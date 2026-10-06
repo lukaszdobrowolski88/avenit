@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase, getCachedUser } from '../../../../lib/supabase';
+import { appLocale } from '../../../../i18n';
 
 export function useCheckin() {
   const [loading, setLoading] = useState(false);
@@ -89,7 +90,7 @@ export function useCheckin() {
 
       // Jeśli nie ma sesji, utwórz nową
       if (!session) {
-        const dayName = new Date().toLocaleDateString('pl-PL', { weekday: 'long' });
+        const dayName = new Date().toLocaleDateString(appLocale(), { weekday: 'long' });
         const { data: newSession, error: insertError } = await supabase
           .from('checkin_sessions')
           .insert({

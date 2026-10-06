@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarCheck, Check, Clock } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 
@@ -55,7 +55,7 @@ export default function RsvpSummaryWidget() {
         <div key={c.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{c.title}</p>
-            <p className="text-xs text-gray-400">{c.event_date ? new Date(c.event_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : ''}</p>
+            <p className="text-xs text-gray-400">{c.event_date ? new Date(c.event_date).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' }) : ''}</p>
           </div>
           <span className="shrink-0 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-sm font-semibold"><Check size={14} />{c.yes}</span>
           <span className="shrink-0 flex items-center gap-1 text-gray-400 text-sm"><Clock size={13} />{c.pending}</span>

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useT } from '../i18n';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 
 // Globalny event do otwierania palety z dowolnego miejsca (np. przycisk w Navbarze).
 export const OPEN_EVENT = 'avenit:open-search';
@@ -95,7 +95,7 @@ const SEARCHERS = [
       return (data || []).map((e) => ({
         id: `event-${e.id}`,
         label: e.title || 'Wydarzenie',
-        sub: [e.date ? new Date(e.date).toLocaleDateString('pl-PL') : '', e.location].filter(Boolean).join(' · '),
+        sub: [e.date ? new Date(e.date).toLocaleDateString(appLocale()) : '', e.location].filter(Boolean).join(' · '),
         path: `/wydarzenie/${e.id}`,
       }));
     },
@@ -111,7 +111,7 @@ const SEARCHERS = [
         .limit(5);
       return (data || []).map((p) => ({
         id: `program-${p.id}`,
-        label: `${p.type || 'Program'}${p.date ? ' — ' + new Date(p.date).toLocaleDateString('pl-PL') : ''}`,
+        label: `${p.type || 'Program'}${p.date ? ' — ' + new Date(p.date).toLocaleDateString(appLocale()) : ''}`,
         sub: p.notes || '',
         path: `/programs/${p.id}`,
       }));

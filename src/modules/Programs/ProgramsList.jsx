@@ -8,7 +8,7 @@ import { useCampus } from '../../contexts/CampusContext';
 import { useT } from '../../i18n';
 
 import * as LucideIcons from 'lucide-react';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
@@ -177,7 +177,7 @@ export default function ProgramsList() {
   const formatDateFull = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const date = new Date(dateString);
-    const formatted = date.toLocaleDateString('pl-PL', options);
+    const formatted = date.toLocaleDateString(appLocale(), options);
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
 

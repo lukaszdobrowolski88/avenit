@@ -109,7 +109,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Etykieta uczestnika
+              {tr('Etykieta uczestnika')}
             </label>
             <input
               type="text"
@@ -123,7 +123,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
             <div>
               <p className="font-medium text-gray-900 dark:text-white">
-                Wymagaj osoby kontaktowej
+                {tr('Wymagaj osoby kontaktowej')}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {tr('Osoba zgłaszająca wypełnia osobną sekcję')}
@@ -167,9 +167,9 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
                         className="text-xs px-2 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
                       >
                         <option value="contact">{tr('Osoba zgłaszająca')}</option>
-                        <option value="participant">Per uczestnik</option>
-                        <option value="both">Oba</option>
-                        <option value="none">Nie przypisane</option>
+                        <option value="participant">{tr('Per uczestnik')}</option>
+                        <option value="both">{tr('Oba')}</option>
+                        <option value="none">{tr('Nie przypisane')}</option>
                       </select>
                     </div>
                   );

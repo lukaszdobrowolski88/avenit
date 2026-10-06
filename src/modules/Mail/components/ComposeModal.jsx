@@ -143,7 +143,7 @@ export default function ComposeModal({
 
   // Wstaw link
   const insertLink = async () => {
-    const url = await promptDialog('Podaj adres URL:', 'https://');
+    const url = await promptDialog(tr('Podaj adres URL:'), 'https://');
     if (url) {
       execCommand('createLink', url);
     }
@@ -246,7 +246,7 @@ export default function ComposeModal({
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              title={isFullscreen ? 'Zmniejsz' : tr('Pełny ekran')}
+              title={isFullscreen ? tr('Zmniejsz') : tr('Pełny ekran')}
             >
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             </button>
@@ -266,7 +266,7 @@ export default function ComposeModal({
         <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           {/* Do */}
           <div className="flex items-center px-6 py-3 border-b border-gray-100 dark:border-gray-800">
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 w-16">Do:</span>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 w-16">{tr('Do:')}</span>
             <div className="flex-1 flex flex-wrap items-center gap-2">
               {draft.to?.map(email => (
                 <span
@@ -285,7 +285,7 @@ export default function ComposeModal({
                 onChange={(e) => setToInput(e.target.value)}
                 onKeyDown={(e) => handleEmailKeyDown(e, 'to', toInput)}
                 onBlur={() => toInput && addEmail('to', toInput)}
-                placeholder={draft.to?.length ? '' : 'Wpisz adres email...'}
+                placeholder={draft.to?.length ? '' : tr('Wpisz adres email...')}
                 className="flex-1 min-w-[200px] bg-transparent text-sm outline-none text-gray-900 dark:text-white placeholder-gray-400"
               />
             </div>
@@ -361,7 +361,7 @@ export default function ComposeModal({
 
           {/* Temat */}
           <div className="flex items-center px-6 py-3">
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 w-16">Temat:</span>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 w-16">{tr('Temat:')}</span>
             <input
               type="text"
               value={draft.subject || ''}
@@ -414,14 +414,14 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('bold')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Pogrubienie (Ctrl+B)"
+            title={tr('Pogrubienie (Ctrl+B)')}
           >
             <Bold size={16} />
           </button>
           <button
             onClick={() => execCommand('italic')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Kursywa (Ctrl+I)"
+            title={tr('Kursywa (Ctrl+I)')}
           >
             <Italic size={16} />
           </button>
@@ -467,7 +467,7 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('formatBlock', 'p')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Paragraf"
+            title={tr('Paragraf')}
           >
             <Type size={16} />
           </button>
@@ -478,14 +478,14 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('insertUnorderedList')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Lista punktowana"
+            title={tr('Lista punktowana')}
           >
             <List size={16} />
           </button>
           <button
             onClick={() => execCommand('insertOrderedList')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Lista numerowana"
+            title={tr('Lista numerowana')}
           >
             <ListOrdered size={16} />
           </button>
@@ -521,14 +521,14 @@ export default function ComposeModal({
           <button
             onClick={insertLink}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Wstaw link"
+            title={tr('Wstaw link')}
           >
             <Link2 size={16} />
           </button>
           <button
             onClick={() => imageInputRef.current?.click()}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Wstaw obraz"
+            title={tr('Wstaw obraz')}
           >
             <Image size={16} />
           </button>
@@ -544,7 +544,7 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('formatBlock', 'blockquote')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Cytat"
+            title={tr('Cytat')}
           >
             <Quote size={16} />
           </button>
@@ -556,7 +556,7 @@ export default function ComposeModal({
             <button
               onClick={() => setShowColorPicker(!showColorPicker)}
               className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex items-center gap-1"
-              title="Kolor tekstu"
+              title={tr('Kolor tekstu')}
             >
               <Palette size={16} />
               <ChevronDown size={12} />
@@ -589,7 +589,7 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('undo')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Cofnij (Ctrl+Z)"
+            title={tr('Cofnij (Ctrl+Z)')}
           >
             <Undo size={16} />
           </button>
@@ -633,7 +633,7 @@ export default function ComposeModal({
               value={draft.body_html || ''}
               onChange={(e) => onUpdateDraft('body_html', e.target.value)}
               className="w-full h-full p-6 bg-gray-900 text-green-400 font-mono text-sm outline-none resize-none"
-              placeholder="<p>Wpisz kod HTML...</p>"
+              placeholder={`<p>${tr('Wpisz kod HTML...')}</p>`}
             />
           )}
         </div>
@@ -643,7 +643,7 @@ export default function ComposeModal({
           <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center gap-2 mb-2">
               <Paperclip size={14} className="text-gray-500" />
-              <span className="text-xs font-medium text-gray-500">Załączniki ({draft.attachments.length})</span>
+              <span className="text-xs font-medium text-gray-500">{tr('Załączniki')} ({draft.attachments.length})</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {draft.attachments.map(att => (
@@ -710,7 +710,7 @@ export default function ComposeModal({
                 title={tr('Szablony')}
               >
                 <FileText size={18} />
-                <span className="hidden sm:inline text-sm font-medium">Szablon</span>
+                <span className="hidden sm:inline text-sm font-medium">{tr('Szablon')}</span>
               </button>
               {showTemplates && (
                 <>
@@ -740,10 +740,10 @@ export default function ComposeModal({
             <button
               onClick={handleInsertSignature}
               className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
-              title="Wstaw podpis"
+              title={tr('Wstaw podpis')}
             >
               <FileText size={18} />
-              <span className="hidden sm:inline text-sm font-medium">Podpis</span>
+              <span className="hidden sm:inline text-sm font-medium">{tr('Podpis')}</span>
             </button>
           )}
 
@@ -757,7 +757,7 @@ export default function ComposeModal({
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
           >
             <Save size={18} />
-            <span className="hidden sm:inline text-sm font-medium">Zapisz szkic</span>
+            <span className="hidden sm:inline text-sm font-medium">{tr('Zapisz szkic')}</span>
           </button>
 
           <button

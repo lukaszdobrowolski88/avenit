@@ -10,7 +10,7 @@ import AttendanceDashboard from './components/AttendanceDashboard';
 import SessionManager from './components/SessionManager';
 import LocationManager from './components/LocationManager';
 import { UserCheck, UserPlus, LogOut, ClipboardList, Settings } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 const MODES = {
   CHECKIN: 'checkin',
@@ -180,7 +180,7 @@ export default function CheckinTab() {
         <span>
           <strong>{session.name}</strong>
           {' • '}
-          {new Date(session.session_date).toLocaleDateString('pl-PL', {
+          {new Date(session.session_date).toLocaleDateString(appLocale(), {
             weekday: 'long',
             day: 'numeric',
             month: 'long'

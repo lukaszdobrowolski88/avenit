@@ -20,7 +20,7 @@ import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
 import { GraduationCap, Podcast } from 'lucide-react';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
 import { confirmDialog } from '../../lib/dialog';
@@ -63,7 +63,7 @@ function useDropdownPosition(triggerRef, isOpen) {
   return coords;
 }
 
-const TableSelect = ({ options, value, onChange, placeholder = 'Wybierz...' }) => {
+const TableSelect = ({ options, value, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
@@ -82,7 +82,7 @@ const TableSelect = ({ options, value, onChange, placeholder = 'Wybierz...' }) =
   }, [isOpen]);
 
   const selectedOption = options.find(opt => opt.value === value);
-  const displayValue = selectedOption ? selectedOption.label : placeholder;
+  const displayValue = selectedOption ? selectedOption.label : (placeholder === undefined ? tr('Wybierz...') : placeholder);
 
   return (
     <div ref={triggerRef} className="relative w-full">
@@ -134,7 +134,7 @@ const TableSelect = ({ options, value, onChange, placeholder = 'Wybierz...' }) =
             );
           })}
           {options.length === 0 && (
-            <div className="p-2 text-gray-400 text-xs text-center">Brak opcji</div>
+            <div className="p-2 text-gray-400 text-xs text-center">{tr('Brak opcji')}</div>
           )}
         </div>,
         document.body
@@ -172,12 +172,12 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
   const formatMonthName = (monthKey) => {
     const [year, month] = monthKey.split('-');
     const date = new Date(year, month - 1);
-    return date.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+    return date.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
   };
 
   const formatDateShort = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('pl-PL', {
+    return date.toLocaleDateString(appLocale(), {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -185,12 +185,12 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
   };
 
   const speakerOptions = [
-    { value: '', label: '-- Wybierz --' },
+    { value: '', label: tr('-- Wybierz --') },
     ...speakers.map(s => ({ value: s.id, label: s.name }))
   ];
 
   const seriesOptions = [
-    { value: '', label: '-- Wybierz --' },
+    { value: '', label: tr('-- Wybierz --') },
     ...series.map(s => ({ value: s.id, label: s.name }))
   ];
 
@@ -204,11 +204,11 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
 
   const columns = [
     { key: 'speaker_id', label: tr('Mówca'), type: 'select', options: speakerOptions },
-    { key: 'series_id', label: 'Seria', type: 'select', options: seriesOptions },
+    { key: 'series_id', label: tr('Seria'), type: 'select', options: seriesOptions },
     { key: 'title', label: tr('Tytuł kazania'), type: 'text' },
-    { key: 'scripture', label: 'Fragment', type: 'text' },
+    { key: 'scripture', label: tr('Fragment'), type: 'text' },
     { key: 'main_point', label: tr('Główna myśl'), type: 'text' },
-    { key: 'notes', label: 'Notatki', type: 'text' },
+    { key: 'notes', label: tr('Notatki'), type: 'text' },
   ];
 
   return (
@@ -261,7 +261,7 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
                               ) : (
                                 <input
                                   className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
-                                  placeholder="Wpisz..."
+                                  placeholder={tr('Wpisz...')}
                                   defaultValue={prog.teaching?.[col.key] || ''}
                                   onBlur={(e) => updateTeachingField(prog.id, col.key, e.target.value)}
                                 />
@@ -355,7 +355,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
           onClick={openAdd}
           className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
         >
-          <Plus size={18} /> Dodaj mówcę
+          <Plus size={18} /> {tr('Dodaj mówcę')}
         </button>
       </div>
 
@@ -419,8 +419,8 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
         size="sm"
         title={editingSpeaker ? tr('Edytuj mówcę') : tr('Dodaj mówcę')}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
-          <Button onClick={handleSave}>{editingSpeaker ? 'Zapisz' : 'Dodaj'}</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={handleSave}>{editingSpeaker ? tr('Zapisz') : tr('Dodaj')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
@@ -471,7 +471,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
 
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Adres e-mail
+              {tr('Adres e-mail')}
             </label>
             <input
               type="email"
@@ -484,7 +484,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
 
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Bio / Opis
+              {tr('Bio / Opis')}
             </label>
             <textarea
               value={form.bio}
@@ -634,16 +634,16 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
           {(selectedSeries.start_date || selectedSeries.end_date) && (
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
               <Calendar size={16} />
-              {selectedSeries.start_date && new Date(selectedSeries.start_date).toLocaleDateString('pl-PL')}
+              {selectedSeries.start_date && new Date(selectedSeries.start_date).toLocaleDateString(appLocale())}
               {selectedSeries.start_date && selectedSeries.end_date && ' - '}
-              {selectedSeries.end_date && new Date(selectedSeries.end_date).toLocaleDateString('pl-PL')}
+              {selectedSeries.end_date && new Date(selectedSeries.end_date).toLocaleDateString(appLocale())}
             </div>
           )}
 
           {/* Graphics gallery */}
           {selectedSeries.graphics && selectedSeries.graphics.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">Grafiki serii</h3>
+              <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">{tr('Grafiki serii')}</h3>
               <div className="flex flex-wrap gap-3">
                 {selectedSeries.graphics.map((g, i) => (
                   <a key={i} href={g.url} target="_blank" rel="noreferrer" className="block">
@@ -657,7 +657,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
           {/* Sermons list */}
           <div>
             <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase mb-4">
-              Kazania w serii ({sermons.length})
+              {tr('Kazania w serii')} ({sermons.length})
             </h3>
             {sermons.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -676,7 +676,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                             {idx + 1}
                           </div>
                           <span className="text-white/90 text-sm font-medium">
-                            {new Date(sermon.date).toLocaleDateString('pl-PL', {
+                            {new Date(sermon.date).toLocaleDateString(appLocale(), {
                               weekday: 'short',
                               day: 'numeric',
                               month: 'short',
@@ -733,7 +733,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                         {sermon.teaching?.notes && (
                           <div className="mt-3 flex items-center gap-1 text-xs text-gray-400">
                             <MessageSquare size={12} />
-                            <span>Zawiera notatki</span>
+                            <span>{tr('Zawiera notatki')}</span>
                           </div>
                         )}
                       </div>
@@ -759,12 +759,12 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
   return (
     <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Serie</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Serie')}</h2>
         <button
           onClick={openAdd}
           className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
         >
-          <Plus size={18} /> Dodaj serię
+          <Plus size={18} /> {tr('Dodaj serię')}
         </button>
       </div>
 
@@ -827,12 +827,12 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   {(s.start_date || s.end_date) && (
                     <span>
-                      {s.start_date && new Date(s.start_date).toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' })}
-                      {s.end_date && ` - ${new Date(s.end_date).toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' })}`}
+                      {s.start_date && new Date(s.start_date).toLocaleDateString(appLocale(), { month: 'short', year: 'numeric' })}
+                      {s.end_date && ` - ${new Date(s.end_date).toLocaleDateString(appLocale(), { month: 'short', year: 'numeric' })}`}
                     </span>
                   )}
                   <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-full font-medium">
-                    {sermonsCount} {sermonsCount === 1 ? 'kazanie' : sermonsCount < 5 ? 'kazania' : tr('kazań')}
+                    {sermonsCount} {sermonsCount === 1 ? tr('kazanie') : sermonsCount < 5 ? tr('kazania') : tr('kazań')}
                   </span>
                 </div>
               </div>
@@ -851,40 +851,40 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
         closeOnBackdrop={false}
         title={editingSeries ? tr('Edytuj serię') : tr('Dodaj serię')}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
-          <Button onClick={handleSave}>{editingSeries ? 'Zapisz' : 'Dodaj'}</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={handleSave}>{editingSeries ? tr('Zapisz') : tr('Dodaj')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Nazwa serii *
+              {tr('Nazwa serii *')}
             </label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
-              placeholder="Np. Fundamenty wiary"
+              placeholder={tr('Np. Fundamenty wiary')}
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Fragment biblijny
+              {tr('Fragment biblijny')}
             </label>
             <input
               type="text"
               value={form.scripture}
               onChange={(e) => setForm({ ...form, scripture: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
-              placeholder="Np. List do Rzymian 1-8"
+              placeholder={tr('Np. List do Rzymian 1-8')}
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Opis serii
+              {tr('Opis serii')}
             </label>
             <textarea
               value={form.description}
@@ -922,7 +922,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
 
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-              Grafiki
+              {tr('Grafiki')}
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
               {form.graphics.map((g, i) => (
@@ -939,7 +939,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
             </div>
             <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light transition">
               <ImageIcon size={20} className="text-gray-400" />
-              <span className="text-sm text-gray-500">{uploading ? tr('Przesyłanie...') : 'Dodaj grafiki'}</span>
+              <span className="text-sm text-gray-500">{uploading ? tr('Przesyłanie...') : tr('Dodaj grafiki')}</span>
               <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
             </label>
           </div>
@@ -1069,14 +1069,14 @@ export default function TeachingModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader moduleKey="teaching" icon={GraduationCap} title="Nauczanie" />
+      <PageHeader moduleKey="teaching" icon={GraduationCap} title={tr('Nauczanie')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs moduleKey="teaching"
         tabs={[
           { id: 'wall', label: tr('Tablica'), icon: MessageSquare },
           { id: 'schedule', label: tr('Grafik'), icon: Calendar, tour: 'teaching-schedule-tab' },
-          { id: 'series', label: 'Serie', icon: BookOpen },
+          { id: 'series', label: tr('Serie'), icon: BookOpen },
           ...(hasTabAccess('teaching', 'speakers') ? [{ id: 'speakers', label: tr('Mówcy'), icon: Users }] : []),
           { id: 'kazania', label: tr('Kazania'), icon: Podcast },
           { id: 'files', label: tr('Pliki'), icon: FolderOpen },
@@ -1099,7 +1099,7 @@ export default function TeachingModule() {
       {activeTab === 'schedule' && (
         <section data-tour="teaching-schedule-section" className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Grafik Nauczania</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Grafik Nauczania')}</h2>
           </div>
           <ScheduleTable
             programs={programs}

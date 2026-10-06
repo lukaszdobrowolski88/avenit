@@ -12,7 +12,7 @@ import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
-import { tr, useT } from '../../i18n';
+import { tr, useT, appLocale } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
 
 export default function UserSettings() {
@@ -282,7 +282,7 @@ export default function UserSettings() {
         if (error) throw error;
       }
 
-      setMessage({ type: 'success', text: 'Podpis email zapisany.' });
+      setMessage({ type: 'success', text: tr('Podpis email zapisany.') });
     } catch (err) {
       setMessage({ type: 'error', text: tr('Nie udało się zapisać podpisu.') });
     }
@@ -329,7 +329,7 @@ export default function UserSettings() {
     if (result.success) {
       setBackupCodesData({ unused: result.backupCodes.map(c => ({ code: c })), used: [] });
       setRegenerateCode('');
-      setMessage({ type: 'success', text: 'Wygenerowano nowe kody zapasowe.' });
+      setMessage({ type: 'success', text: tr('Wygenerowano nowe kody zapasowe.') });
     } else {
       setMessage({ type: 'error', text: result.error || tr('Nie udało się wygenerować kodów.') });
     }
@@ -338,7 +338,7 @@ export default function UserSettings() {
   const copyBackupCodes = () => {
     const codes = backupCodesData.unused.map(c => c.code).join('\n');
     navigator.clipboard.writeText(codes);
-    setMessage({ type: 'success', text: 'Kody skopiowane do schowka.' });
+    setMessage({ type: 'success', text: tr('Kody skopiowane do schowka.') });
   };
 
   const downloadBackupCodes = () => {
@@ -449,7 +449,7 @@ export default function UserSettings() {
 
       if (!error) {
         setIcalSubscription({ ...icalSubscription, export_preferences: icalPreferences });
-        setMessage({ type: 'success', text: 'Preferencje kalendarza zapisane.' });
+        setMessage({ type: 'success', text: tr('Preferencje kalendarza zapisane.') });
       } else {
         throw error;
       }
@@ -469,7 +469,7 @@ export default function UserSettings() {
   // Kopiowanie URL do schowka
   const copyIcalUrl = () => {
     navigator.clipboard.writeText(getIcalSubscriptionUrl());
-    setMessage({ type: 'success', text: 'Link skopiowany do schowka!' });
+    setMessage({ type: 'success', text: tr('Link skopiowany do schowka!') });
   };
 
   // Pobieranie pliku .ics
@@ -544,7 +544,7 @@ export default function UserSettings() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><User size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Dane Osobowe</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Dane Osobowe')}</h3>
             </div>
             
             <div className="space-y-4">
@@ -554,11 +554,11 @@ export default function UserSettings() {
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-accent-primary-light dark:focus:border-accent-primary-light outline-none transition"
                   value={formData.full_name}
                   onChange={e => setFormData({...formData, full_name: e.target.value})}
-                  placeholder="Np. Jan Kowalski"
+                  placeholder={tr('Np. Jan Kowalski')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Adres Email</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Adres Email')}</label>
                 <div className="relative">
                   <Mail size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
                   <input 
@@ -567,13 +567,13 @@ export default function UserSettings() {
                     disabled
                   />
                 </div>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">Zmiana adresu email wymaga kontaktu z administratorem.</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">{tr('Zmiana adresu email wymaga kontaktu z administratorem.')}</p>
               </div>
             </div>
 
             <div className="mt-6 flex justify-end">
               <button onClick={handleSaveProfile} disabled={saving} className="bg-accent-primary dark:bg-accent-primary-light text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition flex items-center gap-2">
-                {saving ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} Zapisz zmiany
+                {saving ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} {tr('Zapisz zmiany')}
               </button>
             </div>
           </div>
@@ -582,7 +582,7 @@ export default function UserSettings() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><Smartphone size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Powiadomienia Push</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Powiadomienia Push')}</h3>
             </div>
 
             {!pushSupported ? (
@@ -679,8 +679,8 @@ export default function UserSettings() {
                     <div>
                       <p className="font-medium text-emerald-800 dark:text-emerald-300">{t('2FA włączone')}</p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                        Aktywowane {twoFactorStatus.verifiedAt
-                          ? new Date(twoFactorStatus.verifiedAt).toLocaleDateString('pl-PL')
+                        {tr('Aktywowane')} {twoFactorStatus.verifiedAt
+                          ? new Date(twoFactorStatus.verifiedAt).toLocaleDateString(appLocale())
                           : ''}
                       </p>
                     </div>
@@ -692,7 +692,7 @@ export default function UserSettings() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <KeyRound size={18} className="text-gray-600 dark:text-gray-400" />
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Kody zapasowe</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{tr('Kody zapasowe')}</span>
                     </div>
                     <button
                       onClick={handleShowBackupCodes}
@@ -713,13 +713,13 @@ export default function UserSettings() {
                     onClose={() => setShowBackupCodes(false)}
                     closeOnBackdrop={false}
                     size="sm"
-                    title="Kody zapasowe"
-                    footer={<Button variant="secondary" onClick={() => setShowBackupCodes(false)}>Zamknij</Button>}
+                    title={tr('Kody zapasowe')}
+                    footer={<Button variant="secondary" onClick={() => setShowBackupCodes(false)}>{tr('Zamknij')}</Button>}
                   >
                     <div className="p-6">
                       <div className="space-y-2 mb-4">
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Pozostało: <span className="font-medium text-emerald-600">{backupCodesData.unused.length}</span> z 10 kodów
+                          {tr('Pozostało:')} <span className="font-medium text-emerald-600">{backupCodesData.unused.length}</span> {tr('z 10 kodów')}
                         </p>
                         <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg font-mono text-sm">
                           {backupCodesData.unused.map((c, i) => (
@@ -730,17 +730,17 @@ export default function UserSettings() {
 
                       <div className="flex gap-2 mb-4">
                         <Button variant="secondary" icon={Copy} onClick={copyBackupCodes} className="flex-1">
-                          Kopiuj
+                          {tr('Kopiuj')}
                         </Button>
                         <Button variant="secondary" icon={Download} onClick={downloadBackupCodes} className="flex-1">
-                          Pobierz
+                          {tr('Pobierz')}
                         </Button>
                       </div>
 
                       {/* Regeneracja kodów */}
                       <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                          Wygeneruj nowe kody (wymagany kod z aplikacji):
+                          {tr('Wygeneruj nowe kody (wymagany kod z aplikacji):')}
                         </p>
                         <div className="flex gap-2">
                           <input
@@ -754,7 +754,7 @@ export default function UserSettings() {
                             onClick={handleRegenerateBackupCodes}
                             loading={twoFactorLoading}
                             icon={RefreshCw}
-                            aria-label="Wygeneruj nowe kody"
+                            aria-label={tr('Wygeneruj nowe kody')}
                           />
                         </div>
                       </div>
@@ -785,7 +785,7 @@ export default function UserSettings() {
                       className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
                     >
                       {twoFactorLoading ? <Loader2 size={16} className="animate-spin" /> : <ShieldOff size={16} />}
-                      Wyłącz
+                      {tr('Wyłącz')}
                     </button>
                   </div>
                 </div>
@@ -847,9 +847,9 @@ export default function UserSettings() {
                 <Calendar size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Subskrypcja Kalendarza</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Subskrypcja Kalendarza')}</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Synchronizuj wydarzenia z Google Calendar, Apple Calendar lub Outlook
+                  {tr('Synchronizuj wydarzenia z Google Calendar, Apple Calendar lub Outlook')}
                 </p>
               </div>
             </div>
@@ -857,7 +857,7 @@ export default function UserSettings() {
             {/* Konfiguracja źródeł */}
             <div className="space-y-4 mb-6">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Wybierz co chcesz eksportować:
+                {tr('Wybierz co chcesz eksportować:')}
               </p>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -866,11 +866,11 @@ export default function UserSettings() {
                   { key: 'events', label: t('Wydarzenia'), icon: '📅' },
                   { key: 'tasks', label: t('Zadania'), icon: '✅' },
                   { key: 'mlodziezowka', label: t('Młodzieżówka'), icon: '🎉' },
-                  { key: 'worship', label: 'Uwielbienie', icon: '🎵' },
-                  { key: 'media', label: 'Media', icon: '🎬' },
+                  { key: 'worship', label: t('Uwielbienie'), icon: '🎵' },
+                  { key: 'media', label: t('Media'), icon: '🎬' },
                   { key: 'atmosfera', label: t('Atmosfera'), icon: '💚' },
-                  { key: 'kids', label: 'Dzieci', icon: '👶' },
-                  { key: 'homegroups', label: 'Grupy Domowe', icon: '🏠' }
+                  { key: 'kids', label: t('Dzieci'), icon: '👶' },
+                  { key: 'homegroups', label: t('Grupy Domowe'), icon: '🏠' }
                 ].map(item => (
                   <label
                     key={item.key}
@@ -910,7 +910,7 @@ export default function UserSettings() {
               <div className="space-y-4">
                 <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                    Link subskrypcji (dodaj do aplikacji kalendarzowej)
+                    {tr('Link subskrypcji (dodaj do aplikacji kalendarzowej)')}
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -922,7 +922,7 @@ export default function UserSettings() {
                     <button
                       onClick={copyIcalUrl}
                       className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                      title="Kopiuj link"
+                      title={tr('Kopiuj link')}
                     >
                       <Copy size={18} />
                     </button>
@@ -936,21 +936,21 @@ export default function UserSettings() {
                     <button
                       onClick={downloadIcs}
                       className="px-3 py-2 bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary dark:text-accent-secondary-light rounded-lg hover:bg-accent-secondary-lighter dark:hover:bg-accent-secondary-darkest/50 transition"
-                      title="Pobierz plik .ics"
+                      title={tr('Pobierz plik .ics')}
                     >
                       <Download size={18} />
                     </button>
                   </div>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    Wklej ten link w Google Calendar (Inne kalendarze → Z adresu URL) lub Apple Calendar (Plik → Nowa subskrypcja)
+                    {tr('Wklej ten link w Google Calendar (Inne kalendarze → Z adresu URL) lub Apple Calendar (Plik → Nowa subskrypcja)')}
                   </p>
                 </div>
 
                 {/* Statystyki */}
                 {icalSubscription.last_accessed_at && (
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Ostatnia synchronizacja: {new Date(icalSubscription.last_accessed_at).toLocaleString('pl-PL')}
-                    {icalSubscription.access_count > 0 && ` (łączna liczba: ${icalSubscription.access_count})`}
+                    {tr('Ostatnia synchronizacja:')} {new Date(icalSubscription.last_accessed_at).toLocaleString(appLocale())}
+                    {icalSubscription.access_count > 0 && ` (${tr('łączna liczba: {n}', { n: icalSubscription.access_count })})`}
                   </div>
                 )}
 
@@ -961,7 +961,7 @@ export default function UserSettings() {
                     className="flex-1 px-4 py-2.5 bg-accent-secondary text-white font-medium rounded-xl hover:bg-accent-secondary transition flex items-center justify-center gap-2"
                   >
                     {icalLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                    Zapisz preferencje
+                    {tr('Zapisz preferencje')}
                   </button>
                   <button
                     onClick={handleCreateOrResetIcal}
@@ -970,7 +970,7 @@ export default function UserSettings() {
                     title={t('Resetuj token (poprzedni link przestanie działać)')}
                   >
                     <RefreshCw size={16} />
-                    Resetuj token
+                    {tr('Resetuj token')}
                   </button>
                 </div>
               </div>
@@ -981,7 +981,7 @@ export default function UserSettings() {
                 className="w-full px-4 py-3 bg-gradient-to-r from-accent-secondary-light to-accent-primary-light text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-secondary-light/30 transition flex items-center justify-center gap-2"
               >
                 {icalLoading ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
-                Utwórz subskrypcję kalendarza
+                {tr('Utwórz subskrypcję kalendarza')}
               </button>
             )}
 
@@ -993,10 +993,10 @@ export default function UserSettings() {
                 closeOnBackdrop={false}
                 size="sm"
                 icon={QrCode}
-                title="Kod QR kalendarza"
+                title={tr('Kod QR kalendarza')}
                 footer={<>
-                  <Button variant="secondary" onClick={() => setShowIcalQrCode(false)}>Zamknij</Button>
-                  <Button icon={Copy} onClick={copyIcalUrl}>Kopiuj link</Button>
+                  <Button variant="secondary" onClick={() => setShowIcalQrCode(false)}>{tr('Zamknij')}</Button>
+                  <Button icon={Copy} onClick={copyIcalUrl}>{tr('Kopiuj link')}</Button>
                 </>}
               >
                 <div className="p-6">
@@ -1004,7 +1004,7 @@ export default function UserSettings() {
                     <div className="p-4 bg-white rounded-xl">
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getIcalSubscriptionUrl())}`}
-                        alt="QR Code"
+                        alt={tr('Kod QR')}
                         className="w-48 h-48"
                       />
                     </div>
@@ -1023,9 +1023,9 @@ export default function UserSettings() {
                 {tr('Jak dodać kalendarz?')}
               </p>
               <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1 list-disc list-inside">
-                <li><strong>Google Calendar:</strong> Ustawienia → Dodaj kalendarz → Z adresu URL</li>
-                <li><strong>Apple Calendar:</strong> Plik → Nowa subskrypcja kalendarza</li>
-                <li><strong>Outlook:</strong> Dodaj kalendarz → Subskrybuj z internetu</li>
+                <li><strong>Google Calendar:</strong> {tr('Ustawienia → Dodaj kalendarz → Z adresu URL')}</li>
+                <li><strong>Apple Calendar:</strong> {tr('Plik → Nowa subskrypcja kalendarza')}</li>
+                <li><strong>Outlook:</strong> {tr('Dodaj kalendarz → Subskrybuj z internetu')}</li>
               </ul>
             </div>
           </div>
@@ -1035,7 +1035,7 @@ export default function UserSettings() {
             <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400"><FileText size={24} /></div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Podpis Email (HTML)</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Podpis Email (HTML)')}</h3>
               </div>
               {/* Toggle HTML/Preview */}
               <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
@@ -1071,21 +1071,21 @@ export default function UserSettings() {
 
               {signatureMode === 'html' ? (
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Kod HTML podpisu</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kod HTML podpisu')}</label>
                   <textarea
                     value={mailSignature}
                     onChange={(e) => setMailSignature(e.target.value)}
                     placeholder={`<div style="font-family: Arial, sans-serif;">
-  <p style="margin: 0; color: #333;">Z pozdrowieniami,</p>
-  <p style="margin: 5px 0 0; font-weight: bold; color: #333;">{t('Jan Kowalski')}</p>
-  <p style="margin: 5px 0 0; color: #666; font-size: 14px;">{t('Kościół [Nazwa]')}</p>
+  <p style="margin: 0; color: #333;">${tr('Z pozdrowieniami,')}</p>
+  <p style="margin: 5px 0 0; font-weight: bold; color: #333;">${t('Jan Kowalski')}</p>
+  <p style="margin: 5px 0 0; color: #666; font-size: 14px;">${t('Kościół [Nazwa]')}</p>
   <p style="margin: 5px 0 0; color: #666; font-size: 12px;">Tel: +48 123 456 789</p>
 </div>`}
                     rows={10}
                     className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-accent-primary dark:focus:border-accent-primary outline-none transition resize-none font-mono text-sm"
                   />
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    Wskazówka: Możesz skopiować podpis z Gmail, Outlook lub wygenerować go w narzędziach online.
+                    {tr('Wskazówka: Możesz skopiować podpis z Gmail, Outlook lub wygenerować go w narzędziach online.')}
                   </p>
                 </div>
               ) : (
@@ -1113,7 +1113,7 @@ export default function UserSettings() {
                 disabled={savingSignature}
                 className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:opacity-95 transition flex items-center gap-2"
               >
-                {savingSignature ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} Zapisz podpis
+                {savingSignature ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} {tr('Zapisz podpis')}
               </button>
             </div>
           </div>
@@ -1156,7 +1156,7 @@ export default function UserSettings() {
 
             <div className="mt-6 flex justify-end">
               <button onClick={handleChangePassword} disabled={saving} className="bg-gray-800 dark:bg-gray-700 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-black dark:hover:bg-gray-600 transition flex items-center gap-2">
-                {saving ? <Loader2 size={18} className="animate-spin"/> : <Lock size={18}/>} Zmień hasło
+                {saving ? <Loader2 size={18} className="animate-spin"/> : <Lock size={18}/>} {tr('Zmień hasło')}
               </button>
             </div>
           </div>

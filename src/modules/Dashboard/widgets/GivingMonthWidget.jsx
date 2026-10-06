@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Gift, TrendingUp } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 
 function money(n) {
-  try { return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 }).format(Number(n) || 0); }
+  try { return new Intl.NumberFormat(appLocale(), { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 }).format(Number(n) || 0); }
   catch { return `${Math.round(Number(n) || 0)} zł`; }
 }
 

@@ -4,9 +4,9 @@ import { tr } from '../../../i18n';
 import { DateTimeInput, TimeField } from '../../../components/pickers';
 
 const MODES = [
-  { id: 'now', label: tr('Wyślij teraz'), icon: Send, description: 'Push idzie natychmiast po zapisie.' },
-  { id: 'scheduled', label: 'Zaplanuj', icon: Clock, description: tr('Wybierz datę i godzinę wysyłki.') },
-  { id: 'smart', label: 'Smart delivery', icon: Sparkles, description: tr('Wyślij gdy odbiorca jest aktywny (max okno czasu).') },
+  { id: 'now', label: 'Wyślij teraz', icon: Send, description: 'Push idzie natychmiast po zapisie.' },
+  { id: 'scheduled', label: 'Zaplanuj', icon: Clock, description: 'Wybierz datę i godzinę wysyłki.' },
+  { id: 'smart', label: 'Smart delivery', icon: Sparkles, description: 'Wyślij gdy odbiorca jest aktywny (max okno czasu).' },
 ];
 
 export default function ScheduleControl({
@@ -34,9 +34,9 @@ export default function ScheduleControl({
           >
             <div className="flex items-center gap-2 mb-1">
               <m.icon size={16} className={sendMode === m.id ? 'text-accent-primary' : 'text-gray-500'} />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">{m.label}</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">{tr(m.label)}</span>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{m.description}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{tr(m.description)}</p>
           </button>
         ))}
       </div>
@@ -60,14 +60,14 @@ export default function ScheduleControl({
             onChange={e => onChange({ smartWindowHours: parseInt(e.target.value, 10) })}
             className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
           >
-            <option value={2}>2 godziny</option>
-            <option value={6}>6 godzin</option>
-            <option value={12}>12 godzin</option>
-            <option value={24}>24 godziny</option>
-            <option value={48}>2 dni</option>
+            <option value={2}>{tr('2 godziny')}</option>
+            <option value={6}>{tr('6 godzin')}</option>
+            <option value={12}>{tr('12 godzin')}</option>
+            <option value={24}>{tr('24 godziny')}</option>
+            <option value={48}>{tr('2 dni')}</option>
           </select>
           <p className="text-xs text-gray-500 mt-1">
-            Push czeka aż odbiorca pojawi się online; po czasie wysyła i tak.
+            {tr('Push czeka aż odbiorca pojawi się online; po czasie wysyła i tak.')}
           </p>
         </div>
       )}
@@ -76,12 +76,12 @@ export default function ScheduleControl({
       <details className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
         <summary className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex items-center gap-2">
           <Moon size={14} />
-          Ograniczenia (opcjonalne)
+          {tr('Ograniczenia (opcjonalne)')}
         </summary>
         <div className="mt-3 space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Cisza nocna od</label>
+              <label className="text-xs text-gray-500 mb-1 block">{tr('Cisza nocna od')}</label>
               <TimeField
                 value={quietHoursStart || ''}
                 onChange={e => onChange({ quietHoursStart: e.target.value || null })}
@@ -89,7 +89,7 @@ export default function ScheduleControl({
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">do</label>
+              <label className="text-xs text-gray-500 mb-1 block">{tr('do')}</label>
               <TimeField
                 value={quietHoursEnd || ''}
                 onChange={e => onChange({ quietHoursEnd: e.target.value || null })}
@@ -98,14 +98,14 @@ export default function ScheduleControl({
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Max pushy dziennie do jednego odbiorcy</label>
+            <label className="text-xs text-gray-500 mb-1 block">{tr('Max pushy dziennie do jednego odbiorcy')}</label>
             <input
               type="number"
               min={1}
               max={20}
               value={frequencyCapPerDay || ''}
               onChange={e => onChange({ frequencyCapPerDay: e.target.value ? parseInt(e.target.value, 10) : null })}
-              placeholder="brak limitu"
+              placeholder={tr('brak limitu')}
               className="w-full px-2 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded"
             />
           </div>

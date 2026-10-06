@@ -94,7 +94,7 @@ export function MobileMenuButton() {
     <button
       onClick={toggle}
       className="lg:hidden p-2 -ml-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
-      aria-label="Menu"
+      aria-label={tr('Menu')}
     >
       <Menu size={24} />
     </button>
@@ -347,7 +347,7 @@ export default function Sidebar() {
         <div className="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logoUrl || sidebarLogo} alt="Logo" className="w-8 h-8 object-contain" onError={(e) => { if (logoUrl && e.target.src !== sidebarLogo) e.target.src = sidebarLogo; }} />
-            <span className="font-semibold text-gray-800 dark:text-white">Menu</span>
+            <span className="font-semibold text-gray-800 dark:text-white">{tr('Menu')}</span>
           </div>
           <button
             onClick={close}
@@ -409,7 +409,7 @@ export default function Sidebar() {
       {/* USTAWIENIA */}
       {hasModuleAccess('module:settings') && (
         <div className={`${isCollapsed && !isMobile ? 'p-2' : 'p-3 lg:p-4'} border-t border-gray-200/50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 shrink-0`}>
-          <Tooltip text="Ustawienia" show={isCollapsed && !isMobile}>
+          <Tooltip text={tr('Ustawienia')} show={isCollapsed && !isMobile}>
             <Link
               to="/settings"
               data-tour="nav-/settings"

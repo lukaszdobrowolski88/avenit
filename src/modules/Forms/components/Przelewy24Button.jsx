@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 export default function Przelewy24Button({
   merchantId,
@@ -162,7 +162,7 @@ export default function Przelewy24Button({
           </span>
         </div>
         <span className="text-lg font-bold text-red-700 dark:text-red-400">
-          {new Intl.NumberFormat('pl-PL', {
+          {new Intl.NumberFormat(appLocale(), {
             style: 'currency',
             currency: currency
           }).format(amount)}

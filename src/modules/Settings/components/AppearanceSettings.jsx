@@ -180,7 +180,7 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
 
   return (
     <div className="max-w-3xl">
-      <SettingsCard title="Logo organizacji" description={tr('Wyświetlane na ekranie logowania i w menu.')} icon={ImageIcon}>
+      <SettingsCard title={tr('Logo organizacji')} description={tr('Wyświetlane na ekranie logowania i w menu.')} icon={ImageIcon}>
         <div className="flex gap-6 items-center">
           <div className="w-32 h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl flex items-center justify-center bg-gray-50 dark:bg-gray-700 relative overflow-hidden group shrink-0">
             {logoUrl
@@ -188,25 +188,25 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
               : <ImageIcon size={32} className="text-gray-300 dark:text-gray-500" />}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
               <button onClick={() => document.getElementById('logo-upload-appearance').click()} className="bg-white text-gray-900 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
-                <Upload size={14} /> Zmień
+                <Upload size={14} /> {tr('Zmień')}
               </button>
             </div>
             <input id="logo-upload-appearance" type="file" className="hidden" accept="image/*" onChange={onLogoUpload} />
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
             <p>{t('Zalecany format: PNG lub SVG z przezroczystym tłem.')}</p>
-            <p className="mt-1">Kwadratowe, min. 256×256 px.</p>
+            <p className="mt-1">{tr('Kwadratowe, min. 256×256 px.')}</p>
           </div>
         </div>
       </SettingsCard>
 
       {/* --- NAZWANE MOTYWY --- */}
-      <SettingsCard title="Motywy" description={tr('Gotowe zestawy — przełącz cały wygląd jednym kliknięciem.')} icon={Layers}>
+      <SettingsCard title={tr('Motywy')} description={tr('Gotowe zestawy — przełącz cały wygląd jednym kliknięciem.')} icon={Layers}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {BUILTIN_THEMES.map((th) => (
             <PickCard key={th.id} selected={isThemeActive(th.settings)} onClick={() => applyTheme(th.settings)}>
               <div className="h-12 rounded-xl mb-2" style={{ background: `linear-gradient(135deg, ${th.preview[0]} 0%, ${th.preview[1]} 100%)` }} />
-              <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">{th.name}</div>
+              <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">{tr(th.name)}</div>
             </PickCard>
           ))}
           {savedThemes.map((th) => (
@@ -235,17 +235,17 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
         </button>
       </SettingsCard>
 
-      <SettingsCard title="Motyw kolorystyczny" description="Kolor przewodni aplikacji." icon={Palette}>
+      <SettingsCard title={tr('Motyw kolorystyczny')} description={tr('Kolor przewodni aplikacji.')} icon={Palette}>
         <ColorPresetPicker currentPreset={get('color_preset') || 'pink-orange'} />
       </SettingsCard>
 
       {/* --- CZCIONKA TREŚCI --- */}
-      <SettingsCard title="Czcionka" description={tr('Krój pisma w całej aplikacji.')} icon={Type}>
+      <SettingsCard title={tr('Czcionka')} description={tr('Krój pisma w całej aplikacji.')} icon={Type}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {fontEntries.map(([key, opt]) => (
             <PickCard key={key} selected={font === key} onClick={() => pickFont(key)}>
               <div className="text-3xl leading-none text-gray-900 dark:text-white mb-1.5" style={{ fontFamily: opt.stack }}>Aa</div>
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate" style={{ fontFamily: opt.stack }}>{opt.label}</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate" style={{ fontFamily: opt.stack }}>{tr(opt.label)}</div>
             </PickCard>
           ))}
         </div>
@@ -263,19 +263,19 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
       </SettingsCard>
 
       {/* --- CZCIONKA NAGŁÓWKÓW --- */}
-      <SettingsCard title="Czcionka nagłówków" description={tr('Osobny krój dla tytułów (opcjonalnie).')} icon={Heading}>
+      <SettingsCard title={tr('Czcionka nagłówków')} description={tr('Osobny krój dla tytułów (opcjonalnie).')} icon={Heading}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {headingEntries.map(([key, opt]) => (
             <PickCard key={key} selected={headingFont === key} onClick={() => pickHeading(key)}>
               <div className="text-3xl leading-none text-gray-900 dark:text-white mb-1.5" style={{ fontFamily: headingStack(key) }}>Aa</div>
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate" style={{ fontFamily: headingStack(key) }}>{opt.label}</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate" style={{ fontFamily: headingStack(key) }}>{tr(opt.label)}</div>
             </PickCard>
           ))}
         </div>
       </SettingsCard>
 
       {/* --- TŁO APLIKACJI (KOLOR) --- */}
-      <SettingsCard title="Tło aplikacji" description={tr('Kolor tła — osobno dla trybu jasnego i ciemnego.')} icon={PaintBucket}>
+      <SettingsCard title={tr('Tło aplikacji')} description={tr('Kolor tła — osobno dla trybu jasnego i ciemnego.')} icon={PaintBucket}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {Object.entries(BACKGROUND_OPTIONS).map(([key, opt]) => (
             <PickCard key={key} selected={bg === key} onClick={() => pickBg(key)}>
@@ -283,14 +283,14 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
                 <span className="flex-1" style={{ background: opt.light }} />
                 <span className="flex-1" style={{ background: opt.dark }} />
               </div>
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{opt.label}</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{tr(opt.label)}</div>
             </PickCard>
           ))}
         </div>
       </SettingsCard>
 
       {/* --- DESEŃ / OBRAZ TŁA --- */}
-      <SettingsCard title="Deseń i obraz tła" description={tr('Delikatny wzór lub własny obraz w tle aplikacji.')} icon={Wallpaper}>
+      <SettingsCard title={tr('Deseń i obraz tła')} description={tr('Delikatny wzór lub własny obraz w tle aplikacji.')} icon={Wallpaper}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {Object.entries(BG_PATTERN_OPTIONS).map(([key, opt]) => (
             <PickCard key={key} selected={pattern === key} onClick={() => pickPattern(key)}>
@@ -298,7 +298,7 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
                 className="h-14 rounded-xl border border-gray-200/70 dark:border-gray-700 mb-2 bg-gray-50 dark:bg-gray-800"
                 style={{ backgroundImage: opt.image, backgroundSize: opt.size, backgroundPosition: 'center' }}
               />
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{opt.label}</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{tr(opt.label)}</div>
             </PickCard>
           ))}
           {hasCustomBg && (
@@ -325,26 +325,26 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
       </SettingsCard>
 
       {/* --- ROZMIAR INTERFEJSU --- */}
-      <SettingsCard title="Rozmiar interfejsu" description={tr('Zagęszczenie i wielkość elementów w całej aplikacji.')} icon={Ruler}>
+      <SettingsCard title={tr('Rozmiar interfejsu')} description={tr('Zagęszczenie i wielkość elementów w całej aplikacji.')} icon={Ruler}>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {Object.entries(SCALE_OPTIONS).map(([key, opt]) => (
             <PickCard key={key} selected={scale === key} onClick={() => pickScale(key)} className="flex flex-col items-center justify-center text-center">
               <div className="text-gray-900 dark:text-white font-semibold leading-none mb-1.5" style={{ fontSize: opt.px || '14px' }}>Aa</div>
-              <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-tight">{opt.label}</div>
+              <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-tight">{tr(opt.label)}</div>
             </PickCard>
           ))}
         </div>
       </SettingsCard>
 
       {/* --- ZAOKRĄGLENIE ROGÓW --- */}
-      <SettingsCard title="Zaokrąglenie rogów" description={tr('Promień kart, przycisków i pól w całej aplikacji.')} icon={Frame}>
+      <SettingsCard title={tr('Zaokrąglenie rogów')} description={tr('Promień kart, przycisków i pól w całej aplikacji.')} icon={Frame}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {Object.entries(RADIUS_OPTIONS).map(([key, opt]) => {
             const s = opt.scale ? parseFloat(opt.scale) : 1;
             return (
               <PickCard key={key} selected={radius === key} onClick={() => pickRadius(key)} className="flex flex-col items-center justify-center text-center">
                 <div className="w-14 h-9 bg-accent-primary/20 border-2 border-accent-primary mb-2" style={{ borderRadius: `${Math.round(12 * s)}px` }} />
-                <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-tight">{opt.label}</div>
+                <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-tight">{tr(opt.label)}</div>
               </PickCard>
             );
           })}
@@ -352,12 +352,12 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
       </SettingsCard>
 
       {/* --- PASEK BOCZNY (STYL + SZEROKOŚĆ) --- */}
-      <SettingsCard title="Pasek boczny" description={tr('Wygląd i szerokość menu bocznego.')} icon={PanelLeft}>
+      <SettingsCard title={tr('Pasek boczny')} description={tr('Wygląd i szerokość menu bocznego.')} icon={PanelLeft}>
         <div className="grid grid-cols-3 gap-3">
           {Object.entries(SIDEBAR_OPTIONS).map(([key, opt]) => (
             <PickCard key={key} selected={sidebar === key} onClick={() => pickSidebar(key)}>
               <SidebarPreview variant={key} />
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate text-center">{opt.label}</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate text-center">{tr(opt.label)}</div>
             </PickCard>
           ))}
         </div>
@@ -368,14 +368,14 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
               <div className="flex justify-center mb-2">
                 <div className="h-8 bg-accent-primary/20 border-2 border-accent-primary rounded-md" style={{ width: key === 'narrow' ? '22px' : key === 'wide' ? '42px' : '32px' }} />
               </div>
-              <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-tight">{opt.label}</div>
+              <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-tight">{tr(opt.label)}</div>
             </PickCard>
           ))}
         </div>
       </SettingsCard>
 
       {/* --- EFEKTY I WYKOŃCZENIE --- */}
-      <SettingsCard title="Efekty i wykończenie" description={tr('Drobne akcenty wizualne i dostępność.')} icon={Sparkles}>
+      <SettingsCard title={tr('Efekty i wykończenie')} description={tr('Drobne akcenty wizualne i dostępność.')} icon={Sparkles}>
         <SettingRow label={tr('Tryb OLED (czysta czerń)')} hint={tr('Czarne tło i powierzchnie w trybie ciemnym')}>
           <Toggle checked={oled === 'on'} onChange={(v) => pickOled(v ? 'on' : 'off')} />
         </SettingRow>
@@ -388,11 +388,11 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
       </SettingsCard>
 
       {/* --- EKRAN LOGOWANIA --- */}
-      <SettingsCard title="Ekran logowania" description={tr('Personalizacja strony logowania (widoczna przed zalogowaniem).')} icon={LogIn}>
+      <SettingsCard title={tr('Ekran logowania')} description={tr('Personalizacja strony logowania (widoczna przed zalogowaniem).')} icon={LogIn}>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Nagłówek powitalny')}</label>
-            <input type="text" defaultValue={get('login_title') || ''} onBlur={(e) => save('login_title', e.target.value)} placeholder="Witaj ponownie" className="w-full" />
+            <input type="text" defaultValue={get('login_title') || ''} onBlur={(e) => save('login_title', e.target.value)} placeholder={tr('Witaj ponownie')} className="w-full" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Podtytuł')}</label>
@@ -404,7 +404,7 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
               {Object.entries(LOGIN_BG_OPTIONS).map(([key, opt]) => (
                 <PickCard key={key} selected={loginBg === key} onClick={() => pickLoginBg(key)}>
                   <div className="h-12 rounded-xl border border-gray-200/70 dark:border-gray-700 mb-2 bg-gray-100 dark:bg-gray-800" style={opt.css ? { background: opt.css } : undefined} />
-                  <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate text-center">{opt.label}</div>
+                  <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate text-center">{tr(opt.label)}</div>
                 </PickCard>
               ))}
               {hasLoginBg && (
@@ -429,32 +429,32 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
         </div>
       </SettingsCard>
 
-      <SettingsCard title="Interfejs" description={tr('Domyślny wygląd dla nowych użytkowników.')} icon={Moon}>
-        <SettingRow label={tr('Domyślny motyw')} hint="Jasny, ciemny lub zgodny z systemem">
+      <SettingsCard title={tr('Interfejs')} description={tr('Domyślny wygląd dla nowych użytkowników.')} icon={Moon}>
+        <SettingRow label={tr('Domyślny motyw')} hint={tr('Jasny, ciemny lub zgodny z systemem')}>
           <SelectSetting
             value={get('appearance_theme') || 'system'}
             onChange={(v) => save('appearance_theme', v)}
             options={[
-              { value: 'system', label: 'Jak w systemie' },
-              { value: 'light', label: 'Jasny' },
-              { value: 'dark', label: 'Ciemny' },
+              { value: 'system', label: tr('Jak w systemie') },
+              { value: 'light', label: tr('Jasny') },
+              { value: 'dark', label: tr('Ciemny') },
             ]}
           />
         </SettingRow>
-        <SettingRow label="Kompaktowy widok" hint={tr('Mniejsze odstępy, więcej treści na ekranie')} last>
+        <SettingRow label={tr('Kompaktowy widok')} hint={tr('Mniejsze odstępy, więcej treści na ekranie')} last>
           <Toggle checked={(get('appearance_compact') ?? 'false') === 'true'} onChange={(v) => save('appearance_compact', String(v))} />
         </SettingRow>
       </SettingsCard>
 
       {/* --- ZAAWANSOWANE: WŁASNY CSS + EKSPORT/IMPORT/RESET --- */}
-      <SettingsCard title="Zaawansowane" description={tr('Własny CSS i zarządzanie całym motywem.')} icon={Code2}>
+      <SettingsCard title={tr('Zaawansowane')} description={tr('Własny CSS i zarządzanie całym motywem.')} icon={Code2}>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Własny CSS')}</label>
             <textarea
               defaultValue={customCss}
               onBlur={(e) => { injectCustomCss(e.target.value); save('custom_css', e.target.value); }}
-              placeholder=":root { /* własne reguły */ }"
+              placeholder={tr(':root { /* własne reguły */ }')}
               rows={6}
               spellCheck={false}
               className="w-full font-mono text-xs"

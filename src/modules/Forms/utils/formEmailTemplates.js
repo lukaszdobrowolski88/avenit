@@ -1,17 +1,18 @@
+import { appLocale } from '../../../i18n';
 // Zmienne personalizacji dostępne w szablonach emaili formularzy
 export const FORM_EMAIL_VARIABLES = [
-  { key: '{{imie}}', label: 'Imie', description: 'Imie osoby wypelniajcej' },
+  { key: '{{imie}}', label: 'Imię', description: 'Imię osoby wypełniającej' },
   { key: '{{nazwisko}}', label: 'Nazwisko', description: 'Nazwisko osoby' },
   { key: '{{email}}', label: 'Email', description: 'Adres email' },
-  { key: '{{data}}', label: 'Data', description: 'Data wyslania formularza' },
-  { key: '{{formularz_nazwa}}', label: 'Nazwa formularza', description: 'Tytul formularza' },
+  { key: '{{data}}', label: 'Data', description: 'Data wysłania formularza' },
+  { key: '{{formularz_nazwa}}', label: 'Nazwa formularza', description: 'Tytuł formularza' },
   { key: '{{formularz_link}}', label: 'Link do formularza', description: 'URL formularza' },
-  { key: '{{kwota}}', label: 'Kwota', description: 'Kwota do zaplaty' },
-  { key: '{{metoda_platnosci}}', label: 'Metoda platnosci', description: 'Wybrana metoda platnosci' },
+  { key: '{{kwota}}', label: 'Kwota', description: 'Kwota do zapłaty' },
+  { key: '{{metoda_platnosci}}', label: 'Metoda płatności', description: 'Wybrana metoda płatności' },
   { key: '{{numer_konta}}', label: 'Numer konta', description: 'Numer konta do przelewu' },
-  { key: '{{termin_platnosci}}', label: 'Termin platnosci', description: 'Data do ktorej nalezy zaplacic' },
+  { key: '{{termin_platnosci}}', label: 'Termin płatności', description: 'Data, do której należy zapłacić' },
   { key: '{{odpowiedzi}}', label: 'Odpowiedzi', description: 'Podsumowanie odpowiedzi z formularza' },
-  { key: '{{kosciol}}', label: 'Nazwa kosciola', description: 'Nazwa organizacji' }
+  { key: '{{kosciol}}', label: 'Nazwa kościoła', description: 'Nazwa organizacji' }
 ];
 
 // Domyslne szablony emaili dla formularzy
@@ -21,7 +22,7 @@ export const DEFAULT_FORM_EMAIL_TEMPLATES = {
     id: 'confirmation',
     name: 'Potwierdzenie rejestracji',
     subject: 'Potwierdzenie - {{formularz_nazwa}}',
-    description: 'Wysylany automatycznie po wyslaniu formularza',
+    description: 'Wysyłany automatycznie po wysłaniu formularza',
     html_content: `
 <!DOCTYPE html>
 <html>
@@ -75,9 +76,9 @@ export const DEFAULT_FORM_EMAIL_TEMPLATES = {
   // Email z informacja o platnosci
   payment_info: {
     id: 'payment_info',
-    name: 'Informacja o platnosci',
+    name: 'Informacja o płatności',
     subject: 'Platnosc - {{formularz_nazwa}}',
-    description: 'Wysylany gdy wymagana jest platnosc przelewem',
+    description: 'Wysyłany, gdy wymagana jest płatność przelewem',
     html_content: `
 <!DOCTYPE html>
 <html>
@@ -164,9 +165,9 @@ export const DEFAULT_FORM_EMAIL_TEMPLATES = {
   // Email z przypomnieniem o platnosci
   payment_reminder: {
     id: 'payment_reminder',
-    name: 'Przypomnienie o platnosci',
+    name: 'Przypomnienie o płatności',
     subject: 'Przypomnienie o platnosci - {{formularz_nazwa}}',
-    description: 'Wysylany jako przypomnienie o niezaplaconej platnosci',
+    description: 'Wysyłany jako przypomnienie o niezapłaconej płatności',
     html_content: `
 <!DOCTYPE html>
 <html>
@@ -249,9 +250,9 @@ export const DEFAULT_FORM_EMAIL_TEMPLATES = {
   // Email z potwierdzeniem platnosci
   payment_confirmed: {
     id: 'payment_confirmed',
-    name: 'Potwierdzenie platnosci',
+    name: 'Potwierdzenie płatności',
     subject: 'Platnosc potwierdzona - {{formularz_nazwa}}',
-    description: 'Wysylany po potwierdzeniu platnosci',
+    description: 'Wysyłany po potwierdzeniu płatności',
     html_content: `
 <!DOCTYPE html>
 <html>
@@ -318,7 +319,7 @@ export const DEFAULT_FORM_EMAIL_TEMPLATES = {
     id: 'admin_notification',
     name: 'Powiadomienie dla administratora',
     subject: 'Nowe zgloszenie - {{formularz_nazwa}}',
-    description: 'Wysylany do administratora po kazdym nowym zgloszeniu',
+    description: 'Wysyłany do administratora po każdym nowym zgłoszeniu',
     html_content: `
 <!DOCTYPE html>
 <html>
@@ -432,7 +433,7 @@ export function personalizeFormEmail(template, data) {
     '{{imie}}': firstName,
     '{{nazwisko}}': lastName,
     '{{email}}': email,
-    '{{data}}': new Date().toLocaleDateString('pl-PL', {
+    '{{data}}': new Date().toLocaleDateString(appLocale(), {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

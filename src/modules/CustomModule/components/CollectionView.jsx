@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Database, Plus, Pencil, Trash2, X, Save, Star, Search, ArrowUpDown, Download, Upload, ChevronLeft, ChevronRight, Kanban, Image as ImageIcon, CalendarDays } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { useModuleRecords } from '../../../hooks/useModuleRecords';
 import { evaluateVisibility } from '../../Forms/utils/fieldTypes';
 import { STATUS_COLORS } from '../../Settings/components/ModuleBuilder/builderElements';
@@ -41,7 +41,7 @@ function formatValue(field, value, empty = '—') {
     }
     case 'person':
       return <span className="inline-flex items-center gap-1.5 text-sm"><span className="w-5 h-5 rounded-full bg-accent-primary/20 text-accent-primary text-[10px] font-bold flex items-center justify-center">{String(value).charAt(0).toUpperCase()}</span>{value}</span>;
-    case 'currency': return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(Number(value) || 0);
+    case 'currency': return new Intl.NumberFormat(appLocale(), { style: 'currency', currency: 'PLN' }).format(Number(value) || 0);
     case 'rating': { const n = Math.max(0, Math.min(5, Number(value) || 0)); return '★'.repeat(n) + '☆'.repeat(5 - n); }
     case 'image': return <img src={value} alt="" className="h-10 w-10 object-cover rounded-lg" />;
     case 'file': return <a href={value} target="_blank" rel="noreferrer" className="text-accent-primary underline">{tr('Otwórz plik')}</a>;
@@ -406,7 +406,7 @@ export default function CollectionView({ element, ctx }) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => setCalCursor(new Date(y, m - 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronLeft size={18} /></button>
-          <span className="text-sm font-semibold capitalize">{calCursor.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
+          <span className="text-sm font-semibold capitalize">{calCursor.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
           <button onClick={() => setCalCursor(new Date(y, m + 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronRight size={18} /></button>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-gray-400 uppercase mb-1">

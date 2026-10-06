@@ -70,9 +70,9 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
 
   // Status colors
   const statusConfig = {
-    online: { color: 'text-green-500', bgColor: 'bg-green-500', label: 'Online' },
-    away: { color: 'text-yellow-500', bgColor: 'bg-yellow-500', label: 'Zaraz wracam' },
-    offline: { color: 'text-gray-400', bgColor: 'bg-gray-400', label: 'Niewidoczny' }
+    online: { color: 'text-green-500', bgColor: 'bg-green-500', label: tr('Online') },
+    away: { color: 'text-yellow-500', bgColor: 'bg-yellow-500', label: tr('Zaraz wracam') },
+    offline: { color: 'text-gray-400', bgColor: 'bg-gray-400', label: tr('Niewidoczny') }
   };
 
   const displayName = userProfile?.full_name || user?.email;
@@ -238,13 +238,13 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{tr('Konto')}</p>
                 </div>
                 <a href="/profile" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary transition-colors cursor-pointer">
-                  <UserIcon size={16}/> Mój Profil
+                  <UserIcon size={16}/> {tr('Mój Profil')}
                 </a>
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
                 >
-                  <LogOut size={16}/> Wyloguj
+                  <LogOut size={16}/> {tr('Wyloguj')}
                 </button>
               </div>
             </div>

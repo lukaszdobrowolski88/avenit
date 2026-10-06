@@ -200,7 +200,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               <ChevronLeft size={20} />
             </button>
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Ustawienia formularza
+              {tr('Ustawienia formularza')}
             </h1>
           </div>
 
@@ -209,7 +209,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
           >
             <Save size={16} />
-            Zapisz
+            {tr('Zapisz')}
           </button>
         </div>
       </div>
@@ -250,7 +250,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Przekierowanie po wysłaniu (opcjonalne)
+                  {tr('Przekierowanie po wysłaniu (opcjonalne)')}
                 </label>
                 <input
                   type="url"
@@ -265,7 +265,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Opcje formularza
+              {tr('Opcje formularza')}
             </h2>
 
             <div className="space-y-4">
@@ -291,14 +291,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Limit odpowiedzi (opcjonalne)
+                  {tr('Limit odpowiedzi (opcjonalne)')}
                 </label>
                 <input
                   type="number"
                   min="1"
                   value={localSettings.limitResponses || ''}
                   onChange={(e) => handleChange('limitResponses', e.target.value ? parseInt(e.target.value) : null)}
-                  placeholder="Bez limitu"
+                  placeholder={tr('Bez limitu')}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -356,14 +356,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Image size={20} className="text-accent-primary-light" />
-              Grafika i obrazy
+              {tr('Grafika i obrazy')}
             </h2>
 
             <div className="space-y-6">
               {/* Logo */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Logo formularza
+                  {tr('Logo formularza')}
                 </label>
                 <input
                   ref={logoImageRef}
@@ -376,7 +376,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <div className="relative inline-block">
                     <img
                       src={localSettings.branding.logoImage}
-                      alt="Logo"
+                      alt={tr('Logo')}
                       className="h-16 object-contain rounded-lg border border-gray-200 dark:border-gray-600"
                     />
                     <button
@@ -397,7 +397,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     ) : (
                       <Upload size={18} />
                     )}
-                    Dodaj logo
+                    {tr('Dodaj logo')}
                   </button>
                 )}
                 <div className="mt-2 flex gap-2">
@@ -411,7 +411,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                       }`}
                     >
-                      {pos === 'left' ? 'Po lewej' : pos === 'center' ? tr('Na środku') : 'Po prawej'}
+                      {pos === 'left' ? tr('Po lewej') : pos === 'center' ? tr('Na środku') : tr('Po prawej')}
                     </button>
                   ))}
                 </div>
@@ -461,7 +461,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 )}
                 <div className="mt-2">
                   <label className="text-xs text-gray-500 dark:text-gray-400">
-                    Wysokość nagłówka: {localSettings.branding?.headerHeight || 200}px
+                    {tr('Wysokość nagłówka:')} {localSettings.branding?.headerHeight || 200}px
                   </label>
                   <input
                     type="range"
@@ -519,7 +519,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 {localSettings.branding?.backgroundImage && (
                   <div className="mt-2">
                     <label className="text-xs text-gray-500 dark:text-gray-400">
-                      Przyciemnienie tła: {Math.round((localSettings.branding?.backgroundOverlay || 0.5) * 100)}%
+                      {tr('Przyciemnienie tła:')} {Math.round((localSettings.branding?.backgroundOverlay || 0.5) * 100)}%
                     </label>
                     <input
                       type="range"
@@ -551,8 +551,8 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 <div className="flex gap-2">
                   {[
                     { id: 'solid', label: tr('Kolor') },
-                    { id: 'gradient', label: 'Gradient' },
-                    { id: 'image', label: 'Grafika' }
+                    { id: 'gradient', label: tr('Gradient') },
+                    { id: 'image', label: tr('Grafika') }
                   ].map((type) => (
                     <button
                       key={type.id}
@@ -618,7 +618,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Kierunek</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Kierunek')}</label>
                     <div className="flex flex-wrap gap-1">
                       {[
                         { id: 'to-r', label: '→' }, { id: 'to-br', label: '↘' },
@@ -657,7 +657,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                         onClick={() => handleHeaderBgChange('gradient', { ...localSettings.header?.background?.gradient, ...preset })}
                         className="h-6 w-12 rounded-lg border border-gray-200 dark:border-gray-600 hover:scale-110 transition-transform"
                         style={{ background: `linear-gradient(to right, ${preset.from}, ${preset.to})` }}
-                        title={preset.label} />
+                        title={tr(preset.label)} />
                     ))}
                   </div>
                 </div>
@@ -691,7 +691,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   )}
                   <div>
                     <label className="text-xs text-gray-500 dark:text-gray-400">
-                      Przyciemnienie: {Math.round((localSettings.header?.background?.overlay ?? 0.5) * 100)}%
+                      {tr('Przyciemnienie:')} {Math.round((localSettings.header?.background?.overlay ?? 0.5) * 100)}%
                     </label>
                     <input type="range" min="0" max="100"
                       value={(localSettings.header?.background?.overlay ?? 0.5) * 100}
@@ -703,12 +703,12 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Kolor tekstu */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kolor tekstu</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Kolor tekstu')}</label>
                 <div className="flex gap-2">
                   {[
-                    { id: 'auto', label: 'Automatyczny' },
-                    { id: 'dark', label: 'Ciemny' },
-                    { id: 'light', label: 'Jasny' }
+                    { id: 'auto', label: tr('Automatyczny') },
+                    { id: 'dark', label: tr('Ciemny') },
+                    { id: 'light', label: tr('Jasny') }
                   ].map((c) => (
                     <button key={c.id}
                       onClick={() => handleHeaderChange('textColor', c.id)}
@@ -743,7 +743,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Wyrównanie')}</label>
                 <div className="flex gap-2">
-                  {[{ id: 'left', label: 'Do lewej' }, { id: 'center', label: tr('Na środku') }].map((a) => (
+                  {[{ id: 'left', label: tr('Do lewej') }, { id: 'center', label: tr('Na środku') }].map((a) => (
                     <button key={a.id}
                       onClick={() => handleHeaderChange('titleAlign', a.id)}
                       className={`flex-1 py-2 rounded-xl text-sm border transition-colors ${
@@ -756,7 +756,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Padding */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Padding</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Padding')}</label>
                 <div className="flex gap-2">
                   {[{ id: 'sm', label: 'S' }, { id: 'md', label: 'M' }, { id: 'lg', label: 'L' }, { id: 'xl', label: 'XL' }].map((p) => (
                     <button key={p.id}
@@ -801,7 +801,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Toggles */}
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <span className="text-sm text-gray-700 dark:text-gray-300">Obramowanie</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{tr('Obramowanie')}</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" checked={localSettings.header?.border !== false}
                     onChange={(e) => handleHeaderChange('border', e.target.checked)} className="sr-only peer" />
@@ -819,7 +819,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div>
                   <span className="text-sm text-gray-700 dark:text-gray-300">{tr('Pokaż info o wydarzeniu')}</span>
-                  <p className="text-xs text-gray-400">Cena, miejsca, data, lokalizacja</p>
+                  <p className="text-xs text-gray-400">{tr('Cena, miejsca, data, lokalizacja')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" checked={localSettings.header?.showEventInfo !== false}
@@ -847,9 +847,9 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   {[
                     { id: 'sm', label: tr('Wąski'), desc: '480px' },
                     { id: 'md', label: tr('Średni'), desc: '576px' },
-                    { id: 'lg', label: 'Szeroki', desc: '672px' },
-                    { id: 'xl', label: 'Bardzo szeroki', desc: '768px' },
-                    { id: '2xl', label: 'Maksymalny', desc: '896px' }
+                    { id: 'lg', label: tr('Szeroki'), desc: '672px' },
+                    { id: 'xl', label: tr('Bardzo szeroki'), desc: '768px' },
+                    { id: '2xl', label: tr('Maksymalny'), desc: '896px' }
                   ].map((size) => (
                     <button
                       key={size.id}
@@ -875,7 +875,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 <div className="flex gap-2">
                   {[
                     { id: 'solid', label: tr('Kolor') },
-                    { id: 'gradient', label: 'Gradient' }
+                    { id: 'gradient', label: tr('Gradient') }
                   ].map((type) => (
                     <button
                       key={type.id}
@@ -937,7 +937,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Przez</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Przez')}</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -973,7 +973,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Kierunek</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Kierunek')}</label>
                     <div className="flex flex-wrap gap-1">
                       {[
                         { id: 'to-r', label: '→' },
@@ -1015,7 +1015,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                   {/* Presety gradientów */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Presety</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">{tr('Presety')}</label>
                     <div className="flex flex-wrap gap-2">
                       {[
                         { from: '#fdf2f8', via: '#ffffff', to: '#fff7ed', label: tr('Różowo-pomarańczowy') },
@@ -1032,7 +1032,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                           }}
                           className="h-6 w-12 rounded-lg border border-gray-200 dark:border-gray-600 hover:scale-110 transition-transform"
                           style={{ background: `linear-gradient(to right, ${preset.from}, ${preset.via}, ${preset.to})` }}
-                          title={preset.label}
+                          title={tr(preset.label)}
                         />
                       ))}
                     </div>
@@ -1045,7 +1045,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 <div className="flex items-center justify-between mb-2">
                   <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
                     <Sparkles size={14} className="text-indigo-500" />
-                    Orby dekoracyjne
+                    {tr('Orby dekoracyjne')}
                   </label>
                   <button
                     onClick={() => {
@@ -1062,7 +1062,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
                   >
                     <Plus size={14} />
-                    Dodaj orb
+                    {tr('Dodaj orb')}
                   </button>
                 </div>
 
@@ -1092,7 +1092,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       />
                       <div className="flex-1 grid grid-cols-3 gap-2">
                         <div>
-                          <label className="text-[10px] text-gray-400">Rozmiar</label>
+                          <label className="text-[10px] text-gray-400">{tr('Rozmiar')}</label>
                           <input
                             type="number"
                             min="50"
@@ -1139,7 +1139,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                         </div>
                       </div>
                       <div className="w-14">
-                        <label className="text-[10px] text-gray-400">Blur</label>
+                        <label className="text-[10px] text-gray-400">{tr('Blur')}</label>
                         <input
                           type="number"
                           min="10"
@@ -1202,7 +1202,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                      Waluta
+                      {tr('Waluta')}
                     </label>
                     <select
                       value={localSettings.pricing?.currency || 'PLN'}
@@ -1241,7 +1241,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {[
-                        { id: 'transfer', label: 'Przelew bankowy', icon: CreditCard },
+                        { id: 'transfer', label: tr('Przelew bankowy'), icon: CreditCard },
                         { id: 'cash', label: tr('Gotówka'), icon: DollarSign },
                         { id: 'paypal', label: 'PayPal', icon: CreditCard },
                         { id: 'przelewy24', label: 'Przelewy24', icon: CreditCard }
@@ -1274,7 +1274,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   {(localSettings.pricing?.paymentMethods || []).includes('transfer') && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        Numer konta bankowego
+                        {tr('Numer konta bankowego')}
                       </label>
                       <input
                         type="text"
@@ -1292,7 +1292,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c1.582 3.185-.072 5.065-3.51 5.065h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106H7.076a.641.641 0 0 1-.633-.74l.142-.9h1.538c.524 0 .968-.382 1.05-.901l1.05-6.66h2.475c4.298 0 7.664-1.747 8.648-6.797.03-.149.054-.294.077-.437-.144-.095-.296-.187-.457-.275l.256.18z"/>
                         </svg>
-                        Konfiguracja PayPal
+                        {tr('Konfiguracja PayPal')}
                       </h4>
 
                       <div className="space-y-3">
@@ -1311,7 +1311,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary"
                           />
                           <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                            Znajdziesz go w{' '}
+                            {tr('Znajdziesz go w')}{' '}
                             <a
                               href="https://developer.paypal.com/dashboard/applications"
                               target="_blank"
@@ -1326,7 +1326,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                         <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-700/50 rounded-lg">
                           <div>
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Tryb testowy (Sandbox)
+                              {tr('Tryb testowy (Sandbox)')}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {tr('Użyj środowiska testowego PayPal')}
@@ -1371,7 +1371,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
                         </svg>
-                        Konfiguracja Przelewy24
+                        {tr('Konfiguracja Przelewy24')}
                       </h4>
 
                       <div className="space-y-3">
@@ -1402,7 +1402,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.przelewy24 || {}),
                               crcKey: e.target.value
                             })}
-                            placeholder="Klucz CRC"
+                            placeholder={tr('Klucz CRC')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-red-200 dark:border-red-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                           />
                         </div>
@@ -1418,18 +1418,18 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.przelewy24 || {}),
                               apiKey: e.target.value
                             })}
-                            placeholder="Klucz API"
+                            placeholder={tr('Klucz API')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-red-200 dark:border-red-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                           />
                           <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                            Znajdziesz je w{' '}
+                            {tr('Znajdziesz je w')}{' '}
                             <a
                               href="https://panel.przelewy24.pl"
                               target="_blank"
                               rel="noopener noreferrer"
                               className="underline hover:text-red-800 dark:hover:text-red-300"
                             >
-                              Panelu Przelewy24
+                              {tr('Panelu Przelewy24')}
                             </a>
                           </p>
                         </div>
@@ -1437,7 +1437,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                         <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-700/50 rounded-lg">
                           <div>
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Tryb testowy (Sandbox)
+                              {tr('Tryb testowy (Sandbox)')}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {tr('Użyj środowiska testowego P24')}
@@ -1497,7 +1497,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Users size={20} className="text-blue-500" />
-              Rejestracja grupowa
+              {tr('Rejestracja grupowa')}
             </h2>
             <GroupRegistrationSettings
               settings={localSettings}
@@ -1510,7 +1510,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Package size={20} className="text-purple-500" />
-              Dodatki (add-ons)
+              {tr('Dodatki (add-ons)')}
             </h2>
             <AddonsSettings
               settings={localSettings}
@@ -1534,17 +1534,17 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Mail size={20} className="text-blue-500" />
-              Powiadomienia email
+              {tr('Powiadomienia email')}
             </h2>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    Wlacz powiadomienia email
+                    {tr('Włącz powiadomienia email')}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Wysylaj automatyczne emaile do uzytkownikow i administratorow
+                    {tr('Wysyłaj automatyczne emaile do użytkowników i administratorów')}
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -1566,7 +1566,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       <div className="flex items-center gap-2">
                         <Bell size={18} className="text-green-600 dark:text-green-400" />
                         <h4 className="font-semibold text-green-700 dark:text-green-400">
-                          Potwierdzenie rejestracji
+                          {tr('Potwierdzenie rejestracji')}
                         </h4>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1580,7 +1580,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </label>
                     </div>
                     <p className="text-sm text-green-600 dark:text-green-400 mb-3">
-                      Wysylany automatycznie po wyslaniu formularza
+                      {tr('Wysyłany automatycznie po wysłaniu formularza')}
                     </p>
 
                     {localSettings.emails?.confirmationEmail?.enabled !== false && (
@@ -1594,7 +1594,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                             className="w-4 h-4 text-green-600 bg-white border-gray-300 rounded focus:ring-green-500"
                           />
                           <label htmlFor="confirmation-custom" className="text-sm text-gray-700 dark:text-gray-300">
-                            Uzyj wlasnego szablonu
+                            {tr('Użyj własnego szablonu')}
                           </label>
                         </div>
 
@@ -1602,13 +1602,13 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                           <div className="space-y-2">
                             <div>
                               <label className="block text-xs font-medium text-green-700 dark:text-green-400 mb-1">
-                                Temat emaila
+                                {tr('Temat emaila')}
                               </label>
                               <input
                                 type="text"
                                 value={localSettings.emails?.confirmationEmail?.customSubject || DEFAULT_FORM_EMAIL_TEMPLATES.confirmation.subject}
                                 onChange={(e) => handleEmailTypeChange('confirmationEmail', 'customSubject', e.target.value)}
-                                placeholder="Potwierdzenie - {{formularz_nazwa}}"
+                                placeholder={tr('Potwierdzenie - {{formularz_nazwa}}')}
                                 className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-green-200 dark:border-green-700 rounded-lg text-sm"
                               />
                             </div>
@@ -1618,14 +1618,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                                 className="flex items-center gap-1 px-3 py-1.5 bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-700"
                               >
                                 <Edit3 size={14} />
-                                Edytuj szablon
+                                {tr('Edytuj szablon')}
                               </button>
                               <button
                                 onClick={() => setPreviewTemplate(DEFAULT_FORM_EMAIL_TEMPLATES.confirmation)}
                                 className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
                               >
                                 <Eye size={14} />
-                                Podglad
+                                {tr('Podgląd')}
                               </button>
                             </div>
                           </div>
@@ -1640,7 +1640,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       <div className="flex items-center gap-2">
                         <DollarSign size={18} className="text-emerald-600 dark:text-emerald-400" />
                         <h4 className="font-semibold text-emerald-700 dark:text-emerald-400">
-                          Informacja o platnosci
+                          {tr('Informacja o płatności')}
                         </h4>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1654,14 +1654,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </label>
                     </div>
                     <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-3">
-                      Wysylany gdy wymagana jest platnosc przelewem
+                      {tr('Wysyłany gdy wymagana jest płatność przelewem')}
                     </p>
 
                     {localSettings.emails?.paymentEmail?.enabled !== false && (
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">
-                            Termin platnosci (dni)
+                            {tr('Termin płatności (dni)')}
                           </label>
                           <input
                             type="number"
@@ -1682,7 +1682,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                             className="w-4 h-4 text-emerald-600 bg-white border-gray-300 rounded focus:ring-emerald-500"
                           />
                           <label htmlFor="payment-custom" className="text-sm text-gray-700 dark:text-gray-300">
-                            Uzyj wlasnego szablonu
+                            {tr('Użyj własnego szablonu')}
                           </label>
                         </div>
 
@@ -1693,14 +1693,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               className="flex items-center gap-1 px-3 py-1.5 bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-sm hover:bg-emerald-200 dark:hover:bg-emerald-700"
                             >
                               <Edit3 size={14} />
-                              Edytuj szablon
+                              {tr('Edytuj szablon')}
                             </button>
                             <button
                               onClick={() => setPreviewTemplate(DEFAULT_FORM_EMAIL_TEMPLATES.payment_info)}
                               className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
                             >
                               <Eye size={14} />
-                              Podglad
+                              {tr('Podgląd')}
                             </button>
                           </div>
                         )}
@@ -1714,7 +1714,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       <div className="flex items-center gap-2">
                         <Clock size={18} className="text-amber-600 dark:text-amber-400" />
                         <h4 className="font-semibold text-amber-700 dark:text-amber-400">
-                          Przypomnienie o platnosci
+                          {tr('Przypomnienie o płatności')}
                         </h4>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1728,14 +1728,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </label>
                     </div>
                     <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
-                      Wysylany jako przypomnienie przed uplywem terminu platnosci
+                      {tr('Wysyłany jako przypomnienie przed upływem terminu płatności')}
                     </p>
 
                     {localSettings.emails?.reminderEmail?.enabled && (
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">
-                            Wyślij przypomnienie na ile dni przed terminem
+                            {tr('Wyślij przypomnienie na ile dni przed terminem')}
                           </label>
                           <input
                             type="number"
@@ -1756,7 +1756,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                             className="w-4 h-4 text-amber-600 bg-white border-gray-300 rounded focus:ring-accent-primary"
                           />
                           <label htmlFor="reminder-custom" className="text-sm text-gray-700 dark:text-gray-300">
-                            Uzyj wlasnego szablonu
+                            {tr('Użyj własnego szablonu')}
                           </label>
                         </div>
 
@@ -1767,14 +1767,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               className="flex items-center gap-1 px-3 py-1.5 bg-amber-100 dark:bg-amber-800 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 dark:hover:bg-amber-700"
                             >
                               <Edit3 size={14} />
-                              Edytuj szablon
+                              {tr('Edytuj szablon')}
                             </button>
                             <button
                               onClick={() => setPreviewTemplate(DEFAULT_FORM_EMAIL_TEMPLATES.payment_reminder)}
                               className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
                             >
                               <Eye size={14} />
-                              Podglad
+                              {tr('Podgląd')}
                             </button>
                           </div>
                         )}
@@ -1788,7 +1788,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       <div className="flex items-center gap-2">
                         <CreditCard size={18} className="text-teal-600 dark:text-teal-400" />
                         <h4 className="font-semibold text-teal-700 dark:text-teal-400">
-                          Potwierdzenie platnosci
+                          {tr('Potwierdzenie płatności')}
                         </h4>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1802,7 +1802,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </label>
                     </div>
                     <p className="text-sm text-teal-600 dark:text-teal-400 mb-3">
-                      Wysylany po potwierdzeniu otrzymania platnosci
+                      {tr('Wysyłany po potwierdzeniu otrzymania płatności')}
                     </p>
 
                     {localSettings.emails?.paymentConfirmedEmail?.enabled !== false && (
@@ -1816,7 +1816,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                             className="w-4 h-4 text-teal-600 bg-white border-gray-300 rounded focus:ring-teal-500"
                           />
                           <label htmlFor="confirmed-custom" className="text-sm text-gray-700 dark:text-gray-300">
-                            Uzyj wlasnego szablonu
+                            {tr('Użyj własnego szablonu')}
                           </label>
                         </div>
 
@@ -1827,14 +1827,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               className="flex items-center gap-1 px-3 py-1.5 bg-teal-100 dark:bg-teal-800 text-teal-700 dark:text-teal-300 rounded-lg text-sm hover:bg-teal-200 dark:hover:bg-teal-700"
                             >
                               <Edit3 size={14} />
-                              Edytuj szablon
+                              {tr('Edytuj szablon')}
                             </button>
                             <button
                               onClick={() => setPreviewTemplate(DEFAULT_FORM_EMAIL_TEMPLATES.payment_confirmed)}
                               className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
                             >
                               <Eye size={14} />
-                              Podglad
+                              {tr('Podgląd')}
                             </button>
                           </div>
                         )}
@@ -1848,7 +1848,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       <div className="flex items-center gap-2">
                         <AlertCircle size={18} className="text-blue-600 dark:text-blue-400" />
                         <h4 className="font-semibold text-blue-700 dark:text-blue-400">
-                          Powiadomienie dla administratora
+                          {tr('Powiadomienie dla administratora')}
                         </h4>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1862,14 +1862,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </label>
                     </div>
                     <p className="text-sm text-blue-600 dark:text-blue-400 mb-3">
-                      Wysylany do administratorow po kazdym nowym zgloszeniu
+                      {tr('Wysyłany do administratorów po każdym nowym zgłoszeniu')}
                     </p>
 
                     {localSettings.emails?.adminNotification?.enabled && (
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
-                            Adresy email administratorow (po przecinku)
+                            {tr('Adresy email administratorów (po przecinku)')}
                           </label>
                           <input
                             type="text"
@@ -1892,7 +1892,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                             className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-accent-primary"
                           />
                           <label htmlFor="admin-custom" className="text-sm text-gray-700 dark:text-gray-300">
-                            Uzyj wlasnego szablonu
+                            {tr('Użyj własnego szablonu')}
                           </label>
                         </div>
 
@@ -1903,14 +1903,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-700"
                             >
                               <Edit3 size={14} />
-                              Edytuj szablon
+                              {tr('Edytuj szablon')}
                             </button>
                             <button
                               onClick={() => setPreviewTemplate(DEFAULT_FORM_EMAIL_TEMPLATES.admin_notification)}
                               className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
                             >
                               <Eye size={14} />
-                              Podglad
+                              {tr('Podgląd')}
                             </button>
                           </div>
                         )}
@@ -1921,7 +1921,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   {/* Info o zmiennych */}
                   <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      Dostepne zmienne w szablonach:
+                      {tr('Dostępne zmienne w szablonach:')}
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {['{{imie}}', '{{nazwisko}}', '{{email}}', '{{formularz_nazwa}}', '{{kwota}}', '{{numer_konta}}', '{{termin_platnosci}}', '{{odpowiedzi}}'].map((variable) => (
@@ -1946,14 +1946,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
         isOpen={!!previewTemplate}
         onClose={() => setPreviewTemplate(null)}
         closeOnBackdrop={false}
-        title={previewTemplate ? `Podglad: ${previewTemplate.name}` : ''}
+        title={previewTemplate ? tr('Podgląd: {name}', { name: previewTemplate.name }) : ''}
         size="xl"
       >
         {previewTemplate && (
           <div className="p-6">
             <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                <strong>Temat:</strong> {previewTemplate.subject}
+                <strong>{tr('Temat:')}</strong> {previewTemplate.subject}
               </p>
             </div>
             <div
@@ -1981,7 +1981,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <ChevronLeft size={20} />
                 </button>
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  Edytuj szablon: {editingTemplate.template.name}
+                  {tr('Edytuj szablon:')} {editingTemplate.template.name}
                 </h3>
               </div>
 
@@ -1997,7 +1997,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     }`}
                   >
                     <Palette size={16} />
-                    Kreator
+                    {tr('Kreator')}
                   </button>
                   <button
                     onClick={() => setEditorMode('code')}
@@ -2008,7 +2008,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     }`}
                   >
                     <Code size={16} />
-                    Kod HTML
+                    {tr('Kod HTML')}
                   </button>
                 </div>
 
@@ -2022,7 +2022,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   }}
                   className="px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
                 >
-                  Zapisz i zamknij
+                  {tr('Zapisz i zamknij')}
                 </button>
               </div>
             </div>
@@ -2032,14 +2032,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
             <div className="flex items-center gap-4">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                Temat emaila:
+                {tr('Temat emaila:')}
               </label>
               <input
                 type="text"
                 value={localSettings.emails?.[editingTemplate.type]?.customSubject || editingTemplate.template.subject}
                 onChange={(e) => handleEmailTypeChange(editingTemplate.type, 'customSubject', e.target.value)}
                 className="flex-1 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                placeholder="Temat emaila..."
+                placeholder={tr('Temat emaila...')}
               />
             </div>
           </div>
@@ -2058,7 +2058,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 {/* Zmienne info */}
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-2">
-                    Dostępne zmienne (kliknij aby wstawić):
+                    {tr('Dostępne zmienne (kliknij aby wstawić):')}
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {FORM_EMAIL_VARIABLES.map((variable) => (
@@ -2069,7 +2069,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                           handleEmailTypeChange(editingTemplate.type, 'customHtml', currentHtml + variable.key);
                         }}
                         className="px-2 py-1 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-300 rounded border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
-                        title={variable.description}
+                        title={tr(variable.description)}
                       >
                         {variable.key}
                       </button>

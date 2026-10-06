@@ -6,6 +6,7 @@ import { useCampusQuery } from '../../hooks/useCampusQuery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import SermonsTab from './tabs/SermonsTab';
 import PlayerTab from './tabs/PlayerTab';
+import { tr } from '../../i18n';
 
 const TABS = [
   { id: 'list', label: 'Kazania', icon: List },
@@ -55,11 +56,11 @@ export default function SermonsModule({ embedded = false }) {
     <div className="space-y-6">
       {/* Nagłówek (pomijany przy osadzeniu) */}
       {!embedded && (
-        <PageHeader moduleKey="sermons" icon={Podcast} title="Kazania" subtitle="Publiczne archiwum kazań — audio, wideo i odnośniki biblijne" />
+        <PageHeader moduleKey="sermons" icon={Podcast} title={tr('Kazania')} subtitle={tr('Publiczne archiwum kazań — audio, wideo i odnośniki biblijne')} />
       )}
 
       {/* Zakładki */}
-      <ResponsiveTabs moduleKey="sermons" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="sermons" tabs={TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

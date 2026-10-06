@@ -3,7 +3,7 @@ import EmptyState from '../../../../components/EmptyState';
 import Spinner from '../../../../components/Spinner';
 import { supabase, getCachedUser } from '../../../../lib/supabase';
 import { Plus, Trash2, CalendarClock } from 'lucide-react';
-import { tr } from '../../../../i18n';
+import { tr, appLocale } from '../../../../i18n';
 import { toast } from '../../../../lib/toast';
 import { DateInput, TimeField } from '../../../../components/pickers';
 import { confirmDialog } from '../../../../lib/dialog';
@@ -118,13 +118,13 @@ export default function SessionManager({ onSessionChange }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Sesje Check-in</h3>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{tr('Sesje Check-in')}</h3>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
         >
           <Plus size={18} />
-          Nowa sesja
+          {tr('Nowa sesja')}
         </button>
       </div>
 
@@ -134,7 +134,7 @@ export default function SessionManager({ onSessionChange }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Nazwa sesji
+                {tr('Nazwa sesji')}
               </label>
               <input
                 type="text"
@@ -146,7 +146,7 @@ export default function SessionManager({ onSessionChange }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Data
+                {tr('Data')}
               </label>
               <DateInput
                 value={formData.session_date}
@@ -157,7 +157,7 @@ export default function SessionManager({ onSessionChange }) {
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                  Start
+                  {tr('Start')}
                 </label>
                 <TimeField
                   value={formData.start_time}
@@ -167,7 +167,7 @@ export default function SessionManager({ onSessionChange }) {
               </div>
               <div className="flex-1">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                  Koniec
+                  {tr('Koniec')}
                 </label>
                 <TimeField
                   value={formData.end_time}
@@ -182,7 +182,7 @@ export default function SessionManager({ onSessionChange }) {
               onClick={() => setShowForm(false)}
               className="px-5 py-2.5 text-base font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition"
             >
-              Anuluj
+              {tr('Anuluj')}
             </button>
             <button
               onClick={handleCreate}
@@ -220,12 +220,12 @@ export default function SessionManager({ onSessionChange }) {
                   {session.name}
                   {session.is_active && (
                     <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-2 py-0.5 rounded text-xs font-semibold">
-                      Aktywna
+                      {tr('Aktywna')}
                     </span>
                   )}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {new Date(session.session_date).toLocaleDateString('pl-PL', {
+                  {new Date(session.session_date).toLocaleDateString(appLocale(), {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long',
@@ -243,7 +243,7 @@ export default function SessionManager({ onSessionChange }) {
                       : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60'
                     }`}
                 >
-                  {session.is_active ? 'Dezaktywuj' : 'Aktywuj'}
+                  {session.is_active ? tr('Dezaktywuj') : tr('Aktywuj')}
                 </button>
                 <button
                   onClick={() => handleDelete(session.id)}

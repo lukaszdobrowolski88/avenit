@@ -48,7 +48,7 @@ export default function CheckinSuccess({
 
   const childrenNames = checkins?.map(c => {
     if (c.is_guest) return c.guest_name;
-    return c.kids_students?.full_name || 'Nieznane';
+    return c.kids_students?.full_name || tr('Nieznane');
   }) || [];
 
   return (
@@ -60,7 +60,7 @@ export default function CheckinSuccess({
 
       {/* Title */}
       <h1 className="text-3xl sm:text-4xl font-bold text-green-500 dark:text-green-400 mb-4">
-        Zameldowano!
+        {tr('Zameldowano!')}
       </h1>
 
       {/* Security codes */}
@@ -92,7 +92,7 @@ export default function CheckinSuccess({
       {/* Children list */}
       <div className="mb-8">
         <div className="text-base text-gray-600 dark:text-gray-400 mb-2">
-          Zameldowane dzieci:
+          {tr('Zameldowane dzieci:')}
         </div>
         <div className="text-xl font-semibold text-gray-900 dark:text-white">
           {childrenNames.join(', ')}
@@ -117,20 +117,20 @@ export default function CheckinSuccess({
           className="flex items-center gap-2 px-5 py-3 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
         >
           <Printer size={18} />
-          Drukuj ponownie
+          {tr('Drukuj ponownie')}
         </button>
         <button
           onClick={handleDoneNow}
           className="flex items-center gap-2 px-5 py-3 text-base font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
         >
           <Check size={18} />
-          Gotowe
+          {tr('Gotowe')}
         </button>
       </div>
 
       {/* Auto return countdown */}
       <div className="text-sm text-gray-400 dark:text-gray-500">
-        Powrót do ekranu głównego za {countdown}s...
+        {tr('Powrót do ekranu głównego za {n}s...', { n: countdown })}
       </div>
 
       <style>{`

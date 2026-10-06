@@ -31,7 +31,7 @@ export default function DashboardsSection({ userEmail }) {
   }
 
   const handleCreate = async () => {
-    const d = await createDashboard('Nowy dashboard');
+    const d = await createDashboard(tr('Nowy dashboard'));
     if (d) setSelectedId(d.id);
   };
 
@@ -63,14 +63,14 @@ export default function DashboardsSection({ userEmail }) {
                 <Popover align="right" width={150} trigger={<button onClick={(e) => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 p-1"><MoreHorizontal size={18} /></button>}>
                   {({ close }) => (
                     <div className="p-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={async () => { if (await confirmDialog(`Usunąć „${d.name}"?`)) deleteDashboard(d.id); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń')}</button>
+                      <button onClick={async () => { if (await confirmDialog(tr('Usunąć „{name}"?', { name: d.name }))) deleteDashboard(d.id); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń')}</button>
                     </div>
                   )}
                 </Popover>
                 )}
               </div>
               <h3 className="mt-3 font-semibold text-gray-800 dark:text-gray-100 truncate">{d.name}</h3>
-              <p className="text-xs text-gray-400">{(d.layout || []).length} widżetów</p>
+              <p className="text-xs text-gray-400">{(d.layout || []).length} {tr('widżetów')}</p>
             </div>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Phone, MapPin, ThumbsUp, Play, Pause, ExternalLink } from 'lucide-react';
 import { formatDuration } from '../../lib/columnTypes';
+import { appLocale } from '../../../../i18n';
 
 // ── E-mail ───────────────────────────────────────────────────────────
 export function EmailCell({ value, onChange, readOnly }) {
@@ -79,7 +80,7 @@ export function TimeTrackingCell({ value, onChange, readOnly }) {
 }
 
 // ── Metadane (item_id / created_log / last_updated) — tylko odczyt ────
-function fmtDate(iso) { try { return new Date(iso).toLocaleString('pl-PL', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } }
+function fmtDate(iso) { try { return new Date(iso).toLocaleString(appLocale(), { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } }
 export function MetaCell({ column, item }) {
   let text = '';
   if (column.type === 'item_id') text = item?.id ? `#${String(item.id).slice(0, 8)}` : '';

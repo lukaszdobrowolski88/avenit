@@ -11,7 +11,7 @@ import {
   ArrowLeft,
   Loader2
 } from 'lucide-react';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 
 const VIEWS = {
   OVERVIEW: 'overview',
@@ -194,7 +194,7 @@ export default function BillingModule() {
   // Import formatPrice locally if needed
   const formatPrice = (priceInGrosze) => {
     const amount = priceInGrosze / 100;
-    return new Intl.NumberFormat('pl-PL', {
+    return new Intl.NumberFormat(appLocale(), {
       style: 'currency',
       currency: 'PLN'
     }).format(amount);

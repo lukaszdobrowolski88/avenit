@@ -199,10 +199,10 @@ export default function PublicFormPage() {
           {error === 'seats_full' && (
             <>
               <h1 className="text-xl font-bold text-gray-900 mb-2">
-                Brak wolnych miejsc
+                {tr('Brak wolnych miejsc')}
               </h1>
               <p className="text-gray-600">
-                Wszystkie miejsca (w tym rezerwowe) zostały zajęte.
+                {tr('Wszystkie miejsca (w tym rezerwowe) zostały zajęte.')}
               </p>
             </>
           )}

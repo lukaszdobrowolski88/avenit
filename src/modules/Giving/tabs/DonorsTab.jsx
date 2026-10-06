@@ -3,6 +3,7 @@ import { Users, Receipt, Printer, Download, Search, ArrowLeft, TrendingUp, Calen
 import { supabase } from '../../../lib/supabase';
 import { formatMoney, formatDate, memberName, methodLabel, statusLabel } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
@@ -60,7 +61,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
         const m = d.member_id ? membersById?.[d.member_id] : null;
         map[key] = {
           key,
-          name: m ? memberName(m) : (d.donor_name || 'Darczyńca nieznany'),
+          name: m ? memberName(m) : (d.donor_name || tr('Darczyńca nieznany')),
           isMember: !!d.member_id,
           address: d.donor_address || m?.address || '',
           email: d.donor_email || m?.email || '',
@@ -105,7 +106,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
     }).sort((a, b) => (a.donation_date || '').localeCompare(b.donation_date || ''));
 
     if (items.length === 0) {
-      toast.error(`Brak darowizn uprawniających do odpisu PIT dla tej osoby w roku ${currentYear}.`);
+      toast.error(tr('Brak darowizn uprawniających do odpisu PIT dla tej osoby w roku {year}.', { year: currentYear }));
       return;
     }
     const total = items.reduce((s, d) => s + (Number(d.amount) || 0), 0);
@@ -131,7 +132,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
       </style></head><body>
       <div class="head">
         <div><h1>${orgName || 'Zestawienie darowizn'}</h1><div class="muted">Roczne zestawienie darowizn za rok ${currentYear}</div></div>
-        <div class="muted" style="text-align:right">Data wystawienia:<br>${new Date().toLocaleDateString('pl-PL')}</div>
+        <div class="muted" style="text-align:right">Data wystawienia:<br>${new Date().toLocaleDateString(appLocale())}</div>
       </div>
       <div class="box">
         <strong>Darczyńca:</strong> ${donor.name}<br>
@@ -151,7 +152,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
       <script>window.onload=function(){window.print();}</script>
       </body></html>`;
     const w = window.open('', '_blank');
-    if (!w) { toast.info('Zezwól na wyskakujące okna, aby wydrukować zestawienie.'); return; }
+    if (!w) { toast.info(tr('Zezwól na wyskakujące okna, aby wydrukować zestawienie.')); return; }
     w.document.write(html); w.document.close();
   };
 
@@ -181,8 +182,8 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
     <div className="space-y-4">
       {/* Podsumowanie u góry */}
       <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">Darczyńców: <b className="text-gray-900 dark:text-white">{donors.length}</b></span>
-        <span className="text-gray-500 dark:text-gray-400">Suma darowizn: <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(grandTotal)}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Darczyńców:')} <b className="text-gray-900 dark:text-white">{donors.length}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Suma darowizn:')} <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(grandTotal)}</b></span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
@@ -195,7 +196,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Szukaj darczyńcy..."
+                  placeholder={tr('Szukaj darczyńcy...')}
                   className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
                 />
               </div>
@@ -204,7 +205,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
               {loading ? (
                 <Spinner center />
               ) : filtered.length === 0 ? (
-                <EmptyState compact icon={Users} title="Brak darczyńców." />
+                <EmptyState compact icon={Users} title={tr('Brak darczyńców.')} />
               ) : (
                 filtered.map(d => {
                   const isActive = d.key === selectedKey;
@@ -219,7 +220,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{d.name}</div>
                         <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                          {d.count} {d.count === 1 ? 'darowizna' : 'darowizn'}{d.lastDate ? ` · ost. ${formatDate(d.lastDate)}` : ''}
+                          {d.count} {d.count === 1 ? tr('darowizna') : tr('darowizn')}{d.lastDate ? ` · ${tr('ost. {date}', { date: formatDate(d.lastDate) })}` : ''}
                         </div>
                       </div>
                       <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums shrink-0">{formatMoney(d.totalAll)}</span>
@@ -235,7 +236,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
         <div className={`${selected ? 'block' : 'hidden lg:block'}`}>
           {!selected ? (
             <div className="h-full min-h-[300px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-              <EmptyState icon={Users} title="Wybierz darczyńcę z listy, aby zobaczyć jego kartę i historię darowizn." />
+              <EmptyState icon={Users} title={tr('Wybierz darczyńcę z listy, aby zobaczyć jego kartę i historię darowizn.')} />
             </div>
           ) : (
             <div className="space-y-4">
@@ -249,7 +250,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{selected.name}</h2>
-                      {selected.isMember && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-accent-primary-lightest text-accent-primary dark:bg-accent-primary-darkest/40 dark:text-accent-primary-light">członek</span>}
+                      {selected.isMember && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-accent-primary-lightest text-accent-primary dark:bg-accent-primary-darkest/40 dark:text-accent-primary-light">{tr('członek')}</span>}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {selected.email && <span className="truncate">{selected.email}</span>}
@@ -261,15 +262,15 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                 {/* Karty podsumowania */}
                 <div className="grid grid-cols-3 gap-3 mt-4">
                   <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"><Calendar size={13} /> Suma {currentYear}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"><Calendar size={13} /> {tr('Suma {year}', { year: currentYear })}</div>
                     <div className="mt-1 text-base font-bold text-gray-900 dark:text-white tabular-nums">{formatMoney(selected.totalYear)}</div>
                   </div>
                   <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"><TrendingUp size={13} /> Suma łącznie</div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"><TrendingUp size={13} /> {tr('Suma łącznie')}</div>
                     <div className="mt-1 text-base font-bold text-accent-primary dark:text-accent-primary-light tabular-nums">{formatMoney(selected.totalAll)}</div>
                   </div>
                   <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"><Receipt size={13} /> Darowizn</div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"><Receipt size={13} /> {tr('Darowizn')}</div>
                     <div className="mt-1 text-base font-bold text-gray-900 dark:text-white tabular-nums">{selected.count}</div>
                   </div>
                 </div>
@@ -277,10 +278,10 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                 {/* Akcje */}
                 <div className="flex flex-wrap items-center gap-3 mt-4">
                   <button onClick={() => printStatement(selected)} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
-                    <Printer size={16} /> Zestawienie PIT
+                    <Printer size={16} /> {tr('Zestawienie PIT')}
                   </button>
                   <button onClick={() => exportCsv(selected)} className="px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-sm">
-                    <Download size={16} /> Eksport CSV
+                    <Download size={16} /> {tr('Eksport CSV')}
                   </button>
                 </div>
               </div>
@@ -288,15 +289,15 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
               {/* Historia darowizn */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {selected.items.length === 0 ? (
-                  <EmptyState icon={Receipt} title="Brak darowizn." />
+                  <EmptyState icon={Receipt} title={tr('Brak darowizn.')} />
                 ) : (
                   <DataTable flush>
                     <THead>
                       <tr>
-                        <TH>Data</TH>
-                        <TH>Fundusz</TH>
-                        <TH align="right">Kwota</TH>
-                        <TH>Metoda</TH>
+                        <TH>{tr('Data')}</TH>
+                        <TH>{tr('Fundusz')}</TH>
+                        <TH align="right">{tr('Kwota')}</TH>
+                        <TH>{tr('Metoda')}</TH>
                       </tr>
                     </THead>
                     <tbody>
@@ -316,8 +317,8 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                             </TD>
                             <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(d.amount, d.currency)}</TD>
                             <TD muted>
-                              <span>{methodLabel(d.method)}</span>
-                              {d.status === 'pending' && <StatusPill color={STATUS_COLORS.warning} className="ml-2">{statusLabel(d.status)}</StatusPill>}
+                              <span>{tr(methodLabel(d.method))}</span>
+                              {d.status === 'pending' && <StatusPill color={STATUS_COLORS.warning} className="ml-2">{tr(statusLabel(d.status))}</StatusPill>}
                             </TD>
                           </TR>
                         ))}

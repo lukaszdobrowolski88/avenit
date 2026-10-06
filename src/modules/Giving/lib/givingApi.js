@@ -1,9 +1,10 @@
+import { appLocale } from '../../../i18n';
 // Helpery modułu Dawania (Giving)
 
 export function formatMoney(amount, currency = 'PLN') {
   const n = Number(amount) || 0;
   try {
-    return new Intl.NumberFormat('pl-PL', { style: 'currency', currency }).format(n);
+    return new Intl.NumberFormat(appLocale(), { style: 'currency', currency }).format(n);
   } catch {
     return `${n.toFixed(2)} ${currency}`;
   }
@@ -61,7 +62,7 @@ export function donorLabel(d, membersById) {
 export function formatDate(dateStr) {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleDateString('pl-PL');
+    return new Date(dateStr).toLocaleDateString(appLocale());
   } catch {
     return dateStr;
   }

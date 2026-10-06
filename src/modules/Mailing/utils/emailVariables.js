@@ -1,3 +1,4 @@
+import { appLocale } from '../../../i18n';
 // Zmienne personalizacji dostępne w szablonach
 export const EMAIL_VARIABLES = [
   { key: '{{imie}}', label: 'Imię', description: 'Imię odbiorcy' },
@@ -22,7 +23,7 @@ export function personalizeHtml(htmlTemplate, recipient, campaignId, config = {}
     '{{imie}}': firstName,
     '{{nazwisko}}': lastName,
     '{{email}}': recipient.email || '',
-    '{{data}}': new Date().toLocaleDateString('pl-PL', {
+    '{{data}}': new Date().toLocaleDateString(appLocale(), {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

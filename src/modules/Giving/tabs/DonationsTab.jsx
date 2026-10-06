@@ -11,6 +11,7 @@ import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const currentYear = new Date().getFullYear();
 
@@ -89,9 +90,9 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
   };
 
   const save = async () => {
-    if (!form.amount || Number(form.amount) <= 0) { toast.error('Podaj kwotę darowizny.'); return; }
+    if (!form.amount || Number(form.amount) <= 0) { toast.error(tr('Podaj kwotę darowizny.')); return; }
     if (!form.member_id && !form.donor_name && !form.is_anonymous) {
-      toast.error('Wskaż członka lub podaj imię i nazwisko darczyńcy (albo zaznacz „Anonimowo").'); return;
+      toast.error(tr('Wskaż członka lub podaj imię i nazwisko darczyńcy (albo zaznacz „Anonimowo").')); return;
     }
     setSaving(true);
     try {
@@ -123,20 +124,20 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
       load();
     } catch (err) {
       console.error('Save donation error:', err);
-      toast.error('Nie udało się zapisać darowizny: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać darowizny: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (d) => {
-    if (!await confirmDialog('Usunąć tę darowiznę?')) return;
+    if (!await confirmDialog(tr('Usunąć tę darowiznę?'))) return;
     try {
       const { error } = await supabase.from('donations').delete().eq('id', d.id);
       if (error) throw error;
       load();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
@@ -157,17 +158,17 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
   };
 
   const memberOptions = useMemo(() => [
-    { value: '', label: '— darczyńca spoza bazy —' },
+    { value: '', label: tr('— darczyńca spoza bazy —') },
     ...(members || []).map(m => ({ value: m.id, label: memberName(m) })),
   ], [members]);
 
   const fundOptionsAll = useMemo(() => [
-    { value: '', label: 'Wszystkie fundusze' },
+    { value: '', label: tr('Wszystkie fundusze') },
     ...(funds || []).map(f => ({ value: f.id, label: f.name })),
   ], [funds]);
 
   const fundOptionsForm = useMemo(() => [
-    { value: '', label: '— bez funduszu —' },
+    { value: '', label: tr('— bez funduszu —') },
     ...(funds || []).map(f => ({ value: f.id, label: f.name })),
   ], [funds]);
 
@@ -179,7 +180,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Szukaj darczyńcy, notatki, nr pokwitowania..."
+            placeholder={tr('Szukaj darczyńcy, notatki, nr pokwitowania...')}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
           />
         </div>
@@ -189,14 +190,14 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
           <Download size={16} /> CSV
         </button>
         <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
-          <Plus size={16} /> Dodaj darowiznę
+          <Plus size={16} /> {tr('Dodaj darowiznę')}
         </button>
       </div>
 
       {/* Podsumowanie */}
       <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">Pozycji: <b className="text-gray-900 dark:text-white">{filtered.length}</b></span>
-        <span className="text-gray-500 dark:text-gray-400">Suma: <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(total)}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Pozycji:')} <b className="text-gray-900 dark:text-white">{filtered.length}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Suma:')} <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(total)}</b></span>
       </div>
 
       {/* Lista */}
@@ -204,18 +205,18 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
         {loading ? (
           <Spinner center />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Receipt} title="Brak darowizn dla wybranych filtrów." />
+          <EmptyState icon={Receipt} title={tr('Brak darowizn dla wybranych filtrów.')} />
         ) : (
           <DataTable flush>
             <THead>
               <tr>
-                <TH>Data</TH>
-                <TH>Darczyńca</TH>
-                <TH>Fundusz</TH>
-                <TH align="right">Kwota</TH>
-                <TH>Metoda</TH>
-                <TH>Status</TH>
-                <TH align="right"><span className="sr-only">Akcje</span></TH>
+                <TH>{tr('Data')}</TH>
+                <TH>{tr('Darczyńca')}</TH>
+                <TH>{tr('Fundusz')}</TH>
+                <TH align="right">{tr('Kwota')}</TH>
+                <TH>{tr('Metoda')}</TH>
+                <TH>{tr('Status')}</TH>
+                <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
               </tr>
             </THead>
             <tbody>
@@ -223,8 +224,8 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
                 <TR key={d.id}>
                   <TD muted numeric className="whitespace-nowrap">{formatDate(d.donation_date)}</TD>
                   <TD>
-                    <div className="font-medium text-gray-900 dark:text-white">{donorLabel(d, membersById)}</div>
-                    {d.member_id && <span className="text-xs text-gray-400 dark:text-gray-500">członek</span>}
+                    <div className="font-medium text-gray-900 dark:text-white">{d.is_anonymous ? tr('Anonimowo') : donorLabel(d, membersById)}</div>
+                    {d.member_id && <span className="text-xs text-gray-400 dark:text-gray-500">{tr('członek')}</span>}
                   </TD>
                   <TD muted>
                     {d.fund_id ? (
@@ -235,10 +236,10 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
                     ) : null}
                   </TD>
                   <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(d.amount, d.currency)}</TD>
-                  <TD muted>{methodLabel(d.method)}</TD>
+                  <TD muted>{tr(methodLabel(d.method))}</TD>
                   <TD>
                     <StatusPill color={d.status === 'completed' ? STATUS_COLORS.success : d.status === 'pending' ? STATUS_COLORS.warning : STATUS_COLORS.danger}>
-                      {statusLabel(d.status)}
+                      {tr(statusLabel(d.status))}
                     </StatusPill>
                   </TD>
                   <TD align="right">
@@ -258,56 +259,56 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
       <Modal
         isOpen={modalOpen}
         onClose={() => !saving && setModalOpen(false)}
-        title={editing ? 'Edytuj darowiznę' : 'Nowa darowizna'}
+        title={editing ? tr('Edytuj darowiznę') : tr('Nowa darowizna')}
         footer={<>
-          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
-          <Button onClick={save} loading={saving}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>{tr('Anuluj')}</Button>
+          <Button onClick={save} loading={saving}>{tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
-              <CustomSelect label="Darczyńca (członek)" value={form.member_id} onChange={v => setForm(f => ({ ...f, member_id: v }))} options={memberOptions} placeholder="Wybierz członka..." />
+              <CustomSelect label={tr('Darczyńca (członek)')} value={form.member_id} onChange={v => setForm(f => ({ ...f, member_id: v }))} options={memberOptions} placeholder={tr('Wybierz członka...')} />
 
               {!form.member_id && (
                 <div className="grid grid-cols-1 gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
-                  <input value={form.donor_name} onChange={e => setForm(f => ({ ...f, donor_name: e.target.value }))} placeholder="Imię i nazwisko darczyńcy (spoza bazy)" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <input value={form.donor_name} onChange={e => setForm(f => ({ ...f, donor_name: e.target.value }))} placeholder={tr('Imię i nazwisko darczyńcy (spoza bazy)')} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                   <div className="grid grid-cols-2 gap-3">
-                    <input value={form.donor_email} onChange={e => setForm(f => ({ ...f, donor_email: e.target.value }))} placeholder="E-mail" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                    <input value={form.donor_address} onChange={e => setForm(f => ({ ...f, donor_address: e.target.value }))} placeholder="Adres (do PIT)" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                    <input value={form.donor_email} onChange={e => setForm(f => ({ ...f, donor_email: e.target.value }))} placeholder={tr('E-mail')} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                    <input value={form.donor_address} onChange={e => setForm(f => ({ ...f, donor_address: e.target.value }))} placeholder={tr('Adres (do PIT)')} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                   </div>
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Kwota (PLN)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kwota (PLN)')}</label>
                   <input type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0,00" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Data')}</label>
                   <DateInput value={form.donation_date} onChange={e => setForm(f => ({ ...f, donation_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
 
-              <CustomSelect label="Fundusz / cel" value={form.fund_id} onChange={v => setForm(f => ({ ...f, fund_id: v }))} options={fundOptionsForm} />
+              <CustomSelect label={tr('Fundusz / cel')} value={form.fund_id} onChange={v => setForm(f => ({ ...f, fund_id: v }))} options={fundOptionsForm} />
 
               <div className="grid grid-cols-2 gap-3">
-                <CustomSelect label="Metoda" value={form.method} onChange={v => setForm(f => ({ ...f, method: v }))} options={GIVING_METHODS} />
-                <CustomSelect label="Status" value={form.status} onChange={v => setForm(f => ({ ...f, status: v }))} options={GIVING_STATUSES} />
+                <CustomSelect label={tr('Metoda')} value={form.method} onChange={v => setForm(f => ({ ...f, method: v }))} options={GIVING_METHODS.map((o) => ({ ...o, label: tr(o.label) }))} />
+                <CustomSelect label={tr('Status')} value={form.status} onChange={v => setForm(f => ({ ...f, status: v }))} options={GIVING_STATUSES.map((o) => ({ ...o, label: tr(o.label) }))} />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nr pokwitowania (opcjonalnie)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nr pokwitowania (opcjonalnie)')}</label>
                 <input value={form.receipt_number} onChange={e => setForm(f => ({ ...f, receipt_number: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatka</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatka')}</label>
                 <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
               </div>
 
               <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
                 <input type="checkbox" checked={form.is_anonymous} onChange={e => setForm(f => ({ ...f, is_anonymous: e.target.checked }))} className="rounded accent-emerald-500" />
-                Darowizna anonimowa
+                {tr('Darowizna anonimowa')}
               </label>
             </div>
       </Modal>

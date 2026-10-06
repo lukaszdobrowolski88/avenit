@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { tr } from '../i18n';
 
 // VAPID public key - wygeneruj parę kluczy przez: npx web-push generate-vapid-keys
 // Ustaw w zmiennych środowiskowych
@@ -134,7 +135,7 @@ export function usePushNotifications(userEmail) {
   // Subskrybuj push notifications
   const subscribe = useCallback(async () => {
     if (!isSupported || !VAPID_PUBLIC_KEY) {
-      setError('Push notifications nie są wspierane lub brak klucza VAPID');
+      setError(tr('Push notifications nie są wspierane lub brak klucza VAPID'));
       return false;
     }
 
@@ -147,7 +148,7 @@ export function usePushNotifications(userEmail) {
       setPermission(permissionResult);
 
       if (permissionResult !== 'granted') {
-        setError('Powiadomienia zostały zablokowane');
+        setError(tr('Powiadomienia zostały zablokowane'));
         setLoading(false);
         return false;
       }
@@ -204,14 +205,14 @@ export function usePushNotifications(userEmail) {
   // Wyślij testowe powiadomienie (lokalne)
   const sendTestNotification = useCallback(async () => {
     if (permission !== 'granted') {
-      setError('Brak pozwolenia na powiadomienia');
+      setError(tr('Brak pozwolenia na powiadomienia'));
       return false;
     }
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification('Test powiadomienia', {
-        body: 'To jest testowe powiadomienie push!',
+      await registration.showNotification(tr('Test powiadomienia'), {
+        body: tr('To jest testowe powiadomienie push!'),
         icon: '/icon-192x192.png',
         badge: '/icon-192x192.png',
         vibrate: [200, 100, 200],

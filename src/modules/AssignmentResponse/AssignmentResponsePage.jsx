@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2, AlertCircle, Calendar, User, Music } from 'lucide-react';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 
 // Strona akceptacji/odrzucenia zaproszenia do służby. Zaproszony jest NIEzalogowany —
 // autoryzuje sam token z linku w mailu. Dane idą przez publiczne endpointy
@@ -23,31 +23,31 @@ export default function AssignmentResponsePage() {
   const assignedByName = assignments[0]?.assigned_by_name;
 
   const roleNames = {
-    lider: 'Lider Uwielbienia',
-    piano: 'Piano',
-    wokale: 'Wokal',
-    gitara_akustyczna: 'Gitara Akustyczna',
-    gitara_elektryczna: 'Gitara Elektryczna',
-    bas: 'Gitara Basowa',
-    cajon: 'Cajon/Perkusja',
+    lider: tr('Lider Uwielbienia'),
+    piano: tr('Piano'),
+    wokale: tr('Wokal'),
+    gitara_akustyczna: tr('Gitara Akustyczna'),
+    gitara_elektryczna: tr('Gitara Elektryczna'),
+    bas: tr('Gitara Basowa'),
+    cajon: tr('Cajon/Perkusja'),
     naglospienie: tr('Nagłośnienie'),
-    projekcja: 'Projekcja',
-    transmisja: 'Transmisja',
-    foto: 'Fotograf',
-    video: 'Wideo'
+    projekcja: tr('Projekcja'),
+    transmisja: tr('Transmisja'),
+    foto: tr('Fotograf'),
+    video: tr('Wideo')
   };
 
   useEffect(() => {
     const fetchAssignment = async () => {
       if (!token) {
-        setError('Brak tokenu w linku');
+        setError(tr('Brak tokenu w linku'));
         setLoading(false);
         return;
       }
       try {
         const res = await fetch(`/api/public/assignment/${encodeURIComponent(token)}`);
         if (!res.ok) {
-          setError('Nie znaleziono przypisania');
+          setError(tr('Nie znaleziono przypisania'));
           setLoading(false);
           return;
         }
@@ -108,7 +108,7 @@ export default function AssignmentResponsePage() {
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('pl-PL', {
+    return date.toLocaleDateString(appLocale(), {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -121,7 +121,7 @@ export default function AssignmentResponsePage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-accent-primary mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Przetwarzanie...</p>
+          <p className="text-gray-600 font-medium">{tr('Przetwarzanie...')}</p>
         </div>
       </div>
     );
@@ -179,7 +179,7 @@ export default function AssignmentResponsePage() {
             )}
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            {isAccepted ? 'Zaakceptowano!' : 'Odrzucono'}
+            {isAccepted ? tr('Zaakceptowano!') : tr('Odrzucono')}
           </h1>
           <p className="text-gray-600">
             {isAccepted
@@ -199,7 +199,7 @@ export default function AssignmentResponsePage() {
             {assignedByName && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <User size={16} />
-                <span>Przypisał: {assignedByName}</span>
+                <span>{tr('Przypisał:')} {assignedByName}</span>
               </div>
             )}
           </div>
@@ -221,7 +221,7 @@ export default function AssignmentResponsePage() {
           </h1>
           {assignedByName && (
             <p className="text-gray-600">
-              {assignedByName} przypisał/a Cię do służby
+              {tr('{name} przypisał/a Cię do służby', { name: assignedByName })}
             </p>
           )}
         </div>
@@ -245,7 +245,7 @@ export default function AssignmentResponsePage() {
             <div className="flex items-center gap-3">
               <User className="text-accent-primary" size={20} />
               <div>
-                <p className="text-sm text-gray-500">Program</p>
+                <p className="text-sm text-gray-500">{tr('Program')}</p>
                 <p className="font-medium text-gray-800">{program.title}</p>
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function AssignmentResponsePage() {
             className="w-full py-3 px-4 bg-gradient-to-r from-accent-secondary-light to-red-500 hover:from-accent-secondary hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-red-500/30 transition flex items-center justify-center gap-2"
           >
             <XCircle size={20} />
-            Odrzucam
+            {tr('Odrzucam')}
           </button>
         </div>
       </div>

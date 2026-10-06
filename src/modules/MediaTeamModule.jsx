@@ -24,7 +24,7 @@ import ScheduleSendButton from '../components/ScheduleSendButton';
 import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
@@ -132,8 +132,8 @@ const CustomDatePicker = ({ label, value, onChange }) => {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const blanks = Array.from({ length: startDay }, (_, i) => i);
 
-  const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
-  const displayValue = value ? new Date(value).toLocaleDateString('pl-PL') : '';
+  const monthName = viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
+  const displayValue = value ? new Date(value).toLocaleDateString(appLocale()) : '';
 
   return (
     <div className="relative w-full">
@@ -452,7 +452,7 @@ export default function MediaTeamModule() {
       // Grafik żyje na wydarzeniach (ScheduleTab), zadania na Tablicy (ModuleBoard) —
       // stare programy i media_tasks nie są tu już pobierane.
       const teamResult = await supabase.from('media_team').select('id, full_name, role, email, phone').order('full_name');
-      if (teamResult.error) throw new Error(`Błąd zespołu: ${teamResult.error.message}`);
+      if (teamResult.error) throw new Error(tr('Błąd zespołu: {msg}', { msg: teamResult.error.message }));
       setTeam(teamResult.data || []);
     } catch (err) {
       console.error('❌ Błąd pobierania danych:', err);
@@ -725,7 +725,7 @@ export default function MediaTeamModule() {
   };
 
   if (loading) return <Spinner center />;
-  if (error) return <div className="p-10 text-red-600 dark:text-red-400">Błąd: {error}</div>;
+  if (error) return <div className="p-10 text-red-600 dark:text-red-400">{tr('Błąd:')} {error}</div>;
 
   return (
     <div className="space-y-8">
@@ -763,12 +763,12 @@ export default function MediaTeamModule() {
 
       {/* SEKCJA 2: ZADANIA — nowy silnik Tablic (Monday-style) */}
       {activeTab === 'tasks' && (
-        <ModuleBoard sourceKind="media_tasks" moduleKey="media" title="Zadania Media Team" />
+        <ModuleBoard sourceKind="media_tasks" moduleKey="media" title={tr('Zadania Media Team')} />
       )}
       {activeTab === 'members' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[30] transition-colors duration-300">
-        <TabHeader title={`Członkowie (${team.length})`} actions={
-          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj członka</button>
+        <TabHeader title={tr('Członkowie ({n})', { n: team.length })} actions={
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
         } />
         <DataTable tableClassName="min-w-[700px]">
           <THead>
@@ -787,7 +787,7 @@ export default function MediaTeamModule() {
                           <StatusPill key={idx} color={STATUS_COLORS.accent}>{name}</StatusPill>
                         ))
                       ) : (
-                        <span className="text-gray-400 dark:text-gray-500 text-xs italic">Brak przypisanych</span>
+                        <span className="text-gray-400 dark:text-gray-500 text-xs italic">{tr('Brak przypisanych')}</span>
                       )}
                     </div>
                   </TD>
@@ -848,7 +848,7 @@ export default function MediaTeamModule() {
       <Modal
         isOpen={showTaskModal}
         onClose={() => setShowTaskModal(false)}
-        title={taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}
+        title={taskForm.id ? tr('Edycja zadania') : tr('Nowe zadanie')}
         size="xl"
         closeOnBackdrop={false}
         footer={<>
@@ -870,23 +870,23 @@ export default function MediaTeamModule() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <CustomDatePicker 
-                    label="Termin"
+                    label={tr('Termin')}
                     value={taskForm.due_date}
                     onChange={val => setTaskForm({...taskForm, due_date: val})}
                   />
                 </div>
                 <div>
                   <CustomSelect 
-                    label="Status"
+                    label={tr('Status')}
                     value={taskForm.status}
                     onChange={val => setTaskForm({...taskForm, status: val})}
-                    options={STATUSES}
+                    options={STATUSES.map((s) => ({ value: s, label: tr(s) }))}
                   />
                 </div>
               </div>
               <div>
                 <CustomSelect 
-                  label="Przypisana osoba"
+                  label={tr('Przypisana osoba')}
                   value={taskForm.assigned_to}
                   onChange={val => setTaskForm({...taskForm, assigned_to: val})}
                   options={[
@@ -906,14 +906,14 @@ export default function MediaTeamModule() {
 
           <div className="w-2/5 bg-gray-50/50 dark:bg-gray-800/30 p-6 flex flex-col">
             <div className="flex items-center mb-4">
-              <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2"><MessageSquare size={18}/> Komentarze</h4>
+              <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2"><MessageSquare size={18}/> {tr('Komentarze')}</h4>
             </div>
             <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
               {!taskForm.id ? <EmptyState icon={MessageSquare} title={t('Zapisz zadanie, aby dodawać komentarze.')} compact /> : loadingComments ? <Spinner center /> : comments.length === 0 ? <EmptyState icon={MessageSquare} title={t('Brak komentarzy. Bądź pierwszy!')} compact /> : comments.map(comment => (
                 <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                   <div className="flex justify-between items-start mb-1">
                     <span className="font-bold text-xs text-accent-primary dark:text-accent-primary-light">{comment.author_name}</span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(comment.created_at).toLocaleString('pl-PL')}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(comment.created_at).toLocaleString(appLocale())}</span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
                 </div>
@@ -993,19 +993,19 @@ export default function MediaTeamModule() {
       <Modal
         isOpen={showExpenseModal}
         onClose={() => setShowExpenseModal(false)}
-        title={`Nowy wydatek - ${expenseForm.ministry}`}
+        title={tr('Nowy wydatek - {ministry}', { ministry: expenseForm.ministry })}
         size="xl"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
-          <Button onClick={saveExpense}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveExpense}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           {/* Wiersz 1: Data i Kwota */}
           <div className="grid grid-cols-2 gap-4">
             <CustomDatePicker
-              label="Data dokumentu"
+              label={tr('Data dokumentu')}
               value={expenseForm.payment_date}
               onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
             />
@@ -1077,7 +1077,7 @@ export default function MediaTeamModule() {
               <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                 <Upload size={18} className="text-gray-400" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
+                  {uploadingFile ? tr('Przesyłanie...') : tr('Dodaj plik(i)')}
                 </span>
                 <input
                   type="file"

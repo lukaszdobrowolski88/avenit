@@ -5,6 +5,7 @@ import { supabase } from '../../../lib/supabase';
 import BoardCell from '../components/BoardCell';
 import ColumnIcon from '../components/ColumnIcon';
 import { getColumnType, defaultCellValue } from '../lib/columnTypes';
+import { tr } from '../../../i18n';
 
 // Publiczna, anonimowa strona formularza tablicy (odpowiednik form.monday.com).
 // Renderowana bez logowania; dane przez publiczne fn (board-form-get/submit).
@@ -41,11 +42,11 @@ export default function PublicBoardForm() {
       const { data, error } = await supabase.functions.invoke('board-form-submit', {
         body: { token, name: name.trim(), cells, respondent: settings.anonymous ? {} : { name, email } },
       });
-      if (error || !data?.ok) throw new Error(data?.error || 'Błąd wysyłania');
-      setMessage(data.message || 'Dziękujemy! Zgłoszenie zostało wysłane.');
+      if (error || !data?.ok) throw new Error(data?.error || tr('Błąd wysyłania'));
+      setMessage(data.message || tr('Dziękujemy! Zgłoszenie zostało wysłane.'));
       setState('sent');
     } catch (e) {
-      setMessage(e.message || 'Wystąpił błąd. Spróbuj ponownie.');
+      setMessage(e.message || tr('Wystąpił błąd. Spróbuj ponownie.'));
     } finally { setBusy(false); }
   };
 
@@ -57,8 +58,8 @@ export default function PublicBoardForm() {
         {state === 'error' && (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
             <AlertCircle size={40} className="mx-auto text-red-400 mb-3" />
-            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Formularz niedostępny</h1>
-            <p className="text-sm text-gray-500 mt-1">Link jest nieprawidłowy lub formularz został wyłączony.</p>
+            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{tr('Formularz niedostępny')}</h1>
+            <p className="text-sm text-gray-500 mt-1">{tr('Link jest nieprawidłowy lub formularz został wyłączony.')}</p>
           </div>
         )}
 
@@ -68,7 +69,7 @@ export default function PublicBoardForm() {
             <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{message}</h1>
             <button onClick={() => { setName(''); setEmail(''); setCells({}); setState('ready'); }}
               className="mt-5 text-sm text-white px-4 py-2 rounded-lg" style={{ backgroundColor: color }}>
-              Wyślij kolejne zgłoszenie
+              {tr('Wyślij kolejne zgłoszenie')}
             </button>
           </div>
         )}
@@ -83,16 +84,16 @@ export default function PublicBoardForm() {
 
               <div className="mt-6 space-y-4">
                 <label className="block">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Nazwa / temat <span className="text-red-500">*</span></span>
-                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Wpisz tytuł zgłoszenia"
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{tr('Nazwa / temat')} <span className="text-red-500">*</span></span>
+                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('Wpisz tytuł zgłoszenia')}
                     className="mt-1 w-full bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2.5 outline-none focus:ring-2 text-gray-800 dark:text-gray-100"
                     style={{ '--tw-ring-color': color }} />
                 </label>
 
                 {!settings.anonymous && settings.collectEmail && (
                   <label className="block">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Twój e-mail</span>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jan@przyklad.pl"
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{tr('Twój e-mail')}</span>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={tr('jan@przyklad.pl')}
                       className="mt-1 w-full bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2.5 outline-none text-gray-800 dark:text-gray-100" />
                   </label>
                 )}
@@ -115,9 +116,9 @@ export default function PublicBoardForm() {
               <button onClick={submit} disabled={!name.trim() || busy}
                 className="mt-7 w-full flex items-center justify-center gap-2 text-white py-3 rounded-xl font-medium disabled:opacity-40"
                 style={{ backgroundColor: color }}>
-                {busy ? <Loader2 size={17} className="animate-spin" /> : <Send size={16} />} Wyślij
+                {busy ? <Loader2 size={17} className="animate-spin" /> : <Send size={16} />} {tr('Wyślij')}
               </button>
-              <p className="text-center text-[11px] text-gray-400 mt-4">Formularz utworzony w Avenit</p>
+              <p className="text-center text-[11px] text-gray-400 mt-4">{tr('Formularz utworzony w Avenit')}</p>
             </div>
           </div>
         )}

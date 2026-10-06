@@ -262,7 +262,7 @@ export default function ConversationList({
               <MessageSquare size={16} className="text-white" />
             </div>
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-              Komunikator
+              {tr('Komunikator')}
             </h1>
           </div>
           <button
@@ -297,7 +297,7 @@ export default function ConversationList({
                 : 'bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50'
             }`}
           >
-            Wszystkie
+            {tr('Wszystkie')}
           </button>
           <button
             onClick={() => setActiveFilter('starred')}
@@ -308,7 +308,7 @@ export default function ConversationList({
             }`}
           >
             <Star size={12} className={activeFilter === 'starred' ? 'fill-current' : ''} />
-            Ulubione
+            {tr('Ulubione')}
           </button>
           <button
             onClick={() => setActiveFilter('archived')}
@@ -319,7 +319,7 @@ export default function ConversationList({
             }`}
           >
             <Archive size={12} />
-            Archiwum
+            {tr('Archiwum')}
           </button>
         </div>
       </div>

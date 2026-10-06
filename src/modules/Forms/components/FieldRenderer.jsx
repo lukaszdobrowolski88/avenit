@@ -27,7 +27,7 @@ export default function FieldRenderer({
 
     for (const file of filesToUpload) {
       if (file.size > maxSize) {
-        toast.error(`Plik "${file.name}" przekracza maksymalny rozmiar ${field.fileConfig?.maxSize || 10} MB`);
+        toast.error(tr('Plik "{name}" przekracza maksymalny rozmiar {size} MB', { name: file.name, size: field.fileConfig?.maxSize || 10 }));
         return;
       }
     }
@@ -140,7 +140,7 @@ export default function FieldRenderer({
           disabled={disabled}
           className={baseInputClass}
         >
-          <option value="">{field.placeholder || 'Wybierz...'}</option>
+          <option value="">{field.placeholder || tr('Wybierz...')}</option>
           {(field.options || []).map((opt) => (
             <option key={opt.id} value={opt.value}>
               {opt.label}
@@ -300,11 +300,11 @@ export default function FieldRenderer({
               <p className="text-sm text-gray-600 dark:text-gray-400">{field.label}</p>
               {maxSeats ? (
                 <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                  {maxSeats} miejsc
+                  {tr('{n} miejsc', { n: maxSeats })}
                 </p>
               ) : (
                 <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                  Bez limitu
+                  {tr('Bez limitu')}
                 </p>
               )}
             </div>
@@ -390,7 +390,7 @@ export default function FieldRenderer({
                 {tr('Kliknij lub przeciągnij plik')}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                Max. {field.fileConfig?.maxSize || 10} MB
+                {tr('Max. {size} MB', { size: field.fileConfig?.maxSize || 10 })}
               </p>
 
               {uploadProgress !== null && (
@@ -398,7 +398,7 @@ export default function FieldRenderer({
                   <div className="text-center">
                     <Spinner size={40} className="mb-2" />
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Przesyłanie... {uploadProgress}%
+                      {tr('Przesyłanie...')} {uploadProgress}%
                     </p>
                   </div>
                 </div>
@@ -421,11 +421,11 @@ export default function FieldRenderer({
 
         for (const file of filesToUpload) {
           if (file.size > maxSize) {
-            toast.error(`Plik "${file.name}" przekracza maksymalny rozmiar ${imageConfig.maxSize || 5} MB`);
+            toast.error(tr('Plik "{name}" przekracza maksymalny rozmiar {size} MB', { name: file.name, size: imageConfig.maxSize || 5 }));
             return;
           }
           if (!file.type.startsWith('image/')) {
-            toast.error(`Plik "${file.name}" nie jest obrazem`);
+            toast.error(tr('Plik "{name}" nie jest obrazem', { name: file.name }));
             return;
           }
         }
@@ -527,10 +527,10 @@ export default function FieldRenderer({
                 <ImageIcon size={28} className="text-accent-primary-light" />
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Kliknij, aby dodać {multipleImages ? tr('zdjęcia') : tr('zdjęcie')}
+                {tr('Kliknij, aby dodać')} {multipleImages ? tr('zdjęcia') : tr('zdjęcie')}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                Max. {imageConfig.maxSize || 5} MB • JPG, PNG, WEBP, GIF
+                {tr('Max. {size} MB', { size: imageConfig.maxSize || 5 })} • JPG, PNG, WEBP, GIF
               </p>
 
               {uploadProgress !== null && (
@@ -538,7 +538,7 @@ export default function FieldRenderer({
                   <div className="text-center">
                     <Spinner size={40} className="mb-2" />
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Przesyłanie... {uploadProgress}%
+                      {tr('Przesyłanie...')} {uploadProgress}%
                     </p>
                   </div>
                 </div>

@@ -31,7 +31,7 @@ import {
   Lock
 } from 'lucide-react';
 import { CATEGORIES } from './categories';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
 
 // ============================================
@@ -104,7 +104,7 @@ function PrayerRequestCard({
     if (diffMins < 60) return t('{n} min temu', { n: diffMins });
     if (diffHours < 24) return t('{n} godz. temu', { n: diffHours });
     if (diffDays < 7) return t('{n} dni temu', { n: diffDays });
-    return date.toLocaleDateString('pl-PL');
+    return date.toLocaleDateString(appLocale());
   };
 
   return (
@@ -184,7 +184,7 @@ function PrayerRequestCard({
         <div className="mb-3">
           <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-1 rounded-full flex items-center gap-1 w-fit">
             <XCircle className="w-3 h-3" />
-            Nieaktualna
+            {tr('Nieaktualna')}
           </span>
         </div>
       )}
@@ -342,7 +342,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
       size="md"
       closeOnBackdrop={false}
       footer={<>
-        <Button type="button" variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button type="button" variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
         <Button
           data-tour="prayer-save"
           type="submit"
@@ -360,7 +360,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
         {/* Kto zgłasza (opcjonalne) */}
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-            Modlitwa za (opcjonalne)
+            {tr('Modlitwa za (opcjonalne)')}
           </label>
           <div className="relative">
             <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -394,7 +394,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
         {/* Kategoria */}
         <div data-tour="prayer-category">
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-            Kategoria
+            {tr('Kategoria')}
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {Object.entries(CATEGORIES).map(([key, { label, Icon }]) => (
@@ -410,7 +410,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                   }
                 `}
               >
-                <Icon className="w-4 h-4" /> {label}
+                <Icon className="w-4 h-4" /> {tr(label)}
               </button>
             ))}
           </div>
@@ -491,7 +491,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             {/* Status aktualności */}
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                Status intencji
+                {tr('Status intencji')}
               </label>
               <div className="flex gap-3">
                 <label className={`
@@ -604,7 +604,7 @@ function AnsweredModal({ isOpen, onClose, onSubmit, request, isLoading }) {
       size="sm"
       closeOnBackdrop={false}
       footer={<>
-        <Button type="button" variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button type="button" variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
         <Button type="submit" form="prayer-answered-form" icon={Star} loading={isLoading}>{tr('Potwierdź')}</Button>
       </>}
     >
@@ -920,7 +920,7 @@ export default function PrayerWallModule() {
           <aside className="hidden lg:block w-56 flex-shrink-0">
             <h3 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
               <Filter className="w-4 h-4" />
-              Filtry
+              {tr('Filtry')}
             </h3>
 
             {/* Główne filtry */}
@@ -934,7 +934,7 @@ export default function PrayerWallModule() {
                 }`}
               >
                 <Heart className="w-4 h-4" />
-                Wszystkie
+                {tr('Wszystkie')}
               </button>
               <button
                 onClick={() => { setFilter('mine'); setCategoryFilter('all'); setActiveFilter('all'); }}
@@ -945,7 +945,7 @@ export default function PrayerWallModule() {
                 }`}
               >
                 <User className="w-4 h-4" />
-                Moje intencje
+                {tr('Moje intencje')}
               </button>
               <button
                 onClick={() => { setFilter('answered'); setCategoryFilter('all'); setActiveFilter('all'); }}
@@ -962,7 +962,7 @@ export default function PrayerWallModule() {
 
             {/* Status aktualności */}
             <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Status
+              {tr('Status')}
             </h4>
             <div className="space-y-1 mb-6">
               <button
@@ -973,7 +973,7 @@ export default function PrayerWallModule() {
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
-                Wszystkie
+                {tr('Wszystkie')}
               </button>
               <button
                 onClick={() => setActiveFilter('active')}
@@ -984,7 +984,7 @@ export default function PrayerWallModule() {
                 }`}
               >
                 <CheckCircle className="w-3 h-3" />
-                Aktualne
+                {tr('Aktualne')}
               </button>
               <button
                 onClick={() => setActiveFilter('inactive')}
@@ -995,13 +995,13 @@ export default function PrayerWallModule() {
                 }`}
               >
                 <XCircle className="w-3 h-3" />
-                Nieaktualne
+                {tr('Nieaktualne')}
               </button>
             </div>
 
             {/* Kategorie */}
             <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Kategorie
+              {tr('Kategorie')}
             </h4>
             <div className="space-y-1">
               <button
@@ -1012,7 +1012,7 @@ export default function PrayerWallModule() {
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
-                Wszystkie kategorie
+                {tr('Wszystkie kategorie')}
               </button>
               {Object.entries(CATEGORIES).map(([key, { label, Icon }]) => (
                 <button
@@ -1024,7 +1024,7 @@ export default function PrayerWallModule() {
                       : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" /> {label}
+                  <Icon className="w-3.5 h-3.5" /> {tr(label)}
                 </button>
               ))}
             </div>
@@ -1053,7 +1053,7 @@ export default function PrayerWallModule() {
                   className="flex items-center gap-2 text-gray-600 dark:text-gray-300 font-medium"
                 >
                   <Filter className="w-4 h-4" />
-                  Filtry
+                  {tr('Filtry')}
                   <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -1068,7 +1068,7 @@ export default function PrayerWallModule() {
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                         }`}
                       >
-                        Wszystkie
+                        {tr('Wszystkie')}
                       </button>
                       <button
                         onClick={() => { setFilter('mine'); setCategoryFilter('all'); setActiveFilter('all'); }}
@@ -1078,7 +1078,7 @@ export default function PrayerWallModule() {
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                         }`}
                       >
-                        Moje
+                        {tr('Moje')}
                       </button>
                       <button
                         onClick={() => { setFilter('answered'); setCategoryFilter('all'); setActiveFilter('all'); }}
@@ -1099,7 +1099,7 @@ export default function PrayerWallModule() {
                     >
                       <option value="all">{t('Wszystkie kategorie')}</option>
                       {Object.entries(CATEGORIES).map(([key, { label }]) => (
-                        <option key={key} value={key}>{label}</option>
+                        <option key={key} value={key}>{tr(label)}</option>
                       ))}
                     </select>
 

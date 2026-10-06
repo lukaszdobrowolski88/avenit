@@ -6,6 +6,7 @@ import { formatMoney, formatDate, memberName } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
+import { tr, appLocale } from '../../../i18n';
 
 const currentYear = new Date().getFullYear();
 
@@ -58,7 +59,7 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
         const m = d.member_id ? membersById?.[d.member_id] : null;
         map[key] = {
           key,
-          name: m ? memberName(m) : (d.donor_name || 'Darczyńca nieznany'),
+          name: m ? memberName(m) : (d.donor_name || tr('Darczyńca nieznany')),
           address: d.donor_address || m?.address || '',
           email: d.donor_email || m?.email || '',
           items: [], total: 0,
@@ -103,7 +104,7 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
       </style></head><body>
       <div class="head">
         <div><h1>${orgName || 'Zestawienie darowizn'}</h1><div class="muted">Roczne zestawienie darowizn za rok ${year}</div></div>
-        <div class="muted" style="text-align:right">Data wystawienia:<br>${new Date().toLocaleDateString('pl-PL')}</div>
+        <div class="muted" style="text-align:right">Data wystawienia:<br>${new Date().toLocaleDateString(appLocale())}</div>
       </div>
       <div class="box">
         <strong>Darczyńca:</strong> ${donor.name}<br>
@@ -123,7 +124,7 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
       <script>window.onload=function(){window.print();}</script>
       </body></html>`;
     const w = window.open('', '_blank');
-    if (!w) { toast.info('Zezwól na wyskakujące okna, aby wydrukować zestawienie.'); return; }
+    if (!w) { toast.info(tr('Zezwól na wyskakujące okna, aby wydrukować zestawienie.')); return; }
     w.document.write(html); w.document.close();
   };
 
@@ -131,42 +132,42 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
     <div className="space-y-4">
       <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl p-4 flex items-start gap-3">
         <FileText size={20} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-        <p className="text-sm text-emerald-800 dark:text-emerald-300">Generuj roczne zestawienia darowizn dla darczyńców — do wykorzystania przy odliczeniu w rozliczeniu PIT. Liczą się darowizny zaksięgowane z funduszy oznaczonych jako „odpis PIT".</p>
+        <p className="text-sm text-emerald-800 dark:text-emerald-300">{tr('Generuj roczne zestawienia darowizn dla darczyńców — do wykorzystania przy odliczeniu w rozliczeniu PIT. Liczą się darowizny zaksięgowane z funduszy oznaczonych jako „odpis PIT".')}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="w-32"><CustomSelect label="Rok" value={year} onChange={setYear} options={yearOptions} /></div>
+        <div className="w-32"><CustomSelect label={tr('Rok')} value={year} onChange={setYear} options={yearOptions} /></div>
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwa organizacji (na wydruku)</label>
-          <input value={orgName} onChange={e => setOrgName(e.target.value)} placeholder="np. Kościół ..." className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nazwa organizacji (na wydruku)')}</label>
+          <input value={orgName} onChange={e => setOrgName(e.target.value)} placeholder={tr('np. Kościół ...')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
         </div>
       </div>
 
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Szukaj darczyńcy..." className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Szukaj darczyńcy...')} className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
       </div>
 
       <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">Darczyńców: <b className="text-gray-900 dark:text-white">{byDonor.length}</b></span>
-        <span className="text-gray-500 dark:text-gray-400">Suma odliczalna: <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(grandTotal)}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Darczyńców:')} <b className="text-gray-900 dark:text-white">{byDonor.length}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Suma odliczalna:')} <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(grandTotal)}</b></span>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? <Spinner center />
         : filtered.length === 0 ? (
-          <EmptyState icon={FileText} title={`Brak darowizn do zestawienia za ${year}.`} />
+          <EmptyState icon={FileText} title={tr('Brak darowizn do zestawienia za {year}.', { year })} />
         ) : (
           <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
             {filtered.map(d => (
               <div key={d.key} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 <div className="min-w-0">
                   <div className="font-medium text-gray-900 dark:text-white truncate">{d.name}</div>
-                  <div className="text-xs text-gray-400">{d.items.length} darowizn · {d.address ? d.address : 'brak adresu'}</div>
+                  <div className="text-xs text-gray-400">{tr('{n} darowizn', { n: d.items.length })} · {d.address ? d.address : tr('brak adresu')}</div>
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
                   <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatMoney(d.total)}</span>
-                  <button onClick={() => printStatement(d)} className="px-3 py-2 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-medium flex items-center gap-2 shadow-sm"><Printer size={15} /> Zestawienie</button>
+                  <button onClick={() => printStatement(d)} className="px-3 py-2 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-medium flex items-center gap-2 shadow-sm"><Printer size={15} /> {tr('Zestawienie')}</button>
                 </div>
               </div>
             ))}

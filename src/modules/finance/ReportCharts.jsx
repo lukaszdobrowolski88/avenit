@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   AreaChart, Area, PieChart, Pie, Cell,
 } from 'recharts';
+import { appLocale } from '../../i18n';
 
 // Kategoryczna paleta (slot order = mechanizm CVD, nie kosmetyka — nie cyklować).
 export const CATEGORICAL = ['#2a78d6', '#1baf7a', '#eda100', '#008300', '#4a3aa7', '#e34948', '#e87ba4', '#eb6834'];
@@ -15,7 +16,7 @@ const AXIS = '#898781';     // muted — czytelny w obu motywach
 const GRID = 'rgba(136,135,129,0.25)';
 
 const num = (v) => Number(v || 0);
-const pln = (n) => num(n).toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' zł';
+const pln = (n) => num(n).toLocaleString(appLocale(), { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' zł';
 const compact = (n) => {
   const a = Math.abs(num(n));
   if (a >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + ' mln';

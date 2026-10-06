@@ -13,6 +13,7 @@ import { ensureGroupFolder } from '../HomeGroups/homeGroupFolder';
 import useShares from '../Materials/hooks/useShares';
 import ShareModal from '../Materials/components/ShareModal';
 import FilePreviewModal from '../Materials/components/FilePreviewModal';
+import { tr } from '../../i18n';
 
 const fileUrl = (path) => supabase.storage.from('materials').getPublicUrl(path).data.publicUrl;
 const fmtSize = (b) => (!b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
@@ -52,7 +53,7 @@ export default function EventMaterialsTab({ event, canManage }) {
 
   const onUpload = async (file) => {
     if (!file) return;
-    if (file.size > 50 * 1024 * 1024) { toast.error('Plik przekracza limit 50MB'); return; }
+    if (file.size > 50 * 1024 * 1024) { toast.error(tr('Plik przekracza limit 50MB')); return; }
     setUploading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -70,8 +71,8 @@ export default function EventMaterialsTab({ event, canManage }) {
       if (insErr) throw insErr;
       await supabase.from('event_materials').insert({ event_id: event.id, file_id: mf.id });
       await loadLinked();
-      toast.success('Dodano materiał');
-    } catch (e) { toast.error(e.message || 'Błąd dodawania materiału'); }
+      toast.success(tr('Dodano materiał'));
+    } catch (e) { toast.error(e.message || tr('Błąd dodawania materiału')); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
@@ -90,15 +91,15 @@ export default function EventMaterialsTab({ event, canManage }) {
       await supabase.from('event_materials').insert({ event_id: event.id, file_id: file.id });
       setPickList((prev) => (prev || []).filter((f) => f.id !== file.id));
       await loadLinked();
-      toast.success('Podpięto materiał');
-    } catch (e) { toast.error(e.message || 'Błąd'); }
+      toast.success(tr('Podpięto materiał'));
+    } catch (e) { toast.error(e.message || tr('Błąd')); }
   };
 
   const unlink = async (file) => {
     try {
       await supabase.from('event_materials').delete().eq('event_id', event.id).eq('file_id', file.id);
       await loadLinked();
-    } catch (e) { toast.error(e.message || 'Błąd'); }
+    } catch (e) { toast.error(e.message || tr('Błąd')); }
   };
 
   const startRename = (file) => { setRenameId(file.id); setRenameVal(file.name || ''); };
@@ -111,7 +112,7 @@ export default function EventMaterialsTab({ event, canManage }) {
       await supabase.from('materials_files').update({ name, updated_at: new Date().toISOString() }).eq('id', file.id);
       setRenameId(null);
       await loadLinked();
-    } catch (e) { toast.error(e.message || 'Błąd zmiany nazwy'); }
+    } catch (e) { toast.error(e.message || tr('Błąd zmiany nazwy')); }
   };
 
   if (linked === null) return <Spinner center size={24} />;
@@ -120,10 +121,10 @@ export default function EventMaterialsTab({ event, canManage }) {
 
   const FileActions = ({ f }) => (
     <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-      <button onClick={() => setPreviewIdx(linked.findIndex((x) => x.id === f.id))} title="Podgląd" className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Eye size={16} /></button>
-      {canManage && <button onClick={() => setShareItem({ file_id: f.id, name: f.name })} title="Udostępnij" className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Share2 size={16} /></button>}
-      {canManage && <button onClick={() => startRename(f)} title="Zmień nazwę" className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Pencil size={15} /></button>}
-      {canManage && <button onClick={() => unlink(f)} title="Odepnij od wydarzenia" className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800"><Trash2 size={16} /></button>}
+      <button onClick={() => setPreviewIdx(linked.findIndex((x) => x.id === f.id))} title={tr('Podgląd')} className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Eye size={16} /></button>
+      {canManage && <button onClick={() => setShareItem({ file_id: f.id, name: f.name })} title={tr('Udostępnij')} className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Share2 size={16} /></button>}
+      {canManage && <button onClick={() => startRename(f)} title={tr('Zmień nazwę')} className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Pencil size={15} /></button>}
+      {canManage && <button onClick={() => unlink(f)} title={tr('Odepnij od wydarzenia')} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800"><Trash2 size={16} /></button>}
     </div>
   );
 
@@ -135,23 +136,23 @@ export default function EventMaterialsTab({ event, canManage }) {
             <input ref={fileRef} type="file" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
             <button onClick={() => fileRef.current?.click()} disabled={uploading}
               className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60">
-              <Upload size={15} /> {uploading ? 'Wgrywanie…' : 'Dodaj plik'}
+              <Upload size={15} /> {uploading ? tr('Wgrywanie…') : tr('Dodaj plik')}
             </button>
             <button onClick={openPicker}
               className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
-              <Plus size={15} /> Podepnij istniejące
+              <Plus size={15} /> {tr('Podepnij istniejące')}
             </button>
           </div>
         ) : <div />}
         <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5">
-          <button onClick={() => setView('grid')} title="Kafelki" className={`p-1.5 rounded-md ${view === 'grid' ? 'bg-accent-primary text-white' : 'text-gray-400 hover:text-gray-600'}`}><LayoutGrid size={16} /></button>
-          <button onClick={() => setView('list')} title="Lista" className={`p-1.5 rounded-md ${view === 'list' ? 'bg-accent-primary text-white' : 'text-gray-400 hover:text-gray-600'}`}><ListIcon size={16} /></button>
+          <button onClick={() => setView('grid')} title={tr('Kafelki')} className={`p-1.5 rounded-md ${view === 'grid' ? 'bg-accent-primary text-white' : 'text-gray-400 hover:text-gray-600'}`}><LayoutGrid size={16} /></button>
+          <button onClick={() => setView('list')} title={tr('Lista')} className={`p-1.5 rounded-md ${view === 'list' ? 'bg-accent-primary text-white' : 'text-gray-400 hover:text-gray-600'}`}><ListIcon size={16} /></button>
         </div>
       </div>
-      {isHomeGroup && group && canManage && <p className="text-[11px] text-gray-400 -mt-2">Nowe pliki trafią do materiałów grupy „{group.name}" i będą widoczne dla jej członków.</p>}
+      {isHomeGroup && group && canManage && <p className="text-[11px] text-gray-400 -mt-2">{tr('Nowe pliki trafią do materiałów grupy „{name}" i będą widoczne dla jej członków.', { name: group.name })}</p>}
 
       {linked.length === 0 ? (
-        <EmptyState icon={FileText} title="Brak materiałów." subtitle={canManage ? 'Dodaj plik lub podepnij istniejące.' : undefined} compact />
+        <EmptyState icon={FileText} title={tr('Brak materiałów.')} subtitle={canManage ? tr('Dodaj plik lub podepnij istniejące.') : undefined} compact />
       ) : view === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {linked.map((m) => (
@@ -219,25 +220,25 @@ export default function EventMaterialsTab({ event, canManage }) {
       <Modal
         isOpen={showPicker}
         onClose={() => setShowPicker(false)}
-        title="Podepnij materiały"
+        title={tr('Podepnij materiały')}
         closeOnBackdrop={false}
       >
         <div className="p-6 space-y-3">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700">
             <Search size={16} className="text-gray-400" />
-            <input value={pickSearch} onChange={(e) => setPickSearch(e.target.value)} placeholder="Szukaj plików…"
+            <input value={pickSearch} onChange={(e) => setPickSearch(e.target.value)} placeholder={tr('Szukaj plików…')}
               className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200" />
           </div>
           <div>
             {pickList === null ? <Spinner center size={22} /> : filteredPick.length === 0 ? (
-              <EmptyState icon={FileText} title="Brak materiałów do podpięcia." compact />
+              <EmptyState icon={FileText} title={tr('Brak materiałów do podpięcia.')} compact />
             ) : filteredPick.map((f) => (
               <div key={f.id} className="flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50">
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText size={16} className="text-gray-400 shrink-0" />
                   <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{f.name}</span>
                 </div>
-                <button onClick={() => attach(f)} className="text-xs px-2.5 py-1.5 rounded-lg bg-accent-primary text-white whitespace-nowrap inline-flex items-center gap-1"><Check size={13} /> Podepnij</button>
+                <button onClick={() => attach(f)} className="text-xs px-2.5 py-1.5 rounded-lg bg-accent-primary text-white whitespace-nowrap inline-flex items-center gap-1"><Check size={13} /> {tr('Podepnij')}</button>
               </div>
             ))}
           </div>

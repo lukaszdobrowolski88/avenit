@@ -108,16 +108,16 @@ export default function EventRSVP({ eventId, maxParticipants }) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200">
           <Users size={16} className="text-accent-primary" />
-          Zapisani: {totalGoing}{cap ? ` / ${cap}` : ''}
+          {tr('Zapisani:')} {totalGoing}{cap ? ` / ${cap}` : ''}
         </div>
         <div className="flex items-center gap-2">
           {isFull && !myReg && (
             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-300">
-              Brak miejsc
+              {tr('Brak miejsc')}
             </span>
           )}
           {canManage && regs.length > 0 && (
-            <button onClick={exportCsv} title="Eksport CSV" className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-accent-primary transition">
+            <button onClick={exportCsv} title={tr('Eksport CSV')} className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-accent-primary transition">
               <Download size={14} /> CSV
             </button>
           )}
@@ -135,27 +135,27 @@ export default function EventRSVP({ eventId, maxParticipants }) {
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
-          <Loader2 size={16} className="animate-spin" /> Ładowanie…
+          <Loader2 size={16} className="animate-spin" /> {tr('Ładowanie…')}
         </div>
       ) : !me ? (
         <p className="text-sm text-gray-400 py-1">{tr('Zaloguj się, aby się zapisać.')}</p>
       ) : myReg ? (
         <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
-            <Check size={16} /> Jesteś zapisany/a{myReg.guests_count ? ` (+${myReg.guests_count})` : ''}
+            <Check size={16} /> {tr('Jesteś zapisany/a')}{myReg.guests_count ? ` (+${myReg.guests_count})` : ''}
           </span>
           <button
             onClick={() => removeReg(myReg.id)}
             disabled={busy}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition disabled:opacity-50"
           >
-            {busy ? <Loader2 size={15} className="animate-spin" /> : <UserMinus size={15} />} Wypisz się
+            {busy ? <Loader2 size={15} className="animate-spin" /> : <UserMinus size={15} />} {tr('Wypisz się')}
           </button>
         </div>
       ) : (
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-            Osoby towarzyszące:
+            {tr('Osoby towarzyszące:')}
             <select
               value={guests}
               onChange={(e) => setGuests(parseInt(e.target.value))}
@@ -169,7 +169,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
             disabled={busy || isFull}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {busy ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />} Zapisz się
+            {busy ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />} {tr('Zapisz się')}
           </button>
         </div>
       )}
@@ -214,7 +214,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
             <input
               value={addEmail}
               onChange={(e) => setAddEmail(e.target.value)}
-              placeholder="E-mail (opcjonalnie)"
+              placeholder={tr('E-mail (opcjonalnie)')}
               className="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
             />
             <button
@@ -222,7 +222,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
               disabled={busy || !addName.trim()}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-800 dark:bg-gray-700 text-white hover:opacity-90 transition disabled:opacity-40"
             >
-              <UserPlus size={15} /> Dopisz
+              <UserPlus size={15} /> {tr('Dopisz')}
             </button>
           </div>
         </div>

@@ -10,54 +10,54 @@ const MODULE_TABS = {
     label: tr('Pulpit'),
     tabs: {
       ministry: tr('Moja służba'),
-      tasks: 'Moje zadania',
+      tasks: tr('Moje zadania'),
       absences: tr('Nieobecności'),
-      prayers: 'Moje modlitwy'
+      prayers: tr('Moje modlitwy')
     }
   },
   homegroups: {
-    label: 'Grupy Domowe',
+    label: tr('Grupy Domowe'),
     tabs: {
-      groups: 'Grupy',
-      leaders: 'Liderzy',
+      groups: tr('Grupy'),
+      leaders: tr('Liderzy'),
       members: tr('Członkowie'),
-      finances: 'Finanse'
+      finances: tr('Finanse')
     }
   },
   media: {
-    label: 'Media Team',
+    label: tr('Media Team'),
     tabs: {
-      schedule: 'Grafik',
-      tasks: 'Zadania',
+      schedule: tr('Grafik'),
+      tasks: tr('Zadania'),
       members: tr('Członkowie'),
-      finances: 'Finanse'
+      finances: tr('Finanse')
     }
   },
   kids: {
     label: tr('Małe Avenit'),
     tabs: {
-      schedule: 'Grafik',
-      groups: 'Grupy',
-      teachers: 'Nauczyciele',
-      students: 'Uczniowie',
-      finances: 'Finanse'
+      schedule: tr('Grafik'),
+      groups: tr('Grupy'),
+      teachers: tr('Nauczyciele'),
+      students: tr('Uczniowie'),
+      finances: tr('Finanse')
     }
   },
   worship: {
     label: tr('Grupa Uwielbienia'),
     tabs: {
-      schedule: 'Grafik',
+      schedule: tr('Grafik'),
       songs: tr('Baza Pieśni'),
       members: tr('Członkowie'),
-      finances: 'Finanse'
+      finances: tr('Finanse')
     }
   },
   atmosfera: {
     label: tr('Atmosfera Team'),
     tabs: {
-      schedule: 'Grafik',
+      schedule: tr('Grafik'),
       members: tr('Członkowie'),
-      finances: 'Finanse'
+      finances: tr('Finanse')
     }
   }
 };
@@ -285,14 +285,14 @@ export function hasTabAccess(module, tab, userRole) {
           onClick={savePermissions}
           className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-bold"
         >
-          Zapisz uprawnienia
+          {tr('Zapisz uprawnienia')}
         </button>
       </div>
 
       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
         <p className="text-sm text-blue-800 dark:text-blue-300">
-          <strong>Instrukcja:</strong> Zaznacz "Wszyscy", aby dać dostęp wszystkim użytkownikom do danej zakładki.
-          W przeciwnym razie zaznacz konkretne role, które mają mieć dostęp. Niezaznaczone role nie będą widzieć zakładki.
+          <strong>{tr('Instrukcja:')}</strong>{' '}
+          {tr('Zaznacz "Wszyscy", aby dać dostęp wszystkim użytkownikom do danej zakładki. W przeciwnym razie zaznacz konkretne role, które mają mieć dostęp. Niezaznaczone role nie będą widzieć zakładki.')}
         </p>
       </div>
     </div>

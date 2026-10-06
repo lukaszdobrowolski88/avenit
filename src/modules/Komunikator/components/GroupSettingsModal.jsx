@@ -139,7 +139,7 @@ export default function GroupSettingsModal({
     if (email === currentUserEmail) {
       if (!await confirmDialog(tr('Czy na pewno chcesz opuścić tę grupę?'))) return;
     } else {
-      if (!await confirmDialog(`Czy na pewno chcesz usunąć tego uczestnika?`)) return;
+      if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tego uczestnika?'))) return;
     }
 
     setSaving(true);
@@ -218,7 +218,7 @@ export default function GroupSettingsModal({
       isOpen={isOpen}
       onClose={onClose}
       closeOnBackdrop={false}
-      title={isMinistryChannel ? tr('Ustawienia kanału') : 'Ustawienia grupy'}
+      title={isMinistryChannel ? tr('Ustawienia kanału') : tr('Ustawienia grupy')}
       size="sm"
     >
       {/* Group info */}
@@ -243,7 +243,7 @@ export default function GroupSettingsModal({
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder={isMinistryChannel ? getMinistryName(conversation?.ministry_key) : 'Nazwa grupy'}
+                  placeholder={isMinistryChannel ? getMinistryName(conversation?.ministry_key) : tr('Nazwa grupy')}
                   className="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light"
                   autoFocus
                 />
@@ -286,7 +286,7 @@ export default function GroupSettingsModal({
               </div>
             )}
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {isMinistryChannel ? tr('Kanał służby • ') : ''}{participants.length} uczestników
+              {isMinistryChannel ? tr('Kanał służby • ') : ''}{tr('{n} uczestników', { n: participants.length })}
             </p>
           </div>
         </div>
@@ -317,7 +317,7 @@ export default function GroupSettingsModal({
             `}
           >
             <UserPlus size={18} />
-            Dodaj
+            {tr('Dodaj')}
           </button>
         )}
       </div>
@@ -356,7 +356,7 @@ export default function GroupSettingsModal({
                       <Crown size={14} className="text-amber-500 flex-shrink-0" />
                     )}
                     {participant.user_email === currentUserEmail && (
-                      <span className="text-xs text-gray-500">(Ty)</span>
+                      <span className="text-xs text-gray-500">({tr('Ty')})</span>
                     )}
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -425,7 +425,7 @@ export default function GroupSettingsModal({
                   <UserAvatar user={user} size="md" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 dark:text-white truncate">
-                      {user.full_name || 'Brak nazwy'}
+                      {user.full_name || tr('Brak nazwy')}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {user.email}

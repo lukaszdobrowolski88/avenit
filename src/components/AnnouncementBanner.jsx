@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { tr } from '../i18n';
 import { X, Info, AlertTriangle, CheckCircle, AlertOctagon } from 'lucide-react';
 
 // Baner ogłoszeń systemowych (z platformy). Pobiera aktywne ogłoszenia
@@ -47,7 +48,7 @@ export default function AnnouncementBanner() {
               <span className="font-semibold">{a.title}</span>
               {a.body && <span className="opacity-90"> — {a.body}</span>}
             </div>
-            <button onClick={() => dismiss(a.id)} className="shrink-0 opacity-80 hover:opacity-100" aria-label="Zamknij">
+            <button onClick={() => dismiss(a.id)} className="shrink-0 opacity-80 hover:opacity-100" aria-label={tr('Zamknij')}>
               <X size={16} />
             </button>
           </div>

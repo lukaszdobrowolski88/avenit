@@ -14,7 +14,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { useTwoFactor } from '../hooks/useTwoFactor';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 
 // Komponent do generowania QR code (używa zewnętrznego API)
 function QRCodeDisplay({ url, size = 200 }) {
@@ -24,7 +24,7 @@ function QRCodeDisplay({ url, size = 200 }) {
     <div className="bg-white p-4 rounded-xl inline-block">
       <img
         src={qrUrl}
-        alt="QR Code dla Google Authenticator"
+        alt={tr('QR Code dla Google Authenticator')}
         width={size}
         height={size}
         className="rounded-lg"
@@ -83,7 +83,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
 
   // Pobierz kody jako plik
   const downloadBackupCodes = () => {
-    const codesText = `Kody zapasowe dla Avenit (${userEmail})\n\nUżyj jednego z tych kodów, jeśli nie masz dostępu do aplikacji Authenticator:\n\n${setupData.backupCodes.join('\n')}\n\nUwaga: Każdy kod można użyć tylko raz.\nWygenerowano: ${new Date().toLocaleString('pl-PL')}`;
+    const codesText = `Kody zapasowe dla Avenit (${userEmail})\n\nUżyj jednego z tych kodów, jeśli nie masz dostępu do aplikacji Authenticator:\n\n${setupData.backupCodes.join('\n')}\n\nUwaga: Każdy kod można użyć tylko raz.\nWygenerowano: ${new Date().toLocaleString(appLocale())}`;
     const blob = new Blob([codesText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -117,9 +117,9 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
               <Shield size={32} />
             </div>
             <div>
-              <h2 className="text-xl font-bold">Weryfikacja dwuetapowa</h2>
+              <h2 className="text-xl font-bold">{tr('Weryfikacja dwuetapowa')}</h2>
               <p className="text-emerald-100 text-sm">
-                {isRequired ? 'Wymagana konfiguracja' : 'Zabezpiecz swoje konto'}
+                {isRequired ? tr('Wymagana konfiguracja') : tr('Zabezpiecz swoje konto')}
               </p>
             </div>
           </div>
@@ -160,8 +160,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
               {isRequired && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
                   <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
-                    Administrator wymaga skonfigurowania weryfikacji dwuetapowej dla Twojego konta.
-                    Musisz ją włączyć, aby kontynuować korzystanie z aplikacji.
+                    {tr('Administrator wymaga skonfigurowania weryfikacji dwuetapowej dla Twojego konta. Musisz ją włączyć, aby kontynuować korzystanie z aplikacji.')}
                   </p>
                 </div>
               )}
@@ -171,14 +170,13 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                   {isRequired ? tr('Skonfiguruj weryfikację dwuetapową') : tr('Dodaj dodatkową ochronę')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Weryfikacja dwuetapowa dodaje dodatkową warstwę bezpieczeństwa.
-                  Przy każdym logowaniu będziesz potrzebować kodu z aplikacji.
+                  {tr('Weryfikacja dwuetapowa dodaje dodatkową warstwę bezpieczeństwa. Przy każdym logowaniu będziesz potrzebować kodu z aplikacji.')}
                 </p>
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 text-left">
                 <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">
-                  Będziesz potrzebować:
+                  {tr('Będziesz potrzebować:')}
                 </h4>
                 <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                   <li className="flex items-center gap-2">
@@ -191,7 +189,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                     <div className="w-5 h-5 bg-emerald-100 dark:bg-emerald-900/30 rounded flex items-center justify-center">
                       <Check size={12} className="text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    Google Authenticator lub Microsoft Authenticator
+                    {tr('Google Authenticator lub Microsoft Authenticator')}
                   </li>
                 </ul>
               </div>
@@ -227,7 +225,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
             <div className="space-y-6">
               <div className="text-center">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Zeskanuj kod QR
+                  {tr('Zeskanuj kod QR')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
                   {tr('Otwórz aplikację Authenticator i zeskanuj poniższy kod')}
@@ -240,7 +238,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
 
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  Lub wprowadź klucz ręcznie:
+                  {tr('Lub wprowadź klucz ręcznie:')}
                 </p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-sm font-mono bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white break-all">
@@ -249,7 +247,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                   <button
                     onClick={copySecret}
                     className="p-2 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
-                    title="Kopiuj"
+                    title={tr('Kopiuj')}
                   >
                     {copiedSecret ? <Check size={18} /> : <Copy size={18} />}
                   </button>
@@ -260,7 +258,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                 onClick={() => setStep(3)}
                 className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all flex items-center justify-center gap-2"
               >
-                Dalej
+                {tr('Dalej')}
                 <ChevronRight size={20} />
               </button>
             </div>
@@ -274,7 +272,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                   {tr('Wprowadź kod weryfikacyjny')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Wpisz 6-cyfrowy kod z aplikacji Authenticator
+                  {tr('Wpisz 6-cyfrowy kod z aplikacji Authenticator')}
                 </p>
               </div>
 
@@ -294,7 +292,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                   onClick={() => setStep(2)}
                   className="flex-1 py-3 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Wstecz
+                  {tr('Wstecz')}
                 </button>
                 <button
                   onClick={handleVerify}
@@ -305,7 +303,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                     <Loader2 size={20} className="animate-spin" />
                   ) : (
                     <>
-                      Weryfikuj
+                      {tr('Weryfikuj')}
                       <ChevronRight size={20} />
                     </>
                   )}
@@ -342,7 +340,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Kody zapasowe
+                    {tr('Kody zapasowe')}
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -350,14 +348,14 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                     >
                       {copiedCodes ? <Check size={14} /> : <Copy size={14} />}
-                      {copiedCodes ? 'Skopiowano' : 'Kopiuj'}
+                      {copiedCodes ? tr('Skopiowano') : tr('Kopiuj')}
                     </button>
                     <button
                       onClick={downloadBackupCodes}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                     >
                       <Download size={14} />
-                      Pobierz
+                      {tr('Pobierz')}
                     </button>
                   </div>
                 </div>
@@ -377,7 +375,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                 onClick={handleFinish}
                 className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
               >
-                Gotowe
+                {tr('Gotowe')}
               </button>
             </div>
           )}

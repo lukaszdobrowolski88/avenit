@@ -7,6 +7,7 @@ import {
   Trash2, Download, ExternalLink, Pin, FileText, Reply, CornerDownRight
 } from 'lucide-react';
 import { confirmDialog } from '../../lib/dialog';
+import { tr, appLocale } from '../../i18n';
 
 // wall_posts.likes ma być tablicą e-maili, ale część rekordów bywa nie-tablicą
 // (np. {} z domyślnej wartości JSONB). Normalizujemy przy KAŻDYM odczycie, żeby
@@ -112,7 +113,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
       setAttachments(prev => [...prev, ...uploadedFiles]);
     } catch (error) {
       console.error('Error uploading file:', error);
-      toast.error('Błąd przesyłania pliku: ' + error.message);
+      toast.error(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploading(false);
     }
@@ -186,12 +187,12 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
       fetchPosts();
     } catch (err) {
       console.error('Error sending message:', err);
-      toast.error('Błąd wysyłania: ' + err.message);
+      toast.error(tr('Błąd wysyłania: {msg}', { msg: err.message }));
     }
   };
 
   const deletePost = async (postId) => {
-    if (!await confirmDialog('Usunąć tę wiadomość?')) return;
+    if (!await confirmDialog(tr('Usunąć tę wiadomość?'))) return;
 
     try {
       const { error } = await supabase
@@ -251,15 +252,15 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
     if (days === 0) {
-      return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' });
     } else if (days === 1) {
-      return 'wczoraj ' + date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+      return tr('wczoraj') + ' ' + date.toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' });
     } else if (days < 7) {
-      return date.toLocaleDateString('pl-PL', { weekday: 'short' }) + ' ' +
-             date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleDateString(appLocale(), { weekday: 'short' }) + ' ' +
+             date.toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' });
     } else {
-      return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) + ' ' +
-             date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' }) + ' ' +
+             date.toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' });
     }
   };
 
@@ -281,7 +282,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
   const groupPostsByDate = (posts) => {
     const groups = {};
     posts.forEach(post => {
-      const date = new Date(post.created_at).toLocaleDateString('pl-PL', {
+      const date = new Date(post.created_at).toLocaleDateString(appLocale(), {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
@@ -310,7 +311,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
       {pinnedPosts.length > 0 && (
         <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-b border-accent-primary-lighter dark:border-accent-primary-dark p-3">
           <div className="flex items-center gap-2 text-accent-primary dark:text-accent-primary-light text-xs font-bold uppercase mb-2">
-            <Pin size={12} /> Przypięte wiadomości
+            <Pin size={12} /> {tr('Przypięte wiadomości')}
           </div>
           <div className="space-y-2">
             {pinnedPosts.map(post => (
@@ -337,8 +338,8 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
             <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
               <Send size={24} className="text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-1">Brak wiadomości</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Napisz pierwszą wiadomość do zespołu!</p>
+            <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-1">{tr('Brak wiadomości')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Napisz pierwszą wiadomość do zespołu!')}</p>
           </div>
         ) : (
           <>
@@ -488,7 +489,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                             <button
                               onClick={() => handleReply(post)}
                               className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-blue-500 transition"
-                              title="Odpowiedz"
+                              title={tr('Odpowiedz')}
                             >
                               <Reply size={12} />
                             </button>
@@ -581,14 +582,14 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="URL linku..."
+              placeholder={tr('URL linku...')}
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
             />
             <input
               type="text"
-              placeholder="Tytuł (opcjonalnie)"
+              placeholder={tr('Tytuł (opcjonalnie)')}
               value={linkTitle}
               onChange={(e) => setLinkTitle(e.target.value)}
               className="w-40 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
@@ -597,7 +598,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
               onClick={addLink}
               className="px-4 py-2 bg-accent-primary text-white rounded-xl text-sm font-medium hover:bg-accent-primary-dark transition"
             >
-              Dodaj
+              {tr('Dodaj')}
             </button>
             <button
               onClick={() => { setShowLinkInput(false); setLinkUrl(''); setLinkTitle(''); }}
@@ -617,7 +618,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
               <CornerDownRight size={14} className="text-blue-500 shrink-0" />
               <div className="min-w-0">
                 <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                  Odpowiadasz do {replyingTo.author}
+                  {tr('Odpowiadasz do {name}', { name: replyingTo.author })}
                 </span>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   {replyingTo.content}
@@ -651,7 +652,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
               onClick={() => imageInputRef.current?.click()}
               disabled={uploading}
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary-light transition"
-              title="Dodaj zdjęcie"
+              title={tr('Dodaj zdjęcie')}
             >
               <Image size={20} />
             </button>
@@ -667,7 +668,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary-light transition"
-              title="Dodaj plik"
+              title={tr('Dodaj plik')}
             >
               <Paperclip size={20} />
             </button>
@@ -679,7 +680,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-500'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary-light'
               }`}
-              title="Dodaj link"
+              title={tr('Dodaj link')}
             >
               <LinkIcon size={20} />
             </button>
@@ -698,7 +699,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                   sendMessage();
                 }
               }}
-              placeholder="Napisz wiadomość..."
+              placeholder={tr('Napisz wiadomość...')}
               className="w-full h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:border-accent-primary-light focus:ring-2 focus:ring-accent-primary-light/20 transition text-sm"
             />
           </div>
@@ -716,7 +717,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
         {uploading && (
           <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
             <Spinner size={12} />
-            Przesylanie...
+            {tr('Przesyłanie...')}
           </div>
         )}
       </div>

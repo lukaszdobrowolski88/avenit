@@ -94,7 +94,7 @@ export default function MailingModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader moduleKey="mailing" icon={Mail} title="Mailing"
+      <PageHeader moduleKey="mailing" icon={Mail} title={tr('Mailing')}
         actions={
           <button
             data-tour="mail-new"
@@ -102,7 +102,7 @@ export default function MailingModule() {
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-xl transition-all font-medium shadow-md hover:shadow-lg"
           >
             <Plus size={18} />
-            <span className="hidden sm:inline">Nowy mail</span>
+            <span className="hidden sm:inline">{tr('Nowy mail')}</span>
           </button>
         } />
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useCheckin } from '../hooks/useCheckin';
 import VirtualKeypad from './VirtualKeypad';
 import { Search, Check, CheckCircle, Loader2, ClipboardList } from 'lucide-react';
-import { tr } from '../../../../i18n';
+import { tr, appLocale } from '../../../../i18n';
 import EmptyState from '../../../../components/EmptyState';
 
 export default function CheckoutScreen({ session }) {
@@ -94,7 +94,7 @@ export default function CheckoutScreen({ session }) {
           <CheckCircle size={40} className="text-green-500 dark:text-green-400" />
         </div>
         <h2 className="text-2xl font-bold text-green-500 dark:text-green-400 mb-4">
-          Odebrano!
+          {tr('Odebrano!')}
         </h2>
         <p className="text-lg text-gray-700 dark:text-gray-300">
           {checkedOutNames.join(', ')}
@@ -117,7 +117,7 @@ export default function CheckoutScreen({ session }) {
           {tr('Checkout - Odbiór dzieci')}
         </h1>
         <p className="text-base text-gray-600 dark:text-gray-400">
-          Wpisz ostatnie 4 cyfry swojego numeru telefonu
+          {tr('Wpisz ostatnie 4 cyfry swojego numeru telefonu')}
         </p>
       </div>
 
@@ -141,12 +141,12 @@ export default function CheckoutScreen({ session }) {
           {searching ? (
             <>
               <Loader2 size={18} className="animate-spin" />
-              Szukam...
+              {tr('Szukam...')}
             </>
           ) : (
             <>
               <Search size={18} />
-              Szukaj dzieci
+              {tr('Szukaj dzieci')}
             </>
           )}
         </button>
@@ -157,14 +157,14 @@ export default function CheckoutScreen({ session }) {
         <div className="w-full max-w-lg mt-4">
           <div className="flex justify-between items-center mb-3">
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              Znaleziono {searchResults.length} {searchResults.length === 1 ? 'dziecko' : 'dzieci'}
+              {tr('Znaleziono')} {searchResults.length} {searchResults.length === 1 ? tr('dziecko') : tr('dzieci')}
             </span>
             {searchResults.length > 1 && (
               <button
                 onClick={handleSelectAll}
                 className="px-3 py-1.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
               >
-                Zaznacz wszystkie
+                {tr('Zaznacz wszystkie')}
               </button>
             )}
           </div>
@@ -211,8 +211,8 @@ export default function CheckoutScreen({ session }) {
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       {checkin.checkin_locations?.name}
                       {' • '}
-                      Check-in:{' '}
-                      {new Date(checkin.checked_in_at).toLocaleTimeString('pl-PL', {
+                      {tr('Check-in:')}{' '}
+                      {new Date(checkin.checked_in_at).toLocaleTimeString(appLocale(), {
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
@@ -236,12 +236,12 @@ export default function CheckoutScreen({ session }) {
             {loading ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
-                Przetwarzanie...
+                {tr('Przetwarzanie...')}
               </>
             ) : (
               <>
                 <Check size={20} />
-                Odbierz {selectedCount > 0 ? `(${selectedCount})` : ''}
+                {tr('Odbierz')} {selectedCount > 0 ? `(${selectedCount})` : ''}
               </>
             )}
           </button>

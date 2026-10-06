@@ -14,7 +14,7 @@ import {
   useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { confirmDialog } from '../../lib/dialog';
 import Modal from '../../components/Modal';
@@ -27,7 +27,7 @@ const KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 const formatDateFull = (dateString) => {
   if (!dateString) return '';
   const date = new Date(dateString);
-  const formatted = date.toLocaleDateString('pl-PL', {
+  const formatted = date.toLocaleDateString(appLocale(), {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
@@ -140,27 +140,27 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
       closeOnBackdrop={false}
       zIndex={110}
       size="md"
-      title="Dodaj do programu"
+      title={tr('Dodaj do programu')}
       subtitle={<><Music size={14} className="inline mr-1 text-accent-primary-light" />{song?.title}</>}
       footer={<>
         <Button variant="secondary" onClick={onClose} disabled={saving}>
-          Anuluj
+          {tr('Anuluj')}
         </Button>
         <Button icon={Plus} onClick={handleSave} loading={saving} disabled={!selectedProgramId}>
-          Dodaj do programu
+          {tr('Dodaj do programu')}
         </Button>
       </>}
     >
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-              Wybierz program (od dzisiaj)
+              {tr('Wybierz program (od dzisiaj)')}
             </label>
             <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
               <Search size={16} className="text-gray-400" />
               <input
                 className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400"
-                placeholder="Szukaj programu..."
+                placeholder={tr('Szukaj programu...')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -190,12 +190,12 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
                           {p.title || formatDateFull(p.date)}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 flex-wrap">
-                          <span>{p.title ? formatDateFull(p.date) : `${(p.schedule || []).length} elementów`}</span>
+                          <span>{p.title ? formatDateFull(p.date) : tr('{n} elementów', { n: (p.schedule || []).length })}</span>
                           {campus && (
                             <span
                               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700/60 text-[10px] font-medium"
                               style={campus.color ? { background: `${campus.color}1a`, color: campus.color } : undefined}
-                              title={`Kampus: ${campus.name}`}
+                              title={tr('Kampus: {name}', { name: campus.name })}
                             >
                               <MapPin size={10} />
                               {campus.name}
@@ -217,7 +217,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
 
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">
-              Tonacja wykonania {song?.key ? <span className="text-gray-400 normal-case font-normal">(pieśń: {song.key})</span> : null}
+              {tr('Tonacja wykonania')} {song?.key ? <span className="text-gray-400 normal-case font-normal">({tr('pieśń:')} {song.key})</span> : null}
             </label>
             <div className="grid grid-cols-6 gap-1.5">
               {KEYS.map(k => (
@@ -238,7 +238,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
 
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-              Notatka
+              {tr('Notatka')}
             </label>
             <textarea
               className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm min-h-[70px] resize-y focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
@@ -308,10 +308,10 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
       zIndex={110}
       size="xl"
       icon={!selectedProgram ? FolderOpen : undefined}
-      title={!selectedProgram ? 'Programy' : (selectedProgram.title || formatDateFull(selectedProgram.date))}
+      title={!selectedProgram ? tr('Programy') : (selectedProgram.title || formatDateFull(selectedProgram.date))}
       subtitle={!selectedProgram
-        ? 'Aktywne programy (od dzisiaj). Wybierz, by zarządzać przypisanymi pieśniami.'
-        : `${selectedProgram.title ? formatDateFull(selectedProgram.date) + ' · ' : ''}Sugerowane pieśni`}
+        ? tr('Aktywne programy (od dzisiaj). Wybierz, by zarządzać przypisanymi pieśniami.')
+        : `${selectedProgram.title ? formatDateFull(selectedProgram.date) + ' · ' : ''}${tr('Sugerowane pieśni')}`}
     >
         {!selectedProgram ? (
           <>
@@ -320,7 +320,7 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
                 <Search size={16} className="text-gray-400" />
                 <input
                   className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400"
-                  placeholder="Szukaj programu..."
+                  placeholder={tr('Szukaj programu...')}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
@@ -352,7 +352,7 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
                               <span
                                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700/60 text-[10px] font-medium"
                                 style={campus.color ? { background: `${campus.color}1a`, color: campus.color } : undefined}
-                                title={`Kampus: ${campus.name}`}
+                                title={tr('Kampus: {name}', { name: campus.name })}
                               >
                                 <MapPin size={10} />
                                 {campus.name}
@@ -361,7 +361,7 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             {p.title ? formatDateFull(p.date) + ' · ' : ''}
-                            {(counts[p.id] || 0)} {counts[p.id] === 1 ? tr('pieśń') : tr('pieśni')} sugerowanych
+                            {(counts[p.id] || 0)} {counts[p.id] === 1 ? tr('pieśń') : tr('pieśni')} {tr('sugerowanych')}
                           </div>
                         </div>
                       </div>
@@ -535,7 +535,7 @@ function ProgramSongsEditor({ program, songs, onBack }) {
               onClick={() => setShowAddPicker(true)}
               className="w-full px-4 py-3 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary dark:hover:border-accent-primary-dark dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"
             >
-              <Plus size={16} /> Dodaj pieśń z bazy
+              <Plus size={16} /> {tr('Dodaj pieśń z bazy')}
             </button>
           ) : (
             <SongPickerInline
@@ -587,7 +587,7 @@ function SortableSuggestionRow({
             value={item.song_key || song?.key || 'C'}
             onChange={e => onChangeKey(e.target.value)}
             className="text-xs font-bold bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 border border-accent-primary-lighter dark:border-accent-primary-dark text-accent-primary-dark dark:text-accent-primary-light rounded-lg px-2 py-1 focus:outline-none cursor-pointer"
-            title="Tonacja"
+            title={tr('Tonacja')}
           >
             {KEYS.map(k => <option key={k} value={k}>{k}</option>)}
           </select>
@@ -615,7 +615,7 @@ function SortableSuggestionRow({
                 autoFocus
                 value={noteDraft}
                 onChange={e => onChangeNoteDraft(e.target.value)}
-                placeholder="Notatka..."
+                placeholder={tr('Notatka...')}
                 className="w-full px-2 py-1.5 text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md outline-none focus:ring-2 focus:ring-accent-primary-light/20 resize-y min-h-[50px] text-gray-700 dark:text-gray-200"
               />
               <div className="flex justify-end gap-2">
@@ -623,13 +623,13 @@ function SortableSuggestionRow({
                   onClick={onCancelNote}
                   className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition"
                 >
-                  Anuluj
+                  {tr('Anuluj')}
                 </button>
                 <button
                   onClick={onSaveNote}
                   className="px-3 py-1 text-xs font-bold bg-accent-primary text-white rounded-md hover:bg-accent-primary-dark transition flex items-center gap-1"
                 >
-                  <Check size={12} /> Zapisz
+                  <Check size={12} /> {tr('Zapisz')}
                 </button>
               </div>
             </div>
@@ -638,7 +638,7 @@ function SortableSuggestionRow({
               onClick={onStartEditNote}
               className="w-full text-left text-xs text-gray-600 dark:text-gray-400 bg-accent-secondary-lightest/50 dark:bg-accent-secondary-darkest/10 border border-accent-secondary-lighter dark:border-accent-secondary-dark/40 rounded-lg px-3 py-2 hover:bg-accent-secondary-lightest dark:hover:bg-accent-secondary-darkest/20 transition"
             >
-              <span className="font-semibold text-accent-secondary dark:text-accent-secondary-light">Notatka: </span>
+              <span className="font-semibold text-accent-secondary dark:text-accent-secondary-light">{tr('Notatka:')} </span>
               {item.note}
             </button>
           )}

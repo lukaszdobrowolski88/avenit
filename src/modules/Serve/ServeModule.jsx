@@ -6,6 +6,7 @@ import { useCampusQuery } from '../../hooks/useCampusQuery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import AvailabilityTab from './tabs/AvailabilityTab';
 import CcliTab from './tabs/CcliTab';
+import { tr } from '../../i18n';
 
 const TABS = [
   { id: 'availability', label: 'Dostępność', icon: CalendarOff },
@@ -71,10 +72,10 @@ export default function ServeModule() {
 
   return (
     <div className="space-y-6">
-      <PageHeader moduleKey="serve" icon={CalendarCheck} title="Służba" subtitle="Dostępność wolontariuszy i ewidencja wykonań pieśni (CCLI)" />
+      <PageHeader moduleKey="serve" icon={CalendarCheck} title={tr('Służba')} subtitle={tr('Dostępność wolontariuszy i ewidencja wykonań pieśni (CCLI)')} />
 
       {/* Zakładki */}
-      <ResponsiveTabs moduleKey="serve" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="serve" tabs={TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

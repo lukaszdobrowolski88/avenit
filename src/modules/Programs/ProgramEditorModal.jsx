@@ -12,7 +12,7 @@ import { generatePPT } from '../../lib/ppt';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
@@ -34,7 +34,7 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
           {tr('Opuść')}
         </Button>
         <Button icon={Save} onClick={onSave}>
-          Zapisz
+          {tr('Zapisz')}
         </Button>
       </>}
     >
@@ -50,7 +50,7 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
 // --- MODAL POTWIERDZENIA USUNIĘCIA NABOŻEŃSTWA ---
 
 const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, date }) => {
-  const formattedDate = date ? new Date(date).toLocaleDateString('pl-PL', {
+  const formattedDate = date ? new Date(date).toLocaleDateString(appLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -68,16 +68,16 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, date }) => {
       title={tr('Usuń nabożeństwo')}
       footer={<>
         <Button variant="secondary" onClick={onClose}>
-          Anuluj
+          {tr('Anuluj')}
         </Button>
         <Button variant="danger" icon={Trash2} onClick={onConfirm}>
-          Usuń
+          {tr('Usuń')}
         </Button>
       </>}
     >
       <div className="p-6">
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          Czy na pewno chcesz usunąć nabożeństwo z dnia <span className="font-medium text-gray-700 dark:text-gray-300">{formattedDate}</span>? Tej operacji nie można cofnąć.
+          {tr('Czy na pewno chcesz usunąć nabożeństwo z dnia')} <span className="font-medium text-gray-700 dark:text-gray-300">{formattedDate}</span>? {tr('Tej operacji nie można cofnąć.')}
         </p>
       </div>
     </Modal>
@@ -208,7 +208,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       >
         <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
+          {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
         </span>
       </div>
 
@@ -224,7 +224,7 @@ const CustomDatePicker = ({ value, onChange }) => {
         >
            <div className="flex justify-between items-center mb-4">
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronLeft size={18} /></button>
-             <span className="text-sm font-bold capitalize text-gray-800 dark:text-gray-200">{viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
+             <span className="text-sm font-bold capitalize text-gray-800 dark:text-gray-200">{viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronRight size={18} /></button>
            </div>
            <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
@@ -277,7 +277,7 @@ const ElementSelector = ({ value, onChange, options }) => {
       <div className="relative">
         <input
           className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-accent-primary-light/20 outline-none placeholder:text-gray-400 dark:placeholder-gray-600"
-          placeholder="Wybierz lub wpisz..."
+          placeholder={tr('Wybierz lub wpisz...')}
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
@@ -312,7 +312,7 @@ const ElementSelector = ({ value, onChange, options }) => {
                 setIsOpen(false);
               }}
             >
-              {opt}
+              {tr(opt)}
             </div>
           ))}
         </div>,
@@ -358,7 +358,7 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-sm">Wybierz osoby...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-sm">{tr('Wybierz osoby...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary-dark dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark flex items-center gap-1">
@@ -871,7 +871,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-sm">Wybierz nieobecnych...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-sm">{tr('Wybierz nieobecnych...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-lg text-xs font-medium border border-red-200 dark:border-red-800 flex items-center gap-1">
@@ -917,7 +917,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
               </div>
             );
           })}
-          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">Brak nauczycieli w bazie</div>}
+          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">{tr('Brak nauczycieli w bazie')}</div>}
         </div>,
         document.body
       )}
@@ -957,12 +957,12 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
       </div>
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Temat lekcji</label>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Temat lekcji')}</label>
           <input
             className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.temat || ''}
             onChange={e => handleFieldChange('temat', e.target.value)}
-            placeholder="Temat lekcji..."
+            placeholder={tr('Temat lekcji...')}
           />
         </div>
 
@@ -996,7 +996,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Starsza</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Starsza')}</label>
               <input
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.starsza || ''}
@@ -1007,7 +1007,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         )}
 
         <div>
-          <label className="block text-xs font-bold text-red-500 dark:text-red-400 uppercase mb-1 ml-1">Absencja nauczycieli</label>
+          <label className="block text-xs font-bold text-red-500 dark:text-red-400 uppercase mb-1 ml-1">{tr('Absencja nauczycieli')}</label>
           <AbsenceMultiSelect
             options={kidsTeachers}
             value={program.szkolka?.absencja || ''}
@@ -1016,12 +1016,12 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki</label>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki')}</label>
           <input
             className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.notatki || ''}
             onChange={e => handleFieldChange('notatki', e.target.value)}
-            placeholder="Notatki..."
+            placeholder={tr('Notatki...')}
           />
         </div>
       </div>
@@ -1042,13 +1042,13 @@ const DynamicScenaSection = ({
   const mcFields = mcRoles.length > 0
     ? mcRoles.map(role => ({ key: role.field_key, label: role.name, roleId: role.id, source: 'mc' }))
     : [
-        { key: 'prowadzenie', label: 'Prowadzenie', roleId: null, source: 'mc' },
-        { key: 'modlitwa', label: 'Modlitwa', roleId: null, source: 'mc' },
-        { key: 'wieczerza', label: 'Wieczerza', roleId: null, source: 'mc' },
+        { key: 'prowadzenie', label: tr('Prowadzenie'), roleId: null, source: 'mc' },
+        { key: 'modlitwa', label: tr('Modlitwa'), roleId: null, source: 'mc' },
+        { key: 'wieczerza', label: tr('Wieczerza'), roleId: null, source: 'mc' },
         { key: 'ogloszenia', label: tr('Ogłoszenia'), roleId: null, source: 'mc' }
       ];
 
-  const kazanieField = { key: 'kazanie', label: 'Kazanie', source: 'teaching' };
+  const kazanieField = { key: 'kazanie', label: tr('Kazanie'), source: 'teaching' };
 
   const allFields = [];
   let kazanieAdded = false;
@@ -1130,7 +1130,7 @@ const DynamicScenaSection = ({
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg text-gray-900 dark:text-white">Scena</h3>
+        <h3 className="font-bold text-lg text-gray-900 dark:text-white">{tr('Scena')}</h3>
       </div>
       <div className="space-y-4">
         {allFields.map(field => {
@@ -1451,7 +1451,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
                 icon={FileText}
                 loading={isLoading}
                 onClick={() => setShowPdfMenu(!showPdfMenu)}
-                title="Generuj PDF"
+                title={tr('Generuj PDF')}
               >
                 <span className="hidden sm:inline">PDF</span>
                 <ChevronDown size={14} />
@@ -1463,7 +1463,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     <Type size={16} className="text-accent-primary-light" />
-                    Z tekstami i akordami
+                    {tr('Z tekstami i akordami')}
                   </button>
                   <button
                     onClick={() => handleSaveAndUploadPDF('attachments')}
@@ -1494,10 +1494,10 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
               <span className="hidden sm:inline">PPT</span>
             </Button>
             <Button variant="secondary" onClick={handleCloseAttempt}>
-              Anuluj
+              {tr('Anuluj')}
             </Button>
             <Button icon={Save} onClick={handleSave}>
-              Zapisz
+              {tr('Zapisz')}
             </Button>
       </>}
     >
@@ -1520,13 +1520,13 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
                 onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})}
                 className="hidden sm:block bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-4 py-2.5 rounded-xl font-bold hover:shadow-lg transition"
               >
-                + Dodaj Element
+                {tr('+ Dodaj Element')}
               </button>
             </div>
             <div className="bg-white/50 dark:bg-gray-900/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-inner overflow-hidden overflow-x-auto">
               <div className="hidden lg:grid grid-cols-12 gap-4 p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50 font-bold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[600px]">
                 <div className="col-span-1"></div>
-                <div className="col-span-3">Element</div>
+                <div className="col-span-3">{tr('Element')}</div>
                 <div className="col-span-3">{tr('Osoba')}</div>
                 <div className="col-span-4">{tr('Szczegóły / Notatki')}</div>
                 <div className="col-span-1"></div>
@@ -1552,7 +1552,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
               onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})}
               className="sm:hidden w-full mt-4 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-4 py-3 rounded-xl font-bold hover:shadow-lg transition"
             >
-              + Dodaj Element
+              {tr('+ Dodaj Element')}
             </button>
           </div>
 
@@ -1565,13 +1565,13 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
               {(worshipRoles.length > 0
                 ? worshipRoles.map(role => ({ key: role.field_key, label: role.name, roleId: role.id }))
                 : [
-                    { key: 'lider', label: 'Lider Uwielbienia', roleId: null },
-                    { key: 'piano', label: 'Piano', roleId: null },
-                    { key: 'gitara_akustyczna', label: 'Gitara Akustyczna', roleId: null },
-                    { key: 'gitara_elektryczna', label: 'Gitara Elektryczna', roleId: null },
-                    { key: 'bas', label: 'Gitara Basowa', roleId: null },
-                    { key: 'wokale', label: 'Wokale', roleId: null },
-                    { key: 'cajon', label: 'Cajon / Perkusja', roleId: null }
+                    { key: 'lider', label: tr('Lider Uwielbienia'), roleId: null },
+                    { key: 'piano', label: tr('Piano'), roleId: null },
+                    { key: 'gitara_akustyczna', label: tr('Gitara Akustyczna'), roleId: null },
+                    { key: 'gitara_elektryczna', label: tr('Gitara Elektryczna'), roleId: null },
+                    { key: 'bas', label: tr('Gitara Basowa'), roleId: null },
+                    { key: 'wokale', label: tr('Wokale'), roleId: null },
+                    { key: 'cajon', label: tr('Cajon / Perkusja'), roleId: null }
                   ]
               ).map(field => {
                 const getMembersForRole = (roleId) => {
@@ -1623,7 +1623,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
               setProgram={setProgram}
               roles={mediaRoles}
               teamMembers={mediaTeam}
-              fallbackFields={[{ key: 'naglosnienie', label: tr('Nagłośnienie') }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: 'Social Media' }, { key: 'host', label: 'Host wydarzenia' }]}
+              fallbackFields={[{ key: 'naglosnienie', label: tr('Nagłośnienie') }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: tr('Social Media') }, { key: 'host', label: tr('Host wydarzenia') }]}
               absentList={absentList}
               memberRoles={mediaMemberRoles}
             />

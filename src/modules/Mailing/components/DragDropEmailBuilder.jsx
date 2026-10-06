@@ -222,7 +222,7 @@ const BLOCK_CATEGORIES = {
 const BLOCK_PRESETS = {
   hero: {
     name: 'Hero Banner',
-    description: tr('Duży obraz z nagłówkiem'),
+    description: 'Duży obraz z nagłówkiem',
     icon: ImageIcon,
     color: 'amber',
     blocks: [
@@ -234,7 +234,7 @@ const BLOCK_PRESETS = {
   },
   announcement: {
     name: 'Ogłoszenie',
-    description: tr('Wyróżniona informacja'),
+    description: 'Wyróżniona informacja',
     icon: Sparkles,
     color: 'amber',
     blocks: [
@@ -244,7 +244,7 @@ const BLOCK_PRESETS = {
   },
   event: {
     name: 'Wydarzenie',
-    description: tr('Zaproszenie z datą i miejscem'),
+    description: 'Zaproszenie z datą i miejscem',
     icon: FileText,
     color: 'green',
     blocks: [
@@ -271,7 +271,7 @@ const BLOCK_PRESETS = {
   },
   twoColumn: {
     name: 'Dwie kolumny',
-    description: tr('Treść w dwóch kolumnach'),
+    description: 'Treść w dwóch kolumnach',
     icon: Columns,
     color: 'purple',
     blocks: [
@@ -528,7 +528,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
     // Dodaj wizualny feedback
     const ghost = document.createElement('div');
     ghost.className = 'bg-accent-primary-light text-white px-3 py-2 rounded-lg shadow-lg text-sm';
-    ghost.textContent = BLOCK_TYPES[blockType]?.name || blockType;
+    ghost.textContent = BLOCK_TYPES[blockType]?.name ? tr(BLOCK_TYPES[blockType].name) : blockType;
     ghost.style.position = 'absolute';
     ghost.style.top = '-1000px';
     document.body.appendChild(ghost);
@@ -622,7 +622,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
               <Layers size={14} className="text-white" />
             </div>
-            Elementy
+            {tr('Elementy')}
           </h3>
           <p className="text-xs text-gray-500 mt-1">{tr('Przeciągnij na canvas lub kliknij')}</p>
         </div>
@@ -643,7 +643,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                     <div className={`p-1 rounded-md ${isExpanded ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30' : 'bg-gray-100 dark:bg-gray-700'} transition-colors`}>
                       <CatIcon size={14} className={isExpanded ? 'text-accent-primary-light' : 'text-gray-500'} />
                     </div>
-                    {category.name}
+                    {tr(category.name)}
                   </span>
                   <ChevronRight size={16} className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-accent-primary-light' : ''}`} />
                 </button>
@@ -668,7 +668,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                             <Icon size={18} className="text-gray-500 dark:text-gray-400 group-hover:text-accent-primary-light transition-colors" />
                           </div>
                           <span className="text-xs text-gray-600 dark:text-gray-400 text-center leading-tight font-medium">
-                            {block.name}
+                            {tr(block.name)}
                           </span>
                         </div>
                       );
@@ -685,7 +685,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
               <div className="p-1 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-md">
                 <Wand2 size={10} className="text-white" />
               </div>
-              Gotowe sekcje
+              {tr('Gotowe sekcje')}
             </h4>
             <div className="space-y-2">
               {Object.entries(BLOCK_PRESETS).map(([key, preset]) => {
@@ -715,8 +715,8 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                       <Icon size={14} className="text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 block">{preset.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{preset.description}</span>
+                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 block">{tr(preset.name)}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{tr(preset.description)}</span>
                     </div>
                     <div className="p-1 rounded-full bg-white/50 dark:bg-gray-700/50 opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:rotate-90">
                       <Plus size={14} className="text-gray-500" />
@@ -739,7 +739,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                 onClick={undo}
                 disabled={historyIndex <= 0}
                 className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm"
-                title="Cofnij (Ctrl+Z)"
+                title={tr('Cofnij (Ctrl+Z)')}
               >
                 <Undo size={16} className="text-gray-600 dark:text-gray-400" />
               </button>
@@ -769,14 +769,14 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <button
               onClick={() => setViewMode('desktop')}
               className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'desktop' ? 'bg-white dark:bg-gray-600 shadow-md text-accent-primary-light' : 'text-gray-500 hover:text-gray-700'}`}
-              title="Widok desktop"
+              title={tr('Widok desktop')}
             >
               <Monitor size={16} />
             </button>
             <button
               onClick={() => setViewMode('mobile')}
               className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'mobile' ? 'bg-white dark:bg-gray-600 shadow-md text-accent-primary-light' : 'text-gray-500 hover:text-gray-700'}`}
-              title="Widok mobile"
+              title={tr('Widok mobile')}
             >
               <Smartphone size={16} />
             </button>
@@ -796,7 +796,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all duration-200 flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Save size={14} />
-                Zapisz
+                {tr('Zapisz')}
               </button>
             )}
           </div>
@@ -918,12 +918,12 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <span className="px-2 py-0.5 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-full">
               {blocks.length}
             </span>
-            {blocks.length === 1 ? 'blok' : blocks.length < 5 ? 'bloki' : tr('bloków')}
+            {blocks.length === 1 ? tr('blok') : blocks.length < 5 ? tr('bloki') : tr('bloków')}
           </span>
           <div className="flex items-center gap-3 text-xs text-gray-400">
-            <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-mono">⌘Z</kbd> cofnij</span>
-            <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-mono">Del</kbd> usuń</span>
-            <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-mono">⌘D</kbd> duplikuj</span>
+            <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-mono">⌘Z</kbd> {tr('cofnij')}</span>
+            <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-mono">Del</kbd> {tr('usuń')}</span>
+            <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-mono">⌘D</kbd> {tr('duplikuj')}</span>
           </div>
         </div>
       </div>
@@ -935,11 +935,11 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
               <Settings size={14} className="text-white" />
             </div>
-            {selectedBlock ? tr('Właściwości bloku') : 'Ustawienia emaila'}
+            {selectedBlock ? tr('Właściwości bloku') : tr('Ustawienia emaila')}
           </h3>
           {selectedBlock && (
             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-              Edytujesz: <span className="font-medium text-accent-primary dark:text-accent-primary-light">{BLOCK_TYPES[selectedBlock.type]?.name || selectedBlock.type}</span>
+              {tr('Edytujesz:')} <span className="font-medium text-accent-primary dark:text-accent-primary-light">{BLOCK_TYPES[selectedBlock.type]?.name ? tr(BLOCK_TYPES[selectedBlock.type].name) : selectedBlock.type}</span>
             </p>
           )}
         </div>
@@ -965,7 +965,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <div className="p-1 bg-gradient-to-br from-purple-400 to-accent-primary-light rounded-md">
               <Sparkles size={10} className="text-white" />
             </div>
-            Zmienne personalizacji
+            {tr('Zmienne personalizacji')}
           </h4>
           <div className="flex flex-wrap gap-1.5">
             {EMAIL_VARIABLES.map(v => (
@@ -975,7 +975,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                   navigator.clipboard.writeText(v.key);
                 }}
                 className="px-2.5 py-1 text-xs font-medium bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-accent-primary dark:text-accent-primary-light rounded-lg hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30 transition-all duration-200 border border-accent-primary-lighter/50 dark:border-accent-primary/30 hover:shadow-sm hover:scale-105 active:scale-95"
-                title={`${v.description} - kliknij aby skopiować`}
+                title={tr('{desc} - kliknij aby skopiować', { desc: tr(v.description) })}
               >
                 {v.key}
               </button>
@@ -1124,7 +1124,7 @@ function BlockRenderer({
         <button
           onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
           className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 hover:border-blue-300 transition-all duration-200 group/btn"
-          title="Duplikuj (Ctrl+D)"
+          title={tr('Duplikuj (Ctrl+D)')}
         >
           <Copy size={14} className="text-blue-500 group-hover/btn:text-blue-600" />
         </button>
@@ -1143,7 +1143,7 @@ function BlockRenderer({
         return (
           <div className="absolute -top-7 left-0 px-3 py-1 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-xs rounded-t-xl font-semibold flex items-center gap-1.5 shadow-lg shadow-accent-primary-light/30">
             {BlockIcon && <BlockIcon size={12} />}
-            {BLOCK_TYPES[block.type]?.name || block.type}
+            {BLOCK_TYPES[block.type]?.name ? tr(BLOCK_TYPES[block.type].name) : block.type}
           </div>
         );
       })()}
@@ -1359,7 +1359,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
       <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700">
         {blockType && <blockType.icon size={16} className="text-accent-primary-light" />}
         <span className="font-medium text-gray-900 dark:text-white">
-          {blockType?.name || block.type}
+          {blockType?.name ? tr(blockType.name) : block.type}
         </span>
       </div>
 
@@ -1438,7 +1438,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
               <Edit3 size={12} />
-              Treść (edytor WYSIWYG)
+              {tr('Treść (edytor WYSIWYG)')}
             </label>
             <BlockTextEditor
               content={block.content}
@@ -1453,7 +1453,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               minHeight={200}
             />
           </div>
-          <PropertyField label="Rozmiar czcionki bazowy" type="range" min={12} max={32} value={block.fontSize} onChange={(v) => handleChange('fontSize', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Rozmiar czcionki bazowy')} type="range" min={12} max={32} value={block.fontSize} onChange={(v) => handleChange('fontSize', v)} onBlur={handleBlur} />
           <PropertyField label={tr('Wysokość linii')} type="range" min={1} max={2.5} step={0.1} value={block.lineHeight} onChange={(v) => handleChange('lineHeight', v)} onBlur={handleBlur} />
           <PropertyField label={tr('Domyślny kolor tekstu')} type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
         </>
@@ -1479,28 +1479,28 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               minHeight={80}
             />
           </div>
-          <PropertyField label={tr('Poziom nagłówka')} type="select" value={block.level} options={[{value: 1, label: tr('H1 - Największy')}, {value: 2, label: tr('H2 - Średni')}, {value: 3, label: 'H3 - Mniejszy'}]} onChange={(v) => handleChange('level', parseInt(v))} onBlur={handleBlur} />
-          <PropertyField label="Kolor tekstu" type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Poziom nagłówka')} type="select" value={block.level} options={[{value: 1, label: tr('H1 - Największy')}, {value: 2, label: tr('H2 - Średni')}, {value: 3, label: tr('H3 - Mniejszy')}]} onChange={(v) => handleChange('level', parseInt(v))} onBlur={handleBlur} />
+          <PropertyField label={tr('Kolor tekstu')} type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
         </>
       )}
 
       {block.type === 'image' && (
         <>
-          <PropertyField label="URL obrazu" type="image" value={block.src} onChange={(v) => handleChange('src', v)} onBlur={handleBlur} />
-          <PropertyField label="Tekst alternatywny" type="text" value={block.alt} onChange={(v) => handleChange('alt', v)} onBlur={handleBlur} />
-          <PropertyField label={tr('Szerokość')} type="text" value={block.width} onChange={(v) => handleChange('width', v)} onBlur={handleBlur} placeholder="100% lub 300px" />
+          <PropertyField label={tr('URL obrazu')} type="image" value={block.src} onChange={(v) => handleChange('src', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Tekst alternatywny')} type="text" value={block.alt} onChange={(v) => handleChange('alt', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Szerokość')} type="text" value={block.width} onChange={(v) => handleChange('width', v)} onBlur={handleBlur} placeholder={tr('100% lub 300px')} />
           <PropertyField label={tr('Zaokrąglenie')} type="range" min={0} max={30} value={block.borderRadius} onChange={(v) => handleChange('borderRadius', v)} onBlur={handleBlur} />
-          <PropertyField label="Link (opcjonalnie)" type="text" value={block.linkUrl} onChange={(v) => handleChange('linkUrl', v)} onBlur={handleBlur} placeholder="https://..." />
+          <PropertyField label={tr('Link (opcjonalnie)')} type="text" value={block.linkUrl} onChange={(v) => handleChange('linkUrl', v)} onBlur={handleBlur} placeholder="https://..." />
         </>
       )}
 
       {block.type === 'button' && (
         <>
-          <PropertyField label="Tekst przycisku" type="text" value={block.text} onChange={(v) => handleChange('text', v)} onBlur={handleBlur} />
-          <PropertyField label="Link URL" type="text" value={block.linkUrl} onChange={(v) => handleChange('linkUrl', v)} onBlur={handleBlur} />
-          <PropertyField label="Kolor przycisku" type="color" value={block.backgroundColor} onChange={(v) => handleChange('backgroundColor', v)} onBlur={handleBlur} />
-          <PropertyField label="Kolor tekstu" type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
-          <PropertyField label="Rozmiar czcionki" type="range" min={12} max={24} value={block.fontSize} onChange={(v) => handleChange('fontSize', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Tekst przycisku')} type="text" value={block.text} onChange={(v) => handleChange('text', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Link URL')} type="text" value={block.linkUrl} onChange={(v) => handleChange('linkUrl', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Kolor przycisku')} type="color" value={block.backgroundColor} onChange={(v) => handleChange('backgroundColor', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Kolor tekstu')} type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Rozmiar czcionki')} type="range" min={12} max={24} value={block.fontSize} onChange={(v) => handleChange('fontSize', v)} onBlur={handleBlur} />
           <PropertyField label={tr('Zaokrąglenie')} type="range" min={0} max={30} value={block.borderRadius} onChange={(v) => handleChange('borderRadius', v)} onBlur={handleBlur} />
           <PropertyField label={tr('Pełna szerokość')} type="checkbox" value={block.fullWidth} onChange={(v) => handleChange('fullWidth', v)} onBlur={handleBlur} />
         </>
@@ -1526,51 +1526,51 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               minHeight={100}
             />
           </div>
-          <PropertyField label="Autor (opcjonalnie)" type="text" value={block.author} onChange={(v) => handleChange('author', v)} onBlur={handleBlur} />
-          <PropertyField label="Kolor ramki" type="color" value={block.borderColor} onChange={(v) => handleChange('borderColor', v)} onBlur={handleBlur} />
-          <PropertyField label="Kolor tekstu" type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Autor (opcjonalnie)')} type="text" value={block.author} onChange={(v) => handleChange('author', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Kolor ramki')} type="color" value={block.borderColor} onChange={(v) => handleChange('borderColor', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Kolor tekstu')} type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
         </>
       )}
 
       {block.type === 'list' && (
         <>
           <PropertyField
-            label="Elementy listy"
+            label={tr('Elementy listy')}
             type="list"
             value={block.items}
             onChange={(v) => handleChange('items', v)}
             onBlur={handleBlur}
           />
           <PropertyField
-            label="Styl listy"
+            label={tr('Styl listy')}
             type="select"
             value={block.listStyle}
             options={[
-              {value: 'disc', label: '• Kropki'},
-              {value: 'decimal', label: '1. Numerowanie'},
+              {value: 'disc', label: tr('• Kropki')},
+              {value: 'decimal', label: tr('1. Numerowanie')},
               {value: 'none', label: tr('Bez znaczników')}
             ]}
             onChange={(v) => handleChange('listStyle', v)}
             onBlur={handleBlur}
           />
-          <PropertyField label="Kolor tekstu" type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Kolor tekstu')} type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
         </>
       )}
 
       {block.type === 'video' && (
         <>
-          <PropertyField label="URL miniatury" type="image" value={block.thumbnailUrl} onChange={(v) => handleChange('thumbnailUrl', v)} onBlur={handleBlur} />
-          <PropertyField label="URL wideo" type="text" value={block.videoUrl} onChange={(v) => handleChange('videoUrl', v)} onBlur={handleBlur} placeholder="https://youtube.com/..." />
-          <PropertyField label="Kolor przycisku play" type="color" value={block.playButtonColor} onChange={(v) => handleChange('playButtonColor', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('URL miniatury')} type="image" value={block.thumbnailUrl} onChange={(v) => handleChange('thumbnailUrl', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('URL wideo')} type="text" value={block.videoUrl} onChange={(v) => handleChange('videoUrl', v)} onBlur={handleBlur} placeholder="https://youtube.com/..." />
+          <PropertyField label={tr('Kolor przycisku play')} type="color" value={block.playButtonColor} onChange={(v) => handleChange('playButtonColor', v)} onBlur={handleBlur} />
         </>
       )}
 
       {block.type === 'divider' && (
         <>
-          <PropertyField label="Styl" type="select" value={block.style} options={[{value: 'solid', label: tr('Ciągły')}, {value: 'dashed', label: 'Przerywany'}, {value: 'dotted', label: 'Kropkowany'}]} onChange={(v) => handleChange('style', v)} onBlur={handleBlur} />
-          <PropertyField label="Kolor" type="color" value={block.color} onChange={(v) => handleChange('color', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Styl')} type="select" value={block.style} options={[{value: 'solid', label: tr('Ciągły')}, {value: 'dashed', label: tr('Przerywany')}, {value: 'dotted', label: tr('Kropkowany')}]} onChange={(v) => handleChange('style', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Kolor')} type="color" value={block.color} onChange={(v) => handleChange('color', v)} onBlur={handleBlur} />
           <PropertyField label={tr('Grubość')} type="range" min={1} max={5} value={block.thickness} onChange={(v) => handleChange('thickness', v)} onBlur={handleBlur} />
-          <PropertyField label={tr('Szerokość')} type="text" value={block.width} onChange={(v) => handleChange('width', v)} onBlur={handleBlur} placeholder="100% lub 200px" />
+          <PropertyField label={tr('Szerokość')} type="text" value={block.width} onChange={(v) => handleChange('width', v)} onBlur={handleBlur} placeholder={tr('100% lub 200px')} />
         </>
       )}
 
@@ -1583,7 +1583,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
               <Edit3 size={12} />
-              Lewa kolumna
+              {tr('Lewa kolumna')}
             </label>
             <BlockTextEditor
               content={block.leftContent}
@@ -1601,7 +1601,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
               <Edit3 size={12} />
-              Prawa kolumna
+              {tr('Prawa kolumna')}
             </label>
             <BlockTextEditor
               content={block.rightContent}
@@ -1623,7 +1623,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
       {block.type === 'header' && (
         <>
           <PropertyField label={tr('Tytuł')} type="text" value={block.title} onChange={(v) => handleChange('title', v)} onBlur={handleBlur} />
-          <PropertyField label="URL logo" type="image" value={block.logoUrl} onChange={(v) => handleChange('logoUrl', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('URL logo')} type="image" value={block.logoUrl} onChange={(v) => handleChange('logoUrl', v)} onBlur={handleBlur} />
         </>
       )}
 
@@ -1647,7 +1647,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               minHeight={100}
             />
           </div>
-          <PropertyField label="Kolor tekstu" type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Kolor tekstu')} type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
         </>
       )}
 
@@ -1657,7 +1657,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
           <PropertyField label="Instagram URL" type="text" value={block.links?.instagram || ''} onChange={(v) => handleChange('links', { ...block.links, instagram: v })} onBlur={handleBlur} />
           <PropertyField label="YouTube URL" type="text" value={block.links?.youtube || ''} onChange={(v) => handleChange('links', { ...block.links, youtube: v })} onBlur={handleBlur} />
           <PropertyField label="Twitter/X URL" type="text" value={block.links?.twitter || ''} onChange={(v) => handleChange('links', { ...block.links, twitter: v })} onBlur={handleBlur} />
-          <PropertyField label="Rozmiar ikon" type="range" min={24} max={48} value={block.iconSize} onChange={(v) => handleChange('iconSize', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Rozmiar ikon')} type="range" min={24} max={48} value={block.iconSize} onChange={(v) => handleChange('iconSize', v)} onBlur={handleBlur} />
         </>
       )}
     </div>
@@ -1804,7 +1804,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
         }}
       >
         {backgroundImage && activeTab === 'image' && (
-          <img src={backgroundImage} alt="bg" className="w-full h-full object-cover" style={{ opacity: backgroundOpacity / 100 }} />
+          <img src={backgroundImage} alt="" className="w-full h-full object-cover" style={{ opacity: backgroundOpacity / 100 }} />
         )}
       </div>
 
@@ -1820,7 +1820,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
           }`}
         >
           <Droplet size={12} />
-          Kolor
+          {tr('Kolor')}
         </button>
         <button
           type="button"
@@ -1832,7 +1832,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
           }`}
         >
           <Layers2 size={12} />
-          Gradient
+          {tr('Gradient')}
         </button>
         <button
           type="button"
@@ -1844,7 +1844,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
           }`}
         >
           <ImagePlus size={12} />
-          Obraz
+          {tr('Obraz')}
         </button>
       </div>
 
@@ -1873,7 +1873,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
             onClick={() => handleColorChange('transparent', true)}
             className="w-full px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors border border-dashed border-gray-300 dark:border-gray-600"
           >
-            Przezroczyste (brak tła)
+            {tr('Przezroczyste (brak tła)')}
           </button>
         </div>
       )}
@@ -1889,7 +1889,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
                 onClick={() => applyPresetGradient(preset)}
                 className="h-8 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden hover:ring-2 hover:ring-accent-primary-light transition-all"
                 style={{ background: `linear-gradient(135deg, ${preset.color1}, ${preset.color2})` }}
-                title={preset.name}
+                title={tr(preset.name)}
               />
             ))}
           </div>
@@ -1905,7 +1905,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
                   : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600'
               }`}
             >
-              Liniowy
+              {tr('Liniowy')}
             </button>
             <button
               type="button"
@@ -1916,14 +1916,14 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
                   : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600'
               }`}
             >
-              Radialny
+              {tr('Radialny')}
             </button>
           </div>
 
           {/* Kolory gradientu */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="text-[10px] text-gray-500 dark:text-gray-400">Kolor 1</label>
+              <label className="text-[10px] text-gray-500 dark:text-gray-400">{tr('Kolor 1')}</label>
               <input
                 type="color"
                 value={gradientColor1}
@@ -1932,7 +1932,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] text-gray-500 dark:text-gray-400">Kolor 2</label>
+              <label className="text-[10px] text-gray-500 dark:text-gray-400">{tr('Kolor 2')}</label>
               <input
                 type="color"
                 value={gradientColor2}
@@ -1972,7 +1972,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
             <div className="relative">
               <img
                 src={backgroundImage}
-                alt="Background"
+                alt={tr('Tło')}
                 className="w-full h-20 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
               />
               <button
@@ -2079,7 +2079,7 @@ function SpacingEditor({ label, icon: Icon, value, onChange, onBlur, max = 60 })
               : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
-          {isAdvanced ? 'Uproszczony' : 'Zaawansowany'}
+          {isAdvanced ? tr('Uproszczony') : tr('Zaawansowany')}
         </button>
       </div>
 
@@ -2157,7 +2157,7 @@ function BorderEditor({ value, onChange, onBlur }) {
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
           <Square size={12} />
-          Obramowanie
+          {tr('Obramowanie')}
         </label>
         <button
           type="button"
@@ -2168,7 +2168,7 @@ function BorderEditor({ value, onChange, onBlur }) {
               : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
-          {isAdvanced ? 'Uproszczony' : 'Zaawansowany'}
+          {isAdvanced ? tr('Uproszczony') : tr('Zaawansowany')}
         </button>
       </div>
 
@@ -2193,12 +2193,12 @@ function BorderEditor({ value, onChange, onBlur }) {
         <>
           {/* Styl */}
           <div className="space-y-1">
-            <span className="text-[10px] text-gray-400">Styl</span>
+            <span className="text-[10px] text-gray-400">{tr('Styl')}</span>
             <div className="grid grid-cols-3 gap-1">
               {[
                 { value: 'solid', label: tr('Ciągła') },
-                { value: 'dashed', label: 'Przerywana' },
-                { value: 'dotted', label: 'Kropkowana' }
+                { value: 'dashed', label: tr('Przerywana') },
+                { value: 'dotted', label: tr('Kropkowana') }
               ].map((style) => (
                 <button
                   key={style.value}
@@ -2238,13 +2238,13 @@ function BorderEditor({ value, onChange, onBlur }) {
           {/* Tryb zaawansowany - wybór stron */}
           {isAdvanced && (
             <div className="space-y-1">
-              <span className="text-[10px] text-gray-400">Strony</span>
+              <span className="text-[10px] text-gray-400">{tr('Strony')}</span>
               <div className="grid grid-cols-4 gap-1">
                 {[
                   { key: 'top', label: tr('↑ Góra') },
-                  { key: 'right', label: '→ Prawa' },
+                  { key: 'right', label: tr('→ Prawa') },
                   { key: 'bottom', label: tr('↓ Dół') },
-                  { key: 'left', label: '← Lewa' }
+                  { key: 'left', label: tr('← Lewa') }
                 ].map(({ key, label }) => (
                   <button
                     key={key}
@@ -2300,9 +2300,9 @@ function ShadowEditor({ value, onChange, onBlur }) {
     { value: 'all', label: tr('Wszystkie'), icon: '◻' },
     { value: 'bottom', label: tr('Dół'), icon: '⬇' },
     { value: 'top', label: tr('Góra'), icon: '⬆' },
-    { value: 'left', label: 'Lewo', icon: '⬅' },
-    { value: 'right', label: 'Prawo', icon: '➡' },
-    { value: 'horizontal', label: 'Boki', icon: '↔' },
+    { value: 'left', label: tr('Lewo'), icon: '⬅' },
+    { value: 'right', label: tr('Prawo'), icon: '➡' },
+    { value: 'horizontal', label: tr('Boki'), icon: '↔' },
     { value: 'vertical', label: tr('Góra/dół'), icon: '↕' }
   ];
 
@@ -2330,7 +2330,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
-            {preset.name}
+            {tr(preset.name)}
           </button>
         ))}
       </div>
@@ -2339,7 +2339,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
         <>
           {/* Kierunek cienia */}
           <div className="space-y-1">
-            <span className="text-[10px] text-gray-400">Kierunek cienia</span>
+            <span className="text-[10px] text-gray-400">{tr('Kierunek cienia')}</span>
             <div className="grid grid-cols-4 gap-1">
               {directionOptions.slice(0, 4).map((opt) => (
                 <button
@@ -2386,7 +2386,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            {showAdvanced ? '▼ Ukryj zaawansowane' : tr('▶ Pokaż zaawansowane')}
+            {showAdvanced ? tr('▼ Ukryj zaawansowane') : tr('▶ Pokaż zaawansowane')}
           </button>
 
           {showAdvanced && (
@@ -2430,7 +2430,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
           {/* Rozmycie */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[10px] text-gray-400">
-              <span>Rozmycie</span>
+              <span>{tr('Rozmycie')}</span>
               <span className="font-medium text-gray-600 dark:text-gray-300">{shadow.blur}px</span>
             </div>
             <input
@@ -2447,7 +2447,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
           {/* Rozszerzenie */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[10px] text-gray-400">
-              <span>Rozszerzenie</span>
+              <span>{tr('Rozszerzenie')}</span>
               <span className="font-medium text-gray-600 dark:text-gray-300">{shadow.spread}px</span>
             </div>
             <input
@@ -2669,7 +2669,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
             </button>
           </div>
           {localValue && (
-            <img src={localValue} alt="Preview" className="w-full h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
+            <img src={localValue} alt={tr('Podgląd')} className="w-full h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
           )}
         </div>
       )}
@@ -2712,7 +2712,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
             className="w-full py-2 text-sm text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg flex items-center justify-center gap-1"
           >
             <Plus size={14} />
-            Dodaj element
+            {tr('Dodaj element')}
           </button>
         </div>
       )}

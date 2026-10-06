@@ -13,6 +13,7 @@ import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import { confirmDialog } from '../../lib/dialog';
+import { tr } from '../../i18n';
 
 const TEAM_MEMBER_TABLE = {
   worship: 'worship_team', media: 'media_team', atmosfera: 'atmosfera_members',
@@ -29,7 +30,7 @@ const SYSTEM_TEAM_OPTIONS = [
   { value: 'atmosfera', label: 'Atmosfera Team' }, { value: 'kids', label: 'Małe Avenit' },
   { value: 'mc', label: 'Scena / MC' },
 ];
-const teamLabel = (t, moduleLabelMap) => moduleLabelMap?.[t] || TEAM_LABELS[t] || t;
+const teamLabel = (t, moduleLabelMap) => moduleLabelMap?.[t] || (TEAM_LABELS[t] ? tr(TEAM_LABELS[t]) : t);
 const csvNames = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
 const uid = (p) => `${p}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 const normLayout = (l) => (l && typeof l === 'object' ? { sections: Array.isArray(l.sections) ? l.sections : [], roles: l.roles && typeof l.roles === 'object' ? l.roles : {} } : { sections: [], roles: {} });
@@ -153,7 +154,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
         isSelfAssignment: !!(me?.email && member.email && me.email.toLowerCase() === member.email.toLowerCase()),
       });
       await fetchAssignmentsForEvents([event.id]); force((n) => n + 1);
-    } catch (e) { toast.error(e.message || 'Błąd zapisu przypisania'); }
+    } catch (e) { toast.error(e.message || tr('Błąd zapisu przypisania')); }
   };
 
   const addManual = async (sectionKey, role) => {
@@ -202,7 +203,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
     setNewSection('');
   };
   const delSection = async (sectionKey) => {
-    if (!await confirmDialog('Usunąć tę sekcję wraz z przypisaniami?')) return;
+    if (!await confirmDialog(tr('Usunąć tę sekcję wraz z przypisaniami?'))) return;
     // wyczyść przypisania sekcji z silnika
     for (const role of rolesForSection({ key: sectionKey, isCustom: true })) {
       for (const n of csvNames(assign?.[sectionKey]?.[role.key])) { try { await removeEventAssignment(event.id, sectionKey, role.key, n); } catch { /* ignore */ } }
@@ -234,18 +235,18 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
     setSending(sectionKey);
     try {
       const res = await sendInvitesForEvent(event.id, sectionKey);
-      if (!res.success) { toast.error('Nie udało się wysłać: ' + (res.error || '')); return; }
-      if (res.emailReady === false) { toast.error(res.error || 'Brak konfiguracji e-mail.'); return; }
-      toast.success(res.sent ? `Wysłano zaproszenia (${res.sent})${res.failed ? `, niepowodzeń: ${res.failed}` : ''}.` : 'Brak nowych osób do zaproszenia.');
+      if (!res.success) { toast.error(tr('Nie udało się wysłać: {msg}', { msg: res.error || '' })); return; }
+      if (res.emailReady === false) { toast.error(res.error || tr('Brak konfiguracji e-mail.')); return; }
+      toast.success(res.sent ? tr('Wysłano zaproszenia ({n})', { n: res.sent }) + (res.failed ? tr(', niepowodzeń: {n}', { n: res.failed }) : '') + '.' : tr('Brak nowych osób do zaproszenia.'));
       await fetchAssignmentsForEvents([event.id]); force((n) => n + 1);
     } finally { setSending(null); }
   };
 
   const statusDot = (sectionKey, roleKey, name) => {
     const s = getEventAssignmentStatus(event.id, sectionKey, roleKey, name);
-    if (s === 'accepted') return <Check size={12} className="text-green-500" title="Potwierdził" />;
-    if (s === 'rejected') return <XIcon size={12} className="text-red-500" title="Odmówił" />;
-    if (s === 'pending') return <Clock size={12} className="text-amber-500" title="Oczekuje" />;
+    if (s === 'accepted') return <Check size={12} className="text-green-500" title={tr('Potwierdził')} />;
+    if (s === 'rejected') return <XIcon size={12} className="text-red-500" title={tr('Odmówił')} />;
+    if (s === 'pending') return <Clock size={12} className="text-amber-500" title={tr('Oczekuje')} />;
     return null;
   };
 
@@ -260,13 +261,13 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <p className="text-xs text-gray-400">
             {teamTypes.length
-              ? <>Służby na tym wydarzeniu: <span className="text-gray-500 dark:text-gray-300">{teamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ')}</span></>
-              : 'Brak wybranych służb dla tego wydarzenia.'}
+              ? <>{tr('Służby na tym wydarzeniu:')} <span className="text-gray-500 dark:text-gray-300">{teamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ')}</span></>
+              : tr('Brak wybranych służb dla tego wydarzenia.')}
           </p>
           <div className="flex items-center gap-2">
-            {isOverridden && <button onClick={resetTeams} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Przywróć domyślne</button>}
+            {isOverridden && <button onClick={resetTeams} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">{tr('Przywróć domyślne')}</button>}
             <button onClick={() => setShowPicker((v) => !v)} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
-              <Settings2 size={14} /> Zarządzaj służbami
+              <Settings2 size={14} /> {tr('Zarządzaj służbami')}
             </button>
           </div>
         </div>
@@ -274,23 +275,23 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
       {managing && showPicker && (
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-3">
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Zaznacz służby dla tego wydarzenia (pojawią się w grafiku i w zakładce „Służby"):</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{tr('Zaznacz służby dla tego wydarzenia (pojawią się w grafiku i w zakładce „Służby"):')}</p>
             <div className="flex flex-wrap gap-1.5">
               {teamOptions.map((o) => (
                 <button key={o.value} type="button" onClick={() => toggleTeamType(o.value)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${teamTypes.includes(o.value) ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                  {o.label}
+                  {TEAM_LABELS[o.value] ? tr(TEAM_LABELS[o.value]) : o.label}
                 </button>
               ))}
             </div>
-            {defaultTeamTypes?.length ? <p className="text-[11px] text-gray-400 mt-2">Domyślnie (z typu/modułu): {defaultTeamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ')}.</p> : null}
+            {defaultTeamTypes?.length ? <p className="text-[11px] text-gray-400 mt-2">{tr('Domyślnie (z typu/modułu): {list}.', { list: defaultTeamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ') })}</p> : null}
           </div>
           <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Dodaj własną sekcję (poza służbami modułów), np. „Kuchnia", „Porządkowi":</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{tr('Dodaj własną sekcję (poza służbami modułów), np. „Kuchnia", „Porządkowi":')}</p>
             <div className="flex items-center gap-2">
               <input value={newSection} onChange={(e) => setNewSection(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addSection(); }}
-                placeholder="Nazwa sekcji…" className="flex-1 max-w-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
-              <button onClick={addSection} className="text-sm px-3 py-1.5 rounded-lg bg-accent-primary text-white flex items-center gap-1.5"><Plus size={14} /> Dodaj sekcję</button>
+                placeholder={tr('Nazwa sekcji…')} className="flex-1 max-w-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
+              <button onClick={addSection} className="text-sm px-3 py-1.5 rounded-lg bg-accent-primary text-white flex items-center gap-1.5"><Plus size={14} /> {tr('Dodaj sekcję')}</button>
             </div>
           </div>
         </div>
@@ -299,8 +300,8 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
       {!hasAnySection ? (
         <EmptyState
           icon={Users}
-          title="Brak służb na tym wydarzeniu."
-          subtitle={managing ? 'Kliknij „Zarządzaj służbami", aby dodać służby lub własną sekcję.' : 'Służby nie zostały skonfigurowane.'}
+          title={tr('Brak służb na tym wydarzeniu.')}
+          subtitle={managing ? tr('Kliknij „Zarządzaj służbami", aby dodać służby lub własną sekcję.') : tr('Służby nie zostały skonfigurowane.')}
           compact
         />
       ) : (effectiveTeamTypes.length > 0 && teamData === null) ? <Spinner center size={24} /> : (
@@ -314,23 +315,23 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
                     <Users size={16} className="text-accent-primary" /> {section.label}
-                    {section.isCustom && <span className="text-[10px] uppercase tracking-wide text-gray-400 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">własna</span>}
+                    {section.isCustom && <span className="text-[10px] uppercase tracking-wide text-gray-400 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">{tr('własna')}</span>}
                   </h3>
                   <div className="flex items-center gap-2">
                     {canManage && !section.isCustom && (
                       <button onClick={() => sendInvites(section.key)} disabled={sending === section.key}
                         className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5 disabled:opacity-60">
-                        <Send size={14} /> {sending === section.key ? 'Wysyłanie…' : `Wyślij zaproszenia${pendingCount ? ` (${pendingCount})` : ''}`}
+                        <Send size={14} /> {sending === section.key ? tr('Wysyłanie…') : tr('Wyślij zaproszenia') + (pendingCount ? ` (${pendingCount})` : '')}
                       </button>
                     )}
                     {canManage && section.isCustom && (
-                      <button onClick={() => delSection(section.key)} title="Usuń sekcję" className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                      <button onClick={() => delSection(section.key)} title={tr('Usuń sekcję')} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
                     )}
                   </div>
                 </div>
 
                 {roles.length === 0 ? (
-                  <p className="text-sm text-gray-400">{section.isCustom ? 'Dodaj role do tej sekcji.' : 'Brak zdefiniowanych ról dla tej służby — dodaj własną rolę poniżej lub zdefiniuj w module.'}</p>
+                  <p className="text-sm text-gray-400">{section.isCustom ? tr('Dodaj role do tej sekcji.') : tr('Brak zdefiniowanych ról dla tej służby — dodaj własną rolę poniżej lub zdefiniuj w module.')}</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {roles.map((role) => {
@@ -341,7 +342,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                         <div key={key} className="rounded-xl border border-gray-100 dark:border-gray-800 p-3">
                           <div className="flex items-center justify-between gap-2 mb-1.5">
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{role.name}</span>
-                            {canManage && role.isCustom && <button onClick={() => delRole(section.key, role.key)} title="Usuń rolę" className="p-1 text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>}
+                            {canManage && role.isCustom && <button onClick={() => delRole(section.key, role.key)} title={tr('Usuń rolę')} className="p-1 text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>}
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {selected.length === 0 && <span className="text-xs text-gray-400">—</span>}
@@ -355,7 +356,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                             {canManage && (
                               <button data-role-toggle={key} onClick={() => setOpenRole(openRole === key ? null : key)}
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs border border-dashed border-gray-300 dark:border-gray-600 text-accent-primary hover:bg-accent-primary/5">
-                                <Plus size={12} /> Dodaj
+                                <Plus size={12} /> {tr('Dodaj')}
                               </button>
                             )}
                           </div>
@@ -370,7 +371,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                                         className="w-4 h-4 rounded accent-accent-primary" />
                                       <span className={teamData?.[section.key]?.unavailable?.has(m.full_name) ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-200'}>
                                         {m.full_name}
-                                        {teamData?.[section.key]?.unavailable?.has(m.full_name) && <span className="ml-1 text-[11px] opacity-80">(zgłoszona nieobecność)</span>}
+                                        {teamData?.[section.key]?.unavailable?.has(m.full_name) && <span className="ml-1 text-[11px] opacity-80">{tr('(zgłoszona nieobecność)')}</span>}
                                       </span>
                                     </label>
                                   ))}
@@ -380,8 +381,8 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                               <div className="flex items-center gap-2 p-2 border-t border-gray-100 dark:border-gray-800">
                                 <input value={manualText[key] || ''} onChange={(e) => setManualText((mm) => ({ ...mm, [key]: e.target.value }))}
                                   onKeyDown={(e) => { if (e.key === 'Enter') addManual(section.key, role); }}
-                                  placeholder="Dopisz osobę ręcznie…" className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
-                                <button onClick={() => addManual(section.key, role)} className="text-xs px-2.5 py-1.5 rounded-lg bg-accent-primary text-white whitespace-nowrap">Dopisz</button>
+                                  placeholder={tr('Dopisz osobę ręcznie…')} className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
+                                <button onClick={() => addManual(section.key, role)} className="text-xs px-2.5 py-1.5 rounded-lg bg-accent-primary text-white whitespace-nowrap">{tr('Dopisz')}</button>
                               </div>
                             </div>
                           )}
@@ -397,13 +398,13 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                     <div className="mt-3 flex items-center gap-2">
                       <input value={newRole} onChange={(e) => setNewRole(e.target.value)} autoFocus
                         onKeyDown={(e) => { if (e.key === 'Enter') addRole(section.key); if (e.key === 'Escape') { setAddingRoleFor(null); setNewRole(''); } }}
-                        placeholder="Nazwa roli…" className="flex-1 max-w-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
-                      <button onClick={() => addRole(section.key)} className="text-sm px-3 py-1.5 rounded-lg bg-accent-primary text-white">Dodaj</button>
-                      <button onClick={() => { setAddingRoleFor(null); setNewRole(''); }} className="text-sm px-2 py-1.5 text-gray-400 hover:text-gray-600">Anuluj</button>
+                        placeholder={tr('Nazwa roli…')} className="flex-1 max-w-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
+                      <button onClick={() => addRole(section.key)} className="text-sm px-3 py-1.5 rounded-lg bg-accent-primary text-white">{tr('Dodaj')}</button>
+                      <button onClick={() => { setAddingRoleFor(null); setNewRole(''); }} className="text-sm px-2 py-1.5 text-gray-400 hover:text-gray-600">{tr('Anuluj')}</button>
                     </div>
                   ) : (
                     <button onClick={() => { setAddingRoleFor(section.key); setNewRole(''); }} className="mt-3 inline-flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary">
-                      <Plus size={15} /> Dodaj rolę
+                      <Plus size={15} /> {tr('Dodaj rolę')}
                     </button>
                   )
                 )}

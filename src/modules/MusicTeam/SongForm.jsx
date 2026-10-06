@@ -431,7 +431,7 @@ const MUSIC_SECTIONS = [
   { label: 'Solo', getTemplate: () => `<div>[SOLO]</div><div>${createBar()}${createBar()}${createBar()}${createLastBar()}</div>`, isHtml: true },
   { label: 'Outro', getTemplate: () => `<div>[OUTRO]</div><div>${createBar()}${createBar()}${createBar()}${createLastBar()}</div>`, isHtml: true },
   { label: 'Pusty Takt', getTemplate: () => `${createLastBar()}`, isHtml: true },
-  { label: tr('Podwójny Takt'), getTemplate: () => `${createLastDoubleBar()}`, isHtml: true },
+  { label: 'Podwójny Takt', getTemplate: () => `${createLastDoubleBar()}`, isHtml: true },
   { label: '4 Takty', getTemplate: () => `<div>${createBar()}${createBar()}${createBar()}${createLastBar()}</div>`, isHtml: true },
 ];
 
@@ -480,7 +480,7 @@ const TagMultiSelect = ({ label, options, value = [], onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer min-h-[50px] flex flex-wrap gap-2 hover:border-accent-primary-light dark:hover:border-accent-primary-light transition"
       >
-        {value.length === 0 && <span className="text-gray-400 dark:text-gray-500 pt-0.5">Wybierz tagi...</span>}
+        {value.length === 0 && <span className="text-gray-400 dark:text-gray-500 pt-0.5">{tr('Wybierz tagi...')}</span>}
         {value.map(tag => (
           <span key={tag} className="bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/40 text-accent-secondary dark:text-accent-secondary-light px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border border-accent-secondary-lighter dark:border-accent-secondary-dark">
             {tag}
@@ -1113,7 +1113,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
       subtitle={tr('Uzupełnij szczegóły utworu')}
       footer={<>
         <Button variant="secondary" onClick={requestClose}>
-          Anuluj
+          {tr('Anuluj')}
         </Button>
         <Button onClick={handleSubmit}>
           {tr('Zapisz Pieśń')}
@@ -1129,20 +1129,20 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
               onClick={() => setActiveTab('basic')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'basic' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
             >
-              Informacje Podstawowe
+              {tr('Informacje Podstawowe')}
             </button>
             <button
               onClick={() => setActiveTab('lyrics')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'lyrics' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
             >
-              Tekst i Chwyty
+              {tr('Tekst i Chwyty')}
             </button>
             <button
               onClick={() => setActiveTab('attachments')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'attachments' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
             >
               <FileText size={14} />
-              Załączniki {(formData.attachments || []).length > 0 && <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-xs">{formData.attachments.length}</span>}
+              {tr('Załączniki')} {(formData.attachments || []).length > 0 && <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-xs">{formData.attachments.length}</span>}
             </button>
           </div>
 
@@ -1160,10 +1160,10 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Autor</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Autor')}</label>
                   <input 
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
-                    placeholder="Np. Chris Tomlin"
+                    placeholder={tr('Np. Chris Tomlin')}
                     value={formData.author}
                     onChange={e => setFormData({...formData, author: e.target.value})}
                   />
@@ -1173,15 +1173,15 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
               {/* Rząd 2: Dane Muzyczne */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <CustomSelect
-                  label="Tonacja"
+                  label={tr('Tonacja')}
                   options={KEYS}
                   value={formData.key}
                   onChange={val => setFormData({...formData, key: val})}
-                  placeholder="Klucz"
+                  placeholder={tr('Klucz')}
                   icon={Music}
                 />
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Metrum</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Metrum')}</label>
                   <div className="relative">
                     <Hash size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
@@ -1193,7 +1193,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tempo (BPM)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tempo (BPM)')}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -1209,7 +1209,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
 
               {/* Tagi */}
               <TagMultiSelect
-                label="Tagi"
+                label={tr('Tagi')}
                 options={availableTags}
                 value={formData.tags}
                 onChange={val => setFormData({...formData, tags: val})}
@@ -1225,7 +1225,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tekst Pieśni (Lyrics)')}</label>
                     <textarea
                       className="flex-1 w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition resize-none font-mono text-sm leading-relaxed"
-                      placeholder="Wpisz tekst tutaj..."
+                      placeholder={tr('Wpisz tekst tutaj...')}
                       value={formData.lyrics}
                       onChange={e => setFormData({...formData, lyrics: e.target.value})}
                     />
@@ -1233,7 +1233,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
 
                  {/* KOLUMNA 2: CHWYTY / TAKTY (CHORDS_BARS) - ZAAWANSOWANY EDYTOR */}
                  <div className="flex flex-col h-full">
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Chwyty / Takty</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">{tr('Chwyty / Takty')}</label>
 
                     {/* PASEK NARZĘDZI - FORMATOWANIE */}
                     <div className="p-2 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800/80 border border-b-0 border-gray-200 dark:border-gray-700 rounded-t-xl">
@@ -1244,7 +1244,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           onClick={handleUndo}
                           disabled={historyIndex <= 0}
                           className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                          title="Cofnij (Ctrl+Z)"
+                          title={tr('Cofnij (Ctrl+Z)')}
                         >
                           <Undo2 size={14} />
                         </button>
@@ -1268,7 +1268,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                             className="h-6 px-2 text-[11px] font-bold bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 border border-accent-secondary-lighter dark:border-accent-secondary-dark rounded text-accent-secondary dark:text-accent-secondary-light cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent-secondary-light"
                             title={tr('Wybierz tonację')}
                           >
-                            <option value="">Tonacja</option>
+                            <option value="">{tr('Tonacja')}</option>
                             {KEYS.map((k) => (
                               <option key={k} value={k}>{k}</option>
                             ))}
@@ -1290,7 +1290,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                                     ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
                                     : 'bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 border-accent-secondary-lighter dark:border-accent-secondary-dark text-accent-secondary dark:text-accent-secondary-light hover:bg-accent-secondary-lighter dark:hover:bg-accent-secondary-darkest/50'
                                 }`}
-                                title={`${label} stopień: ${fullChord}`}
+                                title={tr('{label} stopień: {chord}', { label, chord: fullChord })}
                               >
                                 <span className="text-[9px] opacity-60 mr-0.5">{label}</span>
                                 {fullChord}
@@ -1308,14 +1308,14 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           <button
                             onMouseDown={(e) => { e.preventDefault(); execFormat('bold'); }}
                             className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 hover:text-accent-primary transition"
-                            title="Pogrubienie (Ctrl+B)"
+                            title={tr('Pogrubienie (Ctrl+B)')}
                           >
                             <Bold size={14} />
                           </button>
                           <button
                             onMouseDown={(e) => { e.preventDefault(); execFormat('italic'); }}
                             className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 hover:text-accent-primary transition"
-                            title="Kursywa (Ctrl+I)"
+                            title={tr('Kursywa (Ctrl+I)')}
                           >
                             <Italic size={14} />
                           </button>
@@ -1326,13 +1326,13 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         {/* Rozmiar czcionki dla zaznaczenia */}
                         <div className="flex items-center gap-1.5">
                           <Type size={14} className="text-gray-400" />
-                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Rozmiar:</span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{tr('Rozmiar:')}</span>
                           {[1, 2, 3, 4, 5, 6, 7].map((size) => (
                             <button
                               key={size}
                               onMouseDown={(e) => { e.preventDefault(); execFontSizeFormat(size); }}
                               className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 hover:text-accent-primary transition text-[10px] font-bold"
-                              title={`Rozmiar ${size}`}
+                              title={tr('Rozmiar {n}', { n: size })}
                             >
                               {size}
                             </button>
@@ -1343,7 +1343,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
 
                         {/* Globalna czcionka bazowa */}
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Baza:</span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{tr('Baza:')}</span>
                           <button
                             onClick={() => setChordsFontSize(Math.max(10, chordsFontSize - 2))}
                             className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
@@ -1364,7 +1364,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         {/* Interlinia */}
                         <div className="flex items-center gap-1.5">
                           <AlignJustify size={14} className="text-gray-400" />
-                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Interlinia:</span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{tr('Interlinia:')}</span>
                           <button
                             onClick={() => setChordsLineHeight(Math.max(1.2, chordsLineHeight - 0.2))}
                             className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
@@ -1391,7 +1391,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                             className="px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-200 dark:border-gray-600 transition flex items-center gap-1"
                           >
                             <PlusCircle size={10} className="text-accent-primary-light dark:text-accent-primary-light"/>
-                            {section.label}
+                            {tr(section.label)}
                           </button>
                         ))}
 
@@ -1403,33 +1403,33 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           className="px-2.5 py-1 bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 hover:bg-accent-secondary-lighter dark:hover:bg-accent-secondary-darkest/50 text-accent-secondary dark:text-accent-secondary-light text-[11px] font-bold rounded-md border border-accent-secondary-lighter dark:border-accent-secondary-dark transition font-mono"
                           title={tr('Takt ze stałą szerokością (jeśli w takcie - dodaje po nim)')}
                         >
-                          |takt|
+                          |{tr('takt')}|
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor(' '.repeat(TAB_SIZE)); }}
                           className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-bold rounded-md border border-blue-200 dark:border-blue-800 transition"
-                          title={`Duża spacja (${TAB_SIZE} znaków) lub Tab`}
+                          title={tr('Duża spacja ({n} znaków) lub Tab', { n: TAB_SIZE })}
                         >
                           TAB
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor(' '.repeat(SMALL_TAB_SIZE)); }}
                           className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-bold rounded-md border border-blue-200 dark:border-blue-800 transition"
-                          title={`Mała spacja (${SMALL_TAB_SIZE} znaków) lub Shift+Tab`}
+                          title={tr('Mała spacja ({n} znaków) lub Shift+Tab', { n: SMALL_TAB_SIZE })}
                         >
                           SPC
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor('\n'); }}
                           className="px-2.5 py-1 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300 text-[11px] font-bold rounded-md border border-green-200 dark:border-green-800 transition flex items-center gap-1"
-                          title="Nowa linia"
+                          title={tr('Nowa linia')}
                         >
                           <CornerDownLeft size={10} />
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor('\n────────────────────────────────\n'); }}
                           className="px-2.5 py-1 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-300 dark:border-gray-500 transition"
-                          title="Linia pozioma (separator)"
+                          title={tr('Linia pozioma (separator)')}
                         >
                           ───
                         </button>
@@ -1443,7 +1443,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor('𝄆  𝄇'); }}
                           className="px-2.5 py-1 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-[11px] font-bold rounded-md border border-purple-200 dark:border-purple-800 transition font-mono"
-                          title="Znaki repetycji"
+                          title={tr('Znaki repetycji')}
                         >
                           𝄆 𝄇
                         </button>
@@ -1466,7 +1466,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                     <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-t-0 border-gray-200 dark:border-gray-700 rounded-b-xl flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                          | = takt ({BAR_WIDTH}px) • Tekst w takcie nie przesuwa kresek • Zmiana rozmiaru nie wpływa na położenie
+                          {tr('| = takt ({n}px) • Tekst w takcie nie przesuwa kresek • Zmiana rozmiaru nie wpływa na położenie', { n: BAR_WIDTH })}
                         </span>
                         <button
                           onClick={() => setShowShortcutsHelp(!showShortcutsHelp)}
@@ -1478,7 +1478,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         </button>
                       </div>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
-                        {(formData.chords_bars || '').length} znaków
+                        {tr('{n} znaków', { n: (formData.chords_bars || '').length })}
                       </span>
                     </div>
 
@@ -1493,17 +1493,16 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-[11px]">
                           <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{tr('Takt (stała szerokość)')}</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">|</kbd></div>
-                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Duża spacja ({TAB_SIZE} znaków)</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Tab</kbd></div>
-                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Mała spacja ({SMALL_TAB_SIZE} znaki)</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Shift+Tab</kbd></div>
-                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Pogrubienie</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Ctrl+B</kbd></div>
-                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Kursywa</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Ctrl+I</kbd></div>
+                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{tr('Duża spacja ({n} znaków)', { n: TAB_SIZE })}</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Tab</kbd></div>
+                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{tr('Mała spacja ({n} znaki)', { n: SMALL_TAB_SIZE })}</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Shift+Tab</kbd></div>
+                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{tr('Pogrubienie')}</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Ctrl+B</kbd></div>
+                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{tr('Kursywa')}</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Ctrl+I</kbd></div>
                           <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{tr('Cofnij / Ponów')}</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Ctrl+Z / Y</kbd></div>
                         </div>
                         <div className="mt-3 pt-2 border-t border-blue-200 dark:border-blue-700">
                           <p className="text-[11px] text-blue-700 dark:text-blue-300 font-medium mb-1">{tr('Stałe takty (jak w Pages):')}</p>
                           <p className="text-[10px] text-gray-600 dark:text-gray-400">
-                            Każdy takt ma stałą szerokość {BAR_WIDTH}px. Tekst wpisany w takcie (nawet z różnymi rozmiarami czcionki)
-                            nie przesuwa następnych kresek. Użyj przycisków sekcji lub klawisza | aby dodać takty.
+                            {tr('Każdy takt ma stałą szerokość {n}px. Tekst wpisany w takcie (nawet z różnymi rozmiarami czcionki) nie przesuwa następnych kresek. Użyj przycisków sekcji lub klawisza | aby dodać takty.', { n: BAR_WIDTH })}
                           </p>
                         </div>
                       </div>
@@ -1518,7 +1517,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
               {/* DODAWANIE PLIKU */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
-                  <Upload size={16} className="text-accent-primary-light" /> Prześlij plik
+                  <Upload size={16} className="text-accent-primary-light" /> {tr('Prześlij plik')}
                 </h3>
                 <div
                   onDragOver={handleDragOver}
@@ -1552,7 +1551,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
               {/* DODAWANIE LINKU */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
-                  <LinkIcon size={16} className="text-accent-secondary-light" /> Dodaj link
+                  <LinkIcon size={16} className="text-accent-secondary-light" /> {tr('Dodaj link')}
                 </h3>
                 <div className="space-y-3">
                   <input
@@ -1563,7 +1562,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                   />
                   <input
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm outline-none focus:border-accent-primary-light transition"
-                    placeholder="Opis linku (np. Tutorial na YouTube)"
+                    placeholder={tr('Opis linku (np. Tutorial na YouTube)')}
                     value={newLinkDescription}
                     onChange={e => setNewLinkDescription(e.target.value)}
                   />
@@ -1572,7 +1571,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                     disabled={!newLink}
                     className="px-6 py-2.5 bg-gradient-to-r from-accent-secondary-light to-accent-primary-light text-white rounded-xl font-bold text-sm hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Dodaj Link
+                    {tr('Dodaj Link')}
                   </button>
                 </div>
               </div>
@@ -1580,7 +1579,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
               {/* LISTA ZAŁĄCZNIKÓW */}
               <div>
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4">
-                  Załączniki ({(formData.attachments || []).length})
+                  {tr('Załączniki')} ({(formData.attachments || []).length})
                 </h3>
 
                 {(!formData.attachments || formData.attachments.length === 0) ? (
@@ -1603,7 +1602,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                                   className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white outline-none focus:border-accent-primary-light"
                                   value={editingDescription}
                                   onChange={e => setEditingDescription(e.target.value)}
-                                  placeholder="Wpisz opis..."
+                                  placeholder={tr('Wpisz opis...')}
                                   autoFocus
                                 />
                                 <button
@@ -1616,7 +1615,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                                   onClick={() => { setEditingAttachmentIdx(null); setEditingDescription(''); }}
                                   className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm"
                                 >
-                                  Anuluj
+                                  {tr('Anuluj')}
                                 </button>
                               </div>
                             ) : (
@@ -1637,7 +1636,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                             <button
                               onClick={() => startEditingDescription(idx)}
                               className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"
-                              title="Edytuj opis"
+                              title={tr('Edytuj opis')}
                             >
                               <Edit3 size={16} />
                             </button>

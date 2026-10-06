@@ -24,7 +24,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
 
   const handleSendTest = async () => {
     if (!testEmail.trim()) {
-      toast.error('Podaj adres email');
+      toast.error(tr('Podaj adres email'));
       return;
     }
 
@@ -45,14 +45,14 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
       }
 
       if (data?.success) {
-        toast.success(`Email testowy wysłany na: ${testEmail}`);
+        toast.success(tr('Email testowy wysłany na: {email}', { email: testEmail }));
         setShowTestForm(false);
       } else {
         throw new Error(data?.error || tr('Nie udało się wysłać'));
       }
     } catch (err) {
       console.error('Error sending test:', err);
-      toast.error(`Błąd podczas wysyłania testu: ${err.message}`);
+      toast.error(tr('Błąd podczas wysyłania testu: {msg}', { msg: err.message }));
     } finally {
       setSending(false);
     }
@@ -70,9 +70,9 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
       footer={<>
         <p className="mr-auto text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
           <Sparkles size={12} className="text-accent-primary-light" />
-          Podgląd z przykładowymi danymi. Zmienne jak {'{{imie}}'} będą zastąpione podczas wysyłki.
+          {tr('Podgląd z przykładowymi danymi. Zmienne jak {var} będą zastąpione podczas wysyłki.', { var: '{{imie}}' })}
         </p>
-        <Button variant="secondary" onClick={onClose}>Zamknij</Button>
+        <Button variant="secondary" onClick={onClose}>{tr('Zamknij')}</Button>
       </>}
     >
       {/* Pasek narzędzi: tryb podglądu + test */}
@@ -88,7 +88,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
             }`}
           >
             <Monitor size={16} />
-            <span className="text-xs font-medium hidden sm:inline">Desktop</span>
+            <span className="text-xs font-medium hidden sm:inline">{tr('Desktop')}</span>
           </button>
           <button
             onClick={() => setViewMode('mobile')}
@@ -99,7 +99,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
             }`}
           >
             <Smartphone size={16} />
-            <span className="text-xs font-medium hidden sm:inline">Mobile</span>
+            <span className="text-xs font-medium hidden sm:inline">{tr('Mobile')}</span>
           </button>
         </div>
 
@@ -109,7 +109,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
           icon={Send}
           onClick={() => setShowTestForm(!showTestForm)}
         >
-          Test
+          {tr('Test')}
         </Button>
       </div>
 
@@ -123,12 +123,12 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
                 type="email"
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
-                placeholder="Wpisz adres email do testu..."
+                placeholder={tr('Wpisz adres email do testu...')}
                 className="w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all"
               />
             </div>
             <Button icon={Send} onClick={handleSendTest} loading={sending}>
-              Wyślij
+              {tr('Wyślij')}
             </Button>
           </div>
         </div>
@@ -156,16 +156,16 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
           <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-600">
             <div className="space-y-1.5 text-xs">
               <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                <span className="text-gray-400 dark:text-gray-500 w-10">Od:</span>
+                <span className="text-gray-400 dark:text-gray-500 w-10">{tr('Od:')}</span>
                 <span className="font-medium">{tr('Twój Kościół')}</span>
                 <span className="text-gray-400">&lt;newsletter@kosciol.pl&gt;</span>
               </p>
               <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                <span className="text-gray-400 dark:text-gray-500 w-10">Do:</span>
+                <span className="text-gray-400 dark:text-gray-500 w-10">{tr('Do:')}</span>
                 <span>jan.kowalski@example.com</span>
               </p>
               <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                <span className="text-gray-400 dark:text-gray-500 w-10">Temat:</span>
+                <span className="text-gray-400 dark:text-gray-500 w-10">{tr('Temat:')}</span>
                 <span className="font-medium text-gray-900 dark:text-white">{subject}</span>
               </p>
             </div>

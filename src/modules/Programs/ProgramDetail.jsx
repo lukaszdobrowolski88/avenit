@@ -21,7 +21,7 @@ import { useCampus } from '../../contexts/CampusContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { confirmDialog, promptDialog } from '../../lib/dialog';
 import Modal from '../../components/Modal';
@@ -38,10 +38,10 @@ const MUSICAL_KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G
 
 // Item types for schedule - inspired by Planning Center
 const ITEM_TYPES = {
-  item: { label: 'Element', icon: Type, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800' },
+  item: { label: tr('Element'), icon: Type, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800' },
   header: { label: tr('Nagłówek'), icon: MoreHorizontal, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
   song: { label: tr('Pieśń'), icon: Music, color: 'text-accent-primary dark:text-accent-primary-light', bg: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30' },
-  media: { label: 'Media', icon: Image, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+  media: { label: tr('Media'), icon: Image, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
 };
 
 // Format time as MM:SS
@@ -174,7 +174,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       >
         <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
+          {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
         </span>
       </div>
 
@@ -190,7 +190,7 @@ const CustomDatePicker = ({ value, onChange }) => {
         >
            <div className="flex justify-between items-center mb-4">
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronLeft size={18} /></button>
-             <span className="text-sm font-bold capitalize text-gray-800 dark:text-gray-200">{viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
+             <span className="text-sm font-bold capitalize text-gray-800 dark:text-gray-200">{viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronRight size={18} /></button>
            </div>
            <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
@@ -243,7 +243,7 @@ const ElementSelector = ({ value, onChange, options }) => {
       <div className="relative">
         <input
           className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-accent-primary-light/20 outline-none placeholder:text-gray-400 dark:placeholder-gray-600"
-          placeholder="Wybierz lub wpisz..."
+          placeholder={tr('Wybierz lub wpisz...')}
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
@@ -278,7 +278,7 @@ const ElementSelector = ({ value, onChange, options }) => {
                 setIsOpen(false);
               }}
             >
-              {opt}
+              {tr(opt)}
             </div>
           ))}
         </div>,
@@ -324,7 +324,7 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-sm">Wybierz osoby...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-sm">{tr('Wybierz osoby...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary-dark dark:text-accent-primary-lighter px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark flex items-center gap-1">
@@ -429,7 +429,7 @@ const SongSelector = ({ songs, onSelect, suggestions = [] }) => {
         className="w-full px-3 py-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border border-accent-primary-lighter dark:border-accent-primary-dark rounded-lg text-sm text-accent-primary-dark dark:text-accent-primary-lighter font-medium flex items-center justify-between cursor-pointer hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 transition"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>+ Wybierz pieśń{suggestions.length > 0 ? ` (${suggestions.length} sugerowanych)` : '...'}</span>
+        <span>{suggestions.length > 0 ? tr('+ Wybierz pieśń ({n} sugerowanych)', { n: suggestions.length }) : tr('+ Wybierz pieśń...')}</span>
         <ChevronDown size={16} className="text-accent-primary-light" />
       </div>
 
@@ -465,7 +465,7 @@ const SongSelector = ({ songs, onSelect, suggestions = [] }) => {
                   <>
                     <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/20 border-b border-accent-primary-lighter dark:border-accent-primary-darkest/40 flex items-center gap-1.5">
                       <Music size={11} />
-                      Sugerowane do programu
+                      {tr('Sugerowane do programu')}
                     </div>
                     {suggestedSongs.map(({ song: s, suggestion: sug }) => (
                       <div
@@ -663,7 +663,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
       {/* Title & info */}
       <div className="flex-1 min-w-0 py-0.5">
         <div className="font-medium text-[13px] text-gray-800 dark:text-gray-200 truncate leading-tight">
-          {item.type === 'song' ? songTitle : (item.title || 'Nowy element')}
+          {item.type === 'song' ? songTitle : (item.title || tr('Nowy element'))}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           {item.person && (
@@ -676,7 +676,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
             <span className={`text-[10px] px-1.5 py-0.5 rounded ${
               item.timing === 'before' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
             }`}>
-              {item.timing === 'before' ? 'Przed' : 'Po'}
+              {item.timing === 'before' ? tr('Przed') : tr('Po')}
             </span>
           )}
         </div>
@@ -823,8 +823,8 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
 
   const tabs = [
     { id: 'details', label: tr('Szczegóły'), icon: Info },
-    ...(item.type === 'media' ? [{ id: 'media', label: 'Media', icon: Image }] : []),
-    { id: 'notes', label: 'Notatki', icon: NoteIcon },
+    ...(item.type === 'media' ? [{ id: 'media', label: tr('Media'), icon: Image }] : []),
+    { id: 'notes', label: tr('Notatki'), icon: NoteIcon },
   ];
 
   const handleChange = (field, value) => {
@@ -846,9 +846,9 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
 
   // Timing options
   const timingOptions = [
-    { value: 'before', label: 'Przed', icon: '◀' },
+    { value: 'before', label: tr('Przed'), icon: '◀' },
     { value: 'during', label: tr('W trakcie'), icon: '●' },
-    { value: 'after', label: 'Po', icon: '▶' },
+    { value: 'after', label: tr('Po'), icon: '▶' },
   ];
 
   return (
@@ -860,7 +860,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             <IconComponent size={18} className={itemType.color} />
           </div>
           <div>
-            <span className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">Edytuj element</span>
+            <span className="text-[13px] font-semibold text-gray-800 dark:text-gray-200">{tr('Edytuj element')}</span>
             <span className={`ml-2 text-[10px] px-2 py-0.5 rounded-full ${itemType.bg} ${itemType.color} font-medium`}>
               {itemType.label}
             </span>
@@ -924,7 +924,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             )}
             {selectedSong && (
               <div className="mt-3">
-                <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Tonacja wykonania</label>
+                <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('Tonacja wykonania')}</label>
                 <div className="grid grid-cols-6 gap-1.5">
                   {MUSICAL_KEYS.map(k => (
                     <button
@@ -969,7 +969,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                   ))}
                   <label className="flex items-center justify-center gap-2 px-3 py-2.5 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-accent-secondary-light hover:bg-accent-secondary-lightest/50 dark:hover:border-accent-secondary-dark dark:hover:bg-accent-secondary-darkest/10 transition text-gray-400 hover:text-accent-secondary-light">
                     <Upload size={14} />
-                    <span className="text-xs font-medium">Dodaj PDF</span>
+                    <span className="text-xs font-medium">{tr('Dodaj PDF')}</span>
                     <input
                       type="file"
                       accept=".pdf"
@@ -1007,7 +1007,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               type="text"
               value={item.title || ''}
               onChange={(e) => handleChange('title', e.target.value)}
-              placeholder={item.type === 'header' ? 'Nazwa sekcji...' : tr('Tytuł elementu...')}
+              placeholder={item.type === 'header' ? tr('Nazwa sekcji...') : tr('Tytuł elementu...')}
               className="w-full text-base font-medium bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark text-gray-800 dark:text-white placeholder-gray-400 transition"
             />
           </>
@@ -1019,7 +1019,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
         <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 space-y-4">
           {/* Duration */}
           <div>
-            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Czas trwania</label>
+            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('Czas trwania')}</label>
             <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 border border-gray-200/80 dark:border-gray-700/80">
               <Clock size={16} className="text-gray-400" />
               <input
@@ -1029,7 +1029,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                 onChange={(e) => handleChange('duration', (parseInt(e.target.value) || 0) * 60 + ((item.duration || 0) % 60))}
                 className="w-16 px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-center focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
               />
-              <span className="text-gray-400 text-xs font-medium">min</span>
+              <span className="text-gray-400 text-xs font-medium">{tr('min')}</span>
               <input
                 type="number"
                 min="0"
@@ -1038,7 +1038,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                 onChange={(e) => handleChange('duration', Math.floor((item.duration || 0) / 60) * 60 + (parseInt(e.target.value) || 0))}
                 className="w-16 px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-center focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
               />
-              <span className="text-gray-400 text-xs font-medium">sek</span>
+              <span className="text-gray-400 text-xs font-medium">{tr('sek')}</span>
               <div className="ml-auto text-base tabular-nums font-bold text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-3 py-1.5 rounded-lg">
                 {formatTime(item.duration || 0)}
               </div>
@@ -1098,7 +1098,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             <div>
               <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <NoteIcon size={12} />
-                Notatki
+                {tr('Notatki')}
               </label>
               <textarea
                 value={item.notes || ''}
@@ -1117,7 +1117,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             <div>
               <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <User size={12} />
-                Osoba odpowiedzialna
+                {tr('Osoba odpowiedzialna')}
               </label>
               <PersonCombobox
                 value={item.person}
@@ -1135,7 +1135,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               <textarea
                 value={item.details || ''}
                 onChange={(e) => handleChange('details', e.target.value)}
-                placeholder="Instrukcje, uwagi techniczne..."
+                placeholder={tr('Instrukcje, uwagi techniczne...')}
                 rows={4}
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl text-sm resize-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark outline-none transition"
               />
@@ -1153,10 +1153,10 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { value: 'video', label: 'Wideo', icon: '🎬' },
+                  { value: 'video', label: tr('Wideo'), icon: '🎬' },
                   { value: 'presentation', label: tr('Prezentacja'), icon: '📊' },
-                  { value: 'image', label: 'Obraz', icon: '🖼️' },
-                  { value: 'countdown', label: 'Odliczanie', icon: '⏱️' },
+                  { value: 'image', label: tr('Obraz'), icon: '🖼️' },
+                  { value: 'countdown', label: tr('Odliczanie'), icon: '⏱️' },
                 ].map(opt => (
                   <button
                     key={opt.value}
@@ -1240,8 +1240,8 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                       {[
                         { value: '', label: tr('Cały') },
                         { value: 'full', label: tr('Pełny') },
-                        { value: 'acoustic', label: 'Akust.' },
-                        { value: 'minimal', label: 'Minimal.' },
+                        { value: 'acoustic', label: tr('Akust.') },
+                        { value: 'minimal', label: tr('Minimal.') },
                       ].map(opt => (
                         <button
                           key={opt.value}
@@ -1278,7 +1278,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             {/* Team assignments summary */}
             {Object.entries(item.teamAssignments || {}).filter(([_, v]) => v).length > 0 && (
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200/80 dark:border-gray-700/50">
-                <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Podsumowanie</h4>
+                <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{tr('Podsumowanie')}</h4>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(item.teamAssignments || {}).filter(([_, v]) => v).map(([key, value]) => (
                     <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-gray-700 rounded-lg text-xs border border-gray-200 dark:border-gray-600 shadow-sm">
@@ -1313,10 +1313,10 @@ const AddItemDropdown = ({ onAdd }) => {
   }, [isOpen]);
 
   const items = [
-    { type: 'item', label: 'Element', icon: Type, shortcut: 'i' },
+    { type: 'item', label: tr('Element'), icon: Type, shortcut: 'i' },
     { type: 'header', label: tr('Nagłówek'), icon: MoreHorizontal, shortcut: 'h' },
     { type: 'song', label: tr('Pieśń'), icon: Music, shortcut: 's' },
-    { type: 'media', label: 'Media', icon: Image, shortcut: 'm' },
+    { type: 'media', label: tr('Media'), icon: Image, shortcut: 'm' },
   ];
 
   return (
@@ -1326,7 +1326,7 @@ const AddItemDropdown = ({ onAdd }) => {
         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-accent-primary-light/20 transition"
       >
         <Plus size={16} />
-        Dodaj
+        {tr('Dodaj')}
         <ChevronDown size={14} />
       </button>
 
@@ -1452,7 +1452,7 @@ const AbsenceMultiSelectDashboard = ({ options, value, onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-sm">Wybierz nieobecnych...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-sm">{tr('Wybierz nieobecnych...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-lg text-xs font-medium border border-red-200 dark:border-red-800 flex items-center gap-1">
@@ -1498,7 +1498,7 @@ const AbsenceMultiSelectDashboard = ({ options, value, onChange }) => {
               </div>
             );
           })}
-          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">Brak nauczycieli w bazie</div>}
+          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">{tr('Brak nauczycieli w bazie')}</div>}
         </div>,
         document.body
       )}
@@ -1538,12 +1538,12 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
       </div>
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Temat lekcji</label>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Temat lekcji')}</label>
           <input
             className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.temat || ''}
             onChange={e => handleFieldChange('temat', e.target.value)}
-            placeholder="Temat lekcji..."
+            placeholder={tr('Temat lekcji...')}
           />
         </div>
 
@@ -1577,7 +1577,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Starsza</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Starsza')}</label>
               <input
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.starsza || ''}
@@ -1588,7 +1588,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         )}
 
         <div>
-          <label className="block text-xs font-bold text-red-500 dark:text-red-400 uppercase mb-1 ml-1">Absencja nauczycieli</label>
+          <label className="block text-xs font-bold text-red-500 dark:text-red-400 uppercase mb-1 ml-1">{tr('Absencja nauczycieli')}</label>
           <div className="relative">
             <AbsenceMultiSelectDashboard
               options={kidsTeachers}
@@ -1599,12 +1599,12 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki</label>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki')}</label>
           <input
             className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.notatki || ''}
             onChange={e => handleFieldChange('notatki', e.target.value)}
-            placeholder="Notatki..."
+            placeholder={tr('Notatki...')}
           />
         </div>
       </div>
@@ -1625,13 +1625,13 @@ const DynamicScenaSection = ({
   const mcFields = mcRoles.length > 0
     ? mcRoles.map(role => ({ key: role.field_key, label: role.name, roleId: role.id, source: 'mc' }))
     : [
-        { key: 'prowadzenie', label: 'Prowadzenie', roleId: null, source: 'mc' },
-        { key: 'modlitwa', label: 'Modlitwa', roleId: null, source: 'mc' },
-        { key: 'wieczerza', label: 'Wieczerza', roleId: null, source: 'mc' },
+        { key: 'prowadzenie', label: tr('Prowadzenie'), roleId: null, source: 'mc' },
+        { key: 'modlitwa', label: tr('Modlitwa'), roleId: null, source: 'mc' },
+        { key: 'wieczerza', label: tr('Wieczerza'), roleId: null, source: 'mc' },
         { key: 'ogloszenia', label: tr('Ogłoszenia'), roleId: null, source: 'mc' }
       ];
 
-  const kazanieField = { key: 'kazanie', label: 'Kazanie', source: 'teaching' };
+  const kazanieField = { key: 'kazanie', label: tr('Kazanie'), source: 'teaching' };
 
   const allFields = [];
   let kazanieAdded = false;
@@ -1713,7 +1713,7 @@ const DynamicScenaSection = ({
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg text-gray-900 dark:text-white">Scena</h3>
+        <h3 className="font-bold text-lg text-gray-900 dark:text-white">{tr('Scena')}</h3>
       </div>
       <div className="space-y-4">
         {allFields.map(field => {
@@ -1815,13 +1815,13 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
       title={tr('Szablony programów')}
       footer={
         <Button variant="secondary" onClick={onClose}>
-          Zamknij
+          {tr('Zamknij')}
         </Button>
       }
     >
         <div className="p-6 space-y-2">
           {templates.length === 0 ? (
-            <EmptyState compact icon={FileText} title={tr('Brak zapisanych szablonów')} subtitle="Zapisz aktualny plan jako szablon" />
+            <EmptyState compact icon={FileText} title={tr('Brak zapisanych szablonów')} subtitle={tr('Zapisz aktualny plan jako szablon')} />
           ) : (
             templates.map(template => (
               <div
@@ -1836,8 +1836,8 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
                     {template.name}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {template.schedule?.length || 0} elementów
-                    {template.created_at && ` • ${new Date(template.created_at).toLocaleDateString('pl-PL')}`}
+                    {tr('{n} elementów', { n: template.schedule?.length || 0 })}
+                    {template.created_at && ` • ${new Date(template.created_at).toLocaleDateString(appLocale())}`}
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -1845,7 +1845,7 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
                     onClick={() => onLoad(template)}
                     className="px-3 py-1.5 text-xs font-medium text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"
                   >
-                    Wczytaj
+                    {tr('Wczytaj')}
                   </button>
                   <button
                     onClick={() => onDelete(template.id)}
@@ -1908,7 +1908,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
   const PRESETS = [
     { id: 'full', label: tr('Pełny'), desc: tr('Plan + zespoły + pieśni'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections } } },
     { id: 'planTeams', label: tr('Plan + zespoły'), desc: tr('Bez stron pieśni'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, songs: false } } },
-    { id: 'planOnly', label: 'Sam plan', desc: tr('Tylko plan szczegółowy'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, teams: false, songs: false } } },
+    { id: 'planOnly', label: tr('Sam plan'), desc: tr('Tylko plan szczegółowy'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, teams: false, songs: false } } },
   ];
 
   return (
@@ -1918,17 +1918,17 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
       closeOnBackdrop={false}
       zIndex={110}
       size="xl"
-      title="Opcje wydruku PDF"
+      title={tr('Opcje wydruku PDF')}
       subtitle={tr('Dopasuj zawartość i wygląd generowanego pliku.')}
       footer={<>
         <Button variant="ghost" className="mr-auto" onClick={() => setPrintOptions(DEFAULT_PDF_OPTIONS)}>
           {tr('Przywróć domyślne')}
         </Button>
         <Button variant="secondary" onClick={onClose}>
-          Anuluj
+          {tr('Anuluj')}
         </Button>
         <Button icon={FileText} onClick={onGenerate} loading={isLoading}>
-          Generuj PDF
+          {tr('Generuj PDF')}
         </Button>
       </>}
     >
@@ -1936,7 +1936,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
         <div className="p-6 space-y-5 bg-gray-50/50 dark:bg-gray-900/20">
           {/* QUICK PRESETS */}
           <div>
-            <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Szybkie presety</div>
+            <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{tr('Szybkie presety')}</div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {PRESETS.map(p => (
                 <button
@@ -1953,16 +1953,16 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           </div>
 
           {/* SEKCJE */}
-          <PrintOptionsCard title="Sekcje w PDF">
+          <PrintOptionsCard title={tr('Sekcje w PDF')}>
             <div className="space-y-2">
               <PrintCheckbox label={tr('Plan szczegółowy (strona 1)')} checked={printOptions.sections.schedule} onChange={v => setSection('schedule', v)} />
               <PrintCheckbox label={tr('Notatka do programu (na końcu strony 1)')} checked={printOptions.sections.programNotes} onChange={v => setSection('programNotes', v)} disabled={!printOptions.sections.schedule} />
               <PrintCheckbox label={tr('Strona "Służby i Zespoły"')} checked={printOptions.sections.teams} onChange={v => setSection('teams', v)} />
               <div className={`pl-2 ml-2 border-l-2 border-accent-primary-lighter/60 dark:border-accent-primary-darkest space-y-1.5 ${!printOptions.sections.teams ? 'opacity-50' : ''}`}>
                 <PrintCheckbox label={tr('Zespół Uwielbienia')} checked={printOptions.sections.teamWorship} onChange={v => setSection('teamWorship', v)} disabled={!printOptions.sections.teams} sub />
-                <PrintCheckbox label="MediaTeam"          checked={printOptions.sections.teamMedia}   onChange={v => setSection('teamMedia',   v)} disabled={!printOptions.sections.teams} sub />
-                <PrintCheckbox label="Atmosfera Team"     checked={printOptions.sections.teamAtmosfera} onChange={v => setSection('teamAtmosfera', v)} disabled={!printOptions.sections.teams} sub />
-                <PrintCheckbox label="Scena"              checked={printOptions.sections.teamScena}   onChange={v => setSection('teamScena',   v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label={tr('MediaTeam')}          checked={printOptions.sections.teamMedia}   onChange={v => setSection('teamMedia',   v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label={tr('Atmosfera Team')}     checked={printOptions.sections.teamAtmosfera} onChange={v => setSection('teamAtmosfera', v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label={tr('Scena')}              checked={printOptions.sections.teamScena}   onChange={v => setSection('teamScena',   v)} disabled={!printOptions.sections.teams} sub />
                 <PrintCheckbox label={tr('Szkółka Niedzielna')} checked={printOptions.sections.teamSzkolka} onChange={v => setSection('teamSzkolka', v)} disabled={!printOptions.sections.teams} sub />
               </div>
               <PrintCheckbox label={tr('Pieśni z tekstami i akordami')} checked={printOptions.sections.songs} onChange={v => setSection('songs', v)} />
@@ -1973,7 +1973,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           <PrintOptionsCard title={tr('Kolumny w planie szczegółowym')} className={!printOptions.sections.schedule ? 'opacity-50 pointer-events-none' : ''}>
             <div className="grid grid-cols-2 gap-y-2 gap-x-4">
               <PrintCheckbox label={tr('Czas (długość)')}        checked={printOptions.scheduleColumns.time}    onChange={v => setColumn('time', v)} />
-              <PrintCheckbox label="Osoba odpowiedzialna"  checked={printOptions.scheduleColumns.person}  onChange={v => setColumn('person', v)} />
+              <PrintCheckbox label={tr('Osoba odpowiedzialna')}  checked={printOptions.scheduleColumns.person}  onChange={v => setColumn('person', v)} />
               <PrintCheckbox label={tr('Szczegóły / Pieśni')}    checked={printOptions.scheduleColumns.details} onChange={v => setColumn('details', v)} />
               <PrintCheckbox label={tr('Tonacja przy pieśni')}   checked={printOptions.scheduleColumns.songKey} onChange={v => setColumn('songKey', v)} disabled={!printOptions.scheduleColumns.details} />
             </div>
@@ -1982,10 +1982,10 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           {/* STRONY PIEŚNI */}
           <PrintOptionsCard title={tr('Strony pieśni')} className={!printOptions.sections.songs ? 'opacity-50 pointer-events-none' : ''}>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-4">
-              <PrintCheckbox label="Tekst"   checked={printOptions.songDetails.lyrics} onChange={v => setSongDt('lyrics', v)} />
-              <PrintCheckbox label="Akordy"  checked={printOptions.songDetails.chords} onChange={v => setSongDt('chords', v)} />
-              <PrintCheckbox label="Tempo"   checked={printOptions.songDetails.tempo}  onChange={v => setSongDt('tempo', v)} />
-              <PrintCheckbox label="Metrum"  checked={printOptions.songDetails.meter}  onChange={v => setSongDt('meter', v)} />
+              <PrintCheckbox label={tr('Tekst')}   checked={printOptions.songDetails.lyrics} onChange={v => setSongDt('lyrics', v)} />
+              <PrintCheckbox label={tr('Akordy')}  checked={printOptions.songDetails.chords} onChange={v => setSongDt('chords', v)} />
+              <PrintCheckbox label={tr('Tempo')}   checked={printOptions.songDetails.tempo}  onChange={v => setSongDt('tempo', v)} />
+              <PrintCheckbox label={tr('Metrum')}  checked={printOptions.songDetails.meter}  onChange={v => setSongDt('meter', v)} />
             </div>
           </PrintOptionsCard>
 
@@ -1993,7 +1993,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           <PrintOptionsCard title={tr('Układ strony')}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <label className="block">
-                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">Format</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">{tr('Format')}</span>
                 <select
                   value={printOptions.pageSize}
                   onChange={(e) => setRoot('pageSize', e.target.value)}
@@ -2004,18 +2004,18 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
                 </select>
               </label>
               <label className="block">
-                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">Orientacja</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">{tr('Orientacja')}</span>
                 <select
                   value={printOptions.orientation}
                   onChange={(e) => setRoot('orientation', e.target.value)}
                   className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
                 >
-                  <option value="p">Pionowa</option>
-                  <option value="l">Pozioma</option>
+                  <option value="p">{tr('Pionowa')}</option>
+                  <option value="l">{tr('Pozioma')}</option>
                 </select>
               </label>
               <label className="block">
-                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">Czcionka</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">{tr('Czcionka')}</span>
                 <select
                   value={printOptions.fontSize}
                   onChange={(e) => setRoot('fontSize', parseInt(e.target.value, 10))}
@@ -2176,7 +2176,7 @@ export default function ProgramDetail() {
   };
 
   const handleSaveAsTemplate = async () => {
-    const name = await promptDialog(tr('Podaj nazwę szablonu:'), program.title || 'Nowy szablon');
+    const name = await promptDialog(tr('Podaj nazwę szablonu:'), program.title || tr('Nowy szablon'));
     if (!name) return;
 
     try {
@@ -2454,7 +2454,7 @@ export default function ProgramDetail() {
       setProgram(result.data[0]);
     }
     setOriginalProgram(JSON.parse(JSON.stringify(program)));
-    toast.success('Zapisano!');
+    toast.success(tr('Zapisano!'));
   };
 
   const syncWorshipAssignments = async (programId) => {
@@ -2520,7 +2520,7 @@ export default function ProgramDetail() {
     return {
       id: Date.now(),
       type,
-      title: type === 'header' ? 'NOWA SEKCJA' : '',
+      title: type === 'header' ? tr('NOWA SEKCJA') : '',
       person: defaultPerson,
       details: '',
       notes: '',
@@ -2629,7 +2629,7 @@ export default function ProgramDetail() {
       }
     } catch (err) {
       console.error(`Błąd generowania ${type}:`, err);
-      toast.error(`Wystąpił błąd podczas generowania ${type}`);
+      toast.error(tr('Wystąpił błąd podczas generowania {type}', { type }));
     }
   };
 
@@ -2657,7 +2657,7 @@ export default function ProgramDetail() {
       const result = await exportToProPresenter(program, songsMap);
 
       if (result.success) {
-        toast.success(`Eksport zakończony pomyślnie!\n\nWyeksportowano ${result.songsCount} pieśni.\n\nRozpakuj pobrany plik ZIP i zaimportuj pliki do ProPresenter.`);
+        toast.success(tr('Eksport zakończony pomyślnie!\n\nWyeksportowano {n} pieśni.\n\nRozpakuj pobrany plik ZIP i zaimportuj pliki do ProPresenter.', { n: result.songsCount }));
       }
     } catch (err) {
       console.error('Błąd eksportu do ProPresenter:', err);
@@ -2678,7 +2678,7 @@ export default function ProgramDetail() {
       return;
     }
 
-    const confirmed = await confirmDialog(`Wysłać program do ${recipients.length} osób?\n\nOdbiorcy:\n${recipients.join('\n')}`);
+    const confirmed = await confirmDialog(tr('Wysłać program do {n} osób?\n\nOdbiorcy:\n{list}', { n: recipients.length, list: recipients.join('\n') }));
     if (!confirmed) return;
 
     setIsSending(true);
@@ -2832,7 +2832,7 @@ export default function ProgramDetail() {
                     title={t('Zapisz jako szablon')}
                   >
                     <Save size={13} />
-                    Szablon
+                    {tr('Szablon')}
                   </button>
                   <button
                     onClick={() => setShowTemplateModal(true)}
@@ -2840,7 +2840,7 @@ export default function ProgramDetail() {
                     title={t('Wczytaj szablon')}
                   >
                     <FileText size={13} />
-                    Wczytaj
+                    {tr('Wczytaj')}
                   </button>
                 </div>
               </div>
@@ -2853,7 +2853,7 @@ export default function ProgramDetail() {
                 title={t('Wyślij program przez e-mail')}
               >
                 {isSending ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
-                <span className="hidden sm:inline">Mail</span>
+                <span className="hidden sm:inline">{tr('Mail')}</span>
               </button>
               </Can>
               <button
@@ -2934,14 +2934,14 @@ export default function ProgramDetail() {
                       onClick={() => setScheduleTab('order')}
                       className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-all ${scheduleTab === 'order' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
                     >
-                      📋 Plan
+                      📋 {tr('Plan')}
                     </button>
                     <button
                       onClick={() => setScheduleTab('notes')}
                       className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-all flex items-center gap-1 ${scheduleTab === 'notes' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
                     >
                       <NoteIcon size={13} />
-                      Notatki
+                      {tr('Notatki')}
                       {program.globalNotes && <span className="w-1.5 h-1.5 bg-accent-primary rounded-full" />}
                     </button>
                   </div>
@@ -2954,7 +2954,7 @@ export default function ProgramDetail() {
                     {/* Column headers */}
                     <div className="hidden lg:flex items-center gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       <div className="w-6"></div>
-                      <div className="w-14">Czas</div>
+                      <div className="w-14">{tr('Czas')}</div>
                       <div className="flex-1">{tr('Tytuł')}</div>
                       <div className="w-20 text-right">{t('Długość')}</div>
                     </div>
@@ -2971,10 +2971,10 @@ export default function ProgramDetail() {
                                 subtitle={t('Użyj przycisku "Dodaj" lub skrótów klawiszowych:')}
                                 action={
                                   <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">i - Element</span>
+                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{tr('i - Element')}</span>
                                     <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{t('h - Nagłówek')}</span>
                                     <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{t('s - Pieśń')}</span>
-                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">m - Media</span>
+                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{tr('m - Media')}</span>
                                   </div>
                                 }
                               />
@@ -3022,17 +3022,17 @@ export default function ProgramDetail() {
                       <div className="flex items-center gap-4">
                         <span className="text-gray-500 dark:text-gray-400">
                           <span className="tabular-nums text-accent-primary dark:text-accent-primary-light">{formatTime(calculateTotalTime(program.schedule))}</span>
-                          {' '}łączny czas
+                          {' '}{tr('łączny czas')}
                         </span>
                         <span className="text-gray-400 dark:text-gray-500">
-                          {program.schedule.length} elementów
+                          {tr('{n} elementów', { n: program.schedule.length })}
                         </span>
                       </div>
                       <div className="flex gap-1 text-[10px] text-gray-400">
                         <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">s</span>
                         <span>{t('pieśń')}</span>
                         <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded ml-2">m</span>
-                        <span>media</span>
+                        <span>{tr('media')}</span>
                         <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded ml-2">h</span>
                         <span>{t('nagłówek')}</span>
                       </div>
@@ -3099,7 +3099,7 @@ export default function ProgramDetail() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
               {(worshipRoles.length > 0
                 ? worshipRoles.map(role => ({ key: role.field_key, label: role.name, roleId: role.id }))
-                : [{ key: 'lider', label: 'Lider Uwielbienia', roleId: null }, { key: 'piano', label: 'Piano', roleId: null }, { key: 'gitara_akustyczna', label: 'Gitara Akustyczna', roleId: null }, { key: 'gitara_elektryczna', label: 'Gitara Elektryczna', roleId: null }, { key: 'bas', label: 'Gitara Basowa', roleId: null }, { key: 'wokale', label: 'Wokale', roleId: null }, { key: 'cajon', label: 'Cajon / Perkusja', roleId: null }]
+                : [{ key: 'lider', label: tr('Lider Uwielbienia'), roleId: null }, { key: 'piano', label: tr('Piano'), roleId: null }, { key: 'gitara_akustyczna', label: tr('Gitara Akustyczna'), roleId: null }, { key: 'gitara_elektryczna', label: tr('Gitara Elektryczna'), roleId: null }, { key: 'bas', label: tr('Gitara Basowa'), roleId: null }, { key: 'wokale', label: tr('Wokale'), roleId: null }, { key: 'cajon', label: tr('Cajon / Perkusja'), roleId: null }]
               ).map(field => {
                 const getMembersForRole = (roleId) => {
                   if (!roleId || worshipMemberRoles.length === 0) {
@@ -3153,7 +3153,7 @@ export default function ProgramDetail() {
               setProgram={setProgram}
               roles={mediaRoles}
               teamMembers={mediaTeam}
-              fallbackFields={[{ key: 'naglosnienie', label: tr('Nagłośnienie') }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: 'Social Media' }, { key: 'host', label: 'Host wydarzenia' }]}
+              fallbackFields={[{ key: 'naglosnienie', label: tr('Nagłośnienie') }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: tr('Social Media') }, { key: 'host', label: tr('Host wydarzenia') }]}
               absentList={absentList}
               memberRoles={mediaMemberRoles}
             />

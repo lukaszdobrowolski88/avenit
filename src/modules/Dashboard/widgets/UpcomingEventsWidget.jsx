@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, MapPin, ChevronRight, CalendarCheck } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import Button from '../../../components/Button';
@@ -28,7 +28,7 @@ function formatWhen(dateStr, timeStr) {
   let day;
   if (dayDiff === 0) day = tr('Dziś');
   else if (dayDiff === 1) day = tr('Jutro');
-  else day = d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+  else day = d.toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' });
   const time = timeStr ? String(timeStr).slice(0, 5) : '';
   return { day, time, isSoon: dayDiff >= 0 && dayDiff <= 1 };
 }

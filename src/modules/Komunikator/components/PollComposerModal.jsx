@@ -65,7 +65,7 @@ export default function PollComposerModal({ isOpen, onClose, onSubmit }) {
       icon={BarChart3}
       size="sm"
       footer={<>
-        <Button variant="secondary" onClick={handleClose}>Anuluj</Button>
+        <Button variant="secondary" onClick={handleClose}>{tr('Anuluj')}</Button>
         <Button icon={BarChart3} onClick={handleSubmit} disabled={!canSubmit}>
           {tr('Utwórz ankietę')}
         </Button>

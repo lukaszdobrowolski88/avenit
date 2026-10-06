@@ -2,11 +2,12 @@
 // Model jest wspólny: zasila wykresy (ReportCharts), pobieranie plików i załączniki maila.
 import { saveAs } from 'file-saver';
 import { bucketsForRange } from './reportRange';
+import { appLocale } from '../../i18n';
 // Ciężkie zależności (xlsx, jspdf, html2canvas) ładowane dynamicznie dopiero przy eksporcie,
 // żeby nie powiększać głównego chunku modułu Finanse.
 
 const num = (v) => Number(v || 0);
-export const pln = (n) => num(n).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł';
+export const pln = (n) => num(n).toLocaleString(appLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł';
 const inRange = (rows, dateField, from, to) =>
   rows.filter((r) => r[dateField] && r[dateField] >= from && r[dateField] <= to)
     .reduce((a, r) => a + num(r.amount), 0);

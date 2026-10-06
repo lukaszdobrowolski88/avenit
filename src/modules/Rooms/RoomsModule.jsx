@@ -7,6 +7,7 @@ import ResponsiveTabs from '../../components/ResponsiveTabs';
 import ResourcesTab from './tabs/ResourcesTab';
 import BookingsTab from './tabs/BookingsTab';
 import ScheduleTab from './tabs/ScheduleTab';
+import { tr } from '../../i18n';
 
 const TABS = [
   { id: 'resources', label: 'Zasoby', icon: Boxes },
@@ -43,10 +44,10 @@ export default function RoomsModule() {
 
   return (
     <div className="space-y-6">
-      <PageHeader moduleKey="rooms" icon={DoorOpen} title="Rezerwacje sal" subtitle="Sale i zasoby, rezerwacje z wykrywaniem konfliktów i rezerwacje cykliczne" />
+      <PageHeader moduleKey="rooms" icon={DoorOpen} title={tr('Rezerwacje sal')} subtitle={tr('Sale i zasoby, rezerwacje z wykrywaniem konfliktów i rezerwacje cykliczne')} />
 
       {/* Zakładki */}
-      <ResponsiveTabs moduleKey="rooms" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="rooms" tabs={TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

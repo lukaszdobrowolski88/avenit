@@ -2,6 +2,7 @@ import React from 'react';
 import { BookOpen, Calendar, User, Layers, Music, Video, ExternalLink } from 'lucide-react';
 import { formatDate, parseVideo } from '../lib/sermonsApi';
 import { bibleUrl } from '../lib/bible';
+import { tr } from '../../../i18n';
 
 /**
  * Prezentacyjny odtwarzacz pojedynczego kazania.
@@ -48,7 +49,7 @@ export default function SermonPlayer({ sermon }) {
         {/* Wideo osadzone (YouTube / Vimeo) */}
         {video.embedUrl && (
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-2"><Video size={14} /> Wideo</div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-2"><Video size={14} /> {tr('Wideo')}</div>
             <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingTop: '56.25%' }}>
               <iframe
                 src={video.embedUrl}
@@ -65,28 +66,28 @@ export default function SermonPlayer({ sermon }) {
         {/* Wideo jako zwykły link (gdy nie da się osadzić) */}
         {sermon.video_url && !video.embedUrl && (
           <a href={sermon.video_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-accent-primary dark:text-accent-primary-light hover:underline">
-            <Video size={16} /> Otwórz wideo <ExternalLink size={12} />
+            <Video size={16} /> {tr('Otwórz wideo')} <ExternalLink size={12} />
           </a>
         )}
 
         {/* Audio */}
         {sermon.audio_url && (
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-2"><Music size={14} /> Audio</div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-2"><Music size={14} /> {tr('Audio')}</div>
             <audio controls preload="none" src={sermon.audio_url} className="w-full">
-              Twoja przeglądarka nie obsługuje odtwarzacza audio.
+              {tr('Twoja przeglądarka nie obsługuje odtwarzacza audio.')}
             </audio>
           </div>
         )}
 
         {!sermon.audio_url && !sermon.video_url && (
-          <p className="text-sm text-gray-400 dark:text-gray-500">Brak dołączonego audio lub wideo.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{tr('Brak dołączonego audio lub wideo.')}</p>
         )}
 
         {/* Opis */}
         {sermon.description && (
           <div>
-            <div className="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">Opis</div>
+            <div className="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">{tr('Opis')}</div>
             <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{sermon.description}</p>
           </div>
         )}
@@ -94,7 +95,7 @@ export default function SermonPlayer({ sermon }) {
         {/* Notatki */}
         {sermon.notes && (
           <div>
-            <div className="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">Notatki / konspekt</div>
+            <div className="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-1">{tr('Notatki / konspekt')}</div>
             <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{sermon.notes}</p>
           </div>
         )}

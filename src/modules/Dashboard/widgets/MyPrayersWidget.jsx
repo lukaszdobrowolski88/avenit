@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, Clock, Lock, Star, Sparkles, HeartHandshake, XCircle, UserPlus, Ghost, User, UserX, CheckCircle, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { CATEGORIES } from '../../PrayerWall/categories';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
@@ -66,12 +66,12 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
       onClose={onClose}
       closeOnBackdrop={false}
       icon={Heart}
-      title={editingRequest ? tr('Edytuj intencję') : 'Nowa intencja modlitewna'}
+      title={editingRequest ? tr('Edytuj intencję') : tr('Nowa intencja modlitewna')}
       size="md"
       footer={<>
-        <Button type="button" variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button type="button" variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
         <Button type="submit" form="dashboard-prayer-form" icon={Heart} loading={isLoading} disabled={!content.trim()}>
-          {editingRequest ? 'Zapisz zmiany' : tr('Dodaj intencję')}
+          {editingRequest ? tr('Zapisz zmiany') : tr('Dodaj intencję')}
         </Button>
       </>}
     >
@@ -80,7 +80,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           {/* Requester name */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Modlitwa za (opcjonalne)
+              {tr('Modlitwa za (opcjonalne)')}
             </label>
             <div className="relative">
               <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -113,7 +113,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           {/* Category */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Kategoria
+              {tr('Kategoria')}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {Object.entries(CATEGORIES).map(([key, { label, Icon }]) => (
@@ -307,10 +307,10 @@ function PrayerCard({ prayer, onClick }) {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return tr('Przed chwilą');
-    if (diffMins < 60) return `${diffMins} min temu`;
-    if (diffHours < 24) return `${diffHours} godz. temu`;
-    if (diffDays < 7) return `${diffDays} dni temu`;
-    return date.toLocaleDateString('pl-PL');
+    if (diffMins < 60) return tr('{n} min temu', { n: diffMins });
+    if (diffHours < 24) return tr('{n} godz. temu', { n: diffHours });
+    if (diffDays < 7) return tr('{n} dni temu', { n: diffDays });
+    return date.toLocaleDateString(appLocale());
   };
 
   return (
@@ -353,7 +353,7 @@ function PrayerCard({ prayer, onClick }) {
       {prayer.requester_name && (
         <div className="mb-2 flex items-center gap-1 text-xs">
           <UserPlus className="w-3 h-3 text-accent-primary-light" />
-          <span className="text-gray-600 dark:text-gray-400">Za:</span>
+          <span className="text-gray-600 dark:text-gray-400">{tr('Za:')}</span>
           <span className="font-medium text-gray-800 dark:text-gray-200">{prayer.requester_name}</span>
         </div>
       )}
@@ -368,7 +368,7 @@ function PrayerCard({ prayer, onClick }) {
         <div className="mt-2">
           <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
             <XCircle className="w-3 h-3" />
-            Nieaktualna
+            {tr('Nieaktualna')}
           </span>
         </div>
       )}
@@ -390,7 +390,7 @@ function PrayerCard({ prayer, onClick }) {
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <HeartHandshake size={14} className="text-accent-primary-light" />
-          <span>{prayer.prayer_count || 0} osób się modli</span>
+          <span>{tr('{n} osób się modli', { n: prayer.prayer_count || 0 })}</span>
         </div>
         {isAnswered && (
           <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
@@ -440,10 +440,10 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return tr('Przed chwilą');
-    if (diffMins < 60) return `${diffMins} min temu`;
-    if (diffHours < 24) return `${diffHours} godz. temu`;
-    if (diffDays < 7) return `${diffDays} dni temu`;
-    return date.toLocaleDateString('pl-PL');
+    if (diffMins < 60) return tr('{n} min temu', { n: diffMins });
+    if (diffHours < 24) return tr('{n} godz. temu', { n: diffHours });
+    if (diffDays < 7) return tr('{n} dni temu', { n: diffDays });
+    return date.toLocaleDateString(appLocale());
   };
 
   const handlePrayerClick = (prayer) => {
@@ -520,7 +520,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
       <EmptyState
         compact
         icon={Heart}
-        title="Brak intencji modlitewnych"
+        title={tr('Brak intencji modlitewnych')}
         subtitle={tr('Dodaj intencje w Centrum Modlitwy')}
         action={
           <a
@@ -551,7 +551,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
 
       {prayers.length > displayCount && (
         <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-          + {prayers.length - displayCount} więcej intencji
+          + {tr('{n} więcej intencji', { n: prayers.length - displayCount })}
         </p>
       )}
 

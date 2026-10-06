@@ -42,7 +42,7 @@ export default function MyWork({ userEmail, userName, onOpenBoard }) {
         <Spinner center />
       ) : rows.length === 0 ? (
         <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-          <EmptyState icon={Inbox} title="Nie masz jeszcze przypisanych elementów." subtitle={'Dodaj się do kolumny „Osoby" w dowolnej tablicy.'} />
+          <EmptyState icon={Inbox} title={tr('Nie masz jeszcze przypisanych elementów.')} subtitle={tr('Dodaj się do kolumny „Osoby" w dowolnej tablicy.')} />
         </div>
       ) : (
         <div className="space-y-6">
@@ -52,14 +52,14 @@ export default function MyWork({ userEmail, userName, onOpenBoard }) {
             return (
               <div key={bucket.key}>
                 <div className={`flex items-center gap-2 mb-2 font-semibold text-sm ${bucket.tone}`}>
-                  <bucket.icon size={16} /> {bucket.label} <span className="text-gray-400 font-normal">{list.length}</span>
+                  <bucket.icon size={16} /> {tr(bucket.label)} <span className="text-gray-400 font-normal">{list.length}</span>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700/60">
                   {list.map(r => (
                     <button key={r.item.id} onClick={() => onOpenBoard(r.boardId, r.item.id)}
                       className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/30 text-left">
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: r.boardColor }} />
-                      <span className={`flex-1 text-sm truncate ${r.done ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'}`}>{r.item.name || 'Bez nazwy'}</span>
+                      <span className={`flex-1 text-sm truncate ${r.done ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'}`}>{r.item.name || tr('Bez nazwy')}</span>
                       {r.status && <span className="text-[11px] px-2 py-0.5 rounded-full text-white shrink-0" style={{ backgroundColor: r.status.color }}>{r.status.title}</span>}
                       <span className="text-xs text-gray-400 w-24 truncate text-right shrink-0">{r.boardName}</span>
                       <span className="text-xs text-gray-500 w-20 text-right shrink-0">{r.due || ''}</span>

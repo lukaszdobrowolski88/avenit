@@ -13,6 +13,7 @@ import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import { toast } from '../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
+import { tr } from '../../i18n';
 
 const CalendarModule = lazy(() => import('../CalendarModule'));
 
@@ -67,8 +68,8 @@ export default function EventsListView() {
 
   const setArchived = async (id, val) => {
     const { error } = await supabase.from('events').update({ is_archived: val }).eq('id', id);
-    if (error) return toast.error('Nie udało się zmienić: ' + error.message);
-    toast.success(val ? 'Przeniesiono do archiwum.' : 'Przywrócono.');
+    if (error) return toast.error(tr('Nie udało się zmienić: {msg}', { msg: error.message }));
+    toast.success(val ? tr('Przeniesiono do archiwum.') : tr('Przywrócono.'));
     load();
   };
 
@@ -110,7 +111,7 @@ export default function EventsListView() {
 
   const ViewSwitch = (
     <div className="flex items-center gap-0.5 p-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg shrink-0">
-      {[['cards', LayoutGrid, 'Kafelki'], ['list', List, 'Lista'], ['calendar', Calendar, 'Kalendarz']].map(([id, Icon, title]) => (
+      {[['cards', LayoutGrid, tr('Kafelki')], ['list', List, tr('Lista')], ['calendar', Calendar, tr('Kalendarz')]].map(([id, Icon, title]) => (
         <button key={id} onClick={() => setView(id)} title={title}
           className={`p-1.5 rounded-md transition ${viewMode === id ? 'bg-white dark:bg-gray-900 text-accent-primary shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
           <Icon size={16} />
@@ -137,40 +138,40 @@ export default function EventsListView() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Szukaj wydarzeń…"
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tr('Szukaj wydarzeń…')}
             className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
         </div>
-        <div className="w-40"><CustomSelect value={archiveF} onChange={setArchiveF} options={ARCHIVE_OPTIONS} /></div>
-        <div className="w-44"><CustomSelect value={typeF} onChange={setTypeF} options={typeOptions} /></div>
-        <div className="w-48"><CustomSelect value={moduleF} onChange={setModuleF} options={moduleOptions} /></div>
+        <div className="w-40"><CustomSelect value={archiveF} onChange={setArchiveF} options={ARCHIVE_OPTIONS.map((o) => ({ ...o, label: tr(o.label) }))} /></div>
+        <div className="w-44"><CustomSelect value={typeF} onChange={setTypeF} options={typeOptions.map((o) => (o.value === '' ? { ...o, label: tr(o.label) } : o))} /></div>
+        <div className="w-48"><CustomSelect value={moduleF} onChange={setModuleF} options={moduleOptions.map((o) => (o.value === '' ? { ...o, label: tr(o.label) } : o))} /></div>
         <button onClick={() => setPaidOnly((v) => !v)}
           className={`px-3 py-2 rounded-xl text-sm font-medium border transition flex items-center gap-1.5 ${paidOnly ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-          <CreditCard size={14} /> Płatne
+          <CreditCard size={14} /> {tr('Płatne')}
         </button>
         <button onClick={() => setRegOnly((v) => !v)}
           className={`px-3 py-2 rounded-xl text-sm font-medium border transition flex items-center gap-1.5 ${regOnly ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-          <Ticket size={14} /> Z rejestracją
+          <Ticket size={14} /> {tr('Z rejestracją')}
         </button>
         <div className="ml-auto flex items-center gap-3">
           {ViewSwitch}
-          <span className="text-xs text-gray-400 whitespace-nowrap">{filtered.length} wydarzeń</span>
+          <span className="text-xs text-gray-400 whitespace-nowrap">{tr('{n} wydarzeń', { n: filtered.length })}</span>
         </div>
       </div>
 
       {loading ? <Spinner center size={28} />
         : filtered.length === 0 ? (
           <EmptyState icon={archiveF === 'archive' ? Archive : Calendar}
-            title={archiveF === 'archive' ? 'Archiwum jest puste' : 'Brak wydarzeń'}
-            subtitle={archiveF === 'archive' ? 'Wydarzenia przeszłe i zarchiwizowane pojawią się tutaj.' : 'Dodaj wydarzenie przyciskiem „Nowe wydarzenie".'} />
+            title={archiveF === 'archive' ? tr('Archiwum jest puste') : tr('Brak wydarzeń')}
+            subtitle={archiveF === 'archive' ? tr('Wydarzenia przeszłe i zarchiwizowane pojawią się tutaj.') : tr('Dodaj wydarzenie przyciskiem „Nowe wydarzenie".')} />
         ) : viewMode === 'list' ? (
           <DataTable>
             <THead>
               <tr>
-                <TH>Data</TH>
-                <TH>Wydarzenie</TH>
-                <TH className="hidden sm:table-cell">Typ</TH>
-                <TH className="hidden md:table-cell">Moduł</TH>
-                <TH className="hidden lg:table-cell">Miejsce</TH>
+                <TH>{tr('Data')}</TH>
+                <TH>{tr('Wydarzenie')}</TH>
+                <TH className="hidden sm:table-cell">{tr('Typ')}</TH>
+                <TH className="hidden md:table-cell">{tr('Moduł')}</TH>
+                <TH className="hidden lg:table-cell">{tr('Miejsce')}</TH>
                 <TH align="right"></TH>
               </tr>
             </THead>
@@ -183,9 +184,9 @@ export default function EventsListView() {
                   <TD>
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium text-gray-900 dark:text-gray-100 truncate">{e.title || ''}</span>
-                      {e.is_paid && <StatusPill color={STATUS_COLORS.warning} className="shrink-0">płatne</StatusPill>}
-                      {e.registration_required && <StatusPill color={STATUS_COLORS.info} className="shrink-0">rejestracja</StatusPill>}
-                      {e.is_archived && <StatusPill color={STATUS_COLORS.accent} className="shrink-0">archiwum</StatusPill>}
+                      {e.is_paid && <StatusPill color={STATUS_COLORS.warning} className="shrink-0">{tr('płatne')}</StatusPill>}
+                      {e.registration_required && <StatusPill color={STATUS_COLORS.info} className="shrink-0">{tr('rejestracja')}</StatusPill>}
+                      {e.is_archived && <StatusPill color={STATUS_COLORS.accent} className="shrink-0">{tr('archiwum')}</StatusPill>}
                     </div>
                   </TD>
                   <TD muted className="hidden sm:table-cell">{e.event_type || ''}</TD>
@@ -195,10 +196,10 @@ export default function EventsListView() {
                   </TD>
                   <TD align="right" className="whitespace-nowrap" onClick={(ev) => ev.stopPropagation()}>
                     {isArch(e) ? (e.is_archived && (
-                      <button onClick={() => setArchived(e.id, false)} title="Przywróć"
+                      <button onClick={() => setArchived(e.id, false)} title={tr('Przywróć')}
                         className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover/row:opacity-100 transition"><RotateCcw size={16} /></button>
                     )) : (
-                      <button onClick={() => setArchived(e.id, true)} title="Archiwizuj"
+                      <button onClick={() => setArchived(e.id, true)} title={tr('Archiwizuj')}
                         className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover/row:opacity-100 transition"><Archive size={16} /></button>
                     )}
                   </TD>
@@ -219,7 +220,7 @@ export default function EventsListView() {
                     <div className="bg-gradient-to-br from-accent-primary to-accent-secondary text-white rounded-xl px-3 py-1.5 text-center min-w-[52px]">
                       {d ? (<>
                         <div className="text-xl font-bold leading-none">{d.getDate()}</div>
-                        <div className="text-[10px] uppercase opacity-90 mt-0.5">{MONTHS_SHORT[d.getMonth()]} {d.getFullYear()}</div>
+                        <div className="text-[10px] uppercase opacity-90 mt-0.5">{tr(MONTHS_SHORT[d.getMonth()])} {d.getFullYear()}</div>
                       </>) : <div className="text-xs py-1">—</div>}
                     </div>
                     {e.event_type && <span className="px-2 py-1 text-[11px] rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0">{e.event_type}</span>}
@@ -227,12 +228,12 @@ export default function EventsListView() {
 
                   {/* Tytuł + pełna data + oznaczenia */}
                   <h4 className="font-bold text-gray-800 dark:text-gray-100 truncate">{e.title || '—'}</h4>
-                  {d && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{WEEKDAYS[d.getDay()]} {fmtDate(e.date)}{e.time ? `, ${fmtTime(e.time)}${e.end_time ? ` - ${fmtTime(e.end_time)}` : ''}` : ''}</p>}
+                  {d && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tr(WEEKDAYS[d.getDay()])} {fmtDate(e.date)}{e.time ? `, ${fmtTime(e.time)}${e.end_time ? ` - ${fmtTime(e.end_time)}` : ''}` : ''}</p>}
                   {(e.is_paid || e.registration_required || e.is_archived) && (
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      {e.is_paid && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">płatne</span>}
-                      {e.registration_required && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">rejestracja</span>}
-                      {e.is_archived && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300">archiwum</span>}
+                      {e.is_paid && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">{tr('płatne')}</span>}
+                      {e.registration_required && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">{tr('rejestracja')}</span>}
+                      {e.is_archived && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300">{tr('archiwum')}</span>}
                     </div>
                   )}
 
@@ -247,12 +248,12 @@ export default function EventsListView() {
                     {archived ? (e.is_archived && (
                       <button onClick={() => setArchived(e.id, false)}
                         className="text-xs font-medium px-2.5 py-1 rounded-lg text-gray-500 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition">
-                        <RotateCcw size={14} /> Przywróć
+                        <RotateCcw size={14} /> {tr('Przywróć')}
                       </button>
                     )) : (
                       <button onClick={() => setArchived(e.id, true)}
                         className="text-xs font-medium px-2.5 py-1 rounded-lg text-gray-500 hover:text-purple-600 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition">
-                        <Archive size={14} /> Archiwizuj
+                        <Archive size={14} /> {tr('Archiwizuj')}
                       </button>
                     )}
                   </div>

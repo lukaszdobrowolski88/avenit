@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { Loader2, MapPin } from 'lucide-react';
 import { applyView } from '../lib/viewData';
 import { findLabel } from '../lib/columnTypes';
+import { tr } from '../../../i18n';
 
 // Geokodowanie adresów przez Nominatim (OSM), z cache w localStorage + pamięci.
 const mem = {};
@@ -69,7 +70,7 @@ export default function MapView({ data, config, onOpenItem }) {
         if (g) {
           const l = statusCol ? findLabel(statusCol, it.cells?.[statusCol.id]) : null;
           const m = L.marker([g.lat, g.lon], { icon: pinIcon(l ? l.color : '#6366f1') })
-            .bindTooltip(it.name || 'Element', { direction: 'top' })
+            .bindTooltip(it.name || tr('Element'), { direction: 'top' })
             .on('click', () => onOpenItem?.(it));
           m.addTo(layerRef.current);
           pts.push([g.lat, g.lon]);
@@ -84,15 +85,15 @@ export default function MapView({ data, config, onOpenItem }) {
   }, [located, locCol, statusCol]);
 
   if (!locCol) {
-    return <div className="text-center py-16 text-gray-400 text-sm">Dodaj kolumnę typu „Lokalizacja", aby zobaczyć elementy na mapie.</div>;
+    return <div className="text-center py-16 text-gray-400 text-sm">{tr('Dodaj kolumnę typu „Lokalizacja", aby zobaczyć elementy na mapie.')}</div>;
   }
 
   return (
     <div>
       <div className="flex items-center gap-2 mb-2 text-sm text-gray-500">
-        <MapPin size={15} /> {located.length} elementów z adresem
-        {loading && <span className="flex items-center gap-1 text-accent-primary"><Loader2 size={13} className="animate-spin" /> geokodowanie…</span>}
-        {!loading && missing > 0 && <span className="text-amber-500">· {missing} bez współrzędnych</span>}
+        <MapPin size={15} /> {tr('{n} elementów z adresem', { n: located.length })}
+        {loading && <span className="flex items-center gap-1 text-accent-primary"><Loader2 size={13} className="animate-spin" /> {tr('geokodowanie…')}</span>}
+        {!loading && missing > 0 && <span className="text-amber-500">· {tr('{n} bez współrzędnych', { n: missing })}</span>}
       </div>
       <div ref={containerRef} className="w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height: 560 }} />
     </div>

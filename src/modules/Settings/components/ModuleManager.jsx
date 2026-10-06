@@ -584,15 +584,13 @@ export default function ModuleManager() {
         size="sm"
         title={tr('Usunąć moduł?')}
         footer={<>
-          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Anuluj</Button>
+          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>{tr('Anuluj')}</Button>
           <Button variant="danger" onClick={confirmDelete}>{tr('Usuń')}</Button>
         </>}
       >
         <div className="p-6">
           <p className="text-gray-600 dark:text-gray-400">
-            Czy na pewno chcesz usunąć moduł "{deleteConfirm?.label}"?
-            Zostaną również usunięte wszystkie zakładki tego modułu.
-            Tej operacji nie można cofnąć.
+            {tr('Czy na pewno chcesz usunąć moduł "{name}"? Zostaną również usunięte wszystkie zakładki tego modułu. Tej operacji nie można cofnąć.', { name: deleteConfirm?.label || '' })}
           </p>
         </div>
       </Modal>

@@ -131,12 +131,12 @@ export default function NewConversationModal({
       isOpen={isOpen}
       onClose={onClose}
       closeOnBackdrop={false}
-      title="Nowa rozmowa"
+      title={tr('Nowa rozmowa')}
       size="sm"
       footer={mode !== 'direct' ? (
         /* Stopka - dla grupy i kanału ogłoszeń */
         <>
-          <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+          <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
           <Button
             icon={mode === 'announcement' ? Megaphone : Users}
             onClick={handleCreateGroup}
@@ -160,7 +160,7 @@ export default function NewConversationModal({
           `}
         >
           <User size={18} />
-          Prywatna
+          {tr('Prywatna')}
         </button>
         <button
           onClick={() => setMode('group')}

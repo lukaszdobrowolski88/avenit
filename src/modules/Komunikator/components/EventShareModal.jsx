@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Search } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { useT, tr } from '../../../i18n';
+import { useT, tr, appLocale } from '../../../i18n';
 import Modal from '../../../components/Modal';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
@@ -88,7 +88,7 @@ export default function EventShareModal({ isOpen, onClose, onShare }) {
             {filtered.map(ev => {
               let dateLabel = ev.date;
               try {
-                dateLabel = new Date(`${ev.date}T${ev.time || '00:00'}`).toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'long' });
+                dateLabel = new Date(`${ev.date}T${ev.time || '00:00'}`).toLocaleDateString(appLocale(), { weekday: 'short', day: 'numeric', month: 'long' });
               } catch { /* surowe */ }
               return (
                 <button

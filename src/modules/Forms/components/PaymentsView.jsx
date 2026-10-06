@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
@@ -146,8 +146,8 @@ export default function PaymentsView({ forms }) {
         processedPayments.push({
           id: response.id,
           formId: response.form_id,
-          formTitle: form?.title || 'Nieznany formularz',
-          participantName: name || 'Anonim',
+          formTitle: form?.title || tr('Nieznany formularz'),
+          participantName: name || tr('Anonim'),
           participantEmail: email,
           submittedAt: response.submitted_at,
           amount: totalAmount,
@@ -247,7 +247,7 @@ export default function PaymentsView({ forms }) {
             const amt = answers._totalPrice || breakdown.grandTotal || 0;
             if (amt > 0) unpaid.push({
               id: response.id, responseId: response.id, type: 'individual',
-              name: extractName(answers, form.fields) || response.respondent_name || 'Anonim',
+              name: extractName(answers, form.fields) || response.respondent_name || tr('Anonim'),
               email: extractEmail(answers, form.fields) || response.respondent_email,
               formTitle: form.title, amount: amt, paidAmount: answers._payment?.totalPaid || 0,
               currency: form.settings.pricing.currency || 'PLN'
@@ -474,7 +474,7 @@ export default function PaymentsView({ forms }) {
       p.participantEmail,
       p.formTitle,
       formatPrice(p.amount, p.currency),
-      p.status === 'paid' ? tr('Opłacone') : 'Oczekuje',
+      p.status === 'paid' ? tr('Opłacone') : tr('Oczekuje'),
       getMethodName(p.method),
       p.reference || '-',
       formatDate(p.submittedAt),
@@ -496,7 +496,7 @@ export default function PaymentsView({ forms }) {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('pl-PL', {
+    return new Date(dateStr).toLocaleDateString(appLocale(), {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -507,11 +507,11 @@ export default function PaymentsView({ forms }) {
 
   const getMethodName = (method) => {
     const methods = {
-      transfer: 'Przelew bankowy',
+      transfer: tr('Przelew bankowy'),
       paypal: 'PayPal',
       przelewy24: 'Przelewy24',
       cash: tr('Gotówka'),
-      card: 'Karta'
+      card: tr('Karta')
     };
     return methods[method] || method;
   };
@@ -528,7 +528,7 @@ export default function PaymentsView({ forms }) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium">
         <Clock size={12} />
-        Oczekuje
+        {tr('Oczekuje')}
       </span>
     );
   };
@@ -553,7 +553,7 @@ export default function PaymentsView({ forms }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Wszystkich</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Wszystkich')}</p>
             </div>
           </div>
         </div>
@@ -591,7 +591,7 @@ export default function PaymentsView({ forms }) {
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatPrice(stats.totalRevenue, 'PLN')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Otrzymano</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Otrzymano')}</p>
             </div>
           </div>
         </div>
@@ -635,7 +635,7 @@ export default function PaymentsView({ forms }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Szukaj (uczestnik, email, formularz, referencja)..."
+              placeholder={tr('Szukaj (uczestnik, email, formularz, referencja)...')}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
             />
           </div>
@@ -651,7 +651,7 @@ export default function PaymentsView({ forms }) {
               }`}
             >
               <Filter size={18} />
-              Filtry
+              {tr('Filtry')}
               {(selectedForm !== 'all' || statusFilter !== 'all' || methodFilter !== 'all' || dateRange.from || dateRange.to) && (
                 <span className="w-2 h-2 bg-accent-primary-light rounded-full"></span>
               )}
@@ -670,7 +670,7 @@ export default function PaymentsView({ forms }) {
               className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <Download size={18} />
-              Eksportuj
+              {tr('Eksportuj')}
             </button>
             <button
               onClick={handleOpenAddModal}
@@ -687,7 +687,7 @@ export default function PaymentsView({ forms }) {
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Formularz
+                {tr('Formularz')}
               </label>
               <select
                 value={selectedForm}
@@ -703,7 +703,7 @@ export default function PaymentsView({ forms }) {
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Status
+                {tr('Status')}
               </label>
               <select
                 value={statusFilter}
@@ -726,17 +726,17 @@ export default function PaymentsView({ forms }) {
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
               >
                 <option value="all">{tr('Wszystkie')}</option>
-                <option value="transfer">Przelew</option>
+                <option value="transfer">{tr('Przelew')}</option>
                 <option value="paypal">PayPal</option>
                 <option value="przelewy24">Przelewy24</option>
                 <option value="cash">{tr('Gotówka')}</option>
-                <option value="card">Karta</option>
+                <option value="card">{tr('Karta')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Data od
+                {tr('Data od')}
               </label>
               <DateInput
                 value={dateRange.from}
@@ -747,7 +747,7 @@ export default function PaymentsView({ forms }) {
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Data do
+                {tr('Data do')}
               </label>
               <DateInput
                 value={dateRange.to}
@@ -758,7 +758,7 @@ export default function PaymentsView({ forms }) {
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Sortuj
+                {tr('Sortuj')}
               </label>
               <div className="flex gap-2">
                 <select
@@ -767,7 +767,7 @@ export default function PaymentsView({ forms }) {
                   className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
                 >
                   <option value="date">{tr('Data')}</option>
-                  <option value="name">Uczestnik</option>
+                  <option value="name">{tr('Uczestnik')}</option>
                   <option value="amount">{tr('Kwota')}</option>
                   <option value="status">{tr('Status')}</option>
                 </select>
@@ -812,13 +812,13 @@ export default function PaymentsView({ forms }) {
           <DataTable flush>
             <THead>
               <tr>
-                <TH>Uczestnik</TH>
-                <TH>Formularz</TH>
-                <TH>Kwota</TH>
-                <TH>Status</TH>
-                <TH>Metoda</TH>
-                <TH>Data</TH>
-                <TH align="right"><span className="sr-only">Akcje</span></TH>
+                <TH>{tr('Uczestnik')}</TH>
+                <TH>{tr('Formularz')}</TH>
+                <TH>{tr('Kwota')}</TH>
+                <TH>{tr('Status')}</TH>
+                <TH>{tr('Metoda')}</TH>
+                <TH>{tr('Data')}</TH>
+                <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
               </tr>
             </THead>
             <tbody>
@@ -850,7 +850,7 @@ export default function PaymentsView({ forms }) {
                   </TD>
                   <TD>
                     <StatusPill color={payment.status === 'paid' ? STATUS_COLORS.success : STATUS_COLORS.warning}>
-                      {payment.status === 'paid' ? tr('Opłacone') : 'Oczekuje'}
+                      {payment.status === 'paid' ? tr('Opłacone') : tr('Oczekuje')}
                     </StatusPill>
                   </TD>
                   <TD>
@@ -861,7 +861,7 @@ export default function PaymentsView({ forms }) {
                       <p>{formatDate(payment.submittedAt)}</p>
                       {payment.paidAt && (
                         <p className="text-xs text-green-600 dark:text-green-400">
-                          Opłacono: {formatDate(payment.paidAt)}
+                          {tr('Opłacono:')} {formatDate(payment.paidAt)}
                         </p>
                       )}
                     </div>
@@ -959,7 +959,7 @@ export default function PaymentsView({ forms }) {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Formularz
+                  {tr('Formularz')}
                 </label>
                 <p className="text-gray-900 dark:text-white">{selectedPayment.formTitle}</p>
               </div>
@@ -973,17 +973,17 @@ export default function PaymentsView({ forms }) {
                   onChange={(e) => updatePayment(selectedPayment.id, { method: e.target.value })}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 >
-                  <option value="transfer">Przelew bankowy</option>
+                  <option value="transfer">{tr('Przelew bankowy')}</option>
                   <option value="paypal">PayPal</option>
                   <option value="przelewy24">Przelewy24</option>
                   <option value="cash">{tr('Gotówka')}</option>
-                  <option value="card">Karta</option>
+                  <option value="card">{tr('Karta')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Numer referencyjny / ID transakcji
+                  {tr('Numer referencyjny / ID transakcji')}
                 </label>
                 <input
                   type="text"
@@ -992,14 +992,14 @@ export default function PaymentsView({ forms }) {
                     setSelectedPayment(prev => ({ ...prev, reference: e.target.value }));
                   }}
                   onBlur={(e) => updatePayment(selectedPayment.id, { reference: e.target.value })}
-                  placeholder="np. numer przelewu lub ID PayPal"
+                  placeholder={tr('np. numer przelewu lub ID PayPal')}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Notatki
+                  {tr('Notatki')}
                 </label>
                 <textarea
                   value={selectedPayment.notes || ''}
@@ -1016,7 +1016,7 @@ export default function PaymentsView({ forms }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Data rejestracji
+                    {tr('Data rejestracji')}
                   </label>
                   <p className="text-gray-900 dark:text-white">
                     {formatDate(selectedPayment.submittedAt)}
@@ -1048,8 +1048,8 @@ export default function PaymentsView({ forms }) {
         size="md"
         footer={selectedUnpaid ? (
           <>
-            <Button variant="secondary" onClick={() => setShowAddModal(false)}>Anuluj</Button>
-            <Button icon={Check} onClick={handleAddPayment}>Potwierdź płatność</Button>
+            <Button variant="secondary" onClick={() => setShowAddModal(false)}>{tr('Anuluj')}</Button>
+            <Button icon={Check} onClick={handleAddPayment}>{tr('Potwierdź płatność')}</Button>
           </>
         ) : undefined}
       >
@@ -1060,7 +1060,7 @@ export default function PaymentsView({ forms }) {
               <div className="relative mb-3">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type="text" value={unpaidSearch} onChange={(e) => setUnpaidSearch(e.target.value)}
-                  placeholder="Szukaj uczestnika..."
+                  placeholder={tr('Szukaj uczestnika...')}
                   className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
               </div>
 
@@ -1083,7 +1083,7 @@ export default function PaymentsView({ forms }) {
                       <div className="text-right flex-shrink-0">
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatPrice(p.amount, p.currency)}</p>
                         {p.paidAmount > 0 && (
-                          <p className="text-[10px] text-orange-500">wpłacono {formatPrice(p.paidAmount, p.currency)}</p>
+                          <p className="text-[10px] text-orange-500">{tr('wpłacono')} {formatPrice(p.paidAmount, p.currency)}</p>
                         )}
                       </div>
                     </button>
@@ -1099,7 +1099,7 @@ export default function PaymentsView({ forms }) {
               {/* Wybrany uczestnik */}
               <button onClick={() => setSelectedUnpaid(null)}
                 className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-3">
-                <ChevronDown size={14} className="rotate-90" />Zmień uczestnika
+                <ChevronDown size={14} className="rotate-90" />{tr('Zmień uczestnika')}
               </button>
 
               <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl mb-4">
@@ -1114,7 +1114,7 @@ export default function PaymentsView({ forms }) {
                   <div className="text-right">
                     <p className="text-sm font-semibold">{formatPrice(selectedUnpaid.amount, selectedUnpaid.currency)}</p>
                     {selectedUnpaid.paidAmount > 0 && (
-                      <p className="text-[10px] text-green-500">wpłacono {formatPrice(selectedUnpaid.paidAmount, selectedUnpaid.currency)}</p>
+                      <p className="text-[10px] text-green-500">{tr('wpłacono')} {formatPrice(selectedUnpaid.paidAmount, selectedUnpaid.currency)}</p>
                     )}
                   </div>
                 </div>
@@ -1123,7 +1123,7 @@ export default function PaymentsView({ forms }) {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Kwota wpłaty ({selectedUnpaid.currency})
+                    {tr('Kwota wpłaty')} ({selectedUnpaid.currency})
                   </label>
                   <input type="number" min="0" step="0.01" value={addPaymentAmount}
                     onChange={(e) => setAddPaymentAmount(e.target.value)}

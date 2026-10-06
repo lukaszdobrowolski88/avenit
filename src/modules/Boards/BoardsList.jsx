@@ -34,23 +34,23 @@ function AiBoardGenerator({ onGenerate, busy }) {
       <div className="rounded-2xl bg-white dark:bg-gray-800 p-4">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles size={18} className="text-accent-primary" />
-          <span className="font-semibold text-gray-800 dark:text-gray-100">Zbuduj tablicę z AI</span>
-          <span className="text-xs text-gray-400">— opisz proces, a Claude zbuduje gotową tablicę</span>
+          <span className="font-semibold text-gray-800 dark:text-gray-100">{tr('Zbuduj tablicę z AI')}</span>
+          <span className="text-xs text-gray-400">— {tr('opisz proces, a Claude zbuduje gotową tablicę')}</span>
         </div>
         <div className="flex items-end gap-2">
           <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={2}
-            placeholder="np. Planowanie chrztu: zgłoszenia, przygotowania, terminy, osoby odpowiedzialne…"
+            placeholder={tr('np. Planowanie chrztu: zgłoszenia, przygotowania, terminy, osoby odpowiedzialne…')}
             className="flex-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl px-3 py-2 text-sm outline-none resize-none text-gray-800 dark:text-gray-100" />
           <button onClick={() => prompt.trim() && onGenerate(prompt.trim())} disabled={busy || !prompt.trim()}
             className="flex items-center gap-1.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-accent-primary/20 hover:opacity-90 disabled:opacity-50 shrink-0">
-            {busy ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />} Generuj
+            {busy ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />} {tr('Generuj')}
           </button>
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2">
           {AI_SUGGESTIONS.map(s => (
-            <button key={s} onClick={() => setPrompt(s)} disabled={busy}
+            <button key={s} onClick={() => setPrompt(tr(s))} disabled={busy}
               className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 hover:bg-accent-primary/10 hover:text-accent-primary disabled:opacity-50">
-              {s}
+              {tr(s)}
             </button>
           ))}
         </div>
@@ -71,8 +71,8 @@ function TemplateChooser({ onPick, onClose, busy }) {
                 className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:shadow-md text-left disabled:opacity-50">
                 <span data-tone={1} className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 shrink-0"><Icon size={20} /></span>
                 <div>
-                  <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{t.name}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{t.description}</div>
+                  <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr(t.name)}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{tr(t.description)}</div>
                 </div>
               </button>
             );
@@ -144,9 +144,9 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
       const spec = await generateBoardSpec(prompt);
       const res = await createFromSpec(spec, { module_key: moduleKey, color: CARD_COLORS[boards.length % CARD_COLORS.length] });
       if (res.success) onOpenBoard(res.data.id);
-      else setAiError(res.error || 'Nie udało się utworzyć tablicy.');
+      else setAiError(res.error || tr('Nie udało się utworzyć tablicy.'));
     } catch (e) {
-      setAiError(e.message || 'Błąd generowania AI.');
+      setAiError(e.message || tr('Błąd generowania AI.'));
     } finally { setAiBusy(false); }
   };
 
@@ -154,7 +154,7 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
 
   const handlePick = async (template) => {
     setCreating(true);
-    const res = await createFromTemplate(template, { module_key: moduleKey, name: template.key === 'blank' ? 'Nowa tablica' : template.name });
+    const res = await createFromTemplate(template, { module_key: moduleKey, name: template.key === 'blank' ? tr('Nowa tablica') : tr(template.name) });
     setCreating(false);
     setChooser(false);
     if (res.success) onOpenBoard(res.data.id);
@@ -206,7 +206,7 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
                   <button onClick={() => setCollapsedFolders(prev => { const n = new Set(prev); const k = folder || '__none__'; n.has(k) ? n.delete(k) : n.add(k); return n; })}
                     className="flex items-center gap-1.5 mb-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
                     {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                    <FolderIcon size={15} className="text-gray-400" /> {folder || 'Bez folderu'} <span className="text-gray-400 font-normal">{list.length}</span>
+                    <FolderIcon size={15} className="text-gray-400" /> {folder || tr('Bez folderu')} <span className="text-gray-400 font-normal">{list.length}</span>
                   </button>
                 )}
                 {!isCollapsed && (
@@ -241,7 +241,7 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
                                 )}
                                 {canCreate && <button onClick={() => { duplicateBoard(b.id); close(); }}
                                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> {tr('Duplikuj')}</button>}
-                                {canDelete && <button onClick={async () => { if (await confirmDialog(`Usunąć tablicę „${b.name}"?`)) deleteBoard(b.id); close(); }}
+                                {canDelete && <button onClick={async () => { if (await confirmDialog(tr('Usunąć tablicę „{name}"?', { name: b.name }))) deleteBoard(b.id); close(); }}
                                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń')}</button>}
                               </div>
                             )}

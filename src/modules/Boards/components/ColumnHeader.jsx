@@ -60,23 +60,23 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
           <div className="p-1.5">
             <button onClick={() => { setRenaming(true); close(); }}
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200">
-              <Pencil size={14} /> Zmień nazwę
+              <Pencil size={14} /> {tr('Zmień nazwę')}
             </button>
             {onReorder && (
               <div className="flex gap-1">
                 <button onClick={() => { move(-1); close(); }} disabled={idx <= 0}
                   className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed">
-                  <ArrowLeft size={14} /> W lewo
+                  <ArrowLeft size={14} /> {tr('W lewo')}
                 </button>
                 <button onClick={() => { move(1); close(); }} disabled={idx >= sortedCols.length - 1}
                   className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed">
-                  W prawo <ArrowRight size={14} />
+                  {tr('W prawo')} <ArrowRight size={14} />
                 </button>
               </div>
             )}
             {(column.type === 'status' || column.type === 'priority') && (
               <div className="px-2 py-1.5">
-                <label className="text-[11px] text-gray-400">Etykiety statusu</label>
+                <label className="text-[11px] text-gray-400">{tr('Etykiety statusu')}</label>
                 <div className="mt-1.5">
                   <LabelsEditor column={column} onUpdateColumn={onUpdate} />
                 </div>
@@ -84,17 +84,17 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
             )}
             {column.type === 'number' && (
               <div className="px-2 py-1.5">
-                <label className="text-[11px] text-gray-400">Jednostka</label>
+                <label className="text-[11px] text-gray-400">{tr('Jednostka')}</label>
                 <input defaultValue={column.settings?.unit || ''} onBlur={(e) => onUpdate(column.id, { settings: { ...column.settings, unit: e.target.value } })}
-                  className="w-full mt-1 text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" placeholder="np. zł, h" />
+                  className="w-full mt-1 text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" placeholder={tr('np. zł, h')} />
               </div>
             )}
             {column.type === 'formula' && (
               <div className="px-2 py-1.5">
-                <label className="text-[11px] text-gray-400">Wyrażenie</label>
+                <label className="text-[11px] text-gray-400">{tr('Wyrażenie')}</label>
                 <input defaultValue={column.settings?.expression || ''} onBlur={(e) => onUpdate(column.id, { settings: { ...column.settings, expression: e.target.value } })}
-                  className="w-full mt-1 text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none font-mono" placeholder="{Budżet} * 2" />
-                <p className="text-[10px] text-gray-400 mt-1">Odwołuj się do kolumn: {'{Nazwa}'}. Działania: + − × ÷ ( )</p>
+                  className="w-full mt-1 text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none font-mono" placeholder={tr('{Budżet} * 2')} />
+                <p className="text-[10px] text-gray-400 mt-1">{tr('Odwołuj się do kolumn: {example}. Działania: + − × ÷ ( )', { example: `{${tr('Nazwa')}}` })}</p>
               </div>
             )}
             {column.type === 'connect_board' && (
@@ -130,9 +130,9 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
                 )}
               </div>
             )}
-            <button onClick={async () => { if (await confirmDialog(`Usunąć kolumnę „${column.name}" i jej wartości?`)) onDelete(column.id); close(); }}
+            <button onClick={async () => { if (await confirmDialog(tr('Usunąć kolumnę „{name}" i jej wartości?', { name: column.name }))) onDelete(column.id); close(); }}
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600">
-              <Trash2 size={14} /> Usuń kolumnę
+              <Trash2 size={14} /> {tr('Usuń kolumnę')}
             </button>
           </div>
         )}

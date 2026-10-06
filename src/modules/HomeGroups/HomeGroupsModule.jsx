@@ -23,7 +23,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
@@ -700,7 +700,7 @@ export default function HomeGroupsModule() {
       const folderId = await ensureGroupFolder(currentGroup);
 
       const file = materialForm.attachment;
-      if (file.size > 50 * 1024 * 1024) throw new Error('Plik przekracza limit 50MB');
+      if (file.size > 50 * 1024 * 1024) throw new Error(tr('Plik przekracza limit 50MB'));
       const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const storagePath = `${MATERIALS_TEAM}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${sanitized}`;
 
@@ -780,7 +780,7 @@ export default function HomeGroupsModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader moduleKey="homegroups" icon={Home} title="Grupy Domowe" />
+      <PageHeader moduleKey="homegroups" icon={Home} title={tr('Grupy Domowe')} />
 
       {/* Tabs */}
       <ResponsiveTabs moduleKey="homegroups"
@@ -804,7 +804,7 @@ export default function HomeGroupsModule() {
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-colors">
           <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Grupy Domowe ({filteredGroups.length})
+              {tr('Grupy Domowe')} ({filteredGroups.length})
             </h2>
             <div className="flex gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none min-w-0">
@@ -862,7 +862,7 @@ export default function HomeGroupsModule() {
                     {group.meeting_day && (
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Calendar size={14} />
-                        <span>{group.meeting_day} {group.meeting_time && `o ${group.meeting_time}`}</span>
+                        <span>{group.meeting_day} {group.meeting_time && tr('o {time}', { time: group.meeting_time })}</span>
                       </div>
                     )}
                     {group.location && (
@@ -878,13 +878,13 @@ export default function HomeGroupsModule() {
                       onClick={() => { setCurrentGroup(group); setShowGroupMembersModal(true); }}
                       className="flex-1 bg-accent-primary-lightest dark:bg-gray-800 text-accent-primary dark:text-accent-primary-light text-xs font-bold py-2 rounded-xl hover:bg-accent-primary-lighter dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"
                     >
-                      <Users size={14}/> Członkowie ({memberCount})
+                      <Users size={14}/> {tr('Członkowie')} ({memberCount})
                     </button>
                     <button
                       onClick={() => openMaterialsModal(group)}
                       className="flex-1 bg-accent-secondary-lightest dark:bg-gray-800 text-accent-secondary dark:text-accent-secondary-light text-xs font-bold py-2 rounded-xl hover:bg-accent-secondary-lighter dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"
                     >
-                      <BookOpen size={14}/> Materiały ({materialCounts[group.id] || 0})
+                      <BookOpen size={14}/> {tr('Materiały')} ({materialCounts[group.id] || 0})
                     </button>
                   </div>
                 </div>
@@ -903,13 +903,13 @@ export default function HomeGroupsModule() {
 
       {/* TASKS TAB — nowy silnik Tablic (Monday-style) */}
       {activeTab === 'tasks' && (
-        <ModuleBoard sourceKind="home_group_tasks" moduleKey="homegroups" title="Zadania grup domowych" />
+        <ModuleBoard sourceKind="home_group_tasks" moduleKey="homegroups" title={tr('Zadania grup domowych')} />
       )}
       {activeTab === 'leaders' && (
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-              Liderzy ({filteredLeaders.length})
+              {tr('Liderzy')} ({filteredLeaders.length})
             </h2>
             <div className="flex gap-3">
               <div className="relative">
@@ -923,7 +923,7 @@ export default function HomeGroupsModule() {
                 />
               </div>
               <Button onClick={() => openModal('leader')} icon={Plus}>
-                Dodaj Lidera
+                {tr('Dodaj Lidera')}
               </Button>
             </div>
           </div>
@@ -956,7 +956,7 @@ export default function HomeGroupsModule() {
                         onClick={() => openModal('leader', leader)}
                         className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline"
                       >
-                        Edytuj
+                        {tr('Edytuj')}
                       </button>
                       <button
                         onClick={() => handleDelete(leader.id, 'leader')}
@@ -981,7 +981,7 @@ export default function HomeGroupsModule() {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-              Członkowie ({filteredMembers.length})
+              {tr('Członkowie')} ({filteredMembers.length})
             </h2>
             <div className="flex gap-3">
               <div className="relative">
@@ -1038,7 +1038,7 @@ export default function HomeGroupsModule() {
                           onClick={() => openModal('member', member)}
                           className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline"
                         >
-                          Edytuj
+                          {tr('Edytuj')}
                         </button>
                         <button
                           onClick={() => handleDelete(member.id, 'member')}
@@ -1099,11 +1099,11 @@ export default function HomeGroupsModule() {
         onClose={closeModal}
         closeOnBackdrop={false}
         size="lg"
-        title={`${editingItem ? 'Edytuj' : 'Dodaj'} ${modalType === 'group' ? tr('Grupę') : modalType === 'leader' ? 'Lidera' : tr('Członka')}`}
+        title={`${editingItem ? tr('Edytuj') : tr('Dodaj')} ${modalType === 'group' ? tr('Grupę') : modalType === 'leader' ? tr('Lidera') : tr('Członka')}`}
         footer={<>
-          <Button variant="secondary" onClick={closeModal}>Anuluj</Button>
+          <Button variant="secondary" onClick={closeModal}>{tr('Anuluj')}</Button>
           <Button data-tour="hg-group-save" onClick={() => modalType === 'group' ? handleSaveGroup() : handleSavePerson(modalType)}>
-            Zapisz
+            {tr('Zapisz')}
           </Button>
         </>}
       >
@@ -1130,7 +1130,7 @@ export default function HomeGroupsModule() {
                   </div>
                   <div>
                     <CustomSelect
-                      label="Lider"
+                      label={tr('Lider')}
                       value={groupForm.leader_id}
                       onChange={(val) => setGroupForm({...groupForm, leader_id: val})}
                       options={[
@@ -1241,7 +1241,7 @@ export default function HomeGroupsModule() {
                     <>
                       <div>
                         <CustomSelect
-                          label="Grupa"
+                          label={tr('Grupa')}
                           value={personForm.group_id}
                           onChange={(val) => setPersonForm({...personForm, group_id: val})}
                           options={[
@@ -1277,7 +1277,7 @@ export default function HomeGroupsModule() {
         onClose={() => setShowGroupMembersModal(false)}
         closeOnBackdrop={false}
         size="xl"
-        title={`Członkowie: ${currentGroup.name}`}
+        title={`${tr('Członkowie:')} ${currentGroup.name}`}
       >
             <div className="p-6">
               <div className="bg-accent-primary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
@@ -1297,7 +1297,7 @@ export default function HomeGroupsModule() {
                   onClick={attachMemberToGroup}
                   className="bg-accent-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-accent-primary h-[46px]"
                 >
-                  Dodaj
+                  {tr('Dodaj')}
                 </button>
               </div>
 
@@ -1344,7 +1344,7 @@ export default function HomeGroupsModule() {
         onClose={() => setShowMaterialsModal(false)}
         closeOnBackdrop={false}
         size="lg"
-        title={`Materiały: ${currentGroup.name}`}
+        title={`${tr('Materiały:')} ${currentGroup.name}`}
       >
             <div className="p-6">
               <div className="bg-accent-secondary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 space-y-2">
@@ -1372,19 +1372,19 @@ export default function HomeGroupsModule() {
                     onClick={() => document.getElementById('file-upload').click()}
                     className={`border px-4 rounded-xl flex items-center gap-2 h-[46px] transition ${materialForm.attachment ? 'bg-accent-secondary-lighter border-accent-secondary-light text-accent-secondary' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-500 text-gray-600 dark:text-gray-300'}`}
                   >
-                    <Upload size={16}/> {materialForm.attachment ? 'Plik wybrany' : 'Plik'}
+                    <Upload size={16}/> {materialForm.attachment ? tr('Plik wybrany') : tr('Plik')}
                   </button>
                   <button
                     onClick={addMaterial}
                     disabled={uploading}
                     className="bg-accent-secondary text-white px-6 rounded-xl font-bold hover:bg-accent-secondary h-[46px] disabled:opacity-50"
                   >
-                    {uploading ? '...' : 'Dodaj'}
+                    {uploading ? '...' : tr('Dodaj')}
                   </button>
                 </div>
               </div>
 
-              <p className="text-[11px] text-gray-400 mb-2">Materiały trafiają do zakładki „Pliki" (folder „{currentGroup.name}") i są udostępnione członkom tej grupy. Pliki dodane w „Plikach" w tym folderze też pojawią się tutaj.</p>
+              <p className="text-[11px] text-gray-400 mb-2">{tr('Materiały trafiają do zakładki „Pliki" (folder „{name}") i są udostępnione członkom tej grupy. Pliki dodane w „Plikach" w tym folderze też pojawią się tutaj.', { name: currentGroup.name })}</p>
               <div className="flex-1 overflow-y-auto space-y-2">
                 {groupMaterials.map(m => {
                   const url = supabase.storage.from('materials').getPublicUrl(m.storage_path).data.publicUrl;
@@ -1432,16 +1432,16 @@ export default function HomeGroupsModule() {
         onClose={() => setShowTaskModal(false)}
         closeOnBackdrop={false}
         size="xl"
-        title={taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}
+        title={taskForm.id ? tr('Edycja zadania') : tr('Nowe zadanie')}
         footer={<>
           {taskForm.id && (
             <Button variant="danger" className="mr-auto" onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }}>
               {tr('Usuń zadanie')}
             </Button>
           )}
-          <Button variant="secondary" onClick={() => setShowTaskModal(false)}>Anuluj</Button>
+          <Button variant="secondary" onClick={() => setShowTaskModal(false)}>{tr('Anuluj')}</Button>
           <Button onClick={saveTask}>
-            Zapisz zmiany
+            {tr('Zapisz zmiany')}
           </Button>
         </>}
       >
@@ -1467,23 +1467,23 @@ export default function HomeGroupsModule() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <CustomDatePicker
-                      label="Termin"
+                      label={tr('Termin')}
                       value={taskForm.due_date}
                       onChange={(val) => setTaskForm({...taskForm, due_date: val})}
                     />
                   </div>
                   <div>
                     <CustomSelect
-                      label="Status"
+                      label={tr('Status')}
                       value={taskForm.status}
                       onChange={(val) => setTaskForm({...taskForm, status: val})}
-                      options={STATUSES}
+                      options={STATUSES.map((s) => ({ value: s, label: tr(s) }))}
                     />
                   </div>
                 </div>
                 <div>
                   <CustomSelect
-                    label="Przypisana osoba"
+                    label={tr('Przypisana osoba')}
                     value={taskForm.assigned_to}
                     onChange={(val) => setTaskForm({...taskForm, assigned_to: val})}
                     options={[
@@ -1495,7 +1495,7 @@ export default function HomeGroupsModule() {
                 </div>
                 <div>
                   <CustomSelect
-                    label="Grupa"
+                    label={tr('Grupa')}
                     value={taskForm.group_id}
                     onChange={(val) => setTaskForm({...taskForm, group_id: val})}
                     options={[
@@ -1511,7 +1511,7 @@ export default function HomeGroupsModule() {
             <div className="w-2/5 bg-gray-50/50 dark:bg-gray-800/30 p-6 flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                  <MessageSquare size={18}/> Komentarze
+                  <MessageSquare size={18}/> {tr('Komentarze')}
                 </h4>
               </div>
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
@@ -1526,7 +1526,7 @@ export default function HomeGroupsModule() {
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-bold text-xs text-accent-primary dark:text-accent-primary-light">{comment.author_name}</span>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {new Date(comment.created_at).toLocaleString('pl-PL')}
+                        {new Date(comment.created_at).toLocaleString(appLocale())}
                       </span>
                     </div>
                     <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
@@ -1564,11 +1564,11 @@ export default function HomeGroupsModule() {
         onClose={() => setShowExpenseModal(false)}
         closeOnBackdrop={false}
         size="lg"
-        title={`Dodaj wydatek - ${expenseForm.ministry}`}
+        title={`${tr('Dodaj wydatek')} - ${tr(expenseForm.ministry)}`}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>{tr('Anuluj')}</Button>
           <Button onClick={saveExpense}>
-            Zapisz wydatek
+            {tr('Zapisz wydatek')}
           </Button>
         </>}
       >

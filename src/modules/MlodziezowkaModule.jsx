@@ -21,7 +21,7 @@ import { useUserRole } from '../hooks/useUserRole';
 import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
@@ -123,8 +123,8 @@ const CustomDatePicker = ({ label, value, onChange }) => {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const blanks = Array.from({ length: startDay }, (_, i) => i);
 
-  const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
-  const displayValue = value ? new Date(value).toLocaleDateString('pl-PL') : '';
+  const monthName = viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
+  const displayValue = value ? new Date(value).toLocaleDateString(appLocale()) : '';
 
   return (
     <div className="relative w-full">
@@ -319,8 +319,8 @@ export default function MlodziezowkaModule() {
         supabase.from('mlodziezowka_leaders').select('*').order('full_name'),
       ]);
 
-      if (membersResult.error) throw new Error(`Błąd członków: ${membersResult.error.message}`);
-      if (leadersResult.error) throw new Error(`Błąd liderów: ${leadersResult.error.message}`);
+      if (membersResult.error) throw new Error(tr('Błąd członków: {msg}', { msg: membersResult.error.message }));
+      if (leadersResult.error) throw new Error(tr('Błąd liderów: {msg}', { msg: leadersResult.error.message }));
 
       setMembers(membersResult.data || []);
       setLeaders(leadersResult.data || []);
@@ -707,7 +707,7 @@ export default function MlodziezowkaModule() {
   };
 
   if (loading) return <Spinner center />;
-  if (error) return <div className="p-10 text-red-600 dark:text-red-400">Błąd: {error}</div>;
+  if (error) return <div className="p-10 text-red-600 dark:text-red-400">{tr('Błąd:')} {error}</div>;
 
   return (
     <div className="space-y-8">
@@ -736,13 +736,13 @@ export default function MlodziezowkaModule() {
 
       {/* ZADANIA — nowy silnik Tablic (Monday-style) */}
       {activeTab === 'tasks' && (
-        <ModuleBoard sourceKind="mlodziezowka_tasks" moduleKey="mlodziezowka" title="Zadania młodzieżówki" />
+        <ModuleBoard sourceKind="mlodziezowka_tasks" moduleKey="mlodziezowka" title={tr('Zadania młodzieżówki')} />
       )}
       {activeTab === 'leaders' && (
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Liderzy ({leaders.length})</h2>
-            <button onClick={() => { setLeaderForm({ id: null, full_name: '', email: '', phone: '', role: '' }); setShowLeaderModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj lidera</button>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Liderzy')} ({leaders.length})</h2>
+            <button onClick={() => { setLeaderForm({ id: null, full_name: '', email: '', phone: '', role: '' }); setShowLeaderModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj lidera')}</button>
           </div>
           <DataTable tableClassName="min-w-[700px]">
             <THead>
@@ -776,18 +776,18 @@ export default function MlodziezowkaModule() {
       {activeTab === 'members' && (
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Członkowie ({members.length})</h2>
-            <button onClick={() => { setMemberForm({ id: null, full_name: '', email: '', phone: '', birth_date: '', notes: '' }); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj członka</button>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Członkowie')} ({members.length})</h2>
+            <button onClick={() => { setMemberForm({ id: null, full_name: '', email: '', phone: '', birth_date: '', notes: '' }); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
           </div>
           <DataTable tableClassName="min-w-[700px]">
             <THead>
-              <tr><TH>{tr('Imię i nazwisko')}</TH><TH>Data urodzenia</TH><TH>{tr('Email')}</TH><TH>{tr('Telefon')}</TH><TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH></tr>
+              <tr><TH>{tr('Imię i nazwisko')}</TH><TH>{tr('Data urodzenia')}</TH><TH>{tr('Email')}</TH><TH>{tr('Telefon')}</TH><TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH></tr>
             </THead>
             <tbody>
               {members.map(m => (
                 <TR key={m.id}>
                   <TD className="font-medium text-gray-900 dark:text-white">{m.full_name}</TD>
-                  <TD muted numeric>{m.birth_date ? new Date(m.birth_date).toLocaleDateString('pl-PL') : ''}</TD>
+                  <TD muted numeric>{m.birth_date ? new Date(m.birth_date).toLocaleDateString(appLocale()) : ''}</TD>
                   <TD muted>{m.email}</TD>
                   <TD muted numeric>{m.phone}</TD>
                   <TD align="right">
@@ -827,7 +827,7 @@ export default function MlodziezowkaModule() {
       <Modal
         isOpen={showTaskModal}
         onClose={() => setShowTaskModal(false)}
-        title={taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}
+        title={taskForm.id ? tr('Edycja zadania') : tr('Nowe zadanie')}
         size="xl"
         closeOnBackdrop={false}
         footer={<>
@@ -849,23 +849,23 @@ export default function MlodziezowkaModule() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <CustomDatePicker
-                    label="Termin"
+                    label={tr('Termin')}
                     value={taskForm.due_date}
                     onChange={val => setTaskForm({...taskForm, due_date: val})}
                   />
                 </div>
                 <div>
                   <CustomSelect
-                    label="Status"
+                    label={tr('Status')}
                     value={taskForm.status}
                     onChange={val => setTaskForm({...taskForm, status: val})}
-                    options={STATUSES}
+                    options={STATUSES.map((s) => ({ value: s, label: tr(s) }))}
                   />
                 </div>
               </div>
               <div>
                 <CustomSelect
-                  label="Przypisana osoba (lider)"
+                  label={tr('Przypisana osoba (lider)')}
                   value={taskForm.assigned_to}
                   onChange={val => setTaskForm({...taskForm, assigned_to: val})}
                   options={[
@@ -885,14 +885,14 @@ export default function MlodziezowkaModule() {
 
           <div className="w-2/5 bg-gray-50/50 dark:bg-gray-800/30 p-6 flex flex-col">
             <div className="flex items-center mb-4">
-              <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2"><MessageSquare size={18}/> Komentarze</h4>
+              <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2"><MessageSquare size={18}/> {tr('Komentarze')}</h4>
             </div>
             <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
               {!taskForm.id ? <EmptyState icon={MessageSquare} title={t('Zapisz zadanie, aby dodawać komentarze.')} compact /> : loadingComments ? <Spinner center /> : comments.length === 0 ? <EmptyState icon={MessageSquare} title={t('Brak komentarzy. Bądź pierwszy!')} compact /> : comments.map(comment => (
                 <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                   <div className="flex justify-between items-start mb-1">
                     <span className="font-bold text-xs text-accent-primary dark:text-accent-secondary-light">{comment.author_name}</span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(comment.created_at).toLocaleString('pl-PL')}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(comment.created_at).toLocaleString(appLocale())}</span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
                 </div>
@@ -923,7 +923,7 @@ export default function MlodziezowkaModule() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <CustomDatePicker
-                label="Data urodzenia"
+                label={tr('Data urodzenia')}
                 value={memberForm.birth_date}
                 onChange={val => setMemberForm({...memberForm, birth_date: val})}
               />
@@ -940,7 +940,7 @@ export default function MlodziezowkaModule() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki')}</label>
             <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={2} placeholder={t('Dodatkowe informacje...')} value={memberForm.notes || ''} onChange={e => setMemberForm({...memberForm, notes: e.target.value})} />
           </div>
         </div>
@@ -950,7 +950,7 @@ export default function MlodziezowkaModule() {
       <Modal
         isOpen={showLeaderModal}
         onClose={() => setShowLeaderModal(false)}
-        title={leaderForm.id ? 'Edytuj lidera' : 'Nowy lider'}
+        title={leaderForm.id ? tr('Edytuj lidera') : tr('Nowy lider')}
         closeOnBackdrop={false}
         footer={<>
           <Button variant="secondary" onClick={() => setShowLeaderModal(false)}>{tr('Anuluj')}</Button>
@@ -989,14 +989,14 @@ export default function MlodziezowkaModule() {
         size="xl"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
-          <Button onClick={saveExpense}>Zapisz wydatek</Button>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveExpense}>{tr('Zapisz wydatek')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <CustomDatePicker
-              label="Data dokumentu"
+              label={tr('Data dokumentu')}
               value={expenseForm.payment_date}
               onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
             />
@@ -1066,7 +1066,7 @@ export default function MlodziezowkaModule() {
               <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-secondary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                 <Upload size={18} className="text-gray-400" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
+                  {uploadingFile ? tr('Przesyłanie...') : tr('Dodaj plik(i)')}
                 </span>
                 <input
                   type="file"

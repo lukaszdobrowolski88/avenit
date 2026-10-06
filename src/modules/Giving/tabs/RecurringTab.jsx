@@ -11,6 +11,7 @@ import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const emptyForm = {
   member_id: '', donor_name: '', fund_id: '', amount: '', frequency: 'monthly',
@@ -46,11 +47,11 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
   const fundsById = useMemo(() => { const m = {}; (funds || []).forEach(f => { m[f.id] = f; }); return m; }, [funds]);
 
   const memberOptions = useMemo(() => [
-    { value: '', label: '— darczyńca spoza bazy —' },
+    { value: '', label: tr('— darczyńca spoza bazy —') },
     ...(members || []).map(m => ({ value: m.id, label: memberName(m) })),
   ], [members]);
   const fundOptions = useMemo(() => [
-    { value: '', label: '— bez funduszu —' },
+    { value: '', label: tr('— bez funduszu —') },
     ...(funds || []).map(f => ({ value: f.id, label: f.name })),
   ], [funds]);
 
@@ -66,8 +67,8 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
   };
 
   const save = async () => {
-    if (!form.amount || Number(form.amount) <= 0) { toast.error('Podaj kwotę.'); return; }
-    if (!form.member_id && !form.donor_name) { toast.error('Wskaż członka lub podaj darczyńcę.'); return; }
+    if (!form.amount || Number(form.amount) <= 0) { toast.error(tr('Podaj kwotę.')); return; }
+    if (!form.member_id && !form.donor_name) { toast.error(tr('Wskaż członka lub podaj darczyńcę.')); return; }
     setSaving(true);
     try {
       const payload = {
@@ -89,7 +90,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
       setModalOpen(false);
       load();
     } catch (err) {
-      toast.error('Nie udało się zapisać planu: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać planu: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
@@ -100,16 +101,16 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
       const { error } = await supabase.from('giving_recurring').update({ is_active: !p.is_active }).eq('id', p.id);
       if (error) throw error;
       load();
-    } catch (err) { toast.error('Błąd: ' + (err.message || err)); }
+    } catch (err) { toast.error(tr('Błąd: {msg}', { msg: err.message || err })); }
   };
 
   const remove = async (p) => {
-    if (!await confirmDialog('Usunąć ten plan cykliczny?')) return;
+    if (!await confirmDialog(tr('Usunąć ten plan cykliczny?'))) return;
     try {
       const { error } = await supabase.from('giving_recurring').delete().eq('id', p.id);
       if (error) throw error;
       load();
-    } catch (err) { toast.error('Nie udało się usunąć: ' + (err.message || err)); }
+    } catch (err) { toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err })); }
   };
 
   const donorName = (p) => p.member_id && membersById?.[p.member_id] ? memberName(membersById[p.member_id]) : (p.donor_name || '');
@@ -122,27 +123,27 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
     <div className="space-y-4">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <div className="text-sm">
-          <span className="text-gray-500 dark:text-gray-400">Aktywne plany: <b className="text-gray-900 dark:text-white">{plans.filter(p => p.is_active).length}</b></span>
-          <span className="text-gray-500 dark:text-gray-400 ml-4">Szac. miesięcznie: <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(monthlyTotal)}</b></span>
+          <span className="text-gray-500 dark:text-gray-400">{tr('Aktywne plany:')} <b className="text-gray-900 dark:text-white">{plans.filter(p => p.is_active).length}</b></span>
+          <span className="text-gray-500 dark:text-gray-400 ml-4">{tr('Szac. miesięcznie:')} <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(monthlyTotal)}</b></span>
         </div>
-        <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md"><Plus size={16} /> Dodaj plan</button>
+        <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md"><Plus size={16} /> {tr('Dodaj plan')}</button>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? <Spinner center />
         : plans.length === 0 ? (
-          <EmptyState icon={Repeat} title="Brak planów cyklicznego dawania." />
+          <EmptyState icon={Repeat} title={tr('Brak planów cyklicznego dawania.')} />
         ) : (
           <DataTable flush>
             <THead>
               <tr>
-                <TH>Darczyńca</TH>
-                <TH>Kwota</TH>
-                <TH>Częstotliwość</TH>
-                <TH>Fundusz</TH>
-                <TH>Nast. pobranie</TH>
-                <TH>Status</TH>
-                <TH align="right"><span className="sr-only">Akcje</span></TH>
+                <TH>{tr('Darczyńca')}</TH>
+                <TH>{tr('Kwota')}</TH>
+                <TH>{tr('Częstotliwość')}</TH>
+                <TH>{tr('Fundusz')}</TH>
+                <TH>{tr('Nast. pobranie')}</TH>
+                <TH>{tr('Status')}</TH>
+                <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
               </tr>
             </THead>
             <tbody>
@@ -150,7 +151,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
                 <TR key={p.id}>
                   <TD className="font-medium text-gray-900 dark:text-white">{donorName(p)}</TD>
                   <TD numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(p.amount, p.currency)}</TD>
-                  <TD muted>{frequencyLabel(p.frequency)}</TD>
+                  <TD muted>{tr(frequencyLabel(p.frequency))}</TD>
                   <TD muted>
                     {p.fund_id && fundsById[p.fund_id] ? (
                       <span className="inline-flex items-center gap-1.5">
@@ -161,11 +162,11 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
                   </TD>
                   <TD muted numeric className="whitespace-nowrap">{formatDate(p.next_run_date)}</TD>
                   <TD>
-                    <StatusPill color={p.is_active ? STATUS_COLORS.success : STATUS_COLORS.neutral}>{p.is_active ? 'Aktywny' : 'Wstrzymany'}</StatusPill>
+                    <StatusPill color={p.is_active ? STATUS_COLORS.success : STATUS_COLORS.neutral}>{p.is_active ? tr('Aktywny') : tr('Wstrzymany')}</StatusPill>
                   </TD>
                   <TD align="right">
                     <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                        <button onClick={() => toggleActive(p)} title={p.is_active ? 'Wstrzymaj' : 'Wznów'} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700">{p.is_active ? <Pause size={15} /> : <Play size={15} />}</button>
+                        <button onClick={() => toggleActive(p)} title={p.is_active ? tr('Wstrzymaj') : tr('Wznów')} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700">{p.is_active ? <Pause size={15} /> : <Play size={15} />}</button>
                         <button onClick={() => openEdit(p)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
                         <button onClick={() => remove(p)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
                     </div>
@@ -180,43 +181,43 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
       <Modal
         isOpen={modalOpen}
         onClose={() => !saving && setModalOpen(false)}
-        title={editing ? 'Edytuj plan' : 'Nowy plan cykliczny'}
+        title={editing ? tr('Edytuj plan') : tr('Nowy plan cykliczny')}
         footer={<>
-          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
-          <Button onClick={save} loading={saving}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>{tr('Anuluj')}</Button>
+          <Button onClick={save} loading={saving}>{tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
-              <CustomSelect label="Darczyńca (członek)" value={form.member_id} onChange={v => setForm(f => ({ ...f, member_id: v }))} options={memberOptions} />
+              <CustomSelect label={tr('Darczyńca (członek)')} value={form.member_id} onChange={v => setForm(f => ({ ...f, member_id: v }))} options={memberOptions} />
               {!form.member_id && (
-                <input value={form.donor_name} onChange={e => setForm(f => ({ ...f, donor_name: e.target.value }))} placeholder="Imię i nazwisko darczyńcy" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                <input value={form.donor_name} onChange={e => setForm(f => ({ ...f, donor_name: e.target.value }))} placeholder={tr('Imię i nazwisko darczyńcy')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Kwota (PLN)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kwota (PLN)')}</label>
                   <input type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
-                <CustomSelect label="Częstotliwość" value={form.frequency} onChange={v => setForm(f => ({ ...f, frequency: v }))} options={GIVING_FREQUENCIES} />
+                <CustomSelect label={tr('Częstotliwość')} value={form.frequency} onChange={v => setForm(f => ({ ...f, frequency: v }))} options={GIVING_FREQUENCIES.map((o) => ({ ...o, label: tr(o.label) }))} />
               </div>
-              <CustomSelect label="Fundusz" value={form.fund_id} onChange={v => setForm(f => ({ ...f, fund_id: v }))} options={fundOptions} />
+              <CustomSelect label={tr('Fundusz')} value={form.fund_id} onChange={v => setForm(f => ({ ...f, fund_id: v }))} options={fundOptions} />
               <div className="grid grid-cols-2 gap-3">
-                <CustomSelect label="Metoda" value={form.method} onChange={v => setForm(f => ({ ...f, method: v }))} options={GIVING_METHODS} />
+                <CustomSelect label={tr('Metoda')} value={form.method} onChange={v => setForm(f => ({ ...f, method: v }))} options={GIVING_METHODS.map((o) => ({ ...o, label: tr(o.label) }))} />
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Dzień miesiąca</label>
-                  <input type="number" min="1" max="28" value={form.day_of_month} onChange={e => setForm(f => ({ ...f, day_of_month: e.target.value }))} placeholder="np. 10" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Dzień miesiąca')}</label>
+                  <input type="number" min="1" max="28" value={form.day_of_month} onChange={e => setForm(f => ({ ...f, day_of_month: e.target.value }))} placeholder={tr('np. 10')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Początek</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Początek')}</label>
                   <DateInput value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Koniec (opcjonalnie)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Koniec (opcjonalnie)')}</label>
                   <DateInput value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
-              <p className="text-xs text-gray-400">Plany są ewidencją zobowiązań. Automatyczne pobrania online podłączymy w kroku integracji Przelewy24/BLIK.</p>
+              <p className="text-xs text-gray-400">{tr('Plany są ewidencją zobowiązań. Automatyczne pobrania online podłączymy w kroku integracji Przelewy24/BLIK.')}</p>
             </div>
       </Modal>
     </div>

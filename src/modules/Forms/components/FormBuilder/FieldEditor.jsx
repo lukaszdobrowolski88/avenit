@@ -101,10 +101,10 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
           )}
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white">
-              {fieldType?.label || field.type}
+              {fieldType?.label ? tr(fieldType.label) : field.type}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {fieldType?.description}
+              {fieldType?.description ? tr(fieldType.description) : null}
             </p>
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-            Etykieta pola
+            {tr('Etykieta pola')}
           </label>
           <input
             type="text"
@@ -127,7 +127,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
         {['text', 'textarea', 'email', 'phone', 'number', 'select'].includes(field.type) && (
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Placeholder
+              {tr('Placeholder')}
             </label>
             <input
               type="text"
@@ -141,7 +141,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-            Opis / Pomoc
+            {tr('Opis / Pomoc')}
           </label>
           <input
             type="text"
@@ -155,7 +155,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
         <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Pole wymagane
+              {tr('Pole wymagane')}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {tr('Użytkownik musi wypełnić to pole')}
@@ -176,7 +176,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
       {hasOptions && (
         <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Opcje
+            {tr('Opcje')}
           </label>
 
           <div className="space-y-2">
@@ -222,7 +222,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
       {['text', 'textarea', 'email', 'phone'].includes(field.type) && (
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Walidacja
+            {tr('Walidacja')}
           </h4>
 
           <div className="grid grid-cols-2 gap-3">
@@ -259,13 +259,13 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
       {field.type === 'number' && (
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Walidacja
+            {tr('Walidacja')}
           </h4>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Minimum
+                {tr('Minimum')}
               </label>
               <input
                 type="number"
@@ -277,7 +277,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Maksimum
+                {tr('Maksimum')}
               </label>
               <input
                 type="number"
@@ -294,12 +294,12 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
       {field.type === 'file' && (
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Ustawienia pliku
+            {tr('Ustawienia pliku')}
           </h4>
 
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Maksymalny rozmiar (MB)
+              {tr('Maksymalny rozmiar (MB)')}
             </label>
             <input
               type="number"
@@ -346,12 +346,12 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
       {field.type === 'image' && (
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Ustawienia obrazu
+            {tr('Ustawienia obrazu')}
           </h4>
 
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Maksymalny rozmiar (MB)
+              {tr('Maksymalny rozmiar (MB)')}
             </label>
             <input
               type="number"
@@ -371,7 +371,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Max. szerokość (px)
+                {tr('Max. szerokość (px)')}
               </label>
               <input
                 type="number"
@@ -389,7 +389,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Max. wysokość (px)
+                {tr('Max. wysokość (px)')}
               </label>
               <input
                 type="number"
@@ -460,10 +460,10 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Kompresja
+                {tr('Kompresja')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Automatycznie zmniejszaj rozmiar
+                {tr('Automatycznie zmniejszaj rozmiar')}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -489,12 +489,12 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
       {field.type === 'price' && (
         <div className="space-y-4 pt-4 border-t border-green-200 dark:border-green-800">
           <h4 className="text-sm font-medium text-green-700 dark:text-green-400">
-            Ustawienia cennika
+            {tr('Ustawienia cennika')}
           </h4>
 
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Cena bazowa
+              {tr('Cena bazowa')}
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -529,7 +529,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
 
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Typ cennika
+              {tr('Typ cennika')}
             </label>
             <select
               value={field.priceConfig?.pricingType || 'fixed'}
@@ -543,7 +543,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
             >
               <option value="fixed">{tr('Stała cena')}</option>
               <option value="per_person">{tr('Cena za osobę')}</option>
-              <option value="tiered">Cena progowa (rabaty)</option>
+              <option value="tiered">{tr('Cena progowa (rabaty)')}</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
               {field.priceConfig?.pricingType === 'per_person' && tr('Cena zostanie pomnożona przez liczbę osób')}
@@ -582,7 +582,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
             <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 rounded-lg mb-3">
               <div>
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Cennik datowy
+                  {tr('Cennik datowy')}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {tr('Różne ceny w zależności od terminu zapisu')}
@@ -610,7 +610,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
             {field.priceConfig?.datePricing?.enabled && (
               <div className="space-y-2">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Dodaj progi cenowe od najwcześniejszego. Cena bazowa ({field.priceConfig?.basePrice || 0} {field.priceConfig?.currency || 'PLN'}) obowiązuje po ostatnim progu.
+                  {tr('Dodaj progi cenowe od najwcześniejszego. Cena bazowa ({price}) obowiązuje po ostatnim progu.', { price: `${field.priceConfig?.basePrice || 0} ${field.priceConfig?.currency || 'PLN'}` })}
                 </p>
 
                 {(field.priceConfig?.datePricing?.tiers || []).map((tier, index) => (
@@ -624,7 +624,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                           tiers[index] = { ...tiers[index], label: e.target.value };
                           onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
                         }}
-                        placeholder="np. Early bird"
+                        placeholder={tr('np. Early bird')}
                         className="flex-1 min-w-0 px-2 py-1 text-xs bg-transparent border border-gray-200 dark:border-gray-500 rounded focus:ring-1 focus:ring-green-400 text-gray-900 dark:text-white"
                       />
                       <button
@@ -648,10 +648,10 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                           tiers[index] = { ...tiers[index], price: parseFloat(e.target.value) || 0 };
                           onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
                         }}
-                        placeholder="Cena"
+                        placeholder={tr('Cena')}
                         className="flex-1 min-w-0 px-2 py-1 text-xs bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-900 dark:text-white"
                       />
-                      <span className="text-[10px] text-gray-400 flex-shrink-0">do</span>
+                      <span className="text-[10px] text-gray-400 flex-shrink-0">{tr('do')}</span>
                       <DateInput
                         value={tier.until || ''}
                         onChange={(e) => {
@@ -686,8 +686,8 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
         <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              {field.type === 'location' ? 'Adres / miejsce' :
-               field.type.includes('date') ? 'Data' : 'Godzina'}
+              {field.type === 'location' ? tr('Adres / miejsce') :
+               field.type.includes('date') ? tr('Data') : tr('Godzina')}
             </label>
             {field.type.includes('date') ? (
               <DateInput value={field.defaultValue || ''} onChange={(e) => handleChange('defaultValue', e.target.value)} />
@@ -699,7 +699,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
               value={field.defaultValue || ''}
               onChange={(e) => handleChange('defaultValue', e.target.value)}
               placeholder={field.type === 'location' ? tr('np. Sala główna, ul. Przykładowa 1') :
-                           field.type.includes('date') ? '' : 'np. 10:00'}
+                           field.type.includes('date') ? '' : tr('np. 10:00')}
               className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary dark:text-white"
             />
             )}
@@ -713,12 +713,12 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
       {field.type === 'seat_limit' && (
         <div className="space-y-4 pt-4 border-t border-blue-200 dark:border-blue-800">
           <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400">
-            Ustawienia limitu miejsc
+            {tr('Ustawienia limitu miejsc')}
           </h4>
 
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Maksymalna liczba miejsc
+              {tr('Maksymalna liczba miejsc')}
             </label>
             <input
               type="number"
@@ -731,7 +731,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                 }
               })}
               className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary dark:text-white"
-              placeholder="Bez limitu"
+              placeholder={tr('Bez limitu')}
             />
           </div>
 
@@ -763,10 +763,10 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
           <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Lista rezerwowa
+                {tr('Lista rezerwowa')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Pozwól na zapisy gdy brak miejsc (bez płatności)
+                {tr('Pozwól na zapisy gdy brak miejsc (bez płatności)')}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -789,7 +789,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
             <>
               <div>
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Limit miejsc rezerwowych
+                  {tr('Limit miejsc rezerwowych')}
                 </label>
                 <input
                   type="number"
@@ -802,7 +802,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                     }
                   })}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary dark:text-white"
-                  placeholder="Bez limitu (nieograniczona lista)"
+                  placeholder={tr('Bez limitu (nieograniczona lista)')}
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   {tr('Zostaw puste aby lista rezerwowa była nieograniczona')}
@@ -811,7 +811,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
 
               <div>
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Komunikat listy rezerwowej
+                  {tr('Komunikat listy rezerwowej')}
                 </label>
                 <textarea
                   value={field.seatConfig?.waitlistMessage || ''}
@@ -840,7 +840,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Minimum
+                {tr('Minimum')}
               </label>
               <input
                 type="number"
@@ -852,7 +852,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Maksimum
+                {tr('Maksimum')}
               </label>
               <input
                 type="number"

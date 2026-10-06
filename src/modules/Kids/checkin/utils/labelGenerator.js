@@ -1,3 +1,4 @@
+import { appLocale } from '../../../../i18n';
 /**
  * Generuje HTML dla etykiety dziecka
  */
@@ -143,7 +144,7 @@ export function generateParentTicket(checkins, securityCode) {
     ? securityCodes
     : codesFromField.map(code => ({ code, name: '' }));
 
-  const date = new Date().toLocaleDateString('pl-PL', {
+  const date = new Date().toLocaleDateString(appLocale(), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',

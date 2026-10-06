@@ -8,7 +8,7 @@ import { useSmsCampaigns } from '../hooks/useSmsCampaigns';
 import { STATUS_CONFIG } from '../constants';
 import { useT } from '../../../i18n';
 import { formatPLN } from '../utils/smsEncoding';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
 import Button from '../../../components/Button';
@@ -28,7 +28,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
   const filtered = campaigns.filter(c => filter === 'all' || c.status === filter);
 
   const handleDelete = async (c) => {
-    if (!await confirmDialog(`Usunąć kampanię "${c.name}"?`)) return;
+    if (!await confirmDialog(tr('Usunąć kampanię "{name}"?', { name: c.name }))) return;
     try { await deleteCampaign(c.id); onRefresh?.(); } catch (e) { toast.error(e.message); }
     setMenuOpen(null);
   };
@@ -39,7 +39,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
   };
 
   const handleCancel = async (c) => {
-    if (!await confirmDialog(`Anulować zaplanowaną kampanię "${c.name}"?`)) return;
+    if (!await confirmDialog(tr('Anulować zaplanowaną kampanię "{name}"?', { name: c.name }))) return;
     try { await cancelCampaign(c.id); onRefresh?.(); } catch (e) { toast.error(e.message); }
     setMenuOpen(null);
   };
@@ -58,7 +58,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
           onClick={onNew}
           className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-medium rounded-xl shadow-md hover:shadow-lg whitespace-nowrap"
         >
-          <Plus size={16} /> Nowa kampania
+          <Plus size={16} /> {tr('Nowa kampania')}
         </button>
       </div>
 
@@ -82,7 +82,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 dark:text-white truncate">{c.name}</h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                        Od: <span className="font-mono">{c.sender}</span>
+                        {tr('Od:')} <span className="font-mono">{c.sender}</span>
                       </p>
                     </div>
                     <div className="relative">
@@ -129,11 +129,11 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
                   {c.status === 'sent' && total > 0 && (
                     <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                       <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle size={12} /> {deliveryRate}% dostarczonych
+                        <CheckCircle size={12} /> {tr('{n}% dostarczonych', { n: deliveryRate })}
                       </span>
                       {(c.replied_count || 0) > 0 && (
                         <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
-                          <CornerDownLeft size={12} /> {replyRate}% odpowiedzi
+                          <CornerDownLeft size={12} /> {tr('{n}% odpowiedzi', { n: replyRate })}
                         </span>
                       )}
                       <span className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
@@ -146,7 +146,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
                     onClick={() => onEdit(c)}
                     className="w-full mt-3 py-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 rounded-lg transition-colors"
                   >
-                    {c.status === 'draft' ? 'Edytuj szkic' : c.status === 'sent' ? 'Zobacz' : 'Edytuj'}
+                    {c.status === 'draft' ? tr('Edytuj szkic') : c.status === 'sent' ? tr('Zobacz') : tr('Edytuj')}
                   </button>
                 </div>
               </div>
@@ -194,14 +194,14 @@ function Empty({ onNew }) {
   return (
     <EmptyState
       icon={MessageSquare}
-      title="Brak kampanii SMS"
+      title={tr('Brak kampanii SMS')}
       subtitle={tr('Dotrzyj do swojej społeczności wiadomościami SMS — kreator + segmenty + statystyki.')}
-      action={<Button icon={Plus} onClick={onNew}>Stwórz pierwszą kampanię</Button>}
+      action={<Button icon={Plus} onClick={onNew}>{tr('Stwórz pierwszą kampanię')}</Button>}
     />
   );
 }
 
 function formatDate(s) {
   if (!s) return '—';
-  return new Date(s).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(s).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 }

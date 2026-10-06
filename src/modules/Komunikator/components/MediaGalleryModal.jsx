@@ -57,7 +57,7 @@ export default function MediaGalleryModal({
             }`}
           >
             <Image size={16} />
-            Zdjęcia ({images.length})
+            {tr('Zdjęcia')} ({images.length})
           </button>
           <button
             onClick={() => setActiveTab('files')}
@@ -68,7 +68,7 @@ export default function MediaGalleryModal({
             }`}
           >
             <FileText size={16} />
-            Pliki ({files.length})
+            {tr('Pliki')} ({files.length})
           </button>
         </div>
 

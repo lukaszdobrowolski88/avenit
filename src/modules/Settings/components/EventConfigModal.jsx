@@ -89,7 +89,7 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
   }, [scopeKey, isGeneral]);
 
   const typeList = (calendars[cfgKey]?.types?.length ? calendars[cfgKey].types : (isGeneral ? OGOLNE_TYPES : []));
-  const typeOpts = [{ value: '', label: '— wybierz typ —' }, ...typeList.map((tp) => ({ value: tp.value, label: tp.label }))];
+  const typeOpts = [{ value: '', label: tr('— wybierz typ —') }, ...typeList.map((tp) => ({ value: tp.value, label: typeList === OGOLNE_TYPES ? tr(tp.label) : tp.label }))];
 
   const addRule = () => setRules((r) => [...(r || []), { event_type: '', tabsText: '', builtins: {}, order: [] }]);
   const updRule = (i, patch) => setRules((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
@@ -149,7 +149,7 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
       for (const r of res) if (r.error) throw r.error;
       toast.success(tr('Zapisano konfigurację'));
       onClose();
-    } catch (e) { toast.error('Nie udało się zapisać: ' + (e.message || e)); }
+    } catch (e) { toast.error(tr('Nie udało się zapisać: {msg}', { msg: e.message || e })); }
     finally { setSaving(false); }
   };
 
@@ -184,8 +184,8 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
               <LayoutList size={16} className="text-accent-primary" />
               <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{tr('Zakładki wg typu')}</h4>
             </div>
-            <p className="text-xs text-gray-400">Dla wybranego typu włącz/wyłącz wbudowane zakładki wydarzenia oraz dodaj własne (nazwy po przecinku). „Szczegóły" są zawsze widoczne.</p>
-            {rules === null ? <p className="text-sm text-gray-400 py-2">Wczytywanie…</p> : (
+            <p className="text-xs text-gray-400">{tr('Dla wybranego typu włącz/wyłącz wbudowane zakładki wydarzenia oraz dodaj własne (nazwy po przecinku). „Szczegóły" są zawsze widoczne.')}</p>
+            {rules === null ? <p className="text-sm text-gray-400 py-2">{tr('Wczytywanie…')}</p> : (
               <div className="space-y-2">
                 {rules.map((r, i) => (
                   <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
@@ -194,10 +194,10 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
                       <button onClick={() => delRule(i)} className="ml-auto p-1.5 text-gray-400 hover:text-red-500"><X size={16} /></button>
                     </div>
                     <input value={r.tabsText} onChange={(e) => updRule(i, { tabsText: e.target.value })}
-                      placeholder="Własne zakładki po przecinku, np. Szkółka Niedzielna, Atmosfera Team"
+                      placeholder={tr('Własne zakładki po przecinku, np. Szkółka Niedzielna, Atmosfera Team')}
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Zakładki, widoczność i kolejność</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Zakładki, widoczność i kolejność')}</p>
                       <div className="rounded-lg border border-gray-100 dark:border-gray-800 divide-y divide-gray-50 dark:divide-gray-800">
                         {tabItemsFor(r).map((it, idx, arr) => {
                           const bt = BUILTIN_EVENT_TABS.find((b) => b.id === it.id);
@@ -212,9 +212,9 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
                                 <input type="checkbox" checked={!!on} onChange={() => toggleBuiltin(i, it.id, bt.def)} className="w-4 h-4 rounded accent-accent-primary" />
                               ) : <span className="w-4 inline-block" />}
                               <span className={`text-sm ${it.kind === 'base' ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
-                                {it.label}
-                                {it.kind === 'base' && <span className="text-[10px] text-gray-400 ml-1">(zawsze)</span>}
-                                {it.kind === 'custom' && <span className="text-[10px] text-gray-400 ml-1">(własna)</span>}
+                                {it.kind === 'custom' ? it.label : tr(it.label)}
+                                {it.kind === 'base' && <span className="text-[10px] text-gray-400 ml-1">{tr('(zawsze)')}</span>}
+                                {it.kind === 'custom' && <span className="text-[10px] text-gray-400 ml-1">{tr('(własna)')}</span>}
                               </span>
                             </div>
                           );
@@ -224,8 +224,8 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
                   </div>
                 ))}
                 {typeList.length === 0
-                  ? <p className="text-xs text-amber-600 dark:text-amber-400">Najpierw zdefiniuj „Typy wydarzeń", aby móc przypisać do nich zakładki.</p>
-                  : <button onClick={addRule} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> Dodaj regułę</button>}
+                  ? <p className="text-xs text-amber-600 dark:text-amber-400">{tr('Najpierw zdefiniuj „Typy wydarzeń", aby móc przypisać do nich zakładki.')}</p>
+                  : <button onClick={addRule} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> {tr('Dodaj regułę')}</button>}
               </div>
             )}
           </div>
@@ -234,10 +234,10 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Users size={16} className="text-accent-primary" />
-              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Służby wg typu</h4>
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{tr('Służby wg typu')}</h4>
             </div>
-            <p className="text-xs text-gray-400">Które służby pojawią się w zakładce „Służby" wydarzenia danego typu (np. Nabożeństwo → Uwielbienie, Media, Atmosfera, Kids). Bez reguły — pokazuje służbę tego modułu.</p>
-            {teamRules === null ? <p className="text-sm text-gray-400 py-2">Wczytywanie…</p> : (
+            <p className="text-xs text-gray-400">{tr('Które służby pojawią się w zakładce „Służby" wydarzenia danego typu (np. Nabożeństwo → Uwielbienie, Media, Atmosfera, Kids). Bez reguły — pokazuje służbę tego modułu.')}</p>
+            {teamRules === null ? <p className="text-sm text-gray-400 py-2">{tr('Wczytywanie…')}</p> : (
               <div className="space-y-2">
                 {teamRules.map((r, i) => (
                   <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
@@ -249,15 +249,15 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
                       {teamOptions.map((o) => (
                         <button key={o.value} type="button" onClick={() => toggleTeam(i, o.value)}
                           className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${r.teams.includes(o.value) ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                          {o.label}
+                          {TEAM_OPTIONS.some((t) => t.value === o.value) ? tr(o.label) : o.label}
                         </button>
                       ))}
                     </div>
                   </div>
                 ))}
                 {typeList.length === 0
-                  ? <p className="text-xs text-amber-600 dark:text-amber-400">Najpierw zdefiniuj „Typy wydarzeń", aby przypisać do nich służby.</p>
-                  : <button onClick={addTeamRule} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> Dodaj regułę</button>}
+                  ? <p className="text-xs text-amber-600 dark:text-amber-400">{tr('Najpierw zdefiniuj „Typy wydarzeń", aby przypisać do nich służby.')}</p>
+                  : <button onClick={addTeamRule} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> {tr('Dodaj regułę')}</button>}
               </div>
             )}
           </div>
@@ -265,9 +265,9 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
           {/* Kalendarze w pickerze (tylko dla „Ogólne"/Wydarzenia) */}
           {isGeneral && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Kalendarze w pickerze</h4>
-              <p className="text-xs text-gray-400">Które moduły pojawiają się w polu „Kalendarz / moduł" przy dodawaniu wydarzenia. „Ogólne" zawsze dostępne.</p>
-              {pickerSel === null ? <p className="text-sm text-gray-400 py-2">Wczytywanie…</p> : (
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{tr('Kalendarze w pickerze')}</h4>
+              <p className="text-xs text-gray-400">{tr('Które moduły pojawiają się w polu „Kalendarz / moduł" przy dodawaniu wydarzenia. „Ogólne" zawsze dostępne.')}</p>
+              {pickerSel === null ? <p className="text-sm text-gray-400 py-2">{tr('Wczytywanie…')}</p> : (
                 <div className="max-h-52 overflow-y-auto custom-scrollbar rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700/50">
                   {enabledModules.map((m) => (
                     <label key={m.key} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30">

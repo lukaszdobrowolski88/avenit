@@ -14,6 +14,7 @@ import EmptyState from '../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { DateInput } from '../../components/pickers';
 import { confirmDialog, promptDialog } from '../../lib/dialog';
+import { tr, appLocale } from '../../i18n';
 
 const EVENT_TYPES = [
   { value: 'service', label: 'Nabożeństwo' },
@@ -22,6 +23,11 @@ const EVENT_TYPES = [
   { value: 'event', label: 'Wydarzenie' },
   { value: 'custom', label: 'Inne' },
 ];
+// Etykieta typu tłumaczona przy wyświetlaniu (EVENT_TYPES trzyma surowe polskie klucze).
+const eventTypeLabel = (v, fallback) => {
+  const l = EVENT_TYPES.find(e => e.value === v)?.label;
+  return l ? tr(l) : fallback;
+};
 // Tryby doboru odbiorców (rozbudowane): wszyscy / wg kryteriów (multi) / ręczny wybór.
 const AUDIENCE_MODES = [
   { value: 'all', label: 'Wszyscy' },
@@ -33,13 +39,13 @@ const MINISTRY_LABELS = {
   worship_team: 'Zespół Uwielbienia', media_team: 'Media Team',
   atmosfera_team: 'Atmosfera Team', kids_ministry: 'Małe Avenit',
 };
-const prettyMinistry = (k) => MINISTRY_LABELS[k] || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const prettyMinistry = (k) => (MINISTRY_LABELS[k] ? tr(MINISTRY_LABELS[k]) : null) || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
 const memberName = (m) => `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || 'Członek';
 
 const eventOptionLabel = (e) => {
-  const d = e.date ? new Date(e.date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : null;
-  return `${e.title || 'Wydarzenie'}${d ? ` · ${d}${e.time ? ' ' + String(e.time).slice(0, 5) : ''}` : ''}`;
+  const d = e.date ? new Date(e.date).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' }) : null;
+  return `${e.title || tr('Wydarzenie')}${d ? ` · ${d}${e.time ? ' ' + String(e.time).slice(0, 5) : ''}` : ''}`;
 };
 
 // Wielokrotny wybór (chipy) — używany w konfiguracji odbiorców.
@@ -136,11 +142,11 @@ export default function RsvpModule() {
       <PageHeader
         moduleKey="rsvp"
         icon={CalendarCheck}
-        title="Obecność (RSVP)"
-        subtitle={'Zaproszenia „Będę / Nie będę" przez push, e-mail i SMS'}
+        title={tr('Obecność (RSVP)')}
+        subtitle={tr('Zaproszenia „Będę / Nie będę" przez push, e-mail i SMS')}
         actions={(
           <button data-tour="rsvp-new" onClick={() => setModalOpen(true)} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md">
-            <Plus size={16} /> Nowa kampania
+            <Plus size={16} /> {tr('Nowa kampania')}
           </button>
         )}
       />
@@ -148,7 +154,7 @@ export default function RsvpModule() {
       {loading ? <Spinner center />
       : campaigns.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-          <EmptyState icon={CalendarCheck} title="Brak kampanii." subtitle="Utwórz pierwsze zaproszenie na wydarzenie, grupę domową lub szkółkę." />
+          <EmptyState icon={CalendarCheck} title={tr('Brak kampanii.')} subtitle={tr('Utwórz pierwsze zaproszenie na wydarzenie, grupę domową lub szkółkę.')} />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -160,8 +166,8 @@ export default function RsvpModule() {
                   <div className="min-w-0">
                     <h3 className="font-bold text-gray-900 dark:text-white truncate">{c.title}</h3>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {EVENT_TYPES.find(e => e.value === c.event_type)?.label || c.event_type}
-                      {c.event_date ? ` · ${new Date(c.event_date).toLocaleDateString('pl-PL')}` : ''}
+                      {eventTypeLabel(c.event_type, c.event_type)}
+                      {c.event_date ? ` · ${new Date(c.event_date).toLocaleDateString(appLocale())}` : ''}
                     </p>
                     {c.event_id && (() => {
                       const ev = events.find(e => e.id === c.event_id);
@@ -173,7 +179,7 @@ export default function RsvpModule() {
                     })()}
                   </div>
                   <span className={`text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded ${c.status === 'sent' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
-                    {c.status === 'sent' ? 'Wysłane' : 'Szkic'}
+                    {c.status === 'sent' ? tr('Wysłane') : tr('Szkic')}
                   </span>
                 </div>
                 <div className="flex gap-3 mt-4 text-sm">
@@ -220,7 +226,7 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
 
   // Opcje kryteriów wyliczane z realnych danych członków.
   const statusOptions = useMemo(
-    () => [...new Set(members.map(m => m.status).filter(Boolean))].map(v => ({ value: v, label: v })),
+    () => [...new Set(members.map(m => m.status).filter(Boolean))].map(v => ({ value: v, label: tr(v) })),
     [members]
   );
   const groupOptions = useMemo(() => homeGroups.map(g => ({ value: g.id, label: g.name })), [homeGroups]);
@@ -283,10 +289,10 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
   }, [members, search]);
 
   const create = async () => {
-    if (!form.title.trim()) { toast.error('Podaj tytuł.'); return; }
+    if (!form.title.trim()) { toast.error(tr('Podaj tytuł.')); return; }
     const chans = Object.entries(channels).filter(([, v]) => v).map(([k]) => k);
-    if (!chans.length) { toast.info('Wybierz co najmniej jeden kanał.'); return; }
-    if (!recipients.length) { toast.error('Brak odbiorców dla wybranej grupy.'); return; }
+    if (!chans.length) { toast.info(tr('Wybierz co najmniej jeden kanał.')); return; }
+    if (!recipients.length) { toast.error(tr('Brak odbiorców dla wybranej grupy.')); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -322,7 +328,7 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
       }
       onCreated();
     } catch (err) {
-      toast.error('Nie udało się utworzyć kampanii: ' + (err.message || err));
+      toast.error(tr('Nie udało się utworzyć kampanii: {msg}', { msg: err.message || err }));
     } finally { setSaving(false); }
   };
 
@@ -332,55 +338,55 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
     <Modal
       isOpen
       onClose={() => !saving && onClose()}
-      title="Nowa kampania RSVP"
+      title={tr('Nowa kampania RSVP')}
       footer={<>
-        <Button variant="secondary" onClick={onClose} disabled={saving}>Anuluj</Button>
-        <Button data-tour="rsvp-create" onClick={create} loading={saving}>Utwórz</Button>
+        <Button variant="secondary" onClick={onClose} disabled={saving}>{tr('Anuluj')}</Button>
+        <Button data-tour="rsvp-create" onClick={create} loading={saving}>{tr('Utwórz')}</Button>
       </>}
     >
       <div className="p-6 space-y-4">
         {/* Powiązanie z istniejącym wydarzeniem (kalendarz) lub wpis ręczny */}
         <div>
           <CustomSelect
-            label="Wydarzenie"
+            label={tr('Wydarzenie')}
             value={eventId}
             onChange={onPickEvent}
-            placeholder="— wpisz ręcznie —"
-            options={[{ value: '', label: '— wpisz ręcznie —' }, ...events.map(e => ({ value: String(e.id), label: eventOptionLabel(e) }))]}
+            placeholder={tr('— wpisz ręcznie —')}
+            options={[{ value: '', label: tr('— wpisz ręcznie —') }, ...events.map(e => ({ value: String(e.id), label: eventOptionLabel(e) }))]}
           />
           {eventId
-            ? <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 ml-1">Powiązano z wydarzeniem — pola poniżej możesz doprecyzować.</p>
-            : <p className="text-xs text-gray-400 mt-1 ml-1">Wybierz utworzone wydarzenie lub wpisz szczegóły ręcznie.</p>}
+            ? <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 ml-1">{tr('Powiązano z wydarzeniem — pola poniżej możesz doprecyzować.')}</p>
+            : <p className="text-xs text-gray-400 mt-1 ml-1">{tr('Wybierz utworzone wydarzenie lub wpisz szczegóły ręcznie.')}</p>}
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
-          <input data-tour="rsvp-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Grupa domowa — wtorek" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł')}</label>
+          <input data-tour="rsvp-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={tr('np. Grupa domowa — wtorek')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
         </div>
         {!eventId && (
-          <CustomSelect label="Typ" value={form.event_type} onChange={v => setForm(f => ({ ...f, event_type: v }))} options={EVENT_TYPES} />
+          <CustomSelect label={tr('Typ')} value={form.event_type} onChange={v => setForm(f => ({ ...f, event_type: v }))} options={EVENT_TYPES.map(o => ({ ...o, label: tr(o.label) }))} />
         )}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Data')}</label>
             <DateInput value={form.event_date} onChange={e => setForm(f => ({ ...f, event_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Godzina</label>
-            <input value={form.event_time} onChange={e => setForm(f => ({ ...f, event_time: e.target.value }))} placeholder="np. 18:00" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Godzina')}</label>
+            <input value={form.event_time} onChange={e => setForm(f => ({ ...f, event_time: e.target.value }))} placeholder={tr('np. 18:00')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
         </div>
-        <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Miejsce (opcjonalnie)" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-        <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={2} placeholder="Treść zaproszenia..." className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
+        <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder={tr('Miejsce (opcjonalnie)')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+        <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={2} placeholder={tr('Treść zaproszenia...')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
 
         {/* Kanały */}
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Kanały</label>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">{tr('Kanały')}</label>
           <div className="flex gap-2">
             {[['push', 'Push'], ['email', 'E-mail'], ['sms', 'SMS']].map(([k, lbl]) => (
               <button key={k} onClick={() => setChannels(c => ({ ...c, [k]: !c[k] }))}
                 className={`px-4 py-2 rounded-xl text-sm font-medium border transition ${channels[k] ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                {lbl}
+                {tr(lbl)}
               </button>
             ))}
           </div>
@@ -390,12 +396,12 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
         <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-3">
           <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
             <input type="checkbox" checked={reminderEnabled} onChange={e => setReminderEnabled(e.target.checked)} className="rounded accent-emerald-500" />
-            Automatyczne przypomnienie niepotwierdzonym
+            {tr('Automatyczne przypomnienie niepotwierdzonym')}
           </label>
           {reminderEnabled && (
             <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
               <input type="number" min="0" max="14" value={reminderDays} onChange={e => setReminderDays(e.target.value)} className="w-14 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-center text-gray-900 dark:text-gray-100" />
-              <span>dni przed</span>
+              <span>{tr('dni przed')}</span>
             </div>
           )}
         </div>
@@ -404,24 +410,24 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
         <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-3">
           <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
             <input type="checkbox" checked={isSeries} onChange={e => setIsSeries(e.target.checked)} className="rounded accent-emerald-500" />
-            Powtarzaj cyklicznie (seria)
+            {tr('Powtarzaj cyklicznie (seria)')}
           </label>
           {isSeries && (
             <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-              co <input type="number" min="1" max="60" value={seriesInterval} onChange={e => setSeriesInterval(e.target.value)} className="w-14 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-center text-gray-900 dark:text-gray-100" /> dni
+              {tr('co')} <input type="number" min="1" max="60" value={seriesInterval} onChange={e => setSeriesInterval(e.target.value)} className="w-14 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-center text-gray-900 dark:text-gray-100" /> {tr('dni')}
             </div>
           )}
         </div>
-        {isSeries && <p className="text-xs text-gray-400 -mt-2">Seria automatycznie wygeneruje kolejne zaproszenia dla wybranej publiczności (pierwsze wystąpienie w dniu wydarzenia).</p>}
+        {isSeries && <p className="text-xs text-gray-400 -mt-2">{tr('Seria automatycznie wygeneruje kolejne zaproszenia dla wybranej publiczności (pierwsze wystąpienie w dniu wydarzenia).')}</p>}
 
         {/* Odbiorcy — rozbudowana konfiguracja */}
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Odbiorcy</label>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">{tr('Odbiorcy')}</label>
           <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/40 rounded-xl">
             {AUDIENCE_MODES.map(m => (
               <button key={m.value} type="button" onClick={() => setAudience(m.value)}
                 className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${audience === m.value ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>
-                {m.label}
+                {tr(m.label)}
               </button>
             ))}
           </div>
@@ -430,22 +436,22 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
         {audience === 'criteria' && (
           <div className="space-y-3 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Status</p>
-              <ChipToggle options={statusOptions} selected={criteria.statuses} onToggle={v => toggleCrit('statuses', v)} empty="Brak statusów" />
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Status')}</p>
+              <ChipToggle options={statusOptions} selected={criteria.statuses} onToggle={v => toggleCrit('statuses', v)} empty={tr('Brak statusów')} />
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Grupy domowe</p>
-              <ChipToggle options={groupOptions} selected={criteria.groups} onToggle={v => toggleCrit('groups', v)} empty="Brak grup domowych" />
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Grupy domowe')}</p>
+              <ChipToggle options={groupOptions} selected={criteria.groups} onToggle={v => toggleCrit('groups', v)} empty={tr('Brak grup domowych')} />
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Służby</p>
-              <ChipToggle options={ministryOptions} selected={criteria.ministries} onToggle={v => toggleCrit('ministries', v)} empty="Brak przypisanych służb" />
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Służby')}</p>
+              <ChipToggle options={ministryOptions} selected={criteria.ministries} onToggle={v => toggleCrit('ministries', v)} empty={tr('Brak przypisanych służb')} />
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Tagi</p>
-              <ChipToggle options={tagOptions} selected={criteria.tags} onToggle={v => toggleCrit('tags', v)} empty="Brak tagów" />
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Tagi')}</p>
+              <ChipToggle options={tagOptions} selected={criteria.tags} onToggle={v => toggleCrit('tags', v)} empty={tr('Brak tagów')} />
             </div>
-            <p className="text-[11px] text-gray-400">W obrębie kategorii warunki łączą się przez LUB, między kategoriami przez ORAZ.</p>
+            <p className="text-[11px] text-gray-400">{tr('W obrębie kategorii warunki łączą się przez LUB, między kategoriami przez ORAZ.')}</p>
           </div>
         )}
 
@@ -453,7 +459,7 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
           <div>
             <div className="relative mb-2">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Szukaj osoby..." className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('Szukaj osoby...')} className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
             <div className="max-h-40 overflow-y-auto custom-scrollbar rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700/50">
               {manualFiltered.slice(0, 100).map(m => (
@@ -462,7 +468,7 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
                   <span className="text-gray-700 dark:text-gray-200">{memberName(m)}</span>
                 </label>
               ))}
-              {manualFiltered.length > 100 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 100 z {manualFiltered.length} — zawęź wyszukiwaniem.</p>}
+              {manualFiltered.length > 100 && <p className="px-3 py-2 text-xs text-gray-400">{tr('Pokazano 100 z {n} — zawęź wyszukiwaniem.', { n: manualFiltered.length })}</p>}
             </div>
           </div>
         )}
@@ -471,12 +477,12 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
         <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-2.5">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500 dark:text-gray-400">
-              Odbiorców: <b className="text-gray-900 dark:text-white">{recipients.length}</b>
-              {excludedInBase > 0 && <span className="text-gray-400"> (wykluczono {excludedInBase})</span>}
+              {tr('Odbiorców:')} <b className="text-gray-900 dark:text-white">{recipients.length}</b>
+              {excludedInBase > 0 && <span className="text-gray-400"> ({tr('wykluczono {n}', { n: excludedInBase })})</span>}
             </span>
             {audience !== 'manual' && base.length > 0 && (
               <button type="button" onClick={() => setShowList(s => !s)} className="text-xs font-medium text-accent-primary hover:underline">
-                {showList ? 'Ukryj listę' : 'Dostosuj listę'}
+                {showList ? tr('Ukryj listę') : tr('Dostosuj listę')}
               </button>
             )}
           </div>
@@ -488,7 +494,7 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
                   <span className={excludedIds.includes(m.id) ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-200'}>{memberName(m)}</span>
                 </label>
               ))}
-              {base.length > 300 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 300 z {base.length}.</p>}
+              {base.length > 300 && <p className="px-3 py-2 text-xs text-gray-400">{tr('Pokazano 300 z {n}.', { n: base.length })}</p>}
             </div>
           )}
         </div>
@@ -514,28 +520,30 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
   }, [invs]);
 
   const send = async () => {
-    if (!await confirmDialog(`Wysłać zaproszenia do ${ct.total} osób kanałami: ${(campaign.channels || []).join(', ')}?`)) return;
+    if (!await confirmDialog(tr('Wysłać zaproszenia do {n} osób kanałami: {channels}?', { n: ct.total, channels: (campaign.channels || []).join(', ') }))) return;
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke('rsvp-send', { body: { campaign_id: campaign.id } });
       if (error || data?.error) throw new Error(data?.error || error?.message);
       const s = data.stats || {};
-      toast.success(`Wysłano. E-mail: ${s.email || 0}, SMS: ${s.sms || 0}, Push: ${s.push || 0}${s.failed ? `, niepowodzeń: ${s.failed}` : ''}.`);
+      toast.success(s.failed
+        ? tr('Wysłano. E-mail: {email}, SMS: {sms}, Push: {push}, niepowodzeń: {failed}.', { email: s.email || 0, sms: s.sms || 0, push: s.push || 0, failed: s.failed })
+        : tr('Wysłano. E-mail: {email}, SMS: {sms}, Push: {push}.', { email: s.email || 0, sms: s.sms || 0, push: s.push || 0 }));
       onChanged();
     } catch (err) {
-      toast.error('Nie udało się wysłać: ' + (err.message || err));
+      toast.error(tr('Nie udało się wysłać: {msg}', { msg: err.message || err }));
     } finally { setSending(false); }
   };
 
   const copyLink = async (token) => {
     const url = `${window.location.origin}/rsvp/${token}`;
-    try { navigator.clipboard.writeText(url); toast.success('Skopiowano link.'); } catch { await promptDialog('Link:', url); }
+    try { navigator.clipboard.writeText(url); toast.success(tr('Skopiowano link.')); } catch { await promptDialog(tr('Link:'), url); }
   };
 
   const createAttendance = async () => {
     const yes = invs.filter(i => i.status === 'yes');
-    if (!yes.length) { toast.error('Brak odpowiedzi „Będę" — nie ma z czego utworzyć frekwencji.'); return; }
-    if (!await confirmDialog(`Utworzyć sesję frekwencji i oznaczyć ${yes.length} obecnych (odpowiedzi „Będę")?`)) return;
+    if (!yes.length) { toast.error(tr('Brak odpowiedzi „Będę" — nie ma z czego utworzyć frekwencji.')); return; }
+    if (!await confirmDialog(tr('Utworzyć sesję frekwencji i oznaczyć {n} obecnych (odpowiedzi „Będę")?', { n: yes.length }))) return;
     setCreatingAtt(true);
     try {
       const user = await getCachedUser();
@@ -555,39 +563,41 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
         const { error: e2 } = await supabase.from('attendance_records').insert(records);
         if (e2) throw e2;
       }
-      toast.success(`Utworzono sesję frekwencji: ${yes.length} obecnych${guests ? ` (+${guests} osób)` : ''}. Znajdziesz ją w module Frekwencja.`);
+      toast.success(guests
+        ? tr('Utworzono sesję frekwencji: {n} obecnych (+{guests} osób). Znajdziesz ją w module Frekwencja.', { n: yes.length, guests })
+        : tr('Utworzono sesję frekwencji: {n} obecnych. Znajdziesz ją w module Frekwencja.', { n: yes.length }));
     } catch (err) {
-      toast.error('Nie udało się utworzyć frekwencji: ' + (err.message || err) + '\n(Wymagany aktywny moduł Frekwencja.)');
+      toast.error(tr('Nie udało się utworzyć frekwencji: {msg}\n(Wymagany aktywny moduł Frekwencja.)', { msg: err.message || err }));
     } finally { setCreatingAtt(false); }
   };
 
   const badge = (s) => {
-    const map = { yes: ['Będę', STATUS_COLORS.success], no: ['Nie będę', STATUS_COLORS.danger], maybe: ['Może', STATUS_COLORS.warning], pending: ['Oczekuje', STATUS_COLORS.neutral] };
+    const map = { yes: [tr('Będę'), STATUS_COLORS.success], no: [tr('Nie będę'), STATUS_COLORS.danger], maybe: [tr('Może'), STATUS_COLORS.warning], pending: [tr('Oczekuje'), STATUS_COLORS.neutral] };
     const [lbl, color] = map[s] || map.pending;
     return <StatusPill color={color}>{lbl}</StatusPill>;
   };
 
   return (
     <div className="space-y-5">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary"><ArrowLeft size={16} /> Wróć</button>
+      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary"><ArrowLeft size={16} /> {tr('Wróć')}</button>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex flex-wrap justify-between items-start gap-3">
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">{campaign.title}</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {EVENT_TYPES.find(e => e.value === campaign.event_type)?.label}
-              {campaign.event_date ? ` · ${new Date(campaign.event_date).toLocaleDateString('pl-PL')}` : ''}
+              {eventTypeLabel(campaign.event_type)}
+              {campaign.event_date ? ` · ${new Date(campaign.event_date).toLocaleDateString(appLocale())}` : ''}
               {campaign.event_time ? ` · ${campaign.event_time}` : ''}
               {campaign.location ? ` · ${campaign.location}` : ''}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={createAttendance} disabled={creatingAtt} className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium flex items-center gap-2 text-sm disabled:opacity-60">
-              <ClipboardCheck size={16} /> {creatingAtt ? 'Tworzenie...' : 'Utwórz frekwencję'}
+              <ClipboardCheck size={16} /> {creatingAtt ? tr('Tworzenie...') : tr('Utwórz frekwencję')}
             </button>
             <button onClick={send} disabled={sending} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60">
-              <Send size={16} /> {sending ? 'Wysyłanie...' : campaign.status === 'sent' ? 'Wyślij ponownie' : 'Wyślij zaproszenia'}
+              <Send size={16} /> {sending ? tr('Wysyłanie...') : campaign.status === 'sent' ? tr('Wyślij ponownie') : tr('Wyślij zaproszenia')}
             </button>
           </div>
         </div>
@@ -596,7 +606,7 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
           {[['Będę', ct.yes, 'text-emerald-600'], ['Może', ct.maybe, 'text-amber-600'], ['Nie będę', ct.no, 'text-red-500'], ['Oczekuje', ct.pending, 'text-gray-500'], ['+ osób', ct.guests, 'text-accent-primary']].map(([lbl, val, cls]) => (
             <div key={lbl} className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3 text-center">
               <div className={`text-xl font-bold ${cls} dark:opacity-90`}>{val}</div>
-              <div className="text-xs text-gray-400">{lbl}</div>
+              <div className="text-xs text-gray-400">{tr(lbl)}</div>
             </div>
           ))}
         </div>
@@ -606,10 +616,10 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
         <DataTable flush>
           <THead>
             <tr>
-              <TH>Osoba</TH>
-              <TH>Kontakt</TH>
-              <TH>Odpowiedź</TH>
-              <TH align="right">Link</TH>
+              <TH>{tr('Osoba')}</TH>
+              <TH>{tr('Kontakt')}</TH>
+              <TH>{tr('Odpowiedź')}</TH>
+              <TH align="right">{tr('Link')}</TH>
             </tr>
           </THead>
           <tbody>

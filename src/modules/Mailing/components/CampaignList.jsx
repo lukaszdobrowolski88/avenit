@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useT } from '../../../i18n';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
 
@@ -73,7 +73,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
   });
 
   const handleDelete = async (campaign) => {
-    if (!await confirmDialog(`Czy na pewno chcesz usunąć mail "${campaign.name}"?`)) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć mail "{name}"?', { name: campaign.name }))) return;
 
     try {
       await deleteCampaign(campaign.id);
@@ -96,7 +96,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('pl-PL', {
+    return new Date(dateString).toLocaleDateString(appLocale(), {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
@@ -265,7 +265,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Edit size={14} />
-                            Edytuj
+                            {tr('Edytuj')}
                           </button>
                           {campaign.status === 'sent' && onViewStats && (
                             <button
@@ -273,7 +273,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
                               <TrendingUp size={14} />
-                              Statystyki
+                              {tr('Statystyki')}
                             </button>
                           )}
                           <button
@@ -281,7 +281,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Copy size={14} />
-                            Duplikuj
+                            {tr('Duplikuj')}
                           </button>
                           <hr className="my-1 border-gray-200 dark:border-gray-700" />
                           <button
@@ -321,11 +321,11 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                   <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                     <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                       <Eye size={12} />
-                      {openRate}% otwarć
+                      {tr('{n}% otwarć', { n: openRate })}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                       <MousePointer size={12} />
-                      {clickRate}% kliknięć
+                      {tr('{n}% kliknięć', { n: clickRate })}
                     </span>
                   </div>
                 )}
@@ -335,7 +335,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                   onClick={() => onEdit(campaign)}
                   className="w-full mt-3 py-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 rounded-lg transition-colors"
                 >
-                  Edytuj mail
+                  {tr('Edytuj mail')}
                 </button>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { appLocale } from '../../../i18n';
 export function formatAnswerForExport(answer, fieldType) {
   if (answer === null || answer === undefined) return '';
 
@@ -21,7 +22,7 @@ export function exportToCSV(form, responses) {
   const headers = ['Data wysłania', ...fields.map(f => f.label)];
 
   const rows = responses.map(response => {
-    const date = new Date(response.submitted_at).toLocaleString('pl-PL');
+    const date = new Date(response.submitted_at).toLocaleString(appLocale());
     const answers = fields.map(field => {
       const answer = response.answers[field.id];
       return formatAnswerForExport(answer, field.type);

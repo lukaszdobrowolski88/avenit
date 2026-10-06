@@ -152,7 +152,7 @@ export default function LocationManager({ onLocationsChange }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Sale / Lokalizacje</h3>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{tr('Sale / Lokalizacje')}</h3>
         <button
           onClick={() => {
             resetForm();
@@ -161,7 +161,7 @@ export default function LocationManager({ onLocationsChange }) {
           className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
         >
           <Plus size={18} />
-          Nowa sala
+          {tr('Nowa sala')}
         </button>
       </div>
 
@@ -171,37 +171,37 @@ export default function LocationManager({ onLocationsChange }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Nazwa sali *
+                {tr('Nazwa sali')} *
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="np. Przedszkolaki"
+                placeholder={tr('np. Przedszkolaki')}
                 className={inputClasses}
               />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Numer pokoju
+                {tr('Numer pokoju')}
               </label>
               <input
                 type="text"
                 value={formData.room_number}
                 onChange={(e) => setFormData(prev => ({ ...prev, room_number: e.target.value }))}
-                placeholder="np. 101"
+                placeholder={tr('np. {example}', { example: '101' })}
                 className={inputClasses}
               />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Wiek min.
+                {tr('Wiek min.')}
               </label>
               <input
                 type="number"
                 value={formData.min_age}
                 onChange={(e) => setFormData(prev => ({ ...prev, min_age: e.target.value }))}
-                placeholder="np. 3"
+                placeholder={tr('np. {example}', { example: '3' })}
                 min="0"
                 max="18"
                 className={inputClasses}
@@ -209,13 +209,13 @@ export default function LocationManager({ onLocationsChange }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Wiek max.
+                {tr('Wiek max.')}
               </label>
               <input
                 type="number"
                 value={formData.max_age}
                 onChange={(e) => setFormData(prev => ({ ...prev, max_age: e.target.value }))}
-                placeholder="np. 5"
+                placeholder={tr('np. {example}', { example: '5' })}
                 min="0"
                 max="18"
                 className={inputClasses}
@@ -229,7 +229,7 @@ export default function LocationManager({ onLocationsChange }) {
                 type="number"
                 value={formData.capacity}
                 onChange={(e) => setFormData(prev => ({ ...prev, capacity: e.target.value }))}
-                placeholder="np. 15"
+                placeholder={tr('np. {example}', { example: '15' })}
                 min="1"
                 className={inputClasses}
               />
@@ -252,7 +252,7 @@ export default function LocationManager({ onLocationsChange }) {
               onClick={resetForm}
               className="px-5 py-2.5 text-base font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition"
             >
-              Anuluj
+              {tr('Anuluj')}
             </button>
             <button
               onClick={handleSave}
@@ -263,7 +263,7 @@ export default function LocationManager({ onLocationsChange }) {
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
             >
-              {editingId ? 'Zapisz zmiany' : tr('Dodaj salę')}
+              {editingId ? tr('Zapisz zmiany') : tr('Dodaj salę')}
             </button>
           </div>
         </div>
@@ -292,29 +292,29 @@ export default function LocationManager({ onLocationsChange }) {
                   </span>
                   {location.room_number && (
                     <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-xs">
-                      Sala {location.room_number}
+                      {tr('Sala')} {location.room_number}
                     </span>
                   )}
                   {!location.is_active && (
                     <span className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-2 py-0.5 rounded text-xs font-semibold">
-                      Nieaktywna
+                      {tr('Nieaktywna')}
                     </span>
                   )}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {location.min_age !== null || location.max_age !== null ? (
                     <>
-                      Wiek:{' '}
+                      {tr('Wiek:')}{' '}
                       {location.min_age !== null && location.max_age !== null
-                        ? `${location.min_age}-${location.max_age} lat`
+                        ? tr('{min}-{max} lat', { min: location.min_age, max: location.max_age })
                         : location.min_age !== null
-                        ? `od ${location.min_age} lat`
-                        : `do ${location.max_age} lat`}
+                        ? tr('od {n} lat', { n: location.min_age })
+                        : tr('do {n} lat', { n: location.max_age })}
                     </>
                   ) : (
-                    'Wszystkie wieki'
+                    tr('Wszystkie wieki')
                   )}
-                  {location.capacity && ` • Pojemność: ${location.capacity}`}
+                  {location.capacity && ` • ${tr('Pojemność:')} ${location.capacity}`}
                 </div>
               </div>
               <div className="flex gap-2">

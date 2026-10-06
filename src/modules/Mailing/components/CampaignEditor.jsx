@@ -12,7 +12,7 @@ import EmailEditor from './EmailEditor';
 import DragDropEmailBuilder from './DragDropEmailBuilder';
 import RecipientSelector from './RecipientSelector';
 import CampaignPreview from './CampaignPreview';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { useCan } from '../../../components/Can';
 import { toast } from '../../../lib/toast';
 import { DateTimeInput } from '../../../components/pickers';
@@ -22,13 +22,13 @@ import Button from '../../../components/Button';
 
 const STEPS = [
   { id: 'basics', label: 'Podstawy', icon: FileText },
-  { id: 'content', label: tr('Treść'), icon: Edit3 },
+  { id: 'content', label: 'Treść', icon: Edit3 },
   { id: 'recipients', label: 'Odbiorcy', icon: Users },
   { id: 'summary', label: 'Podsumowanie', icon: CheckCircle }
 ];
 
 const EDITOR_MODES = {
-  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: tr('Przeciągnij i upuść gotowe elementy') },
+  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: 'Przeciągnij i upuść gotowe elementy' },
   richtext: { id: 'richtext', label: 'Edytor tekstu', icon: Edit3, description: 'Klasyczny edytor z formatowaniem' },
   html: { id: 'html', label: 'Kod HTML', icon: Code, description: 'Dla zaawansowanych - edytuj surowy HTML' }
 };
@@ -243,16 +243,16 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
         if (error) {
           await updateCampaign(savedCampaign.id, { status: 'scheduled' });
-          toast.error(`Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.`);
+          toast.error(tr('Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.'));
           onSave?.();
           return;
         }
 
-        toast.success(`Mail wysłany! Wysłano: ${data?.batch_results?.sent || 0}, Błędy: ${data?.batch_results?.failed || 0}`);
+        toast.success(tr('Mail wysłany! Wysłano: {sent}, Błędy: {failed}', { sent: data?.batch_results?.sent || 0, failed: data?.batch_results?.failed || 0 }));
         onSave?.();
       } catch (funcError) {
         await updateCampaign(savedCampaign.id, { status: 'scheduled' });
-        toast.error(`Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.`);
+        toast.error(tr('Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.'));
         onSave?.();
       }
     } catch (err) {
@@ -292,9 +292,9 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       });
 
       if (error) {
-        toast.error(`Błąd wysyłki testowej: ${error.message}`);
+        toast.error(tr('Błąd wysyłki testowej: {msg}', { msg: error.message }));
       } else {
-        toast.success(`Email testowy wysłany na: ${testEmail}`);
+        toast.success(tr('Email testowy wysłany na: {email}', { email: testEmail }));
         setShowTestSend(false);
       }
     } catch (err) {
@@ -313,7 +313,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
     try {
       setSaving(true);
       await handleSave('scheduled');
-      toast.error(`Mail zaplanowany na: ${new Date(formData.scheduled_at).toLocaleString('pl-PL')}`);
+      toast.error(tr('Mail zaplanowany na: {date}', { date: new Date(formData.scheduled_at).toLocaleString(appLocale()) }));
       setShowSchedule(false);
     } catch (err) {
       toast.error(tr('Błąd podczas planowania maila'));
@@ -354,7 +354,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
             <X size={20} className="text-gray-500" />
           </button>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-            {campaign ? 'Edytuj mail' : 'Nowy mail'}
+            {campaign ? tr('Edytuj mail') : tr('Nowy mail')}
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -364,7 +364,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
             title={tr('Wyślij email testowy')}
           >
             <TestTube size={16} />
-            <span className="hidden sm:inline">Test</span>
+            <span className="hidden sm:inline">{tr('Test')}</span>
           </button>
           <button
             onClick={() => setShowPreview(true)}
@@ -413,7 +413,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 }`}>
                   {isCompleted ? <Check size={14} /> : <StepIcon size={14} />}
                 </span>
-                {step.label}
+                {tr(step.label)}
               </button>
               {!isLast && (
                 <ChevronRight size={16} className={`flex-shrink-0 self-center ${
@@ -437,7 +437,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <FileText size={12} className="text-white" />
                   </div>
-                  Nazwa maila
+                  {tr('Nazwa maila')}
                   <span className="text-accent-primary-light">*</span>
                 </label>
                 <input
@@ -445,7 +445,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="np. Newsletter grudniowy"
+                  placeholder={tr('np. Newsletter grudniowy')}
                   className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400"
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
@@ -468,7 +468,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                  placeholder="np. Zaproszenie na spotkanie wigilijne"
+                  placeholder={tr('np. Zaproszenie na spotkanie wigilijne')}
                   className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400"
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
@@ -519,10 +519,10 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                         <h4 className={`font-semibold mb-1 transition-colors ${
                           isSelected ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-900 dark:text-white'
                         }`}>
-                          {mode.label}
+                          {tr(mode.label)}
                         </h4>
                         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                          {mode.description}
+                          {tr(mode.description)}
                         </p>
                       </button>
                     );
@@ -558,7 +558,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
             {editorMode === 'html' && (
               <div className="p-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Kod HTML
+                  {tr('Kod HTML')}
                 </label>
                 <textarea
                   value={formData.html_content}
@@ -594,7 +594,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Podsumowanie maila
+                    {tr('Podsumowanie maila')}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {tr('Sprawdź szczegóły przed wysyłką')}
@@ -603,12 +603,12 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <SummaryCard label="Nazwa maila" value={formData.name} icon={FileText} />
+                <SummaryCard label={tr('Nazwa maila')} value={formData.name} icon={FileText} />
                 <SummaryCard label={tr('Temat wiadomości')} value={formData.subject} icon={Mail} />
-                <SummaryCard label={tr('Liczba odbiorców')} value={`${totalRecipients} osób`} icon={Users} highlight />
+                <SummaryCard label={tr('Liczba odbiorców')} value={tr('{n} osób', { n: totalRecipients })} icon={Users} highlight />
                 <SummaryCard
-                  label="Segmenty"
-                  value={selectedSegments.map(s => s.name || s.type).join(', ') || 'Brak'}
+                  label={tr('Segmenty')}
+                  value={selectedSegments.map(s => s.name || s.type).join(', ') || tr('Brak')}
                   icon={Users}
                 />
               </div>
@@ -637,7 +637,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   className="group flex items-center justify-center gap-2 px-6 py-3.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all disabled:opacity-50"
                 >
                   <Save size={18} className="group-hover:text-accent-primary-light transition-colors" />
-                  Zapisz jako szkic
+                  {tr('Zapisz jako szkic')}
                 </button>
                 {canSend && (<>
                 <button
@@ -655,7 +655,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   className="group flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl hover:shadow-accent-primary-light/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {saving ? <Loader size={18} className="animate-spin" /> : <Send size={18} className="group-hover:translate-x-0.5 transition-transform" />}
-                  Wyślij teraz ({totalRecipients})
+                  {tr('Wyślij teraz')} ({totalRecipients})
                 </button>
                 </>)}
               </div>
@@ -672,7 +672,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               className="group flex items-center gap-2 px-6 py-3.5 text-gray-600 dark:text-gray-400 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 rounded-xl transition-all border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md disabled:opacity-50 disabled:hover:bg-white/80"
             >
               <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
-              Wstecz
+              {tr('Wstecz')}
             </button>
             <button
               data-tour="mail-next"
@@ -680,7 +680,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               disabled={!canProceed()}
               className="group flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl hover:shadow-accent-primary-light/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
             >
-              Dalej
+              {tr('Dalej')}
               <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
@@ -706,9 +706,9 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         icon={TestTube}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setShowTestSend(false)}>Anuluj</Button>
+          <Button variant="secondary" onClick={() => setShowTestSend(false)}>{tr('Anuluj')}</Button>
           <Button icon={Mail} onClick={handleTestSend} disabled={!testEmail} loading={saving}>
-            Wyślij test
+            {tr('Wyślij test')}
           </Button>
         </>}
       >
@@ -719,7 +719,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Adres email
+              {tr('Adres email')}
             </label>
             <input
               type="email"
@@ -742,15 +742,15 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         icon={Calendar}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setShowSchedule(false)}>Anuluj</Button>
+          <Button variant="secondary" onClick={() => setShowSchedule(false)}>{tr('Anuluj')}</Button>
           <Button icon={Clock} onClick={handleSchedule} disabled={!formData.scheduled_at} loading={saving}>
-            Zaplanuj
+            {tr('Zaplanuj')}
           </Button>
         </>}
       >
         <div className="p-6 space-y-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Wybierz datę i godzinę, o której mail zostanie automatycznie wysłany do {totalRecipients} odbiorców.
+            {tr('Wybierz datę i godzinę, o której mail zostanie automatycznie wysłany do {n} odbiorców.', { n: totalRecipients })}
           </p>
 
           <div>
@@ -769,7 +769,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
             <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200/50 dark:border-amber-800/50">
               <p className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
                 <Clock size={14} />
-                Mail zostanie wysłany: <strong>{new Date(formData.scheduled_at).toLocaleString('pl-PL')}</strong>
+                {tr('Mail zostanie wysłany:')} <strong>{new Date(formData.scheduled_at).toLocaleString(appLocale())}</strong>
               </p>
             </div>
           )}

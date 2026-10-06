@@ -1,3 +1,4 @@
+import { appLocale } from '../../../i18n';
 // Helpery modułu Kazań (Sermons)
 
 // Mapa polskich znaków diakrytycznych na łacińskie odpowiedniki.
@@ -24,7 +25,7 @@ export function slugify(text) {
 export function formatDate(dateStr) {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
+    return new Date(dateStr).toLocaleDateString(appLocale(), { year: 'numeric', month: 'long', day: 'numeric' });
   } catch {
     return dateStr;
   }

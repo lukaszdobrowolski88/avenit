@@ -22,6 +22,7 @@ import { useModuleCalendar, useModuleLabel, useModuleColor } from '../hooks/useM
 import { useCan } from '../components/Can';
 import { DateInput, TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
+import { tr } from '../i18n';
 
 const genToken = () => (typeof crypto !== 'undefined' && crypto.randomUUID)
   ? crypto.randomUUID().replace(/-/g, '')
@@ -113,10 +114,10 @@ export default function EventDetailPage() {
   const fileRef = React.useRef(null);
 
   const canManage = useCan('module:calendar');
-  const moduleTitle = useModuleLabel(ev?.module_key, ev?.module_key || 'Wydarzenie');
+  const moduleTitle = useModuleLabel(ev?.module_key, ev?.module_key || tr('Wydarzenie'));
   const moduleColor = useModuleColor(ev?.module_key);
   const calCfg = useModuleCalendar(ev?.module_key || 'general'); // brak modułu → typy kalendarza „Ogólne"
-  const types = calCfg?.types?.length ? calCfg.types : DEFAULT_TYPES;
+  const types = calCfg?.types?.length ? calCfg.types : DEFAULT_TYPES.map((dt) => ({ ...dt, label: tr(dt.label) }));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -170,10 +171,10 @@ export default function EventDetailPage() {
   const saveCustom = (key, val) => save({ custom: { ...(ev?.custom || {}), [key]: val } });
 
   const del = async () => {
-    if (!await confirmDialog('Usunąć to wydarzenie? Tej operacji nie można cofnąć.')) return;
+    if (!await confirmDialog(tr('Usunąć to wydarzenie? Tej operacji nie można cofnąć.'))) return;
     const { error } = await supabase.from('events').delete().eq('id', id);
     if (error) return toast.error(error.message);
-    toast.success('Wydarzenie usunięte');
+    toast.success(tr('Wydarzenie usunięte'));
     navigate(-1);
   };
 
@@ -197,7 +198,7 @@ export default function EventDetailPage() {
   // Ręczne przypomnienie osobom bez odpowiedzi (status pending) — teraz.
   const sendReminder = async () => {
     const ids = campaignIds.length ? campaignIds : (campaign ? [campaign.id] : []);
-    if (!ids.length) return toast.info('Najpierw wyślij zaproszenia.');
+    if (!ids.length) return toast.info(tr('Najpierw wyślij zaproszenia.'));
     setRemindBusy(true);
     try {
       let total = 0;
@@ -206,9 +207,9 @@ export default function EventDetailPage() {
         if (error || data?.error) throw new Error(data?.error || error?.message);
         total += (data?.stats?.email || 0) + (data?.stats?.sms || 0) + (data?.stats?.push || 0);
       }
-      toast.success(total ? `Wysłano przypomnienia (${total}).` : 'Brak osób do przypomnienia.');
+      toast.success(total ? tr('Wysłano przypomnienia ({n}).', { n: total }) : tr('Brak osób do przypomnienia.'));
       load();
-    } catch (e) { toast.error('Nie udało się wysłać przypomnień: ' + (e.message || e)); }
+    } catch (e) { toast.error(tr('Nie udało się wysłać przypomnień: {msg}', { msg: e.message || e })); }
     finally { setRemindBusy(false); }
   };
 
@@ -228,8 +229,8 @@ export default function EventDetailPage() {
         added.push({ name: file.name, url: data?.publicUrl, path, type: file.type || '', size: file.size || 0 });
       }
       save({ attachments: [...(ev.attachments || []), ...added] });
-      toast.success(added.length > 1 ? `Wgrano ${added.length} plików.` : 'Wgrano plik.');
-    } catch (e) { toast.error('Nie udało się wgrać: ' + (e.message || e)); }
+      toast.success(added.length > 1 ? tr('Wgrano {n} plików.', { n: added.length }) : tr('Wgrano plik.'));
+    } catch (e) { toast.error(tr('Nie udało się wgrać: {msg}', { msg: e.message || e })); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
   const removeAttachment = async (idx) => {
@@ -255,13 +256,13 @@ export default function EventDetailPage() {
       if (error) throw error;
       setPrograms((prev) => [{ id: data.id, title: data.title, type: data.type, date: data.date }, ...prev]);
       save({ program_id: data.id });
-      toast.success('Utworzono program — otwieram edytor.');
+      toast.success(tr('Utworzono program — otwieram edytor.'));
       navigate(`/programs/${data.id}?event=${id}`);
-    } catch (e) { toast.error('Nie udało się utworzyć programu: ' + (e.message || e)); }
+    } catch (e) { toast.error(tr('Nie udało się utworzyć programu: {msg}', { msg: e.message || e })); }
   };
 
   if (loading) return <Spinner center size={28} />;
-  if (!ev) return <div className="max-w-3xl mx-auto py-10"><EmptyState icon={Calendar} title="Nie znaleziono wydarzenia" subtitle="Mogło zostać usunięte." /></div>;
+  if (!ev) return <div className="max-w-3xl mx-auto py-10"><EmptyState icon={Calendar} title={tr('Nie znaleziono wydarzenia')} subtitle={tr('Mogło zostać usunięte.')} /></div>;
 
   const formLink = ev.form_id ? `${window.location.origin}/form/${ev.form_id}` : null;
   const invCounts = {
@@ -271,10 +272,10 @@ export default function EventDetailPage() {
     pending: invites.filter((i) => i.status === 'pending').length,
   };
   const STATUS_META = {
-    yes: { label: 'Potwierdził', cls: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300' },
-    maybe: { label: 'Może', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300' },
-    no: { label: 'Odmówił', cls: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' },
-    pending: { label: 'Oczekuje', cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
+    yes: { label: tr('Potwierdził'), cls: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300' },
+    maybe: { label: tr('Może'), cls: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300' },
+    no: { label: tr('Odmówił'), cls: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' },
+    pending: { label: tr('Oczekuje'), cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
   };
   const roField = !canManage;
 
@@ -299,17 +300,17 @@ export default function EventDetailPage() {
   const tabOn = (id, def) => (tabBi && id in tabBi) ? tabBi[id] === true : def;
   const materialsEnabled = tabBi && 'materialy' in tabBi ? tabBi.materialy === true : (tabRule?.materials === true);
   const extraTabs = [];
-  (tabRule?.tabs || []).forEach((tb) => { if (tb?.id) extraTabs.push({ id: `custom:${tb.id}`, label: tb.label || 'Zakładka' }); });
+  (tabRule?.tabs || []).forEach((tb) => { if (tb?.id) extraTabs.push({ id: `custom:${tb.id}`, label: tb.label || tr('Zakładka') }); });
 
   const TABS = [
-    { id: 'szczegoly', label: 'Szczegóły', icon: FileText },
-    ...(tabOn('program', true) ? [{ id: 'program', label: 'Program', icon: ClipboardList, badge: ev.program_id ? '●' : null }] : []),
-    ...(tabOn('rejestracja', true) ? [{ id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null }] : []),
-    ...(tabOn('sluzby', true) ? [{ id: 'sluzby', label: 'Służby', icon: Users, badge: (teamTypes.length || Object.keys(ev.assignments || {}).length || (ev.team_layout?.sections?.length)) ? '●' : null }] : []),
-    ...(tabOn('uczestnicy', true) ? [{ id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null }] : []),
-    ...(materialsEnabled ? [{ id: 'materialy', label: 'Materiały', icon: FolderOpen }] : []),
+    { id: 'szczegoly', label: tr('Szczegóły'), icon: FileText },
+    ...(tabOn('program', true) ? [{ id: 'program', label: tr('Program'), icon: ClipboardList, badge: ev.program_id ? '●' : null }] : []),
+    ...(tabOn('rejestracja', true) ? [{ id: 'rejestracja', label: tr('Rejestracja i płatność'), icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null }] : []),
+    ...(tabOn('sluzby', true) ? [{ id: 'sluzby', label: tr('Służby'), icon: Users, badge: (teamTypes.length || Object.keys(ev.assignments || {}).length || (ev.team_layout?.sections?.length)) ? '●' : null }] : []),
+    ...(tabOn('uczestnicy', true) ? [{ id: 'uczestnicy', label: tr('Uczestnicy'), icon: Users, badge: invites.length || null }] : []),
+    ...(materialsEnabled ? [{ id: 'materialy', label: tr('Materiały'), icon: FolderOpen }] : []),
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
-    ...(canManage && tabOn('widocznosc', true) ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
+    ...(canManage && tabOn('widocznosc', true) ? [{ id: 'widocznosc', label: tr('Widoczność'), icon: Eye }] : []),
   ];
   // Kolejność zakładek wg konfiguracji (Zakładki wg typu). Zakładki spoza order → na końcu (domyślnie).
   if (tabRule?.order?.length) {
@@ -329,7 +330,7 @@ export default function EventDetailPage() {
           <input value={ev.title || ''} readOnly={roField}
             onChange={(e) => setEv({ ...ev, title: e.target.value })}
             onBlur={(e) => save({ title: e.target.value })}
-            placeholder="Nazwa wydarzenia"
+            placeholder={tr('Nazwa wydarzenia')}
             className="w-full text-2xl font-bold bg-transparent text-gray-900 dark:text-white outline-none rounded-lg px-1 -mx-1 focus:ring-2 focus:ring-accent-primary/30" />
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
             <span className="inline-flex items-center gap-1"><Calendar size={14} /> {fmtDate(ev.date) || '—'}</span>
@@ -339,7 +340,7 @@ export default function EventDetailPage() {
           </div>
         </div>
         {canManage && (
-          <button onClick={del} className="mt-1 p-2 shrink-0 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Usuń wydarzenie"><Trash2 size={18} /></button>
+          <button onClick={del} className="mt-1 p-2 shrink-0 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={tr('Usuń wydarzenie')}><Trash2 size={18} /></button>
         )}
       </div>
 
@@ -359,76 +360,76 @@ export default function EventDetailPage() {
       {/* SZCZEGÓŁY */}
       {tab === 'szczegoly' && (<div className="space-y-5">
       {/* Podstawowe: data / godziny / lokalizacja / typ */}
-      <Card icon={Calendar} title="Termin i miejsce">
+      <Card icon={Calendar} title={tr('Termin i miejsce')}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Data</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Data')}</label>
             <CustomDatePicker value={String(ev.date || '').slice(0, 10)} onChange={(v) => save({ date: v })} />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Początek</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Początek')}</label>
             <TimeField value={ev.time || ''} onChange={(e) => save({ time: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Koniec</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Koniec')}</label>
             <TimeField value={ev.end_time || ''} onChange={(e) => save({ end_time: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Typ</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Typ')}</label>
             <CustomSelect value={ev.event_type || ''} onChange={(v) => save({ event_type: v })} options={types} />
           </div>
         </div>
         <div className="mt-3">
-          <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Lokalizacja</label>
-          <input value={ev.location || ''} onChange={(e) => setEv({ ...ev, location: e.target.value })} onBlur={(e) => save({ location: e.target.value })} placeholder="Sala główna, Kościół…" className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+          <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Lokalizacja')}</label>
+          <input value={ev.location || ''} onChange={(e) => setEv({ ...ev, location: e.target.value })} onBlur={(e) => save({ location: e.target.value })} placeholder={tr('Sala główna, Kościół…')} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
         </div>
       </Card>
 
       {/* Szczegóły (rich text) */}
-      <Card icon={FileText} title="Szczegóły wydarzenia">
-        <SimpleRichEditor content={ev.details_html || ev.description || ''} onChange={(html) => setEv({ ...ev, details_html: html })} placeholder="Opis, agenda, informacje dla uczestników…" />
+      <Card icon={FileText} title={tr('Szczegóły wydarzenia')}>
+        <SimpleRichEditor content={ev.details_html || ev.description || ''} onChange={(html) => setEv({ ...ev, details_html: html })} placeholder={tr('Opis, agenda, informacje dla uczestników…')} />
         <div className="mt-2 flex justify-end">
-          <button onClick={() => save({ details_html: ev.details_html || '' })} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">Zapisz szczegóły</button>
+          <button onClick={() => save({ details_html: ev.details_html || '' })} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">{tr('Zapisz szczegóły')}</button>
         </div>
       </Card>
 
       {/* Link */}
-      <Card icon={LinkIcon} title="Link">
+      <Card icon={LinkIcon} title={tr('Link')}>
         <div className="flex items-center gap-2">
           <input value={ev.link || ''} onChange={(e) => setEv({ ...ev, link: e.target.value })} onBlur={(e) => save({ link: e.target.value })} placeholder="https://…" className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
-          {ev.link && <a href={ev.link} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title="Otwórz"><ExternalLink size={18} /></a>}
+          {ev.link && <a href={ev.link} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title={tr('Otwórz')}><ExternalLink size={18} /></a>}
         </div>
       </Card>
       </div>)}
 
       {/* WIDOCZNOŚĆ */}
       {tab === 'widocznosc' && canManage && (
-        <Card icon={Eye} title="Kto widzi wydarzenie">
+        <Card icon={Eye} title={tr('Kto widzi wydarzenie')}>
           {(() => {
             const ministryKey = MODULE_TO_MINISTRY[ev.module_key];
             const current = detectPreset(ev.visibility_segments, ministryKey);
             const presets = [
-              { id: 'all', label: 'Wszyscy' },
-              ...(ministryKey ? [{ id: 'ministry', label: 'Ta służba' }] : []),
-              { id: 'elders', label: 'Rada Starszych' },
-              { id: 'staff', label: 'Kadra (liderzy)' },
-              { id: 'owner', label: 'Tylko organizatorzy' },
-              { id: 'invited', label: 'Zaproszeni' },
+              { id: 'all', label: tr('Wszyscy') },
+              ...(ministryKey ? [{ id: 'ministry', label: tr('Ta służba') }] : []),
+              { id: 'elders', label: tr('Rada Starszych') },
+              { id: 'staff', label: tr('Kadra (liderzy)') },
+              { id: 'owner', label: tr('Tylko organizatorzy') },
+              { id: 'invited', label: tr('Zaproszeni') },
             ];
             const HINTS = {
-              all: 'Widoczne dla wszystkich z dostępem do kalendarza.',
-              ministry: 'Widoczne tylko dla członków tej służby (oraz administratorów).',
-              elders: 'Widoczne tylko dla Rady Starszych (oraz administratorów).',
-              staff: 'Widoczne dla liderów, koordynatorów i Rady Starszych (oraz administratorów).',
-              owner: 'Widoczne tylko dla organizatorów / twórcy (oraz administratorów).',
-              invited: 'Widoczne tylko dla osób zaproszonych lub zapisanych na to wydarzenie.',
-              custom: 'Ustawiono zaawansowane audytorium (służby / grupy / osoby).',
+              all: tr('Widoczne dla wszystkich z dostępem do kalendarza.'),
+              ministry: tr('Widoczne tylko dla członków tej służby (oraz administratorów).'),
+              elders: tr('Widoczne tylko dla Rady Starszych (oraz administratorów).'),
+              staff: tr('Widoczne dla liderów, koordynatorów i Rady Starszych (oraz administratorów).'),
+              owner: tr('Widoczne tylko dla organizatorów / twórcy (oraz administratorów).'),
+              invited: tr('Widoczne tylko dla osób zaproszonych lub zapisanych na to wydarzenie.'),
+              custom: tr('Ustawiono zaawansowane audytorium (służby / grupy / osoby).'),
             };
             return (
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-1.5">
                   {current === 'custom' && (
-                    <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-primary text-white">Zaawansowane (własne)</span>
+                    <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-primary text-white">{tr('Zaawansowane (własne)')}</span>
                   )}
                   {presets.map((p) => (
                     <button key={p.id} type="button"
@@ -439,7 +440,7 @@ export default function EventDetailPage() {
                   ))}
                   <button type="button" onClick={() => setShowVisBuilder(true)}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium border border-dashed border-gray-300 dark:border-gray-600 text-accent-primary hover:bg-accent-primary/5">
-                    Zaawansowane…
+                    {tr('Zaawansowane…')}
                   </button>
                 </div>
                 <p className="text-xs text-gray-400">{HINTS[current] || HINTS.all}</p>
@@ -451,15 +452,15 @@ export default function EventDetailPage() {
 
       {/* PROGRAM */}
       {tab === 'program' && (<div className="space-y-5">
-      <Card icon={ClipboardList} title="Program" actions={
+      <Card icon={ClipboardList} title={tr('Program')} actions={
         canManage && (
           <div className="flex items-center gap-2">
             <button onClick={createProgram} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5">
-              <ClipboardList size={14} /> Nowy program
+              <ClipboardList size={14} /> {tr('Nowy program')}
             </button>
             {ev.program_id && (
               <button onClick={() => navigate(`/programs/${ev.program_id}?event=${ev.id}`)} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5">
-                <ExternalLink size={14} /> Otwórz / edytuj
+                <ExternalLink size={14} /> {tr('Otwórz / edytuj')}
               </button>
             )}
           </div>
@@ -468,40 +469,40 @@ export default function EventDetailPage() {
         <div className="flex items-center gap-3">
           <div className="flex-1 max-w-md">
             <CustomSelect value={ev.program_id || ''} onChange={(v) => save({ program_id: v || null })}
-              placeholder="— brak —"
-              options={[{ value: '', label: '— brak —' }, ...programs.map((p) => ({
+              placeholder={tr('— brak —')}
+              options={[{ value: '', label: tr('— brak —') }, ...programs.map((p) => ({
                 value: p.id,
-                label: `${p.title || p.type || 'Program'}${p.date ? ` · ${fmtDate(p.date)}` : ''}`,
+                label: `${p.title || p.type || tr('Program')}${p.date ? ` · ${fmtDate(p.date)}` : ''}`,
               }))]} />
           </div>
           {ev.program_id && (
-            <button onClick={() => save({ program_id: null })} className="text-sm text-gray-400 hover:text-red-500">Odepnij</button>
+            <button onClick={() => save({ program_id: null })} className="text-sm text-gray-400 hover:text-red-500">{tr('Odepnij')}</button>
           )}
         </div>
-        {!programs.length && <p className="mt-1 text-xs text-gray-400">Brak programów. Kliknij „Nowy program", aby utworzyć i podpiąć.</p>}
+        {!programs.length && <p className="mt-1 text-xs text-gray-400">{tr('Brak programów. Kliknij „Nowy program", aby utworzyć i podpiąć.')}</p>}
 
         {/* Podgląd planu podpiętego programu */}
         {ev.program_id && programDetail && (
           <div className="mt-4 border-t border-gray-100 dark:border-gray-800 pt-4">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm mb-3">
-              <span className="font-semibold text-gray-800 dark:text-gray-100">{programDetail.title || 'Program'}</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-100">{programDetail.title || tr('Program')}</span>
               {programDetail.date && <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400"><Calendar size={13} /> {fmtDate(programDetail.date)}</span>}
-              <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400"><Clock size={13} /> {fmtDur(progTotal)} łącznie</span>
-              <span className="text-gray-500 dark:text-gray-400">{progItems.length} elementów</span>
-              <span className="text-gray-500 dark:text-gray-400">{progSongs} pieśni</span>
+              <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400"><Clock size={13} /> {fmtDur(progTotal)} {tr('łącznie')}</span>
+              <span className="text-gray-500 dark:text-gray-400">{tr('{n} elementów', { n: progItems.length })}</span>
+              <span className="text-gray-500 dark:text-gray-400">{tr('{n} pieśni', { n: progSongs })}</span>
             </div>
             {progItems.length === 0 ? (
-              <p className="text-sm text-gray-400">Program nie ma jeszcze elementów. Kliknij „Otwórz / edytuj", aby dodać plan.</p>
+              <p className="text-sm text-gray-400">{tr('Program nie ma jeszcze elementów. Kliknij „Otwórz / edytuj", aby dodać plan.')}</p>
             ) : (
               <div className="rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
                 {progItems.map((it, idx) => {
                   if (it?.type === 'header') {
-                    return <div key={it.id || idx} className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-xs font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">{it.title || 'Sekcja'}</div>;
+                    return <div key={it.id || idx} className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-xs font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">{it.title || tr('Sekcja')}</div>;
                   }
                   const tdef = PROG_ITEM_TYPES[it?.type] || PROG_ITEM_TYPES.item;
                   const Icon = tdef.icon;
                   const song = it?.type === 'song' && it?.songId ? songs.find((s) => s.id === it.songId) : null;
-                  const itemTitle = it?.type === 'song' ? (it?.title || song?.title || 'Pieśń') : (it?.title || 'Element');
+                  const itemTitle = it?.type === 'song' ? (it?.title || song?.title || tr('Pieśń')) : (it?.title || tr('Element'));
                   const songKey = it?.songKey || song?.key;
                   return (
                     <div key={it.id || idx} className="flex items-start gap-3 px-3 py-2.5">
@@ -512,7 +513,7 @@ export default function EventDetailPage() {
                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             {it?.person && <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1"><User size={10} className="text-gray-400" /> {it.person}</span>}
                             {it?.timing && it.timing !== 'during' && (
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${it.timing === 'before' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}`}>{it.timing === 'before' ? 'Przed' : 'Po'}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${it.timing === 'before' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}`}>{it.timing === 'before' ? tr('Przed') : tr('Po')}</span>
                             )}
                             {it?.type === 'song' && songKey && <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary font-semibold">{songKey}</span>}
                           </div>
@@ -533,62 +534,62 @@ export default function EventDetailPage() {
       {/* ZAŁĄCZNIKI */}
       {/* REJESTRACJA */}
       {tab === 'rejestracja' && (<div className="space-y-5">
-      <Card icon={Ticket} title="Rejestracja i płatność">
+      <Card icon={Ticket} title={tr('Rejestracja i płatność')}>
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
             <input type="checkbox" checked={!!ev.registration_required} onChange={(e) => save({ registration_required: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
-            Wymaga rejestracji
+            {tr('Wymaga rejestracji')}
           </label>
           {ev.registration_required && (
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Rejestracja do (termin)</label>
+              <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Rejestracja do (termin)')}</label>
               <DateInput value={String(ev.registration_deadline || '').slice(0, 10)}
                 onChange={(e) => save({ registration_deadline: e.target.value || null })}
                 className="w-full sm:w-56 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
             </div>
           )}
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Formularz rejestracji (wewnętrzny)</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Formularz rejestracji (wewnętrzny)')}</label>
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <CustomSelect value={ev.form_id || ''} onChange={(v) => save({ form_id: v || null })}
-                  placeholder="— brak —"
-                  options={[{ value: '', label: '— brak —' }, ...forms.map((f) => ({ value: f.id, label: f.title }))]} />
+                  placeholder={tr('— brak —')}
+                  options={[{ value: '', label: tr('— brak —') }, ...forms.map((f) => ({ value: f.id, label: f.title }))]} />
               </div>
               {formLink && (
                 <>
-                  <a href={formLink} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title="Otwórz formularz"><ExternalLink size={18} /></a>
-                  <button onClick={() => { navigator.clipboard.writeText(formLink); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" title="Kopiuj link">{copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}</button>
+                  <a href={formLink} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title={tr('Otwórz formularz')}><ExternalLink size={18} /></a>
+                  <button onClick={() => { navigator.clipboard.writeText(formLink); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" title={tr('Kopiuj link')}>{copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}</button>
                 </>
               )}
             </div>
             {formLink && <p className="mt-1 text-xs text-gray-400 truncate">{formLink}</p>}
           </div>
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">…lub link do zewnętrznego formularza</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('…lub link do zewnętrznego formularza')}</label>
             <div className="flex items-center gap-2">
               <input value={ev.form_url || ''} onChange={(e) => setEv({ ...ev, form_url: e.target.value })} onBlur={(e) => save({ form_url: e.target.value })} placeholder="https://forms.google.com/…" className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
-              {ev.form_url && <a href={ev.form_url} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title="Otwórz"><ExternalLink size={18} /></a>}
+              {ev.form_url && <a href={ev.form_url} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title={tr('Otwórz')}><ExternalLink size={18} /></a>}
             </div>
           </div>
           <div>
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
               <input type="checkbox" checked={!!ev.is_paid} onChange={(e) => save({ is_paid: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
-              Wydarzenie płatne
+              {tr('Wydarzenie płatne')}
             </label>
             {ev.is_paid && (
               <div className="mt-2 space-y-2">
                 {(ev.prices || []).map((p, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <input value={p.label || ''} onChange={(e) => setEv({ ...ev, prices: (ev.prices || []).map((x, j) => j === i ? { ...x, label: e.target.value } : x) })} onBlur={() => save({ prices: ev.prices || [] })} placeholder="Opis (np. Bilet normalny)" className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+                    <input value={p.label || ''} onChange={(e) => setEv({ ...ev, prices: (ev.prices || []).map((x, j) => j === i ? { ...x, label: e.target.value } : x) })} onBlur={() => save({ prices: ev.prices || [] })} placeholder={tr('Opis (np. Bilet normalny)')} className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
                     <input type="number" min="0" step="0.01" value={p.amount != null ? (p.amount / 100) : ''} onChange={(e) => setEv({ ...ev, prices: (ev.prices || []).map((x, j) => j === i ? { ...x, amount: e.target.value === '' ? null : Math.round(parseFloat(e.target.value) * 100) } : x) })} onBlur={() => save({ prices: ev.prices || [] })} placeholder="0.00" className="w-24 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-right" />
-                    <span className="text-sm text-gray-500">zł</span>
+                    <span className="text-sm text-gray-500">{tr('zł')}</span>
                     <button onClick={() => save({ prices: (ev.prices || []).filter((_, j) => j !== i) })} className="p-1.5 text-gray-400 hover:text-red-500"><X size={16} /></button>
                   </div>
                 ))}
-                <button onClick={() => save({ prices: [...(ev.prices || []), { label: '', amount: null }] })} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><span className="text-base leading-none">＋</span> Dodaj cenę</button>
+                <button onClick={() => save({ prices: [...(ev.prices || []), { label: '', amount: null }] })} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><span className="text-base leading-none">＋</span> {tr('Dodaj cenę')}</button>
                 <div className="pt-1">
-                  <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Płatność do (termin)</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Płatność do (termin)')}</label>
                   <DateInput value={String(ev.payment_deadline || '').slice(0, 10)}
                     onChange={(e) => save({ payment_deadline: e.target.value || null })}
                     className="w-full sm:w-56 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
@@ -602,7 +603,7 @@ export default function EventDetailPage() {
 
       {/* SZCZEGÓŁY — pola własne */}
       {tab === 'szczegoly' && fields.length > 0 && (
-        <Card icon={FileText} title="Pola własne">
+        <Card icon={FileText} title={tr('Pola własne')}>
           <div className="space-y-3">
             {fields.map((f) => (
               <div key={f.id || f.field_key}>
@@ -622,34 +623,34 @@ export default function EventDetailPage() {
 
       {/* UCZESTNICY */}
       {tab === 'uczestnicy' && (<div className="space-y-5">
-      <Card icon={Users} title="Obecność / zapisani">
+      <Card icon={Users} title={tr('Obecność / zapisani')}>
         <EventRSVP eventId={ev.id} maxParticipants={ev.max_participants} />
       </Card>
 
       {/* Zaproszenia (do kogo wysłaliśmy) */}
-      <Card icon={Send} title="Zaproszenia" actions={
+      <Card icon={Send} title={tr('Zaproszenia')} actions={
         canManage && (
           <div className="flex items-center gap-2">
             {invCounts.pending > 0 && (
               <button onClick={sendReminder} disabled={remindBusy}
                 className="text-sm px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 dark:border-amber-500/40 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 flex items-center gap-1.5 disabled:opacity-60">
-                <Clock size={14} /> {remindBusy ? 'Wysyłanie…' : `Przypomnij oczekującym (${invCounts.pending})`}
+                <Clock size={14} /> {remindBusy ? tr('Wysyłanie…') : tr('Przypomnij oczekującym ({n})', { n: invCounts.pending })}
               </button>
             )}
-            <button onClick={() => setShowInvite(true)} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5"><Send size={14} /> Wyślij zaproszenia</button>
+            <button onClick={() => setShowInvite(true)} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5"><Send size={14} /> {tr('Wyślij zaproszenia')}</button>
           </div>
         )
       }>
         {invites.length === 0 ? (
-          <p className="text-sm text-gray-400">Brak wysłanych zaproszeń. Kliknij „Wyślij zaproszenia", aby zaprosić osoby — statusy odpowiedzi pojawią się tutaj.</p>
+          <p className="text-sm text-gray-400">{tr('Brak wysłanych zaproszeń. Kliknij „Wyślij zaproszenia", aby zaprosić osoby — statusy odpowiedzi pojawią się tutaj.')}</p>
         ) : (
           <>
             <div className="flex flex-wrap gap-2 mb-3 text-xs">
-              <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300 font-semibold">Potwierdzili: {invCounts.yes}</span>
-              <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-semibold">Może: {invCounts.maybe}</span>
-              <span className="px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 font-semibold">Odmówili: {invCounts.no}</span>
-              <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 font-semibold">Oczekuje: {invCounts.pending}</span>
-              <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Wysłano: {invites.length}</span>
+              <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300 font-semibold">{tr('Potwierdzili:')} {invCounts.yes}</span>
+              <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-semibold">{tr('Może:')} {invCounts.maybe}</span>
+              <span className="px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 font-semibold">{tr('Odmówili:')} {invCounts.no}</span>
+              <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 font-semibold">{tr('Oczekuje:')} {invCounts.pending}</span>
+              <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{tr('Wysłano:')} {invites.length}</span>
             </div>
             {/* Lista zaproszonych (imiona, e-maile) tylko dla organizatora — reszta widzi liczniki;
                 serwer i tak wymazuje cudze dane osobowe. */}
@@ -700,13 +701,13 @@ export default function EventDetailPage() {
       {/* Zakładki wg typu (konfigurowalne) — na razie notatki/informacje na zakładkę */}
       {tab.startsWith('custom:') && (() => {
         const key = `tabhtml_${tab.slice('custom:'.length)}`;
-        const label = extraTabs.find((x) => x.id === tab)?.label || 'Zakładka';
+        const label = extraTabs.find((x) => x.id === tab)?.label || tr('Zakładka');
         return (
           <div className="space-y-5">
             <Card icon={FileText} title={label}>
-              <SimpleRichEditor content={ev.custom?.[key] || ''} onChange={(html) => setEv({ ...ev, custom: { ...(ev.custom || {}), [key]: html } })} placeholder={`Notatki / informacje — ${label}…`} />
+              <SimpleRichEditor content={ev.custom?.[key] || ''} onChange={(html) => setEv({ ...ev, custom: { ...(ev.custom || {}), [key]: html } })} placeholder={tr('Notatki / informacje — {label}…', { label })} />
               <div className="mt-2 flex justify-end">
-                <button onClick={() => save({ custom: { ...(ev.custom || {}), [key]: ev.custom?.[key] || '' } })} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">Zapisz</button>
+                <button onClick={() => save({ custom: { ...(ev.custom || {}), [key]: ev.custom?.[key] || '' } })} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">{tr('Zapisz')}</button>
               </div>
             </Card>
           </div>
@@ -761,12 +762,12 @@ function EventInviteModal({ event, ensureCampaign, existingMemberIds = [], onClo
 
   const send = async () => {
     const recips = members.filter((m) => sel.has(m.id));
-    if (!recips.length) return toast.error('Wybierz odbiorców.');
+    if (!recips.length) return toast.error(tr('Wybierz odbiorców.'));
     const chans = Object.entries(channels).filter(([, v]) => v).map(([k]) => k);
-    if (!chans.length) return toast.error('Wybierz co najmniej jeden kanał.');
+    if (!chans.length) return toast.error(tr('Wybierz co najmniej jeden kanał.'));
     // Pomiń już zaproszonych (dedup po member_id) — wyślemy tylko nowym.
     const newRecips = recips.filter((m) => !invitedSet.has(m.id));
-    if (!newRecips.length) return toast.info('Wybrane osoby są już zaproszone.');
+    if (!newRecips.length) return toast.info(tr('Wybrane osoby są już zaproszone.'));
     setBusy(true);
     try {
       const camp = await ensureCampaign();
@@ -788,9 +789,11 @@ function EventInviteModal({ event, ensureCampaign, existingMemberIds = [], onClo
       });
       if (serr || sres?.error) throw new Error(sres?.error || serr?.message);
       const s = sres?.stats || {};
-      toast.success(`Wysłano zaproszenia. E-mail: ${s.email || 0}, SMS: ${s.sms || 0}, Push: ${s.push || 0}${s.failed ? `, niepowodzeń: ${s.failed}` : ''}.`);
+      toast.success(s.failed
+        ? tr('Wysłano zaproszenia. E-mail: {email}, SMS: {sms}, Push: {push}, niepowodzeń: {failed}.', { email: s.email || 0, sms: s.sms || 0, push: s.push || 0, failed: s.failed })
+        : tr('Wysłano zaproszenia. E-mail: {email}, SMS: {sms}, Push: {push}.', { email: s.email || 0, sms: s.sms || 0, push: s.push || 0 }));
       onSent();
-    } catch (e) { toast.error('Nie udało się wysłać: ' + (e.message || e)); }
+    } catch (e) { toast.error(tr('Nie udało się wysłać: {msg}', { msg: e.message || e })); }
     finally { setBusy(false); }
   };
 
@@ -799,10 +802,10 @@ function EventInviteModal({ event, ensureCampaign, existingMemberIds = [], onClo
       isOpen
       onClose={onClose}
       size="md"
-      title={`Wyślij zaproszenia — ${event.title || ''}`}
+      title={`${tr('Wyślij zaproszenia')} — ${event.title || ''}`}
       footer={<>
-        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
-        <Button icon={Send} onClick={send} loading={busy} disabled={sel.size === 0}>Wyślij ({sel.size})</Button>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button icon={Send} onClick={send} loading={busy} disabled={sel.size === 0}>{tr('Wyślij')} ({sel.size})</Button>
       </>}
     >
       <div className="p-6 space-y-4">
@@ -810,33 +813,33 @@ function EventInviteModal({ event, ensureCampaign, existingMemberIds = [], onClo
           {fmtDate(event.date) || '—'}{event.time ? `, ${event.time}` : ''}{event.location ? ` · ${event.location}` : ''}
         </div>
         <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Kanały</label>
+          <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Kanały')}</label>
           <div className="flex items-center gap-4">
             {[['email', 'E-mail'], ['push', 'Push'], ['sms', 'SMS']].map(([k, l]) => (
               <label key={k} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
-                <input type="checkbox" checked={!!channels[k]} onChange={(e) => setChannels((c) => ({ ...c, [k]: e.target.checked }))} className="w-4 h-4 rounded accent-accent-primary" /> {l}
+                <input type="checkbox" checked={!!channels[k]} onChange={(e) => setChannels((c) => ({ ...c, [k]: e.target.checked }))} className="w-4 h-4 rounded accent-accent-primary" /> {tr(l)}
               </label>
             ))}
           </div>
         </div>
         <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Wiadomość (opcjonalnie)</label>
-          <textarea rows={2} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Zapraszamy na…" className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm resize-none" />
+          <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Wiadomość (opcjonalnie)')}</label>
+          <textarea rows={2} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={tr('Zapraszamy na…')} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm resize-none" />
         </div>
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Odbiorcy ({sel.size})</label>
-            <button onClick={toggleAll} className="text-xs text-accent-primary hover:text-accent-secondary">{allShownSelected ? 'Odznacz widoczne' : 'Zaznacz widoczne'}</button>
+            <label className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{tr('Odbiorcy')} ({sel.size})</label>
+            <button onClick={toggleAll} className="text-xs text-accent-primary hover:text-accent-secondary">{allShownSelected ? tr('Odznacz widoczne') : tr('Zaznacz widoczne')}</button>
           </div>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Szukaj osoby…" className="w-full mb-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tr('Szukaj osoby…')} className="w-full mb-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
           <div className="max-h-56 overflow-y-auto custom-scrollbar rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
-            {filtered.length === 0 ? <div className="p-3 text-sm text-gray-400 text-center">Brak osób.</div> : filtered.map((m) => {
+            {filtered.length === 0 ? <div className="p-3 text-sm text-gray-400 text-center">{tr('Brak osób.')}</div> : filtered.map((m) => {
               const invited = invitedSet.has(m.id);
               return (
                 <label key={m.id} className={`flex items-center gap-2 px-3 py-2 text-sm ${invited ? 'opacity-60' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}>
                   <input type="checkbox" checked={invited || sel.has(m.id)} disabled={invited} onChange={() => toggle(m.id)} className="w-4 h-4 rounded accent-accent-primary" />
                   <span className="text-gray-800 dark:text-gray-100 truncate">{name(m)}</span>
-                  {invited && <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">zaproszony</span>}
+                  {invited && <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">{tr('zaproszony')}</span>}
                   {m.email && <span className="text-xs text-gray-400 truncate ml-auto">{m.email}</span>}
                 </label>
               );
@@ -906,26 +909,26 @@ function ReminderAutomation({ campaign, campaignIds, ensureCampaign, onSaved }) 
         const { error } = await supabase.from('rsvp_campaigns').update(payload).eq('id', cid);
         if (error) throw error;
       }
-      toast.success('Zapisano automatyzację przypomnień.');
+      toast.success(tr('Zapisano automatyzację przypomnień.'));
       onSaved?.();
-    } catch (e) { toast.error('Nie udało się zapisać: ' + (e.message || e)); }
+    } catch (e) { toast.error(tr('Nie udało się zapisać: {msg}', { msg: e.message || e })); }
     finally { setSaving(false); }
   };
 
   return (
-    <Card icon={Clock} title="Automatyzacja przypomnień" actions={
+    <Card icon={Clock} title={tr('Automatyzacja przypomnień')} actions={
       <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
         <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="w-4 h-4 rounded accent-accent-primary" />
-        Włączone
+        {tr('Włączone')}
       </label>
     }>
       {!enabled ? (
-        <p className="text-sm text-gray-400">Automatyczne przypomnienia wyłączone. Włącz, aby system sam wysyłał ponaglenia osobom bez odpowiedzi w wybranych terminach przed wydarzeniem.</p>
+        <p className="text-sm text-gray-400">{tr('Automatyczne przypomnienia wyłączone. Włącz, aby system sam wysyłał ponaglenia osobom bez odpowiedzi w wybranych terminach przed wydarzeniem.')}</p>
       ) : (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Kroki wysyłane osobom bez odpowiedzi (na X dni przed wydarzeniem):</p>
-            <button onClick={applyPreset} className="text-xs text-accent-primary hover:underline">Ustaw 7 / 3 / 1 (eskalacja)</button>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Kroki wysyłane osobom bez odpowiedzi (na X dni przed wydarzeniem):')}</p>
+            <button onClick={applyPreset} className="text-xs text-accent-primary hover:underline">{tr('Ustaw 7 / 3 / 1 (eskalacja)')}</button>
           </div>
 
           {steps.map((s, i) => (
@@ -934,35 +937,35 @@ function ReminderAutomation({ campaign, campaignIds, ensureCampaign, onSaved }) 
                 <input type="number" min="0" max="60" value={s.days}
                   onChange={(e) => setStep(i, { days: e.target.value })}
                   className="w-16 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-center" />
-                <span className="text-sm text-gray-600 dark:text-gray-300">dni przed</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">{tr('dni przed')}</span>
                 <div className="flex gap-1.5 ml-auto">
                   {CHANNELS.map(([k, lbl]) => (
                     <button key={k} type="button" onClick={() => toggleChannel(i, k)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${s.channels.includes(k) ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}>
-                      {lbl}
+                      {tr(lbl)}
                     </button>
                   ))}
-                  <button type="button" onClick={() => removeStep(i)} className="p-1.5 text-gray-400 hover:text-red-500" title="Usuń krok"><X size={15} /></button>
+                  <button type="button" onClick={() => removeStep(i)} className="p-1.5 text-gray-400 hover:text-red-500" title={tr('Usuń krok')}><X size={15} /></button>
                 </div>
               </div>
               <input value={s.message} onChange={(e) => setStep(i, { message: e.target.value })}
-                placeholder="Treść przypomnienia (opcjonalnie — domyślnie jak w kampanii)"
+                placeholder={tr('Treść przypomnienia (opcjonalnie — domyślnie jak w kampanii)')}
                 className="w-full px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
             </div>
           ))}
 
-          <button onClick={addStep} className="text-sm text-accent-primary hover:underline">+ Dodaj krok</button>
+          <button onClick={addStep} className="text-sm text-accent-primary hover:underline">+ {tr('Dodaj krok')}</button>
 
           <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer rounded-xl bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
             <input type="checkbox" checked={autoClose} onChange={(e) => setAutoClose(e.target.checked)} className="w-4 h-4 rounded accent-accent-primary" />
-            Automatycznie zamknij zapisy po dacie wydarzenia
+            {tr('Automatycznie zamknij zapisy po dacie wydarzenia')}
           </label>
         </div>
       )}
 
       <div className="flex justify-end mt-4">
         <button onClick={save} disabled={saving} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60">
-          {saving ? 'Zapisywanie…' : 'Zapisz automatyzację'}
+          {saving ? tr('Zapisywanie…') : tr('Zapisz automatyzację')}
         </button>
       </div>
     </Card>
@@ -977,8 +980,8 @@ const VIS_ROLES = [
   { value: 'czlonek', label: 'Członkowie' },
 ];
 const VIS_MINISTRY_LABELS = { worship_team: 'Zespół Uwielbienia', media_team: 'Media Team', atmosfera_team: 'Atmosfera Team', kids_ministry: 'Małe Avenit' };
-const prettyMin = (k) => VIS_MINISTRY_LABELS[k] || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-const memName = (m) => `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || 'Osoba';
+const prettyMin = (k) => (VIS_MINISTRY_LABELS[k] ? tr(VIS_MINISTRY_LABELS[k]) : null) || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const memName = (m) => `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || tr('Osoba');
 
 function VisChips({ options, selected, onToggle, empty }) {
   if (!options.length) return <p className="text-xs text-gray-400 italic">{empty}</p>;
@@ -1067,49 +1070,49 @@ function VisibilityBuilderModal({ initial, onClose, onSave }) {
       isOpen
       onClose={onClose}
       size="md"
-      title="Zaawansowane audytorium — kto widzi"
+      title={tr('Zaawansowane audytorium — kto widzi')}
       footer={<>
-        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
-        <Button onClick={() => onSave(toSegments(s))}>Zapisz widoczność</Button>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button onClick={() => onSave(toSegments(s))}>{tr('Zapisz widoczność')}</Button>
       </>}
     >
       <div className="p-6 space-y-4">
         <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
-          Wydarzenie zobaczy osoba pasująca do <b>któregokolwiek</b> z zaznaczonych kryteriów. Administratorzy widzą zawsze.
+          {tr('Wydarzenie zobaczy osoba pasująca do')} <b>{tr('któregokolwiek')}</b> {tr('z zaznaczonych kryteriów. Administratorzy widzą zawsze.')}
         </p>
 
         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer rounded-xl bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5">
           <input type="checkbox" checked={s.everyone} onChange={(e) => setS({ ...s, everyone: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
-          Wszyscy (bez ograniczeń) — nadrzędne wobec pozostałych
+          {tr('Wszyscy (bez ograniczeń) — nadrzędne wobec pozostałych')}
         </label>
 
         {!s.everyone && (
           <>
-            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Role</p>
-              <VisChips options={VIS_ROLES} selected={s.roles} onToggle={(v) => toggle('roles', v)} empty="—" /></div>
-            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Służby</p>
-              <VisChips options={ministryOptions} selected={s.ministries} onToggle={(v) => toggle('ministries', v)} empty="Brak przypisanych służb" /></div>
-            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Grupy domowe</p>
-              <VisChips options={groupOptions} selected={s.groups} onToggle={(v) => toggle('groups', v)} empty="Brak grup domowych" /></div>
-            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Kampusy</p>
-              <VisChips options={campusOptions} selected={s.campuses} onToggle={(v) => toggle('campuses', v)} empty="Brak kampusów" /></div>
-            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Tagi</p>
-              <VisChips options={tagOptions} selected={s.tags} onToggle={(v) => toggle('tags', v)} empty="Brak tagów" /></div>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Role')}</p>
+              <VisChips options={VIS_ROLES.map((r) => ({ ...r, label: tr(r.label) }))} selected={s.roles} onToggle={(v) => toggle('roles', v)} empty="—" /></div>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Służby')}</p>
+              <VisChips options={ministryOptions} selected={s.ministries} onToggle={(v) => toggle('ministries', v)} empty={tr('Brak przypisanych służb')} /></div>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Grupy domowe')}</p>
+              <VisChips options={groupOptions} selected={s.groups} onToggle={(v) => toggle('groups', v)} empty={tr('Brak grup domowych')} /></div>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Kampusy')}</p>
+              <VisChips options={campusOptions} selected={s.campuses} onToggle={(v) => toggle('campuses', v)} empty={tr('Brak kampusów')} /></div>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Tagi')}</p>
+              <VisChips options={tagOptions} selected={s.tags} onToggle={(v) => toggle('tags', v)} empty={tr('Brak tagów')} /></div>
 
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
-                <input type="checkbox" checked={s.invited} onChange={(e) => setS({ ...s, invited: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" /> Zaproszeni/zapisani
+                <input type="checkbox" checked={s.invited} onChange={(e) => setS({ ...s, invited: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" /> {tr('Zaproszeni/zapisani')}
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
-                <input type="checkbox" checked={s.owner} onChange={(e) => setS({ ...s, owner: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" /> Organizatorzy
+                <input type="checkbox" checked={s.owner} onChange={(e) => setS({ ...s, owner: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" /> {tr('Organizatorzy')}
               </label>
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Pojedyncze osoby ({s.members.length})</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{tr('Pojedyncze osoby')} ({s.members.length})</p>
               <div className="relative mb-2">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Szukaj osoby…" className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tr('Szukaj osoby…')} className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
               </div>
               <div className="max-h-40 overflow-y-auto custom-scrollbar rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700/50">
                 {memberFiltered.slice(0, 100).map((m) => (
@@ -1118,7 +1121,7 @@ function VisibilityBuilderModal({ initial, onClose, onSave }) {
                     <span className="text-gray-800 dark:text-gray-100 truncate">{memName(m)}</span>
                   </label>
                 ))}
-                {memberFiltered.length > 100 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 100 z {memberFiltered.length} — zawęź wyszukiwaniem.</p>}
+                {memberFiltered.length > 100 && <p className="px-3 py-2 text-xs text-gray-400">{tr('Pokazano 100 z {n} — zawęź wyszukiwaniem.', { n: memberFiltered.length })}</p>}
               </div>
             </div>
           </>

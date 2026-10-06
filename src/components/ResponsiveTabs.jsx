@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useCan } from './Can';
 import { useModuleTabs, invalidateModuleLabels } from '../hooks/useModuleLabel';
 import { toast } from '../lib/toast';
+import { tr } from '../i18n';
 
 /**
  * ResponsiveTabs - Responsywny komponent zakładek (styl Monday: podkreślenie akcentem).
@@ -137,9 +138,9 @@ function TabConfig({ moduleKey, tabs, current }) {
       const { error } = await supabase.from('app_settings').upsert({ key: 'module_tabs', value: JSON.stringify(map) }, { onConflict: 'key' });
       if (error) throw error;
       invalidateModuleLabels();
-      toast.success('Zapisano układ zakładek');
+      toast.success(tr('Zapisano układ zakładek'));
       setOpen(false);
-    } catch (e) { toast.error('Nie udało się zapisać: ' + e.message); }
+    } catch (e) { toast.error(tr('Nie udało się zapisać: {msg}', { msg: e.message })); }
     finally { setBusy(false); }
   };
   const reset = async () => {
@@ -151,15 +152,15 @@ function TabConfig({ moduleKey, tabs, current }) {
       delete map[moduleKey];
       await supabase.from('app_settings').upsert({ key: 'module_tabs', value: JSON.stringify(map) }, { onConflict: 'key' });
       invalidateModuleLabels();
-      toast.success('Przywrócono domyślny układ');
+      toast.success(tr('Przywrócono domyślny układ'));
       setOpen(false);
-    } catch (e) { toast.error('Błąd: ' + e.message); }
+    } catch (e) { toast.error(tr('Błąd: {msg}', { msg: e.message })); }
     finally { setBusy(false); }
   };
 
   return (
     <div className="relative shrink-0">
-      <button onClick={openPanel} title="Ustaw kolejność i domyślną zakładkę" className="p-2 mb-1 text-gray-400 hover:text-accent-primary transition">
+      <button onClick={openPanel} title={tr('Ustaw kolejność i domyślną zakładkę')} className="p-2 mb-1 text-gray-400 hover:text-accent-primary transition">
         <Settings2 size={16} />
       </button>
       {open && (
@@ -167,20 +168,20 @@ function TabConfig({ moduleKey, tabs, current }) {
           <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-1 z-[100] w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-gray-500 uppercase">Zakładki: kolejność + domyślna</span>
+              <span className="text-[11px] font-semibold text-gray-500 uppercase">{tr('Zakładki: kolejność + domyślna')}</span>
               <button onClick={() => setOpen(false)} className="text-gray-400"><X size={16} /></button>
             </div>
-            <p className="text-[11px] text-gray-400 mb-2">Gwiazdka = zakładka otwierana domyślnie.</p>
+            <p className="text-[11px] text-gray-400 mb-2">{tr('Gwiazdka = zakładka otwierana domyślnie.')}</p>
             <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
               {order.map((id, i) => {
                 const isHidden = hidden.includes(id);
                 return (
                   <div key={id} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700 ${isHidden ? 'opacity-50' : ''}`}>
-                    <button onClick={() => setDef(def === id ? '' : id)} title="Ustaw jako domyślną" disabled={isHidden} className={`${def === id ? 'text-amber-500' : 'text-gray-300 hover:text-amber-400'} disabled:opacity-30`}>
+                    <button onClick={() => setDef(def === id ? '' : id)} title={tr('Ustaw jako domyślną')} disabled={isHidden} className={`${def === id ? 'text-amber-500' : 'text-gray-300 hover:text-amber-400'} disabled:opacity-30`}>
                       <Star size={15} fill={def === id ? 'currentColor' : 'none'} />
                     </button>
                     <span className={`text-sm flex-1 truncate text-gray-800 dark:text-gray-100 ${isHidden ? 'line-through' : ''}`}>{label(id)}</span>
-                    <button onClick={() => toggleHidden(id)} title={isHidden ? 'Pokaż' : 'Ukryj'} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">{isHidden ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                    <button onClick={() => toggleHidden(id)} title={isHidden ? tr('Pokaż') : tr('Ukryj')} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">{isHidden ? <EyeOff size={14} /> : <Eye size={14} />}</button>
                     <button onClick={() => move(i, -1)} disabled={i === 0} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30"><ArrowUp size={14} /></button>
                     <button onClick={() => move(i, 1)} disabled={i === order.length - 1} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30"><ArrowDown size={14} /></button>
                   </div>
@@ -188,8 +189,8 @@ function TabConfig({ moduleKey, tabs, current }) {
               })}
             </div>
             <div className="flex gap-2 mt-3">
-              <button onClick={reset} disabled={busy} className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Domyślny układ</button>
-              <button onClick={save} disabled={busy} className="flex-1 px-3 py-2 text-xs rounded-lg bg-accent-primary text-white font-medium disabled:opacity-60">Zapisz</button>
+              <button onClick={reset} disabled={busy} className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">{tr('Domyślny układ')}</button>
+              <button onClick={save} disabled={busy} className="flex-1 px-3 py-2 text-xs rounded-lg bg-accent-primary text-white font-medium disabled:opacity-60">{tr('Zapisz')}</button>
             </div>
           </div>
         </>

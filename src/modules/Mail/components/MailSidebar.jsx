@@ -178,7 +178,7 @@ export default function MailSidebar({
               </div>
               <div className="flex-1 text-left min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {activeAccount?.external_email || activeAccount?.user_email || 'Konto'}
+                  {activeAccount?.external_email || activeAccount?.user_email || tr('Konto')}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {activeAccount?.account_type === 'external' ? tr('Zewnętrzne') : tr('Wewnętrzne')}
@@ -256,7 +256,7 @@ export default function MailSidebar({
               className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
             >
               {expandedSections.folders ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              <span>Foldery</span>
+              <span>{tr('Foldery')}</span>
             </div>
             {expandedSections.folders && customFolders.map(renderFolder)}
           </div>
@@ -273,7 +273,7 @@ export default function MailSidebar({
                 if (e.key === 'Enter') handleCreateFolder();
                 if (e.key === 'Escape') setShowNewFolder(false);
               }}
-              placeholder="Nazwa folderu..."
+              placeholder={tr('Nazwa folderu...')}
               autoFocus
               className="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-accent-primary-light focus:border-transparent outline-none"
             />
@@ -288,7 +288,7 @@ export default function MailSidebar({
                 onClick={() => setShowNewFolder(false)}
                 className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
               >
-                Anuluj
+                {tr('Anuluj')}
               </button>
             </div>
           </div>
@@ -298,7 +298,7 @@ export default function MailSidebar({
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary-light dark:hover:text-accent-primary-light transition-colors"
           >
             <Plus size={16} />
-            <span>Nowy folder</span>
+            <span>{tr('Nowy folder')}</span>
           </button>
         )}
 
@@ -309,7 +309,7 @@ export default function MailSidebar({
             className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
           >
             {expandedSections.labels ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span>Etykiety</span>
+            <span>{tr('Etykiety')}</span>
           </div>
 
           {expandedSections.labels && (
@@ -327,7 +327,7 @@ export default function MailSidebar({
                       if (e.key === 'Enter') handleCreateLabel();
                       if (e.key === 'Escape') setShowNewLabel(false);
                     }}
-                    placeholder="Nazwa etykiety..."
+                    placeholder={tr('Nazwa etykiety...')}
                     autoFocus
                     className="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-accent-primary-light focus:border-transparent outline-none"
                   />
@@ -352,7 +352,7 @@ export default function MailSidebar({
                       onClick={() => setShowNewLabel(false)}
                       className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                     >
-                      Anuluj
+                      {tr('Anuluj')}
                     </button>
                   </div>
                 </div>
@@ -362,7 +362,7 @@ export default function MailSidebar({
                   className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary-light dark:hover:text-accent-primary-light transition-colors"
                 >
                   <Plus size={16} />
-                  <span>Nowa etykieta</span>
+                  <span>{tr('Nowa etykieta')}</span>
                 </button>
               )}
             </>
@@ -377,7 +377,7 @@ export default function MailSidebar({
           className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
         >
           <Settings size={18} />
-          <span>Ustawienia poczty</span>
+          <span>{tr('Ustawienia poczty')}</span>
         </button>
       </div>
 
@@ -396,7 +396,7 @@ export default function MailSidebar({
               <>
                 <button
                   onClick={async () => {
-                    const newName = await promptDialog('Nowa nazwa:', contextMenu.item.name);
+                    const newName = await promptDialog(tr('Nowa nazwa:'), contextMenu.item.name);
                     if (newName) onRenameFolder(contextMenu.item.id, newName);
                     setContextMenu(null);
                   }}
@@ -422,7 +422,7 @@ export default function MailSidebar({
             {contextMenu.type === 'label' && (
               <>
                 <div className="px-3 py-2">
-                  <p className="text-xs text-gray-500 mb-2">Kolor:</p>
+                  <p className="text-xs text-gray-500 mb-2">{tr('Kolor:')}</p>
                   <div className="flex flex-wrap gap-1">
                     {LABEL_COLORS.map(color => (
                       <button

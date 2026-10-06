@@ -72,7 +72,7 @@ export default function FileUploader({
     // Waliduj rozmiar plików
     const validFiles = files.filter(file => {
       if (file.size > maxFileSize) {
-        toast.error(`Plik "${file.name}" przekracza limit ${formatFileSize(maxFileSize)}`);
+        toast.error(tr('Plik "{name}" przekracza limit {limit}', { name: file.name, limit: formatFileSize(maxFileSize) }));
         return false;
       }
       return true;
@@ -141,7 +141,7 @@ export default function FileUploader({
               {isDragging ? tr('Upuść pliki tutaj') : tr('Przeciągnij pliki lub kliknij, aby wybrać')}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Maksymalny rozmiar pliku: {formatFileSize(maxFileSize)}
+              {tr('Maksymalny rozmiar pliku:')} {formatFileSize(maxFileSize)}
             </p>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default function FileUploader({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Wybrane pliki ({selectedFiles.length})
+              {tr('Wybrane pliki')} ({selectedFiles.length})
             </span>
             <button
               onClick={() => setSelectedFiles([])}
@@ -204,12 +204,12 @@ export default function FileUploader({
             {uploading ? (
               <>
                 <Loader size={18} className="animate-spin" />
-                Przesyłanie... {uploadProgress}%
+                {tr('Przesyłanie...')} {uploadProgress}%
               </>
             ) : (
               <>
                 <Upload size={18} />
-                Prześlij {selectedFiles.length} {selectedFiles.length === 1 ? 'plik' : selectedFiles.length < 5 ? 'pliki' : tr('plików')}
+                {tr('Prześlij')} {selectedFiles.length} {selectedFiles.length === 1 ? tr('plik') : selectedFiles.length < 5 ? tr('pliki') : tr('plików')}
               </>
             )}
           </button>

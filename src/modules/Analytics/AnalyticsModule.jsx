@@ -6,6 +6,7 @@ import { useCampusQuery } from '../../hooks/useCampusQuery';
 import CustomSelect from '../../components/CustomSelect';
 import { formatMoney, formatNumber, MONTHS, MEMBER_STATUSES, aggregateMonthly, yearOptions } from './lib/analyticsApi';
 import Spinner from '../../components/Spinner';
+import { tr } from '../../i18n';
 
 // Wykres słupkowy miesięczny (styl jak w Giving/OverviewTab)
 function MonthlyBars({ data, format = (v) => v, highlightMonth = -1 }) {
@@ -20,7 +21,7 @@ function MonthlyBars({ data, format = (v) => v, highlightMonth = -1 }) {
               title={format(mo.v)}
             />
           </div>
-          <span className={`text-[10px] ${mo.m === highlightMonth ? 'text-accent-primary font-bold' : 'text-gray-400'}`}>{MONTHS[mo.m]}</span>
+          <span className={`text-[10px] ${mo.m === highlightMonth ? 'text-accent-primary font-bold' : 'text-gray-400'}`}>{tr(MONTHS[mo.m])}</span>
         </div>
       ))}
     </div>
@@ -32,7 +33,8 @@ function MonthlyBars({ data, format = (v) => v, highlightMonth = -1 }) {
 async function loadAttendance(start, end, withCampusFilter) {
   // 1) attendance_sessions — jedna sesja = headcount
   try {
-    let q = supabase.from('attendance_sessions').select('*').gte('date', start).lte('date', end);
+    // Kolumna daty sesji to session_date (filtr po „date” kończył się błędem 42703 i pustym wykresem).
+    let q = supabase.from('attendance_sessions').select('*').gte('session_date', start).lte('session_date', end);
     q = withCampusFilter(q);
     const { data, error } = await q;
     if (error) throw error;
@@ -156,12 +158,12 @@ export default function AnalyticsModule() {
   const highlightMonth = year === currentYear ? new Date().getMonth() : -1;
 
   const cards = [
-    { key: 'total', label: 'Wszyscy', value: formatNumber(totalMembers), icon: Users, tint: 'from-violet-500 to-purple-500' },
-    { key: 'czlonek', label: 'Członkowie', value: formatNumber(statusCounts['Członek']), icon: UserCheck, tint: 'from-emerald-500 to-teal-500' },
-    { key: 'sympatyk', label: 'Sympatycy', value: formatNumber(statusCounts['Sympatyk']), icon: UserCircle, tint: 'from-blue-500 to-indigo-500' },
-    { key: 'gosc', label: 'Goście', value: formatNumber(statusCounts['Gość']), icon: Users, tint: 'from-slate-400 to-slate-500' },
-    { key: 'new', label: `Nowi w ${year}`, value: formatNumber(newThisYear), icon: UserPlus, tint: 'from-amber-500 to-orange-500' },
-    { key: 'giving', label: `Dawanie ${year}`, value: donationsAvailable ? formatMoney(donationTotalYear) : '—', icon: Gift, tint: 'from-pink-500 to-rose-500' },
+    { key: 'total', label: tr('Wszyscy'), value: formatNumber(totalMembers), icon: Users, tint: 'from-violet-500 to-purple-500' },
+    { key: 'czlonek', label: tr('Członkowie'), value: formatNumber(statusCounts['Członek']), icon: UserCheck, tint: 'from-emerald-500 to-teal-500' },
+    { key: 'sympatyk', label: tr('Sympatycy'), value: formatNumber(statusCounts['Sympatyk']), icon: UserCircle, tint: 'from-blue-500 to-indigo-500' },
+    { key: 'gosc', label: tr('Goście'), value: formatNumber(statusCounts['Gość']), icon: Users, tint: 'from-slate-400 to-slate-500' },
+    { key: 'new', label: tr('Nowi w {year}', { year }), value: formatNumber(newThisYear), icon: UserPlus, tint: 'from-amber-500 to-orange-500' },
+    { key: 'giving', label: tr('Dawanie {year}', { year }), value: donationsAvailable ? formatMoney(donationTotalYear) : '—', icon: Gift, tint: 'from-pink-500 to-rose-500' },
   ];
 
   return (
@@ -169,8 +171,8 @@ export default function AnalyticsModule() {
       <PageHeader
         moduleKey="analytics"
         icon={BarChart3}
-        title="Analityka"
-        subtitle="Strategiczny obraz wzrostu, dawania i zaangażowania"
+        title={tr('Analityka')}
+        subtitle={tr('Strategiczny obraz wzrostu, dawania i zaangażowania')}
         actions={<div className="w-full sm:w-40"><CustomSelect value={year} onChange={setYear} options={years} icon={Filter} /></div>}
       />
 
@@ -197,24 +199,24 @@ export default function AnalyticsModule() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp size={18} className="text-accent-primary" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Nowe osoby w {year}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">{tr('Nowe osoby w {year}', { year })}</h3>
               </div>
               {growthMonthly.some((mo) => mo.v > 0)
-                ? <MonthlyBars data={growthMonthly} format={(v) => `${formatNumber(v)} os.`} highlightMonth={highlightMonth} />
-                : <p className="text-sm text-gray-400 py-10 text-center">Brak dat członkostwa w tym roku.</p>}
+                ? <MonthlyBars data={growthMonthly} format={(v) => `${formatNumber(v)} ${tr('os.')}`} highlightMonth={highlightMonth} />
+                : <p className="text-sm text-gray-400 py-10 text-center">{tr('Brak dat członkostwa w tym roku.')}</p>}
             </div>
 
             {/* Dawanie miesięczne */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Gift size={18} className="text-accent-primary" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Dawanie w {year}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">{tr('Dawanie w {year}', { year })}</h3>
               </div>
               {!donationsAvailable
-                ? <p className="text-sm text-gray-400 py-10 text-center">Brak danych / moduł Dawania nieaktywny.</p>
+                ? <p className="text-sm text-gray-400 py-10 text-center">{tr('Brak danych / moduł Dawania nieaktywny.')}</p>
                 : donationMonthly.some((mo) => mo.v > 0)
                   ? <MonthlyBars data={donationMonthly} format={(v) => formatMoney(v)} highlightMonth={highlightMonth} />
-                  : <p className="text-sm text-gray-400 py-10 text-center">Brak darowizn w tym roku.</p>}
+                  : <p className="text-sm text-gray-400 py-10 text-center">{tr('Brak darowizn w tym roku.')}</p>}
             </div>
           </div>
 
@@ -224,33 +226,33 @@ export default function AnalyticsModule() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <CalendarCheck size={18} className="text-accent-primary" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Frekwencja w {year}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">{tr('Frekwencja w {year}', { year })}</h3>
                 {attendanceAvailable && attendance?.mode === 'records' && (
-                  <span className="text-[10px] text-gray-400">(liczba obecności)</span>
+                  <span className="text-[10px] text-gray-400">({tr('liczba obecności')})</span>
                 )}
               </div>
               {!attendanceAvailable || !attendance?.monthly
-                ? <p className="text-sm text-gray-400 py-10 text-center">Brak danych / moduł nieaktywny.</p>
+                ? <p className="text-sm text-gray-400 py-10 text-center">{tr('Brak danych / moduł nieaktywny.')}</p>
                 : attendance.monthly.some((mo) => mo.v > 0)
                   ? <MonthlyBars data={attendance.monthly} format={(v) => `${formatNumber(v)}`} highlightMonth={highlightMonth} />
-                  : <p className="text-sm text-gray-400 py-10 text-center">Brak zarejestrowanej frekwencji w tym roku.</p>}
+                  : <p className="text-sm text-gray-400 py-10 text-center">{tr('Brak zarejestrowanej frekwencji w tym roku.')}</p>}
             </div>
 
             {/* Lejek gość → sympatyk → członek */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Users size={18} className="text-accent-primary" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Lejek zaangażowania</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">{tr('Lejek zaangażowania')}</h3>
               </div>
               {totalMembers === 0 ? (
-                <p className="text-sm text-gray-400 py-10 text-center">Brak osób w bazie.</p>
+                <p className="text-sm text-gray-400 py-10 text-center">{tr('Brak osób w bazie.')}</p>
               ) : (
                 <div className="space-y-4">
                   {funnel.map((f) => (
                     <div key={f.value}>
                       <div className="flex justify-between text-sm mb-1">
                         <span className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                          <span className="w-2.5 h-2.5 rounded-full" style={{ background: f.color }} />{f.label}
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ background: f.color }} />{tr(f.label)}
                         </span>
                         <span className="font-medium text-gray-900 dark:text-white tabular-nums">{formatNumber(f.count)}</span>
                       </div>
@@ -260,7 +262,7 @@ export default function AnalyticsModule() {
                     </div>
                   ))}
                   <p className="text-xs text-gray-400 pt-1">
-                    Łącznie {formatNumber(totalMembers)} osób w wybranym kampusie.
+                    {tr('Łącznie {n} osób w wybranym kampusie.', { n: formatNumber(totalMembers) })}
                   </p>
                 </div>
               )}

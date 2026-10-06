@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart3 } from 'lucide-react';
 import EmptyState from '../../../components/EmptyState';
+import { tr } from '../../../i18n';
 
 // Lekkie wykresy SVG (bez zewnętrznej biblioteki). Kolory przekazuje wołający
 // (etykiety statusów/opcji mają własne kolory), fallback z palety.
@@ -97,5 +98,5 @@ export function Battery({ data }) {
   );
 }
 
-function Empty() { return <EmptyState compact icon={BarChart3} title="Brak danych" />; }
+function Empty() { return <EmptyState compact icon={BarChart3} title={tr('Brak danych')} />; }
 function truncate(s, n) { return (s || '').length > n ? s.slice(0, n) + '…' : s; }

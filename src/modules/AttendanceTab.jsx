@@ -77,7 +77,7 @@ export default function AttendanceTab({ members = [] }) {
           <CustomDatePicker value={date} onChange={setDate} />
         </div>
         <div className="w-full md:w-56">
-          <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Typ</label>
+          <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">{tr('Typ')}</label>
           <select value={kind} onChange={(e) => setKind(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 text-sm text-gray-900 dark:text-gray-100">
             {KINDS.map((k) => <option key={k} value={k}>{tr(k)}</option>)}
@@ -86,7 +86,7 @@ export default function AttendanceTab({ members = [] }) {
         <div className="flex-1">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Szukaj osoby..."
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tr('Szukaj osoby...')}
               className="w-full pl-10 pr-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 text-sm text-gray-900 dark:text-gray-100" />
           </div>
         </div>
@@ -95,16 +95,16 @@ export default function AttendanceTab({ members = [] }) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200">
           <CalendarCheck size={18} className="text-accent-primary" />
-          Obecni: {presentIds.size} / {members.length}
+          {tr('Obecni:')} {presentIds.size} / {members.length}
         </div>
         <div className="flex gap-2">
-          <button onClick={() => markAll(true)} className="text-xs px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-300 font-medium hover:bg-green-100 transition">Zaznacz wszystkich</button>
+          <button onClick={() => markAll(true)} className="text-xs px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-300 font-medium hover:bg-green-100 transition">{tr('Zaznacz wszystkich')}</button>
           <button onClick={() => markAll(false)} className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium hover:bg-gray-200 transition">{tr('Wyczyść')}</button>
         </div>
       </div>
 
       {loading ? (
-        <Spinner center label="Ładowanie…" />
+        <Spinner center label={tr('Ładowanie…')} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {filtered.map((m) => {

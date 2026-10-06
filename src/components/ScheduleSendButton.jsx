@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Send, Check, X, Clock } from 'lucide-react';
 import { toast } from '../lib/toast';
+import { tr } from '../i18n';
 import { deriveAssignments, assignmentFor, countToNotify, statusSummary } from '../lib/scheduleBridge';
 
 // Przycisk „Wyślij" + status akceptacji do grafików zespołowych (MediaTeam/Kids/Atmosfera).
@@ -35,7 +36,7 @@ export default function ScheduleSendButton({
         });
         // Nie połykaj cichej porażki (np. brak uprawnień) — inaczej „Wyślij (3)" kończy się
         // mylącym „Brak nowych osób", choć w bazie nic nie powstało.
-        if (cr && cr.success === false) throw new Error(cr.error || 'Nie udało się zapisać przypisania (uprawnienia?).');
+        if (cr && cr.success === false) throw new Error(cr.error || tr('Nie udało się zapisać przypisania (uprawnienia?).'));
       }
       // 2) Sprzątanie: usuń przypisania osób, których już nie ma w siatce.
       for (const a of assignments || []) {
@@ -48,13 +49,13 @@ export default function ScheduleSendButton({
       const res = await hook.sendInvitesForProgram(program.id, teamType);
       await onRefresh?.();
       if (res?.success) {
-        if (res.sent > 0) toast.success(`Wysłano powiadomienia: ${res.sent}`);
-        else toast.info('Brak nowych osób do powiadomienia (sprawdź, czy mają e-mail w profilu).');
+        if (res.sent > 0) toast.success(tr('Wysłano powiadomienia: {n}', { n: res.sent }));
+        else toast.info(tr('Brak nowych osób do powiadomienia (sprawdź, czy mają e-mail w profilu).'));
       } else {
-        toast.error(res?.error || 'Nie udało się wysłać powiadomień.');
+        toast.error(res?.error || tr('Nie udało się wysłać powiadomień.'));
       }
     } catch (e) {
-      toast.error(e.message || 'Błąd wysyłki powiadomień.');
+      toast.error(e.message || tr('Błąd wysyłki powiadomień.'));
     } finally {
       setLoading(false);
     }
@@ -64,9 +65,9 @@ export default function ScheduleSendButton({
     <div className="flex items-center gap-2 flex-wrap">
       {canSend && (
         <button onClick={send} disabled={loading}
-          title={count ? 'Wyślij powiadomienia (mail + push) do przypisanych osób' : 'Brak nowych osób do powiadomienia'}
+          title={count ? tr('Wyślij powiadomienia (mail + push) do przypisanych osób') : tr('Brak nowych osób do powiadomienia')}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition ${loading ? 'opacity-60' : ''} ${count ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'}`}>
-          <Send size={12} /> {loading ? '...' : count ? `Wyślij (${count})` : 'Wyślij'}
+          <Send size={12} /> {loading ? '...' : count ? `${tr('Wyślij')} (${count})` : tr('Wyślij')}
         </button>
       )}
       {/* Status akceptacji — widoczny w grafiku, jak w Worship */}

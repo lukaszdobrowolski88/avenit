@@ -5,6 +5,7 @@ import { formatMoney, formatDate, donorLabel, methodLabel } from '../lib/givingA
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { promptDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 export default function OverviewTab({ funds, membersById, withCampusFilter, onNavigate }) {
   const [donations, setDonations] = useState([]);
@@ -42,7 +43,7 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
     const fundsById = {}; (funds || []).forEach(f => { fundsById[f.id] = f; });
     const total = stats.totalYear || 1;
     return Object.entries(map)
-      .map(([k, v]) => ({ id: k, name: k === '__none' ? 'Bez funduszu' : (fundsById[k]?.name || '—'), color: k === '__none' ? '#94a3b8' : (fundsById[k]?.color || '#94a3b8'), amount: v, pct: Math.round((v / total) * 100) }))
+      .map(([k, v]) => ({ id: k, name: k === '__none' ? tr('Bez funduszu') : (fundsById[k]?.name || '—'), color: k === '__none' ? '#94a3b8' : (fundsById[k]?.color || '#94a3b8'), amount: v, pct: Math.round((v / total) * 100) }))
       .sort((a, b) => b.amount - a.amount);
   }, [donations, funds, stats.totalYear]);
 
@@ -54,22 +55,22 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
     return arr.map((v, i) => ({ m: i, v, h: Math.round((v / max) * 100) }));
   }, [donations]);
 
-  const MONTHS = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
+  const MONTHS = [tr('Sty'), tr('Lut'), tr('Mar'), tr('Kwi'), tr('Maj'), tr('Cze'), tr('Lip'), tr('Sie'), tr('Wrz'), tr('Paź'), tr('Lis'), tr('Gru')];
   const recent = donations.slice(0, 6);
 
   const cards = [
-    { label: `Suma ${year}`, value: formatMoney(stats.totalYear), icon: TrendingUp, tint: 'from-emerald-500 to-teal-500' },
-    { label: 'Ten miesiąc', value: formatMoney(stats.totalMonth), icon: Calendar, tint: 'from-blue-500 to-indigo-500' },
-    { label: 'Darczyńcy', value: stats.donors, icon: Users, tint: 'from-violet-500 to-purple-500' },
-    { label: 'Darowizn', value: stats.count, icon: Receipt, tint: 'from-amber-500 to-orange-500' },
+    { label: tr('Suma {year}', { year }), value: formatMoney(stats.totalYear), icon: TrendingUp, tint: 'from-emerald-500 to-teal-500' },
+    { label: tr('Ten miesiąc'), value: formatMoney(stats.totalMonth), icon: Calendar, tint: 'from-blue-500 to-indigo-500' },
+    { label: tr('Darczyńcy'), value: stats.donors, icon: Users, tint: 'from-violet-500 to-purple-500' },
+    { label: tr('Darowizn'), value: stats.count, icon: Receipt, tint: 'from-amber-500 to-orange-500' },
   ];
 
   if (loading) return <Spinner center />;
 
   const giveUrl = `${window.location.origin}/give`;
   const copyGiveLink = async () => {
-    try { navigator.clipboard.writeText(giveUrl); toast.success('Skopiowano link do dawania online.'); }
-    catch { await promptDialog('Link do dawania online:', giveUrl); }
+    try { navigator.clipboard.writeText(giveUrl); toast.success(tr('Skopiowano link do dawania online.')); }
+    catch { await promptDialog(tr('Link do dawania online:'), giveUrl); }
   };
 
   return (
@@ -77,12 +78,12 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
       {/* Dawanie online — link publiczny */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="font-semibold text-gray-900 dark:text-white">Dawanie online (Przelewy24 / BLIK)</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 break-all">Udostępnij link, aby przyjmować darowizny online: <span className="font-mono text-gray-700 dark:text-gray-200">{giveUrl}</span></div>
+          <div className="font-semibold text-gray-900 dark:text-white">{tr('Dawanie online (Przelewy24 / BLIK)')}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 break-all">{tr('Udostępnij link, aby przyjmować darowizny online:')} <span className="font-mono text-gray-700 dark:text-gray-200">{giveUrl}</span></div>
         </div>
         <div className="flex gap-2">
-          <button onClick={copyGiveLink} className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 text-sm font-medium">Kopiuj link</button>
-          <a href={giveUrl} target="_blank" rel="noreferrer" className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-semibold shadow-md">Otwórz</a>
+          <button onClick={copyGiveLink} className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 text-sm font-medium">{tr('Kopiuj link')}</button>
+          <a href={giveUrl} target="_blank" rel="noreferrer" className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-semibold shadow-md">{tr('Otwórz')}</a>
         </div>
       </div>
 
@@ -102,7 +103,7 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trend miesięczny */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Dawanie w {year}</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">{tr('Dawanie w {year}', { year })}</h3>
           <div className="flex items-end justify-between gap-1.5 h-40">
             {monthly.map(mo => (
               <div key={mo.m} className="flex-1 flex flex-col items-center gap-1.5 group">
@@ -117,8 +118,8 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
 
         {/* Podział na fundusze */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Podział na fundusze</h3>
-          {byFund.length === 0 ? <p className="text-sm text-gray-400">Brak danych.</p> : (
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">{tr('Podział na fundusze')}</h3>
+          {byFund.length === 0 ? <p className="text-sm text-gray-400">{tr('Brak danych.')}</p> : (
             <div className="space-y-3">
               {byFund.slice(0, 6).map(f => (
                 <div key={f.id}>
@@ -141,16 +142,16 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
       {/* Ostatnie darowizny */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="font-semibold text-gray-900 dark:text-white">Ostatnie darowizny</h3>
-          <button onClick={() => onNavigate?.('donations')} className="text-sm text-accent-primary dark:text-accent-primary-light flex items-center gap-1 hover:underline">Wszystkie <ArrowRight size={14} /></button>
+          <h3 className="font-semibold text-gray-900 dark:text-white">{tr('Ostatnie darowizny')}</h3>
+          <button onClick={() => onNavigate?.('donations')} className="text-sm text-accent-primary dark:text-accent-primary-light flex items-center gap-1 hover:underline">{tr('Wszystkie')} <ArrowRight size={14} /></button>
         </div>
-        {recent.length === 0 ? <p className="text-sm text-gray-400">Brak darowizn w tym roku.</p> : (
+        {recent.length === 0 ? <p className="text-sm text-gray-400">{tr('Brak darowizn w tym roku.')}</p> : (
           <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
             {recent.map(d => (
               <div key={d.id} className="flex items-center justify-between py-2.5">
                 <div className="min-w-0">
-                  <div className="font-medium text-gray-900 dark:text-white truncate">{donorLabel(d, membersById)}</div>
-                  <div className="text-xs text-gray-400">{formatDate(d.donation_date)} · {methodLabel(d.method)}</div>
+                  <div className="font-medium text-gray-900 dark:text-white truncate">{d.is_anonymous ? tr('Anonimowo') : donorLabel(d, membersById)}</div>
+                  <div className="text-xs text-gray-400">{formatDate(d.donation_date)} · {tr(methodLabel(d.method))}</div>
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white tabular-nums whitespace-nowrap">{formatMoney(d.amount, d.currency)}</span>
               </div>

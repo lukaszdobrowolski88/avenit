@@ -12,6 +12,7 @@ import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog, promptDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const emptyForm = {
   title: '', speaker: '', series: '', sermon_date: new Date().toISOString().slice(0, 10),
@@ -43,22 +44,22 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
     const fromSermons = (sermons || []).map(s => s.series).filter(Boolean);
     const fromSeries = (teachingSeries || []).filter(s => s.is_active !== false).map(s => s.name).filter(Boolean);
     const set = new Set([...fromSeries, ...fromSermons]);
-    return [{ value: '', label: 'Wszystkie serie' }, ...[...set].sort().map(s => ({ value: s, label: s }))];
+    return [{ value: '', label: tr('Wszystkie serie') }, ...[...set].sort().map(s => ({ value: s, label: s }))];
   }, [sermons, teachingSeries]);
 
   const statusOptions = [
-    { value: '', label: 'Wszystkie statusy' },
-    { value: 'published', label: 'Opublikowane' },
-    { value: 'draft', label: 'Szkice' },
+    { value: '', label: tr('Wszystkie statusy') },
+    { value: 'published', label: tr('Opublikowane') },
+    { value: 'draft', label: tr('Szkice') },
   ];
 
   // Wybór serii na kazaniu = aktywne serie nauczania (is_active !== false).
   // Jeśli edytowane kazanie ma serię spoza listy aktywnych, dopisujemy ją (oznaczoną).
   const seriesSelectOptions = useMemo(() => {
     const activeNames = (teachingSeries || []).filter(s => s.is_active !== false).map(s => s.name).filter(Boolean);
-    const opts = [{ value: '', label: '— brak serii —' }, ...[...new Set(activeNames)].sort().map(n => ({ value: n, label: n }))];
+    const opts = [{ value: '', label: tr('— brak serii —') }, ...[...new Set(activeNames)].sort().map(n => ({ value: n, label: n }))];
     if (form.series && !activeNames.includes(form.series)) {
-      opts.push({ value: form.series, label: `${form.series} (nieaktywna)` });
+      opts.push({ value: form.series, label: `${form.series} (${tr('nieaktywna')})` });
     }
     return opts;
   }, [teachingSeries, form.series]);
@@ -94,7 +95,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
   };
 
   const save = async () => {
-    if (!form.title.trim()) { toast.error('Podaj tytuł kazania.'); return; }
+    if (!form.title.trim()) { toast.error(tr('Podaj tytuł kazania.')); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -125,31 +126,31 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
       refresh();
     } catch (err) {
       console.error('Save sermon error:', err);
-      toast.error('Nie udało się zapisać kazania: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać kazania: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (item) => {
-    if (!await confirmDialog(`Usunąć kazanie „${item.title}"?`)) return;
+    if (!await confirmDialog(tr('Usunąć kazanie „{title}"?', { title: item.title }))) return;
     try {
       const { error } = await supabase.from('sermons').delete().eq('id', item.id);
       if (error) throw error;
       refresh();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
   const copyPublicLink = async (item) => {
-    if (!item.slug) { toast.error('To kazanie nie ma jeszcze slugu — otwórz edycję i zapisz, aby go wygenerować.'); return; }
+    if (!item.slug) { toast.error(tr('To kazanie nie ma jeszcze slugu — otwórz edycję i zapisz, aby go wygenerować.')); return; }
     const url = `${window.location.origin}/sermon/${item.slug}`;
     try {
       await navigator.clipboard.writeText(url);
     } catch {
       // Fallback dla przeglądarek bez clipboard API
-      await promptDialog('Skopiuj link publiczny:', url);
+      await promptDialog(tr('Skopiuj link publiczny:'), url);
     }
     setCopiedId(item.id);
     setTimeout(() => setCopiedId(null), 1800);
@@ -163,21 +164,21 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Szukaj tytułu, mówcy, serii, odnośnika..."
+            placeholder={tr('Szukaj tytułu, mówcy, serii, odnośnika...')}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
           />
         </div>
         <div className="w-44"><CustomSelect value={seriesFilter} onChange={setSeriesFilter} options={seriesOptions} compact icon={Filter} /></div>
         <div className="w-40"><CustomSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} compact /></div>
         <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
-          <Plus size={16} /> Dodaj kazanie
+          <Plus size={16} /> {tr('Dodaj kazanie')}
         </button>
       </div>
 
       {/* Podsumowanie */}
       <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">Kazań: <b className="text-gray-900 dark:text-white">{filtered.length}</b></span>
-        <span className="text-gray-500 dark:text-gray-400">Opublikowanych: <b className="text-accent-primary dark:text-accent-primary-light">{filtered.filter(s => s.is_published).length}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Kazań:')} <b className="text-gray-900 dark:text-white">{filtered.length}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Opublikowanych:')} <b className="text-accent-primary dark:text-accent-primary-light">{filtered.filter(s => s.is_published).length}</b></span>
       </div>
 
       {/* Lista */}
@@ -185,18 +186,18 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
         {loading ? (
           <Spinner center />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Podcast} title="Brak kazań dla wybranych filtrów." />
+          <EmptyState icon={Podcast} title={tr('Brak kazań dla wybranych filtrów.')} />
         ) : (
           <DataTable flush>
             <THead>
               <tr>
-                <TH>Tytuł</TH>
-                <TH>Mówca</TH>
-                <TH>Seria</TH>
-                <TH>Data</TH>
-                <TH>Media</TH>
-                <TH>Status</TH>
-                <TH align="right"><span className="sr-only">Akcje</span></TH>
+                <TH>{tr('Tytuł')}</TH>
+                <TH>{tr('Mówca')}</TH>
+                <TH>{tr('Seria')}</TH>
+                <TH>{tr('Data')}</TH>
+                <TH>{tr('Media')}</TH>
+                <TH>{tr('Status')}</TH>
+                <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
               </tr>
             </THead>
             <tbody>
@@ -215,20 +216,20 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
                   <TD muted numeric className="whitespace-nowrap">{item.sermon_date ? formatDate(item.sermon_date) : ''}</TD>
                   <TD>
                     <div className="flex items-center gap-2 text-gray-400">
-                      {item.audio_url && <Music size={15} className="text-accent-primary dark:text-accent-primary-light" title="Audio" />}
-                      {item.video_url && <Video size={15} className="text-accent-primary dark:text-accent-primary-light" title="Wideo" />}
+                      {item.audio_url && <Music size={15} className="text-accent-primary dark:text-accent-primary-light" title={tr('Audio')} />}
+                      {item.video_url && <Video size={15} className="text-accent-primary dark:text-accent-primary-light" title={tr('Wideo')} />}
                     </div>
                   </TD>
                   <TD>
                     <StatusPill color={item.is_published ? STATUS_COLORS.success : STATUS_COLORS.neutral}>
-                      {item.is_published ? 'Opublikowane' : 'Szkic'}
+                      {item.is_published ? tr('Opublikowane') : tr('Szkic')}
                     </StatusPill>
                   </TD>
                   <TD align="right">
                     <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
                       <button
                         onClick={() => copyPublicLink(item)}
-                        title="Kopiuj link publiczny"
+                        title={tr('Kopiuj link publiczny')}
                         className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         {copiedId === item.id ? <Check size={15} className="text-emerald-500" /> : <LinkIcon size={15} />}
@@ -248,88 +249,88 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
       <Modal
         isOpen={modalOpen}
         onClose={() => !saving && setModalOpen(false)}
-        title={editing ? 'Edytuj kazanie' : 'Nowe kazanie'}
+        title={editing ? tr('Edytuj kazanie') : tr('Nowe kazanie')}
         size="lg"
         footer={<>
-          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
-          <Button onClick={save} loading={saving}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>{tr('Anuluj')}</Button>
+          <Button onClick={save} loading={saving}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
-            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Łaska większa niż grzech" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł')}</label>
+            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={tr('np. Łaska większa niż grzech')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Mówca</label>
-              <input value={form.speaker} onChange={e => setForm(f => ({ ...f, speaker: e.target.value }))} placeholder="np. Jan Kowalski" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Mówca')}</label>
+              <input value={form.speaker} onChange={e => setForm(f => ({ ...f, speaker: e.target.value }))} placeholder={tr('np. Jan Kowalski')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Seria</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Seria')}</label>
               <CustomSelect value={form.series || ''} onChange={(val) => setForm(f => ({ ...f, series: val }))} options={seriesSelectOptions} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Data')}</label>
               <DateInput value={form.sermon_date} onChange={e => setForm(f => ({ ...f, sermon_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Odnośnik biblijny</label>
-              <input value={form.scripture_ref} onChange={e => setForm(f => ({ ...f, scripture_ref: e.target.value }))} placeholder="np. J 3,16" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Odnośnik biblijny')}</label>
+              <input value={form.scripture_ref} onChange={e => setForm(f => ({ ...f, scripture_ref: e.target.value }))} placeholder={tr('np. J 3,16')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               {form.scripture_ref && bibleUrl(form.scripture_ref) && (
                 <a href={bibleUrl(form.scripture_ref)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 ml-1 text-xs text-accent-primary dark:text-accent-primary-light hover:underline">
-                  <BookOpen size={12} /> Podgląd fragmentu (UBG)
+                  <BookOpen size={12} /> {tr('Podgląd fragmentu (UBG)')}
                 </a>
               )}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Opis</label>
-            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Krótki opis / streszczenie kazania" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Opis')}</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder={tr('Krótki opis / streszczenie kazania')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">URL audio</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('URL audio')}</label>
             <input value={form.audio_url} onChange={e => setForm(f => ({ ...f, audio_url: e.target.value }))} placeholder="https://.../kazanie.mp3" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">URL wideo (YouTube / Vimeo)</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('URL wideo (YouTube / Vimeo)')}</label>
             <input value={form.video_url} onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))} placeholder="https://www.youtube.com/watch?v=..." className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             {form.video_url && parseVideo(form.video_url).provider && parseVideo(form.video_url).provider !== 'other' && (
               <span className="inline-flex items-center gap-1 mt-1 ml-1 text-xs text-emerald-600 dark:text-emerald-400">
-                <Check size={12} /> Rozpoznano: {parseVideo(form.video_url).provider === 'youtube' ? 'YouTube' : 'Vimeo'} (osadzenie w odtwarzaczu)
+                <Check size={12} /> {tr('Rozpoznano: {provider} (osadzenie w odtwarzaczu)', { provider: parseVideo(form.video_url).provider === 'youtube' ? 'YouTube' : 'Vimeo' })}
               </span>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki / konspekt</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki / konspekt')}</label>
             <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Slug (link publiczny)</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Slug (link publiczny)')}</label>
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">/sermon/</span>
               <input
                 value={form.slug}
                 onChange={e => { setSlugTouched(true); setForm(f => ({ ...f, slug: e.target.value })); }}
-                placeholder="auto z tytułu"
+                placeholder={tr('auto z tytułu')}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
               />
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">Generowany automatycznie z tytułu; możesz nadpisać.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">{tr('Generowany automatycznie z tytułu; możesz nadpisać.')}</p>
           </div>
 
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" checked={form.is_published} onChange={e => setForm(f => ({ ...f, is_published: e.target.checked }))} className="rounded accent-emerald-500" />
-            Opublikowane (widoczne pod linkiem publicznym)
+            {tr('Opublikowane (widoczne pod linkiem publicznym)')}
           </label>
         </div>
       </Modal>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAttendance } from '../hooks/useAttendance';
 import { ClipboardList, LayoutGrid, RefreshCw, Search, Loader2 } from 'lucide-react';
-import { tr } from '../../../../i18n';
+import { tr, appLocale } from '../../../../i18n';
 import NotifyParentButton from './NotifyParentButton';
 import EmptyState from '../../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, EmptyRow, StatusPill, STATUS_COLORS } from '../../../../components/ui/DataTable';
@@ -79,7 +79,7 @@ export default function AttendanceDashboard({ session, locations }) {
             {tr('Lista obecności')}
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Aktualnie obecnych: <strong className="text-accent-primary dark:text-accent-primary-light">{activeCheckins.length}</strong>
+            {tr('Aktualnie obecnych:')} <strong className="text-accent-primary dark:text-accent-primary-light">{activeCheckins.length}</strong>
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function AttendanceDashboard({ session, locations }) {
               }`}
           >
             <ClipboardList size={18} />
-            Lista
+            {tr('Lista')}
           </button>
           <button
             onClick={() => setView('rooms')}
@@ -105,7 +105,7 @@ export default function AttendanceDashboard({ session, locations }) {
               }`}
           >
             <LayoutGrid size={18} />
-            Sale
+            {tr('Sale')}
           </button>
           <button
             onClick={refresh}
@@ -133,7 +133,7 @@ export default function AttendanceDashboard({ session, locations }) {
                   </h3>
                   {loc.room_number && (
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      Sala {loc.room_number}
+                      {tr('Sala')} {loc.room_number}
                     </span>
                   )}
                 </div>
@@ -178,7 +178,7 @@ export default function AttendanceDashboard({ session, locations }) {
                   ))}
                 </div>
               ) : (
-                <EmptyState compact title="Brak dzieci w tej sali" />
+                <EmptyState compact title={tr('Brak dzieci w tej sali')} />
               )}
             </div>
           ))}
@@ -195,9 +195,9 @@ export default function AttendanceDashboard({ session, locations }) {
               onChange={(e) => setFilter(e.target.value)}
               className="px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
             >
-              <option value="active">Obecni ({activeCheckins.length})</option>
-              <option value="checkedout">Odebrani ({checkedOutCheckins.length})</option>
-              <option value="all">Wszyscy ({checkins.length})</option>
+              <option value="active">{tr('Obecni')} ({activeCheckins.length})</option>
+              <option value="checkedout">{tr('Odebrani')} ({checkedOutCheckins.length})</option>
+              <option value="all">{tr('Wszyscy')} ({checkins.length})</option>
             </select>
 
             <select
@@ -205,7 +205,7 @@ export default function AttendanceDashboard({ session, locations }) {
               onChange={(e) => setSelectedLocation(e.target.value)}
               className="px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
             >
-              <option value="all">Wszystkie sale</option>
+              <option value="all">{tr('Wszystkie sale')}</option>
               {locations?.map((loc) => (
                 <option key={loc.id} value={loc.id}>
                   {loc.name}
@@ -217,7 +217,7 @@ export default function AttendanceDashboard({ session, locations }) {
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Szukaj po imieniu lub kodzie..."
+                placeholder={tr('Szukaj po imieniu lub kodzie...')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
@@ -230,8 +230,8 @@ export default function AttendanceDashboard({ session, locations }) {
             <THead>
               <tr>
                 <TH>{tr('Imię')}</TH>
-                <TH>Sala</TH>
-                <TH>Kod</TH>
+                <TH>{tr('Sala')}</TH>
+                <TH>{tr('Kod')}</TH>
                 <TH>{tr('Check-in')}</TH>
                 <TH>{tr('Status')}</TH>
                 <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
@@ -274,7 +274,7 @@ export default function AttendanceDashboard({ session, locations }) {
                         </span>
                       </TD>
                       <TD muted numeric>
-                        {new Date(checkin.checked_in_at).toLocaleTimeString('pl-PL', {
+                        {new Date(checkin.checked_in_at).toLocaleTimeString(appLocale(), {
                           hour: '2-digit',
                           minute: '2-digit'
                         })}
@@ -282,15 +282,15 @@ export default function AttendanceDashboard({ session, locations }) {
                       <TD>
                         {isCheckedOut ? (
                           <StatusPill color={STATUS_COLORS.neutral} className="tabular-nums">
-                            Odebrany{' '}
-                            {new Date(checkin.checked_out_at).toLocaleTimeString('pl-PL', {
+                            {tr('Odebrany')}{' '}
+                            {new Date(checkin.checked_out_at).toLocaleTimeString(appLocale(), {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}
                           </StatusPill>
                         ) : (
                           <StatusPill color={STATUS_COLORS.success}>
-                            Obecny
+                            {tr('Obecny')}
                           </StatusPill>
                         )}
                       </TD>

@@ -152,7 +152,7 @@ export default function IconPicker({ value, onChange, className = '' }) {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Szukaj ikony..."
+                placeholder={tr('Szukaj ikony...')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:border-accent-primary-light focus:ring-1 focus:ring-accent-primary-light"
@@ -216,7 +216,7 @@ export default function IconPicker({ value, onChange, className = '' }) {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-400 text-sm">
-                Nie znaleziono ikon dla "{search}"
+                {tr('Nie znaleziono ikon dla "{q}"', { q: search })}
               </div>
             )}
           </div>
@@ -225,7 +225,7 @@ export default function IconPicker({ value, onChange, className = '' }) {
           {value && (
             <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                Wybrana: <span className="font-medium text-gray-700 dark:text-gray-300">{value}</span>
+                {tr('Wybrana:')} <span className="font-medium text-gray-700 dark:text-gray-300">{value}</span>
               </span>
             </div>
           )}

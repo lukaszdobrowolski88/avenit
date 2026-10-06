@@ -90,7 +90,7 @@ function FolderItem({ folder, level = 0, selectedId, onSelect, onCreateFolder, o
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                   <Plus size={14} />
-                  Nowy podfolder
+                  {tr('Nowy podfolder')}
                 </button>
                 <button
                   onClick={(e) => handleMenuAction('rename', e)}
@@ -181,7 +181,7 @@ export default function FolderTree({
           }`}
       >
         <Folder size={16} className={selectedId === null ? 'text-accent-primary-light' : 'text-gray-500'} />
-        <span className="text-sm font-medium">Wszystkie pliki</span>
+        <span className="text-sm font-medium">{tr('Wszystkie pliki')}</span>
       </div>
 
       {/* Separator */}
@@ -210,7 +210,7 @@ export default function FolderTree({
           className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
         >
           <Plus size={14} />
-          Nowy folder
+          {tr('Nowy folder')}
         </button>
       )}
     </div>

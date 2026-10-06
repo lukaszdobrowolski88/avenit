@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { toast } from './toast';
+import { tr, appLocale } from '../i18n';
 
 // Domyślne URL-e dla grafik PPT (można zmienić na URL-e z Supabase Storage)
 const DEFAULT_GRAPHICS = {
@@ -27,7 +28,7 @@ export const generatePPT = async (program, songsMap) => {
   const printWindow = window.open('', '', 'width=1000,height=700');
 
   if (!printWindow) {
-    toast.error('Nie można otworzyć nowego okna. Sprawdź czy przeglądarka nie blokuje wyskakujących okien.');
+    toast.error(tr('Nie można otworzyć nowego okna. Sprawdź czy przeglądarka nie blokuje wyskakujących okien.'));
     return;
   }
 
@@ -124,7 +125,7 @@ export const generatePPT = async (program, songsMap) => {
   let slidesHtml = '';
 
   // Formatowanie daty
-  const formattedDate = program.date ? new Date(program.date).toLocaleDateString('pl-PL', {
+  const formattedDate = program.date ? new Date(program.date).toLocaleDateString(appLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

@@ -41,11 +41,11 @@ export default function SuperAdminModule() {
   }, []);
 
   const navItems = [
-    { id: TABS.DASHBOARD, icon: LayoutDashboard, label: 'Dashboard' },
-    { id: TABS.TENANTS, icon: Building2, label: 'Klienci' },
-    { id: TABS.INVOICES, icon: CreditCard, label: 'Faktury' },
-    { id: TABS.PLANS, icon: Package, label: 'Plany' },
-    { id: TABS.COUPONS, icon: Tag, label: 'Kupony' },
+    { id: TABS.DASHBOARD, icon: LayoutDashboard, label: tr('Dashboard') },
+    { id: TABS.TENANTS, icon: Building2, label: tr('Klienci') },
+    { id: TABS.INVOICES, icon: CreditCard, label: tr('Faktury') },
+    { id: TABS.PLANS, icon: Package, label: tr('Plany') },
+    { id: TABS.COUPONS, icon: Tag, label: tr('Kupony') },
     { id: TABS.SETTINGS, icon: Settings, label: tr('Ustawienia') }
   ];
 
@@ -84,7 +84,7 @@ export default function SuperAdminModule() {
         return (
           <div className="p-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Kupony rabatowe
+              {tr('Kupony rabatowe')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
               {tr('Zarządzaj kuponami i promocjami.')}
@@ -96,10 +96,10 @@ export default function SuperAdminModule() {
         return (
           <div className="p-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Ustawienia systemu
+              {tr('Ustawienia systemu')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Konfiguracja globalna aplikacji.
+              {tr('Konfiguracja globalna aplikacji.')}
             </p>
             {/* TODO: SystemSettings component */}
           </div>
@@ -117,7 +117,7 @@ export default function SuperAdminModule() {
           <Shield size={24} className="text-white" />
           <div>
             <h1 className="text-lg font-bold text-white">
-              Panel Super Administratora
+              {tr('Panel Super Administratora')}
             </h1>
             <p className="text-sm text-white/80">
               {tr('Avenit - Zarządzanie systemem')}

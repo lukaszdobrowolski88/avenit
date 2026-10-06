@@ -16,6 +16,7 @@ import FieldDefsTab from './tabs/FieldDefsTab';
 import { memberName, memberInitials } from './lib/careApi';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
+import { tr } from '../../i18n';
 
 const VIEW_TABS = [
   { id: 'people', label: 'Kartoteka', icon: Users },
@@ -100,11 +101,11 @@ export default function CareModule({ embedded = false }) {
   return (
     <div className="space-y-6">
       {!embedded && (
-        <PageHeader moduleKey="care" icon={HeartPulse} title="Opieka i CRM" subtitle="Notatki, opieka duszpasterska, kamienie milowe, tagi i pola własne członków" />
+        <PageHeader moduleKey="care" icon={HeartPulse} title={tr('Opieka i CRM')} subtitle={tr('Notatki, opieka duszpasterska, kamienie milowe, tagi i pola własne członków')} />
       )}
 
       {/* Przełącznik widoku */}
-      <ResponsiveTabs moduleKey="care" tabs={VIEW_TABS} activeTab={view} onChange={setView} className="relative" />
+      <ResponsiveTabs moduleKey="care" tabs={VIEW_TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={view} onChange={setView} className="relative" />
 
       {view === 'fields' ? (
         <FieldDefsTab fields={fields} refreshFields={loadFields} />
@@ -120,7 +121,7 @@ export default function CareModule({ embedded = false }) {
                     data-tour="care-search"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder="Szukaj po imieniu, nazwisku, e-mailu..."
+                    placeholder={tr('Szukaj po imieniu, nazwisku, e-mailu...')}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
                   />
                 </div>
@@ -129,7 +130,7 @@ export default function CareModule({ embedded = false }) {
                 {membersLoading ? (
                   <Spinner center />
                 ) : filtered.length === 0 ? (
-                  <EmptyState compact icon={Users} title="Brak osób." />
+                  <EmptyState compact icon={Users} title={tr('Brak osób.')} />
                 ) : (
                   filtered.map(m => {
                     const isActive = m.id === selectedId;
@@ -152,7 +153,7 @@ export default function CareModule({ embedded = false }) {
                         </div>
                         {m.status && (
                           <span className={`text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded shrink-0 ${STATUS_STYLES[m.status] || 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
-                            {m.status}
+                            {tr(m.status)}
                           </span>
                         )}
                       </button>
@@ -167,7 +168,7 @@ export default function CareModule({ embedded = false }) {
           <div className={`${selected ? 'block' : 'hidden lg:block'}`}>
             {!selected ? (
               <div className="h-full min-h-[300px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-                <EmptyState icon={HeartPulse} title="Wybierz osobę z listy, aby zobaczyć jej kartotekę opieki." />
+                <EmptyState icon={HeartPulse} title={tr('Wybierz osobę z listy, aby zobaczyć jej kartotekę opieki.')} />
               </div>
             ) : (
               <div className="space-y-4">
@@ -183,7 +184,7 @@ export default function CareModule({ embedded = false }) {
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{memberName(selected)}</h2>
                         {selected.status && (
                           <span className={`text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded ${STATUS_STYLES[selected.status] || 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
-                            {selected.status}
+                            {tr(selected.status)}
                           </span>
                         )}
                       </div>
@@ -196,7 +197,7 @@ export default function CareModule({ embedded = false }) {
                 </div>
 
                 {/* Zakładki osoby */}
-                <ResponsiveTabs tabs={PERSON_TABS} activeTab={personTab} onChange={setPersonTab} className="relative" />
+                <ResponsiveTabs tabs={PERSON_TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={personTab} onChange={setPersonTab} className="relative" />
 
                 <div>
                   {personTab === 'notes' && <NotesTab key={selected.id} member={selected} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}

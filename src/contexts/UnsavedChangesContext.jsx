@@ -33,7 +33,7 @@ const UnsavedChangesWarningModal = ({ isOpen, onClose, onSave, onDiscard }) => (
     title={tr('Niezapisane zmiany')}
     footer={<>
       <Button variant="secondary" onClick={onDiscard}>{tr('Opuść bez zapisu')}</Button>
-      <Button icon={Save} onClick={onSave}>Zapisz</Button>
+      <Button icon={Save} onClick={onSave}>{tr('Zapisz')}</Button>
     </>}
   >
     <div className="p-6">

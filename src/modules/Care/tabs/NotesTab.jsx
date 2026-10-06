@@ -6,6 +6,7 @@ import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 export default function NotesTab({ member, campusIdForInsert, withCampusFilter }) {
   const [notes, setNotes] = useState([]);
@@ -33,7 +34,7 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
   useEffect(() => { load(); }, [load]);
 
   const add = async () => {
-    if (!body.trim()) { toast.error('Wpisz treść notatki.'); return; }
+    if (!body.trim()) { toast.error(tr('Wpisz treść notatki.')); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -47,20 +48,20 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
       setBody('');
       load();
     } catch (err) {
-      toast.error('Nie udało się zapisać notatki: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać notatki: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (n) => {
-    if (!await confirmDialog('Usunąć tę notatkę?')) return;
+    if (!await confirmDialog(tr('Usunąć tę notatkę?'))) return;
     try {
       const { error } = await supabase.from('member_notes').delete().eq('id', n.id);
       if (error) throw error;
       load();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
@@ -72,12 +73,12 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
           value={body}
           onChange={e => setBody(e.target.value)}
           rows={3}
-          placeholder="Nowa notatka duszpasterska..."
+          placeholder={tr('Nowa notatka duszpasterska...')}
           className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
         />
         <div className="flex justify-end">
           <button onClick={add} disabled={saving} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60">
-            <Plus size={16} /> {saving ? 'Zapisywanie...' : 'Dodaj notatkę'}
+            <Plus size={16} /> {saving ? tr('Zapisywanie...') : tr('Dodaj notatkę')}
           </button>
         </div>
       </div>
@@ -86,7 +87,7 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
       {loading ? (
         <Spinner center />
       ) : notes.length === 0 ? (
-        <EmptyState icon={StickyNote} title="Brak notatek dla tej osoby." className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
+        <EmptyState icon={StickyNote} title={tr('Brak notatek dla tej osoby.')} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
       ) : (
         <div className="space-y-3">
           {notes.map(n => (
@@ -96,7 +97,7 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
                 <button onClick={() => remove(n)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0"><Trash2 size={15} /></button>
               </div>
               <div className="flex items-center gap-3 mt-3 text-xs text-gray-400 dark:text-gray-500">
-                <span className="inline-flex items-center gap-1"><User size={13} /> {n.author_email || 'nieznany'}</span>
+                <span className="inline-flex items-center gap-1"><User size={13} /> {n.author_email || tr('nieznany')}</span>
                 <span>{formatDateTime(n.created_at)}</span>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { appLocale } from '../../../i18n';
 // Helpery modułu Rezerwacji sal i zasobów (Rooms)
 
 export const RESOURCE_TYPES = [
@@ -33,7 +34,7 @@ export function localInputToIso(value) {
 export function formatDateTime(iso) {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleString('pl-PL', {
+    return new Date(iso).toLocaleString(appLocale(), {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   } catch {
@@ -44,7 +45,7 @@ export function formatDateTime(iso) {
 export function formatTime(iso) {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' });
   } catch {
     return String(iso);
   }
@@ -53,7 +54,7 @@ export function formatTime(iso) {
 export function formatDate(iso) {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return new Date(iso).toLocaleDateString(appLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
   } catch {
     return String(iso);
   }

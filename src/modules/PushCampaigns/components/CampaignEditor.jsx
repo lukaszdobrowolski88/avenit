@@ -19,9 +19,9 @@ import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 
 const SECTIONS = [
-  { id: 'compose', label: tr('Treść') },
+  { id: 'compose', label: 'Treść' },
   { id: 'recipients', label: 'Odbiorcy' },
-  { id: 'actions', label: tr('Akcje') },
+  { id: 'actions', label: 'Akcje' },
   { id: 'schedule', label: 'Harmonogram' },
 ];
 
@@ -106,7 +106,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       }
       onClose?.();
     } catch (e) {
-      toast.error(`Błąd zapisu: ${e.message}`);
+      toast.error(tr('Błąd zapisu: {msg}', { msg: e.message }));
     } finally {
       setSaving(false);
     }
@@ -128,7 +128,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       }
       onClose?.();
     } catch (e) {
-      toast.error(`Błąd: ${e.message}`);
+      toast.error(tr('Błąd: {msg}', { msg: e.message }));
     } finally {
       setSaving(false);
     }
@@ -138,7 +138,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
     const err = validate();
     if (err) { toast.error(err); return; }
     if (recipientCount === 0) { toast.error(tr('Brak odbiorców')); return; }
-    if (!await confirmDialog(`Wysłać kampanię do ${recipientCount} odbiorców?`)) return;
+    if (!await confirmDialog(tr('Wysłać kampanię do {n} odbiorców?', { n: recipientCount }))) return;
 
     setSending(true);
     try {
@@ -152,7 +152,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       await dispatchCampaign(id);
       onClose?.();
     } catch (e) {
-      toast.error(`Błąd wysyłki: ${e.message}`);
+      toast.error(tr('Błąd wysyłki: {msg}', { msg: e.message }));
     } finally {
       setSending(false);
     }
@@ -178,10 +178,10 @@ export default function CampaignEditor({ campaign, template, onClose }) {
         actions,
         data: { ...form.data, test: true },
       });
-      toast.success(`Test wysłany do ${testEmail}`);
+      toast.success(tr('Test wysłany do {email}', { email: testEmail }));
       setShowTestSend(false);
     } catch (e) {
-      toast.error(`Błąd: ${e.message}`);
+      toast.error(tr('Błąd: {msg}', { msg: e.message }));
     } finally {
       setSending(false);
     }
@@ -197,10 +197,10 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           </button>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {campaign?.id ? tr('Edytuj kampanię') : 'Nowa kampania push'}
+              {campaign?.id ? tr('Edytuj kampanię') : tr('Nowa kampania push')}
             </h2>
             <p className="text-xs text-gray-500">
-              {recipientCount > 0 ? `Wyśle do ${recipientCount} osób` : tr('Brak odbiorców')}
+              {recipientCount > 0 ? tr('Wyśle do {n} osób', { n: recipientCount }) : tr('Brak odbiorców')}
             </p>
           </div>
         </div>
@@ -209,7 +209,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
             onClick={() => setShowTestSend(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-            <TestTube size={14} /> Test
+            <TestTube size={14} /> {tr('Test')}
           </button>
           <button
             onClick={handleSaveDraft}
@@ -217,7 +217,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
             className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Zapisz szkic
+            {tr('Zapisz szkic')}
           </button>
           {canSend && (form.send_mode === 'now' ? (
             <button
@@ -227,7 +227,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
               className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg shadow hover:shadow-lg disabled:opacity-50"
             >
               {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-              Wyślij teraz
+              {tr('Wyślij teraz')}
             </button>
           ) : (
             <button
@@ -236,7 +236,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
               className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg shadow hover:shadow-lg disabled:opacity-50"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-              Zaplanuj
+              {tr('Zaplanuj')}
             </button>
           ))}
         </div>
@@ -284,7 +284,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
-                {s.label}
+                {tr(s.label)}
               </button>
             ))}
           </div>
@@ -297,7 +297,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     data-tour="push-name"
                     value={form.name}
                     onChange={e => updateForm({ name: e.target.value })}
-                    placeholder="Np. Niedziela 12.05 — przypomnienie"
+                    placeholder={tr('Np. Niedziela 12.05 — przypomnienie')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                   />
                 </Field>
@@ -329,13 +329,13 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                   <input
                     value={form.link}
                     onChange={e => updateForm({ link: e.target.value })}
-                    placeholder="/ albo /events/123"
+                    placeholder={tr('/ albo /events/123')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                   />
                 </Field>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Icon URL (opcjonalnie)">
+                  <Field label={tr('Icon URL (opcjonalnie)')}>
                     <input
                       value={form.icon}
                       onChange={e => updateForm({ icon: e.target.value })}
@@ -343,7 +343,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                       className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                     />
                   </Field>
-                  <Field label="Tag (collapse key)">
+                  <Field label={tr('Tag (collapse key)')}>
                     <input
                       value={form.tag}
                       onChange={e => updateForm({ tag: e.target.value })}
@@ -353,11 +353,11 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                   </Field>
                 </div>
 
-                <Field label={<span className="flex items-center gap-1"><ImageIcon size={12} /> Big image (Android big picture / iOS attachment)</span>}>
+                <Field label={<span className="flex items-center gap-1"><ImageIcon size={12} /> {tr('Big image (Android big picture / iOS attachment)')}</span>}>
                   <input
                     value={form.big_image}
                     onChange={e => updateForm({ big_image: e.target.value })}
-                    placeholder="https://... (opcjonalnie)"
+                    placeholder={tr('https://... (opcjonalnie)')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                   />
                 </Field>
@@ -405,7 +405,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
         {/* Prawa kolumna: preview */}
         <div className="lg:sticky lg:top-4 self-start">
           <div className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
-            <Eye size={12} /> Live preview
+            <Eye size={12} /> {tr('Live preview')}
           </div>
           <PushPreview
             title={form.title}

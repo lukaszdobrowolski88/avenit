@@ -33,7 +33,7 @@ async function readEventCalendars() {
 
 export default function EventsModule() {
   const t = useT();
-  const title = useModuleLabel('calendar', 'Wydarzenia');
+  const title = useModuleLabel('calendar', t('Wydarzenia'));
   const [showCreate, setShowCreate] = useState(false);
 
   return (
@@ -120,7 +120,7 @@ function CreateEventModal({ onClose }) {
       if (error) throw error;
       toast.success(t('Utworzono wydarzenie'));
       navigate(`/wydarzenie/${data.id}`);
-    } catch (e) { toast.error('Nie udało się utworzyć: ' + (e.message || e)); }
+    } catch (e) { toast.error(t('Nie udało się utworzyć: {msg}', { msg: e.message || e })); }
     finally { setSaving(false); }
   };
 

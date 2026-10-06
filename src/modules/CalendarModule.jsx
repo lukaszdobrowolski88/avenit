@@ -20,7 +20,7 @@ import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useModules } from '../hooks/useModules';
 import { useModuleCalendars } from '../hooks/useModuleLabel';
 import { useT } from '../i18n';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { DateInput, TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
@@ -37,8 +37,8 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, title, message }) => (
     zIndex={110}
     closeOnBackdrop={false}
     footer={<>
-      <Button variant="secondary" onClick={onClose}>Anuluj</Button>
-      <Button variant="danger" icon={Trash2} onClick={onConfirm}>Usuń</Button>
+      <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+      <Button variant="danger" icon={Trash2} onClick={onConfirm}>{tr('Usuń')}</Button>
     </>}
   >
     <div className="p-6">
@@ -51,11 +51,11 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, title, message }) => (
 
 const TEAMS = {
   program: { label: tr('Nabożeństwa'), color: 'pink', icon: Music },
-  media: { label: 'Media Team', color: 'orange', icon: Video },
+  media: { label: tr('Media Team'), color: 'orange', icon: Video },
   atmosfera: { label: tr('Atmosfera'), color: 'teal', icon: HeartHandshake },
   worship: { label: tr('Zespół Uwielbienia'), color: 'purple', icon: Music },
   kids: { label: tr('Małe Avenit'), color: 'yellow', icon: Baby },
-  groups: { label: 'Grupy Domowe', color: 'blue', icon: Home },
+  groups: { label: tr('Grupy Domowe'), color: 'blue', icon: Home },
   mlodziezowka: { label: tr('Młodzieżówka'), color: 'rose', icon: Users },
 };
 
@@ -112,14 +112,14 @@ const CustomDatePicker = ({ value, onChange }) => {
       <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full h-[42px] px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light transition">
         <CalIcon size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
+          {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
         </span>
       </div>
       {isOpen && coords.width > 0 && document.body && createPortal(
         <div className="fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100 w-[280px]" style={{ ...(coords.openUpward ? { bottom: `calc(100vh - ${coords.top}px)` } : { top: coords.top }), left: coords.left }}>
            <div className="flex justify-between items-center mb-4">
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronLeft size={18} /></button>
-             <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
+             <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronRight size={18} /></button>
            </div>
            <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
@@ -140,7 +140,7 @@ const CustomDatePicker = ({ value, onChange }) => {
   );
 };
 
-const CustomTimePicker = ({ value, onChange, placeholder = 'Wybierz' }) => {
+const CustomTimePicker = ({ value, onChange, placeholder = tr('Wybierz') }) => {
   return (
     <div className="relative w-full">
       <TimeField
@@ -170,7 +170,7 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
       isOpen
       onClose={onClose}
       title={t('Co chcesz dodać?')}
-      subtitle={date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : t('Wybierz typ')}
+      subtitle={date ? new Date(date).toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) : t('Wybierz typ')}
       icon={Plus}
       size="sm"
       closeOnBackdrop={false}
@@ -214,10 +214,10 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
 // Lista służb do wyboru przy dodawaniu wydarzenia
 const MINISTRY_CALENDARS = [
   { key: 'worship', icon: '🎵', title: tr('Zespół Uwielbienia'), color: 'from-purple-500 to-indigo-500', description: tr('Próby, koncerty, nabożeństwa') },
-  { key: 'media', icon: '🎬', title: 'Media Team', color: 'from-accent-secondary-light to-red-500', description: 'Produkcje, streaming, szkolenia' },
-  { key: 'atmosfera', icon: '💚', title: 'Atmosfera Team', color: 'from-teal-500 to-green-500', description: 'Spotkania, integracje' },
+  { key: 'media', icon: '🎬', title: tr('Media Team'), color: 'from-accent-secondary-light to-red-500', description: tr('Produkcje, streaming, szkolenia') },
+  { key: 'atmosfera', icon: '💚', title: tr('Atmosfera Team'), color: 'from-teal-500 to-green-500', description: tr('Spotkania, integracje') },
   { key: 'kids', icon: '👶', title: tr('Małe Avenit'), color: 'from-yellow-500 to-amber-500', description: tr('Zajęcia, warsztaty, wycieczki') },
-  { key: 'homegroups', icon: '🏠', title: 'Grupy Domowe', color: 'from-blue-500 to-cyan-500', description: 'Spotkania grupowe' },
+  { key: 'homegroups', icon: '🏠', title: tr('Grupy Domowe'), color: 'from-blue-500 to-cyan-500', description: tr('Spotkania grupowe') },
   { key: 'mlodziezowka', icon: '🎉', title: tr('Młodzieżówka'), color: 'from-accent-primary-light to-rose-500', description: tr('Wydarzenia młodzieżowe') }
 ];
 
@@ -226,8 +226,8 @@ const ModalSelectEventCategory = ({ date, categories, ministries, onClose, onSel
     <Modal
       isOpen
       onClose={onClose}
-      title="Wybierz kalendarz"
-      subtitle={date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
+      title={tr('Wybierz kalendarz')}
+      subtitle={date ? new Date(date).toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
       icon={CalendarPlus}
       closeOnBackdrop={false}
     >
@@ -334,7 +334,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
       icon={CalendarPlus}
       closeOnBackdrop={false}
       footer={<>
-        {event.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={handleDeleteClick}>Usuń</Button>}
+        {event.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={handleDeleteClick}>{tr('Usuń')}</Button>}
         <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
         <Button data-tour="cal-event-save" icon={Save} onClick={handleSubmit}>{t('Zapisz')}</Button>
       </>}
@@ -342,7 +342,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
       <div className="p-6">
         <div className="mb-6">
           <span className="inline-block px-3 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light text-xs font-bold rounded-full">
-            {event.category || category}
+            {tr(event.category || category)}
           </span>
         </div>
 
@@ -513,7 +513,7 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
       icon={task.id ? CheckCircle : Plus}
       closeOnBackdrop={false}
       footer={<>
-        {task.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={() => onDelete(task.id)}>Usuń</Button>}
+        {task.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={() => onDelete(task.id)}>{tr('Usuń')}</Button>}
         <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
         <Button icon={Save} onClick={handleSubmit}>{t('Zapisz')}</Button>
       </>}
@@ -596,30 +596,30 @@ const MINISTRY_EVENT_CONFIG = {
     defaultType: 'proba',
     types: [
       { value: 'proba', label: tr('Próba') },
-      { value: 'koncert', label: 'Koncert' },
+      { value: 'koncert', label: tr('Koncert') },
       { value: 'nabozesnstwo', label: tr('Nabożeństwo') },
-      { value: 'warsztat', label: 'Warsztat' },
+      { value: 'warsztat', label: tr('Warsztat') },
       { value: 'inne', label: tr('Inne') }
     ]
   },
   media: {
     icon: '🎬',
-    title: 'Media Team',
+    title: tr('Media Team'),
     defaultType: 'produkcja',
     types: [
-      { value: 'produkcja', label: 'Produkcja' },
-      { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'streaming', label: 'Streaming' },
+      { value: 'produkcja', label: tr('Produkcja') },
+      { value: 'szkolenie', label: tr('Szkolenie') },
+      { value: 'streaming', label: tr('Streaming') },
       { value: 'inne', label: tr('Inne') }
     ]
   },
   atmosfera: {
     icon: '💚',
-    title: 'Atmosfera Team',
+    title: tr('Atmosfera Team'),
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: tr('Spotkanie') },
-      { value: 'szkolenie', label: 'Szkolenie' },
+      { value: 'szkolenie', label: tr('Szkolenie') },
       { value: 'integracja', label: tr('Integracja') },
       { value: 'inne', label: tr('Inne') }
     ]
@@ -630,20 +630,20 @@ const MINISTRY_EVENT_CONFIG = {
     defaultType: 'zajecia',
     types: [
       { value: 'zajecia', label: tr('Zajęcia') },
-      { value: 'wycieczka', label: 'Wycieczka' },
-      { value: 'warsztat', label: 'Warsztat' },
-      { value: 'przedstawienie', label: 'Przedstawienie' },
+      { value: 'wycieczka', label: tr('Wycieczka') },
+      { value: 'warsztat', label: tr('Warsztat') },
+      { value: 'przedstawienie', label: tr('Przedstawienie') },
       { value: 'inne', label: tr('Inne') }
     ]
   },
   homegroups: {
     icon: '🏠',
-    title: 'Grupy Domowe',
+    title: tr('Grupy Domowe'),
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: tr('Spotkanie') },
       { value: 'integracja', label: tr('Integracja') },
-      { value: 'szkolenie', label: 'Szkolenie' },
+      { value: 'szkolenie', label: tr('Szkolenie') },
       { value: 'inne', label: tr('Inne') }
     ]
   }
@@ -705,9 +705,9 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
       size="md"
       title={`${eventForm.id ? tr('Edytuj wydarzenie') : tr('Nowe wydarzenie')} — ${config.title}`}
       footer={<>
-        {eventForm.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={handleDeleteClick}>Usuń</Button>}
+        {eventForm.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={handleDeleteClick}>{tr('Usuń')}</Button>}
         <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
-        <Button icon={Save} onClick={handleSubmit}>Zapisz</Button>
+        <Button icon={Save} onClick={handleSubmit}>{tr('Zapisz')}</Button>
       </>}
     >
       <div className="p-6 space-y-4">
@@ -731,7 +731,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
             <CustomTimePicker value={eventForm.event_time || ''} onChange={v => setEventForm({...eventForm, event_time: v})} placeholder={tr('Od')} />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Koniec</label>
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Koniec')}</label>
             <CustomTimePicker value={eventForm.end_time || ''} onChange={v => setEventForm({...eventForm, end_time: v})} placeholder={tr('Do')} />
           </div>
         </div>
@@ -747,7 +747,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
             <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={eventForm.max_participants || ''} onChange={e => setEventForm({...eventForm, max_participants: e.target.value})} />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Typ</label>
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Typ')}</label>
             <CustomSelect
               value={eventForm.event_type}
               onChange={val => setEventForm({...eventForm, event_type: val})}
@@ -788,7 +788,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleConfirmDelete}
         title={tr('Usuń wydarzenie')}
-        message={`Czy na pewno chcesz usunąć to wydarzenie z ${config.title}? Tej operacji nie można cofnąć.`}
+        message={tr('Czy na pewno chcesz usunąć to wydarzenie z {name}? Tej operacji nie można cofnąć.', { name: config.title })}
       />
     </Modal>
   );
@@ -822,7 +822,7 @@ export default function CalendarModule({ embedded = false } = {}) {
     types: [
       { value: 'spotkanie', label: t('Spotkanie') },
       { value: 'wydarzenie', label: t('Wydarzenie') },
-      { value: 'szkolenie', label: 'Szkolenie' },
+      { value: 'szkolenie', label: tr('Szkolenie') },
       { value: 'inne', label: t('Inne') },
     ],
   });
@@ -1005,7 +1005,7 @@ export default function CalendarModule({ embedded = false } = {}) {
       }
 
       if (error) {
-          toast.error(`Błąd zapisu: ${error.message}`);
+          toast.error(tr('Błąd zapisu: {msg}', { msg: error.message }));
           console.error(error);
       } else {
           fetchEvents(); 
@@ -1038,7 +1038,7 @@ export default function CalendarModule({ embedded = false } = {}) {
     }
 
     if (error) {
-      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
       console.error(error);
     } else {
       fetchEvents();
@@ -1076,7 +1076,7 @@ export default function CalendarModule({ embedded = false } = {}) {
       const { error: e } = await supabase.from('events').insert([{ ...toEventRow(eventData, moduleKey), campus_id: campusIdForInsert }]);
       error = e;
     }
-    if (error) toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
+    if (error) toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
     else { setModals((m) => ({ ...m, moduleEvent: null })); fetchEvents(); }
   };
   const handleDeleteModuleEvent = async (id) => {
@@ -1097,7 +1097,7 @@ export default function CalendarModule({ embedded = false } = {}) {
       error = e;
     }
     if (error) {
-      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
     } else {
       setModals({...modals, worshipEvent: null});
       fetchEvents();
@@ -1123,7 +1123,7 @@ export default function CalendarModule({ embedded = false } = {}) {
       error = e;
     }
     if (error) {
-      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
     } else {
       setModals({...modals, mediaEvent: null});
       fetchEvents();
@@ -1149,7 +1149,7 @@ export default function CalendarModule({ embedded = false } = {}) {
       error = e;
     }
     if (error) {
-      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
     } else {
       setModals({...modals, atmosferaEvent: null});
       fetchEvents();
@@ -1175,7 +1175,7 @@ export default function CalendarModule({ embedded = false } = {}) {
       error = e;
     }
     if (error) {
-      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
     } else {
       setModals({...modals, kidsEvent: null});
       fetchEvents();
@@ -1201,7 +1201,7 @@ export default function CalendarModule({ embedded = false } = {}) {
       error = e;
     }
     if (error) {
-      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
     } else {
       setModals({...modals, homegroupsEvent: null});
       fetchEvents();
@@ -1424,7 +1424,7 @@ export default function CalendarModule({ embedded = false } = {}) {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {selectedDate.toLocaleDateString('pl-PL', { month: 'long' })}
+                {selectedDate.toLocaleDateString(appLocale(), { month: 'long' })}
                 <span className="text-accent-primary-light ml-2">{selectedDate.getFullYear()}</span>
               </h2>
             </div>
@@ -1510,7 +1510,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                     }`}
                   >
                     <span className={`text-[10px] font-medium uppercase ${isSelected ? 'text-accent-primary-lighter' : 'text-gray-400 dark:text-gray-500'}`}>
-                      {d.toLocaleDateString('pl-PL', { weekday: 'short' }).slice(0, 2)}
+                      {d.toLocaleDateString(appLocale(), { weekday: 'short' }).slice(0, 2)}
                     </span>
                     <span className={`text-lg font-bold ${isSelected ? '' : ''}`}>
                       {d.getDate()}
@@ -1553,7 +1553,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                     <span className={`text-xs font-medium ${
                       h === 12 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'
                     }`}>
-                      {h === 12 ? 'Noon' : `${String(h).padStart(2, '0')}:00`}
+                      {h === 12 ? tr('Południe') : `${String(h).padStart(2, '0')}:00`}
                     </span>
                   </div>
 
@@ -1586,7 +1586,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                             </div>
                           </div>
                           <p className="text-xs opacity-70 mt-0.5">
-                            {String(pos.hour).padStart(2, '0')}:{String(pos.minute).padStart(2, '0')} - {TEAMS[ev.team]?.label || 'Wydarzenie'}
+                            {String(pos.hour).padStart(2, '0')}:{String(pos.minute).padStart(2, '0')} - {TEAMS[ev.team]?.label || tr('Wydarzenie')}
                           </p>
                         </div>
                       );
@@ -1625,7 +1625,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                     handleAddClick(dateStr);
                   }}
                 >
-                  Dodaj wydarzenie
+                  {tr('Dodaj wydarzenie')}
                 </Button>
               }
             />
@@ -1696,7 +1696,7 @@ export default function CalendarModule({ embedded = false } = {}) {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {selectedDate.toLocaleDateString('pl-PL', { month: 'long' })}
+                {selectedDate.toLocaleDateString(appLocale(), { month: 'long' })}
                 <span className="text-accent-primary-light ml-2">{selectedDate.getFullYear()}</span>
               </h2>
             </div>
@@ -1740,7 +1740,7 @@ export default function CalendarModule({ embedded = false } = {}) {
           )}
           {searchQuery && !mobileSearchExpanded && (
             <p className="text-xs text-accent-primary dark:text-accent-primary-light font-medium mb-2">
-              Znaleziono {filteredEvents.length} wydarzeń
+              {tr('Znaleziono {n} wydarzeń', { n: filteredEvents.length })}
             </p>
           )}
 
@@ -1810,7 +1810,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                     }`}
                   >
                     <span className={`text-[9px] font-medium uppercase ${isSelected ? 'text-accent-primary-lighter' : 'text-gray-400 dark:text-gray-500'}`}>
-                      {d.toLocaleDateString('pl-PL', { weekday: 'short' }).slice(0, 2)}
+                      {d.toLocaleDateString(appLocale(), { weekday: 'short' }).slice(0, 2)}
                     </span>
                     <span className="text-base font-bold">
                       {d.getDate()}
@@ -1845,7 +1845,7 @@ export default function CalendarModule({ embedded = false } = {}) {
             <div className="p-3">
               {/* Nagłówek dnia */}
               <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
-                {selectedDate.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                {selectedDate.toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}
               </h3>
 
               {dayEvents.length > 0 ? (
@@ -1875,7 +1875,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                               {ev.raw?.due_time
                                 ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time)
-                                : tr('Cały dzień')} • {TEAMS[ev.team]?.label || 'Wydarzenie'}
+                                : tr('Cały dzień')} • {TEAMS[ev.team]?.label || tr('Wydarzenie')}
                             </p>
                             {ev.raw?.location && (
                               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
@@ -1907,7 +1907,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                         handleAddClick(dateStr);
                       }}
                     >
-                      Dodaj wydarzenie
+                      {tr('Dodaj wydarzenie')}
                     </Button>
                   }
                 />
@@ -1958,10 +1958,10 @@ export default function CalendarModule({ embedded = false } = {}) {
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-sm text-gray-800 dark:text-white">
-                          {d.toLocaleDateString('pl-PL', { weekday: 'long' })}
+                          {d.toLocaleDateString(appLocale(), { weekday: 'long' })}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' })}
+                          {d.toLocaleDateString(appLocale(), { day: 'numeric', month: 'long' })}
                         </div>
                       </div>
                       {dayEventsForWeek.length > 0 && (
@@ -1997,7 +1997,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                           );
                         })}
                         {dayEventsForWeek.length > 3 && (
-                          <p className="text-xs text-gray-400 text-center">+{dayEventsForWeek.length - 3} więcej</p>
+                          <p className="text-xs text-gray-400 text-center">{tr('+{n} więcej', { n: dayEventsForWeek.length - 3 })}</p>
                         )}
                       </div>
                     )}
@@ -2008,7 +2008,7 @@ export default function CalendarModule({ embedded = false } = {}) {
               {/* Lista wydarzeń w wybranym dniu pod tygodniem */}
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
-                  {selectedDate.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  {selectedDate.toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}
                 </h3>
                 {dayEvents.length > 0 ? (
                   <div className="space-y-2">
@@ -2032,7 +2032,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 dark:text-white truncate">{ev.title}</p>
                             <p className="text-xs text-gray-500">
-                              {ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''} • {TEAMS[ev.team]?.label || 'Wydarzenie'}
+                              {ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''} • {TEAMS[ev.team]?.label || tr('Wydarzenie')}
                             </p>
                           </div>
                         </div>
@@ -2124,7 +2124,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                 return (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
-                  {selectedDate.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  {selectedDate.toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}
                 </h3>
                 {monthDayEvents.length > 0 ? (
                   <div className="space-y-2">
@@ -2148,7 +2148,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 dark:text-white truncate">{ev.title}</p>
                             <p className="text-xs text-gray-500">
-                              {ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''} • {TEAMS[ev.team]?.label || 'Wydarzenie'}
+                              {ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''} • {TEAMS[ev.team]?.label || tr('Wydarzenie')}
                             </p>
                           </div>
                         </div>
@@ -2250,7 +2250,7 @@ export default function CalendarModule({ embedded = false } = {}) {
           <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
             {weekDays.map(d => (
               <div key={d.toString()} className="py-3 text-center border-r border-gray-100 dark:border-gray-700/50 last:border-0">
-                <div className="text-xs text-gray-500 uppercase mb-1">{d.toLocaleDateString('pl-PL', {weekday: 'short'})}</div>
+                <div className="text-xs text-gray-500 uppercase mb-1">{d.toLocaleDateString(appLocale(), {weekday: 'short'})}</div>
                 <div className={`text-lg font-bold w-8 h-8 rounded-full flex items-center justify-center mx-auto ${d.getDate() === new Date().getDate() && d.getMonth() === new Date().getMonth() ? 'bg-accent-primary text-white' : 'text-gray-800 dark:text-white'}`}>
                   {d.getDate()}
                 </div>
@@ -2284,8 +2284,8 @@ export default function CalendarModule({ embedded = false } = {}) {
                     {d.getDate()}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-800 dark:text-white">{d.toLocaleDateString('pl-PL', {weekday: 'long'})}</div>
-                    <div className="text-xs text-gray-500">{d.toLocaleDateString('pl-PL', {day: 'numeric', month: 'long'})}</div>
+                    <div className="font-medium text-gray-800 dark:text-white">{d.toLocaleDateString(appLocale(), {weekday: 'long'})}</div>
+                    <div className="text-xs text-gray-500">{d.toLocaleDateString(appLocale(), {day: 'numeric', month: 'long'})}</div>
                   </div>
                   <button onClick={() => handleAddClick(dateStr)} className="ml-auto p-2 text-gray-400 hover:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition">
                     <Plus size={18} />
@@ -2315,8 +2315,8 @@ export default function CalendarModule({ embedded = false } = {}) {
             {/* Nagłówek z datą na mobile */}
             <div className="lg:hidden absolute top-0 left-0 right-0 p-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 z-30">
                 <div className="text-center">
-                    <div className="font-bold text-gray-800 dark:text-white">{currentDate.toLocaleDateString('pl-PL', {weekday: 'long'})}</div>
-                    <div className="text-sm text-gray-500">{currentDate.toLocaleDateString('pl-PL', {day: 'numeric', month: 'long', year: 'numeric'})}</div>
+                    <div className="font-bold text-gray-800 dark:text-white">{currentDate.toLocaleDateString(appLocale(), {weekday: 'long'})}</div>
+                    <div className="text-sm text-gray-500">{currentDate.toLocaleDateString(appLocale(), {day: 'numeric', month: 'long', year: 'numeric'})}</div>
                 </div>
             </div>
 
@@ -2390,7 +2390,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                  {sortedEvents.map(ev => (
                      <div key={ev.id} onClick={() => handleEventClick(ev)} className="flex items-center gap-2 lg:gap-4 p-2 lg:p-3 rounded-lg lg:rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 last:border-0 cursor-pointer transition">
                          <div className="w-12 lg:w-16 text-center flex-shrink-0">
-                             <div className="text-[10px] lg:text-xs text-gray-400 uppercase font-bold">{ev.date.toLocaleDateString('pl-PL', {month: 'short'})}</div>
+                             <div className="text-[10px] lg:text-xs text-gray-400 uppercase font-bold">{ev.date.toLocaleDateString(appLocale(), {month: 'short'})}</div>
                              <div className="text-lg lg:text-xl font-bold text-gray-800 dark:text-white">{ev.date.getDate()}</div>
                          </div>
                          <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
@@ -2453,7 +2453,7 @@ export default function CalendarModule({ embedded = false } = {}) {
              </div>
              {searchQuery && (
                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-1">
-                 Znaleziono {filteredEvents.length} wydarzeń
+                 {tr('Znaleziono {n} wydarzeń', { n: filteredEvents.length })}
                </p>
              )}
            </div>
@@ -2483,7 +2483,7 @@ export default function CalendarModule({ embedded = false } = {}) {
         <div className="w-64 flex-shrink-0 flex flex-col gap-6">
           <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <span className="font-bold text-lg text-gray-800 dark:text-white capitalize">{currentDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
+              <span className="font-bold text-lg text-gray-800 dark:text-white capitalize">{currentDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
               <div className="flex gap-1">
                 <button onClick={prevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"><ChevronLeft size={16} /></button>
                 <button onClick={nextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"><ChevronRight size={16} /></button>
@@ -2516,7 +2516,7 @@ export default function CalendarModule({ embedded = false } = {}) {
               ))}
             </div>
             <button data-tour="cal-add" onClick={() => { handleAddClick(new Date().toISOString().split('T')[0]); setSidebarOpen(false); }} className="w-full mt-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl shadow-lg shadow-accent-primary-light/30 flex items-center justify-center gap-2 hover:shadow-accent-primary-light/50 transition transform hover:-translate-y-0.5">
-              <Plus size={18} /> Dodaj
+              <Plus size={18} /> {tr('Dodaj')}
             </button>
           </div>
         </div>
@@ -2545,7 +2545,7 @@ export default function CalendarModule({ embedded = false } = {}) {
             <div className="flex items-center justify-between mb-6 mt-2">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Filter size={20} className="text-accent-primary" />
-                Filtry kalendarza
+                {tr('Filtry kalendarza')}
               </h2>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -2585,13 +2585,13 @@ export default function CalendarModule({ embedded = false } = {}) {
                 onClick={() => setVisibleTeams(Object.keys(TEAMS))}
                 className="flex-1 py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
               >
-                Wybierz wszystkie
+                {tr('Wybierz wszystkie')}
               </button>
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="flex-1 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl shadow-lg shadow-accent-primary-light/30"
               >
-                Gotowe
+                {tr('Gotowe')}
               </button>
             </div>
           </div>

@@ -77,7 +77,7 @@ export default function MemberCheckin({
       {/* Children list */}
       <div className="flex flex-col gap-4 w-full max-w-lg mb-8">
         {children.length === 0 ? (
-          <EmptyState icon={Baby} title="Brak zarejestrowanych dzieci w tej rodzinie" />
+          <EmptyState icon={Baby} title={tr('Brak zarejestrowanych dzieci w tej rodzinie')} />
         ) : (
           children.map((child) => {
             const isSelected = selectedMembers[child.id];
@@ -118,7 +118,7 @@ export default function MemberCheckin({
                       {child.allergies && (
                         <span className="flex items-center gap-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-2 py-0.5 rounded text-xs font-medium">
                           <AlertTriangle size={12} />
-                          Alergie
+                          {tr('Alergie')}
                         </span>
                       )}
                     </div>
@@ -129,7 +129,7 @@ export default function MemberCheckin({
                 {isSelected && (
                   <div className="mt-4 pl-11">
                     <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      Sala:
+                      {tr('Sala:')}
                     </label>
                     <select
                       value={memberLocations[child.id] || ''}
@@ -148,7 +148,7 @@ export default function MemberCheckin({
                     </select>
                     {selectedLocation && (
                       <div className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-                        Pojemność: {selectedLocation.capacity || '∞'}
+                        {tr('Pojemność:')} {selectedLocation.capacity || '∞'}
                       </div>
                     )}
                   </div>
@@ -180,12 +180,12 @@ export default function MemberCheckin({
           {loading ? (
             <>
               <Loader2 size={20} className="animate-spin" />
-              Meldowanie...
+              {tr('Meldowanie...')}
             </>
           ) : (
             <>
               <Check size={20} />
-              Check In {selectedCount > 0 && `(${selectedCount})`}
+              {tr('Check In')} {selectedCount > 0 && `(${selectedCount})`}
             </>
           )}
         </button>

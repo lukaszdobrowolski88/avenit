@@ -12,7 +12,7 @@ import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import PageHeader from '../components/PageHeader';
 import { useT } from '../i18n';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { computeRange, shiftRangeYears, MONTHS_PL, yearOptions } from './finance/reportRange';
 import { buildReportModel, toCsvBlob, toXlsxBlob, reportElToPdfBlob, printReportEl, blobToBase64, download, slugForRange } from './finance/reportExport';
@@ -113,8 +113,8 @@ const CustomDatePicker = ({ label, value, onChange }) => {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const blanks = Array.from({ length: startDay }, (_, i) => i);
 
-  const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
-  const displayValue = value ? new Date(value).toLocaleDateString('pl-PL') : '';
+  const monthName = viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
+  const displayValue = value ? new Date(value).toLocaleDateString(appLocale()) : '';
 
   return (
     <div className="relative w-full">
@@ -713,7 +713,7 @@ const FinanceModule = () => {
         .from('finance_balances')
         .select('*')
         .eq('year', selectedYear)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching balances:', error);
@@ -750,7 +750,7 @@ const FinanceModule = () => {
         .from('finance_balances')
         .select('id')
         .eq('year', selectedYear)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
@@ -866,7 +866,7 @@ const FinanceModule = () => {
     const label = await promptDialog(tr('Nazwa wersji (np. „Projekt zarządu", „Zatwierdzony")'));
     if (label === null) return;
     try {
-      await supabase.from('budget_versions').insert([{ year: selectedYear, label: label.trim() || `Wersja ${new Date().toLocaleDateString('pl-PL')}`, snapshot: budgetItems, created_by: currentUserEmail || null }]);
+      await supabase.from('budget_versions').insert([{ year: selectedYear, label: label.trim() || `Wersja ${new Date().toLocaleDateString(appLocale())}`, snapshot: budgetItems, created_by: currentUserEmail || null }]);
       toast.success(tr('Zapisano wersję budżetu'));
       fetchBudgetHistory();
     } catch (e) { toast.error(tr('Błąd zapisu wersji: ') + e.message); }
@@ -1229,7 +1229,7 @@ const FinanceModule = () => {
 
   return (
     <div className="space-y-8">
-      <PageHeader moduleKey="finance" icon={DollarSign} title="Finanse" subtitle={t('Zarządzanie budżetem i finansami kościoła')}
+      <PageHeader moduleKey="finance" icon={DollarSign} title={tr('Finanse')} subtitle={t('Zarządzanie budżetem i finansami kościoła')}
         actions={
           <div className="flex items-center gap-2">
             <button
@@ -1264,7 +1264,7 @@ const FinanceModule = () => {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Budżet {selectedYear}
+              {tr('Budżet')} {selectedYear}
             </h2>
             <div className="flex items-center gap-2 flex-wrap">
               <select value={budgetPeriod} onChange={(e) => setBudgetPeriod(e.target.value)} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200">
@@ -1319,15 +1319,15 @@ const FinanceModule = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
             <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-900/10 p-4">
               <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase">{tr('Planowane przychody')}</div>
-              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{totalPlannedIncome.toLocaleString('pl-PL')} zł</div>
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{totalPlannedIncome.toLocaleString(appLocale())} zł</div>
             </div>
             <div className="rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50/60 dark:bg-red-900/10 p-4">
               <div className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase">{tr('Planowane wydatki')}</div>
-              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{totalPlannedExpense.toLocaleString('pl-PL')} zł</div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{totalPlannedExpense.toLocaleString(appLocale())} zł</div>
             </div>
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-4">
               <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{tr('Planowany bilans')}</div>
-              <div className={`text-2xl font-bold ${totalPlannedIncome - totalPlannedExpense >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{(totalPlannedIncome - totalPlannedExpense).toLocaleString('pl-PL')} zł</div>
+              <div className={`text-2xl font-bold ${totalPlannedIncome - totalPlannedExpense >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{(totalPlannedIncome - totalPlannedExpense).toLocaleString(appLocale())} zł</div>
             </div>
           </div>
 
@@ -1357,13 +1357,13 @@ const FinanceModule = () => {
                         <TD muted>{it.description}</TD>
                         <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                           <span className="inline-flex items-center gap-1.5 justify-end">
-                            {planned.toLocaleString('pl-PL')} zł
+                            {planned.toLocaleString(appLocale())} zł
                             {itemChanges(it.id).length > 0 && (
                               <button onClick={() => setChangeItem(itemChanges(it.id))} title={tr('Kwota zmieniona — pokaż historię')} className="text-amber-500 hover:text-amber-600"><Clock size={13} /></button>
                             )}
                           </span>
                         </TD>
-                        <TD align="right" numeric className="text-emerald-600 font-medium whitespace-nowrap">{real.toLocaleString('pl-PL')} zł</TD>
+                        <TD align="right" numeric className="text-emerald-600 font-medium whitespace-nowrap">{real.toLocaleString(appLocale())} zł</TD>
                         <TD align="center" numeric>{pct}%</TD>
                         <TD align="right" className="whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
@@ -1376,8 +1376,8 @@ const FinanceModule = () => {
                   })}
                   <TR className="bg-gray-50/70 dark:bg-gray-800/40 font-semibold">
                     <TD className="text-gray-900 dark:text-white" colSpan={2}>{tr('Suma przychodów')}</TD>
-                    <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">{totalPlannedIncome.toLocaleString('pl-PL')} zł</TD>
-                    <TD align="right" numeric className="text-emerald-600 whitespace-nowrap">{incomeBudgetItems.reduce((s, it) => s + calculateIncomeRealization(it.category), 0).toLocaleString('pl-PL')} zł</TD>
+                    <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">{totalPlannedIncome.toLocaleString(appLocale())} zł</TD>
+                    <TD align="right" numeric className="text-emerald-600 whitespace-nowrap">{incomeBudgetItems.reduce((s, it) => s + calculateIncomeRealization(it.category), 0).toLocaleString(appLocale())} zł</TD>
                     <TD />
                     <TD />
                   </TR>
@@ -1395,7 +1395,7 @@ const FinanceModule = () => {
                 <div className="flex items-center gap-2 font-semibold text-red-700 dark:text-red-300 mb-1"><AlertTriangle size={18} /> {tr('Przekroczony budżet')} ({over.length})</div>
                 <ul className="text-sm text-red-700/90 dark:text-red-300/90 list-disc pl-6">
                   {over.slice(0, 6).map((it) => (
-                    <li key={it.id}>{it.category} — {it.description}: {tr('plan')} {Number(it.planned_amount).toLocaleString('pl-PL')} zł, {tr('wydano')} {calculateRealization(it.category, it.description).toLocaleString('pl-PL')} zł</li>
+                    <li key={it.id}>{it.category} — {it.description}: {tr('plan')} {Number(it.planned_amount).toLocaleString(appLocale())} zł, {tr('wydano')} {calculateRealization(it.category, it.description).toLocaleString(appLocale())} zł</li>
                   ))}
                 </ul>
               </div>
@@ -1405,7 +1405,7 @@ const FinanceModule = () => {
           {loading ? (
             <Spinner center />
           ) : budgetItems.length === 0 ? (
-            <EmptyState icon={DollarSign} title={`Brak pozycji budżetowych na rok ${selectedYear}`} />
+            <EmptyState icon={DollarSign} title={tr('Brak pozycji budżetowych na rok {year}', { year: selectedYear })} />
           ) : expenseBudgetItems.length === 0 ? null : (
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="px-4 py-2.5 bg-red-50 dark:bg-red-900/10 text-sm font-bold text-red-700 dark:text-red-300 flex items-center gap-2"><ArrowDownRight size={16} /> {tr('Planowane wydatki')}</div>
@@ -1414,9 +1414,9 @@ const FinanceModule = () => {
                   <tr>
                     <TH>{t('Służba')}</TH>
                     <TH>{t('Opis kosztu')}</TH>
-                    <TH align="right">Plan (PLN)</TH>
-                    <TH align="right">Realizacja (PLN)</TH>
-                    <TH align="center">% Realizacji</TH>
+                    <TH align="right">{tr('Plan (PLN)')}</TH>
+                    <TH align="right">{tr('Realizacja (PLN)')}</TH>
+                    <TH align="center">{tr('% Realizacji')}</TH>
                     <TH align="right">{t('Pozostało')}</TH>
                     <TH align="center"><span className="sr-only">{t('Akcje')}</span></TH>
                   </tr>
@@ -1472,7 +1472,7 @@ const FinanceModule = () => {
                             <TD muted>{item.description}</TD>
                             <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                               <span className="inline-flex items-center gap-1.5 justify-end">
-                                {Number(item.planned_amount || 0).toLocaleString('pl-PL')} zł
+                                {Number(item.planned_amount || 0).toLocaleString(appLocale())} zł
                                 {itemChanges(item.id).length > 0 && (
                                   <button onClick={() => setChangeItem(itemChanges(item.id))} title={tr('Kwota zmieniona — pokaż historię')} className="text-amber-500 hover:text-amber-600">
                                     <Clock size={13} />
@@ -1492,7 +1492,7 @@ const FinanceModule = () => {
                                 }));
                               }}
                             >
-                              {realization.toLocaleString('pl-PL')} zł
+                              {realization.toLocaleString(appLocale())} zł
                               {expandedBudgetItems[`${item.id}`] ?
                                 <ChevronUp size={16} className="inline ml-1" /> :
                                 <ChevronDown size={16} className="inline ml-1" />
@@ -1512,7 +1512,7 @@ const FinanceModule = () => {
                               </div>
                             </TD>
                             <TD align="right" numeric className={`font-semibold whitespace-nowrap ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {remaining.toLocaleString('pl-PL')} zł
+                              {remaining.toLocaleString(appLocale())} zł
                             </TD>
                             <TD align="center">
                               <div className="flex justify-center gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
@@ -1550,7 +1550,7 @@ const FinanceModule = () => {
                                 {categoryExpenses.length > 0 ? (
                                   <div className="space-y-2">
                                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                      Wydatki: {item.category} - {item.description}
+                                      {tr('Wydatki:')} {item.category} - {item.description}
                                     </p>
                                     <div className="space-y-1">
                                       {categoryExpenses.map((expense) => (
@@ -1561,7 +1561,7 @@ const FinanceModule = () => {
                                           <div className="flex flex-col">
                                             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{tr('Data')}</span>
                                             <span className="text-gray-900 dark:text-white">
-                                              {new Date(expense.payment_date).toLocaleDateString('pl-PL')}
+                                              {new Date(expense.payment_date).toLocaleDateString(appLocale())}
                                             </span>
                                           </div>
                                           <div className="flex flex-col">
@@ -1571,7 +1571,7 @@ const FinanceModule = () => {
                                           <div className="flex flex-col">
                                             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kwota')}</span>
                                             <span className="font-bold text-gray-900 dark:text-white">
-                                              {expense.amount.toLocaleString('pl-PL')} zł
+                                              {expense.amount.toLocaleString(appLocale())} zł
                                             </span>
                                           </div>
                                           <div className="flex flex-col">
@@ -1587,7 +1587,7 @@ const FinanceModule = () => {
                                     </div>
                                     <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
                                       <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                        Suma: {categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString('pl-PL')} zł
+                                        {tr('Suma:')} {categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString(appLocale())} zł
                                       </span>
                                     </div>
                                   </div>
@@ -1612,19 +1612,19 @@ const FinanceModule = () => {
                       rows.push(
                         <TR key={`subtotal-${category}`} className="bg-gray-50/70 dark:bg-gray-800/40 font-semibold">
                           <TD className="text-gray-900 dark:text-white" colSpan={2}>
-                            Podsumowanie: {category}
+                            {tr('Podsumowanie:')} {category}
                           </TD>
                           <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                            {categoryTotalPlanned.toLocaleString('pl-PL')} zł
+                            {categoryTotalPlanned.toLocaleString(appLocale())} zł
                           </TD>
                           <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                            {categoryTotalRealization.toLocaleString('pl-PL')} zł
+                            {categoryTotalRealization.toLocaleString(appLocale())} zł
                           </TD>
                           <TD align="center" numeric className="text-gray-900 dark:text-white">
                             {categoryPercentage.toFixed(1)}%
                           </TD>
                           <TD align="right" numeric className={`whitespace-nowrap ${categoryTotalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {categoryTotalRemaining.toLocaleString('pl-PL')} zł
+                            {categoryTotalRemaining.toLocaleString(appLocale())} zł
                           </TD>
                           <TD />
                         </TR>
@@ -1640,16 +1640,16 @@ const FinanceModule = () => {
                           {tr('SUMA CAŁKOWITA')}
                         </TD>
                         <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                          {grandTotalPlanned.toLocaleString('pl-PL')} zł
+                          {grandTotalPlanned.toLocaleString(appLocale())} zł
                         </TD>
                         <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                          {grandTotalRealization.toLocaleString('pl-PL')} zł
+                          {grandTotalRealization.toLocaleString(appLocale())} zł
                         </TD>
                         <TD align="center" numeric className="text-gray-900 dark:text-white">
                           {grandPercentage.toFixed(1)}%
                         </TD>
                         <TD align="right" numeric className={`whitespace-nowrap ${grandTotalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {grandTotalRemaining.toLocaleString('pl-PL')} zł
+                          {grandTotalRemaining.toLocaleString(appLocale())} zł
                         </TD>
                         <TD />
                       </TR>
@@ -1678,7 +1678,7 @@ const FinanceModule = () => {
                       <div className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{p.team_type} — {p.description} <span className="text-xs font-normal text-gray-400">({tr('budżet')} {p.year})</span></div>
                       <div className="text-xs text-gray-400 truncate">{p.note ? `${p.note} · ` : ''}{tr('zgłosił')}: {p.submitted_by || '—'}</div>
                     </div>
-                    <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0">{Number(p.amount).toLocaleString('pl-PL')} zł</div>
+                    <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0">{Number(p.amount).toLocaleString(appLocale())} zł</div>
                     <button onClick={() => approveProposal(p)} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg shrink-0" title={tr('Zatwierdź do budżetu')}><CheckCircle size={16} /></button>
                     <button onClick={() => rejectProposal(p.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg shrink-0" title={tr('Odrzuć')}><XCircle size={16} /></button>
                   </div>
@@ -1693,7 +1693,7 @@ const FinanceModule = () => {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Wpływy {selectedYear}
+              {tr('Wpływy')} {selectedYear}
             </h2>
             <div className="flex items-center gap-2">
               <button
@@ -1723,13 +1723,13 @@ const FinanceModule = () => {
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">{t('Filtry')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
               <CustomSelect
-                label="Typ"
+                label={tr('Typ')}
                 value={incomeFilters.type}
                 onChange={(val) => setIncomeFilters({...incomeFilters, type: val})}
                 options={[
                   { value: '', label: tr('Wszystkie') },
-                  { value: 'Kolekta', label: 'Kolekta' },
-                  { value: 'Darowizny', label: 'Darowizny' },
+                  { value: 'Kolekta', label: tr('Kolekta') },
+                  { value: 'Darowizny', label: tr('Darowizny') },
                   { value: 'Inne', label: tr('Inne') }
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1745,7 +1745,7 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label="Tag"
+                label={tr('Tag')}
                 value={incomeFilters.tag}
                 onChange={(val) => setIncomeFilters({...incomeFilters, tag: val})}
                 options={[
@@ -1755,12 +1755,12 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomDatePicker
-                label="Data od"
+                label={tr('Data od')}
                 value={incomeFilters.dateFrom}
                 onChange={(val) => setIncomeFilters({...incomeFilters, dateFrom: val})}
               />
               <CustomDatePicker
-                label="Data do"
+                label={tr('Data do')}
                 value={incomeFilters.dateTo}
                 onChange={(val) => setIncomeFilters({...incomeFilters, dateTo: val})}
               />
@@ -1778,13 +1778,13 @@ const FinanceModule = () => {
           {loading ? (
             <Spinner center />
           ) : filteredIncomeTransactions.length === 0 ? (
-            <EmptyState icon={TrendingUp} title={incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : tr('Brak wpływów pasujących do filtrów')} />
+            <EmptyState icon={TrendingUp} title={incomeTransactions.length === 0 ? tr('Brak wpływów na rok {year}', { year: selectedYear }) : tr('Brak wpływów pasujących do filtrów')} />
           ) : (
             <DataTable>
                 <THead>
                   <tr>
                     <TH>{tr('Data')}</TH>
-                    <TH>Typ</TH>
+                    <TH>{tr('Typ')}</TH>
                     <TH>{t('Źródło')}</TH>
                     <TH align="right">{t('Kwota')}</TH>
                     <TH>{t('Notatka')}</TH>
@@ -1796,18 +1796,18 @@ const FinanceModule = () => {
                   {filteredIncomeTransactions.map((transaction) => (
                     <TR key={transaction.id}>
                       <TD numeric className="whitespace-nowrap">
-                        {new Date(transaction.date).toLocaleDateString('pl-PL')}
+                        {new Date(transaction.date).toLocaleDateString(appLocale())}
                       </TD>
                       <TD>
                         <StatusPill color={STATUS_COLORS.success}>
-                          {transaction.type}
+                          {tr(transaction.type)}
                         </StatusPill>
                       </TD>
                       <TD>
                         {transaction.source}
                       </TD>
                       <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                        {transaction.amount.toLocaleString('pl-PL')} zł
+                        {transaction.amount.toLocaleString(appLocale())} zł
                       </TD>
                       <TD muted>
                         {transaction.notes || ''}
@@ -1861,7 +1861,7 @@ const FinanceModule = () => {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Wydatki {selectedYear}
+              {tr('Wydatki')} {selectedYear}
             </h2>
             <div className="flex items-center gap-2">
               <button
@@ -1884,7 +1884,7 @@ const FinanceModule = () => {
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
-                Dodaj wydatek
+                {tr('Dodaj wydatek')}
               </button>
             </div>
           </div>
@@ -1894,7 +1894,7 @@ const FinanceModule = () => {
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">{t('Filtry')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
               <CustomSelect
-                label="Kategoria"
+                label={tr('Kategoria')}
                 value={expenseFilters.category}
                 onChange={(val) => setExpenseFilters({...expenseFilters, category: val})}
                 options={[
@@ -1914,7 +1914,7 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label="Kontrahent"
+                label={tr('Kontrahent')}
                 value={expenseFilters.contractor}
                 onChange={(val) => setExpenseFilters({...expenseFilters, contractor: val})}
                 options={[
@@ -1924,7 +1924,7 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label="Osoba odpowiedzialna"
+                label={tr('Osoba odpowiedzialna')}
                 value={expenseFilters.responsible}
                 onChange={(val) => setExpenseFilters({...expenseFilters, responsible: val})}
                 options={[
@@ -1936,7 +1936,7 @@ const FinanceModule = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <CustomSelect
-                label="Tag"
+                label={tr('Tag')}
                 value={expenseFilters.tag}
                 onChange={(val) => setExpenseFilters({...expenseFilters, tag: val})}
                 options={[
@@ -1946,12 +1946,12 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomDatePicker
-                label="Data od"
+                label={tr('Data od')}
                 value={expenseFilters.dateFrom}
                 onChange={(val) => setExpenseFilters({...expenseFilters, dateFrom: val})}
               />
               <CustomDatePicker
-                label="Data do"
+                label={tr('Data do')}
                 value={expenseFilters.dateTo}
                 onChange={(val) => setExpenseFilters({...expenseFilters, dateTo: val})}
               />
@@ -1969,7 +1969,7 @@ const FinanceModule = () => {
           {loading ? (
             <Spinner center />
           ) : filteredExpenseTransactions.length === 0 ? (
-            <EmptyState icon={Receipt} title={expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : tr('Brak wydatków pasujących do filtrów')} />
+            <EmptyState icon={Receipt} title={expenseTransactions.length === 0 ? tr('Brak wydatków na rok {year}', { year: selectedYear }) : tr('Brak wydatków pasujących do filtrów')} />
           ) : (
             <DataTable minWidth={900}>
                 <THead>
@@ -1988,7 +1988,7 @@ const FinanceModule = () => {
                   {filteredExpenseTransactions.map((transaction) => (
                     <TR key={transaction.id}>
                       <TD numeric className="whitespace-nowrap">
-                        {new Date(transaction.payment_date).toLocaleDateString('pl-PL')}
+                        {new Date(transaction.payment_date).toLocaleDateString(appLocale())}
                       </TD>
                       <TD>
                         <div className="flex flex-col items-start gap-1">
@@ -2013,7 +2013,7 @@ const FinanceModule = () => {
                         {transaction.contractor}
                       </TD>
                       <TD align="right" numeric>
-                        <div className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{transaction.amount.toLocaleString('pl-PL')} zł</div>
+                        <div className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{transaction.amount.toLocaleString(appLocale())} zł</div>
                         <div className="flex flex-col items-end gap-1 mt-1">
                           {transaction.status && transaction.status !== 'approved' && (
                             <StatusPill color={(EXPENSE_STATUS[transaction.status] || EXPENSE_STATUS.approved).color}>
@@ -2026,7 +2026,7 @@ const FinanceModule = () => {
                             </StatusPill>
                           )}
                           {transaction.invoice_number && (
-                            <span className="text-[10px] text-gray-400">FV {transaction.invoice_number}</span>
+                            <span className="text-[10px] text-gray-400">{tr('FV')} {transaction.invoice_number}</span>
                           )}
                         </div>
                       </TD>
@@ -2126,7 +2126,7 @@ const FinanceModule = () => {
                       </div>
                     </div>
                     <div className={`font-bold shrink-0 ${r.kind === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {r.kind === 'income' ? '+' : '−'}{Number(r.amount).toLocaleString('pl-PL')} zł
+                      {r.kind === 'income' ? '+' : '−'}{Number(r.amount).toLocaleString(appLocale())} zł
                     </div>
                     <button onClick={() => toggleRecurring(r)} className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 shrink-0">
                       {r.is_active ? tr('Wstrzymaj') : tr('Wznów')}
@@ -2154,7 +2154,7 @@ const FinanceModule = () => {
               </div>
               {reportMode === 'month' && (
                 <>
-                  <CustomSelect value={reportAnchor.month} onChange={(v) => setReportAnchor((a) => ({ ...a, month: parseInt(v) }))} options={MONTHS_PL.map((m, i) => ({ value: i, label: m }))} />
+                  <CustomSelect value={reportAnchor.month} onChange={(v) => setReportAnchor((a) => ({ ...a, month: parseInt(v) }))} options={MONTHS_PL.map((m, i) => ({ value: i, label: tr(m) }))} />
                   <CustomSelect value={reportAnchor.year} onChange={(v) => setReportAnchor((a) => ({ ...a, year: parseInt(v) }))} options={yearOptions().map((y) => ({ value: y, label: String(y) }))} />
                 </>
               )}
@@ -2220,11 +2220,11 @@ const FinanceModule = () => {
               <div className="sm:text-right text-sm">
                 <p className="font-semibold text-gray-900 dark:text-white">{reportRange.label}</p>
                 <p className="text-gray-500 dark:text-gray-400 tabular-nums">{reportRange.from} – {reportRange.to}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{tr('Wygenerowano')}: {new Date().toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{tr('Wygenerowano')}: {new Date().toLocaleString(appLocale(), { dateStyle: 'short', timeStyle: 'short' })}</p>
               </div>
             </div>
             {(() => {
-              const fmt = (n) => Number(n || 0).toLocaleString('pl-PL');
+              const fmt = (n) => Number(n || 0).toLocaleString(appLocale());
               const { income: tIncome, expense: tExpense, balance: tBalance } = reportModel.totals;
               const totalPlanned = reportBudget.reduce((s, i) => s + (i.planned_amount || 0), 0);
               const budgetExec = totalPlanned > 0 ? (tExpense / totalPlanned) * 100 : 0;
@@ -2277,7 +2277,7 @@ const FinanceModule = () => {
             {/* KPI — szybkie wskaźniki okresu */}
             {(() => {
               const k = reportModel.kpis;
-              const fmt = (n) => Number(n || 0).toLocaleString('pl-PL');
+              const fmt = (n) => Number(n || 0).toLocaleString(appLocale());
               const Tile = ({ icon, label, value, sub, tone }) => (
                 <div className={`rounded-2xl border p-4 ${tone === 'warn' ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'}`}>
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1.5">{icon}<span className="text-xs font-medium uppercase">{label}</span></div>
@@ -2305,7 +2305,7 @@ const FinanceModule = () => {
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-accent-primary" />{tr('Przepływ gotówki (skumulowany)')}</h3>
               <CashFlowAreaChart buckets={reportModel.buckets} tr={tr} />
-              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">{tr('Saldo na koniec okresu')}: <span className={`font-bold ${reportModel.totals.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(reportModel.buckets.at(-1)?.cumulative || 0).toLocaleString('pl-PL')} zł</span></div>
+              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">{tr('Saldo na koniec okresu')}: <span className={`font-bold ${reportModel.totals.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(reportModel.buckets.at(-1)?.cumulative || 0).toLocaleString(appLocale())} zł</span></div>
             </div>
 
             {/* Donuty kategorii */}
@@ -2345,7 +2345,7 @@ const FinanceModule = () => {
                           <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{e.description || e.contractor}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{e.contractor} · {e.category} · {e.date}</p>
                         </div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString('pl-PL')} zł</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString(appLocale())} zł</p>
                       </div>
                     ))}
                   </div>
@@ -2363,7 +2363,7 @@ const FinanceModule = () => {
                         const pct = (s.amount / total) * 100;
                         return (
                           <div key={s.status}>
-                            <div className="flex justify-between text-sm mb-1"><span className="text-gray-700 dark:text-gray-300">{tr(lbl)} <span className="text-gray-400">({s.count})</span></span><span className="font-semibold text-gray-900 dark:text-white">{Number(s.amount).toLocaleString('pl-PL')} zł</span></div>
+                            <div className="flex justify-between text-sm mb-1"><span className="text-gray-700 dark:text-gray-300">{tr(lbl)} <span className="text-gray-400">({s.count})</span></span><span className="font-semibold text-gray-900 dark:text-white">{Number(s.amount).toLocaleString(appLocale())} zł</span></div>
                             <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2"><div className="h-2 rounded-full" style={{ width: `${pct}%`, background: col }} /></div>
                           </div>
                         );
@@ -2394,10 +2394,10 @@ const FinanceModule = () => {
                       return (
                         <TR key={b.category}>
                           <TD className="font-medium text-gray-900 dark:text-white">{b.category}</TD>
-                          <TD align="right" numeric className="whitespace-nowrap">{Number(b.planned).toLocaleString('pl-PL')} zł</TD>
-                          <TD align="right" numeric className="whitespace-nowrap">{Number(b.realized).toLocaleString('pl-PL')} zł</TD>
+                          <TD align="right" numeric className="whitespace-nowrap">{Number(b.planned).toLocaleString(appLocale())} zł</TD>
+                          <TD align="right" numeric className="whitespace-nowrap">{Number(b.realized).toLocaleString(appLocale())} zł</TD>
                           <TD><div className="flex items-center gap-2"><div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2"><div className={`h-2 rounded-full bg-gradient-to-r ${progressColor}`} style={{ width: `${Math.min(b.pct, 100)}%` }} /></div><span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white w-14 text-right">{b.pct.toFixed(0)}%</span></div></TD>
-                          <TD align="right" numeric className={`font-semibold whitespace-nowrap ${b.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(b.remaining).toLocaleString('pl-PL')} zł</TD>
+                          <TD align="right" numeric className={`font-semibold whitespace-nowrap ${b.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(b.remaining).toLocaleString(appLocale())} zł</TD>
                         </TR>
                       );
                     })}
@@ -2429,7 +2429,7 @@ const FinanceModule = () => {
                           <TD muted className="truncate max-w-[220px]">{e.description}</TD>
                           <TD muted numeric>{e.invoice_number || ''}</TD>
                           <TD muted numeric className="whitespace-nowrap"><span className={overdue ? 'text-red-600 font-semibold' : ''}>{e.due_date || ''}{overdue ? ' ⚠' : ''}</span></TD>
-                          <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString('pl-PL')} zł</TD>
+                          <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString(appLocale())} zł</TD>
                         </TR>
                       );
                     })}
@@ -2741,9 +2741,9 @@ const FinanceModule = () => {
             {changeItem.map((a) => (
               <div key={a.id} className="px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
                 <div className="font-medium text-gray-800 dark:text-gray-100">
-                  {Number(a.before?.planned_amount || 0).toLocaleString('pl-PL')} zł <span className="text-gray-400">→</span> {Number(a.after?.planned_amount || 0).toLocaleString('pl-PL')} zł
+                  {Number(a.before?.planned_amount || 0).toLocaleString(appLocale())} zł <span className="text-gray-400">→</span> {Number(a.after?.planned_amount || 0).toLocaleString(appLocale())} zł
                 </div>
-                <div className="text-xs text-gray-400">{a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}</div>
+                <div className="text-xs text-gray-400">{a.actor || '—'} · {new Date(a.created_at).toLocaleString(appLocale())}</div>
               </div>
             ))}
           </div>
@@ -2765,7 +2765,7 @@ const FinanceModule = () => {
                 <div key={v.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
                   <Copy size={14} className="text-gray-400 shrink-0" />
                   <span className="font-medium text-gray-800 dark:text-gray-100 flex-1 truncate">{v.label}</span>
-                  <span className="text-xs text-gray-400">{Array.isArray(v.snapshot) ? v.snapshot.length : 0} {tr('poz.')} · {new Date(v.created_at).toLocaleDateString('pl-PL')}</span>
+                  <span className="text-xs text-gray-400">{Array.isArray(v.snapshot) ? v.snapshot.length : 0} {tr('poz.')} · {new Date(v.created_at).toLocaleDateString(appLocale())}</span>
                 </div>
               ))}
             </div>
@@ -2786,9 +2786,9 @@ const FinanceModule = () => {
                       <div className="text-gray-800 dark:text-gray-100 truncate">{a.category}{a.description ? ` — ${a.description}` : ''}</div>
                       <div className="text-xs text-gray-400">
                         {a.action === 'updated' && beforeAmt != null && afterAmt != null && beforeAmt !== afterAmt
-                          ? `${Number(beforeAmt).toLocaleString('pl-PL')} → ${Number(afterAmt).toLocaleString('pl-PL')} zł · `
-                          : (afterAmt != null ? `${Number(afterAmt).toLocaleString('pl-PL')} zł · ` : '')}
-                        {a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}
+                          ? `${Number(beforeAmt).toLocaleString(appLocale())} → ${Number(afterAmt).toLocaleString(appLocale())} zł · `
+                          : (afterAmt != null ? `${Number(afterAmt).toLocaleString(appLocale())} zł · ` : '')}
+                        {a.actor || '—'} · {new Date(a.created_at).toLocaleString(appLocale())}
                       </div>
                     </div>
                   </div>
@@ -2806,8 +2806,8 @@ const FinanceModule = () => {
         size="sm"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowBudgetModal(false)}>Anuluj</Button>
-          <Button onClick={saveBudgetItem}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowBudgetModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveBudgetItem}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
@@ -2826,7 +2826,7 @@ const FinanceModule = () => {
               onChange={(val) => setBudgetForm({ ...budgetForm, category: val })}
               options={incomeCategories.length > 0
                 ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
-                : [{ value: 'Kolekta', label: 'Kolekta' }, { value: 'Darowizny', label: 'Darowizny' }, { value: 'Inne', label: tr('Inne') }]}
+                : [{ value: 'Kolekta', label: tr('Kolekta') }, { value: 'Darowizny', label: tr('Darowizny') }, { value: 'Inne', label: tr('Inne') }]}
               placeholder={tr('Wybierz kategorię')}
             />
           ) : (
@@ -2858,7 +2858,7 @@ const FinanceModule = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Planowana kwota (PLN)</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Planowana kwota (PLN)')}</label>
               <input
                 type="number"
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -2889,8 +2889,8 @@ const FinanceModule = () => {
         size="sm"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowIncomeModal(false)}>Anuluj</Button>
-          <Button data-tour="fin-income-save" onClick={saveIncome}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowIncomeModal(false)}>{tr('Anuluj')}</Button>
+          <Button data-tour="fin-income-save" onClick={saveIncome}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
@@ -2917,8 +2917,8 @@ const FinanceModule = () => {
             options={incomeCategories.length > 0
               ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
               : [
-                { value: 'Kolekta', label: 'Kolekta' },
-                { value: 'Darowizny', label: 'Darowizny' },
+                { value: 'Kolekta', label: tr('Kolekta') },
+                { value: 'Darowizny', label: tr('Darowizny') },
                 { value: 'Inne', label: tr('Inne') },
               ]}
           />
@@ -2990,15 +2990,15 @@ const FinanceModule = () => {
         size="xl"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
-          <Button onClick={saveExpense}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveExpense}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           {/* Wiersz 1: Data i Kwota */}
           <div className="grid grid-cols-2 gap-4">
             <CustomDatePicker
-              label="Data dokumentu"
+              label={tr('Data dokumentu')}
               value={expenseForm.payment_date}
               onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
             />
@@ -3116,7 +3116,7 @@ const FinanceModule = () => {
               <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                 <Upload size={18} className="text-gray-400" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
+                  {uploadingFile ? tr('Przesyłanie...') : tr('Dodaj plik(i)')}
                 </span>
                 <input
                   type="file"
@@ -3191,11 +3191,11 @@ const FinanceModule = () => {
       <Modal
         isOpen={showBalanceModal}
         onClose={() => setShowBalanceModal(false)}
-        title={`Stan początkowy kont - ${selectedYear}`}
+        title={tr('Stan początkowy kont - {year}', { year: selectedYear })}
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowBalanceModal(false)}>Anuluj</Button>
-          <Button onClick={saveAccountBalances}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowBalanceModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveAccountBalances}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-5">
@@ -3203,13 +3203,13 @@ const FinanceModule = () => {
           <div>
             <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-              Złotówki (PLN)
+              {tr('Złotówki (PLN)')}
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                   <CreditCard size={12} className="inline mr-1" />
-                  Rachunek bankowy
+                  {tr('Rachunek bankowy')}
                 </label>
                 <input
                   type="number"
@@ -3241,7 +3241,7 @@ const FinanceModule = () => {
           <div>
             <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
               <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-              Waluta obca
+              {tr('Waluta obca')}
             </h4>
             <div className="mb-3">
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Typ waluty')}</label>
@@ -3250,17 +3250,17 @@ const FinanceModule = () => {
                 value={balanceForm.currency_type}
                 onChange={(e) => setBalanceForm({...balanceForm, currency_type: e.target.value})}
               >
-                <option value="EUR">EUR - Euro</option>
+                <option value="EUR">{tr('EUR - Euro')}</option>
                 <option value="USD">{tr('USD - Dolar amerykański')}</option>
-                <option value="GBP">GBP - Funt brytyjski</option>
-                <option value="CHF">CHF - Frank szwajcarski</option>
+                <option value="GBP">{tr('GBP - Funt brytyjski')}</option>
+                <option value="CHF">{tr('CHF - Frank szwajcarski')}</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                   <CreditCard size={12} className="inline mr-1" />
-                  Rachunek walutowy
+                  {tr('Rachunek walutowy')}
                 </label>
                 <input
                   type="number"
@@ -3290,7 +3290,7 @@ const FinanceModule = () => {
 
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300">
             <p className="font-medium mb-1">{t('💡 Wskazówka')}</p>
-            <p>Wprowadź stany kont na początek roku {selectedYear}. System automatycznie doliczy wpływy i wydatki, aby pokazać aktualny stan.</p>
+            <p>{tr('Wprowadź stany kont na początek roku {year}. System automatycznie doliczy wpływy i wydatki, aby pokazać aktualny stan.', { year: selectedYear })}</p>
           </div>
         </div>
       </Modal>

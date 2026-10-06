@@ -39,7 +39,7 @@ export default function CampusManager({ onMessage }) {
 
   const save = async () => {
     if (!form.name.trim()) {
-      onMessage?.({ type: 'error', text: 'Nazwa kampusu jest wymagana.' });
+      onMessage?.({ type: 'error', text: tr('Nazwa kampusu jest wymagana.') });
       return;
     }
 
@@ -63,13 +63,13 @@ export default function CampusManager({ onMessage }) {
       }
     }
 
-    onMessage?.({ type: 'success', text: form.id ? 'Kampus zaktualizowany.' : 'Kampus dodany.' });
+    onMessage?.({ type: 'success', text: form.id ? tr('Kampus zaktualizowany.') : tr('Kampus dodany.') });
     setShowModal(false);
     fetchCampuses();
   };
 
   const deleteCampus = async (campus) => {
-    if (!await confirmDialog(`Usunąć kampus "${campus.name}"? Powiązane rekordy stracą przypisanie do kampusu.`)) return;
+    if (!await confirmDialog(tr('Usunąć kampus "{name}"? Powiązane rekordy stracą przypisanie do kampusu.', { name: campus.name }))) return;
     const { error } = await supabase.from('campuses').delete().eq('id', campus.id);
     if (error) {
       onMessage?.({ type: 'error', text: tr('Błąd usuwania: ') + error.message });
@@ -139,7 +139,7 @@ export default function CampusManager({ onMessage }) {
               </div>
 
               <div className="flex items-center gap-2">
-                <button onClick={() => toggleActive(campus)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition" title={campus.is_active ? 'Dezaktywuj' : 'Aktywuj'}>
+                <button onClick={() => toggleActive(campus)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition" title={campus.is_active ? tr('Dezaktywuj') : tr('Aktywuj')}>
                   {campus.is_active ? <ToggleRight size={20} className="text-green-500" /> : <ToggleLeft size={20} className="text-gray-400" />}
                 </button>
                 <button onClick={() => openEdit(campus)} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg transition">
@@ -162,25 +162,25 @@ export default function CampusManager({ onMessage }) {
         size="sm"
         title={form.id ? tr('Edytuj kampus') : tr('Nowy kampus')}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
-          <Button onClick={save}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={save}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Nazwa *')}</label>
-            <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="np. Kampus Centrum" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={tr('np. Kampus Centrum')} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
           </div>
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Adres')}</label>
             <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('ul. Przykładowa 1')} value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} />
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Miasto</label>
-            <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="Warszawa" value={form.city || ''} onChange={e => setForm({ ...form, city: e.target.value })} />
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{tr('Miasto')}</label>
+            <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={tr('Warszawa')} value={form.city || ''} onChange={e => setForm({ ...form, city: e.target.value })} />
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Strefa czasowa</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{tr('Strefa czasowa')}</label>
             <select className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" value={form.timezone || 'Europe/Warsaw'} onChange={e => setForm({ ...form, timezone: e.target.value })}>
               <option value="Europe/Warsaw">Europe/Warsaw</option>
               <option value="Europe/London">Europe/London</option>

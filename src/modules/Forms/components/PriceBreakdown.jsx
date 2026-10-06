@@ -1,6 +1,6 @@
 import { DollarSign } from 'lucide-react';
 import { formatPrice } from '../utils/fieldTypes';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist = false }) {
   if (!breakdown || breakdown.grandTotal === 0) return null;
@@ -43,7 +43,7 @@ export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist
               <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-medium">
                 {activeDateTier.label}
                 {activeDateTier.until && (
-                  <span className="font-normal text-blue-500"> — do {new Date(activeDateTier.until).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
+                  <span className="font-normal text-blue-500"> — do {new Date(activeDateTier.until).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' })}</span>
                 )}
               </span>
             </div>

@@ -89,19 +89,19 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
   );
 
   const featureLabels = {
-    calendar: 'Kalendarz',
+    calendar: tr('Kalendarz'),
     members: tr('Zarządzanie członkami'),
-    groups: 'Grupy domowe',
-    kids_checkin: 'Check-in dzieci',
-    events: 'Wydarzenia',
+    groups: tr('Grupy domowe'),
+    kids_checkin: tr('Check-in dzieci'),
+    events: tr('Wydarzenia'),
     email: tr('Wysyłka emaili'),
     finance: tr('Moduł finansowy'),
-    forms: 'Formularze',
-    basic_reports: 'Podstawowe raporty',
-    advanced_reports: 'Zaawansowane raporty',
+    forms: tr('Formularze'),
+    basic_reports: tr('Podstawowe raporty'),
+    advanced_reports: tr('Zaawansowane raporty'),
     api: tr('Dostęp do API'),
-    white_label: 'White label',
-    priority_support: 'Priorytetowe wsparcie',
+    white_label: tr('White label'),
+    priority_support: tr('Priorytetowe wsparcie'),
     custom_domain: tr('Własna domena')
   };
 
@@ -147,7 +147,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            Rocznie
+            {tr('Rocznie')}
             <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs px-2 py-0.5 rounded-full">
               -17%
             </span>
@@ -177,7 +177,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center gap-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold px-3 py-1 rounded-full">
                     <Sparkles size={12} />
-                    NAJPOPULARNIEJSZY
+                    {tr('NAJPOPULARNIEJSZY')}
                   </span>
                 </div>
               )}
@@ -198,12 +198,12 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                       {formatPrice(price)}
                     </span>
                     <span className="text-gray-500 dark:text-gray-400">
-                      /{billingCycle === 'yearly' ? 'rok' : 'mies.'}
+                      /{billingCycle === 'yearly' ? tr('rok') : tr('mies.')}
                     </span>
                   </div>
                   {billingCycle === 'yearly' && (
                     <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                      Oszczędzasz {formatPrice(savings)} rocznie ({percent}%)
+                      {tr('Oszczędzasz {amount} rocznie ({percent}%)', { amount: formatPrice(savings), percent })}
                     </p>
                   )}
                 </div>
@@ -213,19 +213,19 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>{tr('Członkowie:')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {plan.max_members === -1 ? 'Bez limitu' : plan.max_members}
+                      {plan.max_members === -1 ? tr('Bez limitu') : plan.max_members}
                     </span>
                   </div>
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>{tr('Użytkownicy:')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {plan.max_users === -1 ? 'Bez limitu' : plan.max_users}
+                      {plan.max_users === -1 ? tr('Bez limitu') : plan.max_users}
                     </span>
                   </div>
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Grupy:</span>
+                    <span>{tr('Grupy:')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {plan.max_groups === -1 ? 'Bez limitu' : plan.max_groups}
+                      {plan.max_groups === -1 ? tr('Bez limitu') : plan.max_groups}
                     </span>
                   </div>
                 </div>
@@ -253,7 +253,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                         : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
                   }`}
                 >
-                  {isCurrentPlan ? 'Aktualny plan' : 'Wybierz plan'}
+                  {isCurrentPlan ? tr('Aktualny plan') : tr('Wybierz plan')}
                 </button>
               </div>
             </div>
@@ -266,7 +266,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <Tag size={16} />
-            Masz kod rabatowy?
+            {tr('Masz kod rabatowy?')}
           </label>
           <div className="flex gap-2">
             <input
@@ -276,7 +276,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                 setCouponCode(e.target.value.toUpperCase());
                 setCouponResult(null);
               }}
-              placeholder="Wpisz kod"
+              placeholder={tr('Wpisz kod')}
               className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light"
             />
             <button
@@ -284,13 +284,13 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
               disabled={!couponCode.trim() || validatingCoupon}
               className="px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition disabled:opacity-50"
             >
-              {validatingCoupon ? <Loader2 size={18} className="animate-spin" /> : 'Zastosuj'}
+              {validatingCoupon ? <Loader2 size={18} className="animate-spin" /> : tr('Zastosuj')}
             </button>
           </div>
           {couponResult && (
             <p className={`mt-2 text-sm ${couponResult.is_valid ? 'text-green-600' : 'text-red-600'}`}>
               {couponResult.is_valid
-                ? `Kupon aktywny! Rabat: ${couponResult.discount_type === 'percent' ? `${couponResult.discount_value}%` : formatPrice(couponResult.discount_value)}`
+                ? tr('Kupon aktywny! Rabat: {discount}', { discount: couponResult.discount_type === 'percent' ? `${couponResult.discount_value}%` : formatPrice(couponResult.discount_value) })
                 : couponResult.error_message
               }
             </p>
@@ -305,7 +305,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
             onClick={onCancel}
             className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
           >
-            Anuluj
+            {tr('Anuluj')}
           </button>
         </div>
       )}

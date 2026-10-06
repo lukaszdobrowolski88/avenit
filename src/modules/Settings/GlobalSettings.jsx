@@ -48,11 +48,11 @@ const SETTINGS_NAV = [
     { id: 'module_manager', label: tr('Zarządzanie'), icon: Layers },
     { id: 'dictionaries', label: tr('Słowniki'), icon: BookOpen },
   ]},
-  { group: 'Komunikacja', items: [
+  { group: tr('Komunikacja'), items: [
     { id: 'notifications', label: tr('Powiadomienia'), icon: Bell },
     { id: 'integrations', label: tr('Integracje'), icon: Plug },
   ]},
-  { group: 'Konto', items: [
+  { group: tr('Konto'), items: [
     { id: 'subscription', label: tr('Subskrypcja'), icon: CreditCard },
   ]},
 ];
@@ -183,7 +183,7 @@ const DictionaryEditor = ({ category, title, items, onAdd, onDelete }) => {
       <div className="flex gap-2 mb-4">
         <input 
           className="flex-1 p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm outline-none focus:border-accent-primary-light transition" 
-          placeholder="Nowa opcja..." 
+          placeholder={tr('Nowa opcja...')} 
           value={newItem} 
           onChange={e => setNewItem(e.target.value)} 
         />
@@ -226,11 +226,11 @@ export default function GlobalSettings() {
     setPwBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-set-user-password', { body: { userId: userForm.id, password: adminNewPassword } });
-      if (error || data?.error) throw new Error(data?.error || error?.message || 'Błąd');
-      setMessage({ type: 'success', text: `Hasło zostało zmienione dla ${userForm.email}.` });
+      if (error || data?.error) throw new Error(data?.error || error?.message || tr('Błąd'));
+      setMessage({ type: 'success', text: tr('Hasło zostało zmienione dla {email}.', { email: userForm.email }) });
       setAdminNewPassword('');
     } catch (e) {
-      setMessage({ type: 'error', text: `Nie udało się zmienić hasła: ${e.message}` });
+      setMessage({ type: 'error', text: tr('Nie udało się zmienić hasła: {msg}', { msg: e.message }) });
     } finally { setPwBusy(false); }
   };
 
@@ -240,9 +240,9 @@ export default function GlobalSettings() {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(userForm.email, { redirectTo: `${window.location.origin}/reset-password` });
       if (error) throw new Error(error.message);
-      setMessage({ type: 'success', text: `Link do resetu hasła wysłany na ${userForm.email}.` });
+      setMessage({ type: 'success', text: tr('Link do resetu hasła wysłany na {email}.', { email: userForm.email }) });
     } catch (e) {
-      setMessage({ type: 'error', text: `Nie udało się wysłać linku: ${e.message}` });
+      setMessage({ type: 'error', text: tr('Nie udało się wysłać linku: {msg}', { msg: e.message }) });
     } finally { setPwBusy(false); }
   };
   const [isCreatingAuthUser, setIsCreatingAuthUser] = useState(false);
@@ -252,10 +252,10 @@ export default function GlobalSettings() {
   // Definicja służb/zespołów z ich tabelami w bazie
   const teamDefinitions = [
     { key: 'worship', label: t('Grupa Uwielbienia'), table: 'worship_team' },
-    { key: 'media', label: 'Media Team', table: 'media_team' },
+    { key: 'media', label: t('Media Team'), table: 'media_team' },
     { key: 'atmosfera', label: t('Atmosfera Team'), table: 'atmosfera_members' },
     { key: 'kids', label: t('Małe Avenit'), table: 'kids_teachers' },
-    { key: 'homegroups', label: 'Grupy Domowe (Lider)', table: 'home_group_leaders' }
+    { key: 'homegroups', label: t('Grupy Domowe (Lider)'), table: 'home_group_leaders' }
   ];
 
   const [expandedModule, setExpandedModule] = useState(null);
@@ -273,17 +273,17 @@ export default function GlobalSettings() {
   // (np. Księgowość, Administracja) NIE były przypisywalne. Teraz czytamy app_roles;
   // fallback do wbudowanych, gdy tabela pusta/nieobecna.
   const BUILTIN_ROLE_LABELS = {
-    superadmin: 'Super Administrator', rada_starszych: 'Rada Starszych',
-    koordynator: 'Koordynator', lider: t('Lider Służby'), czlonek: t('Członek'),
+    superadmin: t('Super Administrator'), rada_starszych: t('Rada Starszych'),
+    koordynator: t('Koordynator'), lider: t('Lider Służby'), czlonek: t('Członek'),
   };
   const definedRoles = useMemo(() => {
     if (dbRoles && dbRoles.length) {
       return dbRoles.map(r => ({ key: r.key, label: r.label || BUILTIN_ROLE_LABELS[r.key] || r.key }));
     }
     return [
-      { key: 'superadmin', label: 'Super Administrator' },
-      { key: 'rada_starszych', label: 'Rada Starszych' },
-      { key: 'koordynator', label: 'Koordynator' },
+      { key: 'superadmin', label: t('Super Administrator') },
+      { key: 'rada_starszych', label: t('Rada Starszych') },
+      { key: 'koordynator', label: t('Koordynator') },
       { key: 'lider', label: t('Lider Służby') },
       { key: 'czlonek', label: t('Członek') },
     ];
@@ -523,7 +523,7 @@ export default function GlobalSettings() {
   };
 
   const saveUser = async () => {
-    if (!userForm.email || !userForm.role) return toast.error('Wymagany Email i Rola');
+    if (!userForm.email || !userForm.role) return toast.error(tr('Wymagany Email i Rola'));
 
     setIsCreatingAuthUser(true);
 
@@ -543,7 +543,7 @@ export default function GlobalSettings() {
           },
         });
         if (updateError) {
-          throw new Error(`Błąd aktualizacji: ${updateError.message}`);
+          throw new Error(tr('Błąd aktualizacji: {msg}', { msg: updateError.message }));
         }
         fetchData(); loadAccountEvents();
         setMessage({ type: 'success', text: tr('Zaktualizowano użytkownika') });
@@ -566,7 +566,7 @@ export default function GlobalSettings() {
             totp_required: require2FA,
             campus_id: userForm.campus_id || null
           }).eq('id', existingAppUser.id);
-          setMessage({ type: 'success', text: `Użytkownik ${userForm.email} już istniał — zaktualizowano dane.` });
+          setMessage({ type: 'success', text: tr('Użytkownik {email} już istniał — zaktualizowano dane.', { email: userForm.email }) });
         } else {
           // Konto zakłada FUNKCJA SERWEROWA (aktywne, hash po stronie serwera) — niezależnie od
           // trybu rejestracji. Krok 5 niżej wysyła e-mail „ustaw hasło" (reset-password).
@@ -580,8 +580,8 @@ export default function GlobalSettings() {
               totp_required: require2FA,
             },
           });
-          if (createErr) throw new Error(`Błąd tworzenia konta: ${createErr.message}`);
-          setMessage({ type: 'success', text: `Utworzono ${userForm.email} — wysłano zaproszenie do ustawienia hasła (ważne 7 dni).` });
+          if (createErr) throw new Error(tr('Błąd tworzenia konta: {msg}', { msg: createErr.message }));
+          setMessage({ type: 'success', text: tr('Utworzono {email} — wysłano zaproszenie do ustawienia hasła (ważne 7 dni).', { email: userForm.email }) });
         }
 
         // 6. Dodaj użytkownika do wybranych zespołów/służb (lub zaktualizuj istniejącego)
@@ -853,7 +853,7 @@ export default function GlobalSettings() {
       setMessage({
         type: 'success',
         text: totalMerged > 0
-          ? `Scalono ${totalMerged} zduplikowanych członków!`
+          ? tr('Scalono {n} zduplikowanych członków!', { n: totalMerged })
           : tr('Nie znaleziono duplikatów do scalenia.')
       });
     } catch (err) {
@@ -1084,7 +1084,7 @@ export default function GlobalSettings() {
     setAppSettings(prev => prev.some(s => s.key === key)
       ? prev.map(s => s.key === key ? { ...s, value: v } : s)
       : [...prev, { key, value: v }]);
-    setMessage({ type: 'success', text: 'Zapisano' });
+    setMessage({ type: 'success', text: tr('Zapisano') });
   };
 
   // Rejestracja: kolejki oczekujących + audyt. Akcje = funkcje serwerowe (bramka admina + maile + log).
@@ -1110,23 +1110,23 @@ export default function GlobalSettings() {
   useEffect(() => { loadAccountEvents(); }, []);
   const approveUser = async (id) => {
     const { error } = await supabase.functions.invoke('approve-user', { body: { userId: id } });
-    if (error) { setMessage({ type: 'error', text: error.message || 'Nie udało się zatwierdzić konta' }); return; }
+    if (error) { setMessage({ type: 'error', text: error.message || tr('Nie udało się zatwierdzić konta') }); return; }
     fetchData(); loadAccountEvents();
-    setMessage({ type: 'success', text: 'Konto zatwierdzone — wysłano powitanie' });
+    setMessage({ type: 'success', text: tr('Konto zatwierdzone — wysłano powitanie') });
   };
   const rejectUser = async (id) => {
     if (!await confirmDialog(tr('Odrzucić i usunąć to zgłoszenie rejestracji?'))) return;
     const { error } = await supabase.functions.invoke('reject-user', { body: { userId: id } });
-    if (error) { setMessage({ type: 'error', text: error.message || 'Nie udało się odrzucić' }); return; }
+    if (error) { setMessage({ type: 'error', text: error.message || tr('Nie udało się odrzucić') }); return; }
     fetchData(); loadAccountEvents();
   };
   const resendVerification = async (id) => {
     const { error } = await supabase.functions.invoke('resend-verification', { body: { userId: id } });
     setMessage(error
-      ? { type: 'error', text: error.message || 'Nie udało się wysłać' }
-      : { type: 'success', text: 'Wysłano ponownie link weryfikacyjny' });
+      ? { type: 'error', text: error.message || tr('Nie udało się wysłać') }
+      : { type: 'success', text: tr('Wysłano ponownie link weryfikacyjny') });
   };
-  const ACTION_LABEL = { registered: 'Rejestracja', verified: 'Potwierdzenie e-mail', approved: 'Zatwierdzenie', rejected: 'Odrzucenie', created: 'Utworzenie (admin)', edited: 'Edycja', deleted: 'Usunięcie', blocked: 'Zablokowanie', unblocked: 'Odblokowanie', reset_2fa: 'Reset 2FA', logged_out: 'Wylogowanie (wszędzie)', unlocked_login: 'Odblokowanie logowania' };
+  const ACTION_LABEL = { registered: tr('Rejestracja'), verified: tr('Potwierdzenie e-mail'), approved: tr('Zatwierdzenie'), rejected: tr('Odrzucenie'), created: tr('Utworzenie (admin)'), edited: tr('Edycja'), deleted: tr('Usunięcie'), blocked: tr('Zablokowanie'), unblocked: tr('Odblokowanie'), reset_2fa: tr('Reset 2FA'), logged_out: tr('Wylogowanie (wszędzie)'), unlocked_login: tr('Odblokowanie logowania') };
 
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
 
@@ -1175,21 +1175,21 @@ export default function GlobalSettings() {
         {activeNav && (
           <div className="flex items-center gap-2.5 mb-6 lg:hidden">
             <activeNav.icon size={22} className="text-accent-primary" />
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">{activeNav.label}</h2>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t(activeNav.label)}</h2>
           </div>
         )}
 
         {/* --- TAB: ORGANIZACJA --- */}
         {activeTab === 'general' && (
           <div className="max-w-2xl">
-            <SectionHeader title="Profil organizacji" description={tr('Podstawowe dane Twojego kościoła.')} />
+            <SectionHeader title={tr('Profil organizacji')} description={tr('Podstawowe dane Twojego kościoła.')} />
             {[
-              { key: 'org_name', label: 'Nazwa organizacji', placeholder: tr('np. Kościół Chrześcijański') },
-              { key: 'org_legal_name', label: 'Nazwa prawna', placeholder: tr('Pełna nazwa do dokumentów') },
+              { key: 'org_name', label: tr('Nazwa organizacji'), placeholder: tr('np. Kościół Chrześcijański') },
+              { key: 'org_legal_name', label: tr('Nazwa prawna'), placeholder: tr('Pełna nazwa do dokumentów') },
               { key: 'org_tax_id', label: 'NIP', placeholder: '000-000-00-00' },
-              { key: 'org_email', label: 'E-mail kontaktowy', type: 'email', placeholder: 'kontakt@kosciol.pl' },
+              { key: 'org_email', label: tr('E-mail kontaktowy'), type: 'email', placeholder: 'kontakt@kosciol.pl' },
               { key: 'org_phone', label: t('Telefon'), placeholder: '+48 000 000 000' },
-              { key: 'org_website', label: 'Strona WWW', placeholder: 'https://...' },
+              { key: 'org_website', label: tr('Strona WWW'), placeholder: 'https://...' },
             ].map((f) => (
               <div key={f.key} className="mb-4">
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">{f.label}</label>
@@ -1206,13 +1206,13 @@ export default function GlobalSettings() {
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">{t('Adres')}</label>
               <textarea
                 rows={2}
-                placeholder="Ulica, kod pocztowy, miasto"
+                placeholder={tr('Ulica, kod pocztowy, miasto')}
                 className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-accent-primary-light outline-none transition resize-none"
                 defaultValue={getSetting('org_address') || ''}
                 onBlur={(e) => { if (e.target.value !== (getSetting('org_address') || '')) saveSetting('org_address', e.target.value); }}
               />
             </div>
-            <p className="text-xs text-gray-400 mt-2">Logo i kolory ustawisz w zakładce <strong>{t('Wygląd')}</strong>.</p>
+            <p className="text-xs text-gray-400 mt-2">{tr('Logo i kolory ustawisz w zakładce')} <strong>{t('Wygląd')}</strong>.</p>
           </div>
         )}
 
@@ -1240,7 +1240,7 @@ export default function GlobalSettings() {
                       const newValue = !mod.is_enabled;
                       await supabase.from('app_modules').update({ is_enabled: newValue }).eq('id', mod.id);
                       setDbModules(prev => prev.map(m => m.id === mod.id ? { ...m, is_enabled: newValue } : m));
-                      setMessage({ type: 'success', text: `Moduł ${mod.label} ${newValue ? tr('włączony') : tr('wyłączony')}` });
+                      setMessage({ type: 'success', text: tr('Moduł {name} {state}', { name: mod.label, state: newValue ? tr('włączony') : tr('wyłączony') }) });
                     }}
                     className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition ${mod.is_enabled ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-600 dark:text-gray-400'}`}
                   >
@@ -1281,10 +1281,10 @@ export default function GlobalSettings() {
               <SectionHeader title={t('Użytkownicy Systemu')} description={tr('Zarządzanie dostępem, rolami i statusem kont.')} />
               <div className="flex items-center gap-2">
                 <button onClick={exportUsersCsv} className="border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm" title={tr('Eksportuj listę do CSV')}><Download size={16}/> CSV</button>
-                <button onClick={() => document.getElementById('users-csv-import').click()} className="border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm" title={tr('Importuj konta z CSV (kolumny: e-mail, imię, rola)')}><Upload size={16}/> Import</button>
+                <button onClick={() => document.getElementById('users-csv-import').click()} className="border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm" title={tr('Importuj konta z CSV (kolumny: e-mail, imię, rola)')}><Upload size={16}/> {tr('Import')}</button>
                 <input id="users-csv-import" type="file" accept=".csv,text/csv" className="hidden" onChange={importUsersCsv} />
-                <button onClick={mergeDuplicateMembers} className="bg-accent-secondary-light text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title={t('Scal zduplikowanych członków w służbach')}><Layers size={16}/> Scal duplikaty</button>
-                <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setRequire2FA(false); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> Dodaj Użytkownika</button>
+                <button onClick={mergeDuplicateMembers} className="bg-accent-secondary-light text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title={t('Scal zduplikowanych członków w służbach')}><Layers size={16}/> {tr('Scal duplikaty')}</button>
+                <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setRequire2FA(false); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> {tr('Dodaj Użytkownika')}</button>
               </div>
             </div>
 
@@ -1334,7 +1334,7 @@ export default function GlobalSettings() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Dozwolone domeny e-mail (opcjonalnie)')}</label>
-                    <input type="text" defaultValue={getSetting('registration_allowed_domains') || ''} onBlur={e => saveSetting('registration_allowed_domains', e.target.value)} placeholder="np. schwro.pl, parafia.pl" className="w-full" />
+                    <input type="text" defaultValue={getSetting('registration_allowed_domains') || ''} onBlur={e => saveSetting('registration_allowed_domains', e.target.value)} placeholder={tr('np. schwro.pl, parafia.pl')} className="w-full" />
                   </div>
                   <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
                     <input type="checkbox" className="w-4 h-4" checked={(getSetting('registration_captcha') || 'on') !== 'off'} onChange={e => saveSetting('registration_captcha', e.target.checked ? 'on' : 'off')} />
@@ -1343,7 +1343,7 @@ export default function GlobalSettings() {
                   {getSetting('registration_mode') === 'approval' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Auto-zatwierdzane domeny')}</label>
-                      <input type="text" defaultValue={getSetting('registration_autoapprove_domains') || ''} onBlur={e => saveSetting('registration_autoapprove_domains', e.target.value)} placeholder="np. schwro.pl" className="w-full" />
+                      <input type="text" defaultValue={getSetting('registration_autoapprove_domains') || ''} onBlur={e => saveSetting('registration_autoapprove_domains', e.target.value)} placeholder={tr('np. schwro.pl')} className="w-full" />
                       <p className="text-xs text-gray-400 mt-1">{tr('Konta z tych domen aktywują się od razu, bez czekania na administratora.')}</p>
                     </div>
                   )}
@@ -1412,7 +1412,7 @@ export default function GlobalSettings() {
                       <button type="button" onClick={() => saveSsoSecret(p)} disabled={!ssoSecret[p]} className="px-3 py-2 bg-accent-primary text-white rounded-lg text-sm font-medium disabled:opacity-50 shrink-0">{tr('Zapisz')}</button>
                     </div>
                     {p === 'microsoft' && (
-                      <input type="text" defaultValue={getSetting('sso_microsoft_tenant') || 'common'} onBlur={e => saveSetting('sso_microsoft_tenant', e.target.value || 'common')} placeholder="Tenant (np. common / organizations / <id>)" className="w-full" />
+                      <input type="text" defaultValue={getSetting('sso_microsoft_tenant') || 'common'} onBlur={e => saveSetting('sso_microsoft_tenant', e.target.value || 'common')} placeholder={tr('Tenant (np. common / organizations / <id>)')} className="w-full" />
                     )}
                   </div>
                   <p className="text-xs text-gray-400 mt-1.5">{tr('URI przekierowania (jeden dla wszystkich subdomen — wklej u dostawcy)')}: <span className="font-mono text-gray-500 dark:text-gray-400 break-all">https://app.{window.location.hostname.split('.').slice(1).join('.')}/api/auth/oauth/{p}/callback</span></p>
@@ -1438,7 +1438,7 @@ export default function GlobalSettings() {
                   <p className="text-xs text-amber-700 dark:text-amber-300">{tr('Bez ograniczeń każda osoba z kontem Google/Microsoft utworzy konto. Zalecane: ogranicz domeny lub wymagaj zatwierdzenia.')}</p>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{tr('Dozwolone domeny e-mail (oddzielone przecinkiem; puste = dowolna)')}</label>
-                    <input type="text" defaultValue={getSetting('sso_allowed_domains') || ''} onBlur={e => saveSetting('sso_allowed_domains', e.target.value.trim())} placeholder="np. parafia.pl, diecezja.pl" className="w-full" />
+                    <input type="text" defaultValue={getSetting('sso_allowed_domains') || ''} onBlur={e => saveSetting('sso_allowed_domains', e.target.value.trim())} placeholder={tr('np. parafia.pl, diecezja.pl')} className="w-full" />
                   </div>
                   <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
                     <input type="checkbox" className="w-4 h-4" checked={getSetting('sso_provision_approval') === 'on'} onChange={e => saveSetting('sso_provision_approval', e.target.checked ? 'on' : 'off')} />
@@ -1560,7 +1560,7 @@ export default function GlobalSettings() {
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase shrink-0 ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light'}`}>
                             {(user.full_name || user.email || '?').charAt(0)}
                           </div>
-                          {user.full_name || 'Brak imienia'}
+                          {user.full_name || tr('Brak imienia')}
                           {isSuperAdmin && <StatusPill color={STATUS_COLORS.warning}>SUPERADMIN</StatusPill>}
                         </div>
                       </TD>
@@ -1614,7 +1614,7 @@ export default function GlobalSettings() {
         {activeTab === 'dictionaries' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <DictionaryEditor title={t('Statusy Członków')} category="member_status" items={dictionaries} onAdd={addDict} onDelete={delDict} />
-            <DictionaryEditor title="Role w Zespole" category="team_role" items={dictionaries} onAdd={addDict} onDelete={delDict} />
+            <DictionaryEditor title={tr('Role w Zespole')} category="team_role" items={dictionaries} onAdd={addDict} onDelete={delDict} />
             <DictionaryEditor title={t('Typy Materiałów')} category="material_type" items={dictionaries} onAdd={addDict} onDelete={delDict} />
             <DictionaryEditor title={t('Kategorie Pieśni')} category="song_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
             <DictionaryEditor title={t('Kategorie Wydarzeń')} category="event_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
@@ -1658,8 +1658,8 @@ export default function GlobalSettings() {
         size="sm"
         title={t('Użytkownik')}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowUserModal(false)}>Anuluj</Button>
-          <Button onClick={saveUser} loading={isCreatingAuthUser}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowUserModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveUser} loading={isCreatingAuthUser}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
@@ -1668,7 +1668,7 @@ export default function GlobalSettings() {
             <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('Jan Kowalski')} value={userForm.full_name || ''} onChange={e => setUserForm({...userForm, full_name: e.target.value})} />
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Email (Login)</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{tr('Email (Login)')}</label>
             <input type="email" className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="jan@example.com" value={userForm.email || ''} onChange={e => setUserForm({...userForm, email: e.target.value})} />
           </div>
           {!userForm.id && (
@@ -1679,7 +1679,7 @@ export default function GlobalSettings() {
             </div>
           )}
           <div>
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">Rola w systemie</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">{tr('Rola w systemie')}</label>
             <CustomSelect options={definedRoles.filter(r => r.key !== 'superadmin').map(r => ({value: r.key, label: r.label}))} value={userForm.role} onChange={v => setUserForm({...userForm, role: v})} placeholder={t('Wybierz rolę...')} />
           </div>
           {campuses.length > 0 && (
@@ -1769,7 +1769,7 @@ export default function GlobalSettings() {
                     </div>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-800 dark:text-white">Wymagaj weryfikacji dwuetapowej (2FA)</span>
+                    <span className="font-medium text-gray-800 dark:text-white">{tr('Wymagaj weryfikacji dwuetapowej (2FA)')}</span>
                     <p className="text-xs text-gray-400 dark:text-gray-500">
                       {tr('Użytkownik będzie musiał skonfigurować 2FA przy pierwszym logowaniu')}
                     </p>

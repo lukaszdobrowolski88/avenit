@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { tr, appLocale } from '../../../i18n';
 
 const INITIAL_DRAFT = {
   to: [],
@@ -40,7 +41,7 @@ export default function useCompose(accountId, userEmail) {
         subject: message.subject.startsWith('Re:') ? message.subject : `Re: ${message.subject}`,
         body_html: `<br><br><div style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 10px;">
           <p><strong>Od:</strong> ${message.from_name || message.from_email}</p>
-          <p><strong>Data:</strong> ${new Date(message.received_at).toLocaleString('pl-PL')}</p>
+          <p><strong>Data:</strong> ${new Date(message.received_at).toLocaleString(appLocale())}</p>
           <p><strong>Temat:</strong> ${message.subject}</p>
           <br>
           ${message.body_html || message.body_text || ''}
@@ -62,7 +63,7 @@ export default function useCompose(accountId, userEmail) {
         subject: message.subject.startsWith('Re:') ? message.subject : `Re: ${message.subject}`,
         body_html: `<br><br><div style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 10px;">
           <p><strong>Od:</strong> ${message.from_name || message.from_email}</p>
-          <p><strong>Data:</strong> ${new Date(message.received_at).toLocaleString('pl-PL')}</p>
+          <p><strong>Data:</strong> ${new Date(message.received_at).toLocaleString(appLocale())}</p>
           <p><strong>Temat:</strong> ${message.subject}</p>
           <br>
           ${message.body_html || message.body_text || ''}
@@ -77,7 +78,7 @@ export default function useCompose(accountId, userEmail) {
         body_html: `<br><br><div style="border-left: 2px solid #ccc; padding-left: 10px; margin-left: 10px;">
           <p><strong>---------- Przekazana wiadomość ----------</strong></p>
           <p><strong>Od:</strong> ${message.from_name || message.from_email}</p>
-          <p><strong>Data:</strong> ${new Date(message.received_at).toLocaleString('pl-PL')}</p>
+          <p><strong>Data:</strong> ${new Date(message.received_at).toLocaleString(appLocale())}</p>
           <p><strong>Temat:</strong> ${message.subject}</p>
           <p><strong>Do:</strong> ${message.to_emails?.join(', ') || ''}</p>
           <br>
@@ -145,7 +146,7 @@ export default function useCompose(accountId, userEmail) {
   // Wyślij wiadomość
   const sendMessage = useCallback(async (sentFolderId) => {
     if (!accountId || draft.to.length === 0) {
-      setError('Brak odbiorców');
+      setError(tr('Brak odbiorców'));
       return false;
     }
 

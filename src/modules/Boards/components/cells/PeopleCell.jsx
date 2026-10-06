@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Check, Search, X } from 'lucide-react';
 import Popover from '../Popover';
+import { tr } from '../../../../i18n';
 
 function initials(name = '') {
   return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('');
@@ -65,7 +66,7 @@ export default function PeopleCell({ value = [], people = [], onChange, readOnly
         <div className="p-2">
           <div className="flex items-center gap-2 px-2 py-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg mb-2">
             <Search size={14} className="text-gray-400" />
-            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Szukaj osoby..."
+            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Szukaj osoby...')}
               className="bg-transparent text-sm outline-none w-full text-gray-700 dark:text-gray-200" />
           </div>
           {selected.length > 0 && (
@@ -90,7 +91,7 @@ export default function PeopleCell({ value = [], people = [], onChange, readOnly
                 {isSelected(p.email) && <Check size={16} className="text-accent-primary" />}
               </button>
             ))}
-            {filtered.length === 0 && <div className="text-xs text-gray-400 text-center py-3">Brak wyników</div>}
+            {filtered.length === 0 && <div className="text-xs text-gray-400 text-center py-3">{tr('Brak wyników')}</div>}
           </div>
         </div>
       )}

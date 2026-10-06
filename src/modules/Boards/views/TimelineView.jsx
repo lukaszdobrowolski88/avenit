@@ -89,8 +89,8 @@ export default function TimelineView({ data, config, onUpdateConfig, onOpenItem 
     return { start, end, days: eachDayOfInterval({ start, end }) };
   }, [spans]);
 
-  if (!col) return <EmptyState icon={CalendarRange} title="Dodaj kolumnę typu Oś czasu, aby użyć widoku Oś czasu." />;
-  if (!range) return <EmptyState icon={CalendarRange} title="Brak elementów z ustawioną datą/osią czasu." />;
+  if (!col) return <EmptyState icon={CalendarRange} title={tr('Dodaj kolumnę typu Oś czasu, aby użyć widoku Oś czasu.')} />;
+  if (!range) return <EmptyState icon={CalendarRange} title={tr('Brak elementów z ustawioną datą/osią czasu.')} />;
 
   const totalW = range.days.length * DAY_W;
   const ROW_H = 40;
@@ -133,7 +133,7 @@ export default function TimelineView({ data, config, onUpdateConfig, onOpenItem 
           <div style={{ width: NAME_W + totalW }}>
             {/* Nagłówek osi */}
             <div className="flex bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 sticky top-0">
-              <div className="shrink-0 border-r border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 flex items-center px-3" style={{ width: NAME_W }}>Element</div>
+              <div className="shrink-0 border-r border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 flex items-center px-3" style={{ width: NAME_W }}>{tr('Element')}</div>
               <div className="flex">
                 {range.days.map((d, i) => {
                   const firstOfMonth = d.getDate() === 1 || i === 0;
@@ -154,7 +154,7 @@ export default function TimelineView({ data, config, onUpdateConfig, onOpenItem 
                 const l = statusCol ? findLabel(statusCol, item.cells?.[statusCol.id]) : null;
                 return (
                   <div key={item.id} className="flex items-center border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30" style={{ height: ROW_H }}>
-                    <div className="shrink-0 border-r border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 truncate px-3" style={{ width: NAME_W }}>{item.name || 'Bez nazwy'}</div>
+                    <div className="shrink-0 border-r border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 truncate px-3" style={{ width: NAME_W }}>{item.name || tr('Bez nazwy')}</div>
                     <div className="relative" style={{ width: totalW, height: ROW_H }}>
                       <TimelineBar item={item} start={start} end={end} offset={offset} length={length}
                         color={l ? l.color : '#6366f1'} editable={canUpdate} resizable={col.type === 'timeline'}

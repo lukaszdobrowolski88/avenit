@@ -10,6 +10,7 @@ import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog, promptDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const emptyForm = { name: '', description: '', goal_amount: '', fund_id: '', start_date: '', end_date: '', is_active: true };
 const emptyPledge = { member_id: '', donor_name: '', pledge_amount: '', note: '' };
@@ -32,7 +33,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
 
   const copyEmbed = async (c) => {
     const code = `<iframe src="${window.location.origin}/widget/campaign/${c.id}" width="100%" height="180" style="border:0"></iframe>`;
-    try { await navigator.clipboard.writeText(code); } catch { await promptDialog('Skopiuj kod osadzenia:', code); }
+    try { await navigator.clipboard.writeText(code); } catch { await promptDialog(tr('Skopiuj kod osadzenia:'), code); }
     setCopiedId(c.id);
     setTimeout(() => setCopiedId(v => (v === c.id ? null : v)), 2000);
   };
@@ -67,11 +68,11 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
   useEffect(() => { load(); }, [load]);
 
   const fundOptions = useMemo(() => [
-    { value: '', label: '— bez funduszu —' },
+    { value: '', label: tr('— bez funduszu —') },
     ...(funds || []).map(f => ({ value: f.id, label: f.name })),
   ], [funds]);
   const memberOptions = useMemo(() => [
-    { value: '', label: '— osoba spoza bazy —' },
+    { value: '', label: tr('— osoba spoza bazy —') },
     ...(members || []).map(m => ({ value: m.id, label: memberName(m) })),
   ], [members]);
 
@@ -83,7 +84,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
   };
 
   const save = async () => {
-    if (!form.name.trim()) { toast.error('Podaj nazwę kampanii.'); return; }
+    if (!form.name.trim()) { toast.error(tr('Podaj nazwę kampanii.')); return; }
     setSaving(true);
     try {
       const payload = {
@@ -101,22 +102,22 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
       setModalOpen(false);
       load();
     } catch (err) {
-      toast.error('Nie udało się zapisać kampanii: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać kampanii: {msg}', { msg: err.message || err }));
     } finally { setSaving(false); }
   };
 
   const remove = async (c) => {
-    if (!await confirmDialog(`Usunąć kampanię „${c.name}"? Deklaracje zostaną usunięte.`)) return;
+    if (!await confirmDialog(tr('Usunąć kampanię „{name}"? Deklaracje zostaną usunięte.', { name: c.name }))) return;
     try {
       const { error } = await supabase.from('giving_campaigns').delete().eq('id', c.id);
       if (error) throw error;
       load();
-    } catch (err) { toast.error('Nie udało się usunąć: ' + (err.message || err)); }
+    } catch (err) { toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err })); }
   };
 
   const openPledge = (c) => { setPledgeModal(c); setPledgeForm(emptyPledge); };
   const savePledge = async () => {
-    if (!pledgeForm.pledge_amount || Number(pledgeForm.pledge_amount) <= 0) { toast.error('Podaj kwotę deklaracji.'); return; }
+    if (!pledgeForm.pledge_amount || Number(pledgeForm.pledge_amount) <= 0) { toast.error(tr('Podaj kwotę deklaracji.')); return; }
     try {
       const { error } = await supabase.from('giving_pledges').insert({
         campaign_id: pledgeModal.id, member_id: pledgeForm.member_id || null,
@@ -126,12 +127,12 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
       if (error) throw error;
       setPledgeModal(null);
       load();
-    } catch (err) { toast.error('Nie udało się zapisać deklaracji: ' + (err.message || err)); }
+    } catch (err) { toast.error(tr('Nie udało się zapisać deklaracji: {msg}', { msg: err.message || err })); }
   };
   const removePledge = async (p) => {
-    if (!await confirmDialog('Usunąć deklarację?')) return;
+    if (!await confirmDialog(tr('Usunąć deklarację?'))) return;
     try { await supabase.from('giving_pledges').delete().eq('id', p.id); load(); }
-    catch (err) { toast.error('Błąd: ' + (err.message || err)); }
+    catch (err) { toast.error(tr('Błąd: {msg}', { msg: err.message || err })); }
   };
 
   const pledgeName = (p) => p.member_id && membersById?.[p.member_id] ? memberName(membersById[p.member_id]) : (p.donor_name || '—');
@@ -139,13 +140,13 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">Zbiórki z celem kwotowym i deklaracjami wsparcia.</p>
-        <button data-tour="giving-campaign-new" onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md"><Plus size={16} /> Nowa kampania</button>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Zbiórki z celem kwotowym i deklaracjami wsparcia.')}</p>
+        <button data-tour="giving-campaign-new" onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md"><Plus size={16} /> {tr('Nowa kampania')}</button>
       </div>
 
       {loading ? <Spinner center />
       : campaigns.length === 0 ? (
-        <EmptyState icon={Target} title="Brak kampanii." subtitle="Utwórz pierwszą zbiórkę." className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
+        <EmptyState icon={Target} title={tr('Brak kampanii.')} subtitle={tr('Utwórz pierwszą zbiórkę.')} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {campaigns.map(c => {
@@ -160,12 +161,12 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-gray-900 dark:text-white truncate">{c.name}</h3>
-                      {c.is_active === false && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">zakończona</span>}
+                      {c.is_active === false && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">{tr('zakończona')}</span>}
                     </div>
                     {c.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{c.description}</p>}
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <button onClick={() => copyEmbed(c)} title="Kopiuj kod osadzenia (iframe)" className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700">{copiedId === c.id ? <Check size={15} /> : <Code2 size={15} />}</button>
+                    <button onClick={() => copyEmbed(c)} title={tr('Kopiuj kod osadzenia (iframe)')} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700">{copiedId === c.id ? <Check size={15} /> : <Code2 size={15} />}</button>
                     <button onClick={() => openEdit(c)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
                     <button onClick={() => remove(c)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
                   </div>
@@ -174,24 +175,24 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
                 <div className="mt-4">
                   <div className="flex justify-between text-sm mb-1.5">
                     <span className="font-semibold text-gray-900 dark:text-white">{formatMoney(raised)}</span>
-                    <span className="text-gray-400">z {formatMoney(goal)} ({pct}%)</span>
+                    <span className="text-gray-400">{tr('z {amount}', { amount: formatMoney(goal) })} ({pct}%)</span>
                   </div>
                   <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                     <div className="h-full rounded-full bg-gradient-to-r from-accent-primary to-accent-secondary transition-all" style={{ width: `${pct}%` }} />
                   </div>
                   <div className="flex justify-between mt-2 text-xs text-gray-400">
-                    <span>Zadeklarowano: {formatMoney(pledged)}</span>
+                    <span>{tr('Zadeklarowano:')} {formatMoney(pledged)}</span>
                     {(c.start_date || c.end_date) && <span>{formatDate(c.start_date)} – {formatDate(c.end_date)}</span>}
                   </div>
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs uppercase font-semibold text-gray-400">Deklaracje ({campaignPledges.length})</span>
-                    <button onClick={() => openPledge(c)} className="text-xs text-accent-primary dark:text-accent-primary-light font-medium flex items-center gap-1 hover:underline"><Heart size={13} /> Dodaj</button>
+                    <span className="text-xs uppercase font-semibold text-gray-400">{tr('Deklaracje')} ({campaignPledges.length})</span>
+                    <button onClick={() => openPledge(c)} className="text-xs text-accent-primary dark:text-accent-primary-light font-medium flex items-center gap-1 hover:underline"><Heart size={13} /> {tr('Dodaj')}</button>
                   </div>
                   {campaignPledges.length === 0 ? (
-                    <p className="text-xs text-gray-400">Brak deklaracji.</p>
+                    <p className="text-xs text-gray-400">{tr('Brak deklaracji.')}</p>
                   ) : (
                     <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
                       {campaignPledges.map(p => (
@@ -216,40 +217,40 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
       <Modal
         isOpen={modalOpen}
         onClose={() => !saving && setModalOpen(false)}
-        title={editing ? 'Edytuj kampanię' : 'Nowa kampania'}
+        title={editing ? tr('Edytuj kampanię') : tr('Nowa kampania')}
         footer={<>
-          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
-          <Button data-tour="giving-campaign-save" onClick={save} loading={saving}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>{tr('Anuluj')}</Button>
+          <Button data-tour="giving-campaign-save" onClick={save} loading={saving}>{tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwa</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nazwa')}</label>
                 <input data-tour="giving-campaign-name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Opis')}</label>
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Cel (PLN)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Cel (PLN)')}</label>
                   <input data-tour="giving-campaign-goal" type="number" step="0.01" min="0" value={form.goal_amount} onChange={e => setForm(f => ({ ...f, goal_amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
-                <CustomSelect label="Fundusz" value={form.fund_id} onChange={v => setForm(f => ({ ...f, fund_id: v }))} options={fundOptions} />
+                <CustomSelect label={tr('Fundusz')} value={form.fund_id} onChange={v => setForm(f => ({ ...f, fund_id: v }))} options={fundOptions} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Początek</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Początek')}</label>
                   <DateInput value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Koniec</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Koniec')}</label>
                   <DateInput value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
               <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-                <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="rounded accent-emerald-500" /> Kampania aktywna
+                <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="rounded accent-emerald-500" /> {tr('Kampania aktywna')}
               </label>
             </div>
       </Modal>
@@ -258,21 +259,21 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
       <Modal
         isOpen={!!pledgeModal}
         onClose={() => setPledgeModal(null)}
-        title="Deklaracja wsparcia"
+        title={tr('Deklaracja wsparcia')}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setPledgeModal(null)}>Anuluj</Button>
-          <Button onClick={savePledge}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setPledgeModal(null)}>{tr('Anuluj')}</Button>
+          <Button onClick={savePledge}>{tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Kampania: <b className="text-gray-900 dark:text-white">{pledgeModal?.name}</b></p>
-              <CustomSelect label="Osoba (członek)" value={pledgeForm.member_id} onChange={v => setPledgeForm(f => ({ ...f, member_id: v }))} options={memberOptions} />
+              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Kampania:')} <b className="text-gray-900 dark:text-white">{pledgeModal?.name}</b></p>
+              <CustomSelect label={tr('Osoba (członek)')} value={pledgeForm.member_id} onChange={v => setPledgeForm(f => ({ ...f, member_id: v }))} options={memberOptions} />
               {!pledgeForm.member_id && (
-                <input value={pledgeForm.donor_name} onChange={e => setPledgeForm(f => ({ ...f, donor_name: e.target.value }))} placeholder="Imię i nazwisko" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                <input value={pledgeForm.donor_name} onChange={e => setPledgeForm(f => ({ ...f, donor_name: e.target.value }))} placeholder={tr('Imię i nazwisko')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               )}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Kwota deklaracji (PLN)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kwota deklaracji (PLN)')}</label>
                 <input type="number" step="0.01" min="0" value={pledgeForm.pledge_amount} onChange={e => setPledgeForm(f => ({ ...f, pledge_amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               </div>
             </div>

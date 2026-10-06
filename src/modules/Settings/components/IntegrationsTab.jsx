@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Loader2, Eye, EyeOff, AlertCircle, CheckCircle, MessageSquare, Copy, ExternalLink, Sparkles } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, AlertCircle, CheckCircle, MessageSquare, Copy, ExternalLink, Sparkles, Info } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { useT } from '../../../i18n';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 // Konfiguracja asystenta AI (provider + model + klucz) — zapis do integration_settings
 // (ai_provider/ai_model/ai_api_key/ai_base_url); odczyt serwerowo w fn ai-assist.
@@ -49,8 +49,8 @@ function AiIntegrationSection({ settings, onSaved }) {
         if (error) throw error;
       }
       setKeyDirty(false); setApiKey('');
-      onSaved?.('Zapisano konfigurację asystenta AI.', false);
-    } catch (e) { onSaved?.('Błąd zapisu AI: ' + e.message, true); }
+      onSaved?.(tr('Zapisano konfigurację asystenta AI.'), false);
+    } catch (e) { onSaved?.(tr('Błąd zapisu AI: {msg}', { msg: e.message }), true); }
     finally { setSaving(false); }
   };
 
@@ -59,7 +59,7 @@ function AiIntegrationSection({ settings, onSaved }) {
     try {
       const { data, error } = await supabase.functions.invoke('ai-assist', { body: { task: 'draft_message', input: 'Odpowiedz krótko: DZIAŁA' } });
       if (error || data?.error) setTest({ ok: false, msg: data?.error || error?.message });
-      else setTest({ ok: true, msg: 'Połączenie działa — model odpowiedział.' });
+      else setTest({ ok: true, msg: tr('Połączenie działa — model odpowiedział.') });
     } catch (e) { setTest({ ok: false, msg: e.message }); }
     finally { setTesting(false); }
   };
@@ -134,7 +134,7 @@ const SMSAPI_KEYS = [
   {
     key: 'smsapi_token',
     label: 'Personal Access Token',
-    description: 'OAuth token z panelu SMSAPI (Bearer). Generuj w: ssl.smsapi.pl/react/oauth/manage',
+    description: tr('OAuth token z panelu SMSAPI (Bearer). Generuj w: ssl.smsapi.pl/react/oauth/manage'),
     secret: true,
     placeholder: tr('np. eyJ0eXAi... (wklej cały token)'),
   },
@@ -143,12 +143,12 @@ const SMSAPI_KEYS = [
     label: tr('Domyślny nadawca (Sender ID)'),
     description: tr('Zarejestrowany w SMSAPI. Max 11 znaków alfanumerycznych.'),
     secret: false,
-    placeholder: 'np. Avenit',
+    placeholder: tr('np. Avenit'),
     maxLength: 11,
   },
   {
     key: 'smsapi_api_url',
-    label: 'URL bramki SMSAPI',
+    label: tr('URL bramki SMSAPI'),
     description: tr('Zostaw default lub podmień na sandbox/inny region.'),
     secret: false,
     placeholder: 'https://api.smsapi.pl',
@@ -156,7 +156,7 @@ const SMSAPI_KEYS = [
   {
     key: 'smsapi_webhook_secret',
     label: 'Webhook MO secret',
-    description: 'Sekret w URL webhooka MO (incoming SMS / RSVP).',
+    description: tr('Sekret w URL webhooka MO (incoming SMS / RSVP).'),
     secret: true,
     placeholder: tr('losowy ciąg, np. 32 znaki'),
   },
@@ -185,8 +185,13 @@ export default function IntegrationsTab() {
       .from('integration_settings')
       .select('key, value, description, is_secret, updated_at, updated_by');
     if (error) {
-      console.error('integration_settings fetch error:', error);
-      setMessage({ type: 'error', text: `Błąd: ${error.message}` });
+      // Klucze integracji (SMSAPI) może czytać tylko superadmin — dla pozostałych wyjaśnienie
+      // zamiast surowego „Brak uprawnień do odczytu”.
+      const denied = String(error.code) === '403' || /uprawnie/i.test(error.message || '');
+      if (!denied) console.error('integration_settings fetch error:', error);
+      setMessage(denied
+        ? { type: 'info', text: tr('Klucze integracji (SMS) może zmieniać tylko administrator techniczny platformy.') }
+        : { type: 'error', text: tr('Błąd: {msg}', { msg: error.message }) });
     } else {
       const map = {};
       (data || []).forEach(r => { map[r.key] = r; });
@@ -209,10 +214,10 @@ export default function IntegrationsTab() {
       if (error) throw error;
       setEdits(prev => { const n = { ...prev }; delete n[key]; return n; });
       setRevealed(prev => ({ ...prev, [key]: false }));
-      setMessage({ type: 'success', text: `Zapisano: ${key}` });
+      setMessage({ type: 'success', text: tr('Zapisano: {key}', { key }) });
       await loadSettings();
     } catch (e) {
-      setMessage({ type: 'error', text: `Błąd zapisu: ${e.message}` });
+      setMessage({ type: 'error', text: tr('Błąd zapisu: {msg}', { msg: e.message }) });
     } finally {
       setSaving(s => ({ ...s, [key]: false }));
     }
@@ -230,11 +235,11 @@ export default function IntegrationsTab() {
       });
       if (error) throw error;
       if (data?.error === 'invalid_phone') {
-        setTestResult({ ok: true, msg: 'Token poprawny (edge function odpowiada).' });
+        setTestResult({ ok: true, msg: tr('Token poprawny (edge function odpowiada).') });
       } else if (data?.error?.includes('token') || data?.error?.includes('not configured')) {
         setTestResult({ ok: false, msg: data.error });
       } else {
-        setTestResult({ ok: true, msg: `Edge function odpowiada: ${JSON.stringify(data)}` });
+        setTestResult({ ok: true, msg: tr('Edge function odpowiada: {data}', { data: JSON.stringify(data) }) });
       }
     } catch (e) {
       setTestResult({ ok: false, msg: e.message });
@@ -248,7 +253,7 @@ export default function IntegrationsTab() {
     const url = `${apiUrl}/api/fn/sms-incoming-webhook${secret ? `?secret=${secret}` : ''}`;
     try {
       await navigator.clipboard.writeText(url);
-      setMessage({ type: 'success', text: 'Skopiowano URL webhooka' });
+      setMessage({ type: 'success', text: tr('Skopiowano URL webhooka') });
     } catch {
       setMessage({ type: 'error', text: tr('Nie udało się skopiować') });
     }
@@ -262,9 +267,11 @@ export default function IntegrationsTab() {
         <div className={`p-3 rounded-lg flex items-center gap-2 cursor-pointer ${
           message.type === 'success'
             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+            : message.type === 'info'
+              ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
         }`} onClick={() => setMessage(null)}>
-          {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+          {message.type === 'success' ? <CheckCircle size={18} /> : message.type === 'info' ? <Info size={18} /> : <AlertCircle size={18} />}
           {message.text}
         </div>
       )}
@@ -301,7 +308,7 @@ export default function IntegrationsTab() {
               ? meta.secret
                 ? `••••••••${currentValue.slice(-4)}`
                 : currentValue
-              : '(nie ustawione)';
+              : tr('(nie ustawione)');
 
             return (
               <div key={meta.key} className="border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
@@ -314,7 +321,7 @@ export default function IntegrationsTab() {
                     <button
                       onClick={() => setRevealed(r => ({ ...r, [meta.key]: !r[meta.key] }))}
                       className="p-1.5 text-gray-400 hover:text-gray-600 rounded"
-                      title={isRevealed ? 'Ukryj' : tr('Pokaż')}
+                      title={isRevealed ? tr('Ukryj') : tr('Pokaż')}
                     >
                       {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -338,13 +345,13 @@ export default function IntegrationsTab() {
                       className="flex items-center gap-1.5 px-3 py-2 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50"
                     >
                       {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                      Zapisz
+                      {tr('Zapisz')}
                     </button>
                     <button
                       onClick={() => setEdits(p => { const n = { ...p }; delete n[meta.key]; return n; })}
                       className="px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
                     >
-                      Anuluj
+                      {tr('Anuluj')}
                     </button>
                   </div>
                 ) : (
@@ -360,15 +367,15 @@ export default function IntegrationsTab() {
                       onClick={() => setEdits(p => ({ ...p, [meta.key]: '' }))}
                       className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                     >
-                      {isSet ? tr('Zmień') : 'Ustaw'}
+                      {isSet ? tr('Zmień') : tr('Ustaw')}
                     </button>
                   </div>
                 )}
 
                 {row?.updated_at && isSet && (
                   <p className="text-xs text-gray-400 mt-1">
-                    Zaktualizowano {new Date(row.updated_at).toLocaleString('pl-PL')}
-                    {row.updated_by && ` przez ${row.updated_by}`}
+                    {tr('Zaktualizowano')} {new Date(row.updated_at).toLocaleString(appLocale())}
+                    {row.updated_by && ` ${tr('przez {who}', { who: row.updated_by })}`}
                   </p>
                 )}
               </div>
@@ -380,7 +387,7 @@ export default function IntegrationsTab() {
             <div className="flex items-start gap-2">
               <ExternalLink size={16} className="text-blue-600 dark:text-blue-400 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">URL webhooka MO (do wklejenia w panelu SMSAPI)</p>
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{tr('URL webhooka MO (do wklejenia w panelu SMSAPI)')}</p>
                 <code className="text-xs text-blue-700 dark:text-blue-400 break-all block mt-1 font-mono">
                   {apiUrl}/api/fn/sms-incoming-webhook
                   {settings.smsapi_webhook_secret?.value ? `?secret=${'•'.repeat(8)}` : ''}
@@ -389,7 +396,7 @@ export default function IntegrationsTab() {
                   onClick={copyWebhookUrl}
                   className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-accent-primary text-white rounded-lg hover:opacity-90"
                 >
-                  <Copy size={12} /> Kopiuj URL
+                  <Copy size={12} /> {tr('Kopiuj URL')}
                 </button>
               </div>
             </div>
@@ -407,7 +414,7 @@ export default function IntegrationsTab() {
               className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg disabled:opacity-50"
             >
               {testing ? <Loader2 size={14} className="animate-spin" /> : null}
-              Testuj
+              {tr('Testuj')}
             </button>
           </div>
 

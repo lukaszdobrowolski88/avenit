@@ -5,7 +5,7 @@ import {
   TrendingUp, Calendar, Users, Download, ChevronDown,
   BarChart3, Sparkles, Mail
 } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 export default function CampaignStats({ campaigns }) {
   const t = useT();
@@ -61,7 +61,7 @@ export default function CampaignStats({ campaigns }) {
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('pl-PL', {
+    return new Date(dateString).toLocaleDateString(appLocale(), {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
@@ -102,7 +102,7 @@ export default function CampaignStats({ campaigns }) {
           </div>
         </div>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-          Brak danych statystycznych
+          {tr('Brak danych statystycznych')}
         </h3>
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
           {tr('Wyślij swój pierwszy mail, aby zobaczyć szczegółowe statystyki')}
@@ -128,10 +128,10 @@ export default function CampaignStats({ campaigns }) {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Analityka maili
+              {tr('Analityka maili')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {filteredCampaigns.length} {filteredCampaigns.length === 1 ? 'mail' : filteredCampaigns.length < 5 ? 'maile' : 'maili'}
+              {filteredCampaigns.length} {filteredCampaigns.length === 1 ? tr('mail') : filteredCampaigns.length < 5 ? tr('maile') : tr('maili')}
             </p>
           </div>
         </div>
@@ -140,9 +140,9 @@ export default function CampaignStats({ campaigns }) {
           {/* Time filter */}
           <div className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-1 border border-gray-200/50 dark:border-gray-700/50">
             {[
-              { value: 'week', label: '7 dni' },
-              { value: 'month', label: '30 dni' },
-              { value: 'all', label: 'Wszystko' }
+              { value: 'week', label: tr('7 dni') },
+              { value: 'month', label: tr('30 dni') },
+              { value: 'all', label: tr('Wszystko') }
             ].map(option => (
               <button
                 key={option.value}
@@ -163,7 +163,7 @@ export default function CampaignStats({ campaigns }) {
             className="group flex items-center gap-2 px-4 py-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 rounded-xl transition-all border border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark/50 hover:shadow-md"
           >
             <Download size={16} className="group-hover:text-accent-primary-light transition-colors" />
-            <span className="hidden sm:inline font-medium">Eksport CSV</span>
+            <span className="hidden sm:inline font-medium">{tr('Eksport CSV')}</span>
           </button>
         </div>
       </div>
@@ -178,14 +178,14 @@ export default function CampaignStats({ campaigns }) {
         />
         <StatCard
           icon={Users}
-          label="Dostarczone"
+          label={tr('Dostarczone')}
           value={overallStats.totalDelivered}
           subValue={`${overallStats.deliveryRate}%`}
           color="emerald"
         />
         <StatCard
           icon={Eye}
-          label="Otwarte"
+          label={tr('Otwarte')}
           value={overallStats.totalOpened}
           subValue={`${overallStats.openRate}%`}
           color="purple"
@@ -199,13 +199,13 @@ export default function CampaignStats({ campaigns }) {
         />
         <StatCard
           icon={AlertTriangle}
-          label="Odbite"
+          label={tr('Odbite')}
           value={overallStats.totalBounced}
           color="amber"
         />
         <StatCard
           icon={UserMinus}
-          label="Wypisani"
+          label={tr('Wypisani')}
           value={overallStats.totalUnsubscribed}
           color="red"
         />
@@ -249,7 +249,7 @@ export default function CampaignStats({ campaigns }) {
                       </span>
                       <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full">
                         <Users size={12} />
-                        {campaign.total_recipients} odbiorców
+                        {tr('{n} odbiorców', { n: campaign.total_recipients })}
                       </span>
                     </div>
                   </div>
@@ -286,12 +286,12 @@ export default function CampaignStats({ campaigns }) {
                   <div className="mt-5 pt-5 border-t border-gray-200/50 dark:border-gray-700/50">
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                       <MiniStat label={tr('Wysłane')} value={campaign.sent_count || 0} color="blue" />
-                      <MiniStat label="Dostarczone" value={campaign.delivered_count || 0} color="emerald" />
-                      <MiniStat label="Otwarte" value={campaign.opened_count || 0} color="purple" />
+                      <MiniStat label={tr('Dostarczone')} value={campaign.delivered_count || 0} color="emerald" />
+                      <MiniStat label={tr('Otwarte')} value={campaign.opened_count || 0} color="purple" />
                       <MiniStat label={tr('Kliknięte')} value={campaign.clicked_count || 0} color="pink" />
-                      <MiniStat label="Odbite" value={campaign.bounced_count || 0} color="amber" />
+                      <MiniStat label={tr('Odbite')} value={campaign.bounced_count || 0} color="amber" />
                       <MiniStat label={tr('Błędy')} value={campaign.failed_count || 0} color="red" />
-                      <MiniStat label="Wypisani" value={campaign.unsubscribed_count || 0} color="gray" />
+                      <MiniStat label={tr('Wypisani')} value={campaign.unsubscribed_count || 0} color="gray" />
                     </div>
 
                     {/* Progress bar */}
@@ -305,23 +305,23 @@ export default function CampaignStats({ campaigns }) {
                         <div
                           className="bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500"
                           style={{ width: `${((campaign.delivered_count || 0) - (campaign.opened_count || 0)) / (campaign.total_recipients || 1) * 100}%` }}
-                          title="Dostarczone (nie otwarte)"
+                          title={tr('Dostarczone (nie otwarte)')}
                         />
                         <div
                           className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light transition-all duration-500"
                           style={{ width: `${(campaign.bounced_count || 0) / (campaign.total_recipients || 1) * 100}%` }}
-                          title="Odbite"
+                          title={tr('Odbite')}
                         />
                       </div>
                       <div className="flex flex-wrap justify-center gap-4 mt-3 text-xs text-gray-500">
                         <span className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full shadow-sm" /> Otwarte
+                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full shadow-sm" /> {tr('Otwarte')}
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full shadow-sm" /> Dostarczone
+                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full shadow-sm" /> {tr('Dostarczone')}
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light rounded-full shadow-sm" /> Odbite
+                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light rounded-full shadow-sm" /> {tr('Odbite')}
                         </span>
                       </div>
                     </div>

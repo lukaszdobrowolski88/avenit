@@ -5,6 +5,7 @@ import SermonPlayer from '../components/SermonPlayer';
 import { formatDate } from '../lib/sermonsApi';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
+import { tr } from '../../../i18n';
 
 export default function PlayerTab({ sermons, loading }) {
   const [selectedId, setSelectedId] = useState('');
@@ -18,7 +19,7 @@ export default function PlayerTab({ sermons, loading }) {
 
   const options = useMemo(() => (sermons || []).map(s => ({
     value: s.id,
-    label: `${s.title}${s.sermon_date ? ' — ' + formatDate(s.sermon_date) : ''}${s.is_published ? '' : ' (szkic)'}`,
+    label: `${s.title}${s.sermon_date ? ' — ' + formatDate(s.sermon_date) : ''}${s.is_published ? '' : ` (${tr('szkic')})`}`,
   })), [sermons]);
 
   const selected = useMemo(() => (sermons || []).find(s => s.id === selectedId) || null, [sermons, selectedId]);
@@ -30,7 +31,7 @@ export default function PlayerTab({ sermons, loading }) {
   if ((sermons || []).length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-        <EmptyState icon={PlayCircle} title="Brak kazań do odtworzenia." subtitle={'Dodaj kazanie w zakładce „Kazania".'} />
+        <EmptyState icon={PlayCircle} title={tr('Brak kazań do odtworzenia.')} subtitle={tr('Dodaj kazanie w zakładce „Kazania".')} />
       </div>
     );
   }
@@ -38,7 +39,7 @@ export default function PlayerTab({ sermons, loading }) {
   return (
     <div className="space-y-4">
       <div className="max-w-md">
-        <CustomSelect label="Wybierz kazanie" value={selectedId} onChange={setSelectedId} options={options} icon={PlayCircle} />
+        <CustomSelect label={tr('Wybierz kazanie')} value={selectedId} onChange={setSelectedId} options={options} icon={PlayCircle} />
       </div>
       {selected && <SermonPlayer sermon={selected} />}
     </div>

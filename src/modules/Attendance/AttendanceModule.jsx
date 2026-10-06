@@ -6,6 +6,7 @@ import { useCampusQuery } from '../../hooks/useCampusQuery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import SessionsTab from './tabs/SessionsTab';
 import TrendsTab from './tabs/TrendsTab';
+import { tr } from '../../i18n';
 
 const TABS = [
   { id: 'sessions', label: 'Sesje', icon: ListChecks },
@@ -47,10 +48,10 @@ export default function AttendanceModule() {
 
   return (
     <div className="space-y-6">
-      <PageHeader moduleKey="attendance" icon={ClipboardCheck} title="Frekwencja" subtitle="Obecność dorosłych na nabożeństwach, spotkaniach i modlitwach — z analityką trendów" />
+      <PageHeader moduleKey="attendance" icon={ClipboardCheck} title={tr('Frekwencja')} subtitle={tr('Obecność dorosłych na nabożeństwach, spotkaniach i modlitwach — z analityką trendów')} />
 
       {/* Zakładki */}
-      <ResponsiveTabs moduleKey="attendance" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="attendance" tabs={TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

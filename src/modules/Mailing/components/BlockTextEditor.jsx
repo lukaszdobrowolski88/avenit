@@ -22,7 +22,7 @@ export default function BlockTextEditor({
   content,
   onChange,
   onBlur,
-  placeholder = 'Wpisz tekst...',
+  placeholder = tr('Wpisz tekst...'),
   showHeadings = true,
   showLists = true,
   showAlignment = true,
@@ -81,7 +81,7 @@ export default function BlockTextEditor({
     if (!editor) return;
 
     const previousUrl = editor.getAttributes('link').href;
-    const url = await promptDialog('URL linku:', previousUrl || 'https://');
+    const url = await promptDialog(tr('URL linku:'), previousUrl || 'https://');
 
     if (url === null) return;
     if (url === '') {
@@ -122,7 +122,7 @@ export default function BlockTextEditor({
             <ToolbarButton
               onClick={() => editor.chain().focus().undo().run()}
               disabled={!editor.can().undo()}
-              title="Cofnij"
+              title={tr('Cofnij')}
             >
               <Undo size={15} />
             </ToolbarButton>
@@ -140,14 +140,14 @@ export default function BlockTextEditor({
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleBold().run()}
               isActive={editor.isActive('bold')}
-              title="Pogrubienie (Ctrl+B)"
+              title={tr('Pogrubienie (Ctrl+B)')}
             >
               <Bold size={15} />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleItalic().run()}
               isActive={editor.isActive('italic')}
-              title="Kursywa (Ctrl+I)"
+              title={tr('Kursywa (Ctrl+I)')}
             >
               <Italic size={15} />
             </ToolbarButton>
@@ -221,7 +221,7 @@ export default function BlockTextEditor({
               <ToolbarButton
                 onClick={() => editor.chain().focus().setTextAlign('justify').run()}
                 isActive={editor.isActive({ textAlign: 'justify' })}
-                title="Wyjustuj"
+                title={tr('Wyjustuj')}
               >
                 <AlignJustify size={15} />
               </ToolbarButton>
@@ -234,14 +234,14 @@ export default function BlockTextEditor({
               <ToolbarButton
                 onClick={() => editor.chain().focus().toggleBulletList().run()}
                 isActive={editor.isActive('bulletList')}
-                title="Lista punktowana"
+                title={tr('Lista punktowana')}
               >
                 <List size={15} />
               </ToolbarButton>
               <ToolbarButton
                 onClick={() => editor.chain().focus().toggleOrderedList().run()}
                 isActive={editor.isActive('orderedList')}
-                title="Lista numerowana"
+                title={tr('Lista numerowana')}
               >
                 <ListOrdered size={15} />
               </ToolbarButton>
@@ -253,13 +253,13 @@ export default function BlockTextEditor({
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleBlockquote().run()}
               isActive={editor.isActive('blockquote')}
-              title="Cytat"
+              title={tr('Cytat')}
             >
               <Quote size={15} />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => editor.chain().focus().setHorizontalRule().run()}
-              title="Linia pozioma"
+              title={tr('Linia pozioma')}
             >
               <Minus size={15} />
             </ToolbarButton>
@@ -270,7 +270,7 @@ export default function BlockTextEditor({
             <ToolbarButton
               onClick={setLink}
               isActive={editor.isActive('link')}
-              title="Dodaj link"
+              title={tr('Dodaj link')}
             >
               <LinkIcon size={15} />
             </ToolbarButton>
@@ -290,7 +290,7 @@ export default function BlockTextEditor({
           <div className="flex flex-wrap items-center gap-1.5 mb-2">
             <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
               <Palette size={12} />
-              Kolor:
+              {tr('Kolor:')}
             </span>
             <div className="flex flex-wrap items-center gap-0.5">
               {COLORS.map((color) => (
@@ -310,7 +310,7 @@ export default function BlockTextEditor({
                       : 'border-gray-300 dark:border-gray-600'
                   }`}
                   style={{ backgroundColor: color.value || '#ffffff' }}
-                  title={color.name}
+                  title={tr(color.name)}
                 />
               ))}
             </div>
@@ -322,7 +322,7 @@ export default function BlockTextEditor({
           <div className="flex flex-col gap-1.5">
             <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
               <Sparkles size={12} />
-              Zmienne:
+              {tr('Zmienne:')}
             </span>
             <div className="flex flex-wrap items-center gap-1">
               {EMAIL_VARIABLES.map((v) => (
@@ -330,7 +330,7 @@ export default function BlockTextEditor({
                   key={v.key}
                   onClick={() => insertVariable(v.key)}
                   className="px-1.5 py-0.5 text-[10px] font-medium bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/50 dark:hover:to-accent-secondary-darkest/50 transition-all border border-accent-primary-lighter/50 dark:border-accent-primary/30"
-                  title={v.description}
+                  title={tr(v.description)}
                 >
                   {v.key}
                 </button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 import { stopOutside } from './pickers/useAnchoredPopover';
 
 // „YYYY-MM-DD” (albo ISO z API „…T00:00:00.000Z”) → data lokalna, bez przesunięcia strefy.
@@ -110,10 +110,10 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const blanks = Array.from({ length: startDay }, (_, i) => i);
 
-  const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
-  const displayValue = parseYmd(value)?.toLocaleDateString('pl-PL') || '';
+  const monthName = viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
+  const displayValue = parseYmd(value)?.toLocaleDateString(appLocale()) || '';
   const decadeStart = Math.floor(viewDate.getFullYear() / 12) * 12;
-  const monthShort = Array.from({ length: 12 }, (_, i) => new Date(2000, i, 1).toLocaleDateString('pl-PL', { month: 'short' }));
+  const monthShort = Array.from({ length: 12 }, (_, i) => new Date(2000, i, 1).toLocaleDateString(appLocale(), { month: 'short' }));
   const selDate = parseYmd(value);
   const todayYmd = toYmd(new Date());
 

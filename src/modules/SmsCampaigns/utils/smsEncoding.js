@@ -2,6 +2,7 @@
 // Mirror logiki z supabase/functions/_shared/sms.ts (kopia, bo Vite vs Deno bez bundlera).
 
 import { PRICE_PER_PART } from '../constants';
+import { appLocale } from '../../../i18n';
 
 const GSM7_BASE =
   '@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà';
@@ -48,5 +49,5 @@ export function estimateCost(text, recipients, pricePerPart = PRICE_PER_PART) {
 
 export function formatPLN(value) {
   if (value == null || isNaN(value)) return '—';
-  return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value);
+  return new Intl.NumberFormat(appLocale(), { style: 'currency', currency: 'PLN' }).format(value);
 }

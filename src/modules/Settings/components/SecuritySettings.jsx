@@ -13,7 +13,7 @@ export default function SecuritySettings({ get, save }) {
 
   return (
     <div className="max-w-3xl">
-      <SettingsCard title="Uwierzytelnianie" description={tr('Zasady logowania dla wszystkich użytkowników.')} icon={ShieldCheck}>
+      <SettingsCard title={tr('Uwierzytelnianie')} description={tr('Zasady logowania dla wszystkich użytkowników.')} icon={ShieldCheck}>
         <SettingRow label={tr('Wymuś 2FA dla wszystkich')} hint={tr('Każdy użytkownik musi skonfigurować weryfikację dwuetapową')}>
           <Toggle checked={bool('sec_force_2fa')} onChange={(v) => save('sec_force_2fa', String(v))} />
         </SettingRow>
@@ -35,21 +35,21 @@ export default function SecuritySettings({ get, save }) {
             ]}
           />
         </SettingRow>
-        <SettingRow label="Wymagaj cyfry i wielkiej litery" hint={tr('Silniejsze hasła')} last>
+        <SettingRow label={tr('Wymagaj cyfry i wielkiej litery')} hint={tr('Silniejsze hasła')} last>
           <Toggle checked={bool('sec_password_complex')} onChange={(v) => save('sec_password_complex', String(v))} />
         </SettingRow>
       </SettingsCard>
 
-      <SettingsCard title="Sesje" description={tr('Zarządzanie aktywnymi sesjami użytkowników.')} icon={Clock}>
-        <SettingRow label="Automatyczne wylogowanie" hint={tr('Po okresie bezczynności')} last>
+      <SettingsCard title={tr('Sesje')} description={tr('Zarządzanie aktywnymi sesjami użytkowników.')} icon={Clock}>
+        <SettingRow label={tr('Automatyczne wylogowanie')} hint={tr('Po okresie bezczynności')} last>
           <SelectSetting
             value={get('sec_session_timeout') || '0'}
             onChange={(v) => save('sec_session_timeout', v)}
             options={[
-              { value: '0', label: 'Nigdy' },
-              { value: '30', label: 'Po 30 min' },
-              { value: '60', label: 'Po 1 godz.' },
-              { value: '480', label: 'Po 8 godz.' },
+              { value: '0', label: tr('Nigdy') },
+              { value: '30', label: tr('Po 30 min') },
+              { value: '60', label: tr('Po 1 godz.') },
+              { value: '480', label: tr('Po 8 godz.') },
             ]}
           />
         </SettingRow>
@@ -58,7 +58,7 @@ export default function SecuritySettings({ get, save }) {
       <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40">
         <Lock size={18} className="text-blue-500 shrink-0 mt-0.5" />
         <p className="text-sm text-blue-700 dark:text-blue-300">
-          Hasła są przechowywane w formie zahashowanej (bcrypt). Avenit nigdy nie przechowuje haseł w postaci jawnej.
+          {tr('Hasła są przechowywane w formie zahashowanej (bcrypt). Avenit nigdy nie przechowuje haseł w postaci jawnej.')}
         </p>
       </div>
     </div>

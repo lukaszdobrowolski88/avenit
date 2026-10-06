@@ -1,3 +1,4 @@
+import { appLocale } from '../../../i18n';
 // Helpery modułu Służby (Serve): dostępność wolontariuszy + raport CCLI
 
 export function memberName(m) {
@@ -20,7 +21,7 @@ export function programLabel(p) {
 export function formatDate(dateStr) {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleDateString('pl-PL');
+    return new Date(dateStr).toLocaleDateString(appLocale());
   } catch {
     return dateStr;
   }

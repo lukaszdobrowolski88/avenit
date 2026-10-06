@@ -16,6 +16,7 @@ import {
   CalendarRange,
   ImageIcon
 } from 'lucide-react';
+import { appLocale } from '../../../i18n';
 
 export const FIELD_TYPES = {
   text: {
@@ -764,7 +765,7 @@ export function calculatePriceBreakdown(fields, answers, settings) {
 
 // Funkcja formatująca cenę
 export function formatPrice(amount, currency = 'PLN') {
-  return new Intl.NumberFormat('pl-PL', {
+  return new Intl.NumberFormat(appLocale(), {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 2

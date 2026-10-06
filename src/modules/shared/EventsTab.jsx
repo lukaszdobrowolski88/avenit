@@ -16,7 +16,7 @@ import EmptyState from '../../components/EmptyState';
 import HomeGroupVisibilityPicker, { buildHgSegments, segmentsToVisKeys } from '../Events/HomeGroupVisibilityPicker';
 import { useCan } from '../../components/Can';
 import { useT } from '../../i18n';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { confirmDialog } from '../../lib/dialog';
 
@@ -83,7 +83,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
     setIsOpen(false);
   };
 
-  const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+  const monthName = viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
   const startDay = (new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay() + 6) % 7;
 
@@ -100,7 +100,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
+            {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -162,9 +162,9 @@ const MINISTRY_CONFIG = {
     defaultType: 'proba',
     types: [
       { value: 'proba', label: tr('Próba') },
-      { value: 'koncert', label: 'Koncert' },
+      { value: 'koncert', label: tr('Koncert') },
       { value: 'nabozesnstwo', label: tr('Nabożeństwo') },
-      { value: 'warsztat', label: 'Warsztat' },
+      { value: 'warsztat', label: tr('Warsztat') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'purple'
@@ -175,9 +175,9 @@ const MINISTRY_CONFIG = {
     title: 'Media Team',
     defaultType: 'produkcja',
     types: [
-      { value: 'produkcja', label: 'Produkcja' },
-      { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'streaming', label: 'Streaming' },
+      { value: 'produkcja', label: tr('Produkcja') },
+      { value: 'szkolenie', label: tr('Szkolenie') },
+      { value: 'streaming', label: tr('Streaming') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'orange'
@@ -189,7 +189,7 @@ const MINISTRY_CONFIG = {
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: tr('Spotkanie') },
-      { value: 'szkolenie', label: 'Szkolenie' },
+      { value: 'szkolenie', label: tr('Szkolenie') },
       { value: 'integracja', label: tr('Integracja') },
       { value: 'inne', label: tr('Inne') }
     ],
@@ -202,9 +202,9 @@ const MINISTRY_CONFIG = {
     defaultType: 'zajecia',
     types: [
       { value: 'zajecia', label: tr('Zajęcia') },
-      { value: 'wycieczka', label: 'Wycieczka' },
-      { value: 'warsztat', label: 'Warsztat' },
-      { value: 'przedstawienie', label: 'Przedstawienie' },
+      { value: 'wycieczka', label: tr('Wycieczka') },
+      { value: 'warsztat', label: tr('Warsztat') },
+      { value: 'przedstawienie', label: tr('Przedstawienie') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'yellow'
@@ -212,12 +212,12 @@ const MINISTRY_CONFIG = {
   mlodziezowka: {
     tableName: 'events', teamType: 'mlodziezowka',
     icon: '🔥',
-    title: 'Młodzieżówka',
+    title: tr('Młodzieżówka'),
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: tr('Spotkanie') },
       { value: 'wyjazd', label: tr('Wyjazd') },
-      { value: 'warsztat', label: 'Warsztat' },
+      { value: 'warsztat', label: tr('Warsztat') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'pink'
@@ -225,12 +225,12 @@ const MINISTRY_CONFIG = {
   homegroups: {
     tableName: 'module_events', teamType: 'homegroups',
     icon: '🏠',
-    title: 'Grupy Domowe',
+    title: tr('Grupy Domowe'),
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: tr('Spotkanie') },
       { value: 'integracja', label: tr('Integracja') },
-      { value: 'szkolenie', label: 'Szkolenie' },
+      { value: 'szkolenie', label: tr('Szkolenie') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'blue'
@@ -249,12 +249,12 @@ function getModuleConfig(ministry) {
   return {
     tableName: 'module_events', teamType: ministry,
     icon: '📅',
-    title: 'Wydarzenia',
+    title: tr('Wydarzenia'),
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: t('Spotkanie') },
-      { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'warsztat', label: 'Warsztat' },
+      { value: 'szkolenie', label: tr('Szkolenie') },
+      { value: 'warsztat', label: tr('Warsztat') },
       { value: 'wydarzenie', label: t('Wydarzenie') },
       { value: 'inne', label: t('Inne') }
     ],
@@ -321,10 +321,10 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
       title={form.id ? tr('Edytuj wydarzenie') : tr('Nowe wydarzenie')}
       footer={<>
         {form.id && onDelete && (
-          <Button variant="danger" icon={Trash2} onClick={() => onDelete(form.id)} className="mr-auto">Usuń</Button>
+          <Button variant="danger" icon={Trash2} onClick={() => onDelete(form.id)} className="mr-auto">{tr('Usuń')}</Button>
         )}
         <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
-        <Button icon={Save} onClick={handleSubmit}>Zapisz</Button>
+        <Button icon={Save} onClick={handleSubmit}>{tr('Zapisz')}</Button>
       </>}
     >
       <div className="p-6 space-y-4">
@@ -364,7 +364,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
               <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={form.max_participants || ''} onChange={e => setForm({...form, max_participants: e.target.value})} />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Typ wydarzenia</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Typ wydarzenia')}</label>
               <CustomSelect
                 value={form.event_type}
                 onChange={val => setForm({...form, event_type: val})}
@@ -440,11 +440,11 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     const segs = Array.isArray(ev.visibility_segments) ? ev.visibility_segments : [];
     const parts = [];
     segs.forEach((s) => {
-      if (s?.type === 'home_group_member') parts.push('Wszyscy członkowie');
-      else if (s?.type === 'home_group_coordinator') parts.push('Koordynatorzy');
+      if (s?.type === 'home_group_member') parts.push(tr('Wszyscy członkowie'));
+      else if (s?.type === 'home_group_coordinator') parts.push(tr('Koordynatorzy'));
       else if (s?.type === 'home_group_leader') {
-        if (Array.isArray(s.values) && s.values.length) parts.push('Liderzy: ' + s.values.map(homeGroupName).filter(Boolean).join(', '));
-        else parts.push('Wszyscy liderzy');
+        if (Array.isArray(s.values) && s.values.length) parts.push(tr('Liderzy: {names}', { names: s.values.map(homeGroupName).filter(Boolean).join(', ') }));
+        else parts.push(tr('Wszyscy liderzy'));
       } else if (s?.type === 'home_group' && Array.isArray(s.values)) parts.push(s.values.map(homeGroupName).filter(Boolean).join(', '));
     });
     if (!parts.length && ev.home_group_id) return homeGroupName(ev.home_group_id);
@@ -572,7 +572,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     }
 
     if (error) {
-      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
     } else {
       setShowModal(null);
       fetchEvents();
@@ -670,7 +670,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       <div className="p-8 text-center">
         <div className="max-w-2xl mx-auto bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-2">
-            Tabela nie istnieje
+            {tr('Tabela nie istnieje')}
           </h3>
           <p className="text-yellow-700 dark:text-yellow-300 mb-4">
             {tr('Ta funkcja wymaga tabeli, której nie ma jeszcze w bazie danych. Skontaktuj się z administratorem.')}
@@ -684,11 +684,11 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           <button
             onClick={() => {
               navigator.clipboard.writeText(sqlScript);
-              toast.success('Skopiowano do schowka!');
+              toast.success(tr('Skopiowano do schowka!'));
             }}
             className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition"
           >
-            Skopiuj SQL
+            {tr('Skopiuj SQL')}
           </button>
           <button
             onClick={fetchEvents}
@@ -733,7 +733,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
           >
-            <option value="">Wszystkie typy</option>
+            <option value="">{tr('Wszystkie typy')}</option>
             {eventTypes.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
@@ -780,7 +780,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           {monthKeys.map((monthKey) => {
             const monthEvents = eventsByMonth[monthKey];
             const [year, month] = monthKey.split('-');
-            const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+            const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
 
             return (
               <div key={monthKey}>
@@ -801,7 +801,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                         <div className="flex items-start justify-between gap-2 mb-3">
                           <div className={`bg-gradient-to-br ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white rounded-xl px-3 py-2 text-center min-w-[56px]`}>
                             <div className="text-xl font-bold leading-none">{date.getDate()}</div>
-                            <div className="text-[10px] uppercase opacity-90 mt-0.5">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
+                            <div className="text-[10px] uppercase opacity-90 mt-0.5">{date.toLocaleDateString(appLocale(), { weekday: 'short' })}</div>
                           </div>
                           <span className={`px-2 py-1 text-[11px] rounded-full font-medium bg-gradient-to-r ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white shrink-0`}>
                             {getTypeLabel(ev.event_type)}
@@ -814,7 +814,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-xs text-gray-500 dark:text-gray-400">
                           {timeStr && <span className="flex items-center gap-1"><Clock size={13} /> {timeStr}{ev.end_time ? ` - ${ev.end_time}` : ''}</span>}
                           {ev.location && <span className="flex items-center gap-1"><MapPin size={13} /> {ev.location}</span>}
-                          {ev.max_participants && <span className="flex items-center gap-1"><Users size={13} /> max. {ev.max_participants}</span>}
+                          {ev.max_participants && <span className="flex items-center gap-1"><Users size={13} /> {tr('max.')} {ev.max_participants}</span>}
                           {isHomeGroups && visBadge(ev) && <span className="flex items-center gap-1 text-accent-primary"><Home size={13} /> {visBadge(ev)}</span>}
                         </div>
 

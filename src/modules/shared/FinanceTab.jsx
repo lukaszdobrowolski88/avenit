@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ChevronDown, ChevronUp, FileText, Wallet } from 'lucide-react';
 import { useT } from '../../i18n';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import TabHeader from '../../components/TabHeader';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
@@ -150,9 +150,9 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
               <THead>
                 <tr>
                   <TH>{t('Opis kosztu')}</TH>
-                  <TH align="right">Plan (PLN)</TH>
-                  <TH align="right">Wykorzystano (PLN)</TH>
-                  <TH align="center">% Realizacji</TH>
+                  <TH align="right">{tr('Plan (PLN)')}</TH>
+                  <TH align="right">{tr('Wykorzystano (PLN)')}</TH>
+                  <TH align="center">{tr('% Realizacji')}</TH>
                   <TH align="right">{t('Pozostało')}</TH>
                 </tr>
               </THead>
@@ -171,7 +171,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                       <TR>
                         <TD className="text-gray-900 dark:text-white">{item.description}</TD>
                         <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                          {planned.toLocaleString('pl-PL')} zł
+                          {planned.toLocaleString(appLocale())} zł
                         </TD>
                         <TD
                           align="right"
@@ -179,7 +179,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                           className="font-medium text-gray-900 dark:text-white whitespace-nowrap cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
                           onClick={() => toggleExpand(item.id)}
                         >
-                          {spent.toLocaleString('pl-PL')} zł
+                          {spent.toLocaleString(appLocale())} zł
                           {expandedItems[item.id] ? (
                             <ChevronUp size={16} className="inline ml-1" />
                           ) : (
@@ -200,7 +200,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                           </div>
                         </TD>
                         <TD align="right" numeric className={`font-semibold whitespace-nowrap ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {remaining.toLocaleString('pl-PL')} zł
+                          {remaining.toLocaleString(appLocale())} zł
                         </TD>
                       </TR>
 
@@ -211,7 +211,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                             {relatedExpenses.length > 0 ? (
                               <div className="space-y-2">
                                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                  Wydatki: {item.description}
+                                  {tr('Wydatki:')} {item.description}
                                 </p>
                                 <div className="space-y-1">
                                   {relatedExpenses.map((expense) => (
@@ -222,7 +222,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                                       <div className="flex flex-col">
                                         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Data')}</span>
                                         <span className="text-gray-900 dark:text-white">
-                                          {new Date(expense.payment_date).toLocaleDateString('pl-PL')}
+                                          {new Date(expense.payment_date).toLocaleDateString(appLocale())}
                                         </span>
                                       </div>
                                       <div className="flex flex-col">
@@ -232,7 +232,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                                       <div className="flex flex-col">
                                         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kwota')}</span>
                                         <span className="font-bold text-gray-900 dark:text-white">
-                                          {Number(expense.amount || 0).toLocaleString('pl-PL')} zł
+                                          {Number(expense.amount || 0).toLocaleString(appLocale())} zł
                                         </span>
                                       </div>
                                       <div className="flex flex-col">
@@ -250,7 +250,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                                 </div>
                                 <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
                                   <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                    Suma: {relatedExpenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0).toLocaleString('pl-PL')} zł
+                                    {tr('Suma:')} {relatedExpenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0).toLocaleString(appLocale())} zł
                                   </span>
                                 </div>
                               </div>
@@ -274,17 +274,17 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('Plan całkowity')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-white">
-                  {totalPlanned.toLocaleString('pl-PL')} zł
+                  {totalPlanned.toLocaleString(appLocale())} zł
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Wykorzystano</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{tr('Wykorzystano')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-white">
-                  {totalSpent.toLocaleString('pl-PL')} zł
+                  {totalSpent.toLocaleString(appLocale())} zł
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">% Realizacji</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{tr('% Realizacji')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-white">
                   {totalPercentage.toFixed(1)}%
                 </div>
@@ -292,7 +292,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('Pozostało')}</div>
                 <div className={`text-xl font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {totalRemaining.toLocaleString('pl-PL')} zł
+                  {totalRemaining.toLocaleString(appLocale())} zł
                 </div>
               </div>
             </div>
@@ -314,7 +314,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                     <div className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{p.description}</div>
                     <div className="text-xs text-gray-400">{p.kind === 'income' ? tr('Przychód') : tr('Wydatek')} · {tr('budżet')} {p.year}{p.note ? ` · ${p.note}` : ''}</div>
                   </div>
-                  <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0">{Number(p.amount || 0).toLocaleString('pl-PL')} zł</div>
+                  <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0">{Number(p.amount || 0).toLocaleString(appLocale())} zł</div>
                 </div>
               );
             })}

@@ -98,14 +98,14 @@ export default function ForwardMessageModal({
       icon={Forward}
       size="sm"
       footer={<>
-        <Button variant="secondary" onClick={handleClose}>Anuluj</Button>
+        <Button variant="secondary" onClick={handleClose}>{tr('Anuluj')}</Button>
         <Button
           icon={Forward}
           onClick={handleForward}
           disabled={selectedConversations.length === 0}
           loading={sending}
         >
-          Przekaż {selectedConversations.length > 0 && `(${selectedConversations.length})`}
+          {tr('Przekaż')} {selectedConversations.length > 0 && `(${selectedConversations.length})`}
         </Button>
       </>}
     >
@@ -113,14 +113,14 @@ export default function ForwardMessageModal({
       {message && (
         <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900/50">
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-            Przekazujesz:
+            {tr('Przekazujesz:')}
           </p>
           <div className="flex items-start gap-3 p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-100/50 dark:border-gray-700/50">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center flex-shrink-0">
               <MessageSquare size={14} className="text-accent-primary-light" />
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
-              {message.content || (message.attachments?.length > 0 ? `${message.attachments.length} załącznik(ów)` : '')}
+              {message.content || (message.attachments?.length > 0 ? tr('{n} załącznik(ów)', { n: message.attachments.length }) : '')}
             </p>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function ForwardMessageModal({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Szukaj konwersacji..."
+            placeholder={tr('Szukaj konwersacji...')}
             className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 transition-all duration-200"
           />
         </div>
@@ -143,7 +143,7 @@ export default function ForwardMessageModal({
       {/* Lista konwersacji */}
       <div className="max-h-64 overflow-y-auto px-4 py-2 custom-scrollbar">
         {filteredConversations.length === 0 ? (
-          <EmptyState compact icon={Search} title="Nie znaleziono konwersacji" />
+          <EmptyState compact icon={Search} title={tr('Nie znaleziono konwersacji')} />
         ) : (
           filteredConversations.map(conv => {
             const isSelected = selectedConversations.includes(conv.id);

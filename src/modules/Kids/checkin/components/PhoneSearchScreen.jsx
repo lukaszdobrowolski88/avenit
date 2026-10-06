@@ -59,10 +59,10 @@ export default function PhoneSearchScreen({
       {/* Header */}
       <div className="text-center mb-10">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">
-          Check-in Dzieci
+          {tr('Check-in Dzieci')}
         </h1>
         <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
-          Wpisz ostatnie 4 cyfry numeru telefonu
+          {tr('Wpisz ostatnie 4 cyfry numeru telefonu')}
         </p>
       </div>
 
@@ -78,7 +78,7 @@ export default function PhoneSearchScreen({
       {(searching || loading) && (
         <div className="mt-6 flex items-center gap-3 text-accent-primary dark:text-accent-primary-light">
           <Loader2 size={24} className="animate-spin" />
-          <span className="text-base font-medium">Szukam rodziny...</span>
+          <span className="text-base font-medium">{tr('Szukam rodziny...')}</span>
         </div>
       )}
 
@@ -86,7 +86,7 @@ export default function PhoneSearchScreen({
       {noResults && !searching && (
         <div className="mt-6 text-center p-5 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-2xl max-w-md">
           <p className="text-base text-amber-800 dark:text-amber-200 mb-4">
-            Nie znaleziono rodziny z tym numerem telefonu.
+            {tr('Nie znaleziono rodziny z tym numerem telefonu.')}
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <button

@@ -4,7 +4,7 @@ import {
   CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote, CalendarCheck, HeartHandshake,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 import ResponsiveTabs from './ResponsiveTabs';
 import Modal from './Modal';
 import Button from './Button';
@@ -18,14 +18,14 @@ import CustomValuesTab from '../modules/Care/tabs/CustomValuesTab';
 
 // Zakładki Opieki/CRM wtopione w profil członka (jeden widok osoby zamiast osobnego modułu).
 const CARE_TABS = [
-  { id: 'notes', label: tr('Notatki') },
-  { id: 'care', label: tr('Opieka') },
-  { id: 'milestones', label: tr('Kamienie milowe') },
-  { id: 'tags', label: tr('Tagi') },
-  { id: 'custom', label: tr('Pola własne') },
+  { id: 'notes', label: 'Notatki' },
+  { id: 'care', label: 'Opieka' },
+  { id: 'milestones', label: 'Kamienie milowe' },
+  { id: 'tags', label: 'Tagi' },
+  { id: 'custom', label: 'Pola własne' },
 ];
 
-const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('pl-PL') : null);
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(appLocale()) : null);
 
 function ageFrom(dateStr) {
   if (!dateStr) return null;
@@ -126,7 +126,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
       zIndex={110}
       footer={<>
         <Button variant="secondary" onClick={onClose}>{tr('Zamknij')}</Button>
-        {onEdit && <Button icon={Edit2} onClick={() => onEdit(member)}>Edytuj</Button>}
+        {onEdit && <Button icon={Edit2} onClick={() => onEdit(member)}>{tr('Edytuj')}</Button>}
       </>}
     >
         {/* Nagłówek */}
@@ -153,14 +153,14 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
         {/* Treść */}
         <div className="p-6 pt-4 divide-y divide-gray-100 dark:divide-gray-800">
           <div className="pb-2">
-            <Row icon={Mail} label="E-mail">{member.email && <a href={`mailto:${member.email}`} className="text-accent-primary dark:text-accent-primary-light hover:underline">{member.email}</a>}</Row>
-            <Row icon={Phone} label="Telefon">{member.phone && <a href={`tel:${member.phone}`} className="hover:underline">{member.phone}</a>}</Row>
-            <Row icon={MapPin} label="Adres">{member.address}</Row>
+            <Row icon={Mail} label={tr('E-mail')}>{member.email && <a href={`mailto:${member.email}`} className="text-accent-primary dark:text-accent-primary-light hover:underline">{member.email}</a>}</Row>
+            <Row icon={Phone} label={tr('Telefon')}>{member.phone && <a href={`tel:${member.phone}`} className="hover:underline">{member.phone}</a>}</Row>
+            <Row icon={MapPin} label={tr('Adres')}>{member.address}</Row>
           </div>
 
           <div className="py-2">
-            <Row icon={Home} label="Grupa domowa">{homeGroupName}</Row>
-            <Row icon={Users} label="Rodzina">
+            <Row icon={Home} label={tr('Grupa domowa')}>{homeGroupName}</Row>
+            <Row icon={Users} label={tr('Rodzina')}>
               {household && (
                 <div>
                   <span className="font-medium">{household.name}</span>
@@ -170,13 +170,13 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
                 </div>
               )}
             </Row>
-            <Row icon={Cake} label="Data urodzenia">
+            <Row icon={Cake} label={tr('Data urodzenia')}>
               {member.birth_date && (
-                <span>{fmtDate(member.birth_date)}{ageFrom(member.birth_date) != null ? ` · ${ageFrom(member.birth_date)} lat` : ''}</span>
+                <span>{fmtDate(member.birth_date)}{ageFrom(member.birth_date) != null ? ` · ${tr('{n} lat', { n: ageFrom(member.birth_date) })}` : ''}</span>
               )}
             </Row>
             <Row icon={Calendar} label={tr('W kościele od')}>{fmtDate(member.join_date)}</Row>
-            <Row icon={Calendar} label="Członek od">{member.status === 'Członek' ? fmtDate(member.membership_date) : null}</Row>
+            <Row icon={Calendar} label={tr('Członek od')}>{member.status === 'Członek' ? fmtDate(member.membership_date) : null}</Row>
             <Row icon={FileText} label={tr('Deklaracja członkowska')}>
               {member.membership_declaration_url && (
                 <a href={member.membership_declaration_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('Otwórz dokument')}</a>
@@ -187,7 +187,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
           {member.tags && member.tags.length > 0 && (
             <div className="py-3">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
-                <Tag size={14} /> Tagi
+                <Tag size={14} /> {tr('Tagi')}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {member.tags.map((t) => (
@@ -200,7 +200,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
           {member.notes && (
             <div className="py-3">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
-                <StickyNote size={14} /> Notatki
+                <StickyNote size={14} /> {tr('Notatki')}
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{member.notes}</p>
             </div>
@@ -212,10 +212,10 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
             return (
               <div className="py-3">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
-                  <CalendarCheck size={14} /> Frekwencja
+                  <CalendarCheck size={14} /> {tr('Frekwencja')}
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-200">
-                  Ostatnie 90 dni: <b>{last90}</b> {last90 === 1 ? tr('obecność') : tr('obecności')} · łącznie {attendance.length}
+                  {tr('Ostatnie 90 dni:')} <b>{last90}</b> {last90 === 1 ? tr('obecność') : tr('obecności')} · {tr('łącznie {n}', { n: attendance.length })}
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {attendance.slice(0, 8).map((a, i) => (
@@ -231,7 +231,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
           {events.length > 0 && (
             <div className="py-3">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
-                <CalendarClock size={14} /> Nadchodzące zapisy
+                <CalendarClock size={14} /> {tr('Nadchodzące zapisy')}
               </div>
               <div className="space-y-1.5">
                 {events.map((ev) => (
@@ -252,7 +252,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
                 <HeartHandshake size={14} /> {tr('Opieka i CRM')}
               </div>
-              <ResponsiveTabs tabs={CARE_TABS} activeTab={careTab} onChange={setCareTab} />
+              <ResponsiveTabs tabs={CARE_TABS.map((ct) => ({ ...ct, label: tr(ct.label) }))} activeTab={careTab} onChange={setCareTab} />
               <div className="mt-3">
                 {careTab === 'notes' && <NotesTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
                 {careTab === 'care' && <CareLogTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}

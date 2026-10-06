@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
 import { defaultColumnSettings, defaultCellValue } from '../lib/columnTypes';
 import { GROUP_COLORS, pickColor } from '../lib/constants';
+import { tr } from '../../../i18n';
 
 // Silnik danych pojedynczej tablicy: ładuje kolumny, grupy, elementy, widoki,
 // listę osób organizacji, oraz udostępnia wszystkie mutacje. Po każdej mutacji
@@ -23,7 +24,7 @@ export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {})
   const [focusItemId, setFocusItemId] = useState(null);
   // KAŻDY błąd mutacji pokazuj użytkownikowi (toast) — koniec cichych awarii „nic się nie dzieje".
   // Opakowanie sprawia, że wszystkie istniejące setError(e.message) automatycznie robią toast.
-  const setError = useCallback((msg) => { setErrorState(msg); if (msg) toast.error(typeof msg === 'string' ? msg : 'Wystąpił błąd'); }, []);
+  const setError = useCallback((msg) => { setErrorState(msg); if (msg) toast.error(typeof msg === 'string' ? msg : tr('Wystąpił błąd')); }, []);
   const onAutomationRef = useRef(null); // hook automatyzacji podpina się tu w Fazie 5
 
   const load = useCallback(async () => {
@@ -142,14 +143,14 @@ export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {})
     setColumns(prev => orderedIds.map((id, i) => ({ ...prev.find(c => c.id === id), display_order: i })));
     const results = await Promise.all(orderedIds.map((id, i) =>
       supabase.from('board_columns').update({ display_order: i }).eq('id', id)));
-    if (results.find(r => r?.error)) { setError('Nie udało się zapisać kolejności kolumn'); load(); }
+    if (results.find(r => r?.error)) { setError(tr('Nie udało się zapisać kolejności kolumn')); load(); }
   }, [load]);
 
   // ── Grupy ──────────────────────────────────────────────────────────
   const addGroup = useCallback(async (name) => {
     const maxOrder = groups.reduce((m, g) => Math.max(m, g.display_order || 0), -1);
     const { data, error: e } = await supabase.from('board_groups').insert({
-      board_id: boardId, name: name || 'Nowa grupa',
+      board_id: boardId, name: name || tr('Nowa grupa'),
       color: pickColor(GROUP_COLORS, groups.length), display_order: maxOrder + 1,
     }).select().single();
     if (e) { setError(e.message); return null; }
@@ -175,7 +176,7 @@ export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {})
     setGroups(prev => orderedIds.map((id, i) => ({ ...prev.find(g => g.id === id), display_order: i })));
     const results = await Promise.all(orderedIds.map((id, i) =>
       supabase.from('board_groups').update({ display_order: i }).eq('id', id)));
-    if (results.find(r => r?.error)) { setError('Nie udało się zapisać kolejności grup'); load(); }
+    if (results.find(r => r?.error)) { setError(tr('Nie udało się zapisać kolejności grup')); load(); }
   }, [load]);
 
   // ── Elementy ───────────────────────────────────────────────────────
@@ -252,7 +253,7 @@ export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {})
     // Zapisz group_id + display_order CAŁEJ grupy docelowej (inaczej po reloadzie kolejność się miesza).
     const results = await Promise.all(orderedTargetIds.map((id, i) =>
       supabase.from('board_items').update({ display_order: i, group_id: toGroupId }).eq('id', id)));
-    if (results.find(r => r?.error)) { setError('Nie udało się przenieść elementu'); load(); return; }
+    if (results.find(r => r?.error)) { setError(tr('Nie udało się przenieść elementu')); load(); return; }
     logActivity(itemId, 'moved', null, null, { group_id: toGroupId });
   }, [items, logActivity, load]);
 
@@ -264,14 +265,14 @@ export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {})
     });
     const results = await Promise.all(orderedIds.map((id, i) =>
       supabase.from('board_items').update({ display_order: i, group_id: groupId }).eq('id', id)));
-    if (results.find(r => r?.error)) { setError('Nie udało się zapisać kolejności'); load(); }
+    if (results.find(r => r?.error)) { setError(tr('Nie udało się zapisać kolejności')); load(); }
   }, [load]);
 
   // ── Widoki ─────────────────────────────────────────────────────────
   const addView = useCallback(async (type, name) => {
     const maxOrder = views.reduce((m, v) => Math.max(m, v.display_order || 0), -1);
     const { data, error: e } = await supabase.from('board_views').insert({
-      board_id: boardId, name: name || 'Nowy widok', type, config: {},
+      board_id: boardId, name: name || tr('Nowy widok'), type, config: {},
       owner_email: null, display_order: maxOrder + 1,
     }).select().single();
     if (e) { setError(e.message); return null; }
@@ -295,7 +296,7 @@ export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {})
   const duplicateView = useCallback(async (view) => {
     const maxOrder = views.reduce((m, v) => Math.max(m, v.display_order || 0), -1);
     const { data, error: e } = await supabase.from('board_views').insert({
-      board_id: boardId, name: `${view.name} (kopia)`, type: view.type, config: view.config || {},
+      board_id: boardId, name: tr('{name} (kopia)', { name: view.name }), type: view.type, config: view.config || {},
       owner_email: null, display_order: maxOrder + 1,
     }).select().single();
     if (e) { setError(e.message); return null; }

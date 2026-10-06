@@ -27,7 +27,7 @@ import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
 import { useModuleLabel } from '../hooks/useModuleLabel';
 import { useModules } from '../hooks/useModules';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { confirmDialog } from '../lib/dialog';
 
@@ -59,11 +59,11 @@ export default function Members() {
   const { campuses } = useCampus();
 
   // Służby: etykiety z konfiguracji modułów tenanta (nie hardcode) + moduły custom + MC.
-  const lblWorship = useModuleLabel('worship', 'Grupa Uwielbienia');
-  const lblMedia = useModuleLabel('media', 'Media Team');
-  const lblAtmosfera = useModuleLabel('atmosfera', 'Atmosfera Team');
-  const lblKids = useModuleLabel('kids', 'Małe Avenit');
-  const lblMc = useModuleLabel('mc', 'Scena / MC');
+  const lblWorship = useModuleLabel('worship', tr('Grupa Uwielbienia'));
+  const lblMedia = useModuleLabel('media', tr('Media Team'));
+  const lblAtmosfera = useModuleLabel('atmosfera', tr('Atmosfera Team'));
+  const lblKids = useModuleLabel('kids', tr('Małe Avenit'));
+  const lblMc = useModuleLabel('mc', tr('Scena / MC'));
   const { modules } = useModules();
   const MINISTRY_OPTIONS = React.useMemo(() => {
     const sys = [
@@ -127,7 +127,7 @@ export default function Members() {
       if (error) throw error;
       toast.success(tr('Zapisano konfigurację'));
       setShowBdayCfg(false);
-    } catch (e) { toast.error('Nie udało się zapisać: ' + (e.message || e)); }
+    } catch (e) { toast.error(tr('Nie udało się zapisać: {msg}', { msg: e.message || e })); }
     finally { setBdaySaving(false); }
   };
 
@@ -679,7 +679,7 @@ export default function Members() {
                         {member.status === 'Członek' && member.membership_date && (
                           <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
                             <Calendar size={12} />
-                            od {new Date(member.membership_date).toLocaleDateString('pl-PL')}
+                            {tr('od {date}', { date: new Date(member.membership_date).toLocaleDateString(appLocale()) })}
                           </div>
                         )}
                       </div>
@@ -728,7 +728,7 @@ export default function Members() {
 
                   <TD numeric className="whitespace-nowrap">
                     {member.birth_date ? (
-                      <span className={`inline-flex items-center gap-1.5 text-xs ${birthdaySoon(member.birth_date) ? 'text-accent-primary font-semibold' : 'text-gray-600 dark:text-gray-400'}`} title={birthdaySoon(member.birth_date) ? 'Urodziny w ciągu 7 dni' : undefined}>
+                      <span className={`inline-flex items-center gap-1.5 text-xs ${birthdaySoon(member.birth_date) ? 'text-accent-primary font-semibold' : 'text-gray-600 dark:text-gray-400'}`} title={birthdaySoon(member.birth_date) ? tr('Urodziny w ciągu 7 dni') : undefined}>
                         <Cake size={13} className={birthdaySoon(member.birth_date) ? 'text-accent-primary' : 'text-gray-400'} /> {fmtBirth(member.birth_date)}
                       </span>
                     ) : null}
@@ -738,7 +738,7 @@ export default function Members() {
                     {(() => {
                       const cnt = attendanceCount(member.id);
                       return (
-                        <div className="flex items-center gap-2" title={`Obecność ostatnie 4 niedziele: ${cnt}/4`}>
+                        <div className="flex items-center gap-2" title={tr('Obecność ostatnie 4 niedziele: {cnt}/4', { cnt })}>
                           <div className="flex gap-0.5">
                             {[...last4Sundays].reverse().map((d) => {
                               const on = attendanceByMember[String(member.id)]?.has(d);
@@ -817,12 +817,12 @@ export default function Members() {
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={formData.id ? 'Edytuj dane' : 'Nowa osoba'}
+        title={formData.id ? tr('Edytuj dane') : tr('Nowa osoba')}
         size="lg"
         closeOnBackdrop={false}
         footer={<>
           <Button variant="secondary" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
-          <Button data-tour="member-save" onClick={handleSave} loading={saving}>Zapisz</Button>
+          <Button data-tour="member-save" onClick={handleSave} loading={saving}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-5">
@@ -838,7 +838,7 @@ export default function Members() {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwisko *</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nazwisko *')}</label>
               <input
                 data-tour="member-last"
                 className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
@@ -871,7 +871,7 @@ export default function Members() {
             {/* DROPDOWN STATUSU */}
             <div>
               <CustomSelect
-                label="Status"
+                label={tr('Status')}
                 value={formData.status}
                 options={STATUS_OPTIONS.map((s) => ({ value: s, label: tr(s) }))}
                 onChange={(val) => setFormData({ ...formData, status: val })}
@@ -883,7 +883,7 @@ export default function Members() {
           {formData.status === 'Członek' && (
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800/50 space-y-4">
               <h4 className="font-bold text-green-800 dark:text-green-300 flex items-center gap-2">
-                <CheckCircle size={18} /> Dane członkostwa
+                <CheckCircle size={18} /> {tr('Dane członkostwa')}
               </h4>
 
               <CustomDatePicker
@@ -906,7 +906,7 @@ export default function Members() {
                         rel="noopener noreferrer"
                         className="text-xs text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1"
                       >
-                        <Eye size={12} /> Podgląd
+                        <Eye size={12} /> {tr('Podgląd')}
                       </a>
                     </div>
                     <button
@@ -943,12 +943,12 @@ export default function Members() {
 
           {/* Nowe pole Adres */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Adres Zamieszkania</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Adres Zamieszkania')}</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
                 className="w-full pl-10 pr-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                placeholder="Ulica, numer domu, miasto"
+                placeholder={tr('Ulica, numer domu, miasto')}
                 value={formData.address}
                 onChange={e => setFormData({ ...formData, address: e.target.value })}
               />
@@ -957,7 +957,7 @@ export default function Members() {
 
           {/* Data urodzenia */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data urodzenia</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Data urodzenia')}</label>
             <CustomDatePicker
               value={formData.birth_date || ''}
               onChange={(val) => setFormData({ ...formData, birth_date: val })}
@@ -1000,7 +1000,7 @@ export default function Members() {
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki (widoczne dla zespołu)')}</label>
             <textarea
               className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100 h-24 resize-none"
-              placeholder="Notatki duszpasterskie, historia kontaktu…"
+              placeholder={tr('Notatki duszpasterskie, historia kontaktu…')}
               value={formData.notes || ''}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
@@ -1008,13 +1008,13 @@ export default function Members() {
 
           {/* Rodzina (Household) */}
           <CustomSelect
-            label="Rodzina (do Check-in)"
+            label={tr('Rodzina (do Check-in)')}
             placeholder={tr('Wybierz rodzinę...')}
             value={formData.household_id}
             onChange={(val) => setFormData({ ...formData, household_id: val })}
-            options={[{ id: '', name: 'Brak', phone_last_four: '' }, ...households]}
+            options={[{ id: '', name: tr('Brak'), phone_last_four: '' }, ...households]}
             mapOptionToValue={(opt) => opt.id}
-            mapOptionToLabel={(opt) => opt.name + (opt.phone_last_four ? ` (tel. ...${opt.phone_last_four})` : '')}
+            mapOptionToLabel={(opt) => opt.name + (opt.phone_last_four ? ` ${tr('(tel. ...{digits})', { digits: opt.phone_last_four })}` : '')}
             icon={Users}
           />
 
@@ -1125,7 +1125,7 @@ export default function Members() {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Dzień tygodnia')}</label>
                 <CustomSelect value={String(bdayCfg.weekday)} onChange={(v) => setBdayCfg({ ...bdayCfg, weekday: parseInt(v, 10) })}
-                  options={[{ value: '1', label: 'Poniedziałek' }, { value: '2', label: 'Wtorek' }, { value: '3', label: 'Środa' }, { value: '4', label: 'Czwartek' }, { value: '5', label: 'Piątek' }, { value: '6', label: 'Sobota' }, { value: '0', label: 'Niedziela' }]} />
+                  options={[{ value: '1', label: tr('Poniedziałek') }, { value: '2', label: tr('Wtorek') }, { value: '3', label: tr('Środa') }, { value: '4', label: tr('Czwartek') }, { value: '5', label: tr('Piątek') }, { value: '6', label: tr('Sobota') }, { value: '0', label: tr('Niedziela') }]} />
               </div>
             )}
           </div>
@@ -1135,12 +1135,12 @@ export default function Members() {
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Ile dni wcześniej')}</label>
               <input type="number" min="0" max="31" value={bdayCfg.days_ahead} onChange={(e) => setBdayCfg({ ...bdayCfg, days_ahead: parseInt(e.target.value || '0', 10) })}
                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
-              <p className="text-[11px] text-gray-400 mt-1 ml-1">0 = tylko w dniu urodzin. Dla „raz w tygodniu" np. 7 = cały tydzień.</p>
+              <p className="text-[11px] text-gray-400 mt-1 ml-1">{tr('0 = tylko w dniu urodzin. Dla „raz w tygodniu" np. 7 = cały tydzień.')}</p>
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kanał')}</label>
               <CustomSelect value={bdayCfg.channel} onChange={(v) => setBdayCfg({ ...bdayCfg, channel: v })}
-                options={[{ value: 'email', label: 'E-mail' }, { value: 'push', label: 'Push' }, { value: 'both', label: tr('E-mail + Push') }]} />
+                options={[{ value: 'email', label: tr('E-mail') }, { value: 'push', label: 'Push' }, { value: 'both', label: tr('E-mail + Push') }]} />
             </div>
           </div>
 

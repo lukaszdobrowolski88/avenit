@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, AlertCircle } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 
 export default function PayPalButton({
@@ -251,7 +251,7 @@ export default function PayPalButton({
           </span>
         </div>
         <span className="text-lg font-bold text-blue-700 dark:text-blue-400">
-          {new Intl.NumberFormat('pl-PL', {
+          {new Intl.NumberFormat(appLocale(), {
             style: 'currency',
             currency: currency
           }).format(amount)}

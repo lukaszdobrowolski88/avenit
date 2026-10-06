@@ -9,6 +9,7 @@ import Spinner from '../../../components/Spinner';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const emptyForm = { name: '', type: 'room', capacity: '', color: '#3b82f6', location: '', is_active: true };
 
@@ -29,7 +30,7 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
   };
 
   const save = async () => {
-    if (!form.name.trim()) { toast.error('Podaj nazwę zasobu.'); return; }
+    if (!form.name.trim()) { toast.error(tr('Podaj nazwę zasobu.')); return; }
     setSaving(true);
     try {
       const payload = {
@@ -52,29 +53,29 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
       refreshShared();
     } catch (err) {
       console.error('Save resource error:', err);
-      toast.error('Nie udało się zapisać zasobu: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać zasobu: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (r) => {
-    if (!await confirmDialog(`Usunąć „${r.name}"? Wszystkie rezerwacje tego zasobu również zostaną usunięte.`)) return;
+    if (!await confirmDialog(tr('Usunąć „{name}"? Wszystkie rezerwacje tego zasobu również zostaną usunięte.', { name: r.name }))) return;
     try {
       const { error } = await supabase.from('resources').delete().eq('id', r.id);
       if (error) throw error;
       refreshShared();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <p className="text-sm text-gray-500 dark:text-gray-400">Sale i sprzęt, które można rezerwować. Kolor ułatwia rozpoznanie w harmonogramie.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Sale i sprzęt, które można rezerwować. Kolor ułatwia rozpoznanie w harmonogramie.')}</p>
         <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
-          <Plus size={16} /> Dodaj zasób
+          <Plus size={16} /> {tr('Dodaj zasób')}
         </button>
       </div>
 
@@ -84,7 +85,7 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
         )}
         {!loading && (resources || []).length === 0 && (
           <div className="col-span-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-            <EmptyState icon={Boxes} title="Brak zasobów." subtitle="Dodaj pierwszą salę lub sprzęt." />
+            <EmptyState icon={Boxes} title={tr('Brak zasobów.')} subtitle={tr('Dodaj pierwszą salę lub sprzęt.')} />
           </div>
         )}
         {!loading && (resources || []).map(r => {
@@ -98,12 +99,12 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
                 <div className="min-w-0">
                   <div className="font-semibold text-gray-900 dark:text-white truncate">{r.name}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span>{typeLabel(r.type)}</span>
+                    <span>{tr(typeLabel(r.type))}</span>
                     {r.capacity != null && <span className="inline-flex items-center gap-1"><Users size={12} /> {r.capacity}</span>}
                     {r.location && <span className="inline-flex items-center gap-1 truncate"><MapPin size={12} /> {r.location}</span>}
                   </div>
                   {r.is_active === false && (
-                    <span className="inline-block mt-2 text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">nieaktywny</span>
+                    <span className="inline-block mt-2 text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">{tr('nieaktywny')}</span>
                   )}
                 </div>
               </div>
@@ -119,34 +120,34 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
       <Modal
         isOpen={modalOpen}
         onClose={() => !saving && setModalOpen(false)}
-        title={editing ? 'Edytuj zasób' : 'Nowy zasób'}
+        title={editing ? tr('Edytuj zasób') : tr('Nowy zasób')}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
-          <Button onClick={save} loading={saving}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>{tr('Anuluj')}</Button>
+          <Button onClick={save} loading={saving}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwa</label>
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="np. Sala główna, Rzutnik" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nazwa')}</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={tr('np. Sala główna, Rzutnik')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <CustomSelect label="Typ" value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))} options={RESOURCE_TYPES} />
+            <CustomSelect label={tr('Typ')} value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))} options={RESOURCE_TYPES.map((o) => ({ ...o, label: tr(o.label) }))} />
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Pojemność</label>
-              <input type="number" min="0" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} placeholder="opcjonalnie" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Pojemność')}</label>
+              <input type="number" min="0" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} placeholder={tr('opcjonalnie')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Lokalizacja</label>
-            <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="np. Parter, Budynek B" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Lokalizacja')}</label>
+            <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder={tr('np. Parter, Budynek B')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Kolor</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">{tr('Kolor')}</label>
             <div className="flex gap-2 flex-wrap">
               {PRESET_COLORS.map(c => (
                 <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))} className={`w-8 h-8 rounded-full transition ${form.color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900' : ''}`} style={{ background: c }} />
@@ -156,7 +157,7 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
 
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="rounded accent-emerald-500" />
-            Aktywny (dostępny do rezerwacji)
+            {tr('Aktywny (dostępny do rezerwacji)')}
           </label>
         </div>
       </Modal>

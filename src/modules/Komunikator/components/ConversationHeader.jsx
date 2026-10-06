@@ -65,10 +65,10 @@ export default function ConversationHeader({
     }
 
     if (conversation.type === 'ministry') {
-      return `Kanał służby • ${conversation.participants?.length || 0} członków`;
+      return tr('Kanał służby • {n} członków', { n: conversation.participants?.length || 0 });
     }
 
-    return `${conversation.participants?.length || 0} uczestników`;
+    return tr('{n} uczestników', { n: conversation.participants?.length || 0 });
   };
 
   const displayName = conversation.type === 'ministry'
@@ -176,7 +176,7 @@ export default function ConversationHeader({
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <Search size={16} />
-                  Szukaj
+                  {tr('Szukaj')}
                 </button>
               )}
               {onOpenMediaGallery && (
@@ -185,7 +185,7 @@ export default function ConversationHeader({
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <Image size={16} />
-                  Galeria
+                  {tr('Galeria')}
                 </button>
               )}
               {onToggleMute && (
@@ -203,7 +203,7 @@ export default function ConversationHeader({
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <Settings size={16} />
-                  Ustawienia
+                  {tr('Ustawienia')}
                 </button>
               )}
               {conversation.type === 'direct' && onDelete && (
@@ -229,7 +229,7 @@ export default function ConversationHeader({
         icon={Trash2}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>Anuluj</Button>
+          <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>{tr('Anuluj')}</Button>
           <Button
             variant="danger"
             onClick={() => {

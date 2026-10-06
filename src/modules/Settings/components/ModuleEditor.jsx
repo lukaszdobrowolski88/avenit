@@ -84,7 +84,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
     }
 
     if (!form.icon) {
-      newErrors.icon = 'Ikona jest wymagana';
+      newErrors.icon = tr('Ikona jest wymagana');
     }
 
     setErrors(newErrors);
@@ -119,8 +119,8 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
       zIndex={150}
       title={isEditing ? tr('Edytuj moduł') : tr('Nowy moduł')}
       footer={<>
-        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
-        <Button icon={Save} onClick={handleSubmit} loading={saving}>Zapisz</Button>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button icon={Save} onClick={handleSubmit} loading={saving}>{tr('Zapisz')}</Button>
       </>}
     >
       <div className="p-6 space-y-5">
@@ -155,13 +155,13 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
         {/* Klucz modułu */}
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-            Klucz (slug)
+            {tr('Klucz (slug)')}
           </label>
           <input
             type="text"
             value={form.key}
             onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase() })}
-            placeholder="np. moj_modul"
+            placeholder={tr('np. moj_modul')}
             disabled={isEditing && module?.is_system}
             className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
               ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
@@ -187,7 +187,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
             type="text"
             value={form.path}
             onChange={(e) => setForm({ ...form, path: e.target.value })}
-            placeholder="np. /moj-modul"
+            placeholder={tr('np. /moj-modul')}
             disabled={isEditing && module?.is_system}
             className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
               ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
@@ -204,7 +204,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
         {/* Ikona */}
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-            Ikona
+            {tr('Ikona')}
           </label>
           <IconPicker
             value={form.icon}

@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { toast } from '../../../lib/toast';
 import { DateInput } from '../../../components/pickers';
@@ -132,7 +132,7 @@ export default function ParticipantsView({ forms }) {
 
         const baseParticipant = {
           formId: response.form_id,
-          formTitle: form?.title || 'Nieznany formularz',
+          formTitle: form?.title || tr('Nieznany formularz'),
           submittedAt: response.submitted_at,
           fields: form?.fields || [],
           settings: form?.settings || {},
@@ -237,7 +237,7 @@ export default function ParticipantsView({ forms }) {
             ...baseParticipant,
             id: response.id,
             responseId: response.id,
-            name: contact.name || response.respondent_name || 'Anonim',
+            name: contact.name || response.respondent_name || tr('Anonim'),
             email: contact.email || response.respondent_email || '',
             phone: contact.phone,
             answers
@@ -341,9 +341,9 @@ export default function ParticipantsView({ forms }) {
       p.email,
       p.phone,
       p.formTitle,
-      new Date(p.submittedAt).toLocaleDateString('pl-PL'),
+      new Date(p.submittedAt).toLocaleDateString(appLocale()),
       p.totalAmount > 0 ? formatPrice(p.totalAmount, p.currency) : '-',
-      p.paymentStatus === 'paid' ? tr('Opłacone') : p.paymentStatus === 'pending' ? 'Oczekuje' : '-'
+      p.paymentStatus === 'paid' ? tr('Opłacone') : p.paymentStatus === 'pending' ? tr('Oczekuje') : '-'
     ]);
 
     const csvContent = [
@@ -523,7 +523,7 @@ export default function ParticipantsView({ forms }) {
   };
 
   const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('pl-PL', {
+    return new Date(dateStr).toLocaleDateString(appLocale(), {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -548,7 +548,7 @@ export default function ParticipantsView({ forms }) {
           </StatusPill>
         );
       case 'pending':
-        return <StatusPill color={STATUS_COLORS.warning}>Oczekuje</StatusPill>;
+        return <StatusPill color={STATUS_COLORS.warning}>{tr('Oczekuje')}</StatusPill>;
       default:
         return null;
     }
@@ -639,7 +639,7 @@ export default function ParticipantsView({ forms }) {
               }`}
             >
               <Filter size={18} />
-              Filtry
+              {tr('Filtry')}
               {(selectedForm !== 'all' || paymentFilter !== 'all') && (
                 <span className="w-2 h-2 bg-accent-primary-light rounded-full"></span>
               )}
@@ -658,7 +658,7 @@ export default function ParticipantsView({ forms }) {
               className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
             >
               <Download size={18} />
-              Eksportuj
+              {tr('Eksportuj')}
             </button>
           </div>
         </div>
@@ -668,14 +668,14 @@ export default function ParticipantsView({ forms }) {
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Formularz
+                {tr('Formularz')}
               </label>
               <select
                 value={selectedForm}
                 onChange={(e) => setSelectedForm(e.target.value)}
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
               >
-                <option value="all">Wszystkie formularze</option>
+                <option value="all">{tr('Wszystkie formularze')}</option>
                 {uniqueForms.map(form => (
                   <option key={form.id} value={form.id}>{form.title}</option>
                 ))}
@@ -710,7 +710,7 @@ export default function ParticipantsView({ forms }) {
                 >
                   <option value="date">{tr('Data')}</option>
                   <option value="name">{tr('Imię')}</option>
-                  <option value="form">Formularz</option>
+                  <option value="form">{tr('Formularz')}</option>
                   <option value="amount">{tr('Kwota')}</option>
                 </select>
                 <button
@@ -738,13 +738,13 @@ export default function ParticipantsView({ forms }) {
           <DataTable flush>
             <THead>
               <tr>
-                <TH>Uczestnik</TH>
-                <TH>Kontakt</TH>
-                <TH>Formularz</TH>
-                <TH>Data</TH>
-                <TH>Kwota</TH>
-                <TH>Status</TH>
-                <TH align="right"><span className="sr-only">Akcje</span></TH>
+                <TH>{tr('Uczestnik')}</TH>
+                <TH>{tr('Kontakt')}</TH>
+                <TH>{tr('Formularz')}</TH>
+                <TH>{tr('Data')}</TH>
+                <TH>{tr('Kwota')}</TH>
+                <TH>{tr('Status')}</TH>
+                <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
               </tr>
             </THead>
             <tbody>
@@ -803,7 +803,7 @@ export default function ParticipantsView({ forms }) {
                         )}
                         {participant.isGroupContact && participant.groupTotalAmount > 0 && (
                           <div className="text-[10px] text-gray-400 mt-0.5">
-                            Grupa: {formatPrice(participant.groupTotalAmount, participant.currency)}
+                            {tr('Grupa:')} {formatPrice(participant.groupTotalAmount, participant.currency)}
                           </div>
                         )}
                       </div>
@@ -894,13 +894,13 @@ export default function ParticipantsView({ forms }) {
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-6">
               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
                 <FileText size={16} />
-                Formularz
+                {tr('Formularz')}
               </div>
               <p className="font-medium text-gray-900 dark:text-white">
                 {selectedParticipant.formTitle}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Zarejestrowany: {formatDate(selectedParticipant.submittedAt)}
+                {tr('Zarejestrowany:')} {formatDate(selectedParticipant.submittedAt)}
               </p>
             </div>
 
@@ -922,7 +922,7 @@ export default function ParticipantsView({ forms }) {
                     </p>
                     {selectedParticipant.paymentMethod && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Metoda: {selectedParticipant.paymentMethod === 'transfer' ? 'Przelew' :
+                        {tr('Metoda:')} {selectedParticipant.paymentMethod === 'transfer' ? tr('Przelew') :
                           selectedParticipant.paymentMethod === 'paypal' ? 'PayPal' :
                           selectedParticipant.paymentMethod === 'przelewy24' ? 'Przelewy24' :
                           selectedParticipant.paymentMethod === 'cash' ? tr('Gotówka') :
@@ -958,7 +958,7 @@ export default function ParticipantsView({ forms }) {
             {/* Odpowiedzi na formularz */}
             <div>
               <h5 className="font-semibold text-gray-900 dark:text-white mb-3">
-                Odpowiedzi
+                {tr('Odpowiedzi')}
               </h5>
               <div className="space-y-3">
                 {selectedParticipant.fields
@@ -981,7 +981,7 @@ export default function ParticipantsView({ forms }) {
                       const option = field.options.find(o => o.value === value);
                       displayValue = option ? option.label : value;
                     } else if (field.type === 'date') {
-                      displayValue = new Date(value).toLocaleDateString('pl-PL');
+                      displayValue = new Date(value).toLocaleDateString(appLocale());
                     }
 
                     return (
@@ -1013,20 +1013,20 @@ export default function ParticipantsView({ forms }) {
         icon={Banknote}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setPaymentModal(null)}>Anuluj</Button>
+          <Button variant="secondary" onClick={() => setPaymentModal(null)}>{tr('Anuluj')}</Button>
           <Button icon={Check} onClick={addPayment}>{tr('Potwierdź płatność')}</Button>
         </>}
       >
         {paymentModal && (
           <div className="p-6 space-y-4">
             <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Uczestnik</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Uczestnik')}</p>
               <p className="font-medium text-gray-900 dark:text-white">{paymentModal.name}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Kwota ({paymentModal.currency})
+                {tr('Kwota')} ({paymentModal.currency})
               </label>
               <input
                 type="number"

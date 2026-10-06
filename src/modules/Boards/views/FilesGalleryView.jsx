@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Paperclip, FileText, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { applyView } from '../lib/viewData';
 import EmptyState from '../../../components/EmptyState';
+import { tr } from '../../../i18n';
 
 const isImage = (name = '', url = '') => /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name) || /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/i.test(url);
 
@@ -23,10 +24,10 @@ export default function FilesGalleryView({ data, config, onOpenItem }) {
   }, [items, fileCols]);
 
   if (fileCols.length === 0) {
-    return <EmptyState icon={Paperclip} title={'Dodaj kolumnę typu „Pliki", aby zbierać załączniki w galerii.'} />;
+    return <EmptyState icon={Paperclip} title={tr('Dodaj kolumnę typu „Pliki", aby zbierać załączniki w galerii.')} />;
   }
   if (files.length === 0) {
-    return <EmptyState icon={ImageIcon} title="Brak plików." subtitle={'Dodaj załączniki w kolumnie „Pliki".'} />;
+    return <EmptyState icon={ImageIcon} title={tr('Brak plików.')} subtitle={tr('Dodaj załączniki w kolumnie „Pliki".')} />;
   }
 
   return (
@@ -40,10 +41,10 @@ export default function FilesGalleryView({ data, config, onOpenItem }) {
           </div>
           <div className="p-2">
             <a href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs font-medium text-accent-primary truncate hover:underline">
-              <ExternalLink size={11} className="shrink-0" /> <span className="truncate">{f.name || 'plik'}</span>
+              <ExternalLink size={11} className="shrink-0" /> <span className="truncate">{f.name || tr('plik')}</span>
             </a>
             <button onClick={() => onOpenItem(data.items.find(x => x.id === f.itemId))}
-              className="text-[11px] text-gray-400 truncate hover:text-gray-600 dark:hover:text-gray-300 block w-full text-left">{f.itemName || 'element'}</button>
+              className="text-[11px] text-gray-400 truncate hover:text-gray-600 dark:hover:text-gray-300 block w-full text-left">{f.itemName || tr('element')}</button>
           </div>
         </div>
       ))}

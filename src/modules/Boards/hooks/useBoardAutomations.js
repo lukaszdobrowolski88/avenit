@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
 import { addDays, format } from 'date-fns';
+import { tr } from '../../../i18n';
 
 // Silnik automatyzacji (natychmiastowe wyzwalacze po stronie klienta) + CRUD.
 // Wyzwalacze czasowe (date_arrives / every_period) obsługuje worker packages/api.
@@ -21,7 +22,7 @@ export function useBoardAutomations(boardId, data, { userEmail, userName } = {})
     const { data: row, error } = await supabase.from('board_automations')
       .insert({ board_id: boardId, name, trigger, actions, enabled: true, created_by: userEmail || null })
       .select().single();
-    if (error) { toast.error('Nie udało się zapisać automatyzacji' + (error.message ? `: ${error.message}` : '')); return null; }
+    if (error) { toast.error(error.message ? tr('Nie udało się zapisać automatyzacji: {msg}', { msg: error.message }) : tr('Nie udało się zapisać automatyzacji')); return null; }
     setAutomations(prev => [...prev, row]);
     return row;
   }, [boardId, userEmail]);

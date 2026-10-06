@@ -27,22 +27,22 @@ const CATEGORY_ICONS = {
 const EXTENDED_CATEGORIES = {
   ...TEMPLATE_CATEGORIES,
   welcome: { label: 'Powitalne' },
-  holiday: { label: tr('Świąteczne') },
+  holiday: { label: 'Świąteczne' },
   invitation: { label: 'Zaproszenia' },
-  ministry: { label: tr('Służby') },
+  ministry: { label: 'Służby' },
   worship: { label: 'Uwielbienie' },
   study: { label: 'Studium' }
 };
 
 const EDITOR_MODES = {
-  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: tr('Przeciągnij i upuść gotowe elementy') },
+  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: 'Przeciągnij i upuść gotowe elementy' },
   richtext: { id: 'richtext', label: 'Edytor tekstu', icon: Edit3, description: 'Klasyczny edytor z formatowaniem' },
   html: { id: 'html', label: 'Kod HTML', icon: Code, description: 'Dla zaawansowanych - edytuj surowy HTML' }
 };
 
 const STEPS = [
   { id: 'info', label: 'Informacje', icon: FileText },
-  { id: 'content', label: tr('Treść'), icon: Edit3 }
+  { id: 'content', label: 'Treść', icon: Edit3 }
 ];
 
 export default function TemplateEditor({ template, onClose, onSave }) {
@@ -125,7 +125,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
             <ArrowLeft size={20} className="text-gray-500" />
           </button>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-            {template?.id ? (isSystemTemplate ? tr('Podgląd szablonu') : 'Edytuj szablon') : 'Nowy szablon'}
+            {template?.id ? (isSystemTemplate ? tr('Podgląd szablonu') : tr('Edytuj szablon')) : tr('Nowy szablon')}
           </h1>
         </div>
 
@@ -147,7 +147,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
               className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 disabled:opacity-50 font-medium"
             >
               {saving ? <Loader size={18} className="animate-spin" /> : <Save size={18} />}
-              Zapisz szablon
+              {tr('Zapisz szablon')}
             </button>
           )}
         </div>
@@ -196,7 +196,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                     <StepIcon size={14} className={isActive ? 'text-white' : ''} />
                   )}
                 </div>
-                <span className="font-medium hidden sm:inline">{step.label}</span>
+                <span className="font-medium hidden sm:inline">{tr(step.label)}</span>
               </button>
             </React.Fragment>
           );
@@ -215,7 +215,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <FileText size={12} className="text-white" />
                   </div>
-                  Nazwa szablonu
+                  {tr('Nazwa szablonu')}
                   <span className="text-accent-primary-light">*</span>
                 </label>
                 <input
@@ -260,7 +260,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Sparkles size={12} className="text-white" />
                   </div>
-                  Kategoria szablonu
+                  {tr('Kategoria szablonu')}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {Object.entries(EXTENDED_CATEGORIES).map(([key, { label }]) => {
@@ -280,7 +280,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                         } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <Icon size={18} className={isSelected ? 'text-accent-primary-light' : ''} />
-                        <span className="font-medium">{label}</span>
+                        <span className="font-medium">{tr(label)}</span>
                       </button>
                     );
                   })}
@@ -331,10 +331,10 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                           <h4 className={`font-semibold mb-1 transition-colors ${
                             isSelected ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-900 dark:text-white'
                           }`}>
-                            {mode.label}
+                            {tr(mode.label)}
                           </h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                            {mode.description}
+                            {tr(mode.description)}
                           </p>
                         </button>
                       );
@@ -351,7 +351,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                 disabled={!canProceed()}
                 className="group flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl hover:shadow-accent-primary-light/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
               >
-                Dalej
+                {tr('Dalej')}
                 <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
@@ -378,7 +378,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                         }`}
                       >
                         <Icon size={16} />
-                        <span className="text-sm font-medium hidden sm:inline">{mode.label}</span>
+                        <span className="text-sm font-medium hidden sm:inline">{tr(mode.label)}</span>
                       </button>
                     );
                   })}
@@ -389,7 +389,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   className="flex items-center gap-2 px-3 py-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                 >
                   <ArrowLeft size={16} />
-                  <span className="text-sm">Wstecz</span>
+                  <span className="text-sm">{tr('Wstecz')}</span>
                 </button>
               </div>
             )}
@@ -414,7 +414,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
               ) : (
                 <div className="p-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Kod HTML
+                    {tr('Kod HTML')}
                   </label>
                   <textarea
                     value={formData.html_content}

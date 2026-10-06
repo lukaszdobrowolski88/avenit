@@ -4,6 +4,7 @@ import { Podcast, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import SermonPlayer from './components/SermonPlayer';
 import Spinner from '../../components/Spinner';
+import { tr } from '../../i18n';
 
 /**
  * Publiczna strona pojedynczego kazania — dostępna bez logowania pod /sermon/:slug.
@@ -54,8 +55,8 @@ export default function SermonPublicPage() {
             <Podcast className="text-white" size={22} />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Kazania</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Archiwum kazań</p>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">{tr('Kazania')}</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Archiwum kazań')}</p>
           </div>
         </div>
 
@@ -64,9 +65,9 @@ export default function SermonPublicPage() {
         ) : notFound || !sermon ? (
           <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
             <Podcast size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">Nie znaleziono kazania lub nie jest ono opublikowane.</p>
+            <p className="text-gray-500 dark:text-gray-400">{tr('Nie znaleziono kazania lub nie jest ono opublikowane.')}</p>
             <Link to="/" className="inline-flex items-center gap-1.5 mt-4 text-sm text-accent-primary dark:text-accent-primary-light hover:underline">
-              <ArrowLeft size={14} /> Strona główna
+              <ArrowLeft size={14} /> {tr('Strona główna')}
             </Link>
           </div>
         ) : (

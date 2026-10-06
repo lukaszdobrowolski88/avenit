@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { tr } from '../i18n';
 
 // Kanoniczny Modal. Dwa tryby (kompatybilne wstecznie):
 //  • CIENKI (bez onClose) — tylko portal + `fixed inset-0 z-[100]`. Dzieci dostarczają
@@ -79,7 +80,7 @@ export default function Modal({
               <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{title}</h2>
               {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
             </div>
-            <button onClick={onClose} aria-label="Zamknij"
+            <button onClick={onClose} aria-label={tr('Zamknij')}
               className="p-1.5 -mr-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 transition shrink-0">
               <X size={18} />
             </button>

@@ -226,7 +226,7 @@ export default function Login() {
           </div>
 
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-            Weryfikacja dwuetapowa
+            {tr('Weryfikacja dwuetapowa')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
             {tr('Wprowadź kod z aplikacji Authenticator')}
@@ -234,7 +234,7 @@ export default function Login() {
 
           <div className="mb-6">
             <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
-              Kod weryfikacyjny
+              {tr('Kod weryfikacyjny')}
             </label>
             <input
               type="text"
@@ -247,7 +247,7 @@ export default function Login() {
               maxLength={8}
             />
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">
-              Możesz też użyć kodu zapasowego (8 znaków)
+              {tr('Możesz też użyć kodu zapasowego (8 znaków)')}
             </p>
           </div>
 
@@ -265,9 +265,9 @@ export default function Login() {
             {loading || verifyLoading ? (
               <span className="flex items-center justify-center gap-2">
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Weryfikacja...
+                {tr('Weryfikacja...')}
               </span>
-            ) : 'Weryfikuj'}
+            ) : tr('Weryfikuj')}
           </button>
 
           <button
@@ -301,7 +301,7 @@ export default function Login() {
           {logoUrl ? (
             <img
               src={logoUrl}
-              alt="Logo organizacji"
+              alt={tr('Logo organizacji')}
               className="max-h-24 object-contain"
             />
           ) : (
@@ -312,7 +312,7 @@ export default function Login() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-          {showRegister ? tr('Załóż konto') : showForgotPassword ? tr('Resetuj hasło') : (loginTitle || 'Witaj ponownie')}
+          {showRegister ? tr('Załóż konto') : showForgotPassword ? tr('Resetuj hasło') : (loginTitle || tr('Witaj ponownie'))}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
           {showRegister
@@ -336,13 +336,13 @@ export default function Login() {
               className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
               value={regName}
               onChange={e => setRegName(e.target.value)}
-              placeholder="Jan Kowalski"
+              placeholder={tr('Jan Kowalski')}
             />
           </div>
         )}
 
         <div className="mb-5">
-          <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">E-mail</label>
+          <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{tr('E-mail')}</label>
           <input
             type="email"
             className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
@@ -450,7 +450,7 @@ export default function Login() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Logowanie...
+                  {tr('Logowanie...')}
                 </span>
               ) : tr('Zaloguj się')}
             </button>

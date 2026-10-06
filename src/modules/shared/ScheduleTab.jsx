@@ -7,7 +7,7 @@ import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download
 import { toast } from '../../lib/toast';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { useT } from '../../i18n';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
 import { getCachedUser } from '../../lib/supabase';
 import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
@@ -168,9 +168,9 @@ function EventSendCell({ eventId, teamType, assignments, onSent }) {
       <button
         onClick={async () => { setLoading(true); try { await onSent(); } finally { setLoading(false); } }}
         disabled={loading}
-        title={toSend ? 'Wyślij zaproszenia (mail + push) do przypisanych osób' : 'Brak nowych osób do powiadomienia'}
+        title={toSend ? tr('Wyślij zaproszenia (mail + push) do przypisanych osób') : tr('Brak nowych osób do powiadomienia')}
         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition ${loading ? 'opacity-60' : ''} ${toSend ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'}`}>
-        <Send size={12} /> {loading ? '...' : toSend ? `Wyślij (${toSend})` : 'Wyślij'}
+        <Send size={12} /> {loading ? '...' : toSend ? `${tr('Wyślij')} (${toSend})` : tr('Wyślij')}
       </button>
       {rows.length > 0 && (
         <span className="inline-flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
@@ -315,11 +315,11 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const formatMonthName = (monthKey) => {
     const [year, month] = monthKey.split('-');
     const date = new Date(year, month - 1);
-    return date.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+    return date.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
   };
 
   const formatDateShort = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return new Date(dateString).toLocaleDateString(appLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   // Zapis pola grafiku w events.assignments[teamType]; jednocześnie synchronizacja do schedule_assignments.
@@ -359,7 +359,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       }
       if (added.length || removed.length) await fetchAssignmentsForEvents(teamEvents.map((e) => e.id).filter(Boolean));
     } catch (e) {
-      toast.error(e.message || 'Błąd zapisu przypisania');
+      toast.error(e.message || tr('Błąd zapisu przypisania'));
     }
   };
 
@@ -390,11 +390,11 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const sendForEvent = async (eventId) => {
     const res = await sendInvitesForEvent(eventId, teamType);
     if (res?.success) {
-      if (res.sent > 0) toast.success(`Wysłano powiadomienia: ${res.sent}${res.failed ? `, niepowodzeń: ${res.failed}` : ''}`);
-      else if (res.emailReady === false) toast.error(res.error || 'Brak konfiguracji e-mail na serwerze.');
-      else toast.info('Brak nowych osób do powiadomienia (sprawdź, czy mają e-mail w profilu).');
+      if (res.sent > 0) toast.success(res.failed ? tr('Wysłano powiadomienia: {sent}, niepowodzeń: {failed}', { sent: res.sent, failed: res.failed }) : tr('Wysłano powiadomienia: {sent}', { sent: res.sent }));
+      else if (res.emailReady === false) toast.error(res.error || tr('Brak konfiguracji e-mail na serwerze.'));
+      else toast.info(tr('Brak nowych osób do powiadomienia (sprawdź, czy mają e-mail w profilu).'));
     } else {
-      toast.error(res?.error || 'Nie udało się wysłać powiadomień.');
+      toast.error(res?.error || tr('Nie udało się wysłać powiadomień.'));
     }
     await fetchAssignmentsForEvents(teamEvents.map((e) => e.id).filter(Boolean));
   };
@@ -422,12 +422,12 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Grafik
+          {tr('Grafik')}
         </h2>
         {teamEvents.length > 0 && (
           <button onClick={exportCsv}
             className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-            <Download size={15} /> Eksport CSV
+            <Download size={15} /> {tr('Eksport CSV')}
           </button>
         )}
       </div>
@@ -435,7 +435,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       {members.length === 0 ? (
         <EmptyState icon={Users} title={t('Brak członków w zespole')} subtitle={tr('Najpierw dodaj członków w zakładce "Służby"')} />
       ) : sortedMonths.length === 0 ? (
-        <EmptyState icon={Calendar} title={t('Brak wydarzeń')} subtitle="Dodaj wydarzenia w tym module albo przypisz tę służbę do typu wydarzenia w Ustawieniach." />
+        <EmptyState icon={Calendar} title={t('Brak wydarzeń')} subtitle={tr('Dodaj wydarzenia w tym module albo przypisz tę służbę do typu wydarzenia w Ustawieniach.')} />
       ) : (
         <div className="space-y-4">
           {sortedMonths.map(monthKey => {
@@ -458,8 +458,8 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                         {columns.map(col => (
                           <TH key={col.key} className="min-w-[130px]">{col.label}</TH>
                         ))}
-                        <TH className="min-w-[130px] !text-red-500 dark:!text-red-400">Absencja</TH>
-                        <TH className="min-w-[150px]">Notatki</TH>
+                        <TH className="min-w-[130px] !text-red-500 dark:!text-red-400">{tr('Absencja')}</TH>
+                        <TH className="min-w-[150px]">{tr('Notatki')}</TH>
                       </tr>
                     </THead>
                     <tbody className="relative">
@@ -510,7 +510,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                             <TD>
                               <input
                                 className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
-                                placeholder="Wpisz..."
+                                placeholder={tr('Wpisz...')}
                                 defaultValue={ev.assignments?.[teamType]?.notatki || ''}
                                 onBlur={(e) => updateNotes(ev.id, e.target.value)}
                               />

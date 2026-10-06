@@ -20,6 +20,7 @@ import { applyView } from '../lib/viewData';
 import { resolveDragEnd } from '../lib/dnd';
 import { GROUP_COLORS } from '../lib/constants';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const HANDLE_W = 28;
 const NAME_MIN = 260;
@@ -43,7 +44,7 @@ function ColResizeHandle({ width, onResize, onCommit }) {
   };
   return <div onPointerDown={onDown} onClick={(e) => e.stopPropagation()}
     className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-accent-primary/50 z-20"
-    title="Przeciągnij, by zmienić szerokość" />;
+    title={tr('Przeciągnij, by zmienić szerokość')} />;
 }
 
 // ── Podsumowanie kolumny (stopka grupy) ──────────────────────────────
@@ -104,27 +105,27 @@ const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people,
       <div className="flex items-center gap-1.5 px-2" style={{ flex: 1, minWidth: NAME_MIN, paddingLeft: isSub ? 34 : 8 }}>
         {isSub && <CornerDownRight size={14} className="shrink-0 text-gray-300 dark:text-gray-500" />}
         {!isSub && (
-          <button onClick={onToggleExpand} className={`shrink-0 p-0.5 ${hasSub ? 'text-gray-400 hover:text-accent-primary' : 'text-transparent'}`} title="Podelementy">
+          <button onClick={onToggleExpand} className={`shrink-0 p-0.5 ${hasSub ? 'text-gray-400 hover:text-accent-primary' : 'text-transparent'}`} title={tr('Podelementy')}>
             {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
           </button>
         )}
-        <input value={nameLocal} placeholder={isSub ? 'Podelement' : 'Nazwa elementu'} data-item-name={item.id}
+        <input value={nameLocal} placeholder={isSub ? tr('Podelement') : tr('Nazwa elementu')} data-item-name={item.id}
           onChange={(e) => setNameLocal(e.target.value)}
           onBlur={() => { if (nameLocal !== item.name) onCell(item.id, '__name__', nameLocal); }}
           onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
           className="flex-1 min-w-0 bg-transparent text-sm text-gray-800 dark:text-gray-100 outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600" />
         {!isSub && subCount > 0 && <span className="text-[10px] text-gray-400 shrink-0">{subCount}</span>}
-        <button onClick={() => onOpen(item)} title="Otwórz" className="relative opacity-0 group-hover/row:opacity-100 text-gray-400 hover:text-accent-primary p-0.5">
+        <button onClick={() => onOpen(item)} title={tr('Otwórz')} className="relative opacity-0 group-hover/row:opacity-100 text-gray-400 hover:text-accent-primary p-0.5">
           <Maximize2 size={13} />
         </button>
         {!isSub && (
-          <button onClick={() => onOpen(item)} title="Aktualizacje" className="relative flex items-center text-gray-400 hover:text-accent-primary p-0.5">
+          <button onClick={() => onOpen(item)} title={tr('Aktualizacje')} className="relative flex items-center text-gray-400 hover:text-accent-primary p-0.5">
             <MessageSquare size={14} />
             {updatesCount > 0 && <span className="ml-0.5 text-[10px] text-gray-400">{updatesCount}</span>}
           </button>
         )}
         {!isSub && onAddSub && (
-          <button onClick={() => onAddSub(item)} title="Dodaj podelement" className="opacity-0 group-hover/row:opacity-100 text-gray-400 hover:text-accent-primary p-0.5"><Plus size={13} /></button>
+          <button onClick={() => onAddSub(item)} title={tr('Dodaj podelement')} className="opacity-0 group-hover/row:opacity-100 text-gray-400 hover:text-accent-primary p-0.5"><Plus size={13} /></button>
         )}
       </div>
       {/* Komórki kolumn */}
@@ -176,16 +177,16 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
         }>
           {({ close }) => (
             <div className="p-2">
-              <button onClick={() => { setRenaming(true); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 mb-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Pencil size={14} /> Zmień nazwę</button>
-              <div className="text-[11px] text-gray-400 px-1 pb-1">Kolor grupy</div>
+              <button onClick={() => { setRenaming(true); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 mb-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Pencil size={14} /> {tr('Zmień nazwę')}</button>
+              <div className="text-[11px] text-gray-400 px-1 pb-1">{tr('Kolor grupy')}</div>
               <div className="flex flex-wrap gap-1 mb-2">
                 {GROUP_COLORS.map(c => (
                   <button key={c} onClick={() => api.updateGroup(group.id, { color: c })} className="w-5 h-5 rounded" style={{ backgroundColor: c }} />
                 ))}
               </div>
-              <button onClick={async () => { if (await confirmDialog(`Usunąć grupę „${group.name}" wraz z wszystkimi jej elementami?`)) api.deleteGroup(group.id); close(); }}
+              <button onClick={async () => { if (await confirmDialog(tr('Usunąć grupę „{name}" wraz z wszystkimi jej elementami?', { name: group.name }))) api.deleteGroup(group.id); close(); }}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600">
-                <Trash2 size={14} /> Usuń grupę
+                <Trash2 size={14} /> {tr('Usuń grupę')}
               </button>
             </div>
           )}
@@ -200,7 +201,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
             <div className="flex items-stretch bg-gray-50/70 dark:bg-gray-800/40 border-b border-gray-200 dark:border-gray-700 h-10 sticky top-0 z-10">
               <div className="shrink-0" style={{ width: HANDLE_W }} />
               <div className="shrink-0" style={{ width: 4 }} />
-              <div className="board-th flex items-center px-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ flex: 1, minWidth: NAME_MIN }}>Element</div>
+              <div className="board-th flex items-center px-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ flex: 1, minWidth: NAME_MIN }}>{tr('Element')}</div>
               {columns.map(col => (
                 <div key={col.id} className="shrink-0 relative" style={{ width: col.width || 160 }}>
                   <ColumnHeader column={col} allColumns={columns} onUpdate={api.updateColumn} onDelete={api.deleteColumn} onReorder={canEditStructure ? api.reorderColumns : undefined} />
@@ -241,7 +242,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
                 <div className="shrink-0" style={{ width: 4, backgroundColor: group.color, opacity: 0.4 }} />
                 <button onClick={() => api.addItem(group.id)}
                   className="flex items-center gap-1.5 px-2 py-2 text-sm text-gray-400 hover:text-accent-primary" style={{ flex: 1, minWidth: NAME_MIN }}>
-                  <Plus size={15} /> Dodaj element
+                  <Plus size={15} /> {tr('Dodaj element')}
                 </button>
               </div>
             </div>
@@ -278,7 +279,7 @@ function GroupTitle({ group, canEdit, editing, onStartEdit, onStopEdit, onRename
     );
   }
   return (
-    <button onClick={() => canEdit && onStartEdit()} title={canEdit ? 'Kliknij, aby zmienić nazwę' : undefined}
+    <button onClick={() => canEdit && onStartEdit()} title={canEdit ? tr('Kliknij, aby zmienić nazwę') : undefined}
       className={`font-semibold text-sm rounded px-1 -mx-1 ${canEdit ? 'hover:bg-gray-100 dark:hover:bg-gray-700/60 cursor-text' : 'cursor-default'}`}>
       {group.name}
     </button>
@@ -327,7 +328,7 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
   const statusCol = columns.find(c => c.type === 'status' || c.type === 'priority');
   const bulkStatus = (labelId) => { selected.forEach(id => data.updateCell(id, statusCol.id, labelId)); clearSelection(); };
   const bulkMove = (groupId) => { selected.forEach(id => data.moveItem(id, groupId)); clearSelection(); };
-  const bulkDelete = async () => { if (await confirmDialog(`Usunąć zaznaczone elementy (${selected.size})?`)) { selected.forEach(id => data.deleteItem(id)); clearSelection(); } };
+  const bulkDelete = async () => { if (await confirmDialog(tr('Usunąć zaznaczone elementy ({n})?', { n: selected.size }))) { selected.forEach(id => data.deleteItem(id)); clearSelection(); } };
 
   // ── DnD na poziomie CAŁEJ tablicy (jeden kontekst) → przeciąganie MIĘDZY grupami ──
   const sensors = useSensors(
@@ -359,7 +360,7 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
       {canEditStructure && (
         <button onClick={() => data.addGroup()}
           className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-accent-primary rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/40">
-          <Plus size={16} /> Dodaj grupę
+          <Plus size={16} /> {tr('Dodaj grupę')}
         </button>
       )}
 
@@ -368,11 +369,11 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-gray-900/95 dark:bg-gray-950/95 backdrop-blur-md text-white rounded-2xl shadow-2xl ring-1 ring-white/10 pl-2 pr-1.5 py-1.5">
           <span className="flex items-center gap-2 text-sm font-medium pl-1 py-1">
             <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold tabular-nums">{selected.size}</span>
-            <span className="text-white/80">zaznaczono</span>
+            <span className="text-white/80">{tr('zaznaczono')}</span>
           </span>
           <span className="w-px h-6 bg-white/15 mx-1" />
           {statusCol && (
-            <Popover align="left" width={190} trigger={<button className="text-sm px-3 py-1.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors">Status</button>}>
+            <Popover align="left" width={190} trigger={<button className="text-sm px-3 py-1.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors">{tr('Status')}</button>}>
               {({ close }) => (
                 <div className="p-1.5">
                   {(statusCol.settings?.labels || []).map(l => (
@@ -384,7 +385,7 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
               )}
             </Popover>
           )}
-          <Popover align="left" width={190} trigger={<button className="text-sm px-3 py-1.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors">Przenieś</button>}>
+          <Popover align="left" width={190} trigger={<button className="text-sm px-3 py-1.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors">{tr('Przenieś')}</button>}>
             {({ close }) => (
               <div className="p-1.5">
                 {sortedGroups.map(g => (
@@ -395,9 +396,9 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
               </div>
             )}
           </Popover>
-          {canDeleteItems && <button onClick={bulkDelete} className="text-sm px-3 py-1.5 rounded-lg text-red-300 hover:bg-red-500/20 transition-colors">Usuń</button>}
+          {canDeleteItems && <button onClick={bulkDelete} className="text-sm px-3 py-1.5 rounded-lg text-red-300 hover:bg-red-500/20 transition-colors">{tr('Usuń')}</button>}
           <span className="w-px h-6 bg-white/15 mx-1" />
-          <button onClick={clearSelection} title="Wyczyść zaznaczenie" className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"><X size={16} /></button>
+          <button onClick={clearSelection} title={tr('Wyczyść zaznaczenie')} className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"><X size={16} /></button>
         </div>
       )}
     </div>

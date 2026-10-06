@@ -112,10 +112,10 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
           </div>
           <div>
             <p className="font-semibold text-gray-900 dark:text-white">
-              {totalRecipients} odbiorców
+              {tr('{n} odbiorców', { n: totalRecipients })}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {totalUnsubscribed > 0 && `(${totalUnsubscribed} wypisanych)`}
+              {totalUnsubscribed > 0 && `(${tr('{n} wypisanych', { n: totalUnsubscribed })})`}
             </p>
           </div>
         </div>
@@ -162,7 +162,7 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
             <div>
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                 <Home size={16} />
-                Grupy domowe
+                {tr('Grupy domowe')}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {homeGroups.map(group => (
@@ -197,7 +197,7 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
                   setShowSearch(true);
                 }}
                 onFocus={() => setShowSearch(true)}
-                placeholder="Szukaj po nazwisku lub email..."
+                placeholder={tr('Szukaj po nazwisku lub email...')}
                 className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50"
               />
 
@@ -258,7 +258,7 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
         <div className="flex items-start gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl text-yellow-800 dark:text-yellow-200">
           <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium">{totalUnsubscribed} osób wypisanych z newslettera</p>
+            <p className="font-medium">{tr('{n} osób wypisanych z newslettera', { n: totalUnsubscribed })}</p>
             <p className="text-yellow-700 dark:text-yellow-300 mt-1">
               {tr('Te osoby nie otrzymają tej wiadomości.')}
             </p>

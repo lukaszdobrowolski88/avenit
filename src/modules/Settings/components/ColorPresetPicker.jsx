@@ -139,7 +139,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
             <Palette size={20} className="text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Kolorystyka</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{tr('Kolorystyka')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">{t('Wybierz lub stwórz schemat kolorów')}</p>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Kolor dodatkowy</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{tr('Kolor dodatkowy')}</label>
               <div className="flex items-center gap-3">
                 <input
                   type="color"
@@ -215,7 +215,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Odcienie dodatkowe</label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">{tr('Odcienie dodatkowe')}</label>
               <div className="flex gap-1">
                 {['lightest', 'lighter', 'light', 'DEFAULT', 'dark', 'darkest'].map(shade => {
                   const shades = generateShades(customSecondary);
@@ -240,7 +240,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
               disabled={saving}
               className="px-5 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-bold text-sm"
             >
-              Zapisz
+              {tr('Zapisz')}
             </button>
             <button
               onClick={() => {
@@ -254,7 +254,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
               }}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm"
             >
-              Anuluj
+              {tr('Anuluj')}
             </button>
           </div>
         </div>
@@ -289,7 +289,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
                 <div className="w-6 h-6 rounded-full shadow-inner" style={{ backgroundColor: preset.preview[1] }} />
               </div>
               <p className={`text-xs font-medium ${isActive ? 'text-accent-primary' : 'text-gray-600 dark:text-gray-300'}`}>
-                {preset.label}
+                {tr(preset.label)}
               </p>
             </button>
           );

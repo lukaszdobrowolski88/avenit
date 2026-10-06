@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
+import { tr } from '../i18n';
 
 function useDropdownPosition(triggerRef, isOpen) {
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, openUpward: false });
@@ -51,7 +52,7 @@ export default function CustomSelect({
   value,
   onChange,
   options,
-  placeholder = "Wybierz...",
+  placeholder,
   icon: Icon,
   compact = false,
   mapOptionToLabel,
@@ -96,7 +97,7 @@ export default function CustomSelect({
   };
 
   const selectedOption = options.find(opt => getValue(opt) === value);
-  const displayValue = selectedOption ? getLabel(selectedOption) : placeholder;
+  const displayValue = selectedOption ? getLabel(selectedOption) : (placeholder === undefined ? tr('Wybierz...') : placeholder);
 
   return (
     <div className="w-full">
@@ -164,7 +165,7 @@ export default function CustomSelect({
           })}
           {options.length === 0 && (
             <div className="p-3 text-gray-400 dark:text-gray-500 text-sm text-center">
-              Brak opcji
+              {tr('Brak opcji')}
             </div>
           )}
         </div>,

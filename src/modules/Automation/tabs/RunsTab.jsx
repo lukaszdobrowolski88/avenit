@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import { RUN_STATUSES, statusLabel, formatDateTime, memberName } from '../lib/automationApi';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
+import { tr } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 export default function RunsTab({ membersById, withCampusFilter }) {
@@ -63,10 +64,10 @@ export default function RunsTab({ membersById, withCampusFilter }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <p className="text-sm text-gray-500 dark:text-gray-400 flex-1 min-w-[200px]">Dziennik uruchomień automatyzacji (tworzy je worker w tle).</p>
-        <div className="w-48"><CustomSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} compact icon={Filter} /></div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 flex-1 min-w-[200px]">{tr('Dziennik uruchomień automatyzacji (tworzy je worker w tle).')}</p>
+        <div className="w-48"><CustomSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions.map((o) => ({ ...o, label: tr(o.label) }))} compact icon={Filter} /></div>
         <button onClick={load} className="px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-sm">
-          <RefreshCw size={16} /> Odśwież
+          <RefreshCw size={16} /> {tr('Odśwież')}
         </button>
       </div>
 
@@ -74,16 +75,16 @@ export default function RunsTab({ membersById, withCampusFilter }) {
         {loading ? (
           <Spinner center />
         ) : runs.length === 0 ? (
-          <EmptyState icon={History} title="Brak uruchomień." subtitle="Pojawią się tu po wykonaniu automatyzacji przez workera." />
+          <EmptyState icon={History} title={tr('Brak uruchomień.')} subtitle={tr('Pojawią się tu po wykonaniu automatyzacji przez workera.')} />
         ) : (
           <DataTable flush>
             <THead>
               <tr>
-                <TH>Automatyzacja</TH>
-                <TH>Osoba</TH>
-                <TH>Status</TH>
-                <TH align="center">Krok</TH>
-                <TH>Data</TH>
+                <TH>{tr('Automatyzacja')}</TH>
+                <TH>{tr('Osoba')}</TH>
+                <TH>{tr('Status')}</TH>
+                <TH align="center">{tr('Krok')}</TH>
+                <TH>{tr('Data')}</TH>
               </tr>
             </THead>
             <tbody>
@@ -92,7 +93,7 @@ export default function RunsTab({ membersById, withCampusFilter }) {
                   <TD className="font-medium text-gray-900 dark:text-white">{workflowsById[r.workflow_id]?.name || ''}</TD>
                   <TD muted>{personName(r)}</TD>
                   <TD>
-                    <StatusPill color={statusColor(r.status)}>{statusLabel(r.status)}</StatusPill>
+                    <StatusPill color={statusColor(r.status)}>{tr(statusLabel(r.status))}</StatusPill>
                   </TD>
                   <TD align="center" muted numeric>{r.current_step ?? 0}</TD>
                   <TD muted numeric className="whitespace-nowrap">{formatDateTime(r.started_at || r.created_at)}</TD>

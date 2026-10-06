@@ -38,6 +38,13 @@ export function tr(key, vars) {
   return translate(_lang, key, vars);
 }
 
+// Locale do formatowania dat, liczb i kwot (toLocaleDateString / Intl) w bieżącym języku —
+// zamiast sztywnego 'pl-PL' (po angielsku nazwy miesięcy i dni zostawały polskie).
+const LOCALES = { pl: 'pl-PL', en: 'en-GB', uk: 'uk-UA' };
+export function appLocale() {
+  return LOCALES[_lang] || 'pl-PL';
+}
+
 export function I18nProvider({ children }) {
   const [lang, setLangState] = useState(readInitialLang);
   _lang = lang; // synchronizuj zmienną modułową dla tr()

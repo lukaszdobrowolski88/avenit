@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckSquare, List, LayoutGrid, Clock, CheckCircle, Circle, Plus, Save, Calendar, ChevronLeft, ChevronRight, Trash2, Lock, Users, Video, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
 import Modal from '../../../components/Modal';
@@ -11,17 +11,17 @@ import EmptyState from '../../../components/EmptyState';
 
 const STATUS_CONFIG = {
   todo: {
-    label: tr('Do zrobienia'),
+    label: 'Do zrobienia',
     color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
     icon: Circle,
   },
   in_progress: {
-    label: tr('W trakcie'),
+    label: 'W trakcie',
     color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300',
     icon: Clock,
   },
   done: {
-    label: tr('Gotowe'),
+    label: 'Gotowe',
     color: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300',
     icon: CheckCircle,
   },
@@ -49,6 +49,10 @@ const SOURCE_CONFIG = {
     bgColor: 'bg-indigo-100 dark:bg-indigo-900/30',
   },
 };
+
+// Stałe etykiety źródeł (z useDashboardData) tłumaczymy przy wyświetlaniu; nazwy grup/tablic to dane.
+const FIXED_SOURCE_LABELS = ['Osobiste', 'Grupa domowa', 'Media Team', 'Tablica'];
+const sourceLabel = (label) => (FIXED_SOURCE_LABELS.includes(label) ? tr(label) : label);
 
 // ============================================
 // CUSTOM DATE PICKER
@@ -124,14 +128,14 @@ const CustomDatePicker = ({ value, onChange }) => {
       <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary-light transition">
         <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
+          {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
         </span>
       </div>
       {isOpen && coords.width > 0 && document.body && createPortal(
         <div className="datepicker-portal fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100 w-[280px]" style={{ ...(coords.openUpward ? { bottom: `calc(100vh - ${coords.top}px)` } : { top: coords.top }), left: coords.left }}>
            <div className="flex justify-between items-center mb-4">
              <button type="button" onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronLeft size={18} /></button>
-             <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
+             <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
              <button type="button" onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronRight size={18} /></button>
            </div>
            <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
@@ -319,16 +323,16 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
       subtitle={!isNewTask ? (
         <span className={`inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 text-xs font-medium rounded-full ${sourceConfig.bgColor} ${sourceConfig.color}`}>
           <SourceIcon size={12} />
-          {task.source_label}
+          {sourceLabel(task.source_label)}
         </span>
       ) : undefined}
       size="md"
       footer={<>
         {task.id && (
-          <Button type="button" variant="danger" icon={Trash2} onClick={handleDelete} className="mr-auto">Usuń</Button>
+          <Button type="button" variant="danger" icon={Trash2} onClick={handleDelete} className="mr-auto">{tr('Usuń')}</Button>
         )}
-        <Button type="button" variant="secondary" onClick={onClose}>Anuluj</Button>
-        <Button type="submit" form="dashboard-task-form" icon={Save} loading={saving} disabled={!task.title.trim()}>Zapisz</Button>
+        <Button type="button" variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button type="submit" form="dashboard-task-form" icon={Save} loading={saving} disabled={!task.title.trim()}>{tr('Zapisz')}</Button>
       </>}
     >
         <div className="p-6">
@@ -367,7 +371,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
                       }`}
                     >
                       <Icon size={16} />
-                      {config.label}
+                      {tr(config.label)}
                     </button>
                   );
                 })}
@@ -445,7 +449,7 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+    return date.toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' });
   };
 
   const isOverdue = (dueDate) => {
@@ -495,10 +499,10 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 hover:text-accent-primary dark:hover:text-accent-primary-light"
           >
             <Plus size={16} />
-            Dodaj
+            {tr('Dodaj')}
           </button>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {pendingTasks.length} do zrobienia
+            {tr('{n} do zrobienia', { n: pendingTasks.length })}
           </p>
         </div>
         <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
@@ -574,7 +578,7 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
                 <div className="flex items-center gap-2 mt-2">
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full ${sourceConfig.bgColor} ${sourceConfig.color}`}>
                     <SourceIcon size={10} />
-                    {task.source_label}
+                    {sourceLabel(task.source_label)}
                   </span>
                 </div>
               </div>
@@ -618,7 +622,7 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
                   </p>
                   <span className={`inline-flex items-center gap-1 text-[10px] ${sourceConfig.color}`}>
                     <SourceIcon size={10} />
-                    {task.source_label}
+                    {sourceLabel(task.source_label)}
                   </span>
                 </div>
                 {task.due_date && (
@@ -639,13 +643,13 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
       {/* Show completed count */}
       {completedTasks.length > 0 && (
         <p className="text-center text-xs text-gray-400 dark:text-gray-500">
-          {completedTasks.length} ukończonych zadań
+          {tr('{n} ukończonych zadań', { n: completedTasks.length })}
         </p>
       )}
 
       {pendingTasks.length > (viewMode === 'tiles' ? 6 : 8) && (
         <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-          + {pendingTasks.length - (viewMode === 'tiles' ? 6 : 8)} więcej zadań
+          + {tr('{n} więcej zadań', { n: pendingTasks.length - (viewMode === 'tiles' ? 6 : 8) })}
         </p>
       )}
 
