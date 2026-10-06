@@ -32,7 +32,7 @@ export default function TimeInput({ value = '', onChange, className = '', placeh
 
   const seg = 'w-8 bg-transparent text-center outline-none tabular-nums text-gray-800 dark:text-white';
   return (
-    <div className={`inline-flex items-center gap-1 ${className}`}>
+    <div className={`ui-field inline-flex items-center gap-1 ${className}`}>
       <Clock size={16} className="text-gray-400 mr-1 shrink-0" />
       <input ref={hhRef} inputMode="numeric" value={hhRaw} onChange={onHour} onBlur={normalize}
         placeholder="--" aria-label="Godzina" className={seg} />

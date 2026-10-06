@@ -15,21 +15,34 @@
    więc akcenty przechodzą na musztardę/kurkumę. !important — palety są ustawiane inline na :root
    (colorPresets.js), a ważna deklaracja z arkusza wygrywa z nieważną inline. */
 html.dark[data-color-preset="avenit"] {
-  --accent-primary: 168 129 10 !important;
-  --accent-primary-light: 201 162 39 !important;
+  --accent-primary: 255 190 11 !important;
+  --accent-primary-light: 255 190 11 !important;
   --accent-primary-lighter: 58 46 12 !important;
   --accent-primary-lightest: 38 31 12 !important;
-  --accent-primary-dark: 138 102 6 !important;
+  --accent-primary-dark: 201 162 39 !important;
   --accent-primary-darkest: 42 35 18 !important;
-  --accent-secondary: 138 102 6 !important;
-  --accent-secondary-light: 168 129 10 !important;
+  --accent-secondary: 255 190 11 !important;
+  --accent-secondary-light: 255 190 11 !important;
   --accent-secondary-lighter: 58 46 12 !important;
   --accent-secondary-lightest: 38 31 12 !important;
-  --accent-secondary-dark: 107 79 5 !important;
+  --accent-secondary-dark: 201 162 39 !important;
   --accent-secondary-darkest: 42 35 18 !important;
 }
 
 :root {
+  /* Szarości (Tailwind gray) — domyślna paleta; motyw „Avenit” nadpisuje je ciepłymi. */
+  --gray-50: 249 250 251;
+  --gray-100: 243 244 246;
+  --gray-200: 229 231 235;
+  --gray-300: 209 213 219;
+  --gray-400: 156 163 175;
+  --gray-500: 107 114 128;
+  --gray-600: 75 85 99;
+  --gray-700: 55 65 81;
+  --gray-800: 31 41 55;
+  --gray-900: 17 24 39;
+  --gray-950: 3 7 18;
+
   /* Avenit Gold (default) */
   --accent-primary: 217 119 6;         /* amber-600 */
   --accent-primary-light: 245 158 11;  /* amber-500 */
@@ -200,4 +213,13 @@ button {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Ikona w polu wyszukiwania (absolutna, PRZED <input> w DOM) była przykrywana półprzezroczystym,
+   rozmytym tłem pola — widać było rozmazany kwadracik. Ikona nad polem, nie łapie kliknięć. */
+.relative > svg.absolute { z-index: 1; pointer-events: none; }
+/* Globalna reguła input[type=…] (wyżej) ma wyższą specyficzność niż klasy Tailwinda, więc jej
+   px-4 zjadało pl-9/pl-10 pól z ikoną z lewej — tekst wchodził pod lupę. Odstęp na ikonę. */
+.relative:has(> svg.absolute:is(.left-2, .left-2\.5, .left-3, .left-3\.5, .left-4)) > :is(input, select) {
+  padding-left: 2.5rem;
 }

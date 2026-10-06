@@ -188,7 +188,8 @@ export default function ProgramsList() {
       >
         <div className="flex justify-between items-center gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ background: typeColor || '#ec4899' }} />
+            {/* Kolor typu jako kropka, nie pionowa belka (decyzja właściciela: belka = „AI slop”). */}
+            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: typeColor || '#ec4899' }} />
             <div className="min-w-0">
               <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">
                 {p.title || formatDateFull(p.date)}
@@ -235,7 +236,7 @@ export default function ProgramsList() {
         {/* Section header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/50" style={{ background: `${type.color || '#6366f1'}08` }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm" style={{ background: type.color || '#6366f1' }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm from-accent-primary" style={{ background: type.color || '#6366f1' }}>
               <DynamicIcon name={type.icon} size={16} />
             </div>
             <h2 className="font-bold text-gray-800 dark:text-white text-base">{type.name}</h2>
@@ -254,7 +255,8 @@ export default function ProgramsList() {
             <button
               data-tour="prog-new"
               onClick={() => handleNewProgram(type.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition text-white shadow-sm hover:shadow-md"
+              // from-accent-primary: w motywie „Avenit” przycisk akcji (kurkuma); w innych wygrywa kolor typu z inline.
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition text-white shadow-sm hover:shadow-md from-accent-primary"
               style={{ background: type.color || '#6366f1' }}
             >
               <Plus size={14} />

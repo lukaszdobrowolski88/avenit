@@ -801,20 +801,20 @@ export default function HomeGroupsModule() {
 
       {/* GROUPS TAB */}
       {activeTab === 'groups' && (
-        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-          <div className="flex justify-between items-center mb-6">
+        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-colors">
+          <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Grupy Domowe ({filteredGroups.length})
             </h2>
-            <div className="flex gap-3">
-              <div className="relative">
+            <div className="flex gap-3 w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-none min-w-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
                   placeholder={t('Szukaj...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
                 />
               </div>
               <Button data-tour="hg-add-group" onClick={() => openModal('group')} icon={Plus}>

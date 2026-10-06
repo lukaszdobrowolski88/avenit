@@ -20,6 +20,11 @@ export default {
         '3xl': 'calc(1.5rem * var(--radius-scale, 1))',
       },
       colors: {
+        // Szarości przez zmienne CSS: domyślnie dokładnie paleta Tailwinda (index.css :root),
+        // w motywie „Avenit” ciepłe szarości jak w aplikacji mobilnej (papier/słód).
+        gray: Object.fromEntries(
+          ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'].map((k) => [k, `rgb(var(--gray-${k}) / <alpha-value>)`])
+        ),
         accent: {
           primary: 'rgb(var(--accent-primary) / <alpha-value>)',
           'primary-light': 'rgb(var(--accent-primary-light) / <alpha-value>)',

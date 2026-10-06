@@ -1,13 +1,13 @@
 // Presety kolorów - każdy kolor jako RGB triplet (dla Tailwind opacity)
 export const COLOR_PRESETS = {
-  // Marka Avenit (grafiki_avenit): słód zamiast czerni na przyciskach i aktywnych elementach,
-  // musztarda jako „złoty" akcent tekstu/obramowań, jasna kurkuma jako tło wyróżnień.
-  // Kurkuma NIE jest kolorem przycisku — biały napis na żółtym byłby nieczytelny.
-  // Tryb ciemny ma własne odcienie (index.css: html.dark[data-color-preset="avenit"]).
+  // Marka Avenit (grafiki_avenit) — jak aplikacja mobilna. Tekst-akcent = musztarda (#8A6606),
+  // obramowania/fokus = kurkuma, tła wyróżnień = jasna kurkuma. Przyciski i kafelki z gradientem
+  // akcentu przemalowuje src/styles/brand-avenit.css (kurkuma + słodowy tekst / papier + słód),
+  // bo biały napis na kurkumie byłby nieczytelny. Tryb ciemny: index.css.
   'avenit': {
     label: 'Avenit (marka)',
-    primary: { lightest: '255 248 225', lighter: '255 241 194', light: '138 102 6', DEFAULT: '42 35 18', dark: '31 25 12', darkest: '21 17 10' },
-    secondary: { lightest: '255 248 225', lighter: '255 233 168', light: '107 79 5', DEFAULT: '58 52 39', dark: '42 35 18', darkest: '26 21 10' },
+    primary: { lightest: '242 238 227', lighter: '255 241 194', light: '255 190 11', DEFAULT: '138 102 6', dark: '107 79 5', darkest: '42 35 18' },
+    secondary: { lightest: '242 238 227', lighter: '255 233 168', light: '255 190 11', DEFAULT: '138 102 6', dark: '107 79 5', darkest: '42 35 18' },
     preview: ['#FFBE0B', '#2A2312']
   },
   'pink-orange': {
