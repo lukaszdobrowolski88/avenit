@@ -1,3 +1,6 @@
+import { tr } from '../../../../i18n';
+import { pluralForm } from './kiosk';
+
 /**
  * Oblicza wiek na podstawie roku urodzenia
  */
@@ -34,12 +37,14 @@ export function getSuggestedLocation(birthYear, locations) {
  */
 export function formatAge(birthYear) {
   const age = calculateAge(birthYear);
-  if (age === null) return 'Nieznany wiek';
+  if (age === null) return tr('Nieznany wiek');
+  if (age === 0) return tr('Niemowlę');
+  return yearsLabel(age);
+}
 
-  if (age === 0) return 'Niemowlę';
-  if (age === 1) return '1 rok';
-  if (age >= 2 && age <= 4) return `${age} lata`;
-  return `${age} lat`;
+// „1 rok / 2 lata / 5 lat” — odmiana jak w języku polskim.
+export function yearsLabel(n) {
+  return pluralForm(n, tr('{n} rok', { n }), tr('{n} lata', { n }), tr('{n} lat', { n }));
 }
 
 /**
@@ -67,16 +72,16 @@ export function formatAgeRange(location) {
   const max = location.max_age;
 
   if ((min === null || min === undefined) && (max === null || max === undefined)) {
-    return 'Wszystkie wieki';
+    return tr('Wszystkie wieki');
   }
 
   if (min === null || min === undefined) {
-    return `Do ${max} lat`;
+    return tr('do {n} lat', { n: max });
   }
 
   if (max === null || max === undefined) {
-    return `Od ${min} lat`;
+    return tr('od {n} lat', { n: min });
   }
 
-  return `${min}-${max} lat`;
+  return tr('{min}-{max} lat', { min, max });
 }

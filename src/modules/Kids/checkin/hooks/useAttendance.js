@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../../lib/supabase';
+import { tr } from '../../../../i18n';
 
 export function useAttendance(sessionId) {
   const [checkins, setCheckins] = useState([]);
@@ -53,6 +54,28 @@ export function useAttendance(sessionId) {
         }))
       };
     });
+
+    // Dzieci zameldowane bez sali (sale są opcjonalne) — osobna karta, żeby nie „znikały”.
+    const unassigned = checkinsData.filter(
+      c => !c.checked_out_at && (!c.location_id || !locations.some(l => l.id === c.location_id))
+    );
+    if (unassigned.length > 0) {
+      stats.push({
+        id: '__none',
+        name: tr('Bez sali'),
+        room_number: null,
+        currentCount: unassigned.length,
+        capacity: null,
+        fillPercentage: null,
+        children: unassigned.map(c => ({
+          id: c.id,
+          name: c.is_guest ? c.guest_name : c.kids_students?.full_name,
+          isGuest: c.is_guest,
+          securityCode: c.security_code,
+          checkedInAt: c.checked_in_at
+        }))
+      });
+    }
 
     setLocationStats(stats);
   }, []);
@@ -111,7 +134,6 @@ export function useAttendance(sessionId) {
           filter: `session_id=eq.${sessionId}`
         },
         async (payload) => {
-          console.log('Realtime update:', payload.eventType, payload);
 
           if (payload.eventType === 'INSERT') {
             // Fetch full record with joins

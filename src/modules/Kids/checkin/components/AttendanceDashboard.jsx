@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useAttendance } from '../hooks/useAttendance';
-import { ClipboardList, LayoutGrid, RefreshCw, Search, Loader2 } from 'lucide-react';
+import { ClipboardList, LayoutGrid, RefreshCw, Search, Loader2, LogOut } from 'lucide-react';
 import { tr, appLocale } from '../../../../i18n';
 import NotifyParentButton from './NotifyParentButton';
 import EmptyState from '../../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, EmptyRow, StatusPill, STATUS_COLORS } from '../../../../components/ui/DataTable';
+import { useCheckin } from '../hooks/useCheckin';
+import { confirmDialog } from '../../../../lib/dialog';
+import { toast } from '../../../../lib/toast';
 
 export default function AttendanceDashboard({ session, locations }) {
   const [view, setView] = useState('list');
@@ -20,6 +23,32 @@ export default function AttendanceDashboard({ session, locations }) {
     loading,
     refresh
   } = useAttendance(session?.id);
+  const { checkOut } = useCheckin();
+  const [checkingOutId, setCheckingOutId] = useState(null);
+
+  // Wydanie ręczne (rodzic bez naklejki albo stary kod z telefonu) — po sprawdzeniu tożsamości.
+  const handleManualCheckout = async (checkin) => {
+    const name = checkin.is_guest ? checkin.guest_name : checkin.kids_students?.full_name;
+    const ok = await confirmDialog({
+      title: tr('Wydać dziecko: {name}?', { name: name || tr('Dziecko') }),
+      message: tr('Użyj tylko po sprawdzeniu, że odbiera rodzic lub upoważniony opiekun.'),
+      confirmLabel: tr('Wydaj dziecko'),
+      danger: false,
+    });
+    if (!ok) return;
+    setCheckingOutId(checkin.id);
+    try {
+      const row = await checkOut(checkin.id);
+      if (row) {
+        toast.success(tr('Wydano: {name}', { name: name || tr('Dziecko') }));
+        refresh();
+      } else {
+        toast.error(tr('Nie udało się oznaczyć odbioru. Spróbuj ponownie.'));
+      }
+    } finally {
+      setCheckingOutId(null);
+    }
+  };
 
   const getFilteredCheckins = () => {
     let filtered = [];
@@ -50,23 +79,25 @@ export default function AttendanceDashboard({ session, locations }) {
 
   const filteredCheckins = getFilteredCheckins();
 
+  // Zapełnienie sali w kolorze marki; czerwień dopiero, gdy sala jest pełna.
   const getFillColor = (percentage) => {
     if (percentage === null) return 'bg-gray-200 dark:bg-gray-700';
-    if (percentage < 70) return 'bg-green-500';
-    if (percentage < 90) return 'bg-yellow-500';
+    if (percentage < 100) return 'bg-accent-primary';
     return 'bg-red-500';
   };
 
   const getFillTextColor = (percentage) => {
-    if (percentage === null) return 'text-gray-400 dark:text-gray-500';
-    if (percentage < 70) return 'text-green-600 dark:text-green-400';
-    if (percentage < 90) return 'text-yellow-600 dark:text-yellow-400';
+    if (percentage === null || percentage < 100) return 'text-gray-900 dark:text-white';
     return 'text-red-600 dark:text-red-400';
   };
 
   if (!session) {
     return (
-      <EmptyState icon={ClipboardList} title={tr('Brak aktywnej sesji. Przejdź do ustawień, aby utworzyć sesję.')} />
+      <EmptyState
+        icon={ClipboardList}
+        title={tr('Dziś nikt nie jest jeszcze zameldowany')}
+        subtitle={tr('Lista obecności pojawi się po pierwszym meldowaniu dziecka.')}
+      />
     );
   }
 
@@ -110,6 +141,8 @@ export default function AttendanceDashboard({ session, locations }) {
           <button
             onClick={refresh}
             disabled={loading}
+            aria-label={tr('Odśwież')}
+            title={tr('Odśwież')}
             className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
@@ -118,7 +151,14 @@ export default function AttendanceDashboard({ session, locations }) {
       </div>
 
       {/* Rooms view */}
-      {view === 'rooms' && (
+      {view === 'rooms' && locationStats.length === 0 && (
+        <EmptyState
+          icon={LayoutGrid}
+          title={tr('Nie ma jeszcze sal ani zameldowanych dzieci')}
+          subtitle={tr('Sale dodasz w zakładce Ustawienia → Sale.')}
+        />
+      )}
+      {view === 'rooms' && locationStats.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {locationStats.map((loc) => (
             <div
@@ -133,7 +173,7 @@ export default function AttendanceDashboard({ session, locations }) {
                   </h3>
                   {loc.room_number && (
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {tr('Sala')} {loc.room_number}
+                      {tr('Pokój {n}', { n: loc.room_number })}
                     </span>
                   )}
                 </div>
@@ -166,8 +206,8 @@ export default function AttendanceDashboard({ session, locations }) {
                       <span className="text-gray-900 dark:text-gray-100">
                         {child.name}
                         {child.isGuest && (
-                          <span className="ml-1.5 bg-amber-400 dark:bg-amber-500 text-black px-1.5 py-0.5 rounded text-[10px] font-bold">
-                            {tr('GOŚĆ')}
+                          <span className="ml-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-1.5 py-0.5 rounded text-[11px] font-bold">
+                            {tr('Gość')}
                           </span>
                         )}
                       </span>
@@ -231,15 +271,17 @@ export default function AttendanceDashboard({ session, locations }) {
               <tr>
                 <TH>{tr('Imię')}</TH>
                 <TH>{tr('Sala')}</TH>
-                <TH>{tr('Kod')}</TH>
-                <TH>{tr('Check-in')}</TH>
+                <TH>{tr('Kod odbioru')}</TH>
+                <TH>{tr('Zameldowano')}</TH>
                 <TH>{tr('Status')}</TH>
                 <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
               </tr>
             </THead>
             <tbody>
               {filteredCheckins.length === 0 ? (
-                <EmptyRow colSpan={6}>{tr('Brak wyników')}</EmptyRow>
+                <EmptyRow colSpan={6}>
+                  {checkins.length === 0 ? tr('Nikt nie jest jeszcze zameldowany w tej sesji.') : tr('Żadne meldowanie nie pasuje do filtrów.')}
+                </EmptyRow>
               ) : (
                 filteredCheckins.map((checkin) => {
                   const name = checkin.is_guest
@@ -256,7 +298,7 @@ export default function AttendanceDashboard({ session, locations }) {
                         <div className="flex items-center gap-2">
                           {name}
                           {checkin.is_guest && (
-                            <StatusPill color={STATUS_COLORS.warning}>{tr('GOŚĆ')}</StatusPill>
+                            <StatusPill color={STATUS_COLORS.neutral}>{tr('Gość')}</StatusPill>
                           )}
                         </div>
                       </TD>
@@ -289,14 +331,25 @@ export default function AttendanceDashboard({ session, locations }) {
                             })}
                           </StatusPill>
                         ) : (
-                          <StatusPill color={STATUS_COLORS.success}>
+                          <StatusPill color={STATUS_COLORS.accent}>
                             {tr('Obecny')}
                           </StatusPill>
                         )}
                       </TD>
                       <TD align="right">
                         {!isCheckedOut && (
-                          <NotifyParentButton checkin={checkin} sessionId={session?.id} />
+                          <div className="flex justify-end gap-2">
+                            <NotifyParentButton checkin={checkin} sessionId={session?.id} />
+                            <button
+                              type="button"
+                              onClick={() => handleManualCheckout(checkin)}
+                              disabled={checkingOutId === checkin.id}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition disabled:opacity-50"
+                            >
+                              {checkingOutId === checkin.id ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
+                              {tr('Wydaj')}
+                            </button>
+                          </div>
                         )}
                       </TD>
                     </TR>

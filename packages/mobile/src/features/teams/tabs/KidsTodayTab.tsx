@@ -109,13 +109,14 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
   }, [checkins]);
   const present = checkins.filter((c) => !c.outAt).length;
 
-  // Kod rodzica — 4 cyfry; kod zameldowania może mieć kilka (z „|”), jak web.
+  // Kod odbioru z naklejki rodzica — losowe 4–6 znaków (litery/cyfry, od 2026-10); starsze
+  // kody to cyfry telefonu i mogą być kilka (z „|”), jak web.
   const pickup = () => {
-    if (!/^\d{4}$/.test(code)) {
-      Alert.alert('Wpisz 4 cyfry', 'Kod to ostatnie 4 cyfry telefonu rodzica.');
+    if (!/^[0-9A-Z]{4,6}$/.test(code)) {
+      Alert.alert('Wpisz kod odbioru', 'Kod odbioru jest na naklejce rodzica (4–6 znaków).');
       return;
     }
-    const match = checkins.filter((c) => !c.outAt && c.code.split('|').includes(code));
+    const match = checkins.filter((c) => !c.outAt && String(c.code ?? '').toUpperCase().split('|').includes(code));
     if (!match.length) {
       Alert.alert('Brak dzieci z tym kodem', 'Sprawdź kod albo zapytaj koordynatora.');
       return;
@@ -172,16 +173,17 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TextInput
             value={code}
-            onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 4))}
-            keyboardType="number-pad"
-            placeholder="Kod rodzica (4 cyfry)"
+            onChangeText={(t) => setCode(t.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 6))}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            placeholder="Kod odbioru z naklejki rodzica"
             placeholderTextColor="#857F70"
             style={{ flex: 1, height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#F6F4EE', fontSize: 18, letterSpacing: 4, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}
           />
           <Pressable
             onPress={pickup}
             className="active:opacity-70"
-            style={{ paddingHorizontal: 18, height: 46, borderRadius: 14, backgroundColor: code.length === 4 ? '#15803d' : '#D3CCBC', alignItems: 'center', justifyContent: 'center' }}
+            style={{ paddingHorizontal: 18, height: 46, borderRadius: 14, backgroundColor: code.length >= 4 ? '#15803d' : '#D3CCBC', alignItems: 'center', justifyContent: 'center' }}
           >
             <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_700Bold' }}>Wydaj</Text>
           </Pressable>

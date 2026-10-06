@@ -13,6 +13,7 @@ import DialogHost from './components/DialogHost';
 import Sidebar, { SidebarProvider } from './components/Sidebar';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import KioskGuard from './modules/Kids/checkin/KioskGuard';
 import InstallPrompt from './components/InstallPrompt';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import CommandPalette from './components/CommandPalette';
@@ -464,6 +465,8 @@ function AppInner() {
     <BrowserRouter>
       {/* Analityka: odsłony przy zmianie trasy + otwarcia modułów */}
       <PageTracker />
+      {/* Tryb kiosku meldowania dzieci: każda trasa poza /kids wraca do kiosku */}
+      <KioskGuard />
       <PermissionsProvider>
         <OnboardingProvider user={session.user}>
         <CampusProvider>

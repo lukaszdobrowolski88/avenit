@@ -10,14 +10,17 @@ import { invokeSendPush } from '../../../PushCampaigns/hooks/usePushCampaigns';
 import { normalizePhone } from '../../../shared/recipients';
 
 // Gotowe szablony wiadomości do rodzica.
+// Treść budowana w momencie kliknięcia — w bieżącym języku aplikacji.
 const TEMPLATES = [
   {
     label: 'Prosimy o odbiór dziecka',
-    build: (name) => `Prosimy o odbiór dziecka${name ? `: ${name}` : ''}. Dziękujemy!`,
+    build: (name) => (name
+      ? tr('Prosimy o odbiór dziecka: {name}. Dziękujemy!', { name })
+      : tr('Prosimy o odbiór dziecka. Dziękujemy!')),
   },
   {
     label: 'Dziecko potrzebuje rodzica',
-    build: (name) => `${name || 'Dziecko'} potrzebuje rodzica — prosimy o przyjście do sali dziecięcej.`,
+    build: (name) => tr('{name} potrzebuje rodzica — prosimy o przyjście do sali dziecięcej.', { name: name || tr('Dziecko') }),
   },
 ];
 
@@ -73,7 +76,8 @@ export default function NotifyParentButton({ checkin, sessionId }) {
         list[0];
       setSelectedContactId(preferred?.id || '');
     } catch (e) {
-      setError(e.message || tr('Nie udało się pobrać kontaktów opiekuna.'));
+      console.error('[check-in] kontakty opiekuna', e);
+      setError(tr('Nie udało się pobrać kontaktów opiekuna.'));
       setContacts([]);
     } finally {
       setLoadingContacts(false);
@@ -144,7 +148,10 @@ export default function NotifyParentButton({ checkin, sessionId }) {
       setSentInfo({ name: selectedContact.full_name });
       setTimeout(() => setOpen(false), 1800);
     } catch (e) {
-      setError(e.message || tr('Wystąpił błąd podczas wysyłania.'));
+      console.error('[check-in] powiadomienie rodzica', e);
+      setError(channel === 'sms'
+        ? tr('Nie udało się wysłać SMS. Sprawdź numer opiekuna i spróbuj ponownie.')
+        : tr('Nie udało się wysłać powiadomienia. Spróbuj ponownie.'));
     } finally {
       setSending(false);
     }
@@ -184,10 +191,10 @@ export default function NotifyParentButton({ checkin, sessionId }) {
             {/* Body */}
             {sentInfo ? (
               <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
-                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle size={32} className="text-green-500 dark:text-green-400" />
+                <div className="w-16 h-16 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle size={32} className="text-accent-primary dark:text-accent-primary-light" />
                 </div>
-                <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
                   {tr('Wysłano!')}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -241,7 +248,7 @@ export default function NotifyParentButton({ checkin, sessionId }) {
                       <Spinner size={16} label={tr('Ładowanie...')} />
                     </div>
                   ) : contacts.length === 0 ? (
-                    <p className="text-sm text-amber-600 dark:text-amber-400 py-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 py-2">
                       {tr('Brak kontaktów opiekuna dla tego dziecka.')}
                     </p>
                   ) : (

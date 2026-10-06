@@ -15,6 +15,7 @@ import EventScheduleTab from '../shared/ScheduleTab';
 import MaterialsTab from '../shared/MaterialsTab';
 import EquipmentTab from '../shared/EquipmentTab';
 import CheckinTab from './checkin/CheckinTab';
+import { isKioskActive } from './checkin/utils/kiosk';
 import HouseholdManager from './components/HouseholdManager';
 import CustomSelect from '../../components/CustomSelect';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
@@ -222,12 +223,27 @@ const TeacherMultiSelect = ({ teachers, selectedIds, onChange }) => {
 // teacher_ids to jsonb — starsze wiersze mają `{}` zamiast `[]` (dawny błąd zapisu pustych tablic).
 const asIdList = (v) => (Array.isArray(v) ? v : []);
 
+// Etykieta nad polem (zamiast samych placeholderów, które znikały przy edycji).
+const FIELD_LABEL = 'block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5';
+const FIELD_INPUT = 'w-full p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:border-accent-primary focus:outline-none';
+const birthYearOptions = (current) => {
+  const now = new Date().getFullYear();
+  const years = [];
+  for (let y = now; y >= now - 18; y--) years.push(y);
+  const cur = parseInt(current, 10);
+  if (cur && !years.includes(cur)) years.push(cur);
+  return years;
+};
+
 export default function KidsModule() {
   const t = useT();
   const { userRole } = useUserRole();
   const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
-  const [activeTab, setActiveTab] = useState('schedule');
+  // Kiosk włączony na tym urządzeniu → od razu meldowanie (po odświeżeniu kiosk wraca).
+  // W niedzielę domyślnie też meldowanie — wolontariusz przy wejściu nie szuka zakładki.
+  const [kioskBoot] = useState(() => isKioskActive());
+  const [activeTab, setActiveTab] = useState(() => (kioskBoot || new Date().getDay() === 0 ? 'checkin' : 'schedule'));
   const [teachers, setTeachers] = useState([]);
   const [groups, setGroups] = useState([]);
   const [students, setStudents] = useState([]);
@@ -371,8 +387,15 @@ export default function KidsModule() {
   };
 
   const saveExpense = async () => {
-    if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      toast.error(tr('Wypełnij wymagane pola'));
+    const missing = [
+      !expenseForm.payment_date && tr('data dokumentu'),
+      !expenseForm.amount && tr('kwota'),
+      !expenseForm.contractor && tr('kontrahent'),
+      !expenseForm.responsible_person && tr('osoba odpowiedzialna'),
+      !expenseForm.description && tr('pozycja budżetowa'),
+    ].filter(Boolean);
+    if (missing.length > 0) {
+      toast.error(tr('Uzupełnij: {fields}', { fields: missing.join(', ') }));
       return;
     }
 
@@ -452,17 +475,97 @@ export default function KidsModule() {
       toast.error(tr('Błąd zapisywania: ') + err.message);
     }
   };
-  const deleteTeacher = async (id) => { if (await confirmDialog(tr('Usunąć?'))) { await supabase.from('kids_teachers').delete().eq('id', id); fetchData(); } };
-  const saveGroup = async () => { if (!groupForm.name) return toast.error(tr('Podaj nazwę')); const payload = { name: groupForm.name, room: groupForm.room, age_range: groupForm.age_range, teacher_ids: groupForm.teacher_ids }; try { if (groupForm.id) await supabase.from('kids_groups').update(payload).eq('id', groupForm.id); else await supabase.from('kids_groups').insert([{ ...payload, materials: [], campus_id: campusIdForInsert }]); setShowGroupModal(false); fetchData(); } catch (err) { toast.error(err.message); } };
-  const deleteGroup = async (id) => { if (await confirmDialog(tr('Usunąć?'))) { await supabase.from('kids_groups').delete().eq('id', id); fetchData(); } };
-  const saveGlobalStudent = async () => { if (!globalStudentForm.full_name) return toast.error(tr('Podaj imię')); const payload = { full_name: globalStudentForm.full_name, birth_year: globalStudentForm.birth_year, parent_info: globalStudentForm.parent_info, notes: globalStudentForm.notes, group_id: globalStudentForm.group_id ? parseInt(globalStudentForm.group_id) : null, household_id: globalStudentForm.household_id || null }; try { if (globalStudentForm.id) await supabase.from('kids_students').update(payload).eq('id', globalStudentForm.id); else await supabase.from('kids_students').insert([{ ...payload, campus_id: campusIdForInsert }]); setShowGlobalStudentModal(false); fetchData(); } catch (err) { toast.error(err.message); } };
-  const deleteStudent = async (id) => { if(await confirmDialog(tr('Usunąć?'))) { await supabase.from('kids_students').delete().eq('id', id); fetchData(); } };
+  // Usuwanie z nazwą obiektu i skutkiem; błąd zapisu nie jest już połykany.
+  const removeRow = async (table, id, { title, message, confirmLabel, done }) => {
+    if (!await confirmDialog({ title, message, confirmLabel, danger: true })) return;
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) { console.error(error); toast.error(tr('Nie udało się usunąć. Spróbuj ponownie.')); return; }
+    toast.success(done);
+    fetchData();
+  };
+  const deleteTeacher = (id) => {
+    const name = teachers.find(x => x.id === id)?.full_name || '';
+    return removeRow('kids_teachers', id, {
+      title: tr('Usunąć nauczyciela „{name}”?', { name }),
+      message: tr('Zniknie z list nauczycieli w grupach. Tej operacji nie można cofnąć.'),
+      confirmLabel: tr('Usuń nauczyciela'),
+      done: tr('Nauczyciel usunięty'),
+    });
+  };
+  const [savingForm, setSavingForm] = useState(false);
+  const saveGroup = async () => {
+    if (!groupForm.name?.trim()) return toast.error(tr('Podaj nazwę grupy'));
+    const payload = { name: groupForm.name.trim(), room: groupForm.room, age_range: groupForm.age_range, teacher_ids: groupForm.teacher_ids };
+    setSavingForm(true);
+    try {
+      const { error } = groupForm.id
+        ? await supabase.from('kids_groups').update(payload).eq('id', groupForm.id)
+        : await supabase.from('kids_groups').insert([{ ...payload, materials: [], campus_id: campusIdForInsert }]);
+      if (error) throw error;
+      toast.success(tr('Zapisano grupę'));
+      setShowGroupModal(false);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error(tr('Nie udało się zapisać grupy. Spróbuj ponownie.'));
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  const deleteGroup = (id) => {
+    const g = groups.find(x => x.id === id);
+    const count = students.filter(st => st.group_id === id).length;
+    return removeRow('kids_groups', id, {
+      title: tr('Usunąć grupę „{name}”?', { name: g?.name || '' }),
+      message: count > 0
+        ? tr('Uczniowie ({n}) zostaną bez grupy, a materiały grupy znikną. Tej operacji nie można cofnąć.', { n: count })
+        : tr('Materiały grupy znikną. Tej operacji nie można cofnąć.'),
+      confirmLabel: tr('Usuń grupę'),
+      done: tr('Grupa usunięta'),
+    });
+  };
+  const saveGlobalStudent = async () => {
+    if (!globalStudentForm.full_name?.trim()) return toast.error(tr('Podaj imię i nazwisko ucznia'));
+    const payload = { full_name: globalStudentForm.full_name.trim(), birth_year: globalStudentForm.birth_year || null, parent_info: globalStudentForm.parent_info, notes: globalStudentForm.notes, group_id: globalStudentForm.group_id ? parseInt(globalStudentForm.group_id) : null, household_id: globalStudentForm.household_id || null };
+    setSavingForm(true);
+    try {
+      const { error } = globalStudentForm.id
+        ? await supabase.from('kids_students').update(payload).eq('id', globalStudentForm.id)
+        : await supabase.from('kids_students').insert([{ ...payload, campus_id: campusIdForInsert }]);
+      if (error) throw error;
+      toast.success(tr('Zapisano ucznia'));
+      setShowGlobalStudentModal(false);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error(tr('Nie udało się zapisać ucznia. Spróbuj ponownie.'));
+    } finally {
+      setSavingForm(false);
+    }
+  };
+  const deleteStudent = (id) => {
+    const name = students.find(x => x.id === id)?.full_name || '';
+    return removeRow('kids_students', id, {
+      title: tr('Usunąć ucznia „{name}”?', { name }),
+      message: tr('Usuniemy go z grup i rodziny; historia meldowań może zostać utracona. Tej operacji nie można cofnąć.'),
+      confirmLabel: tr('Usuń ucznia'),
+      done: tr('Uczeń usunięty'),
+    });
+  };
   const openEditStudent = (s) => { setGlobalStudentForm({ id: s.id, full_name: s.full_name, birth_year: s.birth_year, parent_info: s.parent_info, notes: s.notes, group_id: s.group_id, household_id: s.household_id }); setShowGlobalStudentModal(true); };
   const attachStudentToGroup = async () => { if (!attachStudentId) return toast.info(tr('Wybierz ucznia')); await supabase.from('kids_students').update({ group_id: currentGroup.id }).eq('id', attachStudentId); setAddStudentId(''); fetchData(); };
   const detachStudentFromGroup = async (studentId) => { await supabase.from('kids_students').update({ group_id: null }).eq('id', studentId); fetchData(); };
   const handleMaterialFileUpload = async (file) => { if (!file) return null; const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${file.name.split('.').pop()}`; const { error } = await supabase.storage.from('kids-materials').upload(fileName, file); if (error) throw error; const { data } = supabase.storage.from('kids-materials').getPublicUrl(fileName); return { url: data.publicUrl, name: file.name }; };
   const addMaterial = async () => { if (!materialForm.title) return toast.error(tr('Podaj nazwę')); setUploading(true); try { let attachmentData = null; if (materialForm.attachment) attachmentData = await handleMaterialFileUpload(materialForm.attachment); const newMaterial = { id: Date.now(), title: materialForm.title, type: materialForm.type, date: new Date().toISOString(), attachmentUrl: attachmentData?.url || null, attachmentName: attachmentData?.name || null }; const updatedMaterials = [...(currentGroup.materials || []), newMaterial]; await supabase.from('kids_groups').update({ materials: updatedMaterials }).eq('id', currentGroup.id); setMaterialForm({ title: '', type: 'Lekcja', attachment: null }); fetchData(); } catch (err) { toast.error(err.message); } finally { setUploading(false); } };
-  const deleteMaterial = async (mid) => { if(!await confirmDialog(tr('Usunąć?'))) return; const um = currentGroup.materials.filter(m => m.id !== mid); await supabase.from('kids_groups').update({ materials: um }).eq('id', currentGroup.id); fetchData(); };
+  const deleteMaterial = async (mid) => {
+    const m = (currentGroup.materials || []).find(x => x.id === mid);
+    if (!await confirmDialog({ title: tr('Usunąć materiał „{name}”?', { name: m?.title || '' }), message: tr('Tej operacji nie można cofnąć.'), confirmLabel: tr('Usuń materiał'), danger: true })) return;
+    const um = currentGroup.materials.filter(x => x.id !== mid);
+    const { error } = await supabase.from('kids_groups').update({ materials: um }).eq('id', currentGroup.id);
+    if (error) { console.error(error); toast.error(tr('Nie udało się usunąć materiału.')); return; }
+    setCurrentGroup({ ...currentGroup, materials: um });
+    fetchData();
+  };
   const filteredStudents = students.filter(s => s.full_name.toLowerCase().includes(studentFilter.toLowerCase()));
   const groupStudents = currentGroup ? students.filter(s => s.group_id === currentGroup.id) : [];
   const availableStudents = students.filter(s => s.group_id !== (currentGroup?.id || -1));
@@ -471,6 +574,8 @@ export default function KidsModule() {
   const availableStudentOptions = availableStudents.map(s => ({ value: s.id, label: s.full_name }));
   const materialTypeOptions = ['Lekcja', 'Kolorowanka', 'Gra', 'Film', 'Książka', 'Inne'].map(t => ({ value: t, label: tr(t) }));
 
+  // Kiosk po odświeżeniu: nakładka od razu, bez czekania na dane całego modułu.
+  if (loading && isKioskActive()) return <CheckinTab />;
   if (loading) return <Spinner center />;
 
   return (
@@ -520,7 +625,7 @@ export default function KidsModule() {
       {activeTab === 'groups' && (
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Grupy Wiekowe')}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Grupy wiekowe')}</h2>
           <button data-tour="kids-group-new" onClick={() => { setGroupForm({ id: null, name: '', teacher_ids: [], room: '', age_range: '' }); setShowGroupModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj grupę')}</button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -539,7 +644,7 @@ export default function KidsModule() {
                 <div className="space-y-2 mb-4 text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex items-center gap-2"><GraduationCap size={16} className="text-accent-primary-light"/> <span className="font-medium">{tr('Nauczyciele:')}</span> {teacherNames || tr('Brak')}</div>
                   <div className="flex items-center gap-2"><MapPin size={16} className="text-accent-secondary-light"/> <span className="font-medium">{tr('Sala:')}</span> {group.room || '-'}</div>
-                  <div className="flex items-center gap-2"><Baby size={16} className="text-green-500"/> <span className="font-medium">{tr('Wiek:')}</span> {group.age_range || '-'}</div>
+                  <div className="flex items-center gap-2"><Baby size={16} className="text-gray-400"/> <span className="font-medium">{tr('Wiek:')}</span> {group.age_range || '-'}</div>
                 </div>
                 <div className="flex gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 mt-2">
                   <button onClick={() => { setCurrentGroup(group); setShowGroupStudentsModal(true); }} className="flex-1 bg-accent-primary-lightest dark:bg-gray-800 text-accent-primary dark:text-accent-primary-light text-xs font-bold py-2 rounded-xl hover:bg-accent-primary-lighter dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"><Users size={14}/> {tr('Uczniowie')} ({studentCount})</button>
@@ -586,7 +691,7 @@ export default function KidsModule() {
       {activeTab === 'students' && (
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Wszyscy Uczniowie')} ({filteredStudents.length})</h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Wszyscy uczniowie')} ({filteredStudents.length})</h2>
           <div className="flex gap-3 items-center">
             <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 w-64">
               <Search size={16} className="text-gray-400 dark:text-gray-500"/>
@@ -609,9 +714,9 @@ export default function KidsModule() {
                 <TD muted numeric>{s.birth_year || ''}</TD>
                 <TD>
                   {household ? (
-                    <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                    <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                       {household.name}
-                      {household.phone_last_four && <span className="text-blue-500 dark:text-blue-400 ml-1">(...{household.phone_last_four})</span>}
+                      {household.phone_last_four && <span className="text-gray-500 dark:text-gray-400 ml-1">(…{household.phone_last_four})</span>}
                     </span>
                   ) : null}
                 </TD>
@@ -674,17 +779,17 @@ export default function KidsModule() {
         onClose={() => setShowGroupModal(false)}
         closeOnBackdrop={false}
         size="sm"
-        title={tr('Grupa Wiekowa')}
+        title={tr('Grupa wiekowa')}
         footer={<>
           <Button variant="secondary" onClick={() => setShowGroupModal(false)}>{tr('Anuluj')}</Button>
-          <Button data-tour="kids-group-save" onClick={saveGroup}>{tr('Zapisz')}</Button>
+          <Button data-tour="kids-group-save" onClick={saveGroup} loading={savingForm}>{tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
-              <input data-tour="kids-group-name" className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Nazwa grupy')} value={groupForm.name} onChange={e => setGroupForm({...groupForm, name: e.target.value})} />
-              <div><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nauczyciele')}</label><TeacherMultiSelect teachers={teachers} selectedIds={groupForm.teacher_ids || []} onChange={ids => setGroupForm({...groupForm, teacher_ids: ids})} /></div>
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Numer sali')} value={groupForm.room} onChange={e => setGroupForm({...groupForm, room: e.target.value})} />
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Przedział wiekowy')} value={groupForm.age_range} onChange={e => setGroupForm({...groupForm, age_range: e.target.value})} />
+              <div><label htmlFor="kids-group-name" className={FIELD_LABEL}>{tr('Nazwa grupy')} *</label><input id="kids-group-name" data-tour="kids-group-name" className={FIELD_INPUT} placeholder={t('np. Przedszkolaki')} value={groupForm.name} onChange={e => setGroupForm({...groupForm, name: e.target.value})} /></div>
+              <div><label className={FIELD_LABEL}>{tr('Nauczyciele')}</label><TeacherMultiSelect teachers={teachers} selectedIds={groupForm.teacher_ids || []} onChange={ids => setGroupForm({...groupForm, teacher_ids: ids})} /></div>
+              <div><label htmlFor="kids-group-room" className={FIELD_LABEL}>{tr('Numer sali')}</label><input id="kids-group-room" className={FIELD_INPUT} value={groupForm.room || ''} onChange={e => setGroupForm({...groupForm, room: e.target.value})} /></div>
+              <div><label htmlFor="kids-group-age" className={FIELD_LABEL}>{tr('Przedział wiekowy')}</label><input id="kids-group-age" className={FIELD_INPUT} placeholder={t('np. 3–5 lat')} value={groupForm.age_range || ''} onChange={e => setGroupForm({...groupForm, age_range: e.target.value})} /></div>
             </div>
       </Modal>
       <Modal
@@ -695,16 +800,25 @@ export default function KidsModule() {
         title={t('Uczeń')}
         footer={<>
           <Button variant="secondary" onClick={() => setShowGlobalStudentModal(false)}>{tr('Anuluj')}</Button>
-          <Button data-tour="kids-student-save" onClick={saveGlobalStudent}>{tr('Zapisz')}</Button>
+          <Button data-tour="kids-student-save" onClick={saveGlobalStudent} loading={savingForm}>{tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
-              <input data-tour="kids-student-name" className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Imię i nazwisko')} value={globalStudentForm.full_name} onChange={e => setGlobalStudentForm({...globalStudentForm, full_name: e.target.value})} />
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Rocznik')} value={globalStudentForm.birth_year} onChange={e => setGlobalStudentForm({...globalStudentForm, birth_year: e.target.value})} />
-              <CustomSelect options={householdOptions} value={globalStudentForm.household_id} onChange={v => setGlobalStudentForm({...globalStudentForm, household_id: v})} placeholder={t('Przypisz do rodziny...')} icon={Home} label={tr('Rodzina')} />
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Kontakt do rodzica (opcjonalnie)')} value={globalStudentForm.parent_info} onChange={e => setGlobalStudentForm({...globalStudentForm, parent_info: e.target.value})} />
-              <CustomSelect options={groupOptions} value={globalStudentForm.group_id} onChange={v => setGlobalStudentForm({...globalStudentForm, group_id: v})} placeholder={t('Przypisz do grupy...')} icon={Users} />
-              <textarea className="w-full p-3 rounded-xl border resize-none dark:bg-gray-900 dark:border-gray-600 dark:text-white" rows={3} placeholder={t('Uwagi')} value={globalStudentForm.notes} onChange={e => setGlobalStudentForm({...globalStudentForm, notes: e.target.value})} />
+              <div><label htmlFor="kids-student-name" className={FIELD_LABEL}>{tr('Imię i nazwisko')} *</label><input id="kids-student-name" data-tour="kids-student-name" className={FIELD_INPUT} value={globalStudentForm.full_name} onChange={e => setGlobalStudentForm({...globalStudentForm, full_name: e.target.value})} /></div>
+              <div>
+                <label htmlFor="kids-student-year" className={FIELD_LABEL}>{tr('Rok urodzenia')}</label>
+                <select id="kids-student-year" className={FIELD_INPUT} value={globalStudentForm.birth_year || ''} onChange={e => setGlobalStudentForm({...globalStudentForm, birth_year: e.target.value})}>
+                  <option value="">{tr('Wybierz...')}</option>
+                  {birthYearOptions(globalStudentForm.birth_year).map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              <div>
+                <CustomSelect options={householdOptions} value={globalStudentForm.household_id} onChange={v => setGlobalStudentForm({...globalStudentForm, household_id: v})} placeholder={t('Przypisz do rodziny...')} icon={Home} label={tr('Rodzina')} />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tr('Przypisz rodzinę, aby rodzic mógł zameldować dziecko numerem telefonu.')}</p>
+              </div>
+              <div><label htmlFor="kids-student-parent" className={FIELD_LABEL}>{tr('Kontakt do rodzica (opcjonalnie)')}</label><input id="kids-student-parent" className={FIELD_INPUT} value={globalStudentForm.parent_info || ''} onChange={e => setGlobalStudentForm({...globalStudentForm, parent_info: e.target.value})} /></div>
+              <div><label className={FIELD_LABEL}>{tr('Grupa')}</label><CustomSelect options={groupOptions} value={globalStudentForm.group_id} onChange={v => setGlobalStudentForm({...globalStudentForm, group_id: v})} placeholder={t('Przypisz do grupy...')} icon={Users} /></div>
+              <div><label htmlFor="kids-student-notes" className={FIELD_LABEL}>{tr('Uwagi')}</label><textarea id="kids-student-notes" className={`${FIELD_INPUT} resize-none`} rows={3} value={globalStudentForm.notes || ''} onChange={e => setGlobalStudentForm({...globalStudentForm, notes: e.target.value})} /></div>
             </div>
       </Modal>
       <Modal
@@ -719,10 +833,10 @@ export default function KidsModule() {
         </>}
       >
             <div className="p-6 space-y-4">
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Imię i nazwisko')} value={teacherForm.full_name} onChange={e => setTeacherForm({...teacherForm, full_name: e.target.value})} />
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Rola')} value={teacherForm.role} onChange={e => setTeacherForm({...teacherForm, role: e.target.value})} />
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Telefon')} value={teacherForm.phone} onChange={e => setTeacherForm({...teacherForm, phone: e.target.value})} />
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Email')} value={teacherForm.email} onChange={e => setTeacherForm({...teacherForm, email: e.target.value})} />
+              <div><label htmlFor="kids-teacher-name" className={FIELD_LABEL}>{tr('Imię i nazwisko')} *</label><input id="kids-teacher-name" className={FIELD_INPUT} value={teacherForm.full_name || ''} onChange={e => setTeacherForm({...teacherForm, full_name: e.target.value})} /></div>
+              <div><label htmlFor="kids-teacher-role" className={FIELD_LABEL}>{tr('Rola')}</label><input id="kids-teacher-role" className={FIELD_INPUT} placeholder={t('np. Nauczyciel')} value={teacherForm.role || ''} onChange={e => setTeacherForm({...teacherForm, role: e.target.value})} /></div>
+              <div><label htmlFor="kids-teacher-phone" className={FIELD_LABEL}>{tr('Telefon')}</label><input id="kids-teacher-phone" type="tel" className={FIELD_INPUT} value={teacherForm.phone || ''} onChange={e => setTeacherForm({...teacherForm, phone: e.target.value})} /></div>
+              <div><label htmlFor="kids-teacher-email" className={FIELD_LABEL}>{tr('E-mail')}</label><input id="kids-teacher-email" type="email" className={FIELD_INPUT} value={teacherForm.email || ''} onChange={e => setTeacherForm({...teacherForm, email: e.target.value})} /></div>
             </div>
       </Modal>
       {showGroupStudentsModal && currentGroup && (
@@ -886,14 +1000,15 @@ export default function KidsModule() {
                   {expenseForm.documents && expenseForm.documents.length > 0 && (
                     <div className="space-y-2">
                       {expenseForm.documents.map((doc, idx) => (
-                        <div key={idx} className="flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                          <span className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1 truncate">
+                        <div key={idx} className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+                          <span className="text-xs text-gray-700 dark:text-gray-200 flex items-center gap-1 truncate">
                             <FileText size={14} />
                             {doc.name}
                           </span>
                           <button
                             onClick={() => removeDocument(idx)}
-                            className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 ml-2 flex-shrink-0"
+                            aria-label={tr('Usuń załącznik {name}', { name: doc.name })}
+                            className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 ml-2 flex-shrink-0"
                           >
                             <X size={14} />
                           </button>

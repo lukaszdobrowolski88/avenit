@@ -11,6 +11,7 @@ import Spinner from '../../../components/Spinner';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import { pluralForm } from '../checkin/utils/kiosk';
 
 export default function HouseholdManager() {
   const [households, setHouseholds] = useState([]);
@@ -202,7 +203,13 @@ export default function HouseholdManager() {
   };
 
   const handleDelete = async (householdId) => {
-    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę rodzinę? Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną.'))) return;
+    const name = households.find(h => h.id === householdId)?.name || '';
+    if (!await confirmDialog({
+      title: tr('Usunąć rodzinę „{name}”?', { name }),
+      message: tr('Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną, a opiekunowie zostaną usunięci. Tej operacji nie można cofnąć.'),
+      confirmLabel: tr('Usuń rodzinę'),
+      danger: true,
+    })) return;
 
     try {
       // First, unlink students
@@ -353,12 +360,18 @@ export default function HouseholdManager() {
         <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
           <span className="flex items-center gap-1.5">
             <Home size={16} />
-            {households.length} {tr('rodzin')}
+            {pluralForm(households.length,
+              tr('{n} rodzina', { n: households.length }),
+              tr('{n} rodziny', { n: households.length }),
+              tr('{n} rodzin', { n: households.length }))}
           </span>
           {unassignedStudents.length > 0 && (
             <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
               <User size={16} />
-              {unassignedStudents.length} {tr('nieprzypisanych uczniów')}
+              {pluralForm(unassignedStudents.length,
+                tr('{n} uczeń bez rodziny', { n: unassignedStudents.length }),
+                tr('{n} uczniów bez rodziny', { n: unassignedStudents.length }),
+                tr('{n} uczniów bez rodziny', { n: unassignedStudents.length }))}
             </span>
           )}
         </div>
@@ -736,7 +749,7 @@ export default function HouseholdManager() {
                                       {contact.relationship ? tr(contact.relationship) : contact.relationship}
                                     </span>
                                     {contact.is_primary && (
-                                      <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded text-xs">
+                                      <span className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-gray-800 dark:text-gray-100 px-1.5 py-0.5 rounded text-xs">
                                         {tr('Główny')}
                                       </span>
                                     )}
@@ -758,7 +771,7 @@ export default function HouseholdManager() {
                                 </div>
                               </div>
                               {contact.can_pickup && (
-                                <span className="text-xs text-green-600 dark:text-green-400">
+                                <span className="text-xs text-gray-600 dark:text-gray-300">
                                   {tr('Może odbierać')}
                                 </span>
                               )}
@@ -830,11 +843,11 @@ export default function HouseholdManager() {
                           {household.members.map(member => (
                             <div
                               key={member.id}
-                              className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl"
+                              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl"
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center">
-                                  <User size={14} className="text-blue-600 dark:text-blue-400" />
+                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                                  <User size={14} className="text-gray-600 dark:text-gray-400" />
                                 </div>
                                 <div>
                                   <span className="font-medium text-gray-900 dark:text-white">
