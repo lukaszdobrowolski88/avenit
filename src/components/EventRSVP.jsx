@@ -176,7 +176,9 @@ export default function EventRSVP({ eventId, maxParticipants }) {
 
       {regs.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-1.5">
-          {regs.map((r) => (
+          {/* Imiona innych zapisanych widzą organizatorzy — reszta swój zapis i liczbę pozostałych
+              (serwer i tak wymazuje cudze dane osobowe). */}
+          {(canManage ? regs : regs.filter((r) => r.user_email && r.user_email === me)).map((r) => (
             <span
               key={r.id}
               className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
@@ -191,6 +193,11 @@ export default function EventRSVP({ eventId, maxParticipants }) {
               )}
             </span>
           ))}
+          {!canManage && regs.filter((r) => !(r.user_email && r.user_email === me)).length > 0 && (
+            <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
+              {myReg ? '+ ' : ''}{regs.filter((r) => !(r.user_email && r.user_email === me)).length} {tr('os.')}
+            </span>
+          )}
         </div>
       )}
 
