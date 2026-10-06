@@ -22,9 +22,32 @@ function esc(t) {
 }
 const uid = (id, type) => `${type}-${id}@avenit.app`;
 
+// Kolumny DATE przychodzą z pg jako Date (północ czasu serwera) — zamiana na YYYY-MM-DD.
+function ymd(v) {
+  if (!v) return '';
+  if (v instanceof Date) {
+    const p = (n) => String(n).padStart(2, '0');
+    return `${v.getFullYear()}-${p(v.getMonth() + 1)}-${p(v.getDate())}`;
+  }
+  return String(v).slice(0, 10);
+}
+const nextDay = (d) => {
+  const [y, m, dd] = d.split('-').map(Number);
+  return ymd(new Date(y, m - 1, dd + 1)).replace(/-/g, '');
+};
+const addHour = (t) => {
+  const [h, m] = t.split(':').map(Number);
+  return `${String(Math.min(23, h + 1)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`;
+};
+
+// Preferencje modułów służb (UserSettings) → module_key wydarzeń.
+const MODULE_PREFS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups'];
+const MODULE_LABEL = { worship: 'Uwielbienie', media: 'Media', atmosfera: 'Atmosfera', kids: 'Dzieci', homegroups: 'Grupy Domowe' };
+
 function vevent(e) {
-  const lines = ['BEGIN:VEVENT', `UID:${e.uid}`, `DTSTAMP:${e.dtstamp}`, `DTSTART:${e.dtstart}`];
-  if (e.dtend) lines.push(`DTEND:${e.dtend}`);
+  // Całodniowe (bez godziny): DTSTART;VALUE=DATE, DTEND = dzień po ostatnim.
+  const lines = ['BEGIN:VEVENT', `UID:${e.uid}`, `DTSTAMP:${e.dtstamp}`, e.allDay ? `DTSTART;VALUE=DATE:${e.dtstart}` : `DTSTART:${e.dtstart}`];
+  if (e.dtend) lines.push(e.allDay ? `DTEND;VALUE=DATE:${e.dtend}` : `DTEND:${e.dtend}`);
   lines.push(`SUMMARY:${esc(e.summary)}`);
   if (e.description) lines.push(`DESCRIPTION:${esc(e.description)}`);
   if (e.location) lines.push(`LOCATION:${esc(e.location)}`);
@@ -35,7 +58,7 @@ function vevent(e) {
 }
 function vtodo(e) {
   const lines = ['BEGIN:VTODO', `UID:${e.uid}`, `DTSTAMP:${e.dtstamp}`];
-  if (e.due) lines.push(`DUE:${e.due}`);
+  if (e.due) lines.push(/^\d{8}$/.test(e.due) ? `DUE;VALUE=DATE:${e.due}` : `DUE:${e.due}`);
   lines.push(`SUMMARY:${esc(e.summary)}`);
   if (e.description) lines.push(`DESCRIPTION:${esc(e.description)}`);
   if (e.status) lines.push(`STATUS:${e.status}`);
@@ -53,7 +76,7 @@ export default async function handler(req, reply) {
     `SELECT * FROM ical_subscriptions WHERE token = $1`, [token]
   );
   const subscription = subRows[0];
-  if (!subscription) return reply.code(404).send('Subscription not found');
+  if (!subscription || subscription.is_active === false) return reply.code(404).send('Subscription not found');
 
   await req.db.query(
     `UPDATE ical_subscriptions SET last_accessed_at = now(), access_count = COALESCE(access_count,0)+1 WHERE id = $1`,
@@ -61,72 +84,92 @@ export default async function handler(req, reply) {
   ).catch(() => {});
 
   const prefs = subscription.export_preferences || {};
+  // Właściciel kanału — po e-mailu (UserSettings zapisuje user_email), awaryjnie po user_id.
+  let ownerEmail = String(subscription.user_email || '').toLowerCase();
+  if (!ownerEmail && subscription.user_id) {
+    const { rows } = await req.db.query(`SELECT email FROM app_users WHERE id = $1`, [subscription.user_id]).catch(() => ({ rows: [] }));
+    ownerEmail = String(rows[0]?.email || '').toLowerCase();
+  }
   const events = [];
   const now = new Date();
   const dtstamp = fmtUtc(now);
   const from = new Date(now); from.setFullYear(from.getFullYear() - 1);
   const to = new Date(now); to.setFullYear(to.getFullYear() + 1);
-  const fromStr = from.toISOString().split('T')[0];
-  const toStr = to.toISOString().split('T')[0];
+  const fromStr = ymd(from);
+  const toStr = ymd(to);
 
   if (prefs.programs) {
     const { rows } = await req.db.query(`SELECT * FROM programs WHERE date >= $1 AND date <= $2`, [fromStr, toStr]);
     for (const p of rows) {
+      const d = ymd(p.date);
       events.push(vevent({
         uid: uid(p.id, 'program'), summary: p.title || 'Nabożeństwo', description: p.notes || '',
-        location: p.location || 'Kościół', dtstart: fmtLocal(p.date, '10:00'), dtend: fmtLocal(p.date, '12:00'),
+        location: p.location || 'Kościół', dtstart: fmtLocal(d, '10:00'), dtend: fmtLocal(d, '12:00'),
         dtstamp, categories: ['Nabożeństwo'], status: 'CONFIRMED',
       }));
     }
   }
-  if (prefs.events) {
+
+  // Wydarzenia: jedna tabela `events` (date/time/end_time; dawne tabele modułów usunięte
+  // migracją 077). Moduł służby wg preferencji (worship, media…), reszta wg „events”.
+  // Tylko wydarzenia bez ograniczonej widoczności (albo moje) — kanał ICS nie zna kontekstu
+  // segmentów, a link może trafić do innej osoby.
+  const wantModule = MODULE_PREFS.some((k) => prefs[k]);
+  if (prefs.events || wantModule) {
     const { rows } = await req.db.query(
-      `SELECT * FROM events WHERE COALESCE(start_date, created_at) >= $1 AND COALESCE(start_date, created_at) <= $2`,
-      [from.toISOString(), to.toISOString()]
-    ).catch(() => ({ rows: [] }));
+      `SELECT id, title, description, location, date, time, end_time, end_date, event_type, module_key
+         FROM events
+        WHERE date >= $1 AND date <= $2
+          AND COALESCE(is_archived, false) = false
+          AND (visibility_segments IS NULL
+               OR jsonb_typeof(visibility_segments) <> 'array'
+               OR jsonb_array_length(visibility_segments) = 0
+               OR visibility_segments @> '[{"type":"everyone"}]'::jsonb
+               OR ($3 <> '' AND lower(created_by) = $3))`,
+      [fromStr, toStr, ownerEmail]
+    ).catch((err) => { req.log?.warn?.({ err }, 'ical: events'); return { rows: [] }; });
     for (const ev of rows) {
-      const dateStr = (ev.start_date || ev.date || '').toString().split('T')[0];
+      const mk = ev.module_key || '';
+      if (!(MODULE_PREFS.includes(mk) ? prefs[mk] : prefs.events)) continue;
+      const d = ymd(ev.date);
+      const t = ev.time ? String(ev.time).slice(0, 5) : null;
+      const label = MODULE_LABEL[mk];
       events.push(vevent({
-        uid: uid(ev.id, 'event'), summary: ev.title, description: ev.description || '', location: ev.location || '',
-        dtstart: fmtLocal(dateStr, '10:00'), dtend: fmtLocal(dateStr, '11:00'), dtstamp,
-        categories: [ev.event_type || 'Wydarzenie'], status: 'CONFIRMED',
-      }));
-    }
-  }
-  if (prefs.tasks) {
-    const { rows } = await req.db.query(
-      `SELECT * FROM tasks WHERE due_date IS NOT NULL AND due_date >= $1 AND due_date <= $2`,
-      [fromStr, toStr]
-    ).catch(() => ({ rows: [] }));
-    for (const t of rows) {
-      events.push(vtodo({
-        uid: uid(t.id, 'task'), summary: t.title, description: t.description || '',
-        due: fmtUtc(new Date(t.due_date)), dtstamp, status: t.status,
+        uid: uid(ev.id, 'event'), summary: ev.title || 'Wydarzenie', description: ev.description || '', location: ev.location || '',
+        ...(t
+          ? { dtstart: fmtLocal(d, t), dtend: ev.end_time ? fmtLocal(ev.end_date ? ymd(ev.end_date) : d, String(ev.end_time).slice(0, 5)) : fmtLocal(d, addHour(t)) }
+          : { allDay: true, dtstart: d.replace(/-/g, ''), dtend: nextDay(ev.end_date ? ymd(ev.end_date) : d) }),
+        dtstamp, categories: [label || 'Wydarzenie', ev.event_type || ''].filter(Boolean), status: 'CONFIRMED',
       }));
     }
   }
 
-  const ministry = [
-    ['mlodziezowka', 'mlodziezowka_events', 'Młodzieżówka'],
-    ['worship', 'worship_events', 'Uwielbienie'],
-    ['media', 'media_events', 'Media'],
-    ['atmosfera', 'atmosfera_events', 'Atmosfera'],
-    ['kids', 'kids_events', 'Dzieci'],
-    ['homegroups', 'homegroups_events', 'Grupy Domowe'],
-  ];
-  for (const [key, table, category] of ministry) {
-    if (!prefs[key]) continue;
+  // Zadania — tylko moje (przypisane do mnie albo utworzone przeze mnie), nie całej organizacji.
+  if (prefs.tasks && ownerEmail) {
     const { rows } = await req.db.query(
-      `SELECT * FROM ${table} WHERE start_date >= $1 AND start_date <= $2`,
+      `SELECT * FROM tasks WHERE due_date IS NOT NULL AND due_date >= $1 AND due_date <= $2
+          AND (lower(assigned_to) = $3 OR lower(created_by) = $3)`,
+      [fromStr, toStr, ownerEmail]
+    ).catch(() => ({ rows: [] }));
+    for (const t of rows) {
+      events.push(vtodo({
+        uid: uid(t.id, 'task'), summary: t.title, description: t.description || '',
+        due: ymd(t.due_date).replace(/-/g, ''), dtstamp, status: t.status,
+      }));
+    }
+  }
+
+  // Młodzieżówka ma jeszcze własną tabelę wydarzeń (start_date).
+  if (prefs.mlodziezowka) {
+    const { rows } = await req.db.query(
+      `SELECT * FROM mlodziezowka_events WHERE start_date >= $1 AND start_date <= $2`,
       [from.toISOString(), to.toISOString()]
     ).catch(() => ({ rows: [] }));
     for (const ev of rows) {
       const start = new Date(ev.start_date);
-      const dateStr = start.toISOString().split('T')[0];
-      const timeStr = ev.event_time || start.toISOString().split('T')[1].substring(0, 5);
       events.push(vevent({
-        uid: uid(ev.id, key), summary: ev.title, description: ev.description || '', location: ev.location || '',
-        dtstart: fmtLocal(dateStr, timeStr), dtstamp, categories: [category, ev.event_type || ''].filter(Boolean),
+        uid: uid(ev.id, 'mlodziezowka'), summary: ev.title, description: ev.description || '', location: ev.location || '',
+        dtstart: fmtUtc(start), dtstamp, categories: ['Młodzieżówka', ev.event_type || ''].filter(Boolean),
         status: 'CONFIRMED',
       }));
     }

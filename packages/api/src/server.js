@@ -11,6 +11,8 @@ import dataApiRoutes from './dataapi/routes.js';
 import storageRoutes from './storage/routes.js';
 import publicPageRoutes from './public/routes.js';
 import { registerClient } from './realtime/hub.js';
+import { canAccess, loadGrants } from './dataapi/registry.js';
+import { getTenantPool, resolveTenant } from './db.js';
 import { verifyAccessToken, AUD_TENANT } from './auth/tokens.js';
 import { config, isProd } from './config.js';
 
@@ -121,13 +123,31 @@ export async function buildServer() {
   });
 
   // Realtime WS: /api/realtime?token=<access_token>
+  // Tenant wyłącznie z tokenu (nagłówek x-tenant może go tylko potwierdzić) — wcześniej
+  // nagłówek wygrywał, więc token jednego kościoła dawał podsłuch zmian innego.
+  // Subskrypcja tabeli wymaga prawa odczytu jak /api/db (canAccess), '*' tylko admin.
   app.get('/api/realtime', { websocket: true }, async (socket, req) => {
     try {
       const url = new URL(req.url, 'http://x');
       const token = url.searchParams.get('token') || '';
       const payload = await verifyAccessToken(token, AUD_TENANT);
-      const slug = req.headers['x-tenant'] || payload.ten;
-      registerClient(socket, String(slug), payload.sub);
+      if (payload.n2fa === true) throw new Error('2FA wymagane');
+      const tenant = await resolveTenant(String(payload.ten || ''));
+      if (!tenant || tenant.status === 'suspended' || tenant.status === 'cancelled') throw new Error('Nieznany lub zablokowany tenant');
+      const header = req.headers['x-tenant'];
+      if (header && header !== tenant.slug && header !== tenant.subdomain) throw new Error('Tenant niezgodny z tokenem');
+      const pool = getTenantPool(tenant.db_name);
+      const { rows } = await pool.query(`SELECT id, email, role, is_super_admin FROM app_users WHERE id = $1`, [payload.sub]);
+      if (!rows[0]) throw new Error('Brak konta');
+      const user = { id: rows[0].id, email: rows[0].email || payload.email, role: rows[0].role ?? payload.role, is_super_admin: rows[0].is_super_admin };
+      const { adminRoles } = await loadGrants(pool, tenant.db_name);
+      registerClient(socket, {
+        tenant: tenant.slug,
+        userId: String(user.id),
+        email: user.email,
+        isAdmin: !!user.is_super_admin || adminRoles.has(user.role),
+        authorize: async (table) => (await canAccess({ pool, dbName: tenant.db_name, table, op: 'select', user })).ok,
+      });
     } catch {
       socket.close(4401, 'unauthorized');
     }

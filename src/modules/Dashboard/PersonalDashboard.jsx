@@ -62,7 +62,6 @@ export default function PersonalDashboard({ user }) {
     userProfile,
     upcomingMinistry,
     pastMinistry,
-    upcomingPrograms,
     tasks,
     absences,
     prayers,
@@ -87,13 +86,7 @@ export default function PersonalDashboard({ user }) {
         return <MyTasksWidget tasks={tasks} userEmail={userEmail} userName={userProfile?.full_name} onRefresh={refreshTasks} />;
       case 'absences':
         return (
-          <MyAbsencesWidget
-            absences={absences}
-            programs={upcomingPrograms}
-            userEmail={userEmail}
-            userName={userProfile?.full_name}
-            onRefresh={refreshAbsences}
-          />
+          <MyAbsencesWidget absences={absences} onRefresh={refreshAbsences} />
         );
       case 'prayers':
         return <MyPrayersWidget prayers={prayers} userEmail={userEmail} onRefresh={refreshPrayers} size={layout.find(l => l.widgetId === 'prayers')?.size || 'medium'} />;

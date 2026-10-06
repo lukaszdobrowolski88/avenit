@@ -243,8 +243,7 @@ function hashCode(s) {
 // dla osób z pasującym kampusem (albo bez kampusu = wszystkie). NIE zawiera app_users ani
 // ministry_memberships (tam campus_id ma inne znaczenie). Rozszerzalne.
 export const CAMPUS_SCOPED_TABLES = new Set([
-  'members', 'programs', 'events', 'module_events',
-  'worship_events', 'media_events', 'atmosfera_events', 'kids_events', 'homegroups_events', 'mlodziezowka_events',
+  'members', 'programs', 'events', 'mlodziezowka_events',
   'home_groups', 'kids_groups', 'kids_students', 'kids_parent_notifications',
   'budget_items', 'checkin_sessions', 'resources', 'resource_bookings',
   'rsvp_campaigns', 'rsvp_invitations', 'sms_campaigns', 'push_campaigns',
@@ -318,6 +317,16 @@ export function buildQuery(q) {
     )`;
   };
 
+  // Własność wierszy (tabele osobiste, patrz ownership.js) — ustawiane w routes.
+  const own = q.__ownerScope || null;
+  const push = (v) => { params.push(v); return params.length; };
+  const ownClause = (kind) => (own && own[kind] ? own[kind](alias, push) : null);
+  const andOwn = (w, kind) => {
+    const c = ownClause(kind);
+    if (!c) return w;
+    return w ? `${w} AND ${c}` : ` WHERE ${c}`;
+  };
+
   switch (q.op) {
     case 'select': {
       const parsed = parseSelect(q.select);
@@ -333,6 +342,7 @@ export function buildQuery(q) {
         const pc = proposalScopeClause(q.__proposalScope, alias, params);
         selWhere = selWhere ? `${selWhere} AND ${pc}` : ` WHERE ${pc}`;
       }
+      selWhere = andOwn(selWhere, 'select');
       let sql = `SELECT ${cols.join(', ')} FROM ${tbl} ${alias}${selWhere}`;
       if (q.order?.length) {
         const orderParts = q.order.map((o) => {
@@ -388,7 +398,10 @@ export function buildQuery(q) {
         .split(',')
         .map((c) => quoteIdent(c.trim()))
         .join(', ');
-      let sql = `INSERT INTO ${tbl} (${columns.map(quoteIdent).join(', ')}) VALUES ${valuesSql}`;
+      // Własność wiersza: alias celu do warunku ON CONFLICT ... WHERE. Tylko wtedy, gdy jest
+      // strażnik — alias psułby RETURNING to_jsonb("tabela".*) tabel z ukrytymi kolumnami.
+      const guard = q.ignoreDuplicates ? null : ownClause('upsertGuard');
+      let sql = `INSERT INTO ${tbl}${guard ? ` AS ${alias}` : ''} (${columns.map(quoteIdent).join(', ')}) VALUES ${valuesSql}`;
       if (q.ignoreDuplicates) {
         sql += ` ON CONFLICT (${conflictCols}) DO NOTHING`;
       } else {
@@ -396,7 +409,7 @@ export function buildQuery(q) {
           .filter((c) => !String(q.onConflict || 'id').split(',').map((s) => s.trim()).includes(c))
           .map((c) => `${quoteIdent(c)} = EXCLUDED.${quoteIdent(c)}`);
         sql += updates.length
-          ? ` ON CONFLICT (${conflictCols}) DO UPDATE SET ${updates.join(', ')}`
+          ? ` ON CONFLICT (${conflictCols}) DO UPDATE SET ${updates.join(', ')}${guard ? ` WHERE ${guard}` : ''}`
           : ` ON CONFLICT (${conflictCols}) DO NOTHING`;
       }
       sql += returningClause(table, q);
@@ -415,7 +428,7 @@ export function buildQuery(q) {
         return `${quoteIdent(c)} = $${params.length}`;
       });
       const where = buildWhere(q.filters, params, alias, hidden);
-      const updWhere = campusId != null ? `${where} AND ${campusClause()}` : where; // scoped: tylko własny kampus
+      const updWhere = andOwn(campusId != null ? `${where} AND ${campusClause()}` : where, 'update'); // scoped: tylko własny kampus
       let sql = `UPDATE ${tbl} AS ${alias} SET ${sets.join(', ')}${updWhere}`;
       sql += returningClause(table, q);
       return { sql, params, kind: 'update' };
@@ -424,7 +437,7 @@ export function buildQuery(q) {
     case 'delete': {
       if (!q.filters?.length) throw new ApiError(400, 'DELETE bez filtrów jest zabroniony');
       const where = buildWhere(q.filters, params, alias, hidden);
-      const delWhere = campusId != null ? `${where} AND ${campusClause()}` : where; // scoped: tylko własny kampus
+      const delWhere = andOwn(campusId != null ? `${where} AND ${campusClause()}` : where, 'delete'); // scoped: tylko własny kampus
       let sql = `DELETE FROM ${tbl} AS ${alias}${delWhere}`;
       sql += returningClause(table, q);
       return { sql, params, kind: 'delete' };

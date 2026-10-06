@@ -1120,7 +1120,8 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
           setEditing(null);
         }}
         onSubmit={handleSubmit}
-        onDelete={handleDelete}
+        // Usuwa tylko autor zadania (serwer i tak to egzekwuje) — przypisany może je zmieniać.
+        onDelete={!editing?.ownerEmail || editing.ownerEmail.toLowerCase() === (myEmail ?? '').toLowerCase() ? handleDelete : undefined}
         isLoading={upsert.isPending}
         isDeleting={deleteMut.isPending}
         initial={editing}

@@ -7,12 +7,21 @@ import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { emitChange } from '../realtime/hub.js';
 import { notifyOnWrite } from '../realtime/push-hooks.js';
 import { platformDisabledModules } from '../lib/platform-modules.js';
+import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
 //   checkins>households — obsługa Dzieci widzi rodzinę zameldowanego dziecka (odbiór,
 //   kontakt z rodzicem), choć gospodarstwa należą do modułu Członkowie.
 const EMBED_CROSS_MODULE_ALLOW = new Set(['checkins>households']);
+
+// Stare tabele wydarzeń modułów usunięte migracją 077 (wszystko jest w `events`). Starsze
+// wersje aplikacji mobilnej mogą jeszcze o nie pytać — odczyt zwraca pustą listę zamiast
+// błędu (ekran kalendarza się nie wywraca), zapis: 410 z prośbą o aktualizację.
+const RETIRED_TABLES = new Set([
+  'worship_events', 'media_events', 'atmosfera_events', 'kids_events',
+  'homegroups_events', 'ministry_events', 'module_events',
+]);
 
 // Propozycje budżetu: team_type, pod którym zakładka Finanse zespołu (shared/FinanceTab,
 // prop `ministry`) zapisuje i czyta propozycje. Stałe etykiety, często inne niż nazwa w menu.
@@ -35,6 +44,10 @@ export default async function dataApiRoutes(app) {
   app.post('/api/db', { preHandler: [app.requireUser, app.block2FAPending] }, async (req, reply) => {
     const q = req.body || {};
     try {
+      if (RETIRED_TABLES.has(q.table)) {
+        if (q.op === 'select') return reply.send({ data: q.single ? null : [], count: q.count ? 0 : null });
+        throw new ApiError(410, 'Ta funkcja została przeniesiona — zaktualizuj aplikację.');
+      }
       const { rows: userRows } = await req.db.query(
         `SELECT is_super_admin, campus_id, role, member_id FROM app_users WHERE id = $1`, [req.user.id]
       );
@@ -164,6 +177,13 @@ export default async function dataApiRoutes(app) {
       // obecność w REGISTRY, więc np. dostęp do checkins dawał przez złączenie dane z modułu
       // Członkowie. Celowo bez CRUD per zasób — złączenia w obrębie modułu (programs →
       // program_types) działają jak dotąd. Admin i tryb legacy (grants null) bez zmian.
+      // Tabel osobistych nie wolno dociągać złączeniem — ominęłoby to zawężenie do właściciela.
+      if (q.select) {
+        for (const [, child] of embeddedTablePairs(q.table, q.select)) {
+          if (isOwnedTable(child)) throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
+        }
+      }
+
       if (q.select && resolver) {
         const pairs = embeddedTablePairs(q.table, q.select);
         for (const [parent, child] of pairs) {
@@ -218,6 +238,13 @@ export default async function dataApiRoutes(app) {
         if (!access.resolver.can(cap)) {
           throw new ApiError(403, `Brak uprawnienia ${cap}`);
         }
+      }
+
+      // Tabele osobiste: wiersze tylko właściciela (patrz ownership.js) — dla każdego, także admina.
+      if (isOwnedTable(q.table)) {
+        q.__ownerScope = ownerScope(q.table, req.user);
+        enforceOwnedWrite(q, req.user);
+        await assertTaskCommentTarget(q, req);
       }
 
       // Wyczyść cache uprawnień przy zmianach ról/grantów.
@@ -431,6 +458,10 @@ function countWhere(q, params) {
   if (q.__proposalScope && q.table === 'budget_proposals') {
     const pc = proposalScopeClause(q.__proposalScope, 't', params);
     where = where ? `${where} AND ${pc}` : ` WHERE ${pc}`;
+  }
+  if (q.__ownerScope?.select) {
+    const oc = q.__ownerScope.select('t', (v) => { params.push(v); return params.length; });
+    where = where ? `${where} AND ${oc}` : ` WHERE ${oc}`;
   }
   return where;
 }
