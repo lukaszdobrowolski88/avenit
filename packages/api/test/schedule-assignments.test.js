@@ -41,3 +41,64 @@ test('mail z zaproszeniem escapuje dane wpisane przez użytkowników', () => {
   assert.ok(html.includes('Nabożeństwo &amp; &lt;i&gt;'));
   assert.ok(html.includes('token=1&amp;action=accept'));
 });
+
+// ── Odpowiedź na zaproszenie (mail i aplikacja): jedna semantyka, atomowo ──
+import { rejectOps, respondToAssignments } from '../src/public/routes.js';
+
+// Atrapa puli pg: zapamiętuje zapytania i odpowiada wg treści SQL.
+function fakeDb({ updatedRows = [], event = null }) {
+  const log = [];
+  const client = {
+    async query(sql, params) {
+      log.push({ sql: sql.replace(/\s+/g, ' ').trim(), params });
+      if (/^UPDATE schedule_assignments/.test(sql.trim())) return { rows: updatedRows };
+      if (/FROM events WHERE id::text = \$1 FOR UPDATE/.test(sql)) return { rows: event ? [event] : [] };
+      if (/^UPDATE events/.test(sql.trim())) return { rows: [{ id: params[0], assignments: JSON.parse(params[1]) }] };
+      return { rows: [] };
+    },
+    release() { log.push({ sql: 'RELEASE' }); },
+  };
+  return { log, db: { connect: async () => client } };
+}
+
+test('rejectOps zdejmuje osobę tylko z jej pól', () => {
+  const asg = { worship: { lider: 'Ania, Jan', piano: 'Ola' }, media: { foto: 'Jan' } };
+  assert.deepEqual(rejectOps(asg, [
+    { team_type: 'worship', role_key: 'lider', assigned_name: 'Jan' },
+    { team_type: 'worship', role_key: 'piano', assigned_name: 'Jan' }, // tu go nie ma
+  ]), [{ team: 'worship', key: 'lider', value: 'Ania' }]);
+});
+
+test('odrzucenie: status z pending + zdjęcie z grafiku w jednej transakcji, cudze służby zostają', async () => {
+  const { db, log } = fakeDb({
+    updatedRows: [{ id: 'a1', event_id: 7, program_id: null, team_type: 'worship', role_key: 'lider', assigned_name: 'Jan' }],
+    event: { id: 7, assignments: { worship: { lider: 'Ania, Jan' }, media: { foto: 'Bartek' } } },
+  });
+  const res = await respondToAssignments(db, { action: 'reject', whereSql: 'token = $2', params: ['t'] });
+  assert.equal(res.status, 'rejected');
+  assert.equal(res.updated, 1);
+  assert.deepEqual(res.events[0].assignments, { worship: { lider: 'Ania' }, media: { foto: 'Bartek' } });
+  const sqls = log.map((l) => l.sql);
+  assert.equal(sqls[0], 'BEGIN');
+  assert.ok(sqls[1].includes("status = 'pending'") && sqls[1].includes('RETURNING'));
+  assert.ok(sqls.some((s) => s.includes('FOR UPDATE')));
+  assert.equal(sqls.at(-2), 'COMMIT');
+});
+
+test('już odpowiedziano (0 zmienionych wierszy) → grafik nietknięty', async () => {
+  const { db, log } = fakeDb({ updatedRows: [], event: { id: 7, assignments: { worship: { lider: 'Jan' } } } });
+  const res = await respondToAssignments(db, { action: 'reject', whereSql: 'token = $2', params: ['t'] });
+  assert.equal(res.updated, 0);
+  assert.ok(!log.some((l) => /events/.test(l.sql)));
+  assert.ok(log.some((l) => l.sql === 'ROLLBACK'));
+});
+
+test('akceptacja nie rusza grafiku', async () => {
+  const { db, log } = fakeDb({
+    updatedRows: [{ id: 'a1', event_id: 7, team_type: 'worship', role_key: 'lider', assigned_name: 'Jan' }],
+    event: { id: 7, assignments: { worship: { lider: 'Jan' } } },
+  });
+  const res = await respondToAssignments(db, { action: 'accept', whereSql: 'token = $2', params: ['t'] });
+  assert.equal(res.status, 'accepted');
+  assert.ok(!log.some((l) => /events/.test(l.sql)));
+});
