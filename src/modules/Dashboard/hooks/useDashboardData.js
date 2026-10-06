@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useCampusQuery } from '../../../hooks/useCampusQuery';
+import { fetchMyEventService } from './myService';
 
 const DASHBOARD_CACHE_KEY = 'dashboard_data_cache';
 
@@ -101,56 +102,40 @@ export function useDashboardData(userEmail) {
     });
   };
 
-  // Pobierz nadchodzące służby użytkownika (z pominięciem tych, na które ma nieobecność)
-  const fetchUpcomingMinistry = useCallback(async (userName) => {
+  // Nadchodzące służby — z grafiku na wydarzeniach (myService.js). Służby wypadające
+  // w mojej zgłoszonej nieobecności NIE znikają (konflikt trzeba widzieć) — są oznaczone.
+  const fetchUpcomingMinistry = useCallback(async () => {
     if (!userEmail) return [];
-
     try {
-      const today = new Date().toISOString().split('T')[0];
-
-      // Pobierz programy i moje nieobecności (volunteer_blockouts przez my-blockouts) równolegle
-      const [programsResponse, blockoutsResponse] = await Promise.all([
-        withCampusFilter(supabase
-          .from('programs')
-          .select('*'))
-          .gte('date', today)
-          .order('date', { ascending: true })
-          .limit(20),
+      const [items, blockoutsResponse] = await Promise.all([
+        fetchMyEventService({ email: userEmail, range: 'upcoming', withCampusFilter }),
         supabase.functions.invoke('my-blockouts', { body: { action: 'list' } }).catch(() => ({ data: null })),
       ]);
-
-      const programs = programsResponse.data || [];
       const blockouts = blockoutsResponse?.data?.blockouts || [];
-
-      // Pomiń programy, których data wypada w mojej nieobecności (od–do).
-      const inBlockout = (date) => {
-        const d = String(date || '').slice(0, 10);
-        return blockouts.some(b => b.start_date <= d && d <= b.end_date);
-      };
-      const availablePrograms = programs.filter(p => !inBlockout(p.date));
-
-      return filterAndMapPrograms(availablePrograms, userName || userEmail);
+      return items.map((it) => ({
+        ...it,
+        absent: blockouts.some((b) => b.start_date <= it.date && it.date <= b.end_date),
+      }));
     } catch (error) {
       console.error('Error fetching upcoming ministry:', error);
       return [];
     }
   }, [userEmail, withCampusFilter]);
 
-  // Pobierz historię służb użytkownika
+  // Historia służb: wydarzenia + stare programy sprzed przeniesienia grafiku na wydarzenia.
   const fetchPastMinistry = useCallback(async (userName) => {
     if (!userEmail) return [];
 
     try {
       const today = new Date().toISOString().split('T')[0];
-
-      const { data: programs } = await withCampusFilter(supabase
-        .from('programs')
-        .select('*'))
-        .lt('date', today)
-        .order('date', { ascending: false })
-        .limit(10);
-
-      return filterAndMapPrograms(programs, userName || userEmail);
+      const [eventItems, { data: programs }, profile] = await Promise.all([
+        fetchMyEventService({ email: userEmail, range: 'past', withCampusFilter, limit: 20 }),
+        withCampusFilter(supabase.from('programs').select('*')).lt('date', today).order('date', { ascending: false }).limit(10),
+        userName ? Promise.resolve({ data: { full_name: userName } }) : supabase.from('app_users').select('full_name').eq('email', userEmail).maybeSingle(),
+      ]);
+      const name = profile?.data?.full_name;
+      const programItems = name ? filterAndMapPrograms(programs, name).map((p) => ({ ...p, kind: 'program' })) : [];
+      return [...eventItems, ...programItems].sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 20);
     } catch (error) {
       console.error('Error fetching past ministry:', error);
       return [];

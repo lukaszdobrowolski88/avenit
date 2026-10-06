@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Spinner from '../../components/Spinner';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download } from 'lucide-react';
+import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX } from 'lucide-react';
 import { toast } from '../../lib/toast';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { useT } from '../../i18n';
@@ -60,7 +60,9 @@ function useDropdownPosition(triggerRef, isOpen) {
 }
 
 // Multi-select dla tabeli grafiku
-const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
+// unavailableMembers — zgłoszone nieobecności (volunteer_blockouts): ostrzeżenie, ale wybór możliwy
+// (lider może wiedzieć więcej); absentMembers — ręczna „Absencja” w grafiku: wybór zablokowany.
+const TableMultiSelect = ({ options, value, onChange, absentMembers = [], unavailableMembers = [] }) => {
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
@@ -120,6 +122,7 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
           {options.map((person) => {
             const isSelected = selectedItems.includes(person.full_name);
             const isAbsent = absentMembers.includes(person.full_name);
+            const isUnavailable = !isAbsent && unavailableMembers.includes(person.full_name);
             return (
               <div
                 key={person.id}
@@ -129,11 +132,13 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
                 `}
                 onClick={() => toggleSelection(person.full_name, isAbsent)}
               >
-                <span className={isAbsent ? 'line-through decoration-gray-400 dark:decoration-gray-600' : ''}>
+                <span className={isAbsent ? 'line-through decoration-gray-400 dark:decoration-gray-600' : isUnavailable ? 'text-red-600 dark:text-red-400' : ''}>
                   {person.full_name}
+                  {isUnavailable && <span className="ml-1 text-[10px] opacity-80">({t('zgłoszona nieobecność')})</span>}
                 </span>
                 {isSelected && !isAbsent && <Check size={12} />}
                 {isAbsent && <UserX size={12} className="text-red-300 dark:text-red-400" />}
+                {isUnavailable && !isSelected && <CalendarX size={12} className="text-red-400" />}
               </div>
             );
           })}
@@ -188,6 +193,8 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const [memberRoles, setMemberRoles] = useState([]);
   const [typeTeams, setTypeTeams] = useState([]);
   const [expandedMonths, setExpandedMonths] = useState({});
+  // Zgłoszone nieobecności osób służby (fn team-availability): [{ name, start_date, end_date }].
+  const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const { assignments: schedAssignments, fetchAssignmentsForEvents, createAssignment, removeEventAssignment, sendInvitesForEvent } = useScheduleAssignments();
@@ -263,6 +270,24 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
 
   // Tylko wydarzenia tej służby.
   const teamEvents = events.filter(includesThisTeam);
+
+  // Nieobecności dla zakresu dat wydarzeń grafiku (od dziś — przeszłości nie układamy).
+  const availRange = (() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const dates = teamEvents.map((e) => String(e.date || '').slice(0, 10)).filter((d) => d >= today).sort();
+    return dates.length ? `${dates[0]}|${dates[dates.length - 1]}` : '';
+  })();
+  useEffect(() => {
+    if (!availRange) { setAvailability([]); return; }
+    const [from, to] = availRange.split('|');
+    supabase.functions.invoke('team-availability', { body: { team: teamType, from, to } })
+      .then(({ data }) => setAvailability(Array.isArray(data?.blockouts) ? data.blockouts : []))
+      .catch(() => setAvailability([]));
+  }, [availRange, teamType]);
+  const unavailableOn = (date) => {
+    const d = String(date || '').slice(0, 10);
+    return [...new Set(availability.filter((b) => b.start_date <= d && d <= b.end_date).map((b) => b.name))];
+  };
 
   // Grupowanie po miesiącach
   const groupedEvents = teamEvents.reduce((acc, ev) => {
@@ -455,6 +480,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                           .sort((a, b) => new Date(a.date) - new Date(b.date))
                           .map((ev) => {
                           const absentList = csvNames(ev.assignments?.[teamType]?.absencja);
+                          const unavailableList = unavailableOn(ev.date);
                           return (
                             <tr key={ev.id} className="hover:bg-white/60 dark:hover:bg-gray-700/30 transition relative">
                               <td className="p-3 font-medium text-gray-700 dark:text-gray-300 text-xs">
@@ -462,6 +488,12 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                                   <span className="font-mono">{formatDateShort(ev.date)}</span>
                                   {ev.title && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">{ev.title}</span>}
                                   <CampusBadge campus={getCampus(ev.campus_id)} />
+                                  {unavailableList.length > 0 && (
+                                    <span className="inline-flex items-start gap-1 text-[10px] text-red-600 dark:text-red-400 max-w-[160px]" title={t('Zgłoszone nieobecności')}>
+                                      <CalendarX size={11} className="shrink-0 mt-px" />
+                                      <span>{unavailableList.join(', ')}</span>
+                                    </span>
+                                  )}
                                   <EventSendCell
                                     eventId={ev.id}
                                     teamType={teamType}
@@ -477,6 +509,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                                     value={ev.assignments?.[teamType]?.[col.key] || ''}
                                     onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
                                     absentMembers={absentList}
+                                    unavailableMembers={unavailableList}
                                   />
                                 </td>
                               ))}

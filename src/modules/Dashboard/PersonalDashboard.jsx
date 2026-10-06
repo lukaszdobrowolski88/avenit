@@ -4,7 +4,8 @@ import { Settings, RefreshCw, Calendar, CheckSquare, CalendarX, Heart, Users, Me
 import { useDashboardLayout } from './hooks/useDashboardLayout';
 import { useDashboardData } from './hooks/useDashboardData';
 import { WIDGET_DEFINITIONS } from './utils/layoutDefaults';
-import { hasTabAccess } from '../../utils/tabPermissions';
+import { widgetAllowed } from './utils/widgetAccess';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import { useUserRole } from '../../hooks/useUserRole';
 import { useT } from '../../i18n';
 
@@ -47,6 +48,7 @@ export default function PersonalDashboard({ user }) {
   const [showCustomizer, setShowCustomizer] = useState(false);
 
   const { userRole, loading: roleLoading } = useUserRole();
+  const { can } = usePermissions();
   const userEmail = user?.email;
   const {
     layout,
@@ -134,7 +136,7 @@ export default function PersonalDashboard({ user }) {
 
   // Filtruj widgety na podstawie widoczności i uprawnień
   const visibleWidgets = filteredLayout
-    .filter(w => w.visible && hasTabAccess('dashboard', w.widgetId, userRole))
+    .filter(w => w.visible && widgetAllowed(w.widgetId, can))
     .sort((a, b) => a.order - b.order);
 
   return (

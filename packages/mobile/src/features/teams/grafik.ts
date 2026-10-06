@@ -310,3 +310,25 @@ export const useAnswerAssignment = (team: string) => {
     },
   });
 };
+
+// Zgłoszone nieobecności osób służby (fn team-availability — imię + daty, bez powodu).
+export interface TeamBlockout {
+  name: string;
+  start_date: string;
+  end_date: string;
+}
+
+export const useTeamAvailability = (team: string, from: string | null, to: string | null) =>
+  useQuery({
+    queryKey: ['team', team, 'availability', from, to],
+    enabled: !!from && !!to,
+    staleTime: 60_000,
+    queryFn: async (): Promise<TeamBlockout[]> => {
+      const { data, error } = await supabase.functions.invoke('team-availability', { body: { team, from, to } });
+      if (error) return [];
+      return Array.isArray((data as any)?.blockouts) ? ((data as any).blockouts as TeamBlockout[]) : [];
+    },
+  });
+
+export const unavailableOn = (blockouts: TeamBlockout[], ymd: string) =>
+  new Set(blockouts.filter((b) => b.start_date <= ymd && ymd <= b.end_date).map((b) => b.name));

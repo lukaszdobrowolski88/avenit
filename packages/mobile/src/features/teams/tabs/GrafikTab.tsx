@@ -6,11 +6,13 @@ import { B } from '../../../components/ui/brand';
 import {
   csvNames,
   splitGrafik,
+  unavailableOn,
   useAnswerAssignment,
   useGrafik,
   useSendInvites,
   useSetRolePeople,
   useSetTeamNote,
+  useTeamAvailability,
   type GrafikAssignment,
   type GrafikEvent,
   type GrafikRoleDef,
@@ -133,6 +135,11 @@ export const GrafikTab = ({
 
   const pickingEvent = picking ? data?.events.find((e: GrafikEvent) => e.id === picking.eventId) ?? null : null;
 
+  // Zgłoszone nieobecności (Moje nieobecności / Dostępność) w zakresie nadchodzących wydarzeń.
+  const upcomingDates = splitGrafik(data?.events ?? []).upcoming.map((e: GrafikEvent) => e.date);
+  const availability = useTeamAvailability(teamKey, upcomingDates[0] ?? null, upcomingDates[upcomingDates.length - 1] ?? null);
+  const blockouts = availability.data ?? [];
+
   const savePicked = (names: string[]) => {
     if (!picking || !pickingEvent) return;
     const done = { onSuccess: () => setPicking(null), onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') };
@@ -208,6 +215,7 @@ export const GrafikTab = ({
         const open = roles.filter((r) => !csvNames(ev.team[r.key]).length);
         const shown = canEdit ? roles : filled;
         const absent = csvNames(ev.team.absencja);
+        const reported = [...unavailableOn(blockouts, ev.date)].filter((n) => !absent.includes(n));
         const mine = ev.sa.filter((a) => a.status === 'pending' && isMe(ev, a.name));
         const toSend = ev.sa.filter((a) => a.status === 'pending' && !a.emailSent && a.email).length;
         const past = range === 'past';
@@ -303,6 +311,12 @@ export const GrafikTab = ({
               </Text>
             ) : null}
 
+            {reported.length && !past ? (
+              <Text style={{ paddingHorizontal: 14, paddingVertical: 9, borderTopWidth: 1, borderTopColor: B.line, fontSize: 12, lineHeight: 17, color: '#B42318', fontFamily: F.semibold }}>
+                Zgłoszone nieobecności: {reported.join(', ')}
+              </Text>
+            ) : null}
+
             {canEdit && !past ? (
               <Pressable
                 onPress={() => setPicking({ eventId: ev.id, role: 'absent' })}
@@ -374,6 +388,7 @@ export const GrafikTab = ({
         role={picking?.role ?? null}
         members={members}
         roles={roles}
+        reported={pickingEvent ? unavailableOn(blockouts, pickingEvent.date) : new Set<string>()}
         saving={setPeople.isPending || setNote.isPending}
         onClose={() => setPicking(null)}
         onSave={savePicked}
