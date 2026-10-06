@@ -613,3 +613,7 @@ html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .
 
 /* Checkboxy i radia w kolorze marki. */
 html[data-color-preset="avenit"] :is(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: #FFBE0B; }
+
+/* Tablica (Zadania w modułach, Projekty): nagłówki kolumn jak etykiety tabel — musztarda. */
+html[data-color-preset="avenit"]:not(.dark) .board-th { color: #8A6606 !important; letter-spacing: 0.08em; }
+html[data-color-preset="avenit"]:not(.dark) .board-th svg { color: #B08A2E !important; }

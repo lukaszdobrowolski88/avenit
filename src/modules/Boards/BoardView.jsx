@@ -168,7 +168,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
           {canManageViews && <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />}
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
-          <Button size="sm" variant="primary" icon={Sparkles} onClick={() => setShowSidekick(true)}>AI Sidekick</Button>
+          <Button size="sm" variant="secondary" icon={Sparkles} onClick={() => setShowSidekick(true)}>AI Sidekick</Button>
           {canManageAutomations && (
             <Button size="sm" variant="outline" icon={Zap} onClick={() => setShowAutomations(true)}>
               Automatyzacje{automations.automations.length > 0 && <span className="text-xs text-gray-400 ml-1">{automations.automations.length}</span>}

@@ -72,17 +72,18 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
 
   return (
     <div className="flex items-center gap-2 mb-4 flex-wrap">
-      <Button size="sm" icon={Plus} onClick={onAddItem}>Nowy element</Button>
+      <Button icon={Plus} onClick={onAddItem}>Nowy element</Button>
 
-      <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5">
-        <Search size={14} className="text-gray-400" />
+      {/* Wyszukiwarka jak w pozostałych modułach (ikona w polu, ta sama wysokość co przyciski). */}
+      <div className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input value={search || ''} onChange={(e) => onSearch(e.target.value)} placeholder="Szukaj..."
-          className="bg-transparent text-sm outline-none w-32 text-gray-700 dark:text-gray-200" />
+          className="w-56 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none" />
       </div>
 
       {/* Filtry */}
       <Popover width={340} triggerClassName="inline-flex" trigger={
-        <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${filters.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
+        <button className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2.5 rounded-xl border transition-colors ${filters.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
           <SlidersHorizontal size={14} /> Filtruj {filters.length ? `(${filters.length})` : ''}
         </button>
       }>
@@ -127,7 +128,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
 
       {/* Sortowanie */}
       <Popover width={220} triggerClassName="inline-flex" trigger={
-        <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${sorts.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
+        <button className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2.5 rounded-xl border transition-colors ${sorts.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
           <ArrowUpDown size={14} /> Sortuj
         </button>
       }>
