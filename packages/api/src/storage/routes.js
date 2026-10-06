@@ -9,6 +9,31 @@ import { config } from '../config.js';
 
 const BUCKET_RE = /^[a-z0-9-]+$/;
 
+// Zdjęcia sprzętu robione telefonem mają 3–4 MB (12 Mpx) — po zapisie zmniejszamy je do
+// rozsądnego rozmiaru (dłuższy bok 1600 px, JPEG/WebP/PNG w tym samym formacie). sharp
+// ładowany leniwie: gdyby go zabrakło albo konwersja się nie udała, zostaje oryginał.
+const SHRINK_BUCKETS = new Set(['equipment']);
+const SHRINK_EXT = { '.jpg': 'jpeg', '.jpeg': 'jpeg', '.png': 'png', '.webp': 'webp' };
+let sharpLib;
+async function shrinkImage(bucket, target) {
+  const format = SHRINK_EXT[path.extname(target).toLowerCase()];
+  if (!SHRINK_BUCKETS.has(bucket) || !format) return;
+  try {
+    if (sharpLib === undefined) sharpLib = (await import('sharp').catch(() => null))?.default ?? null;
+    if (!sharpLib) return;
+    const meta = await sharpLib(target).metadata();
+    if (Math.max(meta.width || 0, meta.height || 0) <= 1600 && (await fsp.stat(target)).size < 600 * 1024) return;
+    const out = await sharpLib(target)
+      .rotate() // orientacja z EXIF (zdjęcia z iPhone'a)
+      .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+      .toFormat(format, format === 'png' ? { compressionLevel: 9 } : { quality: 80 })
+      .toBuffer();
+    if (out.length < (await fsp.stat(target)).size) await fsp.writeFile(target, out);
+  } catch {
+    // zostaje oryginał
+  }
+}
+
 // Znane buckety (jak w Supabase) — fail-closed na literówki.
 const BUCKETS = new Set([
   'public-assets',
@@ -63,6 +88,7 @@ export default async function storageRoutes(app) {
         // surowe body (Buffer z addContentTypeParser w server.js)
         await fsp.writeFile(target, req.body);
       }
+      await shrinkImage(bucket, target);
       return reply.send({ path: filePath, fullPath: `${bucket}/${filePath}`, id: filePath });
     }
   );

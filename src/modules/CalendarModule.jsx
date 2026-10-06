@@ -914,7 +914,6 @@ export default function CalendarModule({ embedded = false } = {}) {
     selectType: null,      // { date: 'YYYY-MM-DD' } - modal wyboru typu
     selectCategory: null,  // { date: 'YYYY-MM-DD' } - modal wyboru kategorii wydarzenia
     addEvent: null,        // { date, category } - modal dodawania ogólnego wydarzenia
-    mlodziezowkaEvent: null, // { event data } - modal edycji wydarzenia Młodzieżówki
     worshipEvent: null,    // { event data } - modal edycji wydarzenia Zespołu Uwielbienia
     mediaEvent: null,      // { event data } - modal edycji wydarzenia Media Team
     atmosferaEvent: null,  // { event data } - modal edycji wydarzenia Atmosfera Team
@@ -962,7 +961,6 @@ export default function CalendarModule({ embedded = false } = {}) {
     const { data: prog } = await withCampusFilter(supabase.from('programs').select('*'));
     const { data: task } = await supabase.from('tasks').select('*');
     const { data: eventsData } = await withCampusFilter(supabase.from('events').select('*'));
-    const { data: mlodziezowkaEvents } = await withCampusFilter(supabase.from('mlodziezowka_events').select('*'));
     const all = [];
 
     prog?.forEach(p => all.push({ id: p.id, type: 'program', team: 'program', title: p.title || tr('Nabożeństwo'), date: new Date(p.date), raw: p }));
@@ -976,6 +974,8 @@ export default function CalendarModule({ embedded = false } = {}) {
       atmosfera:  { emoji: '💚', team: 'atmosfera', type: 'atmosfera_event' },
       kids:       { emoji: '👶', team: 'kids',      type: 'kids_event' },
       homegroups: { emoji: '🏠', team: 'groups',    type: 'homegroups_event' },
+      // Młodzieżówka od migracji 078 też w `events` — edycja generycznym modalem modułu.
+      mlodziezowka: { emoji: '🎉', team: 'mlodziezowka', type: 'module_event' },
     };
     const isModuleKey = (k) => k && k !== 'general' && k !== 'program';
     eventsData?.forEach(ev => {
@@ -1038,29 +1038,6 @@ export default function CalendarModule({ embedded = false } = {}) {
         });
     });
 
-    // Wydarzenia z Młodzieżówki
-    mlodziezowkaEvents?.forEach(ev => {
-        if (!ev.start_date) return;
-        const d = new Date(ev.start_date);
-        if (isNaN(d.getTime())) return;
-
-        let timeStr = '00:00';
-        if (ev.start_date.includes('T')) {
-            const timePart = ev.start_date.split('T')[1];
-            const [h, m] = timePart.split(':');
-            timeStr = `${h}:${m}`;
-        }
-
-        all.push({
-            id: `mlodziezowka_${ev.id}`,
-            type: 'mlodziezowka',
-            team: 'mlodziezowka',
-            title: `🎉 ${ev.title}`,
-            date: d,
-            raw: { ...ev, due_time: timeStr }
-        });
-    });
-
     setEvents(all.filter(e => e.date));
   };
 
@@ -1119,34 +1096,6 @@ export default function CalendarModule({ embedded = false } = {}) {
     if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals({...modals, addEvent: null});
-      fetchEvents();
-    }
-  };
-
-  // Obsługa zapisywania wydarzeń Młodzieżówki
-  const handleSaveMlodziezowkaEvent = async (id, eventData) => {
-    let error = null;
-    if (id) {
-      const { error: e } = await supabase.from('mlodziezowka_events').update(eventData).eq('id', id);
-      error = e;
-    } else {
-      const { error: e } = await supabase.from('mlodziezowka_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
-      error = e;
-    }
-
-    if (error) {
-      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
-      console.error(error);
-    } else {
-      setModals({...modals, mlodziezowkaEvent: null});
-      fetchEvents();
-    }
-  };
-
-  const handleDeleteMlodziezowkaEvent = async (id) => {
-    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie Młodzieżówki?'))) {
-      await supabase.from('mlodziezowka_events').delete().eq('id', id);
-      setModals({...modals, mlodziezowkaEvent: null});
       fetchEvents();
     }
   };
@@ -1372,8 +1321,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   // Po wyborze służby (kalendarza) - otwórz odpowiedni modal wydarzenia
   const handleSelectMinistry = (ministryKey) => {
     const date = modals.selectCategory?.date;
-    const modalKey = ministryKey === 'mlodziezowka' ? 'mlodziezowkaEvent' :
-                     ministryKey === 'worship' ? 'worshipEvent' :
+    const modalKey = ministryKey === 'worship' ? 'worshipEvent' :
                      ministryKey === 'media' ? 'mediaEvent' :
                      ministryKey === 'atmosfera' ? 'atmosferaEvent' :
                      ministryKey === 'kids' ? 'kidsEvent' :
@@ -1413,11 +1361,6 @@ export default function CalendarModule({ embedded = false } = {}) {
   // Obsługa kliknięcia w wydarzenie na kalendarzu
   const handleEventClick = (ev) => {
     // Wydarzenia z poszczególnych służb
-    if (ev.type === 'mlodziezowka') {
-      const realId = ev.id.replace('mlodziezowka_', '');
-      setModals({...modals, mlodziezowkaEvent: { ...ev.raw, id: realId }});
-      return;
-    }
     if (ev.type === 'worship_event') {
       const realId = ev.id.replace('worship_', '');
       setModals({...modals, worshipEvent: { ...ev.raw, id: realId }});
@@ -2729,18 +2672,6 @@ export default function CalendarModule({ embedded = false } = {}) {
 
       {modals.addTask && <ModalAddTask initialTask={modals.addTask} onClose={() => setModals({...modals, addTask: null})} onSave={handleSaveTask} onDelete={handleDeleteTask} />}
       {modals.editProgram && <ProgramEditorModal programId={modals.editProgram} onClose={() => setModals({...modals, editProgram: null})} onSave={handleSaveProgram} onDelete={handleDeleteProgram} />}
-
-      {modals.mlodziezowkaEvent && (
-        <ModalMinistryEvent
-          event={modals.mlodziezowkaEvent}
-          ministry="mlodziezowka"
-          config={ministryConfig('mlodziezowka')}
-          fields={eventFields['mlodziezowka'] || []}
-          onClose={() => setModals({...modals, mlodziezowkaEvent: null})}
-          onSave={handleSaveMlodziezowkaEvent}
-          onDelete={handleDeleteMlodziezowkaEvent}
-        />
-      )}
 
       {modals.worshipEvent && (
         <ModalMinistryEvent

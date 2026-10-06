@@ -20,7 +20,6 @@ import ResponsiveTabs from '../components/ResponsiveTabs';
 import TabHeader from '../components/TabHeader';
 import PageHeader from '../components/PageHeader';
 import { useUserRole } from '../hooks/useUserRole';
-import { useScheduleAssignments } from '../hooks/useScheduleAssignments';
 import ScheduleSendButton from '../components/ScheduleSendButton';
 import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
@@ -216,17 +215,9 @@ export default function MediaTeamModule() {
   const [activeTab, setActiveTab] = useState('schedule');
   const [team, setTeam] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
-
-  // Powiadomienia grafiku (ten sam silnik co Grupa Uwielbienia): mail + push + akceptacja.
-  const { assignments: schedAssignments, fetchAssignmentsForPrograms, createAssignment, removeAssignment, sendInvitesForProgram } = useScheduleAssignments();
-  useEffect(() => {
-    const ids = programs.map((p) => p.id).filter(Boolean);
-    if (ids.length) fetchAssignmentsForPrograms(ids);
-  }, [programs, fetchAssignmentsForPrograms]);
 
   const [viewMode, setViewMode] = useState('kanban');
   const [filterScope, setFilterScope] = useState('all');
@@ -453,25 +444,17 @@ export default function MediaTeamModule() {
     setError(null);
 
     try {
-      // Pobierz programy tylko z ostatnich 6 miesięcy dla wydajności
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const dateFrom = sixMonthsAgo.toISOString().split('T')[0];
-
-      // Wykonaj wszystkie zapytania równolegle
-      const [teamResult, tasksResult, progResult] = await Promise.all([
+      // Grafik żyje na wydarzeniach (ScheduleTab) — stare programy nie są tu już potrzebne.
+      const [teamResult, tasksResult] = await Promise.all([
         supabase.from('media_team').select('id, full_name, role, email, phone').order('full_name'),
         supabase.from('media_tasks').select('*').order('due_date'),
-        withCampusFilter(supabase.from('programs').select('id, date, produkcja')).gte('date', dateFrom).order('date', { ascending: false })
       ]);
 
       if (teamResult.error) throw new Error(`Błąd zespołu: ${teamResult.error.message}`);
       if (tasksResult.error) throw new Error(`Błąd zadań: ${tasksResult.error.message}`);
-      if (progResult.error) throw new Error(`Błąd programów: ${progResult.error.message}`);
 
       setTeam(teamResult.data || []);
       setTasks(tasksResult.data || []);
-      setPrograms(progResult.data || []);
     } catch (err) {
       console.error('❌ Błąd pobierania danych:', err);
       setError(err.message);
@@ -479,20 +462,6 @@ export default function MediaTeamModule() {
       setLoading(false);
     }
   }
-
-  const handleProgramUpdate = async (id, updates) => {
-    setPrograms(prev => prev.map(p => {
-      if (p.id === id) {
-        if (updates.produkcja) {
-          return { ...p, ...updates, produkcja: { ...p.produkcja, ...updates.produkcja } };
-        }
-        return { ...p, ...updates };
-      }
-      return p;
-    }));
-    
-    await supabase.from('programs').update(updates).eq('id', id);
-  };
 
   const fetchComments = async (taskId) => {
     if (!taskId) return;

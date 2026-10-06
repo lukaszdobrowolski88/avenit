@@ -99,7 +99,7 @@ export const TEAM_CONFIG: Record<TeamKey, TeamConfig> = {
     memberTable: 'mlodziezowka_members',
     leaderTable: 'mlodziezowka_leaders',
     boardSourceKind: 'mlodziezowka_tasks',
-    eventsTable: 'mlodziezowka_events',
+    eventsTable: 'events',
   },
   homegroups: {
     key: 'homegroups',

@@ -17,7 +17,6 @@ import ResponsiveTabs from '../components/ResponsiveTabs';
 import PageHeader from '../components/PageHeader';
 import { CampusBadge, useCampusBadge } from '../components/CampusBadge';
 import { useUserRole } from '../hooks/useUserRole';
-import { useScheduleAssignments } from '../hooks/useScheduleAssignments';
 import ScheduleSendButton from '../components/ScheduleSendButton';
 import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
@@ -162,17 +161,9 @@ export default function AtmosferaTeamModule() {
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('schedule');
   const [team, setTeam] = useState([]);
-  const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
-
-  // Powiadomienia grafiku (ten sam silnik co Grupa Uwielbienia): mail + push + akceptacja.
-  const { assignments: schedAssignments, fetchAssignmentsForPrograms, createAssignment, removeAssignment, sendInvitesForProgram } = useScheduleAssignments();
-  useEffect(() => {
-    const ids = programs.map((p) => p.id).filter(Boolean);
-    if (ids.length) fetchAssignmentsForPrograms(ids);
-  }, [programs, fetchAssignmentsForPrograms]);
 
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [memberForm, setMemberForm] = useState({ id: null, full_name: '', role: 'Atmosfera', email: '', phone: '' });
@@ -388,15 +379,7 @@ export default function AtmosferaTeamModule() {
          teamData = [];
       } else if (teamError) throw teamError;
 
-      const { data: progData, error: progError } = await withCampusFilter(supabase
-        .from('programs')
-        .select('*'))
-        .order('date', { ascending: false });
-
-      if (progError) throw progError;
-      
       setTeam(teamData || []);
-      setPrograms(progData || []);
     } catch (err) {
       console.error('Błąd:', err);
       setError(err.message);
@@ -404,19 +387,6 @@ export default function AtmosferaTeamModule() {
       setLoading(false);
     }
   }
-
-  const handleProgramUpdate = async (id, updates) => {
-    setPrograms(prev => prev.map(p => {
-      if (p.id === id) {
-        if (updates.atmosfera_team) {
-          return { ...p, ...updates, atmosfera_team: { ...p.atmosfera_team, ...updates.atmosfera_team } };
-        }
-        return { ...p, ...updates };
-      }
-      return p;
-    }));
-    await supabase.from('programs').update(updates).eq('id', id);
-  };
 
   const saveMember = async () => {
     try {

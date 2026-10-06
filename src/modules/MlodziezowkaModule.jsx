@@ -10,6 +10,7 @@ import {
   MapPin, Clock, Star, Heart, Package
 } from 'lucide-react';
 import FinanceTab from './shared/FinanceTab';
+import EventsTab from './shared/EventsTab';
 import EquipmentTab from './shared/EquipmentTab';
 import RolesTab from '../components/RolesTab';
 import CustomSelect from '../components/CustomSelect';
@@ -205,7 +206,6 @@ export default function MlodziezowkaModule() {
   const [members, setMembers] = useState([]);
   const [leaders, setLeaders] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
@@ -217,7 +217,6 @@ export default function MlodziezowkaModule() {
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showLeaderModal, setShowLeaderModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showEventModal, setShowEventModal] = useState(false);
 
   const [memberForm, setMemberForm] = useState({ id: null, full_name: '', email: '', phone: '', birth_date: '', notes: '' });
   const [leaderForm, setLeaderForm] = useState({ id: null, full_name: '', email: '', phone: '', role: '' });
@@ -230,17 +229,6 @@ export default function MlodziezowkaModule() {
     status: 'Do zrobienia',
     attachment: null
   });
-  const [eventForm, setEventForm] = useState({
-    id: null,
-    title: '',
-    description: '',
-    start_date: '',
-    event_time: '',
-    location: '',
-    max_participants: '',
-    event_type: 'spotkanie'
-  });
-
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
@@ -320,22 +308,19 @@ export default function MlodziezowkaModule() {
     setError(null);
 
     try {
-      const [membersResult, leadersResult, tasksResult, eventsResult] = await Promise.all([
+      const [membersResult, leadersResult, tasksResult] = await Promise.all([
         supabase.from('mlodziezowka_members').select('*').order('full_name'),
         supabase.from('mlodziezowka_leaders').select('*').order('full_name'),
         supabase.from('mlodziezowka_tasks').select('*').order('due_date'),
-        withCampusFilter(supabase.from('mlodziezowka_events').select('*')).order('start_date', { ascending: false })
       ]);
 
       if (membersResult.error) throw new Error(`Błąd członków: ${membersResult.error.message}`);
       if (leadersResult.error) throw new Error(`Błąd liderów: ${leadersResult.error.message}`);
       if (tasksResult.error) throw new Error(`Błąd zadań: ${tasksResult.error.message}`);
-      if (eventsResult.error) throw new Error(`Błąd wydarzeń: ${eventsResult.error.message}`);
 
       setMembers(membersResult.data || []);
       setLeaders(leadersResult.data || []);
       setTasks(tasksResult.data || []);
-      setEvents(eventsResult.data || []);
     } catch (err) {
       console.error('Błąd pobierania danych:', err);
       setError(err.message);
@@ -590,52 +575,6 @@ export default function MlodziezowkaModule() {
     }
   };
 
-  // Events
-  const saveEvent = async () => {
-    try {
-      if (!eventForm.title.trim()) {
-        toast.error(tr('Tytuł wydarzenia jest wymagany'));
-        return;
-      }
-      const eventData = {
-        title: eventForm.title.trim(),
-        description: eventForm.description.trim(),
-        start_date: eventForm.start_date ? new Date(eventForm.start_date + (eventForm.event_time ? 'T' + eventForm.event_time : 'T00:00:00')).toISOString() : null,
-        location: eventForm.location,
-        max_participants: eventForm.max_participants ? parseInt(eventForm.max_participants) : null,
-        event_type: eventForm.event_type || 'spotkanie',
-        created_by: currentUserEmail
-      };
-
-      if (eventForm.id) {
-        const { error } = await supabase.from('mlodziezowka_events').update(eventData).eq('id', eventForm.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('mlodziezowka_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
-        if (error) throw error;
-      }
-
-      setShowEventModal(false);
-      await fetchData();
-    } catch (err) {
-      console.error('Błąd zapisywania wydarzenia:', err);
-      toast.error(tr('Błąd: ') + err.message);
-    }
-  };
-
-  const deleteEvent = async (id) => {
-    if (confirm(tr('Usunąć wydarzenie?'))) {
-      try {
-        const { error } = await supabase.from('mlodziezowka_events').delete().eq('id', id);
-        if (error) throw error;
-        await fetchData();
-      } catch (err) {
-        console.error('Błąd usuwania wydarzenia:', err);
-        toast.error(tr('Błąd: ') + err.message);
-      }
-    }
-  };
-
   // Drag & Drop for tasks
   const handleDragStart = (task) => setDraggedTask(task);
   const handleDragOver = (e, status) => { e.preventDefault(); setDragOverColumn(status); };
@@ -785,66 +724,10 @@ export default function MlodziezowkaModule() {
         onChange={setActiveTab}
       />
 
-      {/* WYDARZENIA */}
+      {/* WYDARZENIA — wspólna tabela events (module_key = mlodziezowka), jak pozostałe służby */}
       {activeTab === 'events' && (
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Wydarzenia ({events.length})</h2>
-            <button data-tour="mlodz-event-add" onClick={() => { setEventForm({ id: null, title: '', description: '', start_date: '', event_time: '', location: '', max_participants: '', event_type: 'spotkanie' }); setShowEventModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj wydarzenie</button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {events.map(event => (
-              <div key={event.id} className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-5 shadow-sm hover:shadow-md transition">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-bold text-gray-800 dark:text-gray-100">{event.title}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                    event.event_type === 'wyjazd' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                    event.event_type === 'integracja' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                    event.event_type === 'inne' ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' :
-                    'bg-accent-primary-lighter dark:bg-accent-secondary-darkest/30 text-accent-primary dark:text-accent-secondary-light'
-                  }`}>
-                    {event.event_type === 'wyjazd' ? 'Wyjazd' : event.event_type === 'integracja' ? 'Integracja' : event.event_type === 'inne' ? 'Inne' : 'Spotkanie'}
-                  </span>
-                </div>
-                {event.description && <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{event.description}</p>}
-                <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-                  {event.start_date && (
-                    <div className="flex items-center gap-2">
-                      <Calendar size={14} />
-                      {new Date(event.start_date).toLocaleDateString('pl-PL')}
-                      {event.start_date && new Date(event.start_date).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) !== '00:00' &&
-                        ` o ${new Date(event.start_date).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`}
-                    </div>
-                  )}
-                  {event.location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin size={14} />
-                      {event.location}
-                    </div>
-                  )}
-                  {event.max_participants && (
-                    <div className="flex items-center gap-2">
-                      <Users size={14} />
-                      Max. {event.max_participants} uczestników
-                    </div>
-                  )}
-                </div>
-                <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-                  <button onClick={() => { setEventForm(event); setShowEventModal(true); }} className="text-accent-primary dark:text-accent-secondary-light text-xs font-medium">{tr('Edytuj')}</button>
-                  <button onClick={() => deleteEvent(event.id)} className="text-red-500 dark:text-red-400 text-xs font-medium">{tr('Usuń')}</button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {events.length === 0 && (
-            <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-              <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-              <p>{t('Brak wydarzeń')}</p>
-              <p className="text-sm mt-1">Dodaj pierwsze wydarzenie</p>
-            </div>
-          )}
+          <EventsTab ministry="mlodziezowka" currentUserEmail={currentUserEmail} />
         </section>
       )}
 
@@ -1106,75 +989,6 @@ export default function MlodziezowkaModule() {
               <div className="flex justify-end gap-3 mt-6">
                 <button onClick={() => setShowLeaderModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
                 <button onClick={saveLeader} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* MODAL WYDARZENIA */}
-      {showEventModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{eventForm.id ? 'Edytuj wydarzenie' : 'Nowe wydarzenie'}</h3>
-              <button onClick={() => setShowEventModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400"><X size={20}/></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Tytuł wydarzenia')}</label>
-                <input data-tour="mlodz-event-title" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Spotkanie młodzieżowe')} value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Opis')}</label>
-                <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={3} placeholder={tr('Szczegóły wydarzenia...')} value={eventForm.description || ''} onChange={e => setEventForm({...eventForm, description: e.target.value})} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div data-tour="mlodz-event-date">
-                  <CustomDatePicker
-                    label="Data"
-                    value={eventForm.start_date}
-                    onChange={val => setEventForm({...eventForm, start_date: val})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Godzina')}</label>
-                  <input type="time" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white" value={eventForm.event_time || ''} onChange={e => setEventForm({...eventForm, event_time: e.target.value})} />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Lokalizacja')}</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Sala główna, Kościół...')} value={eventForm.location || ''} onChange={e => setEventForm({...eventForm, location: e.target.value})} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Max. uczestników')}</label>
-                  <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={eventForm.max_participants || ''} onChange={e => setEventForm({...eventForm, max_participants: e.target.value})} />
-                </div>
-                <div>
-                  <CustomSelect
-                    label="Typ wydarzenia"
-                    value={eventForm.event_type}
-                    onChange={val => setEventForm({...eventForm, event_type: val})}
-                    options={[
-                      { value: 'spotkanie', label: t('Spotkanie') },
-                      { value: 'wyjazd', label: t('Wyjazd') },
-                      { value: 'integracja', label: t('Integracja') },
-                      { value: 'inne', label: t('Inne') }
-                    ]}
-                    placeholder="Typ"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowEventModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
-                <button data-tour="mlodz-event-save" onClick={saveEvent} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
               </div>
             </div>
           </div>

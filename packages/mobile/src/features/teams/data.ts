@@ -37,31 +37,6 @@ export const useTeamEvents = (cfg: EventsCfg, scope: CampusScope) =>
     queryKey: ['team', cfg.key, 'events', scope.selectedCampusId],
     queryFn: async (): Promise<TeamEvent[]> => {
       const today = todayYmd();
-      if (cfg.eventsTable === 'mlodziezowka_events') {
-        const { data, error } = await scope
-          .withCampusFilter(supabase.from('mlodziezowka_events').select('*'))
-          .order('start_date', { ascending: false });
-        if (error) throw error;
-        return asList(data).map((e) => {
-          const start = e.start_date ? new Date(e.start_date) : null;
-          const date = start
-            ? `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
-            : '';
-          return {
-            id: String(e.id),
-            title: e.title ?? 'Wydarzenie',
-            description: e.description ?? null,
-            date,
-            time: start ? `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}` : null,
-            endTime: null,
-            location: e.location ?? null,
-            eventType: e.event_type ?? null,
-            maxParticipants: e.max_participants ?? null,
-            archived: !!date && date < today,
-            createdBy: e.created_by ?? null,
-          };
-        });
-      }
       const { data, error } = await scope
         .withCampusFilter(
           supabase
@@ -183,19 +158,6 @@ export const useCreateTeamEvent = (cfg: EventsCfg, campusIdForInsert: number | n
       authorEmail: string;
     }) => {
       const start = new Date(input.startDate);
-      if (cfg.eventsTable === 'mlodziezowka_events') {
-        const { error } = await (supabase.from('mlodziezowka_events') as any).insert({
-          title: input.title,
-          description: input.description,
-          event_type: input.eventType,
-          start_date: input.startDate,
-          location: input.location,
-          created_by: input.authorEmail,
-          campus_id: campusIdForInsert,
-        });
-        if (error) throw error;
-        return;
-      }
       // Kształt jak EventsTab.jsx:552 — date/time osobno + module_key.
       const { error } = await (supabase.from('events') as any).insert({
         title: input.title,

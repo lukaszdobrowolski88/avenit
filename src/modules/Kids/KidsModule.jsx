@@ -19,7 +19,6 @@ import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
 import { useUserRole } from '../../hooks/useUserRole';
-import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
 import ScheduleSendButton from '../../components/ScheduleSendButton';
 import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -225,15 +224,8 @@ export default function KidsModule() {
   const [teachers, setTeachers] = useState([]);
   const [groups, setGroups] = useState([]);
   const [students, setStudents] = useState([]);
-  const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState({ email: '', name: '' });
-  // Powiadomienia grafiku (ten sam silnik co Grupa Uwielbienia): mail + push + akceptacja.
-  const { assignments: schedAssignments, fetchAssignmentsForPrograms, createAssignment, removeAssignment, sendInvitesForProgram } = useScheduleAssignments();
-  useEffect(() => {
-    const ids = programs.map((p) => p.id).filter(Boolean);
-    if (ids.length) fetchAssignmentsForPrograms(ids);
-  }, [programs, fetchAssignmentsForPrograms]);
   const [uploading, setUploading] = useState(false);
   const [studentFilter, setStudentFilter] = useState('');
   const [showGroupModal, setShowGroupModal] = useState(false);
@@ -420,9 +412,8 @@ export default function KidsModule() {
       const { data: t } = await supabase.from('kids_teachers').select('*').order('full_name');
       const { data: g } = await withCampusFilter(supabase.from('kids_groups').select('*')).order('created_at');
       const { data: s } = await withCampusFilter(supabase.from('kids_students').select('*')).order('full_name');
-      const { data: p } = await withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false });
       const { data: h } = await supabase.from('households').select('*').order('name');
-      setTeachers(t || []); setGroups(g || []); setStudents(s || []); setPrograms(p || []); setHouseholds(h || []);
+      setTeachers(t || []); setGroups(g || []); setStudents(s || []); setHouseholds(h || []);
     } catch (err) { console.error('Błąd:', err); }
     setLoading(false);
   }
@@ -465,7 +456,6 @@ export default function KidsModule() {
   const handleMaterialFileUpload = async (file) => { if (!file) return null; const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${file.name.split('.').pop()}`; const { error } = await supabase.storage.from('kids-materials').upload(fileName, file); if (error) throw error; const { data } = supabase.storage.from('kids-materials').getPublicUrl(fileName); return { url: data.publicUrl, name: file.name }; };
   const addMaterial = async () => { if (!materialForm.title) return toast.error(tr('Podaj nazwę')); setUploading(true); try { let attachmentData = null; if (materialForm.attachment) attachmentData = await handleMaterialFileUpload(materialForm.attachment); const newMaterial = { id: Date.now(), title: materialForm.title, type: materialForm.type, date: new Date().toISOString(), attachmentUrl: attachmentData?.url || null, attachmentName: attachmentData?.name || null }; const updatedMaterials = [...(currentGroup.materials || []), newMaterial]; await supabase.from('kids_groups').update({ materials: updatedMaterials }).eq('id', currentGroup.id); setMaterialForm({ title: '', type: 'Lekcja', attachment: null }); fetchData(); } catch (err) { toast.error(err.message); } finally { setUploading(false); } };
   const deleteMaterial = async (mid) => { if(!confirm(tr('Usunąć?'))) return; const um = currentGroup.materials.filter(m => m.id !== mid); await supabase.from('kids_groups').update({ materials: um }).eq('id', currentGroup.id); fetchData(); };
-  const handleProgramUpdate = async (id, updates) => { setPrograms(prev => prev.map(p => p.id === id ? { ...p, ...updates, szkolka: { ...p.szkolka, ...updates.szkolka } } : p)); await supabase.from('programs').update(updates).eq('id', id); };
   const filteredStudents = students.filter(s => s.full_name.toLowerCase().includes(studentFilter.toLowerCase()));
   const groupStudents = currentGroup ? students.filter(s => s.group_id === currentGroup.id) : [];
   const availableStudents = students.filter(s => s.group_id !== (currentGroup?.id || -1));
