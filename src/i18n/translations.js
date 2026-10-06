@@ -2,11 +2,7 @@
 // Tłumaczenia wygenerowane z pomocą AI (Claude). Rozszerzane przyrostowo wraz z obejmowaniem
 // kolejnych ekranów funkcją t().
 
-export const LANGUAGES = [
-  { code: 'pl', label: 'Polski', flag: '🇵🇱' },
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'uk', label: 'Українська', flag: '🇺🇦' },
-];
+// Lista języków: src/i18n/languages.js (mała, w głównej paczce). Ten plik ładuje się leniwie.
 
 const en = {
   'Kampus': 'Campus',
