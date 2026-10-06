@@ -158,12 +158,12 @@ export default function AudioPlayer({ url, duration, isOwn = false }) {
 
         {/* Time display */}
         <div className="flex items-center justify-between mt-1">
-          <span className={`text-[10px] font-mono ${isOwn ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
+          <span className={`text-[10px] tabular-nums ${isOwn ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
             {formatTime(currentTime)}
           </span>
           <div className="flex items-center gap-1">
             <Mic size={10} className={isOwn ? 'text-white/50' : 'text-gray-400'} />
-            <span className={`text-[10px] font-mono ${isOwn ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
+            <span className={`text-[10px] tabular-nums ${isOwn ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
               {formatTime(totalDuration)}
             </span>
           </div>

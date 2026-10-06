@@ -113,7 +113,7 @@ export default function CampaignStats({ campaign, onClose }) {
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span className="font-mono">+{r.phone}</span>
+                    <span className="tabular-nums">+{r.phone}</span>
                     {r.user_email && <span>· {r.user_email}</span>}
                     <span>· {fmt(r.created_at)}</span>
                   </div>
@@ -170,7 +170,7 @@ export default function CampaignStats({ campaign, onClose }) {
             <tbody>
               {filtered.map(r => (
                 <TR key={r.id}>
-                  <TD numeric className="font-mono">{r.phone ? `+${r.phone}` : ''}</TD>
+                  <TD numeric className="tabular-nums">{r.phone ? `+${r.phone}` : ''}</TD>
                   <TD>{r.user_email || ''}</TD>
                   <TD><RecipientStatus status={r.status} /></TD>
                   <TD muted>{r.variant || ''}</TD>

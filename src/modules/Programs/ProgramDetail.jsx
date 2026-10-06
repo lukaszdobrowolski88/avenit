@@ -742,7 +742,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
 
       {/* Duration */}
       <div className="w-14 text-right">
-        <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+        <span className="text-[11px] tabular-nums text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
           {formatTime(item.duration || 0)}
         </span>
       </div>
@@ -1034,7 +1034,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                 className="w-16 px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-center focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
               />
               <span className="text-gray-400 text-xs font-medium">sek</span>
-              <div className="ml-auto text-base font-mono font-bold text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-3 py-1.5 rounded-lg">
+              <div className="ml-auto text-base tabular-nums font-bold text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-3 py-1.5 rounded-lg">
                 {formatTime(item.duration || 0)}
               </div>
             </div>
@@ -2953,7 +2953,7 @@ export default function ProgramDetail() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-sm">
                   <Clock size={16} className="text-accent-primary-light" />
-                  <span className="font-mono font-bold text-accent-primary dark:text-accent-primary-light">{formatTime(calculateTotalTime(program.schedule))}</span>
+                  <span className="tabular-nums font-bold text-accent-primary dark:text-accent-primary-light">{formatTime(calculateTotalTime(program.schedule))}</span>
                   <span className="text-gray-500 dark:text-gray-400">{t('łącznie')}</span>
                 </div>
                 <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
@@ -3066,7 +3066,7 @@ export default function ProgramDetail() {
                     <div className="flex items-center justify-between px-4 py-2 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/30 dark:bg-gray-800/20 text-xs">
                       <div className="flex items-center gap-4">
                         <span className="text-gray-500 dark:text-gray-400">
-                          <span className="font-mono text-accent-primary dark:text-accent-primary-light">{formatTime(calculateTotalTime(program.schedule))}</span>
+                          <span className="tabular-nums text-accent-primary dark:text-accent-primary-light">{formatTime(calculateTotalTime(program.schedule))}</span>
                           {' '}łączny czas
                         </span>
                         <span className="text-gray-400 dark:text-gray-500">

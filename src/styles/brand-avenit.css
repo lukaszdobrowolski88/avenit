@@ -130,6 +130,16 @@ html[data-color-preset="avenit"]:not(.dark) :is(button, a):is(.bg-white):is(.bor
 html[data-color-preset="avenit"]:not(.dark) :is(button, a):is(.bg-white):is(.border):not(:has(input)):hover {
   background-color: #E3DDD0 !important;
 }
+/* Przyciski „z samą ramką” (wariant outline, „Anuluj” w oknach) — ta sama miękka pigułka.
+   Bez własnego tła (klasa bg-… na początku tokenu; hover:bg-… się nie liczy) i bez czerwieni
+   (usuń/ostrzeżenie zostaje obrysem). */
+html[data-color-preset="avenit"]:not(.dark) :is(button, a).border:not([class^="bg-"]):not([class*=" bg-"]):not([class*="border-red"]):not([class*="text-red"]):not([class*="border-accent"]):not(:has(input)) {
+  background-color: #ECE8DE !important;
+  border-color: transparent !important;
+}
+html[data-color-preset="avenit"]:not(.dark) :is(button, a).border:not([class^="bg-"]):not([class*=" bg-"]):not([class*="border-red"]):not([class*="text-red"]):not([class*="border-accent"]):not(:has(input)):hover {
+  background-color: #E3DDD0 !important;
+}
 
 /* ── Kolorowe kafelki ikon z gradientem (statystyki, nagłówki kart) → papier + słód.
    Tylko elementy nie-interaktywne (div/span) — przyciski obsługuje reguła akcji. ── */
@@ -178,4 +188,11 @@ html.dark[data-color-preset="avenit"] :is(div, span, i, p):is(
 ) :is(.text-white, svg),
 html.dark[data-color-preset="avenit"] :is(div, span):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-b, .bg-gradient-to-l, .bg-gradient-to-bl):is(.from-blue-400, .from-blue-500, .from-blue-600, .from-sky-400, .from-sky-500, .from-sky-600, .from-cyan-400, .from-cyan-500, .from-cyan-600, .from-teal-400, .from-teal-500, .from-teal-600, .from-emerald-400, .from-emerald-500, .from-emerald-600, .from-green-400, .from-green-500, .from-green-600, .from-lime-400, .from-lime-500, .from-lime-600, .from-amber-400, .from-amber-500, .from-amber-600, .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500, .from-yellow-600, .from-red-400, .from-red-500, .from-red-600, .from-rose-400, .from-rose-500, .from-rose-600, .from-pink-400, .from-pink-500, .from-pink-600, .from-fuchsia-400, .from-fuchsia-500, .from-fuchsia-600, .from-purple-400, .from-purple-500, .from-purple-600, .from-violet-400, .from-violet-500, .from-violet-600, .from-indigo-400, .from-indigo-500, .from-indigo-600) :is(.text-white, svg) {
   color: #F6F4EE !important;
+}
+
+/* Plakietki-liczniki i ptaszki wyboru (małe, okrągłe, przypięte do rogu) — kurkuma ze słodem,
+   jak liczniki w apce; reguła kafelków wyżej dałaby im papier. */
+html[data-color-preset="avenit"] span.absolute.rounded-full:is(.bg-accent-primary, .bg-accent-primary-light, .bg-accent-secondary) {
+  background-color: #FFBE0B !important;
+  color: #2A2312 !important;
 }

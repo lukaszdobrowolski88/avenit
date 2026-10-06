@@ -259,7 +259,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
         </div>
 
         {/* Czas nagrywania */}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-accent-primary dark:text-accent-primary-light font-mono text-xs sm:text-sm min-w-[50px] sm:min-w-[60px] flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-accent-primary dark:text-accent-primary-light tabular-nums text-xs sm:text-sm min-w-[50px] sm:min-w-[60px] flex-shrink-0">
           <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse'}`} />
           {formatTime(recordingTime)}
         </div>
@@ -316,7 +316,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
               <span className="hidden sm:inline">{tr('Wiadomość głosowa')}</span>
               <span className="sm:hidden">{tr('Głosowa')}</span>
             </span>
-            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-mono flex-shrink-0">
+            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
               {formatTime(recordingTime)}
             </span>
           </div>

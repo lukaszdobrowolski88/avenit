@@ -627,7 +627,7 @@ export default function Members() {
 
           <Can cap="res:members:create">
           <button onClick={() => setShowBdayCfg(true)} title={tr('Przypomnienia urodzinowe')}
-            className="whitespace-nowrap px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5 text-sm">
+            className="whitespace-nowrap px-3 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5 text-sm font-medium">
             <Cake size={16} /> {tr('Przypomnienia')}
           </button>
           <Button data-tour="member-add" onClick={() => openModal()} icon={Plus} className="whitespace-nowrap">
@@ -773,10 +773,10 @@ export default function Members() {
                   </TD>
 
                   <TD align="right">
-                    <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                      <button onClick={() => setProfileMember(member)} title={t('Zobacz profil')} className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"><Eye size={18} /></button>
-                      <Can cap="res:members:update"><button onClick={() => openModal(member)} className="p-2 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={18} /></button></Can>
-                      <Can cap="res:members:delete"><button onClick={() => handleDelete(member.id)} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={18} /></button></Can>
+                    <div className="flex justify-end gap-0.5 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                      <button onClick={() => setProfileMember(member)} title={t('Zobacz profil')} className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"><Eye size={16} /></button>
+                      <Can cap="res:members:update"><button onClick={() => openModal(member)} className="p-1.5 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={16} /></button></Can>
+                      <Can cap="res:members:delete"><button onClick={() => handleDelete(member.id)} className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={16} /></button></Can>
                     </div>
                   </TD>
                 </TR>

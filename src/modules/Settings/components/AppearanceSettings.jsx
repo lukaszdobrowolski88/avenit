@@ -79,6 +79,10 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
   const loginBgUrl = get('login_bg_url') || '';
   const hasLoginBg = !!loginBgUrl;
 
+  // Motyw jest „aktywny”, gdy wszystkie jego ustawienia zgadzają się z bieżącymi.
+  const currentLook = { ui_font: font, ui_font_heading: headingFont, ui_bg: bg, ui_bg_pattern: pattern, ui_radius: radius, ui_sidebar: sidebar };
+  const isThemeActive = (settings) => Object.entries(settings || {}).every(([k, v]) => String((k in currentLook ? currentLook[k] : get(k)) ?? '') === String(v ?? ''));
+
   const pickFont = (k) => { applyFont(k); save('ui_font', k); };
   const pickHeading = (k) => { applyHeadingFont(k); save('ui_font_heading', k); };
   const pickBg = (k) => { applyBackground(k); save('ui_bg', k); };
@@ -198,26 +202,17 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
       <SettingsCard title="Motywy" description={tr('Gotowe zestawy — przełącz cały wygląd jednym kliknięciem.')} icon={Layers}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {BUILTIN_THEMES.map((th) => (
-            <button
-              key={th.id}
-              type="button"
-              onClick={() => applyTheme(th.settings)}
-              className="text-left rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 p-3 transition"
-            >
+            <PickCard key={th.id} selected={isThemeActive(th.settings)} onClick={() => applyTheme(th.settings)}>
               <div className="h-12 rounded-xl mb-2" style={{ background: `linear-gradient(135deg, ${th.preview[0]} 0%, ${th.preview[1]} 100%)` }} />
               <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">{th.name}</div>
-            </button>
+            </PickCard>
           ))}
           {savedThemes.map((th) => (
             <div key={th.id} className="relative">
-              <button
-                type="button"
-                onClick={() => applyTheme(th.settings)}
-                className="w-full text-left rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 p-3 transition"
-              >
+              <PickCard selected={isThemeActive(th.settings)} onClick={() => applyTheme(th.settings)} className="w-full">
                 <div className="h-12 rounded-xl mb-2 bg-gradient-to-br from-accent-primary to-accent-secondary" style={themePreviewStyle(th.settings)} />
                 <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate pr-5">{th.name}</div>
-              </button>
+              </PickCard>
               <button
                 type="button"
                 onClick={() => deleteTheme(th.id)}

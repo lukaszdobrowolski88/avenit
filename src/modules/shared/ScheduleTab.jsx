@@ -485,7 +485,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                           <TR key={ev.id} className="relative">
                             <TD className="font-medium">
                               <div className="flex flex-col gap-1.5 items-start text-xs">
-                                <span className="font-mono tabular-nums">{formatDateShort(ev.date)}</span>
+                                <span className="tabular-nums">{formatDateShort(ev.date)}</span>
                                 {ev.title && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">{ev.title}</span>}
                                 <CampusBadge campus={getCampus(ev.campus_id)} />
                                 {unavailableList.length > 0 && (
