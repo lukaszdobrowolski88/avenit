@@ -12,6 +12,7 @@ import { useCan } from '../../../components/Can';
 import { Avatar } from './cells/PeopleCell';
 import { getColumnType } from '../lib/columnTypes';
 import { useItemUpdates } from '../hooks/useItemUpdates';
+import { confirmDialog } from '../../../lib/dialog';
 
 const ACTION_LABEL = {
   created: 'utworzył(a) element',
@@ -184,7 +185,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
     }
     if (trail.length) goBack(); else onClose();
   };
-  const remove = () => { if (confirm('Usunąć ten element?')) { data.deleteItem(current.id); if (trail.length) goBack(); else onClose(); } };
+  const remove = async () => { if (await confirmDialog('Usunąć ten element?')) { data.deleteItem(current.id); if (trail.length) goBack(); else onClose(); } };
 
   return (
     <Modal isOpen onClose={onClose} size="lg" className="!p-0 !overflow-hidden !max-h-[85vh] flex flex-col animate-modal-pop">

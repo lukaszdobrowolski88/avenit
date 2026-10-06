@@ -5,6 +5,7 @@ import {
   Mail, MoreVertical, Edit2, Palette, X, User, Globe
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { confirmDialog, promptDialog } from '../../../lib/dialog';
 
 // Mapowanie typów na ikony
 const FOLDER_TYPE_ICONS = {
@@ -394,8 +395,8 @@ export default function MailSidebar({
             {contextMenu.type === 'folder' && (
               <>
                 <button
-                  onClick={() => {
-                    const newName = prompt('Nowa nazwa:', contextMenu.item.name);
+                  onClick={async () => {
+                    const newName = await promptDialog('Nowa nazwa:', contextMenu.item.name);
                     if (newName) onRenameFolder(contextMenu.item.id, newName);
                     setContextMenu(null);
                   }}
@@ -405,8 +406,8 @@ export default function MailSidebar({
                   <span>{tr('Zmień nazwę')}</span>
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(tr('Czy na pewno usunąć folder?'))) {
+                  onClick={async () => {
+                    if (await confirmDialog(tr('Czy na pewno usunąć folder?'))) {
                       onDeleteFolder(contextMenu.item.id);
                     }
                     setContextMenu(null);
@@ -438,8 +439,8 @@ export default function MailSidebar({
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                 <button
-                  onClick={() => {
-                    if (confirm(tr('Czy na pewno usunąć etykietę?'))) {
+                  onClick={async () => {
+                    if (await confirmDialog(tr('Czy na pewno usunąć etykietę?'))) {
                       onDeleteLabel(contextMenu.item.id);
                     }
                     setContextMenu(null);

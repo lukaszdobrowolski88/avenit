@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Download, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { confirmDialog } from '../../../lib/dialog';
 
 // Formatowanie rozmiaru pliku
 function formatFileSize(bytes) {
@@ -71,8 +72,8 @@ export default function FilePreviewModal({
     onDownload?.(file);
   };
 
-  const handleDelete = () => {
-    if (window.confirm(`Czy na pewno chcesz usunąć plik "${file.name}"?`)) {
+  const handleDelete = async () => {
+    if (await confirmDialog(`Czy na pewno chcesz usunąć plik "${file.name}"?`)) {
       onDelete?.(file.id, file.storage_path);
       onClose();
     }

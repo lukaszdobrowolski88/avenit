@@ -6,6 +6,7 @@ import { CARE_TYPES, careTypeLabel, formatDate } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 const CARE_ICONS = {
   wizyta: Home,
@@ -75,7 +76,7 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
   };
 
   const remove = async (item) => {
-    if (!confirm('Usunąć ten wpis?')) return;
+    if (!await confirmDialog('Usunąć ten wpis?')) return;
     try {
       const { error } = await supabase.from('member_care_log').delete().eq('id', item.id);
       if (error) throw error;

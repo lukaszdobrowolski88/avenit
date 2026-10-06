@@ -9,6 +9,7 @@ import {
   TRIGGER_TYPES, ACTION_TYPES, ACTION_CONFIG_FIELDS,
   triggerLabel, actionLabel, stepSummary, emptyStep,
 } from '../lib/automationApi';
+import { confirmDialog } from '../../../lib/dialog';
 
 const emptyForm = { name: '', description: '', trigger_type: 'new_guest' };
 
@@ -177,7 +178,7 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter, memb
   };
 
   const remove = async (wf) => {
-    if (!confirm(`Usunąć automatyzację „${wf.name}"? Kroki i uruchomienia zostaną usunięte.`)) return;
+    if (!await confirmDialog(`Usunąć automatyzację „${wf.name}"? Kroki i uruchomienia zostaną usunięte.`)) return;
     try {
       const { error } = await supabase.from('automation_workflows').delete().eq('id', wf.id);
       if (error) throw error;

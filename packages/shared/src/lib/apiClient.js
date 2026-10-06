@@ -323,6 +323,8 @@ export function createApiClient({
           mode: payload?.mode || 'closed',
           captcha: payload?.captcha !== false,
           consent: payload?.consent || { required: false, url: '', text: '' },
+          passwordPolicy: payload?.passwordPolicy || null,
+          branding: payload?.branding || null,
         };
       } catch {
         return { mode: 'closed', captcha: true, consent: { required: false, url: '', text: '' } };

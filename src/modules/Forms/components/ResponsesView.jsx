@@ -30,6 +30,7 @@ import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function ResponsesView({ form }) {
   const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -218,14 +219,14 @@ export default function ResponsesView({ form }) {
   }, [participants]);
 
   const handleDeleteResponse = async (responseId) => {
-    if (window.confirm(tr('Czy na pewno chcesz usunąć tę odpowiedź?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć tę odpowiedź?'))) {
       await deleteResponse(responseId);
       setSelectedParticipant(null);
     }
   };
 
   const handleDeleteAll = async () => {
-    if (window.confirm(tr('Czy na pewno chcesz usunąć wszystkie odpowiedzi? Ta operacja jest nieodwracalna.'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć wszystkie odpowiedzi? Ta operacja jest nieodwracalna.'))) {
       await deleteAllResponses();
     }
   };

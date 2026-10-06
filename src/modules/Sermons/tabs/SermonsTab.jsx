@@ -9,6 +9,7 @@ import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog, promptDialog } from '../../../lib/dialog';
 
 const emptyForm = {
   title: '', speaker: '', series: '', sermon_date: new Date().toISOString().slice(0, 10),
@@ -129,7 +130,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
   };
 
   const remove = async (item) => {
-    if (!confirm(`Usunąć kazanie „${item.title}"?`)) return;
+    if (!await confirmDialog(`Usunąć kazanie „${item.title}"?`)) return;
     try {
       const { error } = await supabase.from('sermons').delete().eq('id', item.id);
       if (error) throw error;
@@ -146,7 +147,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
       await navigator.clipboard.writeText(url);
     } catch {
       // Fallback dla przeglądarek bez clipboard API
-      window.prompt('Skopiuj link publiczny:', url);
+      await promptDialog('Skopiuj link publiczny:', url);
     }
     setCopiedId(item.id);
     setTimeout(() => setCopiedId(null), 1800);

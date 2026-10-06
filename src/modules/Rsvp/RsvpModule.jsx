@@ -11,6 +11,7 @@ import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { DateInput } from '../../components/pickers';
+import { confirmDialog, promptDialog } from '../../lib/dialog';
 
 const EVENT_TYPES = [
   { value: 'service', label: 'Nabożeństwo' },
@@ -516,7 +517,7 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
   }, [invs]);
 
   const send = async () => {
-    if (!confirm(`Wysłać zaproszenia do ${ct.total} osób kanałami: ${(campaign.channels || []).join(', ')}?`)) return;
+    if (!await confirmDialog(`Wysłać zaproszenia do ${ct.total} osób kanałami: ${(campaign.channels || []).join(', ')}?`)) return;
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke('rsvp-send', { body: { campaign_id: campaign.id } });
@@ -529,15 +530,15 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
     } finally { setSending(false); }
   };
 
-  const copyLink = (token) => {
+  const copyLink = async (token) => {
     const url = `${window.location.origin}/rsvp/${token}`;
-    try { navigator.clipboard.writeText(url); toast.success('Skopiowano link.'); } catch { window.prompt('Link:', url); }
+    try { navigator.clipboard.writeText(url); toast.success('Skopiowano link.'); } catch { await promptDialog('Link:', url); }
   };
 
   const createAttendance = async () => {
     const yes = invs.filter(i => i.status === 'yes');
     if (!yes.length) { toast.error('Brak odpowiedzi „Będę" — nie ma z czego utworzyć frekwencji.'); return; }
-    if (!confirm(`Utworzyć sesję frekwencji i oznaczyć ${yes.length} obecnych (odpowiedzi „Będę")?`)) return;
+    if (!await confirmDialog(`Utworzyć sesję frekwencji i oznaczyć ${yes.length} obecnych (odpowiedzi „Będę")?`)) return;
     setCreatingAtt(true);
     try {
       const user = await getCachedUser();

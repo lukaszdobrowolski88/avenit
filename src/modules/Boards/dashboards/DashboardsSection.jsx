@@ -6,6 +6,7 @@ import { tr } from '../../../i18n';
 import { useCan } from '../../../components/Can';
 import DashboardView from './DashboardView';
 import Popover from '../components/Popover';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function DashboardsSection({ userEmail }) {
   const { dashboards, loading, createDashboard, updateDashboard, deleteDashboard } = useDashboards(userEmail);
@@ -61,7 +62,7 @@ export default function DashboardsSection({ userEmail }) {
                 <Popover align="right" width={150} trigger={<button onClick={(e) => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 p-1"><MoreHorizontal size={18} /></button>}>
                   {({ close }) => (
                     <div className="p-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => { if (confirm(`Usunąć „${d.name}"?`)) deleteDashboard(d.id); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń')}</button>
+                      <button onClick={async () => { if (await confirmDialog(`Usunąć „${d.name}"?`)) deleteDashboard(d.id); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń')}</button>
                     </div>
                   )}
                 </Popover>

@@ -4,6 +4,7 @@ import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 
 // Gotowy element „FAQ" — pytania i odpowiedzi (akordeon). Dane w module_records
 // (collection_key='faq'), izolowane per moduł.
@@ -84,7 +85,7 @@ export default function FaqTab({ moduleKey, moduleId, tabId, canEdit = true }) {
                   {canEdit && (
                     <span className="opacity-0 group-hover:opacity-100 flex gap-1" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => setModal({ record: r })} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><Pencil size={14} /></button>
-                      <button onClick={() => { if (confirm(tr('Usunąć to pytanie?'))) remove(r.id); }} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Trash2 size={14} /></button>
+                      <button onClick={async () => { if (await confirmDialog(tr('Usunąć to pytanie?'))) remove(r.id); }} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Trash2 size={14} /></button>
                     </span>
                   )}
                 </button>

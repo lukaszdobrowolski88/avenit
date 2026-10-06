@@ -14,6 +14,7 @@ import PushPreview from './PushPreview';
 import { tr } from '../../../i18n';
 import { useCan } from '../../../components/Can';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 const SECTIONS = [
   { id: 'compose', label: tr('Treść') },
@@ -113,7 +114,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
     const err = validate();
     if (err) { toast.error(err); return; }
     if (recipientCount === 0) {
-      if (!confirm(tr('Brak odbiorców pasujących do segmentów. Zapisać mimo to?'))) return;
+      if (!await confirmDialog(tr('Brak odbiorców pasujących do segmentów. Zapisać mimo to?'))) return;
     }
     setSaving(true);
     try {
@@ -135,7 +136,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
     const err = validate();
     if (err) { toast.error(err); return; }
     if (recipientCount === 0) { toast.error(tr('Brak odbiorców')); return; }
-    if (!confirm(`Wysłać kampanię do ${recipientCount} odbiorców?`)) return;
+    if (!await confirmDialog(`Wysłać kampanię do ${recipientCount} odbiorców?`)) return;
 
     setSending(true);
     try {

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function FormList({
   forms,
@@ -417,11 +418,11 @@ export default function FormList({
                               </button>
 
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   const msg = form.response_count > 0
                                     ? t('Ten formularz ma zapisane odpowiedzi. Usunięcie skasuje też wszystkie odpowiedzi. Czy na pewno usunąć?')
                                     : t('Czy na pewno chcesz usunąć ten formularz?');
-                                  if (window.confirm(msg)) {
+                                  if (await confirmDialog(msg)) {
                                     onDelete(form.id);
                                     setOpenMenuId(null);
                                   }
@@ -460,8 +461,8 @@ export default function FormList({
                               </button>
 
                               <button
-                                onClick={() => {
-                                  if (window.confirm(t('Czy na pewno chcesz trwale usunąć ten formularz wraz ze wszystkimi odpowiedziami? Ta operacja jest nieodwracalna.'))) {
+                                onClick={async () => {
+                                  if (await confirmDialog(t('Czy na pewno chcesz trwale usunąć ten formularz wraz ze wszystkimi odpowiedziami? Ta operacja jest nieodwracalna.'))) {
                                     onDelete(form.id);
                                     setOpenMenuId(null);
                                   }

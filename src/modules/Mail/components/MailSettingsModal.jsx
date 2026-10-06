@@ -5,6 +5,7 @@ import {
   Trash2, Edit2, Check, AlertCircle, Loader2, Eye, EyeOff, Star, RefreshCw
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { confirmDialog } from '../../../lib/dialog';
 
 const TABS = [
   { id: 'accounts', label: tr('Konta zewnętrzne'), icon: Server },
@@ -316,8 +317,8 @@ export default function MailSettingsModal({
                           )}
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm(tr('Czy na pewno usunąć to konto?'))) {
+                          onClick={async () => {
+                            if (await confirmDialog(tr('Czy na pewno usunąć to konto?'))) {
                               onDeleteAccount(account.id);
                             }
                           }}

@@ -6,6 +6,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import { RESOURCE_TYPES, typeLabel, PRESET_COLORS } from '../lib/roomsApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { confirmDialog } from '../../../lib/dialog';
 
 const emptyForm = { name: '', type: 'room', capacity: '', color: '#3b82f6', location: '', is_active: true };
 
@@ -56,7 +57,7 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
   };
 
   const remove = async (r) => {
-    if (!confirm(`Usunąć „${r.name}"? Wszystkie rezerwacje tego zasobu również zostaną usunięte.`)) return;
+    if (!await confirmDialog(`Usunąć „${r.name}"? Wszystkie rezerwacje tego zasobu również zostaną usunięte.`)) return;
     try {
       const { error } = await supabase.from('resources').delete().eq('id', r.id);
       if (error) throw error;

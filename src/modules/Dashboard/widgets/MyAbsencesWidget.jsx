@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 // „Moje nieobecności” — JEDNA funkcja nieobecności, wspólna z aplikacją mobilną:
 // volunteer_blockouts przez fn my-blockouts (member_id ustala serwer). Lider widzi
@@ -59,7 +60,7 @@ export default function MyAbsencesWidget({ absences, onRefresh }) {
   };
 
   const handleDelete = async (b) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć tę nieobecność?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę nieobecność?'))) return;
     try {
       const { error } = await supabase.functions.invoke('my-blockouts', { body: { action: 'delete', id: b.id } });
       if (error) throw error;

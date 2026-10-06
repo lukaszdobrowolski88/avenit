@@ -20,6 +20,7 @@ import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
+import { confirmDialog } from '../../lib/dialog';
 
 // ================== TABLE SELECT COMPONENT ==================
 
@@ -1051,7 +1052,7 @@ export default function TeachingModule() {
   };
 
   const deleteSpeaker = async (id) => {
-    if (!confirm(tr('Usunąć tego mówcę?'))) return;
+    if (!await confirmDialog(tr('Usunąć tego mówcę?'))) return;
     const { error } = await supabase.from('teaching_speakers').delete().eq('id', id);
     if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();
@@ -1077,7 +1078,7 @@ export default function TeachingModule() {
   };
 
   const deleteSeries = async (id) => {
-    if (!confirm(tr('Usunąć tę serię?'))) return;
+    if (!await confirmDialog(tr('Usunąć tę serię?'))) return;
     const { error } = await supabase.from('teaching_series').delete().eq('id', id);
     if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();

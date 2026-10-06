@@ -15,6 +15,7 @@ import { EMAIL_VARIABLES } from '../utils/emailVariables';
 import BlockTextEditor from './BlockTextEditor';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 // Definicje bloków
 const BLOCK_TYPES = {
@@ -601,8 +602,8 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
   };
 
   // Wyczyść wszystko
-  const clearAll = () => {
-    if (confirm(tr('Czy na pewno chcesz usunąć wszystkie bloki?'))) {
+  const clearAll = async () => {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć wszystkie bloki?'))) {
       setBlocks([]);
       setSelectedBlockId(null);
       updateHtml([]);

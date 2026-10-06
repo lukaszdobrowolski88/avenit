@@ -28,6 +28,7 @@ import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
 import { DataTable, THead, TH, TR, TD, EmptyRow, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { DateInput, TimeField } from '../../components/pickers';
+import { confirmDialog } from '../../lib/dialog';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -349,7 +350,7 @@ export default function HomeGroupsModule() {
   };
 
   const handleDelete = async (id, type) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć?'))) return;
 
     try {
       const table = type === 'group' ? 'home_groups'
@@ -497,7 +498,7 @@ export default function HomeGroupsModule() {
   };
 
   const deleteTask = async (id) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć to zadanie?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć to zadanie?'))) return;
 
     try {
       const { error } = await supabase.from('home_group_tasks').delete().eq('id', id);
@@ -634,7 +635,7 @@ export default function HomeGroupsModule() {
   };
 
   const detachMemberFromGroup = async (memberId) => {
-    if (!confirm(tr('Czy na pewno chcesz odłączyć członka od tej grupy?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz odłączyć członka od tej grupy?'))) return;
 
     try {
       const { error } = await supabase
@@ -728,7 +729,7 @@ export default function HomeGroupsModule() {
   };
 
   const deleteMaterial = async (file) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć ten materiał?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć ten materiał?'))) return;
     try {
       if (file.storage_path) await supabase.storage.from('materials').remove([file.storage_path]);
       const { error } = await supabase.from('materials_files').delete().eq('id', file.id);

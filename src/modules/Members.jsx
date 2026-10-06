@@ -29,6 +29,7 @@ import { useModuleLabel } from '../hooks/useModuleLabel';
 import { useModules } from '../hooks/useModules';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
+import { confirmDialog } from '../lib/dialog';
 
 // --- STAŁE DANE ---
 
@@ -364,7 +365,7 @@ export default function Members() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć tego członka?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tego członka?'))) return;
 
     try {
       // Pobierz dane członka przed usunięciem

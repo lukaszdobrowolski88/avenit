@@ -8,6 +8,7 @@ import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 const emptyForm = () => ({
   song_id: '', program_id: '', used_date: todayIso(), ccli_number: '', note: '',
@@ -95,7 +96,7 @@ export default function CcliTab({ songs, songsById, programs, programsById, camp
   };
 
   const remove = async (u) => {
-    if (!confirm('Usunąć ten wpis wykonania?')) return;
+    if (!await confirmDialog('Usunąć ten wpis wykonania?')) return;
     try {
       const { error } = await supabase.from('song_usage').delete().eq('id', u.id);
       if (error) throw error;

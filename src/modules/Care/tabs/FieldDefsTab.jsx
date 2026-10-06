@@ -5,6 +5,7 @@ import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { FIELD_TYPES, fieldTypeLabel, slugifyFieldKey } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 const emptyForm = { label: '', field_type: 'text', optionsText: '' };
 
@@ -64,7 +65,7 @@ export default function FieldDefsTab({ fields, refreshFields }) {
   };
 
   const remove = async (f) => {
-    if (!confirm(`Usunąć pole „${f.label}"? Wartości tego pola u członków przestaną być widoczne.`)) return;
+    if (!await confirmDialog(`Usunąć pole „${f.label}"? Wartości tego pola u członków przestaną być widoczne.`)) return;
     try {
       const { error } = await supabase.from('member_custom_fields').delete().eq('id', f.id);
       if (error) throw error;

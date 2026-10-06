@@ -26,6 +26,7 @@ import { PitchShifter } from 'soundtouchjs';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
+import { confirmDialog } from '../../lib/dialog';
 
 
 // Hook to calculate dropdown position with smart positioning (up/down)
@@ -1567,14 +1568,14 @@ export default function WorshipModule() {
   };
 
   const deleteMember = async (id) => {
-    if(confirm(tr('Usunąć?'))) {
+    if(await confirmDialog(tr('Usunąć?'))) {
       await supabase.from('worship_team').delete().eq('id', id);
       fetchData();
     }
   };
 
   const deleteSong = async (id) => {
-    if(confirm(tr('Usunąć pieśń?'))) {
+    if(await confirmDialog(tr('Usunąć pieśń?'))) {
       await supabase.from('songs').delete().eq('id', id);
       fetchData();
     }
@@ -1630,7 +1631,7 @@ export default function WorshipModule() {
 
   // Usunięcie tagu ze wszystkich pieśni
   const deleteTagGlobally = async (tagToDelete) => {
-    if (!confirm(`Czy na pewno chcesz usunąć tag "${tagToDelete}" ze wszystkich pieśni?`)) return;
+    if (!await confirmDialog(`Czy na pewno chcesz usunąć tag "${tagToDelete}" ze wszystkich pieśni?`)) return;
 
     const songsWithTag = songs.filter(s => Array.isArray(s.tags) && s.tags.includes(tagToDelete));
 

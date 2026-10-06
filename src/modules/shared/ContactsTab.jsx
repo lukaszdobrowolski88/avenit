@@ -4,6 +4,7 @@ import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 
 // Gotowy element „Lista kontaktów" — prosta baza kontaktów per moduł.
 // Dane w module_records (collection_key='contacts').
@@ -122,7 +123,7 @@ export default function ContactsTab({ moduleKey, moduleId, tabId, canEdit = true
                 {canEdit && (
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1">
                     <button onClick={() => setModal({ record: r })} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><Pencil size={14} /></button>
-                    <button onClick={() => { if (confirm(tr('Usunąć ten kontakt?'))) remove(r.id); }} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Trash2 size={14} /></button>
+                    <button onClick={async () => { if (await confirmDialog(tr('Usunąć ten kontakt?'))) remove(r.id); }} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Trash2 size={14} /></button>
                   </div>
                 )}
               </div>

@@ -8,6 +8,7 @@ import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 import { ChevronDown, ChevronRight, Shield, Plus, Trash2, Users, Sliders, HeartHandshake } from 'lucide-react';
 import MinistryMemberships from './MinistryMemberships';
 import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
+import { confirmDialog } from '../../../lib/dialog';
 
 const KIND_STYLE = {
   module: 'font-semibold text-gray-800 dark:text-gray-100',
@@ -200,7 +201,7 @@ export default function PermissionsAdmin() {
               <TD align="right">
                 {!r.is_system && (
                   <button className="text-rose-500 opacity-60 group-hover/row:opacity-100 transition-opacity" onClick={async () => {
-                    if (!window.confirm(tr('Usunąć rolę?') + ` ${r.label}`)) return;
+                    if (!await confirmDialog(tr('Usunąć rolę?') + ` ${r.label}`)) return;
                     try { await supabase.from('app_roles').delete().eq('key', r.key); await load(); flash(tr('Usunięto')); } catch (e) { setErr(e.message); }
                   }}><Trash2 size={15} /></button>
                 )}
@@ -272,7 +273,7 @@ export default function PermissionsAdmin() {
                   {users.filter((u) => u.id !== user.id).map((u) => <option key={`user:${u.id}`} value={`user:${u.id}`}>{u.full_name || u.name || u.email}</option>)}
                 </optgroup>
               </select>
-              <button disabled={!copyFrom} onClick={() => { if (window.confirm(tr('Zastąpić nadpisania tej osoby skopiowanymi?'))) copyGrantsToUser(user.id, copyFrom); }}
+              <button disabled={!copyFrom} onClick={async () => { if (await confirmDialog(tr('Zastąpić nadpisania tej osoby skopiowanymi?'))) copyGrantsToUser(user.id, copyFrom); }}
                 className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50">{tr('Kopiuj')}</button>
             </div>
             {searchInput}

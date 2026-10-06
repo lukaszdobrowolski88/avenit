@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function HouseholdManager() {
   const [households, setHouseholds] = useState([]);
@@ -198,7 +199,7 @@ export default function HouseholdManager() {
   };
 
   const handleDelete = async (householdId) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć tę rodzinę? Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną.'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę rodzinę? Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną.'))) return;
 
     try {
       // First, unlink students

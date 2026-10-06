@@ -7,6 +7,7 @@ import { formatMoney, formatDate, memberName } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog, promptDialog } from '../../../lib/dialog';
 
 const emptyForm = { name: '', description: '', goal_amount: '', fund_id: '', start_date: '', end_date: '', is_active: true };
 const emptyPledge = { member_id: '', donor_name: '', pledge_amount: '', note: '' };
@@ -29,7 +30,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
 
   const copyEmbed = async (c) => {
     const code = `<iframe src="${window.location.origin}/widget/campaign/${c.id}" width="100%" height="180" style="border:0"></iframe>`;
-    try { await navigator.clipboard.writeText(code); } catch { window.prompt('Skopiuj kod osadzenia:', code); }
+    try { await navigator.clipboard.writeText(code); } catch { await promptDialog('Skopiuj kod osadzenia:', code); }
     setCopiedId(c.id);
     setTimeout(() => setCopiedId(v => (v === c.id ? null : v)), 2000);
   };
@@ -103,7 +104,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
   };
 
   const remove = async (c) => {
-    if (!confirm(`Usunąć kampanię „${c.name}"? Deklaracje zostaną usunięte.`)) return;
+    if (!await confirmDialog(`Usunąć kampanię „${c.name}"? Deklaracje zostaną usunięte.`)) return;
     try {
       const { error } = await supabase.from('giving_campaigns').delete().eq('id', c.id);
       if (error) throw error;
@@ -126,7 +127,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
     } catch (err) { toast.error('Nie udało się zapisać deklaracji: ' + (err.message || err)); }
   };
   const removePledge = async (p) => {
-    if (!confirm('Usunąć deklarację?')) return;
+    if (!await confirmDialog('Usunąć deklarację?')) return;
     try { await supabase.from('giving_pledges').delete().eq('id', p.id); load(); }
     catch (err) { toast.error('Błąd: ' + (err.message || err)); }
   };

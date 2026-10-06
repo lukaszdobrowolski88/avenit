@@ -21,6 +21,7 @@ import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
 import { DateInput, TimeField } from '../components/pickers';
+import { confirmDialog } from '../lib/dialog';
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA ---
 
@@ -1062,7 +1063,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   };
 
   const handleDeleteTask = async (id) => {
-      if (confirm(tr('Czy na pewno chcesz usunąć to zadanie?'))) {
+      if (await confirmDialog(tr('Czy na pewno chcesz usunąć to zadanie?'))) {
           await supabase.from('tasks').delete().eq('id', id);
           setModals({...modals, addTask: null});
           fetchEvents();
@@ -1095,7 +1096,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   };
 
   const handleDeleteEvent = async (id) => {
-    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals({...modals, addEvent: null});
       fetchEvents();
@@ -1129,7 +1130,7 @@ export default function CalendarModule({ embedded = false } = {}) {
     else { setModals((m) => ({ ...m, moduleEvent: null })); fetchEvents(); }
   };
   const handleDeleteModuleEvent = async (id) => {
-    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals((m) => ({ ...m, moduleEvent: null }));
       fetchEvents();
@@ -1154,7 +1155,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   };
 
   const handleDeleteWorshipEvent = async (id) => {
-    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals({...modals, worshipEvent: null});
       fetchEvents();
@@ -1180,7 +1181,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   };
 
   const handleDeleteMediaEvent = async (id) => {
-    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals({...modals, mediaEvent: null});
       fetchEvents();
@@ -1206,7 +1207,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   };
 
   const handleDeleteAtmosferaEvent = async (id) => {
-    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals({...modals, atmosferaEvent: null});
       fetchEvents();
@@ -1232,7 +1233,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   };
 
   const handleDeleteKidsEvent = async (id) => {
-    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals({...modals, kidsEvent: null});
       fetchEvents();
@@ -1258,7 +1259,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   };
 
   const handleDeleteHomegroupsEvent = async (id) => {
-    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals({...modals, homegroupsEvent: null});
       fetchEvents();

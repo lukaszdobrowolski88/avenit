@@ -4,6 +4,7 @@ import { usePushTemplates } from '../hooks/usePushTemplates';
 import { PUSH_CATEGORIES } from '../constants';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function TemplateGallery({ onUseTemplate }) {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = usePushTemplates();
@@ -14,7 +15,7 @@ export default function TemplateGallery({ onUseTemplate }) {
   const handleEdit = (t) => { setEditing(t); setShowEditor(true); };
   const handleDelete = async (t) => {
     if (t.is_system) { toast.error(tr('Nie można usunąć szablonu systemowego.')); return; }
-    if (!confirm(`Usunąć szablon "${t.name}"?`)) return;
+    if (!await confirmDialog(`Usunąć szablon "${t.name}"?`)) return;
     try { await deleteTemplate(t.id); } catch (e) { toast.error(e.message); }
   };
 

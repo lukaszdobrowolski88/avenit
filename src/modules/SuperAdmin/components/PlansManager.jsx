@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function PlansManager() {
   const { getPlans, createPlan, updatePlan, deactivatePlan, loading } = usePlans();
@@ -111,7 +112,7 @@ export default function PlansManager() {
   };
 
   const handleDelete = async (planId) => {
-    if (confirm(tr('Czy na pewno chcesz dezaktywować ten plan?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz dezaktywować ten plan?'))) {
       await deactivatePlan(planId);
       loadPlans();
     }

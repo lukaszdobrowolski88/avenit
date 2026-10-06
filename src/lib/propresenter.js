@@ -1,3 +1,4 @@
+import { toast } from './toast';
 // ProPresenter Export - Generates Pro6 compatible playlist XML
 // Pro6 format can be imported into ProPresenter 7
 
@@ -275,7 +276,7 @@ export const exportServiceOrderText = (program, songsMap) => {
 
   // Copy to clipboard
   navigator.clipboard.writeText(text).then(() => {
-    alert('Lista pieśni skopiowana do schowka!\n\nMożesz wkleić ją w ProPresenter lub innym programie.');
+    toast.success({ title: 'Lista pieśni skopiowana do schowka', message: 'Możesz wkleić ją w ProPresenterze lub innym programie.' });
   }).catch(() => {
     // Fallback - show in new window
     const win = window.open('', '', 'width=600,height=400');

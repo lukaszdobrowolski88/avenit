@@ -23,6 +23,7 @@ import EmbedCodeGenerator from './components/EmbedCodeGenerator';
 import { BUILT_IN_TEMPLATES, DEFAULT_FORM_SETTINGS } from './utils/fieldTypes';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
+import { confirmDialog } from '../../lib/dialog';
 
 export default function FormsModule({ userEmail }) {
   const t = useT();
@@ -117,7 +118,7 @@ export default function FormsModule({ userEmail }) {
   };
 
   const handleDeleteForm = async (formId) => {
-    if (window.confirm(tr('Czy na pewno chcesz usunąć ten formularz? Wszystkie odpowiedzi zostaną usunięte.'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć ten formularz? Wszystkie odpowiedzi zostaną usunięte.'))) {
       await deleteForm(formId);
     }
   };

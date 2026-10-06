@@ -27,6 +27,7 @@ import EmptyState from '../../components/EmptyState';
 import Button from '../../components/Button';
 import { useCan } from '../../components/Can';
 import { exportBoardCsv, buildCellsFromRecord } from './lib/csv';
+import { confirmDialog } from '../../lib/dialog';
 
 const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails, workload: Gauge, doc: FileText, map: MapPin };
 const VIEW_TYPES = [
@@ -162,7 +163,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
           {data.views.map(v => (
             <ViewTab key={v.id} view={v} active={activeViewId === v.id} onSelect={setActiveViewId} data={data}
               canManage={canManageViews} canDelete={data.views.length > 1}
-              onDelete={() => { if (!confirm(`Usunąć widok „${v.name}"?`)) return; data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
+              onDelete={async () => { if (!await confirmDialog(`Usunąć widok „${v.name}"?`)) return; data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
               onDuplicated={(nv) => nv && setActiveViewId(nv.id)} />
           ))}
           {canManageViews && <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />}

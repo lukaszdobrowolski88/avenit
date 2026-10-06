@@ -8,6 +8,7 @@ import { useCampaigns } from '../hooks/useCampaigns';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 const STATUS_CONFIG = {
   draft: {
@@ -72,7 +73,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
   });
 
   const handleDelete = async (campaign) => {
-    if (!confirm(`Czy na pewno chcesz usunąć mail "${campaign.name}"?`)) return;
+    if (!await confirmDialog(`Czy na pewno chcesz usunąć mail "${campaign.name}"?`)) return;
 
     try {
       await deleteCampaign(campaign.id);

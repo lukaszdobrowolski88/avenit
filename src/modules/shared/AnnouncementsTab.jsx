@@ -5,6 +5,7 @@ import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { DateInput } from '../../components/pickers';
+import { confirmDialog } from '../../lib/dialog';
 
 // Gotowy element „Ogłoszenia" — komunikaty z datą i przypięciem. Dane w
 // module_records (collection_key='announcements'), izolowane per moduł.
@@ -113,7 +114,7 @@ export default function AnnouncementsTab({ moduleKey, moduleId, tabId, canEdit =
                     <div className="opacity-0 group-hover:opacity-100 flex gap-1 shrink-0">
                       <button onClick={() => togglePin(r)} title={d.pinned ? tr('Odepnij') : tr('Przypnij')} className="p-1.5 text-gray-400 hover:text-accent-primary rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{d.pinned ? <PinOff size={14} /> : <Pin size={14} />}</button>
                       <button onClick={() => setModal({ record: r })} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><Pencil size={14} /></button>
-                      <button onClick={() => { if (confirm(tr('Usunąć to ogłoszenie?'))) remove(r.id); }} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Trash2 size={14} /></button>
+                      <button onClick={async () => { if (await confirmDialog(tr('Usunąć to ogłoszenie?'))) remove(r.id); }} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Trash2 size={14} /></button>
                     </div>
                   )}
                 </div>

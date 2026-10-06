@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { X, FolderInput, Home, Folder } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 // Okno „Przenieś do…" — wybór folderu docelowego (płaska, wcięta lista).
 // Dla folderów blokuje przeniesienie do samego siebie lub swojego potomka.
@@ -32,7 +33,7 @@ export default function MoveModal({ isOpen, onClose, item, folders, onMove }) {
   const move = async (targetId) => {
     setBusy(true);
     try { await onMove(targetId); onClose(); }
-    catch (e) { window.alert(tr('Nie udało się przenieść: ') + e.message); }
+    catch (e) { toast.error(tr('Nie udało się przenieść: ') + e.message); }
     finally { setBusy(false); }
   };
 

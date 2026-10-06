@@ -6,6 +6,7 @@ import { Plus, Trash2, X, Check, Edit2, Users, ChevronDown } from 'lucide-react'
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -253,7 +254,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
   };
 
   const deleteRole = async (id) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć tę służbę? Spowoduje to usunięcie wszystkich przypisań.'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę służbę? Spowoduje to usunięcie wszystkich przypisań.'))) return;
 
     try {
       await supabase.from('team_roles').delete().eq('id', id);

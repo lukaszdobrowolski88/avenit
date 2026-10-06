@@ -6,6 +6,7 @@ import { Plus, Search, Trash2, X, User, Mail, Phone, Check, Edit2 } from 'lucide
 import { tr } from '../../../i18n';
 import { useCampusQuery } from '../../../hooks/useCampusQuery';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function MembersTab({ moduleKey, moduleName }) {
   const { withCampusFilter, campusIdForInsert } = useCampusQuery();
@@ -176,7 +177,7 @@ export default function MembersTab({ moduleKey, moduleName }) {
 
   // Usuń członka
   const handleDelete = async (id) => {
-    if (!confirm(tr('Usunąć tego członka?'))) return;
+    if (!await confirmDialog(tr('Usunąć tego członka?'))) return;
     try {
       // Usuń przypisania do służb
       await supabase
