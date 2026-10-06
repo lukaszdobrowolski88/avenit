@@ -62,7 +62,7 @@ export default function WidgetContainer({
       style={style}
       className={`${sizeConfig.className} ${isDragging ? 'opacity-50 z-50' : ''}`}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl">
+      <div className="widget-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl">
         {/* Header */}
         <div className="widget-head flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750">
           <div className="flex items-center gap-2">

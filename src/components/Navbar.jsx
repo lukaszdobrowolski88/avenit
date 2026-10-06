@@ -80,7 +80,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
 
   return (
     // z-40 aby navbar był nad treścią, ale pod modalami (z-[100])
-    <div className="relative z-40 h-14 lg:h-16 bg-white/80 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700 flex items-center justify-between px-3 lg:px-6 transition-colors duration-300">
+    <div className="app-topbar relative z-40 h-14 lg:h-16 bg-white/80 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700 flex items-center justify-between px-3 lg:px-6 transition-colors duration-300">
 
       {/* Lewa strona */}
       <div className="flex items-center gap-2 lg:gap-4">

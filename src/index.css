@@ -14,19 +14,21 @@
 /* Marka Avenit w trybie CIEMNYM: słód (kolor przycisków w jasnym) zlałby się z ciemnym tłem,
    więc akcenty przechodzą na musztardę/kurkumę. !important — palety są ustawiane inline na :root
    (colorPresets.js), a ważna deklaracja z arkusza wygrywa z nieważną inline. */
+/* Tła-odcienie akcentu (lighter/lightest/darkest) są w ciemnym NEUTRALNE — przyciemniona kurkuma
+   daje oliwkowo-brązowy „błotny” odcień (feedback właściciela). Kurkuma tylko jako jasny akcent. */
 html.dark[data-color-preset="avenit"] {
   --accent-primary: 255 190 11 !important;
   --accent-primary-light: 255 190 11 !important;
-  --accent-primary-lighter: 58 46 12 !important;
-  --accent-primary-lightest: 38 31 12 !important;
-  --accent-primary-dark: 201 162 39 !important;
-  --accent-primary-darkest: 42 35 18 !important;
+  --accent-primary-lighter: 52 51 48 !important;
+  --accent-primary-lightest: 38 37 35 !important;
+  --accent-primary-dark: 230 172 10 !important;
+  --accent-primary-darkest: 44 43 41 !important;
   --accent-secondary: 255 190 11 !important;
   --accent-secondary-light: 255 190 11 !important;
-  --accent-secondary-lighter: 58 46 12 !important;
-  --accent-secondary-lightest: 38 31 12 !important;
-  --accent-secondary-dark: 201 162 39 !important;
-  --accent-secondary-darkest: 42 35 18 !important;
+  --accent-secondary-lighter: 52 51 48 !important;
+  --accent-secondary-lightest: 38 37 35 !important;
+  --accent-secondary-dark: 230 172 10 !important;
+  --accent-secondary-darkest: 44 43 41 !important;
 }
 
 :root {

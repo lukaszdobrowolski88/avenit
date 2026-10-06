@@ -152,7 +152,7 @@ export default function PersonalDashboard({ user }) {
     .sort((a, b) => a.order - b.order);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 -m-4 lg:-m-6 p-4 md:p-6 lg:p-8">
+    <div className="dashboard-root min-h-screen bg-gray-50 dark:bg-gray-900 -m-4 lg:-m-6 p-4 md:p-6 lg:p-8">
       {/* Header z powitaniem */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-4">

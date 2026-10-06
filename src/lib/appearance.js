@@ -21,7 +21,7 @@ export const FONT_OPTIONS = {
 // Tło aplikacji — para (jasny / ciemny motyw). Domyślne odwzorowuje obecny wygląd.
 export const BACKGROUND_OPTIONS = {
   slate:    { label: 'Grafitowe (domyślne)', light: '#f9fafb', dark: '#111827' },
-  paper:    { label: 'Papier (Avenit)',      light: '#F6F4EE', dark: '#17140D' },
+  paper:    { label: 'Papier (Avenit)',      light: '#F6F4EE', dark: '#121211' },
   white:    { label: 'Czyste białe',         light: '#ffffff', dark: '#0b0d12' },
   warm:     { label: 'Ciepłe kremowe',       light: '#f7f4ef', dark: '#15120d' },
   cool:     { label: 'Chłodny błękit',       light: '#eef2f8', dark: '#0c1119' },
