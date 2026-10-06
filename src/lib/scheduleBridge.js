@@ -131,3 +131,22 @@ export function statusSummary(assignments, programId, teamType) {
   }
   return { accepted, rejected, pending, sent, total: accepted + rejected + pending };
 }
+
+// ── Czy wydarzenie należy do służby ──
+// Jedno źródło prawdy dla Grafiku (ScheduleTab), zakładki „Wydarzenia” modułu (EventsTab, sekcja
+// „Służymy na”) i „Służb” na wydarzeniu — żeby wszędzie była ta sama lista nabożeństw.
+// 0) wydarzenie ma już przypisania tej służby → zawsze należy (nie gubimy danych po zmianie typu/reguły);
+// dalej priorytet: override per wydarzenie (events.team_types) → reguła typu (app_settings
+// event_type_teams: [{ module_key, event_type, teams: [...] }]) → moduł-służba (module_key === teamType).
+const csvList = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
+export function eventIncludesTeam(ev, teamType, rules = []) {
+  if (!ev || !teamType) return false;
+  let all = ev.assignments;
+  if (typeof all === 'string') { try { all = JSON.parse(all); } catch { all = null; } }
+  const asg = isObj(all) ? all[teamType] : null;
+  if (isObj(asg) && Object.entries(asg).some(([k, v]) => k !== 'notatki' && k !== 'absencja' && csvList(v).length)) return true;
+  if (ev.team_types != null) return csvList(ev.team_types).includes(teamType);
+  const rule = (rules || []).find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type === ev.event_type);
+  if (rule && Array.isArray(rule.teams) && rule.teams.length) return rule.teams.includes(teamType);
+  return (ev.module_key || '') === teamType; // brak reguły → służba = moduł wydarzenia
+}

@@ -10,7 +10,7 @@ import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { useT } from '../../i18n';
 import { tr, appLocale } from '../../i18n';
 import { useScheduleAssignments, patchEventAssignments, scheduleSaveErrorMessage } from '../../hooks/useScheduleAssignments';
-import { eventInviteSummary } from '../../lib/scheduleBridge';
+import { eventInviteSummary, eventIncludesTeam } from '../../lib/scheduleBridge';
 import { getCachedUser } from '../../lib/supabase';
 import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
 
@@ -316,14 +316,8 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   // Czy wydarzenie należy do tej służby (spójne z zakładką „Służby" na wydarzeniu).
   // 0) event ma już przypisania tej służby → zawsze pokaż (nie gub danych po zmianie typu/reguły).
   // Dalej priorytet: override per wydarzenie (events.team_types) → reguła typu → moduł-służba.
-  const includesThisTeam = useCallback((ev) => {
-    const asg = ev.assignments?.[teamType];
-    if (asg && Object.entries(asg).some(([k, v]) => k !== 'notatki' && k !== 'absencja' && csvNames(v).length)) return true;
-    if (ev.team_types != null) return csvNames(ev.team_types).includes(teamType);
-    const rule = (typeTeams || []).find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type === ev.event_type);
-    if (rule && Array.isArray(rule.teams) && rule.teams.length) return rule.teams.includes(teamType);
-    return (ev.module_key || '') === teamType; // brak reguły → służba = moduł wydarzenia
-  }, [typeTeams, teamType]);
+  // Wspólny predykat z lib/scheduleBridge (ten sam w zakładce „Wydarzenia” modułu).
+  const includesThisTeam = useCallback((ev) => eventIncludesTeam(ev, teamType, typeTeams), [typeTeams, teamType]);
 
   const fetchData = async () => {
     setLoading(true);
