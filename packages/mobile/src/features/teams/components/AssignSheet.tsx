@@ -25,6 +25,7 @@ export const AssignSheet = ({
   role,
   members,
   roles,
+  reported,
   saving,
   onClose,
   onSave,
@@ -34,6 +35,7 @@ export const AssignSheet = ({
   role: GrafikRoleDef | 'absent' | null;
   members: GrafikMember[];
   roles: GrafikRoleDef[];
+  reported: Set<string>; // zgłoszona nieobecność (volunteer_blockouts) w dniu wydarzenia — ostrzeżenie
   saving: boolean;
   onClose: () => void;
   onSave: (names: string[]) => void;
@@ -87,10 +89,13 @@ export const AssignSheet = ({
   const row = (m: GrafikMember, i: number) => {
     const on = picked.includes(m.name);
     const isAbsent = !absentMode && absent.has(m.name);
+    const isReported = !isAbsent && reported.has(m.name);
     const st = statusOf.get(m.name);
     const extra = elsewhere.get(m.name);
     const sub = isAbsent
       ? 'nieobecność w tym terminie'
+      : isReported
+        ? 'zgłoszona nieobecność w tym dniu'
       : on && st
         ? STATUS[st].text
         : extra?.length
@@ -123,7 +128,7 @@ export const AssignSheet = ({
           {sub ? (
             <Text
               numberOfLines={1}
-              style={{ fontSize: 12, marginTop: 1, fontFamily: F.medium, color: on && st ? STATUS[st].color : isAbsent ? '#B42318' : B.ink4 }}
+              style={{ fontSize: 12, marginTop: 1, fontFamily: F.medium, color: isReported ? '#B42318' : on && st ? STATUS[st].color : isAbsent ? '#B42318' : B.ink4 }}
             >
               {sub}
             </Text>

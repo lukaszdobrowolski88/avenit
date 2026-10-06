@@ -2,7 +2,8 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { WIDGET_DEFINITIONS, WIDGET_SIZES } from '../utils/layoutDefaults';
-import { hasTabAccess } from '../../../utils/tabPermissions';
+import { widgetAllowed } from '../utils/widgetAccess';
+import { usePermissions } from '../../../contexts/PermissionsContext';
 import * as Icons from 'lucide-react';
 import { tr } from '../../../i18n';
 
@@ -15,6 +16,7 @@ export default function LayoutCustomizer({
   onReset,
   userRole,
 }) {
+  const { can } = usePermissions();
   if (!isOpen) return null;
 
   const getIcon = (iconName) => {
@@ -52,7 +54,7 @@ export default function LayoutCustomizer({
 
           <div className="space-y-3">
             {layout
-              .filter(item => hasTabAccess('dashboard', item.widgetId, userRole))
+              .filter(item => widgetAllowed(item.widgetId, can))
               .map(item => {
               const widget = WIDGET_DEFINITIONS[item.widgetId];
               if (!widget) return null;

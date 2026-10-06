@@ -36,6 +36,7 @@ const MODULES = [
   'home-groups-map',
   'my-blockouts',
   'ministry-roster',
+  'team-availability',
   'my-shared-materials',
   'program-songs-preview',
   'prayer-wall',

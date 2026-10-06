@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Music, Video, Users, BookOpen, Mic, History, Clock, X, Save, ChevronDown, GripVertical, Trash2, Search, Check, Inbox, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useScheduleAssignments } from '../../../hooks/useScheduleAssignments';
@@ -305,6 +306,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
 // ============================================
 
 export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userEmail }) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [modalState, setModalState] = useState({ isOpen: false, programId: null });
   const [pendingAssignments, setPendingAssignments] = useState([]);
@@ -358,8 +360,9 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
     setProcessingId(assignment.id);
     const result = await rejectAssignment(assignment.id);
 
-    if (result.success) {
-      // Usuń z grafiku programu
+    if (result.success && assignment.program_id) {
+      // Stary grafik programu (sprzed przeniesienia na wydarzenia) — usuń imię z JSON-a.
+      // Na wydarzeniu imię zostaje, a lider widzi odmowę w grafiku.
       const { data: programData } = await supabase
         .from('programs')
         .select('zespol')
@@ -380,8 +383,8 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
           .eq('id', assignment.program_id);
       }
 
-      setPendingAssignments(prev => prev.filter(a => a.id !== assignment.id));
     }
+    if (result.success) setPendingAssignments(prev => prev.filter(a => a.id !== assignment.id));
     setProcessingId(null);
   };
 
@@ -402,8 +405,10 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
     return dateString === tomorrow.toISOString().split('T')[0];
   };
 
-  const handleProgramClick = (programId) => {
-    setModalState({ isOpen: true, programId });
+  // Wydarzenie → pełny ekran wydarzenia (plan, służby, materiały); stary program → podgląd.
+  const handleItemClick = (item) => {
+    if (item.kind === 'event') navigate(`/wydarzenie/${item.id}`);
+    else setModalState({ isOpen: true, programId: item.id });
   };
 
   const currentList = activeTab === 'upcoming' ? upcomingMinistry : pastMinistry;
@@ -419,7 +424,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
             {isPast ? tr('Brak historii służb') : tr('Brak nadchodzących służb')}
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {isPast ? tr('Historia pojawi się po zakończeniu służb') : tr('Nie jesteś przypisany do żadnego programu')}
+            {isPast ? tr('Historia pojawi się po zakończeniu służb') : tr('Gdy lider wpisze Cię do grafiku, zobaczysz to tutaj')}
           </p>
         </div>
       );
@@ -429,8 +434,8 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
       <div className="space-y-3">
         {list.slice(0, 5).map((ministry) => (
           <div
-            key={ministry.id}
-            onClick={() => handleProgramClick(ministry.id)}
+            key={`${ministry.kind || 'program'}-${ministry.id}`}
+            onClick={() => handleItemClick(ministry)}
             className={`p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${
               !isPast && isToday(ministry.date)
                 ? 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-accent-primary-lighter dark:border-accent-primary-dark'
@@ -458,6 +463,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {formatDate(ministry.date)}
+                  {ministry.time ? `, ${ministry.time}` : ''}
                   {!isPast && isToday(ministry.date) && (
                     <span className="ml-2 text-accent-primary-light font-medium">• Dzisiaj</span>
                   )}
@@ -477,14 +483,23 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
                 return (
                   <div
                     key={index}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${colorClass}`}
+                    title={role.status === 'pending' ? tr('Czeka na Twoje potwierdzenie') : role.status === 'rejected' ? tr('Odmówiono') : undefined}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${colorClass} ${role.status === 'rejected' ? 'line-through opacity-60' : ''}`}
                   >
                     <IconComponent size={12} />
                     <span>{ROLE_LABELS[role.role] || role.role}</span>
+                    {role.status === 'accepted' && <Check size={12} />}
+                    {role.status === 'pending' && <Clock size={12} />}
                   </div>
                 );
               })}
             </div>
+
+            {ministry.absent && !isPast && (
+              <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
+                {tr('Masz zgłoszoną nieobecność w tym terminie — daj znać liderowi.')}
+              </p>
+            )}
 
             {/* Notes */}
             {ministry.notes && (
@@ -544,17 +559,21 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-gray-800 dark:text-white truncate">
-                    {ROLE_LABELS[assignment.role_key] || assignment.role_key}
+                    {assignment.role_label || ROLE_LABELS[assignment.role_key] || assignment.role_key}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {assignment.programs?.date ? formatDate(assignment.programs.date) : 'Nieznana data'}
+                    {(() => {
+                      const target = assignment.events || assignment.programs;
+                      if (!target?.date) return tr('Nieznana data');
+                      return [target.title, formatDate(target.date), assignment.events?.time ? String(assignment.events.time).slice(0, 5) : null].filter(Boolean).join(' · ');
+                    })()}
                   </p>
                 </div>
               </div>
             </div>
 
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Przypisał/a: <span className="font-medium">{assignment.assigned_by_name || 'Nieznany'}</span>
+              {tr('Zaproszenie od')}: <span className="font-medium">{assignment.assigned_by_name || tr('lidera')}</span>
             </p>
 
             <div className="flex gap-2">

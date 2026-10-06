@@ -44,22 +44,21 @@ export function useScheduleAssignments() {
       if (assignmentsError) throw assignmentsError;
       if (!assignmentsData || assignmentsData.length === 0) return [];
 
-      // Pobierz dane programów
-      const programIds = [...new Set(assignmentsData.map(a => a.program_id))];
-      const { data: programsData } = await supabase
-        .from('programs')
-        .select('id, date')
-        .in('id', programIds);
+      // Cel przypisania: wydarzenie (grafik od migracji 055) albo stary program.
+      const programIds = [...new Set(assignmentsData.map(a => a.program_id).filter(x => x != null))];
+      const eventIds = [...new Set(assignmentsData.map(a => a.event_id).filter(x => x != null))];
+      const [{ data: programsData }, { data: eventsData }] = await Promise.all([
+        programIds.length ? supabase.from('programs').select('id, date, title').in('id', programIds) : Promise.resolve({ data: [] }),
+        eventIds.length ? supabase.from('events').select('id, date, time, title').in('id', eventIds) : Promise.resolve({ data: [] }),
+      ]);
 
-      // Połącz dane
-      const programsMap = (programsData || []).reduce((acc, p) => {
-        acc[p.id] = p;
-        return acc;
-      }, {});
+      const programsMap = Object.fromEntries((programsData || []).map(p => [p.id, p]));
+      const eventsMap = Object.fromEntries((eventsData || []).map(e => [e.id, e]));
 
       return assignmentsData.map(a => ({
         ...a,
-        programs: programsMap[a.program_id] || null
+        programs: programsMap[a.program_id] || null,
+        events: eventsMap[a.event_id] || null,
       }));
     } catch (err) {
       console.error('Error fetching pending assignments:', err);

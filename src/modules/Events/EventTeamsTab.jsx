@@ -78,19 +78,25 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
       const out = {};
       for (const tt of effectiveTeamTypes) {
         const table = memberTableFor(tt);
-        const [rolesRes, membersRes, tmrRes] = await Promise.all([
+        const day = String(event.date || '').slice(0, 10);
+        const [rolesRes, membersRes, tmrRes, availRes] = await Promise.all([
           supabase.from('team_roles').select('id, field_key, name, display_order').eq('team_type', tt).eq('is_active', true).order('display_order', { ascending: true }),
           supabase.from(table).select('id, full_name, email').order('full_name', { ascending: true }).then((r) => r, () => ({ data: [] })),
           supabase.from('team_member_roles').select('role_id, member_id').eq('member_table', table).then((r) => r, () => ({ data: [] })),
+          // Zgłoszone nieobecności w dniu wydarzenia (fn team-availability — bez powodów).
+          day
+            ? supabase.functions.invoke('team-availability', { body: { team: tt, from: day, to: day } }).then((r) => r, () => ({ data: null }))
+            : Promise.resolve({ data: null }),
         ]);
         const eligible = {};
         (tmrRes.data || []).forEach((r) => { (eligible[r.role_id] = eligible[r.role_id] || new Set()).add(String(r.member_id)); });
-        out[tt] = { roles: rolesRes.data || [], members: membersRes.data || [], eligible };
+        const unavailable = new Set((availRes?.data?.blockouts || []).map((b) => b.name));
+        out[tt] = { roles: rolesRes.data || [], members: membersRes.data || [], eligible, unavailable };
       }
       if (alive) setTeamData(out);
     })();
     return () => { alive = false; };
-  }, [effectiveTeamTypes.join(',')]);
+  }, [effectiveTeamTypes.join(','), event.date]);
 
   useEffect(() => { fetchAssignmentsForEvents([event.id]).then(() => force((n) => n + 1)); }, [event.id, fetchAssignmentsForEvents]);
 
@@ -358,7 +364,10 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                                       <input type="checkbox" checked={isSelected(section.key, role, m.full_name)}
                                         onChange={() => (isSelected(section.key, role, m.full_name) ? removeName(section.key, role, m.full_name) : addPicked(section.key, role, m))}
                                         className="w-4 h-4 rounded accent-accent-primary" />
-                                      <span className="text-gray-700 dark:text-gray-200">{m.full_name}</span>
+                                      <span className={teamData?.[section.key]?.unavailable?.has(m.full_name) ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-200'}>
+                                        {m.full_name}
+                                        {teamData?.[section.key]?.unavailable?.has(m.full_name) && <span className="ml-1 text-[11px] opacity-80">(zgłoszona nieobecność)</span>}
+                                      </span>
                                     </label>
                                   ))}
                                 </div>
