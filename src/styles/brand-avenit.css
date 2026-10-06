@@ -526,11 +526,15 @@ html[data-color-preset="avenit"] {
   --field-bg: #FFFFFF;
   --field-border: 230 225 213;
   --field-radius: 14px;
+  --field-text: rgb(var(--gray-900));
+  --field-text-muted: rgb(var(--gray-500));
   --field-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B6557' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 html.dark[data-color-preset="avenit"] {
   --field-bg: rgb(var(--gray-800));
   --field-border: 58 57 54;
+  --field-text: #F3F1EC;
+  --field-text-muted: #9C978E;
   --field-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23BEBAB3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 html[data-color-preset="avenit"] :is(
@@ -543,9 +547,11 @@ html[data-color-preset="avenit"] .ui-field.rounded-xl {
   border: 1px solid rgb(var(--field-border)) !important;
   border-radius: var(--field-radius) !important;
   backdrop-filter: none !important;
-  color: rgb(var(--gray-900));
+  /* Kolor przez zmienną: osobna reguła dla ciemnego trybu przegrywała specyficznością z tą
+     (wpisany tekst był ciemny na ciemnym polu). */
+  color: var(--field-text);
 }
-html.dark[data-color-preset="avenit"] :is(input, textarea, select):not(.ui-field *) { color: #F3F1EC; }
+html[data-color-preset="avenit"] :is(input, textarea, select):disabled:not(.ui-field *) { color: var(--field-text-muted) !important; -webkit-text-fill-color: var(--field-text-muted); }
 html[data-color-preset="avenit"] :is(input, textarea)::placeholder { color: rgb(var(--gray-400)); opacity: 1; }
 html[data-color-preset="avenit"] .ui-field.rounded-xl:hover,
 html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.ui-field *):not(:focus):hover { border-color: rgb(var(--gray-300)) !important; }
@@ -617,3 +623,24 @@ html[data-color-preset="avenit"] :is(input[type="checkbox"], input[type="radio"]
 /* Tablica (Zadania w modułach, Projekty): nagłówki kolumn jak etykiety tabel — musztarda. */
 html[data-color-preset="avenit"]:not(.dark) .board-th { color: #8A6606 !important; letter-spacing: 0.08em; }
 html[data-color-preset="avenit"]:not(.dark) .board-th svg { color: #B08A2E !important; }
+
+/* ═══ Audyt spójności ═════════════════════════════════════════════════════════════════════ */
+/* Szare/łupkowe kafelki ikon z gradientem (np. „Goście” w Analityce) — jak pozostałe: papier. */
+html[data-color-preset="avenit"] :is(div, span):is(.from-slate-400, .from-slate-500, .from-slate-600, .from-gray-400, .from-gray-500, .from-gray-600):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-b) {
+  background-image: none !important;
+  background-color: #ECE8DE !important;
+  color: #2A2312 !important;
+  box-shadow: none !important;
+}
+html[data-color-preset="avenit"] :is(div, span):is(.from-slate-400, .from-slate-500, .from-slate-600, .from-gray-400, .from-gray-500, .from-gray-600):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-b) :is(.text-white, svg) { color: #2A2312 !important; }
+html.dark[data-color-preset="avenit"] :is(div, span):is(.from-slate-400, .from-slate-500, .from-slate-600, .from-gray-400, .from-gray-500, .from-gray-600):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-b) { background-color: rgb(var(--gray-700)) !important; color: #F6F4EE !important; }
+html.dark[data-color-preset="avenit"] :is(div, span):is(.from-slate-400, .from-slate-500, .from-slate-600, .from-gray-400, .from-gray-500, .from-gray-600):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-b) :is(.text-white, svg) { color: #F6F4EE !important; }
+
+/* Zaznaczone chipy/zakładki w chłodnych gradientach (niebieski, cyjan, fiolet) → kurkuma ze słodem,
+   jak każdy inny stan „wybrane” w motywie. */
+html[data-color-preset="avenit"] :is(button, a):is(.from-blue-400, .from-blue-500, .from-blue-600, .from-sky-500, .from-cyan-500, .from-indigo-500, .from-indigo-600, .from-violet-500, .from-violet-600, .from-purple-500, .from-purple-600):is(.bg-gradient-to-r, .bg-gradient-to-b, .bg-gradient-to-br) {
+  background-image: none !important;
+  background-color: #FFBE0B !important;
+  color: #2A2312 !important;
+  box-shadow: none !important;
+}

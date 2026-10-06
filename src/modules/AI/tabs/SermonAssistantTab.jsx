@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Share2, Users, Baby } from 'lucide-react';
+import { Mail, Share2, Users, Baby, Loader2 } from 'lucide-react';
 import { callAi } from '../lib/aiApi';
 import ResultPanel from '../components/ResultPanel';
 
@@ -63,9 +63,9 @@ export default function SermonAssistantTab() {
                 key={a.task}
                 onClick={() => run(a)}
                 disabled={busy}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition disabled:opacity-60"
+                className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium flex items-center gap-2 text-sm transition disabled:opacity-60"
               >
-                <Icon size={16} />
+                {loadingTask === a.task ? <Loader2 size={16} className="animate-spin" /> : <Icon size={16} />}
                 {loadingTask === a.task ? 'Generowanie…' : a.label}
               </button>
             );

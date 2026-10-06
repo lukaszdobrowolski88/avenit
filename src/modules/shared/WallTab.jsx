@@ -111,7 +111,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
       setAttachments(prev => [...prev, ...uploadedFiles]);
     } catch (error) {
       console.error('Error uploading file:', error);
-      toast.error('Blad przesylania pliku: ' + error.message);
+      toast.error('Błąd przesyłania pliku: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -185,12 +185,12 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
       fetchPosts();
     } catch (err) {
       console.error('Error sending message:', err);
-      toast.error('Blad wysylania: ' + err.message);
+      toast.error('Błąd wysyłania: ' + err.message);
     }
   };
 
   const deletePost = async (postId) => {
-    if (!confirm('Usunac ta wiadomosc?')) return;
+    if (!confirm('Usunąć tę wiadomość?')) return;
 
     try {
       const { error } = await supabase
@@ -309,7 +309,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
       {pinnedPosts.length > 0 && (
         <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-b border-accent-primary-lighter dark:border-accent-primary-dark p-3">
           <div className="flex items-center gap-2 text-accent-primary dark:text-accent-primary-light text-xs font-bold uppercase mb-2">
-            <Pin size={12} /> Przypiete wiadomosci
+            <Pin size={12} /> Przypięte wiadomości
           </div>
           <div className="space-y-2">
             {pinnedPosts.map(post => (
@@ -336,8 +336,8 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
             <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
               <Send size={24} className="text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-1">Brak wiadomosci</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Napisz pierwsza wiadomosc do zespolu!</p>
+            <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-1">Brak wiadomości</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Napisz pierwszą wiadomość do zespołu!</p>
           </div>
         ) : (
           <>
@@ -587,14 +587,14 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
             />
             <input
               type="text"
-              placeholder="Tytul (opcjonalnie)"
+              placeholder="Tytuł (opcjonalnie)"
               value={linkTitle}
               onChange={(e) => setLinkTitle(e.target.value)}
               className="w-40 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
             />
             <button
               onClick={addLink}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition"
+              className="px-4 py-2 bg-accent-primary text-white rounded-xl text-sm font-medium hover:bg-accent-primary-dark transition"
             >
               Dodaj
             </button>
@@ -650,7 +650,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
               onClick={() => imageInputRef.current?.click()}
               disabled={uploading}
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary-light transition"
-              title="Dodaj zdjecie"
+              title="Dodaj zdjęcie"
             >
               <Image size={20} />
             </button>
@@ -697,7 +697,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                   sendMessage();
                 }
               }}
-              placeholder="Napisz wiadomosc..."
+              placeholder="Napisz wiadomość..."
               className="w-full h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:border-accent-primary-light focus:ring-2 focus:ring-accent-primary-light/20 transition text-sm"
             />
           </div>

@@ -56,7 +56,7 @@ export default function SmsCampaignsModule() {
 
   if (view.type === 'edit') {
     return (
-      <div className="p-4 sm:p-6">
+      <div>
         <CampaignEditor
           campaign={editingCampaign}
           template={templateForNew}
@@ -68,14 +68,14 @@ export default function SmsCampaignsModule() {
 
   if (view.type === 'stats') {
     return (
-      <div className="p-4 sm:p-6">
+      <div>
         <CampaignStats campaign={statsCampaign} onClose={closeView} />
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader moduleKey="sms_campaigns" icon={MessageSquare} title={tr('SMS Kampanie')}
         subtitle={tr('Twórz, planuj i analizuj kampanie SMS przez bramkę SMSAPI.pl.')} />
 

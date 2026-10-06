@@ -2,16 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Heart, Clock, Lock, Star, Sparkles, HeartHandshake, XCircle, UserPlus, X, Ghost, User, UserX, Loader2, CheckCircle, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { CATEGORIES } from '../../PrayerWall/categories';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
-
-const CATEGORIES = {
-  zdrowie: { label: tr('Zdrowie'), color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❤️' },
-  rodzina: { label: tr('Rodzina'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '👨‍👩‍👧‍👦' },
-  finanse: { label: tr('Finanse'), color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '💰' },
-  duchowe: { label: tr('Duchowe'), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: '🙏' },
-  inne: { label: tr('Inne'), color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', icon: '✨' }
-};
 
 // ============================================
 // PRAYER MODAL
@@ -127,20 +120,20 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               Kategoria
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {Object.entries(CATEGORIES).map(([key, { label, icon, color }]) => (
+              {Object.entries(CATEGORIES).map(([key, { label, Icon }]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setCategory(key)}
                   className={`
-                    px-3 py-2 rounded-xl text-sm font-medium transition-all
+                    px-3 py-2 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-1.5
                     ${category === key
-                      ? `${color} ring-2 ring-offset-2 ring-accent-primary-light`
+                      ? 'bg-accent-primary text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }
                   `}
                 >
-                  {icon} {label}
+                  <Icon className="w-4 h-4" /> {label}
                 </button>
               ))}
             </div>
@@ -375,11 +368,11 @@ function PrayerCard({ prayer, onClick }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${category.color}`}>
-            {category.icon} {category.label}
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1 ${category.color}`}>
+            <category.Icon className="w-3 h-3" /> {category.label}
           </span>
           {prayer.visibility === 'leaders_only' && (
-            <Lock size={12} className="text-indigo-500 dark:text-indigo-400" />
+            <Lock size={12} className="text-gray-400" />
           )}
         </div>
         <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">

@@ -1734,7 +1734,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">
-                            Wyslij przypomnienie na ile dni przed terminem
+                            Wyślij przypomnienie na ile dni przed terminem
                           </label>
                           <input
                             type="number"

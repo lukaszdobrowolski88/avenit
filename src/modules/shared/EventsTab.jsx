@@ -6,6 +6,7 @@ import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronR
 import CustomSelect from '../../components/CustomSelect';
 import TabHeader from '../../components/TabHeader';
 import TimeInput from '../../components/TimeInput';
+import { DateInput } from '../../components/pickers';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useModuleCalendar, saveModuleCalendar } from '../../hooks/useModuleLabel';
 import Modal from '../../components/Modal';
@@ -375,10 +376,12 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
                       onChange={(val) => setCustom(f.field_key, val)}
                       options={[{ value: '', label: '—' }, ...((f.options || []).map((o) => ({ value: o, label: o })))]}
                     />
+                  ) : f.field_type === 'date' ? (
+                    <DateInput value={form.custom?.[f.field_key] || ''} onChange={(e) => setCustom(f.field_key, e.target.value)} />
                   ) : (
                     <input
-                      type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text'}
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 [color-scheme:light] dark:[color-scheme:dark]"
+                      type={f.field_type === 'number' ? 'number' : 'text'}
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                       value={form.custom?.[f.field_key] || ''}
                       onChange={(e) => setCustom(f.field_key, e.target.value)}
                     />

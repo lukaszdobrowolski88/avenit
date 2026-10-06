@@ -25,21 +25,11 @@ import {
   Pencil,
   UserPlus,
   CheckCircle,
-  XCircle
+  XCircle,
+  Lock
 } from 'lucide-react';
+import { CATEGORIES } from './categories';
 import { tr } from '../../i18n';
-
-// ============================================
-// KONFIGURACJA KATEGORII
-// ============================================
-
-const CATEGORIES = {
-  zdrowie: { label: tr('Zdrowie'), color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❤️' },
-  rodzina: { label: tr('Rodzina'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '👨‍👩‍👧‍👦' },
-  finanse: { label: tr('Finanse'), color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '💰' },
-  duchowe: { label: tr('Duchowe'), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: '🙏' },
-  inne: { label: tr('Inne'), color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', icon: '✨' }
-};
 
 // ============================================
 // SKELETON LOADER
@@ -162,9 +152,14 @@ function PrayerRequestCard({
         </div>
 
         {/* Badge kategorii */}
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${CATEGORIES[request.category]?.color}`}>
-          {CATEGORIES[request.category]?.icon} {t(CATEGORIES[request.category]?.label)}
-        </span>
+        {CATEGORIES[request.category] && (() => {
+          const { color, Icon, label } = CATEGORIES[request.category];
+          return (
+            <span className={`px-3 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1.5 shrink-0 ${color}`}>
+              <Icon className="w-3.5 h-3.5" /> {t(label)}
+            </span>
+          );
+        })()}
       </div>
 
       {/* Kto zgłasza */}
@@ -207,8 +202,8 @@ function PrayerRequestCard({
       {/* Badge widoczności dla autora */}
       {isAuthor && request.visibility === 'leaders_only' && (
         <div className="mb-3">
-          <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2 py-1 rounded-full">
-            {tr('🔒 Tylko dla liderów')}
+          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full inline-flex items-center gap-1">
+            <Lock className="w-3 h-3" /> {tr('Tylko dla liderów')}
           </span>
         </div>
       )}
@@ -260,7 +255,7 @@ function PrayerRequestCard({
             )}
             <button
               onClick={() => onEdit(request)}
-              className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
               title={tr('Edytuj')}
             >
               <Pencil className="w-4 h-4" />
@@ -396,20 +391,20 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               Kategoria
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {Object.entries(CATEGORIES).map(([key, { label, icon, color }]) => (
+              {Object.entries(CATEGORIES).map(([key, { label, Icon }]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setCategory(key)}
                   className={`
-                    px-3 py-2 rounded-xl text-sm font-medium transition-all
+                    px-3 py-2 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-1.5
                     ${category === key
-                      ? `${color} ring-2 ring-offset-2 ring-accent-primary-light`
+                      ? 'bg-accent-primary text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }
                   `}
                 >
-                  {icon} {label}
+                  <Icon className="w-4 h-4" /> {label}
                 </button>
               ))}
             </div>
@@ -1014,7 +1009,7 @@ export default function PrayerWallModule() {
                 onClick={() => { setFilter('answered'); setCategoryFilter('all'); setActiveFilter('all'); }}
                 className={`w-full text-left px-4 py-2.5 rounded-xl transition-all flex items-center gap-3 ${
                   filter === 'answered'
-                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
                 }`}
               >
@@ -1042,7 +1037,7 @@ export default function PrayerWallModule() {
                 onClick={() => setActiveFilter('active')}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${
                   activeFilter === 'active'
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
@@ -1053,7 +1048,7 @@ export default function PrayerWallModule() {
                 onClick={() => setActiveFilter('inactive')}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${
                   activeFilter === 'inactive'
-                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
@@ -1077,17 +1072,17 @@ export default function PrayerWallModule() {
               >
                 Wszystkie kategorie
               </button>
-              {Object.entries(CATEGORIES).map(([key, { label, icon }]) => (
+              {Object.entries(CATEGORIES).map(([key, { label, Icon }]) => (
                 <button
                   key={key}
                   onClick={() => setCategoryFilter(key)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${
                     categoryFilter === key
                       ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                   }`}
                 >
-                  {icon} {label}
+                  <Icon className="w-3.5 h-3.5" /> {label}
                 </button>
               ))}
             </div>

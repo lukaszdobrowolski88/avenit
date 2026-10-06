@@ -74,14 +74,14 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
   return (
     <div className="space-y-5">
       {/* Dawanie online — link publiczny */}
-      <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-white">
-        <div>
-          <div className="font-semibold">Dawanie online (Przelewy24 / BLIK)</div>
-          <div className="text-sm text-white/80">Udostępnij link, aby przyjmować darowizny online: <span className="font-mono">{giveUrl}</span></div>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-semibold text-gray-900 dark:text-white">Dawanie online (Przelewy24 / BLIK)</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 break-all">Udostępnij link, aby przyjmować darowizny online: <span className="font-mono text-gray-700 dark:text-gray-200">{giveUrl}</span></div>
         </div>
         <div className="flex gap-2">
-          <button onClick={copyGiveLink} className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-medium">Kopiuj link</button>
-          <a href={giveUrl} target="_blank" rel="noreferrer" className="px-4 py-2 rounded-xl bg-white text-accent-primary text-sm font-semibold">Otwórz</a>
+          <button onClick={copyGiveLink} className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 text-sm font-medium">Kopiuj link</button>
+          <a href={giveUrl} target="_blank" rel="noreferrer" className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-semibold shadow-md">Otwórz</a>
         </div>
       </div>
 

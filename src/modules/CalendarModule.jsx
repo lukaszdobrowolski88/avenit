@@ -20,7 +20,7 @@ import { useModuleCalendars } from '../hooks/useModuleLabel';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
-import { TimeField } from '../components/pickers';
+import { DateInput, TimeField } from '../components/pickers';
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA ---
 
@@ -802,10 +802,12 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
                       onChange={(val) => setCustom(f.field_key, val)}
                       options={[{ value: '', label: '—' }, ...((f.options || []).map((o) => ({ value: o, label: o })))]}
                     />
+                  ) : f.field_type === 'date' ? (
+                    <DateInput value={eventForm.custom?.[f.field_key] || ''} onChange={(e) => setCustom(f.field_key, e.target.value)} />
                   ) : (
                     <input
-                      type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text'}
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 [color-scheme:light] dark:[color-scheme:dark]"
+                      type={f.field_type === 'number' ? 'number' : 'text'}
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                       value={eventForm.custom?.[f.field_key] || ''}
                       onChange={(e) => setCustom(f.field_key, e.target.value)}
                     />

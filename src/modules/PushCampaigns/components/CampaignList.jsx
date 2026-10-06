@@ -53,7 +53,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
         <button
           data-tour="push-new"
           onClick={onNew}
-          className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm rounded-lg shadow hover:shadow-lg whitespace-nowrap"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-medium rounded-xl shadow-md hover:shadow-lg whitespace-nowrap"
         >
           <Plus size={16} /> Nowa kampania
         </button>
