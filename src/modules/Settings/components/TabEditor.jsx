@@ -96,7 +96,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
     if (!form.key.trim()) {
       newErrors.key = tr('Klucz zakładki jest wymagany');
     } else if (!/^[a-z0-9_]+$/.test(form.key)) {
-      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i podkreślniki');
+      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i znak podkreślenia (_)');
     } else if (!isEditing && existingKeys.includes(form.key)) {
       newErrors.key = tr('Zakładka z takim kluczem już istnieje');
     }

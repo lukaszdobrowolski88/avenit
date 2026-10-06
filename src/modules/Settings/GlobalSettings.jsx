@@ -1,199 +1,102 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
-  List, Plus, Trash2, Settings, Grid, Users, Shield, BookOpen, Building2,
-  CheckCircle, AlertCircle, Upload, Eye,
-  Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, Check, ChevronDown, ChevronUp, Layers, Plug,
-  Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2, UserPlus, Clock, Download
+  List, Plus, Trash2, Settings, Grid, Users, Shield, ShieldCheck, Building2, Upload,
+  Edit3, UserX, Check, Layers, Plug, Palette, CreditCard, KeyRound, Mail, Clock, Download,
+  AlertTriangle, ArrowRight,
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
-import { useT } from '../../i18n';
+import { useT, tr, appLocale } from '../../i18n';
 import ModuleManager from './components/ModuleManager';
 import PermissionsAdmin from './components/PermissionsAdmin';
 import CampusManager from './components/CampusManager';
-import ColorPresetPicker from './components/ColorPresetPicker';
 import IntegrationsTab from './components/IntegrationsTab';
 import AppearanceSettings from './components/AppearanceSettings';
-import NotificationSettings from './components/NotificationSettings';
 import SecuritySettings from './components/SecuritySettings';
-import LocalizationSettings from './components/LocalizationSettings';
 import SubscriptionInfo from './components/SubscriptionInfo';
+import { Toggle } from './components/SettingsUI';
+import { resolveSettingsTab, groupDuplicateMembers, mergeFill } from './components/settingsLogic';
 import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
+import Spinner from '../../components/Spinner';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { Settings as SettingsIcon } from 'lucide-react';
-import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { injectCustomFont, applyFont, setBgUrl, applyBgPattern } from '../../lib/appearance';
 import { confirmDialog } from '../../lib/dialog';
 
-// Grupy nawigacji ustawień (menu po lewej).
+// Grupy nawigacji ustawień (menu po lewej). Adres zakładki: /settings?tab=<id> (UXE-10).
+// Ukryte: „Regionalne” i „Powiadomienia” (ich ustawień nic nie czytało — UXE-07),
+// „Zarządzanie” scalone z „Moduły” (UXE-13). Stare adresy mapuje resolveSettingsTab.
 const SETTINGS_NAV = [
-  { group: tr('Ogólne'), items: [
-    { id: 'general', label: tr('Organizacja'), icon: Settings },
-    { id: 'appearance', label: tr('Wygląd'), icon: Palette },
-    { id: 'localization', label: tr('Regionalne'), icon: Globe },
-    { id: 'campuses', label: tr('Kampusy'), icon: Building2 },
+  { group: 'Ogólne', items: [
+    { id: 'general', label: 'Organizacja', icon: Settings },
+    { id: 'appearance', label: 'Wygląd', icon: Palette },
+    { id: 'campuses', label: 'Kampusy', icon: Building2 },
   ]},
-  { group: tr('Zespół i dostęp'), items: [
-    { id: 'users', label: tr('Użytkownicy'), icon: Users },
-    { id: 'permissions', label: tr('Uprawnienia'), icon: Shield },
-    { id: 'security', label: tr('Bezpieczeństwo'), icon: Shield },
+  { group: 'Zespół i dostęp', items: [
+    { id: 'users', label: 'Użytkownicy', icon: Users },
+    { id: 'permissions', label: 'Uprawnienia', icon: Shield },
+    { id: 'security', label: 'Bezpieczeństwo i logowanie', icon: ShieldCheck },
   ]},
-  { group: tr('Moduły'), items: [
-    { id: 'modules', label: tr('Moduły'), icon: Grid },
-    { id: 'module_manager', label: tr('Zarządzanie'), icon: Layers },
-    { id: 'dictionaries', label: tr('Słowniki'), icon: BookOpen },
+  { group: 'Moduły i integracje', items: [
+    { id: 'modules', label: 'Moduły', icon: Grid },
+    { id: 'dictionaries', label: 'Słowniki', icon: List },
+    { id: 'integrations', label: 'Integracje', icon: Plug },
   ]},
-  { group: tr('Komunikacja'), items: [
-    { id: 'notifications', label: tr('Powiadomienia'), icon: Bell },
-    { id: 'integrations', label: tr('Integracje'), icon: Plug },
-  ]},
-  { group: tr('Konto'), items: [
-    { id: 'subscription', label: tr('Subskrypcja'), icon: CreditCard },
+  { group: 'Konto', items: [
+    { id: 'subscription', label: 'Subskrypcja', icon: CreditCard },
   ]},
 ];
 const SETTINGS_NAV_FLAT = SETTINGS_NAV.flatMap((g) => g.items);
 
-// --- MODULE TABS DEFINITION ---
-const MODULE_TABS = {
-  members: {
-    label: tr('Członkowie'),
-    resourceKey: 'module:members',
-    tabs: {}
-  },
-  homegroups: {
-    label: 'Grupy Domowe',
-    resourceKey: 'module:homegroups',
-    tabs: {
-      groups: 'Grupy',
-      leaders: 'Liderzy',
-      members: tr('Członkowie'),
-      finances: 'Finanse'
-    }
-  },
-  media: {
-    label: 'Media Team',
-    resourceKey: 'module:media',
-    tabs: {
-      schedule: 'Grafik',
-      tasks: 'Zadania',
-      members: tr('Członkowie'),
-      finances: 'Finanse'
-    }
-  },
-  kids: {
-    label: tr('Małe Avenit'),
-    resourceKey: 'module:kids',
-    tabs: {
-      schedule: 'Grafik',
-      groups: 'Grupy',
-      teachers: 'Nauczyciele',
-      students: 'Uczniowie',
-      finances: 'Finanse'
-    }
-  },
-  worship: {
-    label: tr('Grupa Uwielbienia'),
-    resourceKey: 'module:worship',
-    tabs: {
-      schedule: 'Grafik',
-      songs: tr('Baza Pieśni'),
-      members: tr('Członkowie'),
-      finances: 'Finanse',
-      wall: 'Tablica'
-    }
-  },
-  atmosfera: {
-    label: tr('Atmosfera Team'),
-    resourceKey: 'module:atmosfera',
-    tabs: {
-      schedule: 'Grafik',
-      members: tr('Członkowie'),
-      finances: 'Finanse'
-    }
-  },
-  finance: {
-    label: tr('Finanse'),
-    resourceKey: 'module:finance',
-    tabs: {}
-  },
-  teaching: {
-    label: tr('Nauczanie'),
-    resourceKey: 'module:teaching',
-    tabs: {
-      wall: 'Tablica',
-      schedule: 'Grafik',
-      series: 'Serie',
-      speakers: tr('Mówcy')
-    }
-  },
-  prayer: {
-    label: tr('Centrum Modlitwy'),
-    resourceKey: 'module:prayer',
-    tabs: {
-      wall: tr('Ściana Modlitwy'),
-      leaders_requests: tr('Prośby dla Liderów')
-    }
-  },
-  komunikator: {
-    label: tr('Komunikator'),
-    resourceKey: 'module:komunikator',
-    tabs: {
-      direct: 'Rozmowy prywatne',
-      groups: 'Grupy',
-      ministry: tr('Kanały służb')
-    }
-  },
-  mlodziezowka: {
-    label: tr('Młodzieżówka'),
-    resourceKey: 'module:mlodziezowka',
-    tabs: {
-      events: 'Wydarzenia',
-      tasks: 'Zadania',
-      leaders: 'Liderzy',
-      members: tr('Członkowie'),
-      finances: 'Finanse'
-    }
-  },
-  settings: {
-    label: tr('Ustawienia'),
-    resourceKey: 'module:settings',
-    tabs: {}
-  }
-};
+// Tabele członków służb, do których można dopisać nowe konto i w których szukamy duplikatów.
+// Kolumny wg produkcji: status tylko w worship_team/media_team; kids_teachers ma group_id.
+// (home_group_leaders celowo pominięte — lider jest przypisany do konkretnej grupy.)
+const TEAM_TABLES = [
+  { key: 'worship', table: 'worship_team', hasStatus: true, fallback: 'Grupa Uwielbienia' },
+  { key: 'media', table: 'media_team', hasStatus: true, fallback: 'MediaTeam' },
+  { key: 'atmosfera', table: 'atmosfera_members', fallback: 'Atmosfera Team' },
+  { key: 'kids', table: 'kids_teachers', hasGroup: true, fallback: 'Służba dzieci' },
+];
+const teamCols = (def) => `id, full_name, email, phone${def.hasStatus ? ', status' : ''}${def.hasGroup ? ', group_id' : ''}`;
 
 // --- UI HELPERS ---
 
 const SectionHeader = ({ title, description }) => (
   <div className="mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h2>
-    <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
+    {description && <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>}
   </div>
 );
 
-const DictionaryEditor = ({ category, title, items, onAdd, onDelete }) => {
+const DictionaryEditor = ({ category, title, description, items, onAdd, onDelete }) => {
   const [newItem, setNewItem] = useState('');
+  const add = () => { const v = newItem.trim(); if (v) { onAdd(category, v); setNewItem(''); } };
   return (
-    <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-6 shadow-sm transition-colors">
-      <h3 className="font-bold text-lg text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2"><List size={20} className="text-accent-primary-light"/> {title}</h3>
+    <div className="bg-white/60 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-6 shadow-sm transition-colors">
+      <h3 className="font-bold text-lg text-gray-700 dark:text-gray-200 mb-1 flex items-center gap-2"><List size={20} className="text-accent-primary-light" aria-hidden="true" /> {title}</h3>
+      {description && <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{description}</p>}
       <div className="flex gap-2 mb-4">
-        <input 
-          className="flex-1 p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm outline-none focus:border-accent-primary-light transition" 
-          placeholder={tr('Nowa opcja...')} 
-          value={newItem} 
-          onChange={e => setNewItem(e.target.value)} 
+        <input
+          aria-label={tr('Nowa opcja: {title}', { title })}
+          className="flex-1 p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm outline-none focus:border-accent-primary-light transition"
+          placeholder={tr('Nowa opcja...')}
+          value={newItem}
+          onChange={e => setNewItem(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') add(); }}
         />
-        <button onClick={() => { if(newItem) { onAdd(category, newItem); setNewItem(''); } }} className="bg-accent-primary text-white px-4 rounded-xl font-bold hover:bg-accent-primary"><Plus size={18}/></button>
+        <button type="button" onClick={add} aria-label={tr('Dodaj opcję')} className="bg-accent-primary text-white px-4 rounded-xl font-bold hover:bg-accent-primary"><Plus size={18} aria-hidden="true" /></button>
       </div>
       <div className="flex flex-wrap gap-2">
         {items.filter(i => i.category === category).map(item => (
-          <div key={item.id} className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 group hover:border-accent-primary-light transition">
+          <div key={item.id} className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 hover:border-accent-primary-light transition">
             <span className="font-medium text-gray-700 dark:text-gray-200">{item.label}</span>
-            <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-500 transition"><Trash2 size={14}/></button>
+            <button type="button" onClick={() => onDelete(item)} aria-label={tr('Usuń opcję „{name}”', { name: item.label })} className="text-gray-400 hover:text-red-500 transition"><Trash2 size={14} aria-hidden="true" /></button>
           </div>
         ))}
       </div>
@@ -201,36 +104,118 @@ const DictionaryEditor = ({ category, title, items, onAdd, onDelete }) => {
   );
 };
 
+// Komunikaty — zawsze toast (w polu widzenia), „info” nie na czerwono (UXE-23).
+const notify = (m) => {
+  if (!m?.text) return;
+  if (m.type === 'error') toast.error(m.text);
+  else if (m.type === 'info') toast.info(m.text);
+  else toast.success(m.text);
+};
+
+const fmtDateTime = (d) => (d ? new Date(d).toLocaleString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+
 // --- GŁÓWNY KOMPONENT ---
 
 export default function GlobalSettings() {
   const t = useT();
-  const [activeTab, setActiveTab] = useState('general');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = resolveSettingsTab(searchParams.get('tab'));
+  const setActiveTab = (id) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', id);
+    setSearchParams(next);
+  };
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState(null);
   const { campuses } = useCampus();
 
   const [appSettings, setAppSettings] = useState([]);
   const [dictionaries, setDictionaries] = useState([]);
-  const [permissions, setPermissions] = useState([]);
   const [users, setUsers] = useState([]);
+  const [dbModules, setDbModules] = useState([]);
+  const [dbRoles, setDbRoles] = useState([]); // role z app_roles (wraz z własnymi)
 
   const [userForm, setUserForm] = useState({ id: null, full_name: '', email: '', password: '', role: '', is_active: true });
   const [showUserModal, setShowUserModal] = useState(false);
   const [adminNewPassword, setAdminNewPassword] = useState('');
   const [pwBusy, setPwBusy] = useState(false);
+  const [isCreatingAuthUser, setIsCreatingAuthUser] = useState(false);
+  const [selectedTeams, setSelectedTeams] = useState([]);
+  const [require2FA, setRequire2FA] = useState(false);
+
+  // Nazwy służb z app_modules (np. „Małe SchWro”), nie zaszyte w kodzie (UXE-12).
+  const moduleLabel = (key, fallback) => dbModules.find(m => m.key === key)?.label || tr(fallback);
+  const teamDefinitions = TEAM_TABLES.map(d => ({ ...d, label: moduleLabel(d.key, d.fallback) }));
+
+  // Lista ról do przypisania osobie — z app_roles; fallback do wbudowanych, gdy tabela pusta.
+  const BUILTIN_ROLE_LABELS = {
+    superadmin: t('Super Administrator'), rada_starszych: t('Rada Starszych'),
+    koordynator: t('Koordynator'), lider: t('Lider Służby'), czlonek: t('Członek'),
+  };
+  const definedRoles = useMemo(() => {
+    if (dbRoles && dbRoles.length) {
+      return dbRoles.map(r => ({ key: r.key, label: r.label || BUILTIN_ROLE_LABELS[r.key] || r.key }));
+    }
+    return Object.entries(BUILTIN_ROLE_LABELS).map(([key, label]) => ({ key, label }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbRoles, t]);
+
+  useEffect(() => {
+    fetchData();
+    fetchDbModules();
+    fetchRoles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchRoles = async () => {
+    const { data, error } = await supabase.from('app_roles').select('key, label, display_order').order('display_order', { ascending: true });
+    if (!error && data) setDbRoles(data);
+  };
+
+  const fetchDbModules = async () => {
+    const { data, error } = await supabase.from('app_modules').select('id, key, label').order('display_order', { ascending: true });
+    if (!error && data) setDbModules(data);
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [{ data: s }, { data: d }, { data: u, error: usersError }] = await Promise.all([
+      supabase.from('app_settings').select('*'),
+      supabase.from('app_dictionaries').select('*'),
+      supabase.from('app_users').select('*').order('full_name'),
+    ]);
+    if (usersError) toast.error(tr('Nie udało się wczytać listy użytkowników.'));
+    if (s) setAppSettings(s);
+    if (d) setDictionaries(d);
+    if (u) setUsers(u);
+    setLoading(false);
+  };
+
+  // Helpery odczytu/zapisu ustawień (app_settings, klucz/wartość).
+  const getSetting = (key) => appSettings.find(s => s.key === key)?.value;
+  const saveSetting = async (key, value) => {
+    const v = String(value);
+    const { error } = await supabase.from('app_settings').upsert({ key, value: v }, { onConflict: 'key' });
+    if (error) { toast.error(tr('Nie udało się zapisać ustawienia. Spróbuj ponownie.')); return false; }
+    setAppSettings(prev => prev.some(s => s.key === key)
+      ? prev.map(s => s.key === key ? { ...s, value: v } : s)
+      : [...prev, { key, value: v }]);
+    toast.success(tr('Zapisano'));
+    return true;
+  };
 
   // Admin: ustaw nowe hasło wskazanemu użytkownikowi (fn admin-set-user-password, bramkowany serwerowo).
+  const minPw = Math.max(6, parseInt(getSetting('password_min_length') || '8', 10) || 8);
   const handleAdminSetPassword = async () => {
-    if (adminNewPassword.length < 8) return;
+    if (adminNewPassword.length < minPw) return;
     setPwBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-set-user-password', { body: { userId: userForm.id, password: adminNewPassword } });
       if (error || data?.error) throw new Error(data?.error || error?.message || tr('Błąd'));
-      setMessage({ type: 'success', text: tr('Hasło zostało zmienione dla {email}.', { email: userForm.email }) });
+      toast.success(tr('Hasło zostało zmienione dla {email}.', { email: userForm.email }));
       setAdminNewPassword('');
     } catch (e) {
-      setMessage({ type: 'error', text: tr('Nie udało się zmienić hasła: {msg}', { msg: e.message }) });
+      toast.error(tr('Nie udało się zmienić hasła: {msg}', { msg: e.message }));
     } finally { setPwBusy(false); }
   };
 
@@ -240,227 +225,29 @@ export default function GlobalSettings() {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(userForm.email, { redirectTo: `${window.location.origin}/reset-password` });
       if (error) throw new Error(error.message);
-      setMessage({ type: 'success', text: tr('Link do resetu hasła wysłany na {email}.', { email: userForm.email }) });
+      toast.success(tr('Link do resetu hasła wysłany na {email}.', { email: userForm.email }));
     } catch (e) {
-      setMessage({ type: 'error', text: tr('Nie udało się wysłać linku: {msg}', { msg: e.message }) });
+      toast.error(tr('Nie udało się wysłać linku: {msg}', { msg: e.message }));
     } finally { setPwBusy(false); }
   };
-  const [isCreatingAuthUser, setIsCreatingAuthUser] = useState(false);
-  const [selectedTeams, setSelectedTeams] = useState([]);
-  const [require2FA, setRequire2FA] = useState(false);
 
-  // Definicja służb/zespołów z ich tabelami w bazie
-  const teamDefinitions = [
-    { key: 'worship', label: t('Grupa Uwielbienia'), table: 'worship_team' },
-    { key: 'media', label: t('Media Team'), table: 'media_team' },
-    { key: 'atmosfera', label: t('Atmosfera Team'), table: 'atmosfera_members' },
-    { key: 'kids', label: t('Małe Avenit'), table: 'kids_teachers' },
-    { key: 'homegroups', label: t('Grupy Domowe (Lider)'), table: 'home_group_leaders' }
-  ];
-
-  const [expandedModule, setExpandedModule] = useState(null);
-  const [tabPermissions, setTabPermissions] = useState(null);
-  const [userPermissions, setUserPermissions] = useState({});
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [expandedUserModule, setExpandedUserModule] = useState(null);
-
-  // Dynamiczne moduły i zakładki z bazy danych
-  const [dbModules, setDbModules] = useState([]);
-  const [dbTabs, setDbTabs] = useState({});
-  const [dbRoles, setDbRoles] = useState([]); // role z app_roles (wraz z własnymi)
-
-  // Lista ról do przypisania osobie. Wcześniej zaszyta na sztywno → role własne
-  // (np. Księgowość, Administracja) NIE były przypisywalne. Teraz czytamy app_roles;
-  // fallback do wbudowanych, gdy tabela pusta/nieobecna.
-  const BUILTIN_ROLE_LABELS = {
-    superadmin: t('Super Administrator'), rada_starszych: t('Rada Starszych'),
-    koordynator: t('Koordynator'), lider: t('Lider Służby'), czlonek: t('Członek'),
+  // Wgrywanie plików (logo, czcionka, tła) → storage + app_settings.
+  const uploadPublic = async (file, prefix) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${prefix}-${Date.now()}.${fileExt}`;
+    const { error } = await supabase.storage.from('public-assets').upload(fileName, file);
+    if (error) throw error;
+    return supabase.storage.from('public-assets').getPublicUrl(fileName).data.publicUrl;
   };
-  const definedRoles = useMemo(() => {
-    if (dbRoles && dbRoles.length) {
-      return dbRoles.map(r => ({ key: r.key, label: r.label || BUILTIN_ROLE_LABELS[r.key] || r.key }));
-    }
-    return [
-      { key: 'superadmin', label: t('Super Administrator') },
-      { key: 'rada_starszych', label: t('Rada Starszych') },
-      { key: 'koordynator', label: t('Koordynator') },
-      { key: 'lider', label: t('Lider Służby') },
-      { key: 'czlonek', label: t('Członek') },
-    ];
-  }, [dbRoles, t]);
-
-
-  useEffect(() => {
-    fetchData();
-    fetchDbModules();
-    fetchRoles();
-    loadTabPermissions();
-    loadUserPermissions();
-  }, []);
-
-  // Pobierz role (app_roles) — do listy przypisania i etykiet ról.
-  const fetchRoles = async () => {
-    try {
-      const { data, error } = await supabase.from('app_roles').select('key, label, display_order').order('display_order', { ascending: true });
-      if (!error && data) setDbRoles(data);
-    } catch { /* brak tabeli → fallback do wbudowanych */ }
-  };
-
-  // Pobierz moduły i zakładki z bazy danych
-  const fetchDbModules = async () => {
-    try {
-      // Pobierz moduły
-      const { data: modulesData, error: modulesError } = await supabase
-        .from('app_modules')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (modulesError) {
-        console.log('Tabela app_modules nie istnieje jeszcze');
-        return;
-      }
-
-      setDbModules(modulesData || []);
-
-      // Pobierz zakładki
-      const { data: tabsData, error: tabsError } = await supabase
-        .from('app_module_tabs')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (!tabsError && tabsData) {
-        // Grupuj zakładki po module_id
-        const grouped = tabsData.reduce((acc, tab) => {
-          const moduleKey = modulesData.find(m => m.id === tab.module_id)?.key;
-          if (moduleKey) {
-            if (!acc[moduleKey]) acc[moduleKey] = {};
-            acc[moduleKey][tab.key] = tab.label;
-          }
-          return acc;
-        }, {});
-        setDbTabs(grouped);
-      }
-    } catch (err) {
-      console.log('Błąd pobierania modułów z bazy:', err);
-    }
-  };
-
-  // Połącz statyczne MODULE_TABS z dynamicznymi modułami z bazy
-  const getDynamicModuleTabs = () => {
-    // Jeśli nie ma danych z bazy, użyj statycznych
-    if (dbModules.length === 0) return MODULE_TABS;
-
-    const result = {};
-
-    // Najpierw dodaj moduły z bazy
-    dbModules.forEach(mod => {
-      // Pomijamy moduły core (dashboard, programs, calendar)
-      if (['dashboard', 'programs', 'calendar'].includes(mod.key)) return;
-
-      result[mod.key] = {
-        label: mod.label,
-        resourceKey: mod.resource_key,
-        tabs: dbTabs[mod.key] || MODULE_TABS[mod.key]?.tabs || {}
-      };
-    });
-
-    return result;
-  };
-
-  const dynamicModuleTabs = getDynamicModuleTabs();
-
-  const loadTabPermissions = () => {
-    const stored = localStorage.getItem('tabPermissions');
-    if (stored) {
-      setTabPermissions(JSON.parse(stored));
-    } else {
-      // Default tab permissions
-      const defaultPerms = {
-        homegroups: {
-          groups: null,
-          leaders: null,
-          members: ['rada_starszych', 'koordynator', 'lider'],
-          finances: ['rada_starszych', 'koordynator']
-        },
-        media: {
-          schedule: null,
-          tasks: null,
-          members: ['rada_starszych', 'koordynator', 'lider'],
-          finances: ['rada_starszych', 'koordynator']
-        },
-        kids: {
-          schedule: null,
-          groups: null,
-          teachers: ['rada_starszych', 'koordynator', 'lider'],
-          students: null,
-          finances: ['rada_starszych', 'koordynator']
-        },
-        worship: {
-          schedule: null,
-          songs: null,
-          members: ['rada_starszych', 'koordynator', 'lider'],
-          finances: ['rada_starszych', 'koordynator']
-        },
-        atmosfera: {
-          schedule: null,
-          members: ['rada_starszych', 'koordynator', 'lider'],
-          finances: ['rada_starszych', 'koordynator']
-        },
-        prayer: {
-          wall: null, // Ściana modlitwy dostępna dla wszystkich
-          leaders_requests: ['superadmin', 'rada_starszych', 'koordynator', 'lider'] // Prośby dla liderów tylko dla liderów
-        },
-        komunikator: {
-          direct: null, // Rozmowy prywatne dla wszystkich
-          groups: null, // Grupy dla wszystkich
-          ministry: null // Kanały służb dla wszystkich
-        },
-        mlodziezowka: {
-          events: null, // Wydarzenia dla wszystkich
-          tasks: null, // Zadania dla wszystkich
-          leaders: ['superadmin', 'rada_starszych', 'koordynator', 'lider'], // Liderzy tylko dla kadry
-          members: ['superadmin', 'rada_starszych', 'koordynator', 'lider'], // Członkowie tylko dla kadry
-          finances: ['superadmin', 'rada_starszych', 'koordynator'] // Finanse dla koordynatorów i wyżej
-        }
-      };
-      setTabPermissions(defaultPerms);
-    }
-  };
-
-  const fetchData = async () => {
-    setLoading(true);
-    const { data: s } = await supabase.from('app_settings').select('*');
-    const { data: d } = await supabase.from('app_dictionaries').select('*');
-    const { data: p } = await supabase.from('app_permissions').select('*');
-    const { data: u, error: usersError } = await supabase.from('app_users').select('*').order('full_name');
-
-    if (usersError) {
-      console.error('Błąd pobierania użytkowników:', usersError);
-    }
-
-    if (s) setAppSettings(s);
-    if (d) setDictionaries(d);
-    if (p) setPermissions(p);
-    if (u) setUsers(u);
-
-    console.log('Pobrani użytkownicy:', u);
-
-    setLoading(false);
-  };
+  const uploadFailed = () => toast.error(tr('Nie udało się przesłać pliku. Spróbuj ponownie.'));
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `org-logo-${Date.now()}.${fileExt}`;
-      await supabase.storage.from('public-assets').upload(fileName, file);
-      const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
-      
-      await supabase.from('app_settings').upsert({ key: 'org_logo_url', value: data.publicUrl }, { onConflict: 'key' });
-      fetchData();
-      window.location.reload(); 
-    } catch (err) { toast.error(tr('Błąd uploadu')); }
+      const url = await uploadPublic(file, 'org-logo');
+      if (await saveSetting('org_logo_url', url)) window.location.reload();
+    } catch { uploadFailed(); }
   };
 
   // Wgranie własnej czcionki brandowej (woff2/woff/ttf/otf) → storage + @font-face na żywo.
@@ -468,17 +255,14 @@ export default function GlobalSettings() {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `org-font-${Date.now()}.${fileExt}`;
-      await supabase.storage.from('public-assets').upload(fileName, file);
-      const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
-      await supabase.from('app_settings').upsert({ key: 'custom_font_url', value: data.publicUrl }, { onConflict: 'key' });
+      const url = await uploadPublic(file, 'org-font');
+      await supabase.from('app_settings').upsert({ key: 'custom_font_url', value: url }, { onConflict: 'key' });
       await supabase.from('app_settings').upsert({ key: 'ui_font', value: 'custom' }, { onConflict: 'key' });
-      injectCustomFont(data.publicUrl);
+      injectCustomFont(url);
       applyFont('custom');
       fetchData();
       toast.success(tr('Wgrano czcionkę'));
-    } catch (err) { toast.error(tr('Błąd uploadu')); }
+    } catch { uploadFailed(); }
   };
 
   // Wgranie własnego obrazu tła aplikacji → storage + zastosowanie na żywo.
@@ -486,17 +270,14 @@ export default function GlobalSettings() {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `org-bg-${Date.now()}.${fileExt}`;
-      await supabase.storage.from('public-assets').upload(fileName, file);
-      const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
-      await supabase.from('app_settings').upsert({ key: 'ui_bg_url', value: data.publicUrl }, { onConflict: 'key' });
+      const url = await uploadPublic(file, 'org-bg');
+      await supabase.from('app_settings').upsert({ key: 'ui_bg_url', value: url }, { onConflict: 'key' });
       await supabase.from('app_settings').upsert({ key: 'ui_bg_pattern', value: 'custom' }, { onConflict: 'key' });
-      setBgUrl(data.publicUrl);
+      setBgUrl(url);
       applyBgPattern('custom');
       fetchData();
       toast.success(tr('Wgrano tło'));
-    } catch (err) { toast.error(tr('Błąd uploadu')); }
+    } catch { uploadFailed(); }
   };
 
   // Wgranie własnego tła ekranu logowania → storage + app_settings (czytane przez Login.jsx).
@@ -504,29 +285,49 @@ export default function GlobalSettings() {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `login-bg-${Date.now()}.${fileExt}`;
-      await supabase.storage.from('public-assets').upload(fileName, file);
-      const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
-      await supabase.from('app_settings').upsert({ key: 'login_bg_url', value: data.publicUrl }, { onConflict: 'key' });
+      const url = await uploadPublic(file, 'login-bg');
+      await supabase.from('app_settings').upsert({ key: 'login_bg_url', value: url }, { onConflict: 'key' });
       await supabase.from('app_settings').upsert({ key: 'login_bg', value: 'custom' }, { onConflict: 'key' });
       fetchData();
       toast.success(tr('Wgrano tło logowania'));
-    } catch (err) { toast.error(tr('Błąd uploadu')); }
+    } catch { uploadFailed(); }
   };
 
-  const toggleModule = async (key, currentValue) => {
-    const newValue = currentValue === 'true' ? 'false' : 'true';
-    await supabase.from('app_settings').update({ value: newValue }).eq('key', key);
-    setAppSettings(prev => prev.map(s => s.key === key ? { ...s, value: newValue } : s));
-    setTimeout(() => window.location.reload(), 500); 
+  // Dopisanie nowego konta do wybranych służb — BEZ scalania i usuwania czegokolwiek:
+  // istniejący rekord z tym e-mailem → nic nie robimy; jeden rekord o tym imieniu bez e-maila →
+  // uzupełniamy e-mail; w pozostałych przypadkach dodajemy nowy rekord.
+  const addUserToTeams = async (fullName, email) => {
+    const failed = [];
+    for (const teamKey of selectedTeams) {
+      const def = teamDefinitions.find(d => d.key === teamKey);
+      if (!def) continue;
+      try {
+        const { data: byEmail, error: e1 } = await supabase.from(def.table).select('id').eq('email', email);
+        if (e1) throw e1;
+        if (byEmail?.length) continue;
+        const { data: byName, error: e2 } = await supabase.from(def.table).select('id, email').eq('full_name', fullName);
+        if (e2) throw e2;
+        const noEmail = (byName || []).filter(m => !m.email);
+        if (noEmail.length === 1) {
+          const { error } = await supabase.from(def.table).update({ email }).eq('id', noEmail[0].id);
+          if (error) throw error;
+        } else {
+          const row = { full_name: fullName, email, phone: '' };
+          if (def.hasStatus) row.status = 'Aktywny';
+          const { error } = await supabase.from(def.table).insert([row]);
+          if (error) throw error;
+        }
+      } catch {
+        failed.push(def.label);
+      }
+    }
+    return failed;
   };
 
   const saveUser = async () => {
-    if (!userForm.email || !userForm.role) return toast.error(tr('Wymagany Email i Rola'));
+    if (!userForm.email || !userForm.role) return toast.error(tr('Podaj e-mail i wybierz rolę.'));
 
     setIsCreatingAuthUser(true);
-
     try {
       if (userForm.id) {
         // Edycja przez FUNKCJĘ SERWEROWĄ: synchronizuje status z is_active, zapisuje totp_required,
@@ -542,15 +343,9 @@ export default function GlobalSettings() {
             totp_required: require2FA,
           },
         });
-        if (updateError) {
-          throw new Error(tr('Błąd aktualizacji: {msg}', { msg: updateError.message }));
-        }
-        fetchData(); loadAccountEvents();
-        setMessage({ type: 'success', text: tr('Zaktualizowano użytkownika') });
+        if (updateError) throw new Error(updateError.message);
+        toast.success(tr('Zaktualizowano użytkownika'));
       } else {
-        // Tworzenie nowego użytkownika
-
-        // 0. Sprawdź czy użytkownik już istnieje w app_users
         const { data: existingAppUser } = await supabase
           .from('app_users')
           .select('id, auth_user_id')
@@ -558,18 +353,20 @@ export default function GlobalSettings() {
           .maybeSingle();
 
         if (existingAppUser) {
-          // Użytkownik już istnieje - zaktualizuj zamiast tworzyć
-          await supabase.from('app_users').update({
-            full_name: userForm.full_name || '',
-            role: userForm.role,
-            is_active: userForm.is_active,
-            totp_required: require2FA,
-            campus_id: userForm.campus_id || null
-          }).eq('id', existingAppUser.id);
-          setMessage({ type: 'success', text: tr('Użytkownik {email} już istniał — zaktualizowano dane.', { email: userForm.email }) });
+          const { error } = await supabase.functions.invoke('admin-update-user', {
+            body: {
+              userId: existingAppUser.id,
+              full_name: userForm.full_name || '',
+              role: userForm.role,
+              is_active: userForm.is_active,
+              campus_id: userForm.campus_id || null,
+              totp_required: require2FA,
+            },
+          });
+          if (error) throw new Error(error.message);
+          toast.info(tr('Konto {email} już istniało — zaktualizowano jego dane.', { email: userForm.email }));
         } else {
-          // Konto zakłada FUNKCJA SERWEROWA (aktywne, hash po stronie serwera) — niezależnie od
-          // trybu rejestracji. Krok 5 niżej wysyła e-mail „ustaw hasło" (reset-password).
+          // Konto zakłada FUNKCJA SERWEROWA (aktywne, hash po stronie serwera) i wysyła e-mail „ustaw hasło”.
           const { error: createErr } = await supabase.functions.invoke('admin-create-user', {
             body: {
               email: userForm.email,
@@ -580,82 +377,13 @@ export default function GlobalSettings() {
               totp_required: require2FA,
             },
           });
-          if (createErr) throw new Error(tr('Błąd tworzenia konta: {msg}', { msg: createErr.message }));
-          setMessage({ type: 'success', text: tr('Utworzono {email} — wysłano zaproszenie do ustawienia hasła (ważne 7 dni).', { email: userForm.email }) });
+          if (createErr) throw new Error(createErr.message);
+          toast.success(tr('Utworzono {email} — wysłano zaproszenie do ustawienia hasła (ważne 7 dni).', { email: userForm.email }));
         }
 
-        // 6. Dodaj użytkownika do wybranych zespołów/służb (lub zaktualizuj istniejącego)
         if (selectedTeams.length > 0) {
-          const fullName = userForm.full_name || userForm.email;
-
-          for (const teamKey of selectedTeams) {
-            const teamDef = teamDefinitions.find(t => t.key === teamKey);
-            if (teamDef) {
-              try {
-                // Sprawdź czy członkowie o tym imieniu już istnieją w zespole
-                const { data: existingMembers } = await supabase
-                  .from(teamDef.table)
-                  .select('id, email, phone, status')
-                  .eq('full_name', fullName);
-
-                if (existingMembers && existingMembers.length > 0) {
-                  // Znajdź główny rekord (ten z emailem lub pierwszy)
-                  const primaryMember = existingMembers.find(m => m.email) || existingMembers[0];
-                  const duplicates = existingMembers.filter(m => m.id !== primaryMember.id);
-
-                  // Scal dane z duplikatów do głównego rekordu
-                  const updateData = {};
-                  if (!primaryMember.email && userForm.email) {
-                    updateData.email = userForm.email;
-                  }
-                  if (!primaryMember.status) {
-                    updateData.status = 'Aktywny';
-                  }
-
-                  // Zbierz dane z duplikatów
-                  for (const dup of duplicates) {
-                    if (!primaryMember.email && dup.email) updateData.email = dup.email;
-                    if (!primaryMember.phone && dup.phone) updateData.phone = dup.phone;
-                    if (!primaryMember.status && dup.status) updateData.status = dup.status;
-                  }
-
-                  // Zaktualizuj główny rekord
-                  if (Object.keys(updateData).length > 0) {
-                    await supabase
-                      .from(teamDef.table)
-                      .update(updateData)
-                      .eq('id', primaryMember.id);
-                  }
-
-                  // Przenieś przypisania służb z duplikatów na główny rekord i usuń duplikaty
-                  for (const dup of duplicates) {
-                    // Przenieś przypisania z team_member_roles
-                    await supabase
-                      .from('team_member_roles')
-                      .update({ member_id: String(primaryMember.id) })
-                      .eq('member_id', String(dup.id))
-                      .eq('member_table', teamDef.table);
-
-                    // Usuń duplikat
-                    await supabase.from(teamDef.table).delete().eq('id', dup.id);
-                  }
-
-                  console.log(`Członek ${fullName} już istnieje w ${teamDef.table} - zaktualizowano i scalono ${duplicates.length} duplikatów`);
-                } else {
-                  // Dodaj nowego członka
-                  const memberData = {
-                    full_name: fullName,
-                    email: userForm.email,
-                    phone: '',
-                    status: 'Aktywny'
-                  };
-                  await supabase.from(teamDef.table).insert([memberData]);
-                }
-              } catch (teamErr) {
-                console.error(`Błąd dodawania do ${teamDef.table}:`, teamErr);
-              }
-            }
-          }
+          const failed = await addUserToTeams(userForm.full_name || userForm.email, userForm.email);
+          if (failed.length) toast.error(tr('Konto utworzone, ale nie udało się dopisać do: {teams}.', { teams: failed.join(', ') }));
         }
       }
 
@@ -665,80 +393,78 @@ export default function GlobalSettings() {
       fetchData();
       loadAccountEvents();
     } catch (err) {
-      toast.error(tr('Błąd zapisu: ') + err.message);
+      toast.error(tr('Nie udało się zapisać użytkownika: {msg}', { msg: err.message }));
     } finally {
       setIsCreatingAuthUser(false);
     }
   };
 
+  const userName = (u) => u?.full_name || u?.email || '';
+
   // Usuwanie/blokada/reset 2FA przez FUNKCJE SERWEROWE: rewokacja sesji, sprzątanie, guardy
   // (nie usuń/zablokuj siebie ani ostatniego admina) i audyt — patrz fn/delete-user, set-user-status.
-  const deleteUser = async (id) => {
-    if (!await confirmDialog(tr('Usunąć użytkownika? Operacja jest nieodwracalna (usuwa konto i wylogowuje sesje).'))) return;
-    const { error } = await supabase.functions.invoke('delete-user', { body: { userId: id } });
-    if (error) { toast.error(error.message || tr('Błąd usuwania')); return; }
+  const deleteUser = async (user) => {
+    if (!await confirmDialog(tr('Usunąć konto „{name}”? Osoba zostanie wylogowana, a konta nie da się przywrócić.', { name: userName(user) }))) return;
+    const { error } = await supabase.functions.invoke('delete-user', { body: { userId: user.id } });
+    if (error) { toast.error(error.message || tr('Nie udało się usunąć konta')); return; }
     fetchData(); loadAccountEvents();
-    setMessage({ type: 'success', text: tr('Użytkownik został usunięty') });
+    toast.success(tr('Konto zostało usunięte'));
   };
   const toggleUserStatus = async (user) => {
     const active = !user.is_active;
-    if (!active && !await confirmDialog(tr('Zablokować użytkownika? Zostanie natychmiast wylogowany.'))) return;
+    if (!active && !await confirmDialog(tr('Zablokować konto „{name}”? Osoba zostanie od razu wylogowana.', { name: userName(user) }))) return;
     const { error } = await supabase.functions.invoke('set-user-status', { body: { userId: user.id, active } });
     if (error) { toast.error(error.message || tr('Nie udało się zmienić statusu')); return; }
     fetchData(); loadAccountEvents();
   };
   const resetUser2FA = async (user) => {
-    if (!await confirmDialog(tr('Zresetować 2FA temu użytkownikowi? Skonfiguruje je od nowa przy kolejnym logowaniu.'))) return;
+    if (!await confirmDialog(tr('Zresetować weryfikację dwuetapową dla „{name}”? Osoba skonfiguruje ją od nowa przy kolejnym logowaniu.', { name: userName(user) }))) return;
     const { error } = await supabase.functions.invoke('admin-reset-2fa', { body: { userId: user.id } });
-    setMessage(error ? { type: 'error', text: error.message || tr('Błąd resetu 2FA') } : { type: 'success', text: tr('Zresetowano 2FA') });
+    notify(error ? { type: 'error', text: error.message || tr('Nie udało się zresetować weryfikacji') } : { type: 'success', text: tr('Zresetowano weryfikację dwuetapową') });
     fetchData(); loadAccountEvents();
   };
   const forceLogoutUser = async (id) => {
-    if (!await confirmDialog(tr('Wylogować użytkownika ze wszystkich urządzeń?'))) return;
+    if (!await confirmDialog(tr('Wylogować „{name}” ze wszystkich urządzeń?', { name: userName(userForm) }))) return;
     const { error } = await supabase.functions.invoke('force-logout-user', { body: { userId: id } });
-    setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Wylogowano ze wszystkich urządzeń') });
+    notify(error ? { type: 'error', text: error.message || tr('Nie udało się wylogować') } : { type: 'success', text: tr('Wylogowano ze wszystkich urządzeń') });
     loadAccountEvents();
   };
   const unlockLogin = async (user) => {
     // Zdejmuje TYLKO blokadę anty-brute-force (nie rusza is_active — nie odblokowuje zablokowanego konta).
     const { error } = await supabase.functions.invoke('unlock-login', { body: { userId: user.id } });
-    if (error) { toast.error(error.message || tr('Błąd')); return; }
+    if (error) { toast.error(error.message || tr('Nie udało się odblokować logowania')); return; }
     fetchData(); loadAccountEvents();
-    setMessage({ type: 'success', text: tr('Odblokowano logowanie') });
+    toast.success(tr('Odblokowano logowanie'));
   };
   const resendInvite = async (id) => {
     const { error } = await supabase.functions.invoke('resend-invite', { body: { userId: id } });
-    setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Ponowiono zaproszenie') });
+    notify(error ? { type: 'error', text: error.message || tr('Nie udało się wysłać zaproszenia') } : { type: 'success', text: tr('Ponowiono zaproszenie') });
   };
 
   // Zaznaczanie i akcje masowe (pętla po zaznaczonych — każdą operację robi funkcja serwerowa).
   const [selectedUserIds, setSelectedUserIds] = useState(() => new Set());
   const [bulkRole, setBulkRole] = useState('');
-  const [ssoSecret, setSsoSecret] = useState({ google: '', microsoft: '' });
-  const saveSsoSecret = async (provider) => {
-    if (!ssoSecret[provider]) return;
-    const { error } = await supabase.functions.invoke('sso-save-config', { body: { provider, client_secret: ssoSecret[provider] } });
-    setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Zapisano sekret SSO') });
-    setSsoSecret(s => ({ ...s, [provider]: '' }));
-  };
   const toggleSelectUser = (id) => setSelectedUserIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const clearSelection = () => setSelectedUserIds(new Set());
-  const bulkRun = async (op, label) => {
+  const bulkRun = async (op, action) => {
     let ok = 0, fail = 0;
     for (const id of [...selectedUserIds]) { const err = await op(id); if (err) fail++; else ok++; }
     fetchData(); loadAccountEvents(); clearSelection();
-    setMessage({ type: fail ? 'error' : 'success', text: `${label}: ${ok} ok${fail ? `, ${fail} ${tr('błędów')}` : ''}` });
+    if (fail) toast.error(tr('{action}: udało się {ok}, nie udało się {fail}.', { action, ok, fail }));
+    else toast.success(tr('{action}: {ok}', { action, ok }));
   };
   const bulkActivate = () => bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: true } })).error, tr('Aktywowano'));
-  const bulkBlock = async () => { if (await confirmDialog(tr('Zablokować zaznaczonych?'))) bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: false } })).error, tr('Zablokowano')); };
-  const bulkDelete = async () => { if (await confirmDialog(tr('Usunąć zaznaczonych? Operacja nieodwracalna.'))) bulkRun(async id => (await supabase.functions.invoke('delete-user', { body: { userId: id } })).error, tr('Usunięto')); };
+  const bulkBlock = async () => { if (await confirmDialog(tr('Zablokować zaznaczone konta ({n})? Te osoby zostaną od razu wylogowane.', { n: selectedUserIds.size }))) bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: false } })).error, tr('Zablokowano')); };
+  const bulkDelete = async () => { if (await confirmDialog(tr('Usunąć zaznaczone konta ({n})? Tej operacji nie da się cofnąć.', { n: selectedUserIds.size }))) bulkRun(async id => (await supabase.functions.invoke('delete-user', { body: { userId: id } })).error, tr('Usunięto')); };
   const bulkChangeRole = () => { if (bulkRole) bulkRun(async id => (await supabase.functions.invoke('admin-update-user', { body: { userId: id, role: bulkRole } })).error, tr('Zmieniono rolę')); };
 
+  const statusLabel = (st) => (st === 'active' ? tr('Aktywny') : st === 'pending' ? tr('Oczekujący') : tr('Zablokowany'));
+
   const exportUsersCsv = () => {
-    const rows = [['Imię i nazwisko', 'E-mail', 'Rola', 'Status', 'Kampus', 'Ostatnie logowanie']];
+    const rows = [[tr('Imię i nazwisko'), tr('E-mail'), tr('Rola'), tr('Status'), tr('Kampus'), tr('Ostatnie logowanie')]];
     filteredUsers.forEach(u => {
       const st = u.status || (u.is_active ? 'active' : 'blocked');
-      rows.push([u.full_name || '', u.email || '', definedRoles.find(r => r.key === u.role)?.label || u.role || '', st, campuses.find(c => c.id === u.campus_id)?.name || '', u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '']);
+      rows.push([u.full_name || '', u.email || '', definedRoles.find(r => r.key === u.role)?.label || u.role || '', statusLabel(st), campuses.find(c => c.id === u.campus_id)?.name || '', fmtDateTime(u.last_login_at)]);
     });
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
@@ -778,314 +504,80 @@ export default function GlobalSettings() {
     }
     e.target.value = '';
     fetchData(); loadAccountEvents();
-    setMessage({ type: fail ? 'error' : 'success', text: `${tr('Import CSV')}: ${ok} ${tr('utworzono')}${fail ? `, ${fail} ${tr('pominięto')}` : ''}` });
+    if (fail) toast.error(tr('Import CSV: utworzono {ok}, pominięto {fail}.', { ok, fail }));
+    else toast.success(tr('Import CSV: utworzono {ok}.', { ok }));
   };
 
-  // Funkcja do scalania zduplikowanych członków we wszystkich tabelach służb
-  const mergeDuplicateMembers = async () => {
-    if (!await confirmDialog(tr('Czy na pewno chcesz scalić zduplikowanych członków? Ta operacja połączy członków o tym samym imieniu i nazwisku.'))) {
-      return;
+  // ── Scalanie duplikatów w służbach: najpierw PODGLĄD par i zaznaczanie (UXE-08) ──────────
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeLoading, setMergeLoading] = useState(false);
+  const [mergeBusy, setMergeBusy] = useState(false);
+  const [mergeGroups, setMergeGroups] = useState([]); // [{ id, team, table, ...group }]
+  const [mergeSelected, setMergeSelected] = useState(() => new Set());
+
+  const openMergePreview = async () => {
+    setMergeOpen(true);
+    setMergeLoading(true);
+    const all = [];
+    for (const def of teamDefinitions) {
+      const { data, error } = await supabase.from(def.table).select(teamCols(def));
+      if (error || !data) continue;
+      groupDuplicateMembers(data).forEach(g => all.push({ ...g, id: `${def.table}:${g.key}`, team: def.label, table: def.table }));
     }
+    setMergeGroups(all);
+    // Domyślnie zaznaczone tylko grupy bez sprzecznych danych — resztę admin zaznacza świadomie.
+    setMergeSelected(new Set(all.filter(g => !g.conflict).map(g => g.id)));
+    setMergeLoading(false);
+  };
 
-    setMessage({ type: 'info', text: tr('Scalanie duplikatów...') });
-    let totalMerged = 0;
-
-    try {
-      for (const teamDef of teamDefinitions) {
-        // Pobierz wszystkich członków z tej tabeli
-        const { data: allMembers } = await supabase
-          .from(teamDef.table)
-          .select('id, full_name, email, phone, status');
-
-        if (!allMembers) continue;
-
-        // Grupuj po full_name
-        const grouped = {};
-        for (const member of allMembers) {
-          const name = member.full_name?.trim().toLowerCase();
-          if (!name) continue;
-          if (!grouped[name]) grouped[name] = [];
-          grouped[name].push(member);
+  const runMerge = async () => {
+    const chosen = mergeGroups.filter(g => mergeSelected.has(g.id));
+    if (!chosen.length) return;
+    setMergeBusy(true);
+    let merged = 0, failed = 0;
+    for (const g of chosen) {
+      try {
+        const fill = mergeFill(g.primary, g.duplicates);
+        const def = TEAM_TABLES.find(d => d.table === g.table);
+        if (!def?.hasStatus) delete fill.status;
+        if (Object.keys(fill).length) {
+          const { error } = await supabase.from(g.table).update(fill).eq('id', g.primary.id);
+          if (error) throw error;
         }
-
-        // Scal duplikaty
-        for (const [name, members] of Object.entries(grouped)) {
-          if (members.length <= 1) continue;
-
-          // Znajdź główny rekord (ten z emailem lub statusem lub pierwszy)
-          const primaryMember = members.find(m => m.email && m.status === 'Aktywny')
-            || members.find(m => m.email)
-            || members.find(m => m.status === 'Aktywny')
-            || members[0];
-          const duplicates = members.filter(m => m.id !== primaryMember.id);
-
-          // Scal dane
-          const updateData = {};
-          for (const dup of duplicates) {
-            if (!primaryMember.email && dup.email) updateData.email = dup.email;
-            if (!primaryMember.phone && dup.phone) updateData.phone = dup.phone;
-            if (!primaryMember.status && dup.status) updateData.status = dup.status;
-          }
-          if (!primaryMember.status && !updateData.status) {
-            updateData.status = 'Aktywny';
-          }
-
-          if (Object.keys(updateData).length > 0) {
-            await supabase.from(teamDef.table).update(updateData).eq('id', primaryMember.id);
-          }
-
-          // Przenieś przypisania służb i usuń duplikaty
-          for (const dup of duplicates) {
-            // Przenieś przypisania z team_member_roles
-            await supabase
-              .from('team_member_roles')
-              .update({ member_id: String(primaryMember.id) })
-              .eq('member_id', String(dup.id))
-              .eq('member_table', teamDef.table);
-
-            // Usuń duplikat
-            await supabase.from(teamDef.table).delete().eq('id', dup.id);
-            totalMerged++;
-          }
+        for (const dup of g.duplicates) {
+          const { error: e1 } = await supabase.from('team_member_roles')
+            .update({ member_id: String(g.primary.id) })
+            .eq('member_id', String(dup.id))
+            .eq('member_table', g.table);
+          if (e1) throw e1;
+          const { error: e2 } = await supabase.from(g.table).delete().eq('id', dup.id);
+          if (e2) throw e2;
+          merged++;
         }
+      } catch {
+        failed++;
       }
-
-      setMessage({
-        type: 'success',
-        text: totalMerged > 0
-          ? tr('Scalono {n} zduplikowanych członków!', { n: totalMerged })
-          : tr('Nie znaleziono duplikatów do scalenia.')
-      });
-    } catch (err) {
-      console.error('Błąd scalania duplikatów:', err);
-      setMessage({ type: 'error', text: tr('Błąd scalania: ') + err.message });
     }
+    setMergeBusy(false);
+    setMergeOpen(false);
+    if (failed) toast.error(tr('Scalono {n} wpisów. Nie udało się scalić {fail} grup — spróbuj ponownie.', { n: merged, fail: failed }));
+    else toast.success(tr('Scalono {n} powtórzonych wpisów.', { n: merged }));
   };
 
-  const addDict = async (category, label) => { const { data } = await supabase.from('app_dictionaries').insert([{ category, label, value: label }]).select(); if (data) setDictionaries([...dictionaries, data[0]]); };
-  const delDict = async (id) => { if(await confirmDialog(tr('Usunąć?'))) { await supabase.from('app_dictionaries').delete().eq('id', id); fetchData(); } };
-
-  const togglePermission = async (role, resource, field, value) => {
-    const existing = permissions.find(p => p.role === role && p.resource === resource);
-    const payload = { role, resource, [field]: value, [field === 'can_read' ? 'can_write' : 'can_read']: existing ? existing[field === 'can_read' ? 'can_write' : 'can_read'] : false };
-    await supabase.from('app_permissions').upsert(payload, { onConflict: 'role, resource' }); fetchData();
+  // ── Słowniki ────────────────────────────────────────────────────────────────────────────
+  const addDict = async (category, label) => {
+    const { data, error } = await supabase.from('app_dictionaries').insert([{ category, label, value: label }]).select();
+    if (error) { toast.error(tr('Nie udało się dodać opcji.')); return; }
+    if (data) setDictionaries(prev => [...prev, data[0]]);
+  };
+  const delDict = async (item) => {
+    if (!await confirmDialog(tr('Usunąć opcję „{name}”? Zniknie z listy wyboru.', { name: item.label }))) return;
+    const { error } = await supabase.from('app_dictionaries').delete().eq('id', item.id);
+    if (error) { toast.error(tr('Nie udało się usunąć opcji.')); return; }
+    setDictionaries(prev => prev.filter(d => d.id !== item.id));
   };
 
-  // Tab permissions functions
-  const toggleTabRoleAccess = (module, tab, roleKey) => {
-    if (!tabPermissions) return;
-
-    setTabPermissions(prev => {
-      const currentTabPerms = prev[module]?.[tab];
-
-      if (currentTabPerms === null) {
-        // Jeśli wszyscy mają dostęp, zmień na tylko tę jedną rolę
-        return {
-          ...prev,
-          [module]: {
-            ...prev[module],
-            [tab]: [roleKey]
-          }
-        };
-      } else if (Array.isArray(currentTabPerms)) {
-        if (currentTabPerms.includes(roleKey)) {
-          // Odklikuj rolę
-          const newRoles = currentTabPerms.filter(r => r !== roleKey);
-          // Nie zmieniaj pustej tablicy na null - zostaw jako pusta tablica (nikt nie ma dostępu)
-          return {
-            ...prev,
-            [module]: {
-              ...prev[module],
-              [tab]: newRoles
-            }
-          };
-        } else {
-          // Dodaj rolę
-          return {
-            ...prev,
-            [module]: {
-              ...prev[module],
-              [tab]: [...currentTabPerms, roleKey]
-            }
-          };
-        }
-      }
-
-      return prev;
-    });
-  };
-
-  const setAllTabAccess = (module, tab) => {
-    if (!tabPermissions) return;
-
-    setTabPermissions(prev => {
-      const currentTabPerms = prev[module]?.[tab];
-
-      // Jeśli już jest null (wszyscy mają dostęp), zmień na pustą tablicę (nikt nie ma dostępu)
-      if (currentTabPerms === null) {
-        return {
-          ...prev,
-          [module]: {
-            ...prev[module],
-            [tab]: []
-          }
-        };
-      }
-
-      // W przeciwnym razie ustaw na null (wszyscy)
-      return {
-        ...prev,
-        [module]: {
-          ...prev[module],
-          [tab]: null
-        }
-      };
-    });
-  };
-
-  const hasTabRoleAccess = (module, tab, roleKey) => {
-    if (!tabPermissions) return false;
-    const tabPerms = tabPermissions[module]?.[tab];
-    if (tabPerms === null) return true; // null = wszyscy mają dostęp
-    if (!Array.isArray(tabPerms)) return false;
-    return tabPerms.includes(roleKey); // pusta tablica = nikt nie ma dostępu
-  };
-
-  const saveTabPermissions = () => {
-    localStorage.setItem('tabPermissions', JSON.stringify(tabPermissions));
-    setMessage({ type: 'success', text: tr('Uprawnienia zaktualizowane. Odśwież stronę, aby zobaczyć zmiany.') });
-    setTimeout(() => window.location.reload(), 1500);
-  };
-
-  // User-specific permissions functions
-  const loadUserPermissions = () => {
-    const stored = localStorage.getItem('userPermissions');
-    if (stored) {
-      setUserPermissions(JSON.parse(stored));
-    }
-  };
-
-  const toggleUserModuleAccess = (userId, moduleKey, field) => {
-    setUserPermissions(prev => {
-      const userPerms = prev[userId] || { modules: {}, tabs: {} };
-      const modulePerms = userPerms.modules[moduleKey] || { can_read: false, can_write: false };
-
-      return {
-        ...prev,
-        [userId]: {
-          ...userPerms,
-          modules: {
-            ...userPerms.modules,
-            [moduleKey]: {
-              ...modulePerms,
-              [field]: !modulePerms[field]
-            }
-          }
-        }
-      };
-    });
-  };
-
-  const toggleUserTabAccess = (userId, moduleKey, tabKey) => {
-    setUserPermissions(prev => {
-      const userPerms = prev[userId] || { modules: {}, tabs: {} };
-      const userTabs = userPerms.tabs[moduleKey] || {};
-
-      return {
-        ...prev,
-        [userId]: {
-          ...userPerms,
-          tabs: {
-            ...userPerms.tabs,
-            [moduleKey]: {
-              ...userTabs,
-              [tabKey]: !userTabs[tabKey]
-            }
-          }
-        }
-      };
-    });
-  };
-
-  const hasUserTabAccess = (userId, moduleKey, tabKey) => {
-    return userPermissions[userId]?.tabs?.[moduleKey]?.[tabKey] || false;
-  };
-
-  const hasUserModuleAccess = (userId, moduleKey, field) => {
-    return userPermissions[userId]?.modules?.[moduleKey]?.[field] || false;
-  };
-
-  const saveUserPermissions = () => {
-    localStorage.setItem('userPermissions', JSON.stringify(userPermissions));
-    setMessage({ type: 'success', text: tr('Uprawnienia użytkowników zapisane. Odśwież stronę, aby zobaczyć zmiany.') });
-    setTimeout(() => window.location.reload(), 1500);
-  };
-
-  const resetUserPermissionsToRole = (userId) => {
-    const user = users.find(u => u.id === userId);
-    if (!user) return;
-
-    // Usuń wszystkie indywidualne uprawnienia użytkownika
-    setUserPermissions(prev => {
-      const newPerms = { ...prev };
-      delete newPerms[userId];
-      return newPerms;
-    });
-
-    setMessage({ type: 'success', text: tr('Przywrócono uprawnienia z roli użytkownika') });
-  };
-
-  const getUserEffectivePermissions = (userId, moduleKey) => {
-    const user = users.find(u => u.id === userId);
-    if (!user) return { can_read: false, can_write: false };
-
-    // Sprawdź czy użytkownik ma indywidualne uprawnienia
-    const userPerms = userPermissions[userId]?.modules?.[moduleKey];
-    if (userPerms) {
-      return userPerms;
-    }
-
-    // W przeciwnym razie zwróć uprawnienia z roli
-    const moduleData = Object.values(dynamicModuleTabs).find(m => m.resourceKey === `module:${moduleKey}` || Object.keys(dynamicModuleTabs).includes(moduleKey));
-    if (!moduleData) return { can_read: false, can_write: false };
-
-    const rolePerm = permissions.find(p => p.role === user.role && p.resource === moduleData.resourceKey);
-    return {
-      can_read: rolePerm?.can_read || false,
-      can_write: rolePerm?.can_write || false
-    };
-  };
-
-  const getUserEffectiveTabAccess = (userId, moduleKey, tabKey) => {
-    const user = users.find(u => u.id === userId);
-    if (!user) return false;
-
-    // Sprawdź czy użytkownik ma indywidualne uprawnienia dla tej zakładki
-    const userTabPerm = userPermissions[userId]?.tabs?.[moduleKey]?.[tabKey];
-    if (userTabPerm !== undefined) {
-      return userTabPerm;
-    }
-
-    // W przeciwnym razie zwróć uprawnienia z roli
-    const tabPerms = tabPermissions?.[moduleKey]?.[tabKey];
-    if (tabPerms === null) return true; // wszyscy mają dostęp
-    if (!Array.isArray(tabPerms)) return false;
-    return tabPerms.includes(user.role);
-  };
-
-  const logoUrl = appSettings.find(s => s.key === 'org_logo_url')?.value;
-  const modulesSettings = appSettings.filter(s => s.key.startsWith('module_'));
-
-  // Helpery odczytu/zapisu ustawień (app_settings, klucz/wartość).
-  const getSetting = (key) => appSettings.find(s => s.key === key)?.value;
-  const saveSetting = async (key, value) => {
-    const v = String(value);
-    await supabase.from('app_settings').upsert({ key, value: v }, { onConflict: 'key' });
-    setAppSettings(prev => prev.some(s => s.key === key)
-      ? prev.map(s => s.key === key ? { ...s, value: v } : s)
-      : [...prev, { key, value: v }]);
-    setMessage({ type: 'success', text: tr('Zapisano') });
-  };
+  const logoUrl = getSetting('org_logo_url');
 
   // Rejestracja: kolejki oczekujących + audyt. Akcje = funkcje serwerowe (bramka admina + maile + log).
   const pendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'admin');
@@ -1110,41 +602,40 @@ export default function GlobalSettings() {
   useEffect(() => { loadAccountEvents(); }, []);
   const approveUser = async (id) => {
     const { error } = await supabase.functions.invoke('approve-user', { body: { userId: id } });
-    if (error) { setMessage({ type: 'error', text: error.message || tr('Nie udało się zatwierdzić konta') }); return; }
+    if (error) { toast.error(error.message || tr('Nie udało się zatwierdzić konta')); return; }
     fetchData(); loadAccountEvents();
-    setMessage({ type: 'success', text: tr('Konto zatwierdzone — wysłano powitanie') });
+    toast.success(tr('Konto zatwierdzone — wysłano powitanie'));
   };
-  const rejectUser = async (id) => {
-    if (!await confirmDialog(tr('Odrzucić i usunąć to zgłoszenie rejestracji?'))) return;
-    const { error } = await supabase.functions.invoke('reject-user', { body: { userId: id } });
-    if (error) { setMessage({ type: 'error', text: error.message || tr('Nie udało się odrzucić') }); return; }
+  const rejectUser = async (user) => {
+    if (!await confirmDialog(tr('Odrzucić zgłoszenie „{name}”? Zgłoszenie zostanie usunięte.', { name: userName(user) }))) return;
+    const { error } = await supabase.functions.invoke('reject-user', { body: { userId: user.id } });
+    if (error) { toast.error(error.message || tr('Nie udało się odrzucić')); return; }
     fetchData(); loadAccountEvents();
   };
   const resendVerification = async (id) => {
     const { error } = await supabase.functions.invoke('resend-verification', { body: { userId: id } });
-    setMessage(error
+    notify(error
       ? { type: 'error', text: error.message || tr('Nie udało się wysłać') }
       : { type: 'success', text: tr('Wysłano ponownie link weryfikacyjny') });
   };
-  const ACTION_LABEL = { registered: tr('Rejestracja'), verified: tr('Potwierdzenie e-mail'), approved: tr('Zatwierdzenie'), rejected: tr('Odrzucenie'), created: tr('Utworzenie (admin)'), edited: tr('Edycja'), deleted: tr('Usunięcie'), blocked: tr('Zablokowanie'), unblocked: tr('Odblokowanie'), reset_2fa: tr('Reset 2FA'), logged_out: tr('Wylogowanie (wszędzie)'), unlocked_login: tr('Odblokowanie logowania') };
+  const ACTION_LABEL = { registered: tr('Rejestracja'), verified: tr('Potwierdzenie e-mail'), approved: tr('Zatwierdzenie'), rejected: tr('Odrzucenie'), created: tr('Utworzenie (admin)'), edited: tr('Edycja'), deleted: tr('Usunięcie'), blocked: tr('Zablokowanie'), unblocked: tr('Odblokowanie'), reset_2fa: tr('Reset weryfikacji dwuetapowej'), logged_out: tr('Wylogowanie (wszędzie)'), unlocked_login: tr('Odblokowanie logowania') };
 
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
+  const openNewUser = () => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setRequire2FA(false); setShowUserModal(true); };
 
   return (
     <div className="flex flex-col h-full space-y-4">
       {/* NAGŁÓWEK */}
       <PageHeader moduleKey="settings" icon={SettingsIcon} title={t('Ustawienia')} />
 
-      {message && <div className={`p-4 rounded-xl flex items-center gap-2 cursor-pointer ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800'}`} onClick={() => setMessage(null)}>{message.type === 'success' ? <CheckCircle size={20}/> : <AlertCircle size={20}/>} {message.text}</div>}
-
-      {/* Mobile: poziome zakładki */}
+      {/* Mobile: poziome zakładki (bez moduleKey — domyślna zakładka z preferencji nie może nadpisać ?tab=) */}
       <div className="lg:hidden">
-        <ResponsiveTabs moduleKey="settings" tabs={SETTINGS_NAV_FLAT.map((i) => ({ ...i, label: t(i.label) }))} activeTab={activeTab} onChange={setActiveTab} />
+        <ResponsiveTabs tabs={SETTINGS_NAV_FLAT.map((i) => ({ ...i, label: t(i.label) }))} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
       <div className="flex gap-6 flex-1 min-h-0">
         {/* MENU PO LEWEJ (desktop) */}
-        <nav className="hidden lg:flex flex-col w-60 shrink-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 overflow-y-auto">
+        <nav aria-label={tr('Sekcje ustawień')} className="hidden lg:flex flex-col w-60 shrink-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 overflow-y-auto">
           {SETTINGS_NAV.map((section) => (
             <div key={section.group} className="mb-2">
               <div className="px-3 pt-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t(section.group)}</div>
@@ -1155,13 +646,14 @@ export default function GlobalSettings() {
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition mb-0.5 ${
+                    aria-current={active ? 'page' : undefined}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition mb-0.5 text-left ${
                       active
                         ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md shadow-accent-primary-light/30'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
-                    <Icon size={18} className="shrink-0" />
+                    <Icon size={18} className="shrink-0" aria-hidden="true" />
                     {t(item.label)}
                   </button>
                 );
@@ -1174,10 +666,14 @@ export default function GlobalSettings() {
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 lg:p-8 flex-1 overflow-y-auto transition-colors">
         {activeNav && (
           <div className="flex items-center gap-2.5 mb-6 lg:hidden">
-            <activeNav.icon size={22} className="text-accent-primary" />
+            <activeNav.icon size={22} className="text-accent-primary" aria-hidden="true" />
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t(activeNav.label)}</h2>
           </div>
         )}
+
+        {loading && ['general', 'users', 'security', 'appearance', 'dictionaries'].includes(activeTab) ? (
+          <Spinner center />
+        ) : (<>
 
         {/* --- TAB: ORGANIZACJA --- */}
         {activeTab === 'general' && (
@@ -1192,8 +688,9 @@ export default function GlobalSettings() {
               { key: 'org_website', label: tr('Strona WWW'), placeholder: 'https://...' },
             ].map((f) => (
               <div key={f.key} className="mb-4">
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">{f.label}</label>
+                <label htmlFor={`org-${f.key}`} className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">{f.label}</label>
                 <input
+                  id={`org-${f.key}`}
                   type={f.type || 'text'}
                   placeholder={f.placeholder}
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-accent-primary-light outline-none transition"
@@ -1203,8 +700,9 @@ export default function GlobalSettings() {
               </div>
             ))}
             <div className="mb-4">
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">{t('Adres')}</label>
+              <label htmlFor="org-address" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">{t('Adres')}</label>
               <textarea
+                id="org-address"
                 rows={2}
                 placeholder={tr('Ulica, kod pocztowy, miasto')}
                 className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-accent-primary-light outline-none transition resize-none"
@@ -1212,246 +710,46 @@ export default function GlobalSettings() {
                 onBlur={(e) => { if (e.target.value !== (getSetting('org_address') || '')) saveSetting('org_address', e.target.value); }}
               />
             </div>
-            <p className="text-xs text-gray-400 mt-2">{tr('Logo i kolory ustawisz w zakładce')} <strong>{t('Wygląd')}</strong>.</p>
+            <p className="text-xs text-gray-400 mt-2">
+              {tr('Zmiany zapisują się automatycznie po opuszczeniu pola.')}{' '}
+              <button type="button" onClick={() => setActiveTab('appearance')} className="underline hover:text-accent-primary">{tr('Logo i kolory ustawisz w zakładce {tab}.', { tab: t('Wygląd') })}</button>
+            </p>
           </div>
         )}
 
-        {/* --- TAB: LOKALIZACJE --- */}
+        {/* --- TAB: KAMPUSY --- */}
         {activeTab === 'campuses' && (
-          <CampusManager onMessage={setMessage} />
+          <CampusManager onMessage={notify} />
         )}
 
-        {/* --- TAB: MODUŁY --- */}
+        {/* --- TAB: MODUŁY (włączanie + nazwa/ikona + kolejność w jednym miejscu) --- */}
         {activeTab === 'modules' && (
-          <div className="max-w-3xl">
-            <SectionHeader title={t('Włączanie Modułów')} description={tr('Włączaj lub ukrywaj funkcje systemu.')} />
-            <div className="space-y-3">
-              {/* Moduły z tabeli app_modules (nowy system) */}
-              {dbModules
-                .filter(mod => !['dashboard', 'programs'].includes(mod.key)) // Pomijamy tylko Pulpit/Programy; „Wydarzenia" pokazujemy
-                .map(mod => (
-                <div key={mod.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-sm transition">
-                  <div>
-                    <div className="font-bold text-gray-800 dark:text-white">{mod.label}</div>
-                    <div className="text-xs text-gray-400 font-mono">{mod.resource_key}</div>
-                  </div>
-                  <button
-                    onClick={async () => {
-                      const newValue = !mod.is_enabled;
-                      await supabase.from('app_modules').update({ is_enabled: newValue }).eq('id', mod.id);
-                      setDbModules(prev => prev.map(m => m.id === mod.id ? { ...m, is_enabled: newValue } : m));
-                      setMessage({ type: 'success', text: tr('Moduł {name} {state}', { name: mod.label, state: newValue ? tr('włączony') : tr('wyłączony') }) });
-                    }}
-                    className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition ${mod.is_enabled ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-600 dark:text-gray-400'}`}
-                  >
-                    {mod.is_enabled ? <ToggleRight size={24}/> : <ToggleLeft size={24}/>}
-                    {mod.is_enabled ? tr('Włączony') : tr('Wyłączony')}
-                  </button>
-                </div>
-              ))}
-
-              {/* Fallback: stary system z app_settings jeśli brak modułów w bazie */}
-              {dbModules.length === 0 && modulesSettings.map(mod => (
-                <div key={mod.key} className="flex items-center justify-between p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-sm transition">
-                  <div>
-                    <div className="font-bold text-gray-800 dark:text-white">{mod.description}</div>
-                    <div className="text-xs text-gray-400 font-mono">{mod.key}</div>
-                  </div>
-                  <button onClick={() => toggleModule(mod.key, mod.value)} className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition ${mod.value === 'true' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-600 dark:text-gray-400'}`}>
-                    {mod.value === 'true' ? <ToggleRight size={24}/> : <ToggleLeft size={24}/>}
-                    {mod.value === 'true' ? tr('Włączony') : tr('Wyłączony')}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* --- TAB: ZARZĄDZANIE MODUŁAMI --- */}
-        {activeTab === 'module_manager' && (
-          <div>
-            <ModuleManager />
-          </div>
+          <ModuleManager />
         )}
 
         {/* --- TAB: UŻYTKOWNICY --- */}
         {activeTab === 'users' && (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <SectionHeader title={t('Użytkownicy Systemu')} description={tr('Zarządzanie dostępem, rolami i statusem kont.')} />
-              <div className="flex items-center gap-2">
-                <button onClick={exportUsersCsv} className="border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm" title={tr('Eksportuj listę do CSV')}><Download size={16}/> CSV</button>
-                <button onClick={() => document.getElementById('users-csv-import').click()} className="border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm" title={tr('Importuj konta z CSV (kolumny: e-mail, imię, rola)')}><Upload size={16}/> {tr('Import')}</button>
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3 mb-2">
+              <SectionHeader title={t('Konta użytkowników')} description={tr('Zarządzanie dostępem, rolami i statusem kont.')} />
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Button variant="outline" size="sm" icon={Download} onClick={exportUsersCsv} title={tr('Pobierz listę kont jako plik CSV')}>{tr('Eksportuj CSV')}</Button>
+                <Button variant="outline" size="sm" icon={Upload} onClick={() => document.getElementById('users-csv-import').click()} title={tr('Importuj konta z CSV (kolumny: e-mail, imię, rola)')}>{tr('Importuj CSV')}</Button>
                 <input id="users-csv-import" type="file" accept=".csv,text/csv" className="hidden" onChange={importUsersCsv} />
-                <button onClick={mergeDuplicateMembers} className="bg-accent-secondary-light text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title={t('Scal zduplikowanych członków w służbach')}><Layers size={16}/> {tr('Scal duplikaty')}</button>
-                <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setRequire2FA(false); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> {tr('Dodaj Użytkownika')}</button>
+                <Button variant="outline" size="sm" icon={Layers} onClick={openMergePreview} title={tr('Znajdź i scal powtórzone wpisy osób w służbach')}>{tr('Scal duplikaty')}</Button>
+                <Button icon={Plus} onClick={openNewUser}>{tr('Dodaj użytkownika')}</Button>
               </div>
             </div>
 
-            {/* Konfiguracja: kto i jak może zakładać konta */}
-            <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
-              <h3 className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2"><UserPlus size={18}/> {t('Zakładanie kont')}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Kto i jak może uzyskać konto w aplikacji.')}</p>
-              <div className="grid sm:grid-cols-3 gap-3">
-                {[
-                  { v: 'closed', label: tr('Zamknięta'), desc: tr('Tylko administrator tworzy konta') },
-                  { v: 'approval', label: tr('Za zgodą administratora'), desc: tr('Można się rejestrować, konto wymaga zatwierdzenia') },
-                  { v: 'open', label: tr('Otwarta'), desc: tr('Rejestracja z potwierdzeniem e-mail') },
-                ].map(opt => {
-                  const active = (getSetting('registration_mode') || 'closed') === opt.v;
-                  return (
-                    <button
-                      key={opt.v}
-                      type="button"
-                      onClick={() => saveSetting('registration_mode', opt.v)}
-                      className={`text-left rounded-xl border-2 p-3 transition ${active ? 'border-accent-primary ring-2 ring-accent-primary/30 bg-accent-primary-lightest/40 dark:bg-gray-700' : 'border-gray-200 dark:border-gray-600 hover:border-accent-primary-light/60'}`}
-                    >
-                      <div className="font-semibold text-sm text-gray-800 dark:text-gray-100">{opt.label}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{opt.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
-              {(getSetting('registration_mode') || 'closed') !== 'closed' && (
-                <div className="mt-4 space-y-4">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Domyślna rola nowych kont')}</label>
-                      <select value={getSetting('registration_default_role') || ''} onChange={e => saveSetting('registration_default_role', e.target.value)} className="w-full">
-                        <option value="">{tr('(najniższa — członek)')}</option>
-                        {definedRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
-                      </select>
-                    </div>
-                    {campuses.length > 0 && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Domyślny kampus nowych kont')}</label>
-                        <select value={getSetting('registration_default_campus') || ''} onChange={e => saveSetting('registration_default_campus', e.target.value)} className="w-full">
-                          <option value="">{tr('(brak — bez kampusu)')}</option>
-                          {campuses.map(c => <option key={c.id} value={String(c.id)}>{c.name}{c.city ? ` (${c.city})` : ''}</option>)}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Dozwolone domeny e-mail (opcjonalnie)')}</label>
-                    <input type="text" defaultValue={getSetting('registration_allowed_domains') || ''} onBlur={e => saveSetting('registration_allowed_domains', e.target.value)} placeholder={tr('np. schwro.pl, parafia.pl')} className="w-full" />
-                  </div>
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                    <input type="checkbox" className="w-4 h-4" checked={(getSetting('registration_captcha') || 'on') !== 'off'} onChange={e => saveSetting('registration_captcha', e.target.checked ? 'on' : 'off')} />
-                    {tr('Wymagaj weryfikacji (captcha) przy rejestracji')}
-                  </label>
-                  {getSetting('registration_mode') === 'approval' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Auto-zatwierdzane domeny')}</label>
-                      <input type="text" defaultValue={getSetting('registration_autoapprove_domains') || ''} onBlur={e => saveSetting('registration_autoapprove_domains', e.target.value)} placeholder={tr('np. schwro.pl')} className="w-full" />
-                      <p className="text-xs text-gray-400 mt-1">{tr('Konta z tych domen aktywują się od razu, bez czekania na administratora.')}</p>
-                    </div>
-                  )}
-                  <div className="pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
-                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                      <input type="checkbox" className="w-4 h-4" checked={getSetting('registration_require_consent') === 'on'} onChange={e => saveSetting('registration_require_consent', e.target.checked ? 'on' : 'off')} />
-                      {tr('Wymagaj akceptacji regulaminu / polityki prywatności (RODO)')}
-                    </label>
-                    {getSetting('registration_require_consent') === 'on' && (
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Treść zgody')}</label>
-                          <input type="text" defaultValue={getSetting('registration_consent_text') || ''} onBlur={e => saveSetting('registration_consent_text', e.target.value)} placeholder={tr('Akceptuję regulamin i politykę prywatności')} className="w-full" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Link do dokumentu')}</label>
-                          <input type="text" defaultValue={getSetting('registration_consent_url') || ''} onBlur={e => saveSetting('registration_consent_url', e.target.value)} placeholder="https://…/polityka-prywatnosci" className="w-full" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            <button type="button" onClick={() => setActiveTab('security')} className="mb-5 w-full flex items-center justify-between gap-3 text-left text-sm rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-gray-600 dark:text-gray-300 hover:border-accent-primary-light/60 transition">
+              <span className="flex items-center gap-2"><ShieldCheck size={16} className="text-accent-primary shrink-0" aria-hidden="true" /> {tr('Zasady logowania, haseł, rejestracji i logowania kontem Google lub Microsoft ustawisz w zakładce „Bezpieczeństwo i logowanie”.')}</span>
+              <ArrowRight size={16} className="shrink-0" aria-hidden="true" />
+            </button>
 
-            {/* Bezpieczeństwo logowania */}
-            <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
-              <h3 className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2"><Shield size={18}/> {tr('Bezpieczeństwo logowania')}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Wymogi bezpieczeństwa dla wszystkich kont.')}</p>
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                <input type="checkbox" className="w-4 h-4" checked={getSetting('require_2fa_all') === 'on'} onChange={e => saveSetting('require_2fa_all', e.target.checked ? 'on' : 'off')} />
-                {tr('Wymagaj dwuetapowej weryfikacji (2FA) od wszystkich użytkowników')}
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none mt-3">
-                <input type="checkbox" className="w-4 h-4" checked={(getSetting('account_change_emails') || 'on') !== 'off'} onChange={e => saveSetting('account_change_emails', e.target.checked ? 'on' : 'off')} />
-                {tr('Powiadamiaj użytkowników e-mailem o zmianach konta (blokada, rola, reset 2FA)')}
-              </label>
-              <div className="grid sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Minimalna długość hasła')}</label>
-                  <input type="number" min="6" max="64" defaultValue={getSetting('password_min_length') || '8'} onBlur={e => saveSetting('password_min_length', String(Math.max(6, Math.min(64, parseInt(e.target.value, 10) || 8))))} className="w-full" />
-                </div>
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none sm:mt-8">
-                  <input type="checkbox" className="w-4 h-4" checked={getSetting('password_require_complexity') === 'on'} onChange={e => saveSetting('password_require_complexity', e.target.checked ? 'on' : 'off')} />
-                  {tr('Wymagaj złożoności (mała + wielka litera + cyfra)')}
-                </label>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">{tr('Konta bez 2FA zostaną poproszone o konfigurację przy następnym logowaniu. Zbyt wiele nieudanych prób czasowo blokuje logowanie.')}</p>
-            </div>
-
-            {/* SSO — logowanie przez Google / Microsoft */}
-            <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
-              <h3 className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2"><KeyRound size={18}/> {tr('Logowanie zewnętrzne (SSO)')}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{tr('Pozwól logować się kontem Google lub Microsoft. Wystarczy JEDNA aplikacja OAuth na dostawcę — obsłuży wszystkie subdomeny (tenant przenoszony w state).')}</p>
-              <p className="text-xs text-gray-400 mb-4">{tr('Client ID/Secret możesz zostawić puste — wtedy użyte zostaną wspólne poświadczenia platformy (o ile skonfigurowane).')}</p>
-              {[{ p: 'google', label: 'Google' }, { p: 'microsoft', label: 'Microsoft' }].map(({ p, label }) => (
-                <div key={p} className="mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2 cursor-pointer select-none">
-                    <input type="checkbox" className="w-4 h-4" checked={getSetting(`sso_${p}_enabled`) === 'on'} onChange={e => saveSetting(`sso_${p}_enabled`, e.target.checked ? 'on' : 'off')} />
-                    {tr('Włącz')} {label}
-                  </label>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <input type="text" defaultValue={getSetting(`sso_${p}_client_id`) || ''} onBlur={e => saveSetting(`sso_${p}_client_id`, e.target.value)} placeholder="Client ID" className="w-full" />
-                    <div className="flex gap-2">
-                      <input type="password" value={ssoSecret[p]} onChange={e => setSsoSecret(s => ({ ...s, [p]: e.target.value }))} placeholder={tr('Client secret (wpisz, aby zmienić)')} className="flex-1" />
-                      <button type="button" onClick={() => saveSsoSecret(p)} disabled={!ssoSecret[p]} className="px-3 py-2 bg-accent-primary text-white rounded-lg text-sm font-medium disabled:opacity-50 shrink-0">{tr('Zapisz')}</button>
-                    </div>
-                    {p === 'microsoft' && (
-                      <input type="text" defaultValue={getSetting('sso_microsoft_tenant') || 'common'} onBlur={e => saveSetting('sso_microsoft_tenant', e.target.value || 'common')} placeholder={tr('Tenant (np. common / organizations / <id>)')} className="w-full" />
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1.5">{tr('URI przekierowania (jeden dla wszystkich subdomen — wklej u dostawcy)')}: <span className="font-mono text-gray-500 dark:text-gray-400 break-all">https://app.{window.location.hostname.split('.').slice(1).join('.')}/api/auth/oauth/{p}/callback</span></p>
-                </div>
-              ))}
-              <div className="grid sm:grid-cols-2 gap-3">
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                  <input type="checkbox" className="w-4 h-4" checked={getSetting('sso_auto_provision') === 'on'} onChange={e => saveSetting('sso_auto_provision', e.target.checked ? 'on' : 'off')} />
-                  {tr('Twórz konto automatycznie przy pierwszym logowaniu')}
-                </label>
-                {getSetting('sso_auto_provision') === 'on' && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{tr('Domyślna rola nowych kont SSO')}</label>
-                    <select value={getSetting('sso_default_role') || ''} onChange={e => saveSetting('sso_default_role', e.target.value)} className="w-full">
-                      <option value="">{tr('(najniższa — członek)')}</option>
-                      {definedRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
-              {getSetting('sso_auto_provision') === 'on' && (
-                <div className="mt-3 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-900/10 p-3 space-y-3">
-                  <p className="text-xs text-amber-700 dark:text-amber-300">{tr('Bez ograniczeń każda osoba z kontem Google/Microsoft utworzy konto. Zalecane: ogranicz domeny lub wymagaj zatwierdzenia.')}</p>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{tr('Dozwolone domeny e-mail (oddzielone przecinkiem; puste = dowolna)')}</label>
-                    <input type="text" defaultValue={getSetting('sso_allowed_domains') || ''} onBlur={e => saveSetting('sso_allowed_domains', e.target.value.trim())} placeholder={tr('np. parafia.pl, diecezja.pl')} className="w-full" />
-                  </div>
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                    <input type="checkbox" className="w-4 h-4" checked={getSetting('sso_provision_approval') === 'on'} onChange={e => saveSetting('sso_provision_approval', e.target.checked ? 'on' : 'off')} />
-                    {tr('Wymagaj zatwierdzenia nowych kont SSO (trafiają do kolejki oczekujących)')}
-                  </label>
-                </div>
-              )}
-            </div>
-
-            {/* Kolejka: oczekujący na zatwierdzenie (tryb „za zgodą administratora") */}
+            {/* Kolejka: oczekujący na zatwierdzenie (tryb „za zgodą administratora”) */}
             {pendingUsers.length > 0 && (
               <div className="mb-6 rounded-xl border border-amber-200 dark:border-amber-900/40 p-5 bg-amber-50/60 dark:bg-amber-900/10">
-                <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2"><Clock size={18}/> {tr('Oczekujący na zatwierdzenie')} ({pendingUsers.length})</h3>
+                <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2"><Clock size={18} aria-hidden="true" /> {tr('Oczekujący na zatwierdzenie')} ({pendingUsers.length})</h3>
                 <div className="space-y-2">
                   {pendingUsers.map(u => (
                     <div key={u.id} className="flex items-center justify-between gap-3 bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
@@ -1461,7 +759,7 @@ export default function GlobalSettings() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <button onClick={() => approveUser(u.id)} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 transition">{tr('Zatwierdź')}</button>
-                        <button onClick={() => rejectUser(u.id)} className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Odrzuć')}</button>
+                        <button onClick={() => rejectUser(u)} className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Odrzuć')}</button>
                       </div>
                     </div>
                   ))}
@@ -1471,8 +769,8 @@ export default function GlobalSettings() {
 
             {/* Kolejka: oczekują na potwierdzenie e-mail (tryb otwarty) */}
             {emailPendingUsers.length > 0 && (
-              <div className="mb-6 rounded-xl border border-blue-200 dark:border-blue-900/40 p-5 bg-blue-50/50 dark:bg-blue-900/10">
-                <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2"><Mail size={18}/> {tr('Oczekują na potwierdzenie e-mail')} ({emailPendingUsers.length})</h3>
+              <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
+                <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2"><Mail size={18} aria-hidden="true" /> {tr('Oczekują na potwierdzenie e-mail')} ({emailPendingUsers.length})</h3>
                 <div className="space-y-2">
                   {emailPendingUsers.map(u => (
                     <div key={u.id} className="flex items-center justify-between gap-3 bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
@@ -1490,26 +788,9 @@ export default function GlobalSettings() {
               </div>
             )}
 
-            {/* Historia kont (audyt rejestracji/zatwierdzeń) */}
-            {accountEvents.length > 0 && (
-              <details className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                <summary className="cursor-pointer select-none p-4 font-bold text-gray-800 dark:text-white flex items-center gap-2"><Clock size={18}/> {tr('Historia kont')} ({accountEvents.length})</summary>
-                <div className="px-4 pb-4 max-h-64 overflow-y-auto">
-                  {accountEvents.map((ev, i) => (
-                    <div key={i} className="flex items-center gap-3 text-xs py-1.5 border-b border-gray-50 dark:border-gray-700/50 last:border-0">
-                      <span className="text-gray-400 whitespace-nowrap w-36 shrink-0">{new Date(ev.created_at).toLocaleString()}</span>
-                      <span className="font-semibold text-gray-700 dark:text-gray-200 w-32 shrink-0">{ACTION_LABEL[ev.action] || ev.action}</span>
-                      <span className="text-gray-600 dark:text-gray-300 truncate flex-1">{ev.email}</span>
-                      <span className="text-gray-400 truncate hidden sm:block">{ev.actor}{ev.detail ? ` · ${ev.detail}` : ''}</span>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            )}
-
             <div className="flex flex-col sm:flex-row gap-3 mb-3">
-              <input type="text" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder={tr('Szukaj po imieniu, e-mailu, roli…')} className="flex-1" />
-              <select value={userStatusFilter} onChange={e => setUserStatusFilter(e.target.value)} className="sm:w-56">
+              <input type="search" aria-label={tr('Szukaj kont')} value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder={tr('Szukaj po imieniu, e-mailu, roli…')} className="flex-1" />
+              <select aria-label={tr('Filtruj po statusie')} value={userStatusFilter} onChange={e => setUserStatusFilter(e.target.value)} className="sm:w-56">
                 <option value="all">{tr('Wszystkie statusy')}</option>
                 <option value="active">{tr('Aktywni')}</option>
                 <option value="blocked">{tr('Zablokowani')}</option>
@@ -1522,7 +803,7 @@ export default function GlobalSettings() {
                 <button onClick={bulkActivate} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600">{tr('Aktywuj')}</button>
                 <button onClick={bulkBlock} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600">{tr('Zablokuj')}</button>
                 <div className="flex items-center gap-1.5">
-                  <select value={bulkRole} onChange={e => setBulkRole(e.target.value)} className="text-sm">
+                  <select aria-label={tr('Zmień rolę zaznaczonych')} value={bulkRole} onChange={e => setBulkRole(e.target.value)} className="text-sm">
                     <option value="">{tr('Zmień rolę…')}</option>
                     {definedRoles.filter(r => r.key !== 'superadmin').map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
                   </select>
@@ -1535,9 +816,9 @@ export default function GlobalSettings() {
             <DataTable>
               <THead>
                 <tr>
-                  <TH className="w-10"><input type="checkbox" checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length} onChange={() => setSelectedUserIds(prev => prev.size === filteredUsers.length ? new Set() : new Set(filteredUsers.map(u => u.id)))} /></TH>
+                  <TH className="w-10"><input type="checkbox" aria-label={tr('Zaznacz wszystkie')} checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length} onChange={() => setSelectedUserIds(prev => prev.size === filteredUsers.length ? new Set() : new Set(filteredUsers.map(u => u.id)))} /></TH>
                   <TH>{t('Użytkownik')}</TH>
-                  <TH>{t('Email')}</TH>
+                  <TH>{t('E-mail')}</TH>
                   <TH>{t('Rola')}</TH>
                   {campuses.length > 0 && <TH>{t('Kampus')}</TH>}
                   <TH>{t('Status')}</TH>
@@ -1554,14 +835,14 @@ export default function GlobalSettings() {
                   const invitedPending = user.invited_at && !user.last_login_at;
                   return (
                     <TR key={user.id} selected={selectedUserIds.has(user.id)}>
-                      <TD className="w-10"><input type="checkbox" checked={selectedUserIds.has(user.id)} onChange={() => toggleSelectUser(user.id)} /></TD>
+                      <TD className="w-10"><input type="checkbox" aria-label={tr('Zaznacz {name}', { name: userName(user) })} checked={selectedUserIds.has(user.id)} onChange={() => toggleSelectUser(user.id)} /></TD>
                       <TD className="font-medium text-gray-900 dark:text-white">
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase shrink-0 ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light'}`}>
+                          <div aria-hidden="true" className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase shrink-0 ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light'}`}>
                             {(user.full_name || user.email || '?').charAt(0)}
                           </div>
                           {user.full_name || tr('Brak imienia')}
-                          {isSuperAdmin && <StatusPill color={STATUS_COLORS.warning}>SUPERADMIN</StatusPill>}
+                          {isSuperAdmin && <StatusPill color={STATUS_COLORS.warning}>{tr('Główny administrator')}</StatusPill>}
                         </div>
                       </TD>
                       <TD muted>{user.email}</TD>
@@ -1569,29 +850,29 @@ export default function GlobalSettings() {
                       {campuses.length > 0 && <TD muted>{campuses.find(c => c.id === user.campus_id)?.name || null}</TD>}
                       <TD>
                         <div className="flex flex-col gap-1 items-start">
-                          <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin || st === 'pending'} className={`rounded-full transition ${isSuperAdmin || st === 'pending' ? 'opacity-70 cursor-default' : 'hover:opacity-80'}`}>
+                          <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin || st === 'pending'} title={isSuperAdmin || st === 'pending' ? undefined : (st === 'active' ? tr('Kliknij, aby zablokować') : tr('Kliknij, aby odblokować'))} className={`rounded-full transition ${isSuperAdmin || st === 'pending' ? 'opacity-70 cursor-default' : 'hover:opacity-80'}`}>
                             <StatusPill color={st === 'active' ? STATUS_COLORS.success : st === 'pending' ? STATUS_COLORS.warning : STATUS_COLORS.danger}>
-                              {st === 'active' ? tr('Aktywny') : st === 'pending' ? tr('Oczekujący') : tr('Zablokowany')}
+                              {statusLabel(st)}
                             </StatusPill>
                           </button>
                           {loginLocked && (
                             <button onClick={() => unlockLogin(user)} title={tr('Zablokowane logowanie po nieudanych próbach — kliknij, aby odblokować')} className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline">
-                              <KeyRound size={11}/> {tr('Odblokuj logowanie')}
+                              <KeyRound size={11} aria-hidden="true" /> {tr('Odblokuj logowanie')}
                             </button>
                           )}
                         </div>
                       </TD>
-                      <TD muted numeric className="whitespace-nowrap">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : invitedPending ? <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">{tr('zaproszono')}</span> : <span className="text-gray-300 dark:text-gray-600">{tr('nigdy')}</span>}</TD>
+                      <TD muted numeric className="whitespace-nowrap">{user.last_login_at ? fmtDate(user.last_login_at) : invitedPending ? <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">{tr('zaproszono')}</span> : <span className="text-gray-400 dark:text-gray-500">{tr('nigdy')}</span>}</TD>
                       <TD align="right" className="whitespace-nowrap">
-                        <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                        <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setRequire2FA(!!user.totp_required); setShowUserModal(true); }} title={t('Edytuj')} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
+                        <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setRequire2FA(!!user.totp_required); setShowUserModal(true); }} title={t('Edytuj')} aria-label={tr('Edytuj {name}', { name: userName(user) })} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16} aria-hidden="true" /></button>
                         {invitedPending && (
-                          <button onClick={() => resendInvite(user.id)} title={tr('Ponów zaproszenie')} className="text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Mail size={16}/></button>
+                          <button onClick={() => resendInvite(user.id)} title={tr('Ponów zaproszenie')} aria-label={tr('Ponów zaproszenie')} className="text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Mail size={16} aria-hidden="true" /></button>
                         )}
                         {user.totp_enabled && (
-                          <button onClick={() => resetUser2FA(user)} title={tr('Zresetuj 2FA')} className="text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-600 p-2 rounded-lg"><KeyRound size={16}/></button>
+                          <button onClick={() => resetUser2FA(user)} title={tr('Zresetuj weryfikację dwuetapową')} aria-label={tr('Zresetuj weryfikację dwuetapową')} className="text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-600 p-2 rounded-lg"><KeyRound size={16} aria-hidden="true" /></button>
                         )}
-                        <button onClick={() => deleteUser(user.id)} title={t('Usuń')} className="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Trash2 size={16}/></button>
+                        <button onClick={() => deleteUser(user)} title={t('Usuń')} aria-label={tr('Usuń {name}', { name: userName(user) })} className="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Trash2 size={16} aria-hidden="true" /></button>
                         </div>
                       </TD>
                     </TR>
@@ -1599,25 +880,47 @@ export default function GlobalSettings() {
                 })}
               </tbody>
             </DataTable>
+
+            {/* Historia kont (audyt rejestracji/zatwierdzeń) — pod tabelą */}
+            {accountEvents.length > 0 && (
+              <details className="mt-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <summary className="cursor-pointer select-none p-4 font-bold text-gray-800 dark:text-white flex items-center gap-2"><Clock size={18} aria-hidden="true" /> {tr('Historia kont')} ({accountEvents.length})</summary>
+                <div className="px-4 pb-4 max-h-64 overflow-y-auto">
+                  {accountEvents.map((ev, i) => (
+                    <div key={i} className="flex items-center gap-3 text-xs py-1.5 border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                      <span className="text-gray-400 whitespace-nowrap w-40 shrink-0">{fmtDateTime(ev.created_at)}</span>
+                      <span className="font-semibold text-gray-700 dark:text-gray-200 w-32 shrink-0">{ACTION_LABEL[ev.action] || ev.action}</span>
+                      <span className="text-gray-600 dark:text-gray-300 truncate flex-1">{ev.email}</span>
+                      <span className="text-gray-400 truncate hidden sm:block">{ev.actor}{ev.detail ? ` · ${ev.detail}` : ''}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
         )}
 
-        {/* --- TAB: UPRAWNIENIA (UNIFIED) --- */}
+        {/* --- TAB: UPRAWNIENIA --- */}
         {activeTab === 'permissions' && (
           <div>
-            <SectionHeader title={t('Uprawnienia')} description={tr('Zarządzaj rolami, uprawnieniami (moduły, zakładki, operacje, pola) i nadpisaniami per-użytkownik.')} />
+            <SectionHeader title={t('Uprawnienia')} description={tr('Role i to, co każda z nich może widzieć i zmieniać. Możesz też nadać wyjątki konkretnym osobom.')} />
             <PermissionsAdmin />
           </div>
         )}
 
-        {/* --- TAB: SŁOWNIKI --- */}
+        {/* --- TAB: BEZPIECZEŃSTWO I LOGOWANIE --- */}
+        {activeTab === 'security' && (
+          <div>
+            <SectionHeader title={t('Bezpieczeństwo i logowanie')} description={tr('Logowanie, hasła, zakładanie kont i logowanie kontem Google lub Microsoft.')} />
+            <SecuritySettings get={getSetting} save={saveSetting} roles={definedRoles} campuses={campuses} />
+          </div>
+        )}
+
+        {/* --- TAB: SŁOWNIKI --- (pozostał tylko słownik, którego aplikacja naprawdę używa) */}
         {activeTab === 'dictionaries' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <DictionaryEditor title={t('Statusy Członków')} category="member_status" items={dictionaries} onAdd={addDict} onDelete={delDict} />
-            <DictionaryEditor title={tr('Role w Zespole')} category="team_role" items={dictionaries} onAdd={addDict} onDelete={delDict} />
-            <DictionaryEditor title={t('Typy Materiałów')} category="material_type" items={dictionaries} onAdd={addDict} onDelete={delDict} />
-            <DictionaryEditor title={t('Kategorie Pieśni')} category="song_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
-            <DictionaryEditor title={t('Kategorie Wydarzeń')} category="event_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
+          <div className="max-w-3xl">
+            <SectionHeader title={t('Słowniki')} description={tr('Listy wyboru używane w aplikacji.')} />
+            <DictionaryEditor title={t('Kategorie wydarzeń')} description={tr('Pojawiają się przy dodawaniu wydarzenia w kalendarzu.')} category="event_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
           </div>
         )}
 
@@ -1629,34 +932,81 @@ export default function GlobalSettings() {
           <AppearanceSettings get={getSetting} save={saveSetting} logoUrl={logoUrl} onLogoUpload={handleLogoUpload} onFontUpload={handleFontUpload} onBgUpload={handleBgUpload} onLoginBgUpload={handleLoginBgUpload} />
         )}
 
-        {/* --- TAB: REGIONALNE --- */}
-        {activeTab === 'localization' && (
-          <LocalizationSettings get={getSetting} save={saveSetting} />
-        )}
-
-        {/* --- TAB: POWIADOMIENIA --- */}
-        {activeTab === 'notifications' && (
-          <NotificationSettings get={getSetting} save={saveSetting} />
-        )}
-
-        {/* --- TAB: BEZPIECZEŃSTWO --- */}
-        {activeTab === 'security' && (
-          <SecuritySettings get={getSetting} save={saveSetting} />
-        )}
-
         {/* --- TAB: SUBSKRYPCJA --- */}
         {activeTab === 'subscription' && <SubscriptionInfo />}
+        </>)}
 
         </div>
       </div>
 
-      {/* MODAL DODAWANIA UŻYTKOWNIKA (DARK MODE) */}
+      {/* MODAL: PODGLĄD SCALANIA DUPLIKATÓW */}
+      <Modal
+        isOpen={mergeOpen}
+        onClose={() => !mergeBusy && setMergeOpen(false)}
+        closeOnBackdrop={false}
+        size="lg"
+        icon={Layers}
+        title={tr('Scal duplikaty w służbach')}
+        subtitle={tr('Zaznacz grupy, które na pewno dotyczą tej samej osoby. Zostanie jeden wpis, a przypisania do służby przejdą na niego.')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setMergeOpen(false)} disabled={mergeBusy}>{tr('Anuluj')}</Button>
+          <Button onClick={runMerge} loading={mergeBusy} disabled={mergeLoading || mergeSelected.size === 0}>
+            {tr('Scal zaznaczone ({n})', { n: mergeSelected.size })}
+          </Button>
+        </>}
+      >
+        <div className="p-6">
+          {mergeLoading ? (
+            <Spinner center />
+          ) : mergeGroups.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Nie znaleziono powtórzonych wpisów w służbach.')}</p>
+          ) : (
+            <div className="space-y-3">
+              {mergeGroups.map(g => {
+                const checked = mergeSelected.has(g.id);
+                return (
+                  <label key={g.id} className={`block rounded-xl border p-3 cursor-pointer transition ${checked ? 'border-accent-primary bg-accent-primary-lightest/30 dark:bg-gray-700/60' : 'border-gray-200 dark:border-gray-600'}`}>
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        className="mt-1 w-4 h-4"
+                        checked={checked}
+                        onChange={() => setMergeSelected(prev => { const n = new Set(prev); n.has(g.id) ? n.delete(g.id) : n.add(g.id); return n; })}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm text-gray-800 dark:text-gray-100">{g.name} <span className="font-normal text-gray-500 dark:text-gray-400">· {g.team} · {tr('wpisów: {n}', { n: g.members.length })}</span></div>
+                        {g.conflict && (
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300">
+                            <AlertTriangle size={13} aria-hidden="true" /> {tr('Różne dane kontaktowe lub grupy — to mogą być dwie różne osoby.')}
+                          </div>
+                        )}
+                        <ul className="mt-2 space-y-1">
+                          {g.members.map(m => (
+                            <li key={m.id} className="text-xs text-gray-600 dark:text-gray-300 flex flex-wrap gap-x-3">
+                              <span className="font-medium">{m.id === g.primary.id ? tr('Zostaje') : tr('Zostanie scalony')}</span>
+                              <span>{m.email || tr('bez e-maila')}</span>
+                              <span>{m.phone || tr('bez telefonu')}</span>
+                              {m.status && <span>{m.status}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* MODAL UŻYTKOWNIKA */}
       <Modal
         isOpen={showUserModal}
         onClose={() => setShowUserModal(false)}
         closeOnBackdrop={false}
         size="sm"
-        title={t('Użytkownik')}
+        title={userForm.id ? t('Edytuj użytkownika') : t('Dodaj użytkownika')}
         footer={<>
           <Button variant="secondary" onClick={() => setShowUserModal(false)}>{tr('Anuluj')}</Button>
           <Button onClick={saveUser} loading={isCreatingAuthUser}>{tr('Zapisz')}</Button>
@@ -1664,19 +1014,17 @@ export default function GlobalSettings() {
       >
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Imię i nazwisko')}</label>
-            <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('Jan Kowalski')} value={userForm.full_name || ''} onChange={e => setUserForm({...userForm, full_name: e.target.value})} />
+            <label htmlFor="user-full-name" className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Imię i nazwisko')}</label>
+            <input id="user-full-name" className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('Jan Kowalski')} value={userForm.full_name || ''} onChange={e => setUserForm({...userForm, full_name: e.target.value})} />
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{tr('Email (Login)')}</label>
-            <input type="email" className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="jan@example.com" value={userForm.email || ''} onChange={e => setUserForm({...userForm, email: e.target.value})} />
+            <label htmlFor="user-email" className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{tr('E-mail (login)')}</label>
+            <input id="user-email" type="email" className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="jan@example.com" value={userForm.email || ''} onChange={e => setUserForm({...userForm, email: e.target.value})} />
           </div>
           {!userForm.id && (
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-              <p className="text-sm text-blue-800 dark:text-blue-300">
-                {tr('Użytkownik otrzyma email z linkiem do ustawienia własnego hasła.')}
-              </p>
-            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-3">
+              {tr('Użytkownik otrzyma e-mail z linkiem do ustawienia własnego hasła.')}
+            </p>
           )}
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">{tr('Rola w systemie')}</label>
@@ -1696,29 +1044,26 @@ export default function GlobalSettings() {
           )}
           {userForm.id && (
             <div className="p-3 border border-gray-200 dark:border-gray-600 rounded-xl space-y-2.5">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"><KeyRound size={13} /> {tr('Hasło (administrator)')}</div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"><KeyRound size={13} aria-hidden="true" /> {tr('Hasło (administrator)')}</div>
               <div className="flex gap-2">
-                <input type="text" value={adminNewPassword} onChange={e => setAdminNewPassword(e.target.value)} placeholder={tr('Nowe hasło (min. 8 znaków)')}
+                <input type="text" aria-label={tr('Nowe hasło')} autoComplete="new-password" value={adminNewPassword} onChange={e => setAdminNewPassword(e.target.value)} placeholder={tr('Nowe hasło (min. {n} znaków)', { n: minPw })}
                   className="flex-1 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm" />
-                <button type="button" onClick={handleAdminSetPassword} disabled={pwBusy || adminNewPassword.length < 8}
-                  className="px-3 py-2 bg-accent-primary text-white rounded-lg text-sm font-medium disabled:opacity-50 shrink-0 flex items-center gap-1.5">
-                  {pwBusy ? <Loader2 size={14} className="animate-spin" /> : null} {tr('Ustaw')}
-                </button>
+                <Button size="sm" onClick={handleAdminSetPassword} loading={pwBusy} disabled={adminNewPassword.length < minPw}>{tr('Ustaw')}</Button>
               </div>
               <button type="button" onClick={handleAdminSendReset} disabled={pwBusy || !userForm.email}
                 className="w-full py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                <Mail size={15} /> {tr('Wyślij link do resetu hasła')}
+                <Mail size={15} aria-hidden="true" /> {tr('Wyślij link do resetu hasła')}
               </button>
-              <p className="text-[11px] text-gray-400">{tr('„Ustaw" zmienia hasło od razu. „Wyślij link" pozwala użytkownikowi ustawić hasło samodzielnie.')}</p>
+              <p className="text-[11px] text-gray-400">{tr('„Ustaw” zmienia hasło od razu. „Wyślij link” pozwala użytkownikowi ustawić hasło samodzielnie.')}</p>
               <button type="button" onClick={() => forceLogoutUser(userForm.id)}
                 className="w-full py-2 border border-amber-200 dark:border-amber-900/50 rounded-lg text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-center gap-2">
-                <UserX size={15} /> {tr('Wyloguj ze wszystkich urządzeń')}
+                <UserX size={15} aria-hidden="true" /> {tr('Wyloguj ze wszystkich urządzeń')}
               </button>
             </div>
           )}
           {!userForm.id && (
             <div>
-              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">{t('Służby / Zespoły')}</label>
+              <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2">{t('Służby / Zespoły')}</div>
               <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
                 <div className="flex flex-wrap gap-2">
                   {teamDefinitions.map(team => {
@@ -1727,57 +1072,33 @@ export default function GlobalSettings() {
                       <button
                         key={team.key}
                         type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedTeams(prev => prev.filter(k => k !== team.key));
-                          } else {
-                            setSelectedTeams(prev => [...prev, team.key]);
-                          }
-                        }}
+                        aria-pressed={isSelected}
+                        onClick={() => setSelectedTeams(prev => isSelected ? prev.filter(k => k !== team.key) : [...prev, team.key])}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
                           isSelected
                             ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
                             : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
                         }`}
                       >
-                        {isSelected && <Check size={14} />}
+                        {isSelected && <Check size={14} aria-hidden="true" />}
                         {team.label}
                       </button>
                     );
                   })}
                 </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                  {tr('Użytkownik zostanie automatycznie dodany jako członek wybranych służb.')}
+                  {tr('Użytkownik zostanie dopisany jako członek wybranych służb.')}
                 </p>
               </div>
             </div>
           )}
-          {!userForm.id && (
+          <div className="flex items-center justify-between gap-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
             <div>
-              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">{t('Bezpieczeństwo')}</label>
-              <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      className="sr-only"
-                      checked={require2FA}
-                      onChange={(e) => setRequire2FA(e.target.checked)}
-                    />
-                    <div className={`w-11 h-6 rounded-full transition ${require2FA ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${require2FA ? 'translate-x-5' : ''}`}></div>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-800 dark:text-white">{tr('Wymagaj weryfikacji dwuetapowej (2FA)')}</span>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                      {tr('Użytkownik będzie musiał skonfigurować 2FA przy pierwszym logowaniu')}
-                    </p>
-                  </div>
-                </label>
-              </div>
+              <div className="font-medium text-sm text-gray-800 dark:text-white">{tr('Wymagaj weryfikacji dwuetapowej')}</div>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{tr('Osoba będzie musiała ją włączyć przy najbliższym logowaniu.')}</p>
             </div>
-          )}
+            <Toggle label={tr('Wymagaj weryfikacji dwuetapowej')} checked={require2FA} onChange={setRequire2FA} />
+          </div>
         </div>
       </Modal>
     </div>

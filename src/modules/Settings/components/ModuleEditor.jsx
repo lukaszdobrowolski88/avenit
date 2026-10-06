@@ -72,7 +72,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
     if (!form.key.trim()) {
       newErrors.key = tr('Klucz modułu jest wymagany');
     } else if (!/^[a-z0-9_]+$/.test(form.key)) {
-      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i podkreślniki');
+      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i znak podkreślenia (_)');
     } else if (!isEditing && existingKeys.includes(form.key)) {
       newErrors.key = tr('Moduł z takim kluczem już istnieje');
     }
@@ -152,55 +152,6 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
           )}
         </div>
 
-        {/* Klucz modułu */}
-        <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-            {tr('Klucz (slug)')}
-          </label>
-          <input
-            type="text"
-            value={form.key}
-            onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase() })}
-            placeholder={tr('np. moj_modul')}
-            disabled={isEditing && module?.is_system}
-            className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
-              ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
-              ${errors.key
-                ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
-              } focus:outline-none focus:ring-2`}
-          />
-          {errors.key && (
-            <p className="mt-1 text-xs text-red-500">{errors.key}</p>
-          )}
-          {isEditing && module?.is_system && (
-            <p className="mt-1 text-xs text-gray-400">{t('Klucz modułu systemowego nie może być zmieniony')}</p>
-          )}
-        </div>
-
-        {/* Ścieżka URL */}
-        <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-            {tr('Ścieżka URL')}
-          </label>
-          <input
-            type="text"
-            value={form.path}
-            onChange={(e) => setForm({ ...form, path: e.target.value })}
-            placeholder={tr('np. /moj-modul')}
-            disabled={isEditing && module?.is_system}
-            className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
-              ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
-              ${errors.path
-                ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
-              } focus:outline-none focus:ring-2`}
-          />
-          {errors.path && (
-            <p className="mt-1 text-xs text-red-500">{errors.path}</p>
-          )}
-        </div>
-
         {/* Ikona */}
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
@@ -223,15 +174,74 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
           <div className="flex items-center gap-2 flex-wrap">
             <button type="button" onClick={() => setColor('')}
               className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] text-gray-400 ${!color ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900 border-gray-300' : 'border-gray-200 dark:border-gray-700'}`}
-              title={tr('Domyślny (gradient)')}>—</button>
+              title={tr('Domyślny (gradient)')} aria-label={tr('Domyślny kolor')} aria-pressed={!color}>—</button>
             {MODULE_COLORS.map((c) => (
               <button type="button" key={c} onClick={() => setColor(c)}
                 className={`w-8 h-8 rounded-full transition ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900' : ''}`}
+                aria-label={tr('Kolor {c}', { c })} aria-pressed={color === c}
                 style={{ backgroundColor: c }} />
             ))}
           </div>
           <p className="mt-1.5 text-xs text-gray-400">{tr('Kolor kafelka-ikony w nagłówku modułu. „—" = domyślny gradient.')}</p>
         </div>
+
+        {/* Zaawansowane: identyfikator i adres (techniczne — schowane, UXE-13) */}
+        <details className="rounded-xl border border-gray-200 dark:border-gray-700" open={errors.key || errors.path ? true : undefined}>
+          <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            {tr('Ustawienia zaawansowane (adres i identyfikator)')}
+          </summary>
+          <div className="px-4 pb-4 space-y-5">
+            {/* Klucz modułu */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+                {tr('Identyfikator')}
+              </label>
+              <input
+                type="text"
+                value={form.key}
+                onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase() })}
+                placeholder={tr('np. moj_modul')}
+                disabled={isEditing && module?.is_system}
+                className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
+                  ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
+                  ${errors.key
+                    ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
+                    : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
+                  } focus:outline-none focus:ring-2`}
+              />
+              {errors.key && (
+                <p className="mt-1 text-xs text-red-500">{errors.key}</p>
+              )}
+              {isEditing && module?.is_system && (
+                <p className="mt-1 text-xs text-gray-400">{t('Klucz modułu systemowego nie może być zmieniony')}</p>
+              )}
+            </div>
+
+            {/* Ścieżka URL */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+                {tr('Adres w aplikacji')}
+              </label>
+              <input
+                type="text"
+                value={form.path}
+                onChange={(e) => setForm({ ...form, path: e.target.value })}
+                placeholder={tr('np. /moj-modul')}
+                disabled={isEditing && module?.is_system}
+                className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
+                  ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
+                  ${errors.path
+                    ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
+                    : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
+                  } focus:outline-none focus:ring-2`}
+              />
+              {errors.path && (
+                <p className="mt-1 text-xs text-red-500">{errors.path}</p>
+              )}
+            </div>
+
+          </div>
+        </details>
       </div>
     </Modal>
   );

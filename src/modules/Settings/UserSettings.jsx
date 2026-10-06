@@ -12,14 +12,31 @@ import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
-import { tr, useT, appLocale } from '../../i18n';
+import { tr, useT, appLocale, useI18n } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
+import { toast } from '../../lib/toast';
+import { describeUserAgent } from './components/settingsLogic';
+import {
+  Church, CalendarDays, CheckSquare, PartyPopper, Music, Clapperboard, HeartHandshake, Baby, Home, Languages, Monitor,
+} from 'lucide-react';
 
 export default function UserSettings() {
   const t = useT();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
+  // Komunikaty jako toast (w polu widzenia), nie baner na górze długiej strony (UXE-23).
+  const setMessage = (m) => {
+    if (!m?.text) return;
+    if (m.type === 'error') toast.error(m.text);
+    else if (m.type === 'info') toast.info(m.text);
+    else toast.success(m.text);
+  };
+  const { lang, setLang, languages } = useI18n();
+  const [mailEnabled, setMailEnabled] = useState(false);
+  useEffect(() => {
+    supabase.from('app_modules').select('is_enabled').eq('key', 'mail').maybeSingle()
+      .then(({ data }) => setMailEnabled(data?.is_enabled === true));
+  }, []);
   const [userSession, setUserSession] = useState(null);
 
   // Dane formularza
@@ -108,8 +125,8 @@ export default function UserSettings() {
   };
   useEffect(() => { loadSessions(); }, []);
   const handleLogoutOthers = async () => {
-    if (!await confirmDialog(tr('Wylogować ze wszystkich innych urządzeń?'))) return;
-    await supabase.auth.logoutOthers?.();
+    if (!await confirmDialog({ title: tr('Wylogować pozostałe urządzenia?'), message: tr('Zostaniesz zalogowany tylko na tym urządzeniu.'), confirmLabel: tr('Wyloguj inne urządzenia') })) return;
+    try { await supabase.auth.logoutOthers?.(); } catch { toast.error(tr('Nie udało się wylogować pozostałych urządzeń.')); return; }
     loadSessions();
     setMessage({ type: 'success', text: tr('Wylogowano z pozostałych urządzeń') });
   };
@@ -407,7 +424,7 @@ export default function UserSettings() {
 
         if (!error) {
           setIcalSubscription({ ...icalSubscription, token: newToken, export_preferences: icalPreferences });
-          setMessage({ type: 'success', text: tr('Token kalendarza został zresetowany. Poprzedni link przestał działać.') });
+          setMessage({ type: 'success', text: tr('Utworzyliśmy nowy link do kalendarza. Poprzedni już nie działa.') });
         } else {
           throw error;
         }
@@ -494,22 +511,24 @@ export default function UserSettings() {
       setMessage({ type: 'success', text: tr('Hasło zostało zmienione.') });
       setPassData({ newPassword: '', confirmPassword: '' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      setMessage({ type: 'error', text: err.message || tr('Nie udało się zmienić hasła.') });
     }
     setSaving(false);
+  };
+
+  // „iPhone · Safari” / „Aplikacja Avenit · iPhone” zamiast surowego user-agenta (UXE-14).
+  const sessionLabel = (ua) => {
+    const d = describeUserAgent(ua);
+    if (!d) return tr('Nieznane urządzenie');
+    if (d.app) return [tr('Aplikacja Avenit'), d.device].filter(Boolean).join(' · ');
+    return [d.device, d.browser].filter(Boolean).join(' · ') || tr('Nieznane urządzenie');
   };
 
   if (loading) return <Spinner center />;
 
   return (
     <div className="space-y-6 pb-10">
-      <PageHeader icon={User} title={t('Mój profil')} subtitle={t('Dane konta, powiadomienia, bezpieczeństwo i kalendarz')} />
-
-      {message && (
-        <div className={`p-4 rounded-xl flex items-center gap-2 cursor-pointer animate-fade-in ${message.type === 'success' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}`} onClick={() => setMessage(null)}>
-          {message.type === 'success' ? <CheckCircle size={20}/> : <AlertCircle size={20}/>} {message.text}
-        </div>
-      )}
+      <PageHeader icon={User} title={t('Mój profil')} subtitle={tr('Konto, bezpieczeństwo, powiadomienia i kalendarz')} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -544,12 +563,12 @@ export default function UserSettings() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><User size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Dane Osobowe')}</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Dane osobowe')}</h3>
             </div>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Imię i Nazwisko')}</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Imię i nazwisko')}</label>
                 <input 
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-accent-primary-light dark:focus:border-accent-primary-light outline-none transition"
                   value={formData.full_name}
@@ -558,7 +577,7 @@ export default function UserSettings() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Adres Email')}</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Adres e-mail')}</label>
                 <div className="relative">
                   <Mail size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
                   <input 
@@ -567,7 +586,7 @@ export default function UserSettings() {
                     disabled
                   />
                 </div>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">{tr('Zmiana adresu email wymaga kontaktu z administratorem.')}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">{tr('Zmiana adresu e-mail wymaga kontaktu z administratorem.')}</p>
               </div>
             </div>
 
@@ -578,84 +597,47 @@ export default function UserSettings() {
             </div>
           </div>
 
-          {/* POWIADOMIENIA PUSH */}
+          {/* BEZPIECZEŃSTWO */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-              <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><Smartphone size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Powiadomienia Push')}</h3>
+              <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-xl text-red-600 dark:text-red-400"><Lock size={24} /></div>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Zmiana hasła')}</h3>
             </div>
 
-            {!pushSupported ? (
-              <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-gray-500 dark:text-gray-400">
-                <BellOff size={20} />
-                <span>{t('Twoja przeglądarka nie obsługuje powiadomień push.')}</span>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    {pushSubscribed ? (
-                      <Bell size={20} className="text-green-500" />
-                    ) : (
-                      <BellOff size={20} className="text-gray-400" />
-                    )}
-                    <div>
-                      <p className="font-medium text-gray-800 dark:text-gray-200">
-                        {pushSubscribed ? tr('Powiadomienia włączone') : tr('Powiadomienia wyłączone')}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {pushPermission === 'denied'
-                          ? tr('Powiadomienia są zablokowane w ustawieniach przeglądarki')
-                          : pushSubscribed
-                            ? tr('Otrzymujesz powiadomienia o nowych wiadomościach')
-                            : tr('Włącz, aby otrzymywać powiadomienia nawet gdy aplikacja jest zamknięta')}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={pushSubscribed ? unsubscribePush : subscribePush}
-                    disabled={pushLoading || pushPermission === 'denied'}
-                    className={`px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 ${
-                      pushSubscribed
-                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                        : 'bg-accent-primary text-white hover:bg-accent-primary-dark'
-                    } ${(pushLoading || pushPermission === 'denied') ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {pushLoading ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : pushSubscribed ? (
-                      <>
-                        <BellOff size={16} />
-                        {tr('Wyłącz')}
-                      </>
-                    ) : (
-                      <>
-                        <Bell size={16} />
-                        {tr('Włącz')}
-                      </>
-                    )}
-                  </button>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Nowe hasło')}</label>
+                <div className="relative">
+                  <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
+                  <input 
+                    type="password"
+                    className="w-full p-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-red-400 dark:focus:border-red-500 outline-none transition"
+                    placeholder="••••••••"
+                    value={passData.newPassword}
+                    onChange={e => setPassData({...passData, newPassword: e.target.value})}
+                  />
                 </div>
-
-                {pushError && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
-                    <AlertCircle size={16} />
-                    {typeof pushError === 'string' ? pushError : tr('Wystąpił błąd')}
-                  </div>
-                )}
-
-                {pushSubscribed && (
-                  <button
-                    onClick={sendTestNotification}
-                    className="text-sm text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1"
-                  >
-                    <Bell size={14} />
-                    {tr('Wyślij testowe powiadomienie')}
-                  </button>
-                )}
               </div>
-            )}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Potwierdź hasło')}</label>
+                <div className="relative">
+                  <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
+                  <input 
+                    type="password"
+                    className="w-full p-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-red-400 dark:focus:border-red-500 outline-none transition"
+                    placeholder="••••••••"
+                    value={passData.confirmPassword}
+                    onChange={e => setPassData({...passData, confirmPassword: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button onClick={handleChangePassword} disabled={saving} className="bg-gray-800 dark:bg-gray-700 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-black dark:hover:bg-gray-600 transition flex items-center gap-2">
+                {saving ? <Loader2 size={18} className="animate-spin"/> : <Lock size={18}/>} {tr('Zmień hasło')}
+              </button>
+            </div>
           </div>
 
           {/* UWIERZYTELNIANIE DWUSKŁADNIKOWE (2FA) */}
@@ -840,6 +822,127 @@ export default function UserSettings() {
             />
           )}
 
+          {/* Aktywne sesje (urządzenia) */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Zalogowane urządzenia')}</h3>
+              {sessions.length > 1 && (
+                <button onClick={handleLogoutOthers} className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline">{tr('Wyloguj inne urządzenia')}</button>
+              )}
+            </div>
+            {sessions.length === 0 ? (
+              <EmptyState compact icon={Smartphone} title={tr('Brak aktywnych sesji do wyświetlenia.')} />
+            ) : (
+              <div className="space-y-2">
+                {sessions.map(s => (
+                  <div key={s.id} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div className="min-w-0">
+                      <div className="text-sm text-gray-800 dark:text-gray-200 truncate flex items-center gap-2">
+                        <Monitor size={15} className="text-gray-400 shrink-0" aria-hidden="true" />
+                        {sessionLabel(s.user_agent)}
+                      </div>
+                      <div className="text-xs text-gray-400">{tr('Zalogowano')}: {new Date(s.created_at).toLocaleString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                    {s.current && <span className="text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">{tr('ta sesja')}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* POWIADOMIENIA PUSH */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
+            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
+              <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><Smartphone size={24} /></div>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Powiadomienia push')}</h3>
+            </div>
+
+            {!pushSupported ? (
+              <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-gray-500 dark:text-gray-400">
+                <BellOff size={20} />
+                <span>{t('Twoja przeglądarka nie obsługuje powiadomień push.')}</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    {pushSubscribed ? (
+                      <Bell size={20} className="text-green-500" />
+                    ) : (
+                      <BellOff size={20} className="text-gray-400" />
+                    )}
+                    <div>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">
+                        {pushSubscribed ? tr('Powiadomienia włączone') : tr('Powiadomienia wyłączone')}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {pushPermission === 'denied'
+                          ? tr('Powiadomienia są zablokowane w ustawieniach przeglądarki')
+                          : pushSubscribed
+                            ? tr('Otrzymujesz powiadomienia o nowych wiadomościach')
+                            : tr('Włącz, aby otrzymywać powiadomienia nawet gdy aplikacja jest zamknięta')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={pushSubscribed ? unsubscribePush : subscribePush}
+                    disabled={pushLoading || pushPermission === 'denied'}
+                    className={`px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 ${
+                      pushSubscribed
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        : 'bg-accent-primary text-white hover:bg-accent-primary-dark'
+                    } ${(pushLoading || pushPermission === 'denied') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {pushLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : pushSubscribed ? (
+                      <>
+                        <BellOff size={16} />
+                        {tr('Wyłącz')}
+                      </>
+                    ) : (
+                      <>
+                        <Bell size={16} />
+                        {tr('Włącz')}
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {pushError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+                    <AlertCircle size={16} />
+                    {typeof pushError === 'string' ? pushError : tr('Wystąpił błąd')}
+                  </div>
+                )}
+
+                {pushSubscribed && (
+                  <button
+                    onClick={sendTestNotification}
+                    className="text-sm text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1"
+                  >
+                    <Bell size={14} />
+                    {tr('Wyślij testowe powiadomienie')}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* PREFERENCJE */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
+            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
+              <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><Languages size={24} aria-hidden="true" /></div>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Preferencje')}</h3>
+            </div>
+            <label htmlFor="profile-language" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Język aplikacji')}</label>
+            <select id="profile-language" value={lang} onChange={(e) => setLang(e.target.value)} className="w-full sm:w-72 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+              {languages.map((l) => <option key={l.code} value={l.code}>{l.flag} {l.label}</option>)}
+            </select>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{tr('Dotyczy tylko Ciebie i tej przeglądarki.')}</p>
+          </div>
+
           {/* SUBSKRYPCJA KALENDARZA iCAL */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
@@ -847,7 +950,7 @@ export default function UserSettings() {
                 <Calendar size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Subskrypcja Kalendarza')}</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Subskrypcja kalendarza')}</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {tr('Synchronizuj wydarzenia z Google Calendar, Apple Calendar lub Outlook')}
                 </p>
@@ -862,15 +965,15 @@ export default function UserSettings() {
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[
-                  { key: 'programs', label: t('Nabożeństwa'), icon: '⛪' },
-                  { key: 'events', label: t('Wydarzenia'), icon: '📅' },
-                  { key: 'tasks', label: t('Zadania'), icon: '✅' },
-                  { key: 'mlodziezowka', label: t('Młodzieżówka'), icon: '🎉' },
-                  { key: 'worship', label: t('Uwielbienie'), icon: '🎵' },
-                  { key: 'media', label: t('Media'), icon: '🎬' },
-                  { key: 'atmosfera', label: t('Atmosfera'), icon: '💚' },
-                  { key: 'kids', label: t('Dzieci'), icon: '👶' },
-                  { key: 'homegroups', label: t('Grupy Domowe'), icon: '🏠' }
+                  { key: 'programs', label: t('Nabożeństwa'), icon: Church },
+                  { key: 'events', label: t('Wydarzenia'), icon: CalendarDays },
+                  { key: 'tasks', label: t('Zadania'), icon: CheckSquare },
+                  { key: 'mlodziezowka', label: t('Młodzieżówka'), icon: PartyPopper },
+                  { key: 'worship', label: t('Uwielbienie'), icon: Music },
+                  { key: 'media', label: t('Media'), icon: Clapperboard },
+                  { key: 'atmosfera', label: t('Atmosfera'), icon: HeartHandshake },
+                  { key: 'kids', label: t('Dzieci'), icon: Baby },
+                  { key: 'homegroups', label: t('Grupy domowe'), icon: Home }
                 ].map(item => (
                   <label
                     key={item.key}
@@ -889,7 +992,7 @@ export default function UserSettings() {
                       })}
                       className="sr-only"
                     />
-                    <span className="text-lg">{item.icon}</span>
+                    <item.icon size={18} aria-hidden="true" className={icalPreferences[item.key] ? 'text-accent-secondary dark:text-accent-secondary-light' : 'text-gray-400'} />
                     <span className={`text-sm font-medium ${
                       icalPreferences[item.key]
                         ? 'text-accent-secondary-dark dark:text-accent-secondary-light'
@@ -967,10 +1070,10 @@ export default function UserSettings() {
                     onClick={handleCreateOrResetIcal}
                     disabled={icalLoading}
                     className="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition flex items-center gap-2"
-                    title={t('Resetuj token (poprzedni link przestanie działać)')}
+                    title={tr('Utwórz nowy link (poprzedni przestanie działać)')}
                   >
                     <RefreshCw size={16} />
-                    {tr('Resetuj token')}
+                    {tr('Utwórz nowy link')}
                   </button>
                 </div>
               </div>
@@ -1030,12 +1133,13 @@ export default function UserSettings() {
             </div>
           </div>
 
+          {mailEnabled && (<>
           {/* PODPIS EMAIL */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400"><FileText size={24} /></div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Podpis Email (HTML)')}</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Podpis w wiadomościach e-mail')}</h3>
               </div>
               {/* Toggle HTML/Preview */}
               <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
@@ -1117,74 +1221,7 @@ export default function UserSettings() {
               </button>
             </div>
           </div>
-
-          {/* BEZPIECZEŃSTWO */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
-            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-              <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-xl text-red-600 dark:text-red-400"><Lock size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Bezpieczeństwo')}</h3>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Nowe hasło')}</label>
-                <div className="relative">
-                  <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
-                  <input 
-                    type="password"
-                    className="w-full p-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-red-400 dark:focus:border-red-500 outline-none transition"
-                    placeholder="••••••••"
-                    value={passData.newPassword}
-                    onChange={e => setPassData({...passData, newPassword: e.target.value})}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Potwierdź hasło')}</label>
-                <div className="relative">
-                  <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
-                  <input 
-                    type="password"
-                    className="w-full p-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-red-400 dark:focus:border-red-500 outline-none transition"
-                    placeholder="••••••••"
-                    value={passData.confirmPassword}
-                    onChange={e => setPassData({...passData, confirmPassword: e.target.value})}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button onClick={handleChangePassword} disabled={saving} className="bg-gray-800 dark:bg-gray-700 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-black dark:hover:bg-gray-600 transition flex items-center gap-2">
-                {saving ? <Loader2 size={18} className="animate-spin"/> : <Lock size={18}/>} {tr('Zmień hasło')}
-              </button>
-            </div>
-          </div>
-
-          {/* Aktywne sesje (urządzenia) */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Aktywne sesje')}</h3>
-              {sessions.length > 1 && (
-                <button onClick={handleLogoutOthers} className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline">{tr('Wyloguj pozostałe')}</button>
-              )}
-            </div>
-            {sessions.length === 0 ? (
-              <EmptyState compact icon={Smartphone} title={tr('Brak aktywnych sesji do wyświetlenia.')} />
-            ) : (
-              <div className="space-y-2">
-                {sessions.map(s => (
-                  <div key={s.id} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <div className="min-w-0">
-                      <div className="text-sm text-gray-800 dark:text-gray-200 truncate">{s.user_agent || tr('Nieznane urządzenie')}</div>
-                      <div className="text-xs text-gray-400">{tr('Zalogowano')}: {new Date(s.created_at).toLocaleString()}</div>
-                    </div>
-                    {s.current && <span className="text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">{tr('ta sesja')}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          </>)}
 
         </div>
       </div>

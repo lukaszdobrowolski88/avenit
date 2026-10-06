@@ -16,6 +16,7 @@ import {
 import { config, isProd } from '../config.js';
 import { validatePassword, getPasswordPolicy } from '../lib/password-policy.js';
 import { resolveProviderCreds, ssoAvailability, signState, ssoRedirectUri, SSO_PROVIDERS } from '../lib/sso.js';
+import { needs2faSetup } from './twofa-policy.js';
 import crypto from 'node:crypto';
 
 const loginSchema = z.object({
@@ -116,7 +117,7 @@ export default async function authRoutes(app) {
 
       const { rows } = await req.db.query(
         `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
-                password_hash, totp_enabled, totp_secret, totp_backup_codes,
+                password_hash, totp_enabled, totp_required, totp_secret, totp_backup_codes,
                 onboarding, last_login_at, status, pending_kind, failed_login_count, locked_until
            FROM app_users WHERE lower(email) = lower($1)`,
         [email]
@@ -184,8 +185,7 @@ export default async function authRoutes(app) {
       );
 
       // Wymóg 2FA (org lub konto) bez skonfigurowanego 2FA → token oznaczony n2fa (dane blokowane).
-      const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
-      const needs2fa = ((r2fa[0]?.value === 'on') || user.totp_required) && !user.totp_enabled;
+      const needs2fa = await needs2faSetup(req.db, user);
 
       const accessToken = await signAccessToken({
         userId: user.id,
@@ -249,8 +249,7 @@ export default async function authRoutes(app) {
     const user = rows[0];
     if (!user || !user.is_active) return reply.code(401).send({ error: 'Konto nieaktywne' });
 
-    const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
-    const needs2fa = ((r2fa[0]?.value === 'on') || user.totp_required) && !user.totp_enabled;
+    const needs2fa = await needs2faSetup(req.db, user);
 
     const accessToken = await signAccessToken({
       userId: user.id,
@@ -297,8 +296,7 @@ export default async function authRoutes(app) {
 
     await req.db.query(`UPDATE app_users SET last_login_at = now() WHERE id = $1`, [user.id]);
 
-    const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
-    const needs2fa = ((r2fa[0]?.value === 'on') || user.totp_required) && !user.totp_enabled;
+    const needs2fa = await needs2faSetup(req.db, user);
     const accessToken = await signAccessToken({
       userId: user.id,
       authUserId: user.auth_user_id,
@@ -365,8 +363,7 @@ export default async function authRoutes(app) {
       [req.user.id]
     );
     if (!rows[0]) return reply.code(404).send({ error: 'Użytkownik nie istnieje' });
-    const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
-    const needs2fa = ((r2fa[0]?.value === 'on') || rows[0].totp_required) && !rows[0].totp_enabled;
+    const needs2fa = await needs2faSetup(req.db, rows[0]);
     return reply.send({ user: { ...publicUser(rows[0]), needs2fa } });
   });
 

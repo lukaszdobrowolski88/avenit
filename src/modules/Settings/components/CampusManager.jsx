@@ -49,7 +49,7 @@ export default function CampusManager({ onMessage }) {
         .update({ name: form.name, address: form.address, city: form.city, timezone: form.timezone, is_active: form.is_active })
         .eq('id', form.id);
       if (error) {
-        onMessage?.({ type: 'error', text: tr('Błąd zapisu: ') + error.message });
+        onMessage?.({ type: 'error', text: tr('Nie udało się zapisać kampusu. Spróbuj ponownie.') });
         return;
       }
     } else {
@@ -58,7 +58,7 @@ export default function CampusManager({ onMessage }) {
         .from('campuses')
         .insert({ name: form.name, address: form.address, city: form.city, timezone: form.timezone, is_active: form.is_active, sort_order: maxSort });
       if (error) {
-        onMessage?.({ type: 'error', text: tr('Błąd zapisu: ') + error.message });
+        onMessage?.({ type: 'error', text: tr('Nie udało się zapisać kampusu. Spróbuj ponownie.') });
         return;
       }
     }
@@ -69,10 +69,10 @@ export default function CampusManager({ onMessage }) {
   };
 
   const deleteCampus = async (campus) => {
-    if (!await confirmDialog(tr('Usunąć kampus "{name}"? Powiązane rekordy stracą przypisanie do kampusu.', { name: campus.name }))) return;
+    if (!await confirmDialog(tr('Usunąć kampus „{name}”? Powiązane rekordy stracą przypisanie do kampusu.', { name: campus.name }))) return;
     const { error } = await supabase.from('campuses').delete().eq('id', campus.id);
     if (error) {
-      onMessage?.({ type: 'error', text: tr('Błąd usuwania: ') + error.message });
+      onMessage?.({ type: 'error', text: tr('Nie udało się usunąć kampusu. Spróbuj ponownie.') });
       return;
     }
     onMessage?.({ type: 'success', text: tr('Kampus usunięty.') });

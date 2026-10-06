@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, Lock, Layers, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, Lock, Layers } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import {
   DndContext,
@@ -34,6 +34,7 @@ import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import { Toggle } from './SettingsUI';
 
 // Sortable Module Item
 function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, onDuplicate, onSaveTemplate, onEventConfig, tabCount }) {
@@ -67,9 +68,10 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
       <button
         {...attributes}
         {...listeners}
+        aria-label={tr('Przeciągnij, aby zmienić kolejność: {name}', { name: module.label })}
         className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing touch-none"
       >
-        <GripVertical size={18} />
+        <GripVertical size={18} aria-hidden="true" />
       </button>
 
       {/* Icon */}
@@ -87,7 +89,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
           {module.label}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {module.path}
+          {!module.is_enabled ? tr('Ukryty w menu') : module.is_system ? tr('Moduł wbudowany') : tr('Moduł własny')}
         </p>
       </div>
 
@@ -117,18 +119,16 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
         )}
       </button>
 
-      {/* Toggle */}
-      <button
-        onClick={() => onToggle(module.id, !module.is_enabled)}
-        className={`p-2 rounded-lg transition ${
-          module.is_enabled
-            ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
-            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-        }`}
-        title={module.is_enabled ? tr('Wyłącz moduł') : tr('Włącz moduł')}
-      >
-        {module.is_enabled ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-      </button>
+      {/* Włącz/wyłącz (bez przełącznika dla „Ustawienia” — tego modułu nie da się ukryć) */}
+      {module.key !== 'settings' && (
+        <div title={module.is_enabled ? tr('Wyłącz moduł') : tr('Włącz moduł')}>
+          <Toggle
+            label={tr('Moduł {name} widoczny w menu', { name: module.label })}
+            checked={!!module.is_enabled}
+            onChange={(v) => onToggle(module, v)}
+          />
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-1">
@@ -139,34 +139,38 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
         )}
         <button
           onClick={() => onEdit(module)}
-          className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+          className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
           title={t('Edytuj')}
+          aria-label={tr('Zmień nazwę i ikonę: {name}', { name: module.label })}
         >
-          <Pencil size={16} />
+          <Pencil size={16} aria-hidden="true" />
         </button>
         {tabCount > 0 && (
           <button
             onClick={() => onSaveTemplate(module)}
-            className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+            className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
             title={tr('Zapisz jako szablon')}
+            aria-label={tr('Zapisz jako szablon')}
           >
             <Icons.BookmarkPlus size={16} />
           </button>
         )}
         <button
           onClick={() => onDuplicate(module)}
-          className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+          className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
           title={tr('Duplikuj moduł')}
+          aria-label={tr('Duplikuj moduł')}
         >
           <Icons.Copy size={16} />
         </button>
         {!module.is_system && (
           <button
             onClick={() => onDelete(module)}
-            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
             title={t('Usuń')}
+            aria-label={tr('Usuń moduł {name}', { name: module.label })}
           >
-            <Trash2 size={16} />
+            <Trash2 size={16} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -370,9 +374,18 @@ export default function ModuleManager() {
 
   const confirmDelete = async () => {
     if (deleteConfirm) {
-      await deleteModule(deleteConfirm.id);
+      const res = await deleteModule(deleteConfirm.id);
+      if (res && res.success === false) { toast.error(tr('Nie udało się usunąć modułu. Spróbuj ponownie.')); return; }
+      toast.success(tr('Usunięto moduł „{name}”', { name: deleteConfirm.label }));
       setDeleteConfirm(null);
     }
+  };
+
+  // Włącz/wyłącz moduł w menu (app_modules.is_enabled — to czyta pasek boczny).
+  const handleToggle = async (module, enabled) => {
+    const res = await toggleModule(module.id, enabled);
+    if (!res?.success) { toast.error(tr('Nie udało się zmienić modułu. Spróbuj ponownie.')); return; }
+    toast.success(enabled ? tr('Moduł „{name}” jest widoczny w menu', { name: module.label }) : tr('Moduł „{name}” został ukryty', { name: module.label }));
   };
 
   const handleManageTabs = (module) => {
@@ -403,10 +416,10 @@ export default function ModuleManager() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-gray-800 dark:text-white">
-            {tr('Zarządzanie modułami')}
+            {tr('Moduły')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {tr('Dodawaj, edytuj i zmieniaj kolejność modułów aplikacji')}
+            {tr('Włączaj i ukrywaj moduły w menu, zmieniaj ich nazwy, ikony i kolejność.')}
           </p>
         </div>
         <button
@@ -419,9 +432,9 @@ export default function ModuleManager() {
       </div>
 
       {/* Info Banner */}
-      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-        <p className="text-sm text-amber-800 dark:text-amber-300">
-          <strong>{t('Wskazówka:')}</strong> {tr('Kliknij ołówek, aby zmienić nazwę i ikonę dowolnego modułu (także systemowego) — nowa nazwa pojawi się w menu i w nagłówku modułu.')} {tr('Przeciągnij moduły, aby zmienić kolejność. Moduły systemowe można wyłączyć, ale nie usunąć.')}
+      <div className="p-4 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          {tr('Przełącznik pokazuje lub ukrywa moduł w menu. Ołówek zmienia nazwę i ikonę — nowa nazwa pojawi się w menu i w nagłówku modułu. Przeciągnij wiersz, aby zmienić kolejność. Moduły wbudowane można ukryć, ale nie usunąć.')}
         </p>
       </div>
 
@@ -443,7 +456,7 @@ export default function ModuleManager() {
                   module={module}
                   onEdit={handleEditModule}
                   onDelete={handleDeleteModule}
-                  onToggle={toggleModule}
+                  onToggle={handleToggle}
                   onManageTabs={handleManageTabs}
                   onDuplicate={handleDuplicateModule}
                   onSaveTemplate={handleSaveTemplate}
@@ -505,7 +518,7 @@ export default function ModuleManager() {
                   </button>
                   {tpl.custom && (
                     <button onClick={async () => { if (await confirmDialog(tr('Usunąć ten szablon?'))) persistUserTemplates(userTemplates.filter((x) => x.key !== tpl.key)); }}
-                      title={tr('Usuń szablon')} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Icons.Trash2 size={14} /></button>
+                      title={tr('Usuń szablon')} aria-label={tr('Usuń szablon')} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Icons.Trash2 size={14} /></button>
                   )}
                 </div>
               );

@@ -1,5 +1,6 @@
 import React from 'react';
 import CustomSelect from '../../../components/CustomSelect';
+import { tr } from '../../../i18n';
 
 // Reużywalne prymitywy UI dla ustawień — spójny wygląd wszystkich sekcji.
 
@@ -36,16 +37,26 @@ export const SettingRow = ({ label, hint, children, last }) => (
   </div>
 );
 
-// Przełącznik on/off.
-export const Toggle = ({ checked, onChange, disabled }) => (
+// Przełącznik on/off. Stan włączony ma nie tylko kolor (kurkuma), ale też ptaszek w gałce
+// i ciemniejszy obrys — odróżnialny od wyłączonego także przy słabym kontraście (UXD-22).
+// `label` = nazwa dla czytnika ekranu, gdy obok nie ma powiązanej etykiety.
+export const Toggle = ({ checked, onChange, disabled, label }) => (
   <button
     type="button"
+    role="switch"
+    aria-checked={!!checked}
+    aria-label={label}
     disabled={disabled}
     onClick={() => !disabled && onChange(!checked)}
-    className={`relative w-11 h-6 rounded-full transition-colors ${checked ? 'bg-accent-primary' : 'bg-gray-300 dark:bg-gray-600'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-    aria-pressed={checked}
+    className={`relative inline-flex shrink-0 w-11 h-6 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-primary ${checked ? 'bg-accent-primary border-accent-primary-dark/60' : 'bg-gray-300 dark:bg-gray-600 border-gray-400/70 dark:border-gray-500'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
   >
-    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : ''}`} />
+    <span className={`absolute top-0.5 left-0.5 w-[18px] h-[18px] rounded-full bg-white shadow flex items-center justify-center transition-transform ${checked ? 'translate-x-5' : ''}`}>
+      {checked && (
+        <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true" className="text-gray-800">
+          <path d="M2.5 6.2 5 8.6 9.5 3.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </span>
   </button>
 );
 
@@ -90,7 +101,7 @@ export const UsageBar = ({ used, max, label }) => {
       <div className="flex justify-between text-sm mb-1.5">
         <span className="text-gray-600 dark:text-gray-300">{label}</span>
         <span className={`font-medium ${danger ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
-          {used}{unlimited ? '' : ` / ${max}`}{unlimited && <span className="text-gray-400"> (bez limitu)</span>}
+          {used}{unlimited ? '' : ` / ${max}`}{unlimited && <span className="text-gray-400"> ({tr('bez limitu')})</span>}
         </span>
       </div>
       {!unlimited && (

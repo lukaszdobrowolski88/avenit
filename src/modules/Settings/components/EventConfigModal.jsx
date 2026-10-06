@@ -149,7 +149,7 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
       for (const r of res) if (r.error) throw r.error;
       toast.success(tr('Zapisano konfigurację'));
       onClose();
-    } catch (e) { toast.error(tr('Nie udało się zapisać: {msg}', { msg: e.message || e })); }
+    } catch { toast.error(tr('Nie udało się zapisać konfiguracji wydarzeń. Spróbuj ponownie.')); }
     finally { setSaving(false); }
   };
 
@@ -249,7 +249,7 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
                       {teamOptions.map((o) => (
                         <button key={o.value} type="button" onClick={() => toggleTeam(i, o.value)}
                           className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${r.teams.includes(o.value) ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                          {TEAM_OPTIONS.some((t) => t.value === o.value) ? tr(o.label) : o.label}
+                          {modules.find((m) => m.key === o.value)?.label || (TEAM_OPTIONS.some((t) => t.value === o.value) ? tr(o.label) : o.label)}
                         </button>
                       ))}
                     </div>
@@ -289,7 +289,7 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
           onClose={() => setShowTypes(false)}
           onSave={async (types) => {
             try { await saveModuleCalendar(cfgKey, { ...(calendars[cfgKey] || {}), types }); toast.success(tr('Zapisano typy wydarzeń')); setShowTypes(false); }
-            catch (e) { toast.error(e.message); }
+            catch { toast.error(tr('Nie udało się zapisać typów wydarzeń. Spróbuj ponownie.')); }
           }}
         />
       )}
