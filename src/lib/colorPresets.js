@@ -1,5 +1,15 @@
 // Presety kolorów - każdy kolor jako RGB triplet (dla Tailwind opacity)
 export const COLOR_PRESETS = {
+  // Marka Avenit (grafiki_avenit): słód zamiast czerni na przyciskach i aktywnych elementach,
+  // musztarda jako „złoty" akcent tekstu/obramowań, jasna kurkuma jako tło wyróżnień.
+  // Kurkuma NIE jest kolorem przycisku — biały napis na żółtym byłby nieczytelny.
+  // Tryb ciemny ma własne odcienie (index.css: html.dark[data-color-preset="avenit"]).
+  'avenit': {
+    label: 'Avenit (marka)',
+    primary: { lightest: '255 248 225', lighter: '255 241 194', light: '138 102 6', DEFAULT: '42 35 18', dark: '31 25 12', darkest: '21 17 10' },
+    secondary: { lightest: '255 248 225', lighter: '255 233 168', light: '107 79 5', DEFAULT: '58 52 39', dark: '42 35 18', darkest: '26 21 10' },
+    preview: ['#FFBE0B', '#2A2312']
+  },
   'pink-orange': {
     label: 'Różowo-Pomarańczowy',
     primary: { lightest: '253 242 248', lighter: '252 231 243', light: '236 72 153', DEFAULT: '219 39 119', dark: '157 23 77', darkest: '131 24 67' },
@@ -99,11 +109,14 @@ export function applyColorPreset(presetKey) {
   const root = document.documentElement;
   applyShades(root, 'primary', preset.primary);
   applyShades(root, 'secondary', preset.secondary);
+  // Atrybut dla reguł CSS zależnych od palety (np. odcienie marki w trybie ciemnym).
+  root.dataset.colorPreset = presetKey;
   localStorage.setItem('color_preset', presetKey);
 }
 
 export function applyCustomColors(primaryHex, secondaryHex) {
   const root = document.documentElement;
+  root.dataset.colorPreset = 'custom';
   applyShades(root, 'primary', generateShades(primaryHex));
   applyShades(root, 'secondary', generateShades(secondaryHex));
   localStorage.setItem('color_preset', 'custom');
