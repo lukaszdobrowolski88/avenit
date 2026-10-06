@@ -569,7 +569,7 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="space-y-5">
       <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary"><ArrowLeft size={16} /> Wróć</button>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">

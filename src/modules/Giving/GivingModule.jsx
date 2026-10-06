@@ -61,7 +61,7 @@ export default function GivingModule() {
   const shared = { funds, members, membersById, campusIdForInsert, withCampusFilter, refreshShared: loadShared };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader moduleKey="giving" icon={Gift} title="Dawanie" subtitle="Darowizny, dawanie cykliczne, kampanie i zestawienia roczne" />
 
       {/* Zakładki */}

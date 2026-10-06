@@ -70,7 +70,7 @@ export default function ServeModule() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader moduleKey="serve" icon={CalendarCheck} title="Służba" subtitle="Dostępność wolontariuszy i ewidencja wykonań pieśni (CCLI)" />
 
       {/* Zakładki */}

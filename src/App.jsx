@@ -136,13 +136,14 @@ function OfflineBanner() {
   );
 }
 
-// Jedno źródło prawdy szerokości modułów: standard = max-w-7xl wyśrodkowany (spójne wcięcia
-// w całej apce). Pełnoekranowe powłoki (Pulpit/Komunikator/Mail) idą na całą szerokość.
-const FULL_BLEED_PATHS = new Set(['/', '/komunikator', '/mail']);
+// Jedno źródło prawdy szerokości modułów: wszystkie strony mają szerokość pulpitu (cała
+// dostępna szerokość, te same marginesy), z limitem tylko na bardzo szerokich ekranach.
+// Pełnoekranowe powłoki (Komunikator/Mail) idą bez limitu.
+const FULL_BLEED_PATHS = new Set(['/komunikator', '/mail']);
 function ModuleContainer({ children }) {
   const { pathname } = useLocation();
   const full = FULL_BLEED_PATHS.has(pathname);
-  return <div className={full ? 'w-full' : 'w-full max-w-7xl mx-auto'}>{children}</div>;
+  return <div className={full ? 'w-full' : 'w-full max-w-[1920px] mx-auto'}>{children}</div>;
 }
 
 function AppInner() {
@@ -484,7 +485,7 @@ function AppInner() {
               <OfflineBanner />
               {/* Ogłoszenia systemowe z platformy */}
               <AnnouncementBanner />
-              <main className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar">
+              <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
               <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
               <ModuleContainer>

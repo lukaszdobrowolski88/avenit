@@ -55,7 +55,7 @@ export default function BoardsModule({ moduleKey = null, initialBoardId = null }
     { id: 'dashboards', label: tr('Dashboardy'), icon: BarChart3 },
   ];
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader moduleKey="boards" icon={LayoutGrid} title={tr('Projekty')} subtitle={tr('Tablice, zadania i procesy zespołów')} />
       <ResponsiveTabs moduleKey="boards" tabs={SECTIONS} activeTab={section} onChange={setSection} />
       <div>
