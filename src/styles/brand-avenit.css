@@ -130,6 +130,16 @@ html[data-color-preset="avenit"]:not(.dark) :is(button, a):is(.bg-white):is(.bor
 html[data-color-preset="avenit"]:not(.dark) :is(button, a):is(.bg-white):is(.border):not(:has(input)):hover {
   background-color: #E3DDD0 !important;
 }
+/* Przyciski „z samą ramką” (wariant outline, „Anuluj” w oknach) — ta sama miękka pigułka.
+   Bez własnego tła (klasa bg-… na początku tokenu; hover:bg-… się nie liczy) i bez czerwieni
+   (usuń/ostrzeżenie zostaje obrysem). */
+html[data-color-preset="avenit"]:not(.dark) :is(button, a).border:not([class^="bg-"]):not([class*=" bg-"]):not([class*="border-red"]):not([class*="text-red"]):not([class*="border-accent"]):not(:has(input)) {
+  background-color: #ECE8DE !important;
+  border-color: transparent !important;
+}
+html[data-color-preset="avenit"]:not(.dark) :is(button, a).border:not([class^="bg-"]):not([class*=" bg-"]):not([class*="border-red"]):not([class*="text-red"]):not([class*="border-accent"]):not(:has(input)):hover {
+  background-color: #E3DDD0 !important;
+}
 
 /* ── Kolorowe kafelki ikon z gradientem (statystyki, nagłówki kart) → papier + słód.
    Tylko elementy nie-interaktywne (div/span) — przyciski obsługuje reguła akcji. ── */
@@ -179,3 +189,69 @@ html.dark[data-color-preset="avenit"] :is(div, span, i, p):is(
 html.dark[data-color-preset="avenit"] :is(div, span):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-b, .bg-gradient-to-l, .bg-gradient-to-bl):is(.from-blue-400, .from-blue-500, .from-blue-600, .from-sky-400, .from-sky-500, .from-sky-600, .from-cyan-400, .from-cyan-500, .from-cyan-600, .from-teal-400, .from-teal-500, .from-teal-600, .from-emerald-400, .from-emerald-500, .from-emerald-600, .from-green-400, .from-green-500, .from-green-600, .from-lime-400, .from-lime-500, .from-lime-600, .from-amber-400, .from-amber-500, .from-amber-600, .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500, .from-yellow-600, .from-red-400, .from-red-500, .from-red-600, .from-rose-400, .from-rose-500, .from-rose-600, .from-pink-400, .from-pink-500, .from-pink-600, .from-fuchsia-400, .from-fuchsia-500, .from-fuchsia-600, .from-purple-400, .from-purple-500, .from-purple-600, .from-violet-400, .from-violet-500, .from-violet-600, .from-indigo-400, .from-indigo-500, .from-indigo-600) :is(.text-white, svg) {
   color: #F6F4EE !important;
 }
+
+/* Plakietki-liczniki i ptaszki wyboru (małe, okrągłe, przypięte do rogu) — kurkuma ze słodem,
+   jak liczniki w apce; reguła kafelków wyżej dałaby im papier. */
+html[data-color-preset="avenit"] span.absolute.rounded-full:is(.bg-accent-primary, .bg-accent-primary-light, .bg-accent-secondary) {
+  background-color: #FFBE0B !important;
+  color: #2A2312 !important;
+}
+
+/* ═══ Akcenty (przeciw „sterylności”) — te same klocki co w aplikacji mobilnej ═══════════════ */
+
+/* Tony kółek: data-tone ustawia komponent (src/lib/brandTone.js). Podwójny selektor atrybutu
+   podbija specyficzność ponad reguły kafelków wyżej; !important bije style inline (Avatar). */
+html[data-color-preset="avenit"] [data-tone][data-tone][data-tone="0"] { background-image: none !important; background-color: #ECE8DE !important; color: #2A2312 !important; box-shadow: none !important; }
+html[data-color-preset="avenit"] [data-tone][data-tone][data-tone="1"] { background-image: none !important; background-color: #FFF1C2 !important; color: #6B4F05 !important; box-shadow: none !important; }
+html[data-color-preset="avenit"] [data-tone][data-tone][data-tone="2"] { background-image: none !important; background-color: #2A2312 !important; color: #FFBE0B !important; box-shadow: none !important; }
+html[data-color-preset="avenit"] [data-tone][data-tone][data-tone="3"] { background-image: none !important; background-color: #FFBE0B !important; color: #2A2312 !important; box-shadow: none !important; }
+html[data-color-preset="avenit"] [data-tone][data-tone][data-tone] :is(svg, span, .text-white) { color: inherit !important; }
+/* Tryb ciemny: papier → ciemny papier, jasna kurkuma → przygaszona, słód → kurkuma (słód zlałby się z tłem). */
+html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="0"] { background-color: rgb(var(--gray-700)) !important; color: #F6F4EE !important; }
+html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="1"] { background-color: #3A2E0C !important; color: #FFBE0B !important; }
+html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="2"] { background-color: #FFBE0B !important; color: #2A2312 !important; }
+html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="3"] { background-color: #FFBE0B !important; color: #2A2312 !important; }
+html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone] :is(svg, span, .text-white) { color: inherit !important; }
+
+/* Widżety pulpitu: nagłówek bez paska i linii, okrągłe kółko ikony, mocniejszy tytuł. */
+html[data-color-preset="avenit"] .widget-head { background-image: none !important; border-color: transparent !important; padding-top: 1.1rem; }
+html[data-color-preset="avenit"] .widget-icon { border-radius: 9999px !important; width: 2.25rem; height: 2.25rem; }
+html[data-color-preset="avenit"] .widget-title { font-weight: 700; font-size: 1.07rem; letter-spacing: -0.015em; }
+
+/* Karta „Najbliższe” (jasna kurkuma) i „Przed Tobą” (słód) na pulpicie. */
+html[data-color-preset="avenit"] .brand-hero { background-color: #FFF1C2; color: #2A2312; }
+html[data-color-preset="avenit"] .brand-hero-chip { background-color: rgba(255, 255, 255, 0.8); color: #2A2312; }
+html[data-color-preset="avenit"] .brand-hero-muted { color: #5C4F2E; }
+html[data-color-preset="avenit"] .brand-hero-arrow { background-color: #2A2312; color: #FFBE0B; }
+html[data-color-preset="avenit"] .brand-hero-pill { background-color: #2A2312; color: #F6F4EE; }
+html[data-color-preset="avenit"] .brand-hero-skeleton { background-color: rgba(42, 35, 18, 0.08); }
+html[data-color-preset="avenit"] .brand-today { background-color: #2A2312; color: #F6F4EE; }
+html[data-color-preset="avenit"] .brand-today-label { color: #FFBE0B; }
+html[data-color-preset="avenit"] .brand-today-num { color: #FFBE0B; }
+html[data-color-preset="avenit"] .brand-today-text { color: #CFC8B6; }
+html.dark[data-color-preset="avenit"] .brand-hero { background-color: #3A2E0C; color: #F6F4EE; }
+html.dark[data-color-preset="avenit"] .brand-hero-chip { background-color: rgba(255, 190, 11, 0.16); color: #FFBE0B; }
+html.dark[data-color-preset="avenit"] .brand-hero-muted { color: #CFC8B6; }
+html.dark[data-color-preset="avenit"] .brand-hero-arrow { background-color: #FFBE0B; color: #2A2312; }
+html.dark[data-color-preset="avenit"] .brand-today { background-color: rgb(var(--gray-800)); }
+
+/* Aktywna zakładka: gruba kreska w kurkumie i słodowy, pogrubiony tekst (jak w apce). */
+html[data-color-preset="avenit"] button.border-b-2.border-accent-primary {
+  border-bottom-color: #FFBE0B !important;
+  border-bottom-width: 3px;
+  color: #2A2312 !important;
+  font-weight: 700;
+}
+html.dark[data-color-preset="avenit"] button.border-b-2.border-accent-primary { color: #F6F4EE !important; }
+
+/* Wybrany kafelek-filtr (np. statystyki Członków): słód, liczba w kurkumie. */
+html[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-selected="true"] {
+  background-color: #2A2312 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+html[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-selected="true"] * { color: #CFC8B6 !important; }
+html[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-selected="true"] :is(.tabular-nums, svg) { color: #FFBE0B !important; }
+/* W ciemnym słód = tło karty, więc wybrany kafelek dostaje przygaszoną kurkumę. */
+html.dark[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-selected="true"] { background-color: #3A2E0C !important; }

@@ -12,6 +12,8 @@ import { useT } from '../../i18n';
 import DashboardGrid from './components/DashboardGrid';
 import WidgetContainer from './components/WidgetContainer';
 import LayoutCustomizer from './components/LayoutCustomizer';
+import BrandHero, { plural } from './components/BrandHero';
+import { useBrandTheme } from '../../hooks/useBrandTheme';
 
 import MyMinistryWidget from './widgets/MyMinistryWidget';
 import MyTasksWidget from './widgets/MyTasksWidget';
@@ -76,6 +78,7 @@ export default function PersonalDashboard({ user }) {
   } = useDashboardData(userEmail);
 
   const loading = layoutLoading || dataLoading || roleLoading;
+  const brand = useBrandTheme();
 
   // Filtruj layout - usuń widget 'welcome' bo teraz jest w nagłówku
   const filteredLayout = layout.filter(w => w.widgetId !== 'welcome');
@@ -116,6 +119,15 @@ export default function PersonalDashboard({ user }) {
   const displayName = userProfile?.full_name || userEmail?.split('@')[0] || tr('Użytkowniku');
   const firstName = displayName.split(' ')[0];
 
+  // Druga, cienka linia powitania w motywie Avenit — najważniejsza rzecz na dziś.
+  const tasksN = stats?.tasksCount || 0;
+  const servicesN = stats?.upcomingServicesCount || 0;
+  const headline = tasksN > 0
+    ? `${tasksN} ${plural(tasksN, tr('zadanie do zrobienia'), tr('zadania do zrobienia'), tr('zadań do zrobienia'))}`
+    : servicesN > 0
+      ? `${servicesN} ${plural(servicesN, tr('służba przed Tobą'), tr('służby przed Tobą'), tr('służb przed Tobą'))}`
+      : t('Miło Cię widzieć');
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return t('Dzień dobry');
@@ -152,11 +164,25 @@ export default function PersonalDashboard({ user }) {
               className="w-14 h-14 rounded-full object-cover ring-2 ring-white dark:ring-gray-700 shadow-lg"
             />
           ) : (
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-xl font-bold shadow-lg">
+            <div data-tone={3} className="w-14 h-14 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-xl font-bold shadow-lg">
               {firstName.charAt(0).toUpperCase()}
             </div>
           )}
 
+          {brand ? (
+            // Jak w aplikacji: etykieta z datą (musztarda), pogrubione powitanie, cienka linia
+            // z tym, co dziś najważniejsze, i kropka w kurkumie.
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8A6606] dark:text-[#FFBE0B]">
+                {new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+              <h1 className="mt-1 text-[28px] md:text-[34px] leading-[1.12] tracking-[-0.035em] text-gray-900 dark:text-white">
+                <span className="font-extrabold">{getGreeting()}, {firstName}!</span>{' '}
+                <span className="font-light">{headline}</span>
+                <span className="font-extrabold text-[#FFBE0B]">.</span>
+              </h1>
+            </div>
+          ) : (
           <div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
               {getGreeting()},
@@ -165,6 +191,7 @@ export default function PersonalDashboard({ user }) {
               {firstName}! <span className="text-gray-400 dark:text-gray-500 font-normal">{t('Miło Cię widzieć')}</span>
             </h1>
           </div>
+          )}
         </div>
 
         {/* Desktop only - hide on mobile */}
@@ -210,6 +237,8 @@ export default function PersonalDashboard({ user }) {
           <span className="text-sm text-gray-600 dark:text-gray-300">{tr('Zapisywanie...')}</span>
         </div>
       )}
+
+      {brand && <BrandHero upcomingMinistry={upcomingMinistry} stats={stats} />}
 
       {/* Widgets Grid */}
       {visibleWidgets.length > 0 ? (

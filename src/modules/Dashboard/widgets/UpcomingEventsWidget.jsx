@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarDays, MapPin, ChevronRight, CalendarCheck } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
+import { TONE } from '../../../lib/brandTone';
 
 // Kolory znaczników wg kategorii wydarzenia (spójne z modułem Kalendarz).
 const CATEGORY_STYLES = {
@@ -15,7 +16,8 @@ const CATEGORY_STYLES = {
 
 // „Dziś / Jutro / 12 lip" + godzina. dateStr='YYYY-MM-DD', timeStr='HH:MM' (opcjonalnie).
 function formatWhen(dateStr, timeStr) {
-  const [y, m, dd] = String(dateStr).split('-').map(Number);
+  // API zwraca datę jako „2026-10-11T00:00:00.000Z” — bierzemy samą część YYYY-MM-DD.
+  const [y, m, dd] = String(dateStr).slice(0, 10).split('-').map(Number);
   const d = new Date(y, (m || 1) - 1, dd || 1);
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -25,7 +27,7 @@ function formatWhen(dateStr, timeStr) {
   else if (dayDiff === 1) day = tr('Jutro');
   else day = d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
   const time = timeStr ? String(timeStr).slice(0, 5) : '';
-  return { day, time, isSoon: dayDiff <= 1 };
+  return { day, time, isSoon: dayDiff >= 0 && dayDiff <= 1 };
 }
 
 export default function UpcomingEventsWidget() {
@@ -83,7 +85,7 @@ export default function UpcomingEventsWidget() {
   return (
     <div className="space-y-1">
       <div className="space-y-1 max-h-72 overflow-y-auto custom-scrollbar">
-        {events.map((ev) => {
+        {events.map((ev, i) => {
           const when = formatWhen(ev.date, ev.time);
           const style = CATEGORY_STYLES[(ev.category || '').toLowerCase()] || CATEGORY_STYLES.default;
           return (
@@ -93,7 +95,8 @@ export default function UpcomingEventsWidget() {
               className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group text-left"
             >
               {/* Data */}
-              <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl shrink-0 ${style}`}>
+              {/* Najbliższe wydarzenie w słodzie z kurkumą (motyw Avenit), kolejne na papierze. */}
+              <div data-tone={i === 0 ? TONE.slod : TONE.paper} className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl shrink-0 ${style}`}>
                 <span className="text-[11px] font-semibold leading-none uppercase">{when.day}</span>
                 {when.time && <span className="text-xs mt-1 leading-none">{when.time}</span>}
               </div>
@@ -108,7 +111,7 @@ export default function UpcomingEventsWidget() {
                 </div>
               </div>
               {when.isSoon && (
-                <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-300">
+                <span data-tone={TONE.kurkuma} className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-300">
                   {tr('wkrótce')}
                 </span>
               )}

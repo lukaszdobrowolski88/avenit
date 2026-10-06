@@ -21,6 +21,7 @@ import PageHeader from '../components/PageHeader';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
+import { brandTone } from '../lib/brandTone';
 import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
@@ -594,7 +595,7 @@ export default function Members() {
             { key: 'Sympatyk', label: tr('Sympatycy'), count: members.filter((m) => m.status === 'Sympatyk').length, Icon: HeartHandshake, color: 'text-blue-500' },
             { key: 'Gość', label: tr('Goście'), count: members.filter((m) => m.status === 'Gość').length, Icon: Users, color: 'text-gray-400' },
           ].map((s) => (
-            <button key={s.key} onClick={() => setStatusFilter(s.key)}
+            <button key={s.key} onClick={() => setStatusFilter(s.key)} data-pick data-selected={statusFilter === s.key}
               className={`text-left rounded-2xl border p-4 transition bg-white dark:bg-gray-800 ${statusFilter === s.key ? 'border-accent-primary ring-2 ring-accent-primary/20' : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark'}`}>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{s.label}</span>
@@ -627,7 +628,7 @@ export default function Members() {
 
           <Can cap="res:members:create">
           <button onClick={() => setShowBdayCfg(true)} title={tr('Przypomnienia urodzinowe')}
-            className="whitespace-nowrap px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5 text-sm">
+            className="whitespace-nowrap px-3 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5 text-sm font-medium">
             <Cake size={16} /> {tr('Przypomnienia')}
           </button>
           <Button data-tour="member-add" onClick={() => openModal()} icon={Plus} className="whitespace-nowrap">
@@ -674,7 +675,7 @@ export default function Members() {
                 <TR key={member.id}>
                   <TD>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest dark:to-accent-secondary-darkest flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold shadow-sm border border-white dark:border-gray-700">
+                      <div data-tone={brandTone(`${member.first_name || ''} ${member.last_name || ''}`)} className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest dark:to-accent-secondary-darkest flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold shadow-sm border border-white dark:border-gray-700">
                         {member.first_name?.[0]}{member.last_name?.[0]}
                       </div>
                       <div>
@@ -773,10 +774,10 @@ export default function Members() {
                   </TD>
 
                   <TD align="right">
-                    <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                      <button onClick={() => setProfileMember(member)} title={t('Zobacz profil')} className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"><Eye size={18} /></button>
-                      <Can cap="res:members:update"><button onClick={() => openModal(member)} className="p-2 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={18} /></button></Can>
-                      <Can cap="res:members:delete"><button onClick={() => handleDelete(member.id)} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={18} /></button></Can>
+                    <div className="flex justify-end gap-0.5 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                      <button onClick={() => setProfileMember(member)} title={t('Zobacz profil')} className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"><Eye size={16} /></button>
+                      <Can cap="res:members:update"><button onClick={() => openModal(member)} className="p-1.5 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={16} /></button></Can>
+                      <Can cap="res:members:delete"><button onClick={() => handleDelete(member.id)} className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={16} /></button></Can>
                     </div>
                   </TD>
                 </TR>

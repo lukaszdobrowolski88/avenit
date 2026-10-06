@@ -1029,7 +1029,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-bold uppercase">
                                 <Music size={14}/> Tonacja
                             </div>
-                            <span className="font-mono text-lg font-bold text-accent-primary dark:text-accent-primary-light min-w-[24px] text-center">{song.key || "-"}</span>
+                            <span className="tabular-nums text-lg font-bold text-accent-primary dark:text-accent-primary-light min-w-[24px] text-center">{song.key || "-"}</span>
                         </div>
 
                         {/* TRANSPOZYCJA - wybór tonacji docelowej (wg wytycznych PDF) */}
@@ -1804,7 +1804,7 @@ export default function WorshipModule() {
               <TR key={s.id}>
                 <TD className="font-semibold text-gray-900 dark:text-white">{s.title}</TD>
                 <TD muted>{s.author || ''}</TD>
-                <TD className="font-mono font-bold text-accent-primary dark:text-accent-primary-light">{s.key}</TD>
+                <TD className="tabular-nums font-bold text-accent-primary dark:text-accent-primary-light">{s.key}</TD>
                 <TD muted numeric>{s.tempo || ''}</TD>
                 <TD>
                   <div className="flex gap-1 flex-wrap">

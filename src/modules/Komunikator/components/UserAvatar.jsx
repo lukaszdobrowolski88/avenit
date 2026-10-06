@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from 'lucide-react';
 import { getInitials, stringToColor } from '../utils/messageHelpers';
+import { brandTone } from '../../../lib/brandTone';
 import { statusColors, statusLabels } from '../../../hooks/usePresence';
 
 export default function UserAvatar({ user, size = 'md', className = '', showStatus = false, status = null }) {
@@ -53,6 +54,7 @@ export default function UserAvatar({ user, size = 'md', className = '', showStat
   return (
     <div className={`relative ${sizeClasses[size]} ${className}`}>
       <div
+        data-tone={brandTone(user?.email || name)}
         className="w-full h-full rounded-full flex items-center justify-center font-semibold text-white ring-2 ring-white dark:ring-gray-800"
         style={{ backgroundColor: bgColor }}
       >

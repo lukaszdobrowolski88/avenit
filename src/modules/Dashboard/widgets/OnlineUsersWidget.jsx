@@ -4,6 +4,7 @@ import { MessageCircle, Users, Circle } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { getInitials, stringToColor } from '../../../utils/text';
+import { brandTone } from '../../../lib/brandTone';
 
 // Kolory statusów
 const statusColors = {
@@ -242,6 +243,7 @@ export default function OnlineUsersWidget({ userEmail }) {
                     />
                   ) : (
                     <div
+                      data-tone={brandTone(user.email)}
                       className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm ring-2 ring-white dark:ring-gray-800"
                       style={{ backgroundColor: stringToColor(user.email) }}
                     >

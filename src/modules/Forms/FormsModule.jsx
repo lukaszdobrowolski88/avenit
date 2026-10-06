@@ -224,7 +224,7 @@ export default function FormsModule({ userEmail }) {
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <div className="px-4 pt-4 md:px-6 md:pt-6">
+      <div>
         <PageHeader moduleKey="forms" icon={FileText} title={t('Formularze')} subtitle={t('Twórz formularze i zbieraj odpowiedzi')}
           actions={
             <button
@@ -240,7 +240,7 @@ export default function FormsModule({ userEmail }) {
         <ResponsiveTabs moduleKey="forms" tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mt-4" />
       </div>
 
-      <div className="flex-1 overflow-auto p-4 md:p-6">
+      <div className="flex-1 overflow-auto pt-6">
         {activeTab === 'forms' && (
           <FormList
             forms={forms}

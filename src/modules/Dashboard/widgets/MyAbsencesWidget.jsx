@@ -16,7 +16,7 @@ const todayYmd = () => {
 };
 
 const fmt = (ymd) => {
-  const [y, m, d] = String(ymd).split('-').map(Number);
+  const [y, m, d] = String(ymd).slice(0, 10).split('-').map(Number);
   return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
 };
 

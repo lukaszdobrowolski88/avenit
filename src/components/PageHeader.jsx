@@ -71,11 +71,16 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
   if (bannerOff) {
     return (
       <div className={`flex items-center gap-3 ${className}`}>
-        <div className={`${brand ? 'w-14 h-14 rounded-full' : 'w-12 h-12 rounded-2xl shadow-md'} flex items-center justify-center shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary`} style={chipStyle}>
+        {/* W motywie „Avenit” kółko w słodzie z kurkumą (data-tone 2) — stały akcent marki na każdej stronie. */}
+        <div data-tone={brand ? 2 : undefined} className={`${brand ? 'w-14 h-14 rounded-full' : 'w-12 h-12 rounded-2xl shadow-md'} flex items-center justify-center shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary`} style={chipStyle}>
           {Icon && <Icon className="text-white w-6 h-6" />}
         </div>
         <div className="min-w-0">
-          <h1 className={`${brand ? 'text-[28px] leading-tight font-extrabold tracking-[-0.03em]' : 'text-xl font-bold tracking-tight'} text-gray-900 dark:text-white truncate`}>{dynamicTitle}</h1>
+          <h1 className={`${brand ? 'text-[28px] leading-tight font-extrabold tracking-[-0.03em]' : 'text-xl font-bold tracking-tight'} text-gray-900 dark:text-white truncate`}>
+            {dynamicTitle}
+            {/* Sygnatura marki: kropka w kurkumie na końcu nagłówka (jak na grafikach Avenit). */}
+            {brand && typeof dynamicTitle === 'string' && !/[.!?…:]$/.test(dynamicTitle.trim()) && <span className="text-[#FFBE0B]">.</span>}
+          </h1>
           {subtitle && <p className={`${brand ? 'text-[15px] mt-0.5' : 'text-sm'} text-gray-500 dark:text-gray-400 truncate`}>{subtitle}</p>}
         </div>
         <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
