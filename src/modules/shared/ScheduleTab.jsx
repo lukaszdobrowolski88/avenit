@@ -9,6 +9,7 @@ import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
 import { getCachedUser } from '../../lib/supabase';
+import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
 
 // Grafik nad WYDARZENIAMI (twardy switch z programów). Wiersze = wydarzenia danej służby:
 // wydarzenie należy do służby, jeśli reguła event_type_teams (module_key, event_type) zawiera
@@ -463,76 +464,74 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                 </button>
 
                 {isExpanded && (
-                  <div className="overflow-x-auto pb-4">
-                    <table className="w-full text-left border-collapse min-w-max">
-                      <thead>
-                        <tr className="bg-gray-50/50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
-                          <th className="p-3 font-semibold w-24 min-w-[90px]">{t('Data')}</th>
-                          {columns.map(col => (
-                            <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
-                          ))}
-                          <th className="p-3 font-semibold min-w-[130px] text-red-500 dark:text-red-400">Absencja</th>
-                          <th className="p-3 font-semibold min-w-[150px]">Notatki</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700 relative">
-                        {groupedEvents[monthKey]
-                          .sort((a, b) => new Date(a.date) - new Date(b.date))
-                          .map((ev) => {
-                          const absentList = csvNames(ev.assignments?.[teamType]?.absencja);
-                          const unavailableList = unavailableOn(ev.date);
-                          return (
-                            <tr key={ev.id} className="hover:bg-white/60 dark:hover:bg-gray-700/30 transition relative">
-                              <td className="p-3 font-medium text-gray-700 dark:text-gray-300 text-xs">
-                                <div className="flex flex-col gap-1.5 items-start">
-                                  <span className="font-mono">{formatDateShort(ev.date)}</span>
-                                  {ev.title && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">{ev.title}</span>}
-                                  <CampusBadge campus={getCampus(ev.campus_id)} />
-                                  {unavailableList.length > 0 && (
-                                    <span className="inline-flex items-start gap-1 text-[10px] text-red-600 dark:text-red-400 max-w-[160px]" title={t('Zgłoszone nieobecności')}>
-                                      <CalendarX size={11} className="shrink-0 mt-px" />
-                                      <span>{unavailableList.join(', ')}</span>
-                                    </span>
-                                  )}
-                                  <EventSendCell
-                                    eventId={ev.id}
-                                    teamType={teamType}
-                                    assignments={schedAssignments}
-                                    onSent={() => sendForEvent(ev.id)}
-                                  />
-                                </div>
-                              </td>
-                              {columns.map(col => (
-                                <td key={col.key} className="p-2 relative">
-                                  <TableMultiSelect
-                                    options={getMembersForRole(col.roleId)}
-                                    value={ev.assignments?.[teamType]?.[col.key] || ''}
-                                    onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
-                                    absentMembers={absentList}
-                                    unavailableMembers={unavailableList}
-                                  />
-                                </td>
-                              ))}
-                              <td className="p-2 relative">
+                  <DataTable flush className="pb-4 rounded-b-2xl" tableClassName="min-w-max">
+                    <THead>
+                      <tr>
+                        <TH className="w-24 min-w-[90px]">{t('Data')}</TH>
+                        {columns.map(col => (
+                          <TH key={col.key} className="min-w-[130px]">{col.label}</TH>
+                        ))}
+                        <TH className="min-w-[130px] !text-red-500 dark:!text-red-400">Absencja</TH>
+                        <TH className="min-w-[150px]">Notatki</TH>
+                      </tr>
+                    </THead>
+                    <tbody className="relative">
+                      {groupedEvents[monthKey]
+                        .sort((a, b) => new Date(a.date) - new Date(b.date))
+                        .map((ev) => {
+                        const absentList = csvNames(ev.assignments?.[teamType]?.absencja);
+                        const unavailableList = unavailableOn(ev.date);
+                        return (
+                          <TR key={ev.id} className="relative">
+                            <TD className="font-medium">
+                              <div className="flex flex-col gap-1.5 items-start text-xs">
+                                <span className="font-mono tabular-nums">{formatDateShort(ev.date)}</span>
+                                {ev.title && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">{ev.title}</span>}
+                                <CampusBadge campus={getCampus(ev.campus_id)} />
+                                {unavailableList.length > 0 && (
+                                  <span className="inline-flex items-start gap-1 text-[10px] text-red-600 dark:text-red-400 max-w-[160px]" title={t('Zgłoszone nieobecności')}>
+                                    <CalendarX size={11} className="shrink-0 mt-px" />
+                                    <span>{unavailableList.join(', ')}</span>
+                                  </span>
+                                )}
+                                <EventSendCell
+                                  eventId={ev.id}
+                                  teamType={teamType}
+                                  assignments={schedAssignments}
+                                  onSent={() => sendForEvent(ev.id)}
+                                />
+                              </div>
+                            </TD>
+                            {columns.map(col => (
+                              <TD key={col.key} className="relative">
                                 <TableMultiSelect
-                                  options={members}
-                                  value={ev.assignments?.[teamType]?.absencja || ''}
-                                  onChange={(val) => updateAbsence(ev.id, val)}
+                                  options={getMembersForRole(col.roleId)}
+                                  value={ev.assignments?.[teamType]?.[col.key] || ''}
+                                  onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
+                                  absentMembers={absentList}
+                                  unavailableMembers={unavailableList}
                                 />
-                              </td>
-                              <td className="p-2">
-                                <input
-                                  className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
-                                  placeholder="Wpisz..."
-                                  defaultValue={ev.assignments?.[teamType]?.notatki || ''}
-                                  onBlur={(e) => updateNotes(ev.id, e.target.value)}
-                                />
-                              </td>
-                            </tr>
-                          );})}
-                      </tbody>
-                    </table>
-                  </div>
+                              </TD>
+                            ))}
+                            <TD className="relative">
+                              <TableMultiSelect
+                                options={members}
+                                value={ev.assignments?.[teamType]?.absencja || ''}
+                                onChange={(val) => updateAbsence(ev.id, val)}
+                              />
+                            </TD>
+                            <TD>
+                              <input
+                                className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
+                                placeholder="Wpisz..."
+                                defaultValue={ev.assignments?.[teamType]?.notatki || ''}
+                                onBlur={(e) => updateNotes(ev.id, e.target.value)}
+                              />
+                            </TD>
+                          </TR>
+                        );})}
+                    </tbody>
+                  </DataTable>
                 )}
               </div>
             );

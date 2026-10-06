@@ -5,6 +5,7 @@ import { tr } from '../../i18n';
 import TabHeader from '../../components/TabHeader';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
+import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
 
 export default function FinanceTab({ ministry, budgetItems = [], expenses = [], onAddExpense, onRefresh }) {
   const t = useT();
@@ -146,17 +147,16 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Opis kosztu')}</th>
-                  <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Plan (PLN)</th>
-                  <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Wykorzystano (PLN)</th>
-                  <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">% Realizacji</th>
-                  <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Pozostało')}</th>
+          <DataTable>
+              <THead>
+                <tr>
+                  <TH>{t('Opis kosztu')}</TH>
+                  <TH align="right">Plan (PLN)</TH>
+                  <TH align="right">Wykorzystano (PLN)</TH>
+                  <TH align="center">% Realizacji</TH>
+                  <TH align="right">{t('Pozostało')}</TH>
                 </tr>
-              </thead>
+              </THead>
               <tbody>
                 {planItems.map(item => {
                   const planned = Number(item.planned_amount || 0);
@@ -169,13 +169,15 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
 
                   return (
                     <React.Fragment key={item.id}>
-                      <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                        <td className="py-4 px-4 text-gray-900 dark:text-white">{item.description}</td>
-                        <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium">
+                      <TR>
+                        <TD className="text-gray-900 dark:text-white">{item.description}</TD>
+                        <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                           {planned.toLocaleString('pl-PL')} zł
-                        </td>
-                        <td
-                          className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
+                        </TD>
+                        <TD
+                          align="right"
+                          numeric
+                          className="font-medium text-gray-900 dark:text-white whitespace-nowrap cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
                           onClick={() => toggleExpand(item.id)}
                         >
                           {spent.toLocaleString('pl-PL')} zł
@@ -184,10 +186,10 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                           ) : (
                             <ChevronDown size={16} className="inline ml-1" />
                           )}
-                        </td>
-                        <td className="py-4 px-4">
+                        </TD>
+                        <TD>
                           <div className="space-y-2">
-                            <div className="text-center font-bold text-gray-900 dark:text-white">
+                            <div className="text-center font-semibold tabular-nums text-gray-900 dark:text-white">
                               {percentage.toFixed(1)}%
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
@@ -197,16 +199,16 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                               ></div>
                             </div>
                           </div>
-                        </td>
-                        <td className={`py-4 px-4 text-right font-bold ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        </TD>
+                        <TD align="right" numeric className={`font-semibold whitespace-nowrap ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {remaining.toLocaleString('pl-PL')} zł
-                        </td>
-                      </tr>
+                        </TD>
+                      </TR>
 
                       {/* Expanded expense list */}
                       {expandedItems[item.id] && (
-                        <tr className="bg-gray-50 dark:bg-gray-800/50">
-                          <td colSpan={5} className="py-4 px-4">
+                        <TR className="bg-gray-50/70 dark:bg-gray-800/40">
+                          <TD colSpan={5}>
                             {relatedExpenses.length > 0 ? (
                               <div className="space-y-2">
                                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -258,15 +260,14 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                                 {tr('Brak wydatków w tej pozycji budżetu')}
                               </p>
                             )}
-                          </td>
-                        </tr>
+                          </TD>
+                        </TR>
                       )}
                     </React.Fragment>
                   );
                 })}
               </tbody>
-            </table>
-          </div>
+          </DataTable>
 
           {/* Summary */}
           <div className="mt-6 p-4 bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 rounded-xl">

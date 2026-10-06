@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { RUN_STATUSES, statusLabel, formatDateTime, memberName } from '../lib/automationApi';
 import Spinner from '../../../components/Spinner';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 export default function RunsTab({ membersById, withCampusFilter }) {
   const [runs, setRuns] = useState([]);
@@ -47,16 +48,16 @@ export default function RunsTab({ membersById, withCampusFilter }) {
 
   const statusOptions = useMemo(() => [{ value: '', label: 'Wszystkie statusy' }, ...RUN_STATUSES], []);
 
-  const statusClass = (s) => {
+  const statusColor = (s) => {
     switch (s) {
-      case 'done': return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400';
-      case 'running': return 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'failed': return 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400';
-      default: return 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400';
+      case 'done': return STATUS_COLORS.success;
+      case 'running': return STATUS_COLORS.info;
+      case 'failed': return STATUS_COLORS.danger;
+      default: return STATUS_COLORS.warning;
     }
   };
 
-  const personName = (r) => (r.member_id && membersById?.[r.member_id]) ? memberName(membersById[r.member_id]) : '—';
+  const personName = (r) => (r.member_id && membersById?.[r.member_id]) ? memberName(membersById[r.member_id]) : '';
 
   return (
     <div className="space-y-4">
@@ -77,32 +78,30 @@ export default function RunsTab({ membersById, withCampusFilter }) {
             <p className="text-gray-500 dark:text-gray-400">Brak uruchomień. Pojawią się tu po wykonaniu automatyzacji przez workera.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 font-semibold">Automatyzacja</th>
-                  <th className="px-4 py-3 font-semibold">Osoba</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold text-center">Krok</th>
-                  <th className="px-4 py-3 font-semibold">Data</th>
-                </tr>
-              </thead>
-              <tbody>
-                {runs.map(r => (
-                  <tr key={r.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{workflowsById[r.workflow_id]?.name || '—'}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{personName(r)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusClass(r.status)}`}>{statusLabel(r.status)}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-300">{r.current_step ?? 0}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDateTime(r.started_at || r.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Automatyzacja</TH>
+                <TH>Osoba</TH>
+                <TH>Status</TH>
+                <TH align="center">Krok</TH>
+                <TH>Data</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {runs.map(r => (
+                <TR key={r.id}>
+                  <TD className="font-medium text-gray-900 dark:text-white">{workflowsById[r.workflow_id]?.name || ''}</TD>
+                  <TD muted>{personName(r)}</TD>
+                  <TD>
+                    <StatusPill color={statusColor(r.status)}>{statusLabel(r.status)}</StatusPill>
+                  </TD>
+                  <TD align="center" muted numeric>{r.current_step ?? 0}</TD>
+                  <TD muted numeric className="whitespace-nowrap">{formatDateTime(r.started_at || r.created_at)}</TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
     </div>

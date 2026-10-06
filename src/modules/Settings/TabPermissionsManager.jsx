@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
 
 // Definicja modułów i ich zakładek
 const MODULE_TABS = {
@@ -208,68 +209,66 @@ export function hasTabAccess(module, tab, userRole) {
 
           {expandedModule === moduleKey && (
             <div className="border-t border-gray-200 dark:border-gray-600 p-6">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-600">
-                      <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-300">{tr('Zakładka')}</th>
-                      <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">{tr('Wszyscy')}</th>
-                      {roles.map(role => (
-                        <th key={role.key} className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">
-                          {role.label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
-                    {Object.entries(moduleData.tabs).map(([tabKey, tabLabel]) => {
-                      const allAccess = permissions[moduleKey]?.[tabKey] === null;
+              <DataTable>
+                <THead>
+                  <tr>
+                    <TH>{tr('Zakładka')}</TH>
+                    <TH align="center">{tr('Wszyscy')}</TH>
+                    {roles.map(role => (
+                      <TH key={role.key} align="center">
+                        {role.label}
+                      </TH>
+                    ))}
+                  </tr>
+                </THead>
+                <tbody>
+                  {Object.entries(moduleData.tabs).map(([tabKey, tabLabel]) => {
+                    const allAccess = permissions[moduleKey]?.[tabKey] === null;
 
-                      return (
-                        <tr key={tabKey} className="hover:bg-gray-50 dark:hover:bg-gray-600/50">
-                          <td className="py-3 px-4 font-medium text-gray-800 dark:text-gray-200">
-                            {tabLabel}
-                            <div className="text-xs text-gray-400 font-mono">{tabKey}</div>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <button
-                              onClick={() => setAllAccess(moduleKey, tabKey)}
-                              className={`w-6 h-6 rounded flex items-center justify-center transition ${
-                                allAccess
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-gray-200 dark:bg-gray-600 text-gray-400'
-                              }`}
-                            >
-                              {allAccess && <Check size={14} />}
-                            </button>
-                          </td>
-                          {roles.map(role => {
-                            const hasRoleAccess = hasAccess(moduleKey, tabKey, role.key);
+                    return (
+                      <TR key={tabKey}>
+                        <TD className="font-medium text-gray-800 dark:text-gray-200">
+                          {tabLabel}
+                          <div className="text-xs text-gray-400 font-mono">{tabKey}</div>
+                        </TD>
+                        <TD align="center">
+                          <button
+                            onClick={() => setAllAccess(moduleKey, tabKey)}
+                            className={`w-6 h-6 rounded flex items-center justify-center mx-auto transition ${
+                              allAccess
+                                ? 'bg-green-500 text-white'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400'
+                            }`}
+                          >
+                            {allAccess && <Check size={14} />}
+                          </button>
+                        </TD>
+                        {roles.map(role => {
+                          const hasRoleAccess = hasAccess(moduleKey, tabKey, role.key);
 
-                            return (
-                              <td key={role.key} className="py-3 px-4 text-center">
-                                <button
-                                  onClick={() => toggleRoleAccess(moduleKey, tabKey, role.key)}
-                                  disabled={allAccess}
-                                  className={`w-6 h-6 rounded flex items-center justify-center mx-auto transition ${
-                                    allAccess
-                                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-300 cursor-not-allowed'
-                                      : hasRoleAccess
-                                      ? 'bg-accent-primary-light text-white'
-                                      : 'bg-gray-200 dark:bg-gray-600 text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-500'
-                                  }`}
-                                >
-                                  {hasRoleAccess && !allAccess && <Check size={14} />}
-                                </button>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          return (
+                            <TD key={role.key} align="center">
+                              <button
+                                onClick={() => toggleRoleAccess(moduleKey, tabKey, role.key)}
+                                disabled={allAccess}
+                                className={`w-6 h-6 rounded flex items-center justify-center mx-auto transition ${
+                                  allAccess
+                                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-300 cursor-not-allowed'
+                                    : hasRoleAccess
+                                    ? 'bg-accent-primary-light text-white'
+                                    : 'bg-gray-200 dark:bg-gray-600 text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-500'
+                                }`}
+                              >
+                                {hasRoleAccess && !allAccess && <Check size={14} />}
+                              </button>
+                            </TD>
+                          );
+                        })}
+                      </TR>
+                    );
+                  })}
+                </tbody>
+              </DataTable>
             </div>
           )}
         </div>

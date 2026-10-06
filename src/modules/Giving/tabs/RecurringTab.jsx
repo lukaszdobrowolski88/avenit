@@ -6,6 +6,7 @@ import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, frequencyLabel, memberName, GIVING_METHODS, GIVING_FREQUENCIES, computeNextRun } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 const emptyForm = {
   member_id: '', donor_name: '', fund_id: '', amount: '', frequency: 'monthly',
@@ -107,7 +108,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
     } catch (err) { toast.error('Nie udało się usunąć: ' + (err.message || err)); }
   };
 
-  const donorName = (p) => p.member_id && membersById?.[p.member_id] ? memberName(membersById[p.member_id]) : (p.donor_name || '—');
+  const donorName = (p) => p.member_id && membersById?.[p.member_id] ? memberName(membersById[p.member_id]) : (p.donor_name || '');
   const monthlyTotal = useMemo(() => plans.filter(p => p.is_active).reduce((s, p) => {
     const factor = { weekly: 4.33, biweekly: 2.17, monthly: 1, quarterly: 1 / 3, yearly: 1 / 12 }[p.frequency] || 1;
     return s + (Number(p.amount) || 0) * factor;
@@ -131,42 +132,47 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
             <p className="text-gray-500 dark:text-gray-400">Brak planów cyklicznego dawania.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 font-semibold">Darczyńca</th>
-                  <th className="px-4 py-3 font-semibold">Kwota</th>
-                  <th className="px-4 py-3 font-semibold">Częstotliwość</th>
-                  <th className="px-4 py-3 font-semibold">Fundusz</th>
-                  <th className="px-4 py-3 font-semibold">Nast. pobranie</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold text-right">Akcje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {plans.map(p => (
-                  <tr key={p.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{donorName(p)}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(p.amount, p.currency)}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{frequencyLabel(p.frequency)}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{fundsById[p.fund_id]?.name || '—'}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(p.next_run_date)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${p.is_active ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>{p.is_active ? 'Aktywny' : 'Wstrzymany'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Darczyńca</TH>
+                <TH>Kwota</TH>
+                <TH>Częstotliwość</TH>
+                <TH>Fundusz</TH>
+                <TH>Nast. pobranie</TH>
+                <TH>Status</TH>
+                <TH align="right"><span className="sr-only">Akcje</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {plans.map(p => (
+                <TR key={p.id}>
+                  <TD className="font-medium text-gray-900 dark:text-white">{donorName(p)}</TD>
+                  <TD numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(p.amount, p.currency)}</TD>
+                  <TD muted>{frequencyLabel(p.frequency)}</TD>
+                  <TD muted>
+                    {p.fund_id && fundsById[p.fund_id] ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full" style={{ background: fundsById[p.fund_id].color || '#94a3b8' }} />
+                        {fundsById[p.fund_id].name}
+                      </span>
+                    ) : null}
+                  </TD>
+                  <TD muted numeric className="whitespace-nowrap">{formatDate(p.next_run_date)}</TD>
+                  <TD>
+                    <StatusPill color={p.is_active ? STATUS_COLORS.success : STATUS_COLORS.neutral}>{p.is_active ? 'Aktywny' : 'Wstrzymany'}</StatusPill>
+                  </TD>
+                  <TD align="right">
+                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
                         <button onClick={() => toggleActive(p)} title={p.is_active ? 'Wstrzymaj' : 'Wznów'} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700">{p.is_active ? <Pause size={15} /> : <Play size={15} />}</button>
                         <button onClick={() => openEdit(p)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
                         <button onClick={() => remove(p)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
 

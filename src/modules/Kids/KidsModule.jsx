@@ -25,6 +25,7 @@ import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { DataTable, THead, TH, TR, TD, EmptyRow } from '../../components/ui/DataTable';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -552,29 +553,26 @@ export default function KidsModule() {
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Nauczyciele ({teachers.length})</h2>
             <button onClick={() => { setTeacherForm({ id: null, full_name: '', role: 'Nauczyciel', email: '', phone: '' }); setShowTeacherModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj nauczyciela</button>
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm min-w-[600px]">
-              {/* USUNIĘTO STYLE BACKGROUND BLACK - TERAZ JEST CZYSTA KLASA */}
-              <thead className="text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <tr><th className="p-4">{tr('Imię i nazwisko')}</th><th className="p-4">{tr('Rola')}</th><th className="p-4">{tr('Email')}</th><th className="p-4 text-right">{tr('Akcje')}</th></tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {teachers.map(t => (
-                  <tr key={t.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                    <td className="p-4 font-medium text-gray-800 dark:text-gray-200">{t.full_name}</td>
-                    <td className="p-4 text-gray-600 dark:text-gray-400">{t.role}</td>
-                    <td className="p-4 text-gray-600 dark:text-gray-400">{t.email}</td>
-                    <td className="p-4 text-right flex justify-end gap-2">
+          <DataTable tableClassName="min-w-[600px]">
+            <THead>
+              <tr><TH>{tr('Imię i nazwisko')}</TH><TH>{tr('Rola')}</TH><TH>{tr('Email')}</TH><TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH></tr>
+            </THead>
+            <tbody>
+              {teachers.map(t => (
+                <TR key={t.id}>
+                  <TD className="font-medium text-gray-900 dark:text-white">{t.full_name}</TD>
+                  <TD muted>{t.role}</TD>
+                  <TD muted>{t.email}</TD>
+                  <TD align="right">
+                    <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
                       <button onClick={() => { setTeacherForm(t); setShowTeacherModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">{tr('Edytuj')}</button>
                       <button onClick={() => deleteTeacher(t.id)} className="text-red-500 dark:text-red-400 font-medium">{tr('Usuń')}</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </div>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         </section>
       )}
 
@@ -591,42 +589,42 @@ export default function KidsModule() {
             <button data-tour="kids-student-new" onClick={() => { setGlobalStudentForm({ id: null, full_name: '', birth_year: '', parent_info: '', notes: '', group_id: null, household_id: null }); setShowGlobalStudentModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-4 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><UserPlus size={18}/> Nowy uczeń</button>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm min-w-[700px]">
-             {/* USUNIĘTO STYLE BACKGROUND BLACK - TERAZ JEST CZYSTA KLASA */}
-            <thead className="text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              <tr><th className="p-4">{tr('Imię i nazwisko')}</th><th className="p-4">Wiek/Rocznik</th><th className="p-4">{tr('Rodzina')}</th><th className="p-4">{tr('Grupa')}</th><th className="p-4 text-right">{tr('Akcje')}</th></tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-              {filteredStudents.map((s) => {
-                const household = households.find(h => h.id === s.household_id);
-                return (
-                <tr key={s.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                  <td className="p-4 font-medium text-gray-800 dark:text-gray-200">{s.full_name}</td>
-                  <td className="p-4 text-gray-600 dark:text-gray-400">{s.birth_year || '-'}</td>
-                  <td className="p-4">
-                    {household ? (
-                      <span className="px-2 py-1 rounded-lg text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                        {household.name}
-                        {household.phone_last_four && <span className="text-blue-500 dark:text-blue-400 ml-1">(...{household.phone_last_four})</span>}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 dark:text-gray-500">-</span>
-                    )}
-                  </td>
-                  <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${s.group_id ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>{groups.find(g => g.id === s.group_id)?.name || '-'}</span></td>
-                  <td className="p-4 text-right flex justify-end gap-2">
+        <DataTable tableClassName="min-w-[700px]">
+          <THead>
+            <tr><TH>{tr('Imię i nazwisko')}</TH><TH>Wiek/Rocznik</TH><TH>{tr('Rodzina')}</TH><TH>{tr('Grupa')}</TH><TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH></tr>
+          </THead>
+          <tbody>
+            {filteredStudents.map((s) => {
+              const household = households.find(h => h.id === s.household_id);
+              const groupName = groups.find(g => g.id === s.group_id)?.name;
+              return (
+              <TR key={s.id}>
+                <TD className="font-medium text-gray-900 dark:text-white">{s.full_name}</TD>
+                <TD muted numeric>{s.birth_year || ''}</TD>
+                <TD>
+                  {household ? (
+                    <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                      {household.name}
+                      {household.phone_last_four && <span className="text-blue-500 dark:text-blue-400 ml-1">(...{household.phone_last_four})</span>}
+                    </span>
+                  ) : null}
+                </TD>
+                <TD>
+                  {groupName ? (
+                    <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">{groupName}</span>
+                  ) : null}
+                </TD>
+                <TD align="right">
+                  <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
                     <button onClick={() => openEditStudent(s)} className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline">{tr('Edytuj')}</button>
                     <button onClick={() => deleteStudent(s.id)} className="text-red-500 dark:text-red-400 font-medium hover:underline">{tr('Usuń')}</button>
-                  </td>
-                </tr>
-              );})}
-              {filteredStudents.length === 0 && <tr><td colSpan="5" className="p-6 text-center text-gray-400 dark:text-gray-500">{t('Brak uczniów')}</td></tr>}
-            </tbody>
-          </table>
-          </div>
-        </div>
+                  </div>
+                </TD>
+              </TR>
+            );})}
+            {filteredStudents.length === 0 && <EmptyRow colSpan={5}>{t('Brak uczniów')}</EmptyRow>}
+          </tbody>
+        </DataTable>
         </section>
       )}
 
@@ -721,17 +719,17 @@ export default function KidsModule() {
               <button onClick={attachStudentToGroup} className="bg-accent-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-accent-primary h-[46px]">{tr('Dodaj')}</button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-3">{tr('Imię')}</th><th className="p-3">Wiek</th><th className="p-3">Kontakt</th><th className="p-3">{tr('Akcja')}</th></tr></thead>
-                <tbody className="divide-y dark:divide-gray-700">
+              <DataTable>
+                <THead><tr><TH>{tr('Imię')}</TH><TH>Wiek</TH><TH>Kontakt</TH><TH align="right"><span className="sr-only">{tr('Akcja')}</span></TH></tr></THead>
+                <tbody>
                   {groupStudents.map(s => (
-                    <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200">
-                      <td className="p-3 font-medium">{s.full_name}</td><td className="p-3">{s.birth_year}</td><td className="p-3">{s.parent_info}</td>
-                      <td className="p-3"><button onClick={() => detachStudentFromGroup(s.id)} className="text-red-500 dark:text-red-400 hover:underline text-xs uppercase font-bold">{t('Odłącz')}</button></td>
-                    </tr>
+                    <TR key={s.id}>
+                      <TD className="font-medium text-gray-900 dark:text-white">{s.full_name}</TD><TD muted numeric>{s.birth_year}</TD><TD muted>{s.parent_info}</TD>
+                      <TD align="right"><button onClick={() => detachStudentFromGroup(s.id)} className="text-red-500 dark:text-red-400 hover:underline text-xs uppercase font-bold opacity-60 group-hover/row:opacity-100 transition-opacity">{t('Odłącz')}</button></TD>
+                    </TR>
                   ))}
                 </tbody>
-              </table>
+              </DataTable>
             </div>
           </div>
         </div>,

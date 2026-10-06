@@ -6,6 +6,7 @@ import Modal from '../../../components/Modal';
 import { SESSION_TYPES, sessionTypeLabel, sessionTypeColor, sessionAttendance, memberName, formatDate } from '../lib/attendanceApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 
 const emptyForm = {
   title: '',
@@ -189,51 +190,49 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
             <p className="text-gray-500 dark:text-gray-400">Brak sesji dla wybranych filtrów.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 font-semibold">Data</th>
-                  <th className="px-4 py-3 font-semibold">Sesja</th>
-                  <th className="px-4 py-3 font-semibold">Typ</th>
-                  <th className="px-4 py-3 font-semibold text-right">Frekwencja</th>
-                  <th className="px-4 py-3 font-semibold text-right">Akcje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(s => {
-                  const count = sessionAttendance(s, presentCounts[s.id]);
-                  const usesRecords = (presentCounts[s.id] || 0) > 0;
-                  return (
-                    <tr key={s.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer" onClick={() => setDetail(s)}>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(s.session_date)}</td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900 dark:text-white">{s.title || sessionTypeLabel(s.session_type)}</div>
-                        {s.note && <div className="text-xs text-gray-400 truncate max-w-[280px]">{s.note}</div>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                          <span className="w-2 h-2 rounded-full" style={{ background: sessionTypeColor(s.session_type) }} />
-                          {sessionTypeLabel(s.session_type)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{count}</span>
-                        <span className="ml-1 text-xs text-gray-400">{usesRecords ? 'obecnych' : 'szacunkowo'}</span>
-                      </td>
-                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => setDetail(s)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700" title="Lista obecności"><ChevronRight size={16} /></button>
-                          <button onClick={() => openEdit(s)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
-                          <button onClick={() => remove(s)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Data</TH>
+                <TH>Sesja</TH>
+                <TH>Typ</TH>
+                <TH align="right">Frekwencja</TH>
+                <TH align="right"><span className="sr-only">Akcje</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filtered.map(s => {
+                const count = sessionAttendance(s, presentCounts[s.id]);
+                const usesRecords = (presentCounts[s.id] || 0) > 0;
+                return (
+                  <TR key={s.id} onClick={() => setDetail(s)}>
+                    <TD muted numeric className="whitespace-nowrap">{formatDate(s.session_date)}</TD>
+                    <TD>
+                      <div className="font-medium text-gray-900 dark:text-white">{s.title || sessionTypeLabel(s.session_type)}</div>
+                      {s.note && <div className="text-xs text-gray-400 truncate max-w-[280px]">{s.note}</div>}
+                    </TD>
+                    <TD muted>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full" style={{ background: sessionTypeColor(s.session_type) }} />
+                        {sessionTypeLabel(s.session_type)}
+                      </span>
+                    </TD>
+                    <TD align="right" numeric className="whitespace-nowrap">
+                      <span className="font-semibold text-gray-900 dark:text-white">{count}</span>
+                      <span className="ml-1 text-xs text-gray-400">{usesRecords ? 'obecnych' : 'szacunkowo'}</span>
+                    </TD>
+                    <TD align="right" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                        <button onClick={() => setDetail(s)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700" title="Lista obecności"><ChevronRight size={16} /></button>
+                        <button onClick={() => openEdit(s)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
+                        <button onClick={() => remove(s)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
+                      </div>
+                    </TD>
+                  </TR>
+                );
+              })}
+            </tbody>
+          </DataTable>
         )}
       </div>
 

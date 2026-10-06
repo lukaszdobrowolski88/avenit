@@ -16,6 +16,7 @@ import { computeRange, shiftRangeYears, MONTHS_PL, yearOptions } from './finance
 import { buildReportModel, toCsvBlob, toXlsxBlob, reportElToPdfBlob, printReportEl, blobToBase64, download, slugForRange } from './finance/reportExport';
 import { IncomeExpenseBarChart, CashFlowAreaChart, CategoryDonut, YoYBars } from './finance/ReportCharts';
 import { usePermissions } from '../contexts/PermissionsContext';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -189,11 +190,11 @@ const CustomDatePicker = ({ label, value, onChange }) => {
 
 // Statusy wydatku (workflow akceptacji).
 const EXPENSE_STATUS = {
-  draft: { label: 'Szkic', cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
-  submitted: { label: 'Do akceptacji', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
-  approved: { label: 'Zaakceptowany', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-  rejected: { label: 'Odrzucony', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
-  paid: { label: 'Opłacony', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  draft: { label: 'Szkic', color: STATUS_COLORS.neutral },
+  submitted: { label: 'Do akceptacji', color: STATUS_COLORS.warning },
+  approved: { label: 'Zaakceptowany', color: STATUS_COLORS.success },
+  rejected: { label: 'Odrzucony', color: STATUS_COLORS.danger },
+  paid: { label: 'Opłacony', color: STATUS_COLORS.info },
 };
 
 // Eksport tablicy obiektów do pliku CSV (średnik = separator PL/Excel; BOM dla polskich znaków).
@@ -1330,54 +1331,54 @@ const FinanceModule = () => {
           {incomeBudgetItems.length > 0 && (
             <div className="mb-6 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-sm font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2"><ArrowUpRight size={16} /> {tr('Planowane przychody')}</div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
-                      <th className="text-left py-3 px-4 font-medium">{tr('Kategoria')}</th>
-                      <th className="text-left py-3 px-4 font-medium">{tr('Opis')}</th>
-                      <th className="text-right py-3 px-4 font-medium">{tr('Plan (PLN)')}</th>
-                      <th className="text-right py-3 px-4 font-medium">{tr('Realizacja (PLN)')}</th>
-                      <th className="text-center py-3 px-4 font-medium">{tr('% Realizacji')}</th>
-                      <th className="text-right py-3 px-4 font-medium">{tr('Akcje')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {incomeBudgetItems.map((it) => {
-                      const planned = Number(it.planned_amount || 0);
-                      const real = calculateIncomeRealization(it.category);
-                      const pct = planned > 0 ? Math.round((real / planned) * 100) : 0;
-                      return (
-                        <tr key={it.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                          <td className="py-4 px-4 font-bold text-gray-900 dark:text-white">{it.category}</td>
-                          <td className="py-4 px-4 text-gray-600 dark:text-gray-400">{it.description}</td>
-                          <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium">
-                            <span className="inline-flex items-center gap-1.5 justify-end">
-                              {planned.toLocaleString('pl-PL')} zł
-                              {itemChanges(it.id).length > 0 && (
-                                <button onClick={() => setChangeItem(itemChanges(it.id))} title={tr('Kwota zmieniona — pokaż historię')} className="text-amber-500 hover:text-amber-600"><Clock size={13} /></button>
-                              )}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-right text-emerald-600 font-medium">{real.toLocaleString('pl-PL')} zł</td>
-                          <td className="py-4 px-4 text-center text-gray-900 dark:text-white">{pct}%</td>
-                          <td className="py-4 px-4 text-right whitespace-nowrap">
+              <DataTable flush>
+                <THead>
+                  <tr>
+                    <TH>{tr('Kategoria')}</TH>
+                    <TH>{tr('Opis')}</TH>
+                    <TH align="right">{tr('Plan (PLN)')}</TH>
+                    <TH align="right">{tr('Realizacja (PLN)')}</TH>
+                    <TH align="center">{tr('% Realizacji')}</TH>
+                    <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
+                  </tr>
+                </THead>
+                <tbody>
+                  {incomeBudgetItems.map((it) => {
+                    const planned = Number(it.planned_amount || 0);
+                    const real = calculateIncomeRealization(it.category);
+                    const pct = planned > 0 ? Math.round((real / planned) * 100) : 0;
+                    return (
+                      <TR key={it.id}>
+                        <TD className="font-semibold text-gray-900 dark:text-white">{it.category}</TD>
+                        <TD muted>{it.description}</TD>
+                        <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 justify-end">
+                            {planned.toLocaleString('pl-PL')} zł
+                            {itemChanges(it.id).length > 0 && (
+                              <button onClick={() => setChangeItem(itemChanges(it.id))} title={tr('Kwota zmieniona — pokaż historię')} className="text-amber-500 hover:text-amber-600"><Clock size={13} /></button>
+                            )}
+                          </span>
+                        </TD>
+                        <TD align="right" numeric className="text-emerald-600 font-medium whitespace-nowrap">{real.toLocaleString('pl-PL')} zł</TD>
+                        <TD align="center" numeric>{pct}%</TD>
+                        <TD align="right" className="whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
                             <button onClick={() => { setBudgetForm({ ...it, planned_amount: String(it.planned_amount) }); setShowBudgetModal(true); }} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg" title={tr('Edytuj')}><Edit2 size={16} /></button>
                             <button onClick={() => deleteBudgetItem(it.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg" title={tr('Usuń')}><Trash2 size={16} /></button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    <tr className="bg-emerald-50/60 dark:bg-emerald-900/10 border-t-2 border-emerald-200 dark:border-emerald-900/40 font-bold">
-                      <td className="py-3 px-4 text-gray-900 dark:text-white" colSpan={2}>{tr('Suma przychodów')}</td>
-                      <td className="py-3 px-4 text-right text-gray-900 dark:text-white">{totalPlannedIncome.toLocaleString('pl-PL')} zł</td>
-                      <td className="py-3 px-4 text-right text-emerald-600">{incomeBudgetItems.reduce((s, it) => s + calculateIncomeRealization(it.category), 0).toLocaleString('pl-PL')} zł</td>
-                      <td className="py-3 px-4"></td>
-                      <td className="py-3 px-4"></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                          </div>
+                        </TD>
+                      </TR>
+                    );
+                  })}
+                  <TR className="bg-gray-50/70 dark:bg-gray-800/40 font-semibold">
+                    <TD className="text-gray-900 dark:text-white" colSpan={2}>{tr('Suma przychodów')}</TD>
+                    <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">{totalPlannedIncome.toLocaleString('pl-PL')} zł</TD>
+                    <TD align="right" numeric className="text-emerald-600 whitespace-nowrap">{incomeBudgetItems.reduce((s, it) => s + calculateIncomeRealization(it.category), 0).toLocaleString('pl-PL')} zł</TD>
+                    <TD />
+                    <TD />
+                  </TR>
+                </tbody>
+              </DataTable>
             </div>
           )}
 
@@ -1404,19 +1405,18 @@ const FinanceModule = () => {
           ) : expenseBudgetItems.length === 0 ? null : (
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="px-4 py-2.5 bg-red-50 dark:bg-red-900/10 text-sm font-bold text-red-700 dark:text-red-300 flex items-center gap-2"><ArrowDownRight size={16} /> {tr('Planowane wydatki')}</div>
-              <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Służba')}</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Opis kosztu')}</th>
-                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Plan (PLN)</th>
-                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Realizacja (PLN)</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">% Realizacji</th>
-                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Pozostało')}</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Akcje')}</th>
+              <DataTable flush>
+                <THead>
+                  <tr>
+                    <TH>{t('Służba')}</TH>
+                    <TH>{t('Opis kosztu')}</TH>
+                    <TH align="right">Plan (PLN)</TH>
+                    <TH align="right">Realizacja (PLN)</TH>
+                    <TH align="center">% Realizacji</TH>
+                    <TH align="right">{t('Pozostało')}</TH>
+                    <TH align="center"><span className="sr-only">{t('Akcje')}</span></TH>
                   </tr>
-                </thead>
+                </THead>
                 <tbody>
                   {(() => {
                     // Group items by category
@@ -1456,20 +1456,17 @@ const FinanceModule = () => {
                         categoryTotalRemaining += remaining;
 
                         rows.push(
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition"
-                          >
+                          <TR key={item.id}>
                             {itemIndex === 0 && (
-                              <td
-                                className="py-4 px-4 text-gray-900 dark:text-white font-bold"
+                              <TD
+                                className="font-semibold text-gray-900 dark:text-white"
                                 rowSpan={totalRowSpan}
                               >
                                 {item.category}
-                              </td>
+                              </TD>
                             )}
-                            <td className="py-4 px-4 text-gray-600 dark:text-gray-400">{item.description}</td>
-                            <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium">
+                            <TD muted>{item.description}</TD>
+                            <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                               <span className="inline-flex items-center gap-1.5 justify-end">
                                 {Number(item.planned_amount || 0).toLocaleString('pl-PL')} zł
                                 {itemChanges(item.id).length > 0 && (
@@ -1478,9 +1475,11 @@ const FinanceModule = () => {
                                   </button>
                                 )}
                               </span>
-                            </td>
-                            <td
-                              className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
+                            </TD>
+                            <TD
+                              align="right"
+                              numeric
+                              className="font-medium text-gray-900 dark:text-white whitespace-nowrap cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
                               onClick={() => {
                                 const key = `${item.id}`;
                                 setExpandedBudgetItems(prev => ({
@@ -1494,10 +1493,10 @@ const FinanceModule = () => {
                                 <ChevronUp size={16} className="inline ml-1" /> :
                                 <ChevronDown size={16} className="inline ml-1" />
                               }
-                            </td>
-                            <td className="py-4 px-4">
+                            </TD>
+                            <TD>
                               <div className="space-y-2">
-                                <div className="text-center font-bold text-gray-900 dark:text-white">
+                                <div className="text-center font-semibold tabular-nums text-gray-900 dark:text-white">
                                   {percentage.toFixed(1)}%
                                 </div>
                                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
@@ -1507,12 +1506,12 @@ const FinanceModule = () => {
                                   ></div>
                                 </div>
                               </div>
-                            </td>
-                            <td className={`py-4 px-4 text-right font-bold ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            </TD>
+                            <TD align="right" numeric className={`font-semibold whitespace-nowrap ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                               {remaining.toLocaleString('pl-PL')} zł
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <div className="flex justify-center gap-2">
+                            </TD>
+                            <TD align="center">
+                              <div className="flex justify-center gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => {
                                     setBudgetForm(item);
@@ -1531,8 +1530,8 @@ const FinanceModule = () => {
                                   <Trash2 size={16} />
                                 </button>
                               </div>
-                            </td>
-                          </tr>
+                            </TD>
+                          </TR>
                         );
 
                         // Add expandable expense list row
@@ -1542,8 +1541,8 @@ const FinanceModule = () => {
                           );
 
                           rows.push(
-                            <tr key={`expenses-${item.id}`} className="bg-gray-50 dark:bg-gray-800/50">
-                              <td colSpan={7} className="py-4 px-4">
+                            <TR key={`expenses-${item.id}`} className="bg-gray-50/70 dark:bg-gray-800/40">
+                              <TD colSpan={7}>
                                 {categoryExpenses.length > 0 ? (
                                   <div className="space-y-2">
                                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -1593,8 +1592,8 @@ const FinanceModule = () => {
                                     {tr('Brak wydatków w tej pozycji budżetu')}
                                   </p>
                                 )}
-                              </td>
-                            </tr>
+                              </TD>
+                            </TR>
                           );
                         }
                       });
@@ -1607,24 +1606,24 @@ const FinanceModule = () => {
 
                       // Subtotal row for this category
                       rows.push(
-                        <tr key={`subtotal-${category}`} className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 border-b-2 border-accent-primary-light dark:border-accent-primary font-bold">
-                          <td className="py-3 px-4 text-gray-900 dark:text-white" colSpan={2}>
+                        <TR key={`subtotal-${category}`} className="bg-gray-50/70 dark:bg-gray-800/40 font-semibold">
+                          <TD className="text-gray-900 dark:text-white" colSpan={2}>
                             Podsumowanie: {category}
-                          </td>
-                          <td className="py-3 px-4 text-right text-gray-900 dark:text-white">
+                          </TD>
+                          <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
                             {categoryTotalPlanned.toLocaleString('pl-PL')} zł
-                          </td>
-                          <td className="py-3 px-4 text-right text-gray-900 dark:text-white">
+                          </TD>
+                          <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
                             {categoryTotalRealization.toLocaleString('pl-PL')} zł
-                          </td>
-                          <td className="py-3 px-4 text-center text-gray-900 dark:text-white">
+                          </TD>
+                          <TD align="center" numeric className="text-gray-900 dark:text-white">
                             {categoryPercentage.toFixed(1)}%
-                          </td>
-                          <td className={`py-3 px-4 text-right ${categoryTotalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          </TD>
+                          <TD align="right" numeric className={`whitespace-nowrap ${categoryTotalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {categoryTotalRemaining.toLocaleString('pl-PL')} zł
-                          </td>
-                          <td className="py-3 px-4"></td>
-                        </tr>
+                          </TD>
+                          <TD />
+                        </TR>
                       );
                     });
 
@@ -1632,31 +1631,30 @@ const FinanceModule = () => {
 
                     // Grand total row
                     rows.push(
-                      <tr key="grand-total" className="bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/60 dark:to-accent-secondary-darkest/60 border-t-4 border-accent-primary-light dark:border-accent-primary-light font-bold text-lg">
-                        <td className="py-4 px-4 text-gray-900 dark:text-white" colSpan={2}>
+                      <TR key="grand-total" className="bg-gray-100/70 dark:bg-gray-700/40 font-bold">
+                        <TD className="text-gray-900 dark:text-white" colSpan={2}>
                           {tr('SUMA CAŁKOWITA')}
-                        </td>
-                        <td className="py-4 px-4 text-right text-gray-900 dark:text-white">
+                        </TD>
+                        <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
                           {grandTotalPlanned.toLocaleString('pl-PL')} zł
-                        </td>
-                        <td className="py-4 px-4 text-right text-gray-900 dark:text-white">
+                        </TD>
+                        <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
                           {grandTotalRealization.toLocaleString('pl-PL')} zł
-                        </td>
-                        <td className="py-4 px-4 text-center text-gray-900 dark:text-white">
+                        </TD>
+                        <TD align="center" numeric className="text-gray-900 dark:text-white">
                           {grandPercentage.toFixed(1)}%
-                        </td>
-                        <td className={`py-4 px-4 text-right ${grandTotalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        </TD>
+                        <TD align="right" numeric className={`whitespace-nowrap ${grandTotalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {grandTotalRemaining.toLocaleString('pl-PL')} zł
-                        </td>
-                        <td className="py-4 px-4"></td>
-                      </tr>
+                        </TD>
+                        <TD />
+                      </TR>
                     );
 
                     return rows;
                   })()}
                 </tbody>
-              </table>
-              </div>
+              </DataTable>
             </div>
           )}
 
@@ -1778,49 +1776,45 @@ const FinanceModule = () => {
           ) : filteredIncomeTransactions.length === 0 ? (
             <EmptyState title={incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : tr('Brak wpływów pasujących do filtrów')} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Data')}</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Typ</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Źródło')}</th>
-                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kwota')}</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Notatka')}</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Tagi')}</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Akcje')}</th>
+            <DataTable>
+                <THead>
+                  <tr>
+                    <TH>{tr('Data')}</TH>
+                    <TH>Typ</TH>
+                    <TH>{t('Źródło')}</TH>
+                    <TH align="right">{t('Kwota')}</TH>
+                    <TH>{t('Notatka')}</TH>
+                    <TH align="center">{t('Tagi')}</TH>
+                    <TH align="center"><span className="sr-only">{t('Akcje')}</span></TH>
                   </tr>
-                </thead>
+                </THead>
                 <tbody>
                   {filteredIncomeTransactions.map((transaction) => (
-                    <tr
-                      key={transaction.id}
-                      className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                    >
-                      <td className="py-4 px-4 text-gray-900 dark:text-white text-sm">
+                    <TR key={transaction.id}>
+                      <TD numeric className="whitespace-nowrap">
                         {new Date(transaction.date).toLocaleDateString('pl-PL')}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+                      </TD>
+                      <TD>
+                        <StatusPill color={STATUS_COLORS.success}>
                           {transaction.type}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-gray-900 dark:text-white text-sm">
+                        </StatusPill>
+                      </TD>
+                      <TD>
                         {transaction.source}
-                      </td>
-                      <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-bold">
+                      </TD>
+                      <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
                         {transaction.amount.toLocaleString('pl-PL')} zł
-                      </td>
-                      <td className="py-4 px-4 text-gray-600 dark:text-gray-400 text-sm">
-                        {transaction.notes || '-'}
-                      </td>
-                      <td className="py-4 px-4 text-center">
+                      </TD>
+                      <TD muted>
+                        {transaction.notes || ''}
+                      </TD>
+                      <TD align="center">
                         {transaction.tags && transaction.tags.length > 0 ? (
                           <div className="flex flex-wrap gap-1 justify-center">
                             {transaction.tags.map((tag, idx) => (
                               <span
                                 key={idx}
-                                className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
+                                className="px-2 py-0.5 rounded-full text-xs flex items-center gap-1 font-medium"
                                 style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
                               >
                                 <Tag size={10} />
@@ -1828,12 +1822,10 @@ const FinanceModule = () => {
                               </span>
                             ))}
                           </div>
-                        ) : (
-                          <span className="text-xs text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <div className="flex justify-center gap-2">
+                        ) : null}
+                      </TD>
+                      <TD align="center">
+                        <div className="flex justify-center gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
                           <button
                             onClick={() => {
                               setIncomeForm(transaction);
@@ -1852,12 +1844,11 @@ const FinanceModule = () => {
                             <Trash2 size={16} />
                           </button>
                         </div>
-                      </td>
-                    </tr>
+                      </TD>
+                    </TR>
                   ))}
                 </tbody>
-              </table>
-            </div>
+            </DataTable>
           )}
         </section>
       )}
@@ -1976,73 +1967,69 @@ const FinanceModule = () => {
           ) : filteredExpenseTransactions.length === 0 ? (
             <EmptyState title={expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : tr('Brak wydatków pasujących do filtrów')} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Data')}</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Kategoria')}</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Opis')}</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kontrahent')}</th>
-                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kwota')}</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Odpowiedzialny')}</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Załączniki')}</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Akcje')}</th>
+            <DataTable minWidth={900}>
+                <THead>
+                  <tr>
+                    <TH>{tr('Data')}</TH>
+                    <TH>{tr('Kategoria')}</TH>
+                    <TH>{tr('Opis')}</TH>
+                    <TH>{t('Kontrahent')}</TH>
+                    <TH align="right">{t('Kwota')}</TH>
+                    <TH>{t('Odpowiedzialny')}</TH>
+                    <TH align="center">{t('Załączniki')}</TH>
+                    <TH align="center"><span className="sr-only">{t('Akcje')}</span></TH>
                   </tr>
-                </thead>
+                </THead>
                 <tbody>
                   {filteredExpenseTransactions.map((transaction) => (
-                    <tr
-                      key={transaction.id}
-                      className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                    >
-                      <td className="py-4 px-4 text-gray-900 dark:text-white text-sm">
+                    <TR key={transaction.id}>
+                      <TD numeric className="whitespace-nowrap">
                         {new Date(transaction.payment_date).toLocaleDateString('pl-PL')}
-                      </td>
-                      <td className="py-4 px-4">
+                      </TD>
+                      <TD>
                         <div className="flex flex-col items-start gap-1">
-                          <span className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-full text-xs font-medium">
+                          <StatusPill color={STATUS_COLORS.danger}>
                             {transaction.category}
-                          </span>
+                          </StatusPill>
                           {transaction.cost_category && (() => {
                             const cc = expenseCategories.find((c) => c.name === transaction.cost_category);
                             const col = cc?.color || '#6366f1';
                             return (
-                              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: `${col}22`, color: col }}>
+                              <StatusPill color={col}>
                                 {transaction.cost_category}
-                              </span>
+                              </StatusPill>
                             );
                           })()}
                         </div>
-                      </td>
-                      <td className="py-4 px-4 text-gray-900 dark:text-white text-sm">
-                        {transaction.description || '-'}
-                      </td>
-                      <td className="py-4 px-4 text-gray-600 dark:text-gray-400 text-sm">
+                      </TD>
+                      <TD>
+                        {transaction.description || ''}
+                      </TD>
+                      <TD muted>
                         {transaction.contractor}
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        <div className="text-gray-900 dark:text-white font-bold">{transaction.amount.toLocaleString('pl-PL')} zł</div>
+                      </TD>
+                      <TD align="right" numeric>
+                        <div className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{transaction.amount.toLocaleString('pl-PL')} zł</div>
                         <div className="flex flex-col items-end gap-1 mt-1">
                           {transaction.status && transaction.status !== 'approved' && (
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${(EXPENSE_STATUS[transaction.status] || EXPENSE_STATUS.approved).cls}`}>
+                            <StatusPill color={(EXPENSE_STATUS[transaction.status] || EXPENSE_STATUS.approved).color}>
                               {tr((EXPENSE_STATUS[transaction.status] || {}).label || transaction.status)}
-                            </span>
+                            </StatusPill>
                           )}
                           {transaction.is_paid === false && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                            <StatusPill color={STATUS_COLORS.warning}>
                               {tr('Do zapłaty')}{transaction.due_date ? ` · ${transaction.due_date}` : ''}
-                            </span>
+                            </StatusPill>
                           )}
                           {transaction.invoice_number && (
                             <span className="text-[10px] text-gray-400">FV {transaction.invoice_number}</span>
                           )}
                         </div>
-                      </td>
-                      <td className="py-4 px-4 text-gray-600 dark:text-gray-400 text-sm">
+                      </TD>
+                      <TD muted>
                         {transaction.responsible_person}
-                      </td>
-                      <td className="py-4 px-4 text-center">
+                      </TD>
+                      <TD align="center">
                         {transaction.documents && transaction.documents.length > 0 ? (
                           <div className="flex flex-col gap-1">
                             {transaction.documents.map((doc, idx) => (
@@ -2058,12 +2045,10 @@ const FinanceModule = () => {
                               </a>
                             ))}
                           </div>
-                        ) : (
-                          <span className="text-xs text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <div className="flex justify-center gap-1 flex-wrap">
+                        ) : null}
+                      </TD>
+                      <TD align="center">
+                        <div className="flex justify-center gap-1 flex-wrap opacity-60 group-hover/row:opacity-100 transition-opacity">
                           {transaction.status === 'submitted' && (
                             <>
                               <button onClick={() => setExpenseStatus(transaction.id, 'approved')} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title={tr('Zatwierdź')}><CheckCircle size={16} /></button>
@@ -2094,12 +2079,11 @@ const FinanceModule = () => {
                             <Trash2 size={16} />
                           </button>
                         </div>
-                      </td>
-                    </tr>
+                      </TD>
+                    </TR>
                   ))}
                 </tbody>
-              </table>
-            </div>
+            </DataTable>
           )}
         </section>
       )}
@@ -2390,31 +2374,31 @@ const FinanceModule = () => {
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><DollarSign size={20} className="text-accent-primary" />{tr('Realizacja budżetu wg służb')} ({reportRange.year})</h3>
               {reportModel.budgetExecution.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead><tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Służba')}</th>
-                      <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Planowany')}</th>
-                      <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Zrealizowany')}</th>
-                      <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Realizacja')}</th>
-                      <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Pozostało')}</th>
-                    </tr></thead>
-                    <tbody>
-                      {reportModel.budgetExecution.map((b) => {
-                        const progressColor = b.pct < 80 ? 'from-green-500 to-green-600' : b.pct <= 100 ? 'from-yellow-500 to-yellow-600' : 'from-red-500 to-red-600';
-                        return (
-                          <tr key={b.category} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                            <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">{b.category}</td>
-                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">{Number(b.planned).toLocaleString('pl-PL')} zł</td>
-                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">{Number(b.realized).toLocaleString('pl-PL')} zł</td>
-                            <td className="py-3 px-4"><div className="flex items-center gap-2"><div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2"><div className={`h-2 rounded-full bg-gradient-to-r ${progressColor}`} style={{ width: `${Math.min(b.pct, 100)}%` }} /></div><span className="text-sm font-bold text-gray-900 dark:text-white w-14 text-right">{b.pct.toFixed(0)}%</span></div></td>
-                            <td className={`py-3 px-4 text-right font-bold ${b.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(b.remaining).toLocaleString('pl-PL')} zł</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable>
+                  <THead>
+                    <tr>
+                      <TH>{t('Służba')}</TH>
+                      <TH align="right">{t('Planowany')}</TH>
+                      <TH align="right">{t('Zrealizowany')}</TH>
+                      <TH align="center">{t('Realizacja')}</TH>
+                      <TH align="right">{t('Pozostało')}</TH>
+                    </tr>
+                  </THead>
+                  <tbody>
+                    {reportModel.budgetExecution.map((b) => {
+                      const progressColor = b.pct < 80 ? 'from-green-500 to-green-600' : b.pct <= 100 ? 'from-yellow-500 to-yellow-600' : 'from-red-500 to-red-600';
+                      return (
+                        <TR key={b.category}>
+                          <TD className="font-medium text-gray-900 dark:text-white">{b.category}</TD>
+                          <TD align="right" numeric className="whitespace-nowrap">{Number(b.planned).toLocaleString('pl-PL')} zł</TD>
+                          <TD align="right" numeric className="whitespace-nowrap">{Number(b.realized).toLocaleString('pl-PL')} zł</TD>
+                          <TD><div className="flex items-center gap-2"><div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2"><div className={`h-2 rounded-full bg-gradient-to-r ${progressColor}`} style={{ width: `${Math.min(b.pct, 100)}%` }} /></div><span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white w-14 text-right">{b.pct.toFixed(0)}%</span></div></TD>
+                          <TD align="right" numeric className={`font-semibold whitespace-nowrap ${b.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(b.remaining).toLocaleString('pl-PL')} zł</TD>
+                        </TR>
+                      );
+                    })}
+                  </tbody>
+                </DataTable>
               ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak pozycji budżetowych')}</p>}
             </div>
 
@@ -2422,31 +2406,31 @@ const FinanceModule = () => {
             {reportModel.unpaidInvoices.length > 0 && (
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><AlertTriangle size={20} className="text-amber-500" />{tr('Nieopłacone zobowiązania')} <span className="text-sm font-normal text-gray-400">({reportModel.unpaidInvoices.length})</span></h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead><tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Kontrahent')}</th>
-                      <th className="text-left py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Opis')}</th>
-                      <th className="text-left py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Nr faktury')}</th>
-                      <th className="text-left py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Termin')}</th>
-                      <th className="text-right py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Kwota')}</th>
-                    </tr></thead>
-                    <tbody>
-                      {reportModel.unpaidInvoices.map((e, idx) => {
-                        const overdue = e.due_date && e.due_date < new Date().toISOString().slice(0, 10);
-                        return (
-                          <tr key={idx} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                            <td className="py-2.5 px-3 font-medium text-gray-900 dark:text-white">{e.contractor}</td>
-                            <td className="py-2.5 px-3 text-gray-600 dark:text-gray-300 truncate max-w-[220px]">{e.description}</td>
-                            <td className="py-2.5 px-3 text-gray-500 dark:text-gray-400">{e.invoice_number || '—'}</td>
-                            <td className={`py-2.5 px-3 ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600 dark:text-gray-300'}`}>{e.due_date || '—'}{overdue ? ' ⚠' : ''}</td>
-                            <td className="py-2.5 px-3 text-right font-bold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString('pl-PL')} zł</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable>
+                  <THead>
+                    <tr>
+                      <TH>{tr('Kontrahent')}</TH>
+                      <TH>{tr('Opis')}</TH>
+                      <TH>{tr('Nr faktury')}</TH>
+                      <TH>{tr('Termin')}</TH>
+                      <TH align="right">{tr('Kwota')}</TH>
+                    </tr>
+                  </THead>
+                  <tbody>
+                    {reportModel.unpaidInvoices.map((e, idx) => {
+                      const overdue = e.due_date && e.due_date < new Date().toISOString().slice(0, 10);
+                      return (
+                        <TR key={idx}>
+                          <TD className="font-medium text-gray-900 dark:text-white">{e.contractor}</TD>
+                          <TD muted className="truncate max-w-[220px]">{e.description}</TD>
+                          <TD muted numeric>{e.invoice_number || ''}</TD>
+                          <TD muted numeric className="whitespace-nowrap"><span className={overdue ? 'text-red-600 font-semibold' : ''}>{e.due_date || ''}{overdue ? ' ⚠' : ''}</span></TD>
+                          <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString('pl-PL')} zł</TD>
+                        </TR>
+                      );
+                    })}
+                  </tbody>
+                </DataTable>
               </div>
             )}
 

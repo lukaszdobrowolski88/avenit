@@ -6,6 +6,7 @@ import Modal from '../../../components/Modal';
 import { memberName, formatDate, todayIso, isUpcoming } from '../lib/serveApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 
 const emptyForm = { member_id: '', start_date: todayIso(), end_date: todayIso(), reason: '' };
 
@@ -136,37 +137,35 @@ export default function AvailabilityTab({ members, membersById, campusIdForInser
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 font-semibold">Wolontariusz</th>
-                  <th className="px-4 py-3 font-semibold">Od</th>
-                  <th className="px-4 py-3 font-semibold">Do</th>
-                  <th className="px-4 py-3 font-semibold">Powód</th>
-                  <th className="px-4 py-3 font-semibold text-right">Akcje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(b => (
-                  <tr key={b.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 dark:text-white">{memberName(membersById[b.member_id])}</div>
-                      {isUpcoming(b) && <span className="text-xs text-accent-primary dark:text-accent-primary-light">nadchodząca</span>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(b.start_date)}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(b.end_date)}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{b.reason || <span className="text-gray-400">—</span>}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => remove(b)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Wolontariusz</TH>
+                <TH>Od</TH>
+                <TH>Do</TH>
+                <TH>Powód</TH>
+                <TH align="right"><span className="sr-only">Akcje</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filtered.map(b => (
+                <TR key={b.id}>
+                  <TD>
+                    <div className="font-medium text-gray-900 dark:text-white">{memberName(membersById[b.member_id])}</div>
+                    {isUpcoming(b) && <span className="text-xs text-accent-primary dark:text-accent-primary-light">nadchodząca</span>}
+                  </TD>
+                  <TD muted numeric className="whitespace-nowrap">{formatDate(b.start_date)}</TD>
+                  <TD muted numeric className="whitespace-nowrap">{formatDate(b.end_date)}</TD>
+                  <TD muted>{b.reason || null}</TD>
+                  <TD align="right">
+                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                      <button onClick={() => remove(b)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
 

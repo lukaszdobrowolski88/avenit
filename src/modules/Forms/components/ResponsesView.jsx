@@ -15,7 +15,6 @@ import {
   Phone,
   CheckCircle,
   Clock,
-  AlertCircle,
   Banknote,
   Check,
   DollarSign,
@@ -29,6 +28,7 @@ import { formatPrice } from '../utils/fieldTypes';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 export default function ResponsesView({ form }) {
   const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -297,13 +297,13 @@ export default function ResponsesView({ form }) {
   const getPaymentStatusBadge = (status, paidAmt, dueAmt) => {
     switch (status) {
       case 'paid':
-        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium"><CheckCircle size={12} />{tr('Opłacone')}</span>);
+        return (<StatusPill color={STATUS_COLORS.success}>{tr('Opłacone')}</StatusPill>);
       case 'partial':
-        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium"><AlertCircle size={12} />Częściowo{paidAmt > 0 && dueAmt > 0 && <span className="text-[10px] font-normal ml-0.5">({formatPrice(paidAmt, 'PLN')}/{formatPrice(dueAmt, 'PLN')})</span>}</span>);
+        return (<StatusPill color="#ea580c">Częściowo{paidAmt > 0 && dueAmt > 0 && <span className="text-[10px] font-normal tabular-nums">({formatPrice(paidAmt, 'PLN')}/{formatPrice(dueAmt, 'PLN')})</span>}</StatusPill>);
       case 'pending':
-        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium"><Clock size={12} />{tr('Oczekuje')}</span>);
+        return (<StatusPill color={STATUS_COLORS.warning}>{tr('Oczekuje')}</StatusPill>);
       default:
-        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full text-xs font-medium">-</span>);
+        return null;
     }
   };
 
@@ -434,88 +434,84 @@ export default function ResponsesView({ form }) {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Uczestnik</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Kontakt</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Data')}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Kwota')}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Status')}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Akcje')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredParticipants.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
-                  onClick={() => setSelectedParticipant(p)}>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-sm font-semibold text-accent-primary dark:text-accent-primary-light">
-                        {(p.name || '?')[0]?.toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{p.name}</p>
-                        {p.isGroupContact && (
-                          <p className="text-[10px] text-blue-500">Osoba zgłaszająca · Grupa {p.groupSize} os.</p>
-                        )}
-                        {p.isGroupMember && (
-                          <p className="text-[10px] text-gray-400">Rejestracja grupowa</p>
-                        )}
-                      </div>
+        <DataTable flush>
+          <THead>
+            <tr>
+              <TH>Uczestnik</TH>
+              <TH>Kontakt</TH>
+              <TH>{tr('Data')}</TH>
+              <TH>{tr('Kwota')}</TH>
+              <TH>{tr('Status')}</TH>
+              <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
+            </tr>
+          </THead>
+          <tbody>
+            {filteredParticipants.map((p) => (
+              <TR key={p.id}
+                onClick={() => setSelectedParticipant(p)}>
+                <TD>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-sm font-semibold text-accent-primary dark:text-accent-primary-light">
+                      {(p.name || '?')[0]?.toUpperCase()}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                    {p.email && <div className="flex items-center gap-1"><Mail size={12} />{p.email}</div>}
-                    {p.phone && <div className="flex items-center gap-1"><Phone size={12} />{p.phone}</div>}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                    {formatDate(p.submittedAt)}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.totalAmount > 0 ? (
-                      <div>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {formatPrice(p.totalAmount, p.currency)}
-                        </span>
-                        {p.addonLabels?.length > 0 && (
-                          <div className="text-[10px] text-purple-500 mt-0.5">{p.addonLabels.join(', ')}</div>
-                        )}
-                        {p.isGroupContact && p.groupTotalAmount > 0 && (
-                          <div className="text-[10px] text-gray-400 mt-0.5">Grupa: {formatPrice(p.groupTotalAmount, p.currency)}</div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {getPaymentStatusBadge(p.status, p.paidAmount, p.totalAmount)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                      {p.totalAmount > 0 && (p.status === 'pending' || p.status === 'partial') && (
-                        <button onClick={() => { setPaymentModal({ participantId: p.id, amount: p.totalAmount, currency: p.currency, name: p.name }); setPaymentAmount(String(p.totalAmount - (p.paidAmount || 0))); }}
-                          className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" title={tr('Dodaj płatność')}>
-                          <Banknote size={16} />
-                        </button>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{p.name}</p>
+                      {p.isGroupContact && (
+                        <p className="text-[10px] text-blue-500">Osoba zgłaszająca · Grupa {p.groupSize} os.</p>
                       )}
-                      <button onClick={() => setSelectedParticipant(p)}
-                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title={tr('Szczegóły')}>
-                        <Eye size={16} />
-                      </button>
-                      <button onClick={() => handleDeleteResponse(p.responseId)}
-                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={tr('Usuń')}>
-                        <Trash2 size={16} />
-                      </button>
+                      {p.isGroupMember && (
+                        <p className="text-[10px] text-gray-400">Rejestracja grupowa</p>
+                      )}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </TD>
+                <TD muted>
+                  {p.email && <div className="flex items-center gap-1"><Mail size={12} />{p.email}</div>}
+                  {p.phone && <div className="flex items-center gap-1"><Phone size={12} />{p.phone}</div>}
+                </TD>
+                <TD muted numeric className="whitespace-nowrap">
+                  {formatDate(p.submittedAt)}
+                </TD>
+                <TD numeric>
+                  {p.totalAmount > 0 ? (
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {formatPrice(p.totalAmount, p.currency)}
+                      </span>
+                      {p.addonLabels?.length > 0 && (
+                        <div className="text-[10px] text-purple-500 mt-0.5">{p.addonLabels.join(', ')}</div>
+                      )}
+                      {p.isGroupContact && p.groupTotalAmount > 0 && (
+                        <div className="text-[10px] text-gray-400 mt-0.5">Grupa: {formatPrice(p.groupTotalAmount, p.currency)}</div>
+                      )}
+                    </div>
+                  ) : null}
+                </TD>
+                <TD>
+                  {getPaymentStatusBadge(p.status, p.paidAmount, p.totalAmount)}
+                </TD>
+                <TD align="right">
+                  <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                    {p.totalAmount > 0 && (p.status === 'pending' || p.status === 'partial') && (
+                      <button onClick={() => { setPaymentModal({ participantId: p.id, amount: p.totalAmount, currency: p.currency, name: p.name }); setPaymentAmount(String(p.totalAmount - (p.paidAmount || 0))); }}
+                        className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" title={tr('Dodaj płatność')}>
+                        <Banknote size={16} />
+                      </button>
+                    )}
+                    <button onClick={() => setSelectedParticipant(p)}
+                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title={tr('Szczegóły')}>
+                      <Eye size={16} />
+                    </button>
+                    <button onClick={() => handleDeleteResponse(p.responseId)}
+                      className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={tr('Usuń')}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </TD>
+              </TR>
+            ))}
+          </tbody>
+        </DataTable>
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">

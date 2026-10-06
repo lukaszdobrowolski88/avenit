@@ -3,6 +3,7 @@ import { useAttendance } from '../hooks/useAttendance';
 import { ClipboardList, LayoutGrid, RefreshCw, Search, Loader2 } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import NotifyParentButton from './NotifyParentButton';
+import { DataTable, THead, TH, TR, TD, EmptyRow, StatusPill, STATUS_COLORS } from '../../../../components/ui/DataTable';
 
 export default function AttendanceDashboard({ session, locations }) {
   const [view, setView] = useState('list');
@@ -228,95 +229,85 @@ export default function AttendanceDashboard({ session, locations }) {
           </div>
 
           {/* Table */}
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tr('Imię')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Sala</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kod</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tr('Check-in')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tr('Status')}</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tr('Akcje')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredCheckins.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-gray-400 dark:text-gray-500">
-                        {tr('Brak wyników')}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredCheckins.map((checkin) => {
-                      const name = checkin.is_guest
-                        ? checkin.guest_name
-                        : checkin.kids_students?.full_name;
-                      const isCheckedOut = !!checkin.checked_out_at;
+          <DataTable>
+            <THead>
+              <tr>
+                <TH>{tr('Imię')}</TH>
+                <TH>Sala</TH>
+                <TH>Kod</TH>
+                <TH>{tr('Check-in')}</TH>
+                <TH>{tr('Status')}</TH>
+                <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filteredCheckins.length === 0 ? (
+                <EmptyRow colSpan={6}>{tr('Brak wyników')}</EmptyRow>
+              ) : (
+                filteredCheckins.map((checkin) => {
+                  const name = checkin.is_guest
+                    ? checkin.guest_name
+                    : checkin.kids_students?.full_name;
+                  const isCheckedOut = !!checkin.checked_out_at;
 
-                      return (
-                        <tr
-                          key={checkin.id}
-                          className={`hover:bg-gray-50 dark:hover:bg-gray-900 transition ${isCheckedOut ? 'opacity-60' : ''}`}
-                        >
-                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                            <div className="flex items-center gap-2">
-                              {name}
-                              {checkin.is_guest && (
-                                <span className="bg-amber-400 dark:bg-amber-500 text-black px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                  {tr('GOŚĆ')}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                            {checkin.checkin_locations?.name}
-                            {checkin.checkin_locations?.room_number && (
-                              <span className="text-gray-500 dark:text-gray-500">
-                                {' '}({checkin.checkin_locations.room_number})
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-accent-primary dark:text-accent-primary-light font-semibold text-base">
-                              {checkin.security_code}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                            {new Date(checkin.checked_in_at).toLocaleTimeString('pl-PL', {
+                  return (
+                    <TR
+                      key={checkin.id}
+                      className={isCheckedOut ? 'opacity-60' : ''}
+                    >
+                      <TD className="font-medium text-gray-900 dark:text-white">
+                        <div className="flex items-center gap-2">
+                          {name}
+                          {checkin.is_guest && (
+                            <StatusPill color={STATUS_COLORS.warning}>{tr('GOŚĆ')}</StatusPill>
+                          )}
+                        </div>
+                      </TD>
+                      <TD>
+                        {checkin.checkin_locations?.name}
+                        {checkin.checkin_locations?.room_number && (
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {' '}({checkin.checkin_locations.room_number})
+                          </span>
+                        )}
+                      </TD>
+                      <TD numeric>
+                        <span className="text-accent-primary dark:text-accent-primary-light font-semibold text-base">
+                          {checkin.security_code}
+                        </span>
+                      </TD>
+                      <TD muted numeric>
+                        {new Date(checkin.checked_in_at).toLocaleTimeString('pl-PL', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </TD>
+                      <TD>
+                        {isCheckedOut ? (
+                          <StatusPill color={STATUS_COLORS.neutral} className="tabular-nums">
+                            Odebrany{' '}
+                            {new Date(checkin.checked_out_at).toLocaleTimeString('pl-PL', {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}
-                          </td>
-                          <td className="px-4 py-3">
-                            {isCheckedOut ? (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                Odebrany{' '}
-                                {new Date(checkin.checked_out_at).toLocaleTimeString('pl-PL', {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
-                                Obecny
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {!isCheckedOut && (
-                              <NotifyParentButton checkin={checkin} sessionId={session?.id} />
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                          </StatusPill>
+                        ) : (
+                          <StatusPill color={STATUS_COLORS.success}>
+                            Obecny
+                          </StatusPill>
+                        )}
+                      </TD>
+                      <TD align="right">
+                        {!isCheckedOut && (
+                          <NotifyParentButton checkin={checkin} sessionId={session?.id} />
+                        )}
+                      </TD>
+                    </TR>
+                  );
+                })
+              )}
+            </tbody>
+          </DataTable>
         </>
       )}
 

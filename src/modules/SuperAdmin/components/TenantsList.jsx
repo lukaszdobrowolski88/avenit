@@ -15,6 +15,7 @@ import {
   Edit
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 export default function TenantsList({ onSelectTenant }) {
   const { getTenants, suspendTenant, resumeTenant, extendTrial, loading } = useTenants();
@@ -59,11 +60,11 @@ export default function TenantsList({ onSelectTenant }) {
   };
 
   const getStatusBadge = (status) => {
-    const statusStyles = {
-      trial: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-      active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-      suspended: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-      cancelled: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+    const statusColors = {
+      trial: STATUS_COLORS.info,
+      active: STATUS_COLORS.success,
+      suspended: STATUS_COLORS.danger,
+      cancelled: STATUS_COLORS.neutral
     };
 
     const statusLabels = {
@@ -74,9 +75,9 @@ export default function TenantsList({ onSelectTenant }) {
     };
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[status] || statusStyles.cancelled}`}>
+      <StatusPill color={statusColors[status] || statusColors.cancelled}>
         {statusLabels[status] || status}
-      </span>
+      </StatusPill>
     );
   };
 
@@ -85,7 +86,7 @@ export default function TenantsList({ onSelectTenant }) {
       s => ['trialing', 'active', 'past_due'].includes(s.status)
     );
 
-    if (!subscription) return { plan: '-', price: '-' };
+    if (!subscription) return { plan: '', price: '' };
 
     const plan = subscription.subscription_plans;
     const price = subscription.billing_cycle === 'yearly'
@@ -93,8 +94,8 @@ export default function TenantsList({ onSelectTenant }) {
       : plan?.price_monthly;
 
     return {
-      plan: plan?.name || '-',
-      price: price ? formatPrice(price) : '-',
+      plan: plan?.name || '',
+      price: price ? formatPrice(price) : '',
       cycle: subscription.billing_cycle === 'yearly' ? '/rok' : '/mies.'
     };
   };
@@ -149,118 +150,113 @@ export default function TenantsList({ onSelectTenant }) {
             {tr('Brak klientów spełniających kryteria')}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
-                  <th className="px-4 py-3 font-medium">Klient</th>
-                  <th className="px-4 py-3 font-medium">{tr('Status')}</th>
-                  <th className="px-4 py-3 font-medium">Plan</th>
-                  <th className="px-4 py-3 font-medium">Cena</th>
-                  <th className="px-4 py-3 font-medium">Data rejestracji</th>
-                  <th className="px-4 py-3 font-medium text-right">{tr('Akcje')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tenants.map((tenant) => {
-                  const subInfo = getSubscriptionInfo(tenant);
-                  return (
-                    <tr
-                      key={tenant.id}
-                      className="border-t border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 flex items-center justify-center">
-                            <Building2 size={18} className="text-accent-primary dark:text-accent-primary-light" />
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Klient</TH>
+                <TH>{tr('Status')}</TH>
+                <TH>Plan</TH>
+                <TH>Cena</TH>
+                <TH>Data rejestracji</TH>
+                <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {tenants.map((tenant) => {
+                const subInfo = getSubscriptionInfo(tenant);
+                return (
+                  <TR key={tenant.id}>
+                    <TD>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 flex items-center justify-center">
+                          <Building2 size={18} className="text-accent-primary dark:text-accent-primary-light" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {tenant.name}
                           </div>
-                          <div>
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              {tenant.name}
-                            </div>
-                            <div className="text-sm text-gray-500 flex items-center gap-1">
-                              <Mail size={12} />
-                              {tenant.email}
-                            </div>
+                          <div className="text-sm text-gray-500 flex items-center gap-1">
+                            <Mail size={12} />
+                            {tenant.email}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {getStatusBadge(tenant.status)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-900 dark:text-white">
-                        {subInfo.plan}
-                      </td>
-                      <td className="px-4 py-3 text-gray-900 dark:text-white">
-                        {subInfo.price}{subInfo.cycle && subInfo.price !== '-' && (
-                          <span className="text-gray-500 text-sm">{subInfo.cycle}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Calendar size={14} />
-                          {new Date(tenant.created_at).toLocaleDateString('pl-PL')}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="relative inline-block">
-                          <button
-                            onClick={() => setShowActions(showActions === tenant.id ? null : tenant.id)}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                          >
-                            <MoreVertical size={18} className="text-gray-500" />
-                          </button>
+                      </div>
+                    </TD>
+                    <TD>
+                      {getStatusBadge(tenant.status)}
+                    </TD>
+                    <TD className="text-gray-900 dark:text-white">
+                      {subInfo.plan}
+                    </TD>
+                    <TD numeric className="text-gray-900 dark:text-white">
+                      {subInfo.price}{subInfo.cycle && subInfo.price && (
+                        <span className="text-gray-500 text-sm">{subInfo.cycle}</span>
+                      )}
+                    </TD>
+                    <TD muted numeric>
+                      <div className="flex items-center gap-1">
+                        <Calendar size={14} />
+                        {new Date(tenant.created_at).toLocaleDateString('pl-PL')}
+                      </div>
+                    </TD>
+                    <TD align="right">
+                      <div className="relative inline-block">
+                        <button
+                          onClick={() => setShowActions(showActions === tenant.id ? null : tenant.id)}
+                          className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-opacity ${showActions === tenant.id ? '' : 'opacity-60 group-hover/row:opacity-100'}`}
+                        >
+                          <MoreVertical size={18} className="text-gray-500" />
+                        </button>
 
-                          {showActions === tenant.id && (
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg z-10">
+                        {showActions === tenant.id && (
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg z-10">
+                            <button
+                              onClick={() => {
+                                onSelectTenant?.(tenant);
+                                setShowActions(null);
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-xl"
+                            >
+                              <Eye size={16} />
+                              {tr('Szczegóły')}
+                            </button>
+
+                            {tenant.status === 'trial' && (
                               <button
-                                onClick={() => {
-                                  onSelectTenant?.(tenant);
-                                  setShowActions(null);
-                                }}
-                                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-xl"
+                                onClick={() => handleExtendTrial(tenant.id)}
+                                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                               >
-                                <Eye size={16} />
-                                {tr('Szczegóły')}
+                                <Clock size={16} />
+                                {tr('Przedłuż trial')}
                               </button>
+                            )}
 
-                              {tenant.status === 'trial' && (
-                                <button
-                                  onClick={() => handleExtendTrial(tenant.id)}
-                                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                                >
-                                  <Clock size={16} />
-                                  {tr('Przedłuż trial')}
-                                </button>
-                              )}
-
-                              {tenant.status === 'suspended' ? (
-                                <button
-                                  onClick={() => handleResume(tenant.id)}
-                                  className="w-full px-4 py-2.5 text-left text-sm text-green-600 dark:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                                >
-                                  <Play size={16} />
-                                  {tr('Przywróć')}
-                                </button>
-                              ) : tenant.status !== 'cancelled' && (
-                                <button
-                                  onClick={() => handleSuspend(tenant.id)}
-                                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 last:rounded-b-xl"
-                                >
-                                  <Pause size={16} />
-                                  {tr('Zawieś')}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            {tenant.status === 'suspended' ? (
+                              <button
+                                onClick={() => handleResume(tenant.id)}
+                                className="w-full px-4 py-2.5 text-left text-sm text-green-600 dark:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                              >
+                                <Play size={16} />
+                                {tr('Przywróć')}
+                              </button>
+                            ) : tenant.status !== 'cancelled' && (
+                              <button
+                                onClick={() => handleSuspend(tenant.id)}
+                                className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 last:rounded-b-xl"
+                              >
+                                <Pause size={16} />
+                                {tr('Zawieś')}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </TD>
+                  </TR>
+                );
+              })}
+            </tbody>
+          </DataTable>
         )}
       </div>
 

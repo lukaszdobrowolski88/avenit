@@ -26,6 +26,7 @@ import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
+import { DataTable, THead, TH, TR, TD, EmptyRow, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -928,31 +929,30 @@ export default function HomeGroupsModule() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm min-w-[600px]">
-              <thead className="text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="p-4">{t('Imię i nazwisko')}</th>
-                  <th className="p-4">{t('Email')}</th>
-                  <th className="p-4">{t('Telefon')}</th>
-                  <th className="p-4 text-right">{t('Akcje')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {filteredLeaders.map((leader) => (
-                  <tr key={leader.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                    <td className="p-4 font-medium text-gray-800 dark:text-gray-200">
-                      <span className="inline-flex items-center gap-2">
-                        {leader.full_name}
-                        {leader.role === 'coordinator' && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-primary/10 text-accent-primary">{tr('Koordynator')}</span>
-                        )}
-                      </span>
-                    </td>
-                    <td className="p-4 text-gray-600 dark:text-gray-400">{leader.email || '-'}</td>
-                    <td className="p-4 text-gray-600 dark:text-gray-400">{leader.phone || '-'}</td>
-                    <td className="p-4 text-right flex justify-end gap-2">
+          <DataTable tableClassName="min-w-[600px]">
+            <THead>
+              <tr>
+                <TH>{t('Imię i nazwisko')}</TH>
+                <TH>{t('Email')}</TH>
+                <TH>{t('Telefon')}</TH>
+                <TH align="right"><span className="sr-only">{t('Akcje')}</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filteredLeaders.map((leader) => (
+                <TR key={leader.id}>
+                  <TD className="font-medium text-gray-900 dark:text-white">
+                    <span className="inline-flex items-center gap-2">
+                      {leader.full_name}
+                      {leader.role === 'coordinator' && (
+                        <StatusPill color={STATUS_COLORS.accent}>{tr('Koordynator')}</StatusPill>
+                      )}
+                    </span>
+                  </TD>
+                  <TD muted>{leader.email || ''}</TD>
+                  <TD muted numeric>{leader.phone || ''}</TD>
+                  <TD align="right">
+                    <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
                       <button
                         onClick={() => openModal('leader', leader)}
                         className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline"
@@ -965,20 +965,15 @@ export default function HomeGroupsModule() {
                       >
                         {tr('Usuń')}
                       </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredLeaders.length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="p-6 text-center text-gray-400 dark:text-gray-500">
-                      {tr('Brak liderów')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            </div>
-          </div>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+              {filteredLeaders.length === 0 && (
+                <EmptyRow colSpan={4}>{tr('Brak liderów')}</EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
         </section>
       )}
 
@@ -1006,61 +1001,62 @@ export default function HomeGroupsModule() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm min-w-[700px]">
-              <thead className="text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="p-4">{t('Imię i nazwisko')}</th>
-                  <th className="p-4">{t('Email')}</th>
-                  <th className="p-4">{t('Telefon')}</th>
-                  <th className="p-4">{t('Grupa')}</th>
-                  <th className="p-4 text-right">{t('Akcje')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {filteredMembers.map((member) => (
-                  <tr key={member.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                    <td className="p-4 font-medium text-gray-800 dark:text-gray-200">{member.full_name}</td>
-                    <td className="p-4 text-gray-600 dark:text-gray-400">{member.email || '-'}</td>
-                    <td className="p-4 text-gray-600 dark:text-gray-400">{member.phone || '-'}</td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-lg text-xs font-bold ${member.group_id ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
-                        {groups.find(g => g.id === member.group_id)?.name || '-'}
+          <DataTable tableClassName="min-w-[700px]">
+            <THead>
+              <tr>
+                <TH>{t('Imię i nazwisko')}</TH>
+                <TH>{t('Email')}</TH>
+                <TH>{t('Telefon')}</TH>
+                <TH>{t('Grupa')}</TH>
+                <TH align="right"><span className="sr-only">{t('Akcje')}</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filteredMembers.map((member) => {
+                const groupName = groups.find(g => g.id === member.group_id)?.name;
+                return (
+                  <TR key={member.id}>
+                    <TD className="font-medium text-gray-900 dark:text-white">{member.full_name}</TD>
+                    <TD muted>{member.email || ''}</TD>
+                    <TD muted numeric>{member.phone || ''}</TD>
+                    <TD>
+                      <span className="inline-flex items-center gap-1.5">
+                        {groupName && (
+                          <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">
+                            {groupName}
+                          </span>
+                        )}
+                        {member.role && member.role !== 'member' && (
+                          <StatusPill color={member.role === 'coordinator' ? STATUS_COLORS.accent : STATUS_COLORS.info}>
+                            {member.role === 'coordinator' ? tr('Koordynator') : tr('Lider')}
+                          </StatusPill>
+                        )}
                       </span>
-                      {member.role && member.role !== 'member' && (
-                        <span className="ml-1.5 px-2 py-1 rounded-lg text-xs font-bold bg-accent-secondary/10 text-accent-secondary dark:text-accent-secondary-light">
-                          {member.role === 'coordinator' ? tr('Koordynator') : tr('Lider')}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-4 text-right flex justify-end gap-2">
-                      <button
-                        onClick={() => openModal('member', member)}
-                        className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline"
-                      >
-                        Edytuj
-                      </button>
-                      <button
-                        onClick={() => handleDelete(member.id, 'member')}
-                        className="text-red-500 dark:text-red-400 font-medium hover:underline"
-                      >
-                        {tr('Usuń')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredMembers.length === 0 && (
-                  <tr>
-                    <td colSpan="5" className="p-6 text-center text-gray-400 dark:text-gray-500">
-                      {tr('Brak członków')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            </div>
-          </div>
+                    </TD>
+                    <TD align="right">
+                      <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openModal('member', member)}
+                          className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline"
+                        >
+                          Edytuj
+                        </button>
+                        <button
+                          onClick={() => handleDelete(member.id, 'member')}
+                          className="text-red-500 dark:text-red-400 font-medium hover:underline"
+                        >
+                          {tr('Usuń')}
+                        </button>
+                      </div>
+                    </TD>
+                  </TR>
+                );
+              })}
+              {filteredMembers.length === 0 && (
+                <EmptyRow colSpan={5}>{tr('Brak członków')}</EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
         </section>
       )}
 
@@ -1325,40 +1321,36 @@ export default function HomeGroupsModule() {
               </div>
 
               <div className="flex-1 overflow-y-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                <DataTable>
+                  <THead>
                     <tr>
-                      <th className="p-3">{t('Imię')}</th>
-                      <th className="p-3">{t('Email')}</th>
-                      <th className="p-3">{t('Telefon')}</th>
-                      <th className="p-3">{t('Akcja')}</th>
+                      <TH>{t('Imię')}</TH>
+                      <TH>{t('Email')}</TH>
+                      <TH>{t('Telefon')}</TH>
+                      <TH align="right"><span className="sr-only">{t('Akcja')}</span></TH>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y dark:divide-gray-700">
+                  </THead>
+                  <tbody>
                     {groupMembers.map(m => (
-                      <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200">
-                        <td className="p-3 font-medium">{m.full_name}</td>
-                        <td className="p-3">{m.email || '-'}</td>
-                        <td className="p-3">{m.phone || '-'}</td>
-                        <td className="p-3">
+                      <TR key={m.id}>
+                        <TD className="font-medium text-gray-900 dark:text-white">{m.full_name}</TD>
+                        <TD muted>{m.email || ''}</TD>
+                        <TD muted numeric>{m.phone || ''}</TD>
+                        <TD align="right">
                           <button
                             onClick={() => detachMemberFromGroup(m.id)}
-                            className="text-red-500 dark:text-red-400 hover:underline text-xs uppercase font-bold"
+                            className="text-red-500 dark:text-red-400 hover:underline text-xs uppercase font-bold opacity-60 group-hover/row:opacity-100 transition-opacity"
                           >
                             {tr('Odłącz')}
                           </button>
-                        </td>
-                      </tr>
+                        </TD>
+                      </TR>
                     ))}
                     {groupMembers.length === 0 && (
-                      <tr>
-                        <td colSpan="4" className="p-6 text-center text-gray-400 dark:text-gray-500">
-                          {tr('Brak członków w tej grupie')}
-                        </td>
-                      </tr>
+                      <EmptyRow colSpan={4}>{tr('Brak członków w tej grupie')}</EmptyRow>
                     )}
                   </tbody>
-                </table>
+                </DataTable>
               </div>
             </div>
           </div>

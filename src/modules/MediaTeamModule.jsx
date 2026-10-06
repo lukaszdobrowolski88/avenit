@@ -27,6 +27,7 @@ import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
 import Spinner from '../components/Spinner';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -771,44 +772,40 @@ export default function MediaTeamModule() {
         <TabHeader title={`Członkowie (${team.length})`} actions={
           <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj członka</button>
         } />
-        <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-          <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm min-w-[700px]">
-            <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
-              <tr><th className="p-4">{tr('Imię i nazwisko')}</th><th className="p-4">{t('Służby')}</th><th className="p-4">{tr('Email')}</th><th className="p-4">{tr('Telefon')}</th><th className="p-4 text-right">{tr('Akcje')}</th></tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
-              {team.map(m => {
-                const roleNames = getMemberRoleNames(m.id);
-                return (
-                  <tr key={m.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition text-gray-700 dark:text-gray-300">
-                    <td className="p-4 font-medium">{m.full_name}</td>
-                    <td className="p-4">
-                      <div className="flex flex-wrap gap-1">
-                        {roleNames.length > 0 ? (
-                          roleNames.map((name, idx) => (
-                            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark">
-                              {name}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500 text-xs italic">Brak przypisanych</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4">{m.email}</td>
-                    <td className="p-4">{m.phone}</td>
-                    <td className="p-4 text-right flex justify-end gap-2">
+        <DataTable tableClassName="min-w-[700px]">
+          <THead>
+            <tr><TH>{tr('Imię i nazwisko')}</TH><TH>{t('Służby')}</TH><TH>{tr('Email')}</TH><TH>{tr('Telefon')}</TH><TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH></tr>
+          </THead>
+          <tbody>
+            {team.map(m => {
+              const roleNames = getMemberRoleNames(m.id);
+              return (
+                <TR key={m.id}>
+                  <TD className="font-medium text-gray-900 dark:text-white">{m.full_name}</TD>
+                  <TD>
+                    <div className="flex flex-wrap gap-1">
+                      {roleNames.length > 0 ? (
+                        roleNames.map((name, idx) => (
+                          <StatusPill key={idx} color={STATUS_COLORS.accent}>{name}</StatusPill>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500 text-xs italic">Brak przypisanych</span>
+                      )}
+                    </div>
+                  </TD>
+                  <TD muted>{m.email}</TD>
+                  <TD muted numeric>{m.phone}</TD>
+                  <TD align="right">
+                    <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
                       <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">{tr('Edytuj')}</button>
                       <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 font-medium">{tr('Usuń')}</button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          </div>
-        </div>
+                    </div>
+                  </TD>
+                </TR>
+              );
+            })}
+          </tbody>
+        </DataTable>
       </section>
       )}
 

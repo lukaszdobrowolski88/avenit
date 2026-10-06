@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import {
   Plus, Search, Trash2, Edit2, X, User,
-  Mail, Phone, CheckCircle, XCircle,
+  Mail, Phone, CheckCircle,
   MapPin, Users, Home, Calendar, FileText,
   Upload, Eye, Check, FolderOpen, HeartHandshake, Cake
 } from 'lucide-react';
@@ -20,6 +20,7 @@ import ResponsiveTabs from '../components/ResponsiveTabs';
 import PageHeader from '../components/PageHeader';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
@@ -547,13 +548,11 @@ export default function Members() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'Członek':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200/50 dark:border-green-800/50';
+        return STATUS_COLORS.success;
       case 'Sympatyk':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-800/50';
-      case 'Gość':
-        return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200/50 dark:border-gray-700/50';
+        return STATUS_COLORS.info;
       default:
-        return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200/50 dark:border-gray-700/50';
+        return STATUS_COLORS.neutral;
     }
   };
 
@@ -656,25 +655,24 @@ export default function Members() {
         )}
 
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm min-w-[800px]">
-            <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
+          <DataTable flush tableClassName="min-w-[800px]">
+            <THead>
               <tr>
-                <th className="p-4 pl-6">{t('Osoba')}</th>
-                <th className="p-4">{t('Kontakt & Adres')}</th>
-                <th className="p-4">{t('Rodzina')}</th>
-                <th className="p-4">{t('Grupa Domowa')}</th>
-                <th className="p-4">{t('Służby')}</th>
-                <th className="p-4">{t('Data urodzenia')}</th>
-                <th className="p-4">{t('Obecność')}</th>
-                <th className="p-4">{t('Status')}</th>
-                <th className="p-4 pr-6 text-right">{t('Akcje')}</th>
+                <TH>{t('Osoba')}</TH>
+                <TH>{t('Kontakt & Adres')}</TH>
+                <TH>{t('Rodzina')}</TH>
+                <TH>{t('Grupa Domowa')}</TH>
+                <TH>{t('Służby')}</TH>
+                <TH>{t('Data urodzenia')}</TH>
+                <TH>{t('Obecność')}</TH>
+                <TH>{t('Status')}</TH>
+                <TH align="right"><span className="sr-only">{t('Akcje')}</span></TH>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+            </THead>
+            <tbody>
               {filteredMembers.map((member) => (
-                <tr key={member.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition duration-200">
-                  <td className="p-4 pl-6">
+                <TR key={member.id}>
+                  <TD>
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest dark:to-accent-secondary-darkest flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold shadow-sm border border-white dark:border-gray-700">
                         {member.first_name?.[0]}{member.last_name?.[0]}
@@ -682,70 +680,64 @@ export default function Members() {
                       <div>
                         <button onClick={() => setProfileMember(member)} className="font-bold text-gray-800 dark:text-gray-200 hover:text-accent-primary dark:hover:text-accent-primary-light transition text-left">{member.first_name} {member.last_name}</button>
                         {member.status === 'Członek' && member.membership_date && (
-                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
                             <Calendar size={12} />
                             od {new Date(member.membership_date).toLocaleDateString('pl-PL')}
                           </div>
                         )}
                       </div>
                     </div>
-                  </td>
+                  </TD>
 
-                  <td className="p-4">
+                  <TD>
                     <div className="space-y-1">
                       {member.email && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-xs"><Mail size={14} className="text-accent-primary-light" /> {member.email}</div>}
-                      {member.phone && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-xs"><Phone size={14} className="text-accent-secondary-light" /> {member.phone}</div>}
+                      {member.phone && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-xs tabular-nums"><Phone size={14} className="text-accent-secondary-light" /> {member.phone}</div>}
                       {member.address && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-xs"><MapPin size={14} className="text-green-500" /> {member.address}</div>}
                     </div>
-                  </td>
+                  </TD>
 
-                  <td className="p-4">
+                  <TD>
                     {(() => {
                       const household = getHousehold(member.household_id);
                       return household ? (
-                        <span className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-md text-xs font-medium">
+                        <span className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md text-xs font-medium">
                           <Users size={12} /> {household.name}
                           {household.phone_last_four && <span className="text-blue-500 dark:text-blue-400">(...{household.phone_last_four})</span>}
                         </span>
-                      ) : (
-                        <span className="text-gray-400 dark:text-gray-600 text-xs">-</span>
-                      );
+                      ) : null;
                     })()}
-                  </td>
+                  </TD>
 
-                  <td className="p-4">
+                  <TD>
                     {member.home_group_id ? (
-                      <span className="inline-flex items-center gap-1.5 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border border-accent-primary-lighter dark:border-accent-primary-dark/30 text-accent-primary dark:text-accent-primary-light px-2.5 py-1 rounded-md text-xs font-medium">
+                      <span className="inline-flex items-center gap-1.5 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-md text-xs font-medium">
                         <Home size={12} /> {getHomeGroupName(member.home_group_id)}
                       </span>
-                    ) : (
-                      <span className="text-gray-400 dark:text-gray-600 text-xs">-</span>
-                    )}
-                  </td>
+                    ) : null}
+                  </TD>
 
-                  <td className="p-4">
+                  <TD>
                     <div className="flex flex-col gap-1.5 items-start">
                       {member.ministries && member.ministries.length > 0 ? (
                         getMinistryLabels(member.ministries).map((label, idx) => (
-                          <span key={idx} className="inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-md text-xs font-medium">
+                          <span key={idx} className="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-md text-xs font-medium">
                             <User size={12} className="text-accent-primary-light" /> {label}
                           </span>
                         ))
-                      ) : (
-                        <span className="text-gray-400 dark:text-gray-600 text-xs">-</span>
-                      )}
+                      ) : null}
                     </div>
-                  </td>
+                  </TD>
 
-                  <td className="p-4 whitespace-nowrap">
+                  <TD numeric className="whitespace-nowrap">
                     {member.birth_date ? (
                       <span className={`inline-flex items-center gap-1.5 text-xs ${birthdaySoon(member.birth_date) ? 'text-accent-primary font-semibold' : 'text-gray-600 dark:text-gray-400'}`} title={birthdaySoon(member.birth_date) ? 'Urodziny w ciągu 7 dni' : undefined}>
                         <Cake size={13} className={birthdaySoon(member.birth_date) ? 'text-accent-primary' : 'text-gray-400'} /> {fmtBirth(member.birth_date)}
                       </span>
-                    ) : <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>}
-                  </td>
+                    ) : null}
+                  </TD>
 
-                  <td className="p-4">
+                  <TD>
                     {(() => {
                       const cnt = attendanceCount(member.id);
                       return (
@@ -756,18 +748,17 @@ export default function Members() {
                               return <span key={d} title={d} className={`w-2.5 h-4 rounded-sm ${on ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}`} />;
                             })}
                           </div>
-                          <span className={`text-xs font-medium ${cnt >= 3 ? 'text-green-600 dark:text-green-400' : cnt === 0 ? 'text-gray-400' : 'text-amber-600 dark:text-amber-400'}`}>{cnt * 25}%</span>
+                          <span className={`text-xs font-medium tabular-nums ${cnt >= 3 ? 'text-green-600 dark:text-green-400' : cnt === 0 ? 'text-gray-400' : 'text-amber-600 dark:text-amber-400'}`}>{cnt * 25}%</span>
                         </div>
                       );
                     })()}
-                  </td>
+                  </TD>
 
-                  <td className="p-4">
-                    <div className="flex flex-col gap-1.5">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(member.status)}`}>
-                        {member.status === 'Członek' ? <CheckCircle size={12} /> : member.status === 'Sympatyk' ? <Users size={12} /> : <XCircle size={12} />}
+                  <TD>
+                    <div className="flex flex-col gap-1.5 items-start">
+                      <StatusPill color={getStatusColor(member.status)}>
                         {tr(member.status || 'Gość')}
-                      </span>
+                      </StatusPill>
                       {member.status === 'Członek' && member.membership_declaration_url && (
                         <a
                           href={member.membership_declaration_url}
@@ -779,20 +770,19 @@ export default function Members() {
                         </a>
                       )}
                     </div>
-                  </td>
+                  </TD>
 
-                  <td className="p-4 pr-6 text-right">
-                    <div className="flex justify-end gap-2">
+                  <TD align="right">
+                    <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
                       <button onClick={() => setProfileMember(member)} title={t('Zobacz profil')} className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"><Eye size={18} /></button>
                       <Can cap="res:members:update"><button onClick={() => openModal(member)} className="p-2 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={18} /></button></Can>
                       <Can cap="res:members:delete"><button onClick={() => handleDelete(member.id)} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={18} /></button></Can>
                     </div>
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ))}
             </tbody>
-          </table>
-          </div>
+          </DataTable>
 
           {filteredMembers.length === 0 && (
             <EmptyState icon={Users} title={tr('Brak wyników do wyświetlenia')} />

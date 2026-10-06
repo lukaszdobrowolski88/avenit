@@ -12,6 +12,7 @@ import {
   Building2
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 export default function AdminInvoicesList() {
   const { getInvoices, markAsPaid, cancelInvoice, loading } = useInvoices();
@@ -49,19 +50,19 @@ export default function AdminInvoicesList() {
 
   const getStatusBadge = (status) => {
     const config = {
-      draft: { label: tr('Szkic'), color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
-      pending: { label: tr('Do zapłaty'), color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-      paid: { label: tr('Opłacona'), color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-      overdue: { label: tr('Zaległa'), color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-      cancelled: { label: 'Anulowana', color: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' },
-      refunded: { label: tr('Zwrócona'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' }
+      draft: { label: tr('Szkic'), color: STATUS_COLORS.neutral },
+      pending: { label: tr('Do zapłaty'), color: STATUS_COLORS.warning },
+      paid: { label: tr('Opłacona'), color: STATUS_COLORS.success },
+      overdue: { label: tr('Zaległa'), color: STATUS_COLORS.danger },
+      cancelled: { label: 'Anulowana', color: STATUS_COLORS.neutral },
+      refunded: { label: tr('Zwrócona'), color: STATUS_COLORS.info }
     };
 
     const { label, color } = config[status] || config.pending;
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}>
+      <StatusPill color={color}>
         {label}
-      </span>
+      </StatusPill>
     );
   };
 
@@ -122,62 +123,54 @@ export default function AdminInvoicesList() {
             {tr('Brak faktur spełniających kryteria')}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
-                  <th className="px-4 py-3 font-medium">Numer</th>
-                  <th className="px-4 py-3 font-medium">Klient</th>
-                  <th className="px-4 py-3 font-medium">{tr('Data')}</th>
-                  <th className="px-4 py-3 font-medium">{tr('Termin')}</th>
-                  <th className="px-4 py-3 font-medium">{tr('Kwota')}</th>
-                  <th className="px-4 py-3 font-medium">{tr('Status')}</th>
-                  <th className="px-4 py-3 font-medium text-right">{tr('Akcje')}</th>
+          <DataTable flush>
+              <THead>
+                <tr>
+                  <TH>Numer</TH>
+                  <TH>Klient</TH>
+                  <TH>{tr('Data')}</TH>
+                  <TH>{tr('Termin')}</TH>
+                  <TH>{tr('Kwota')}</TH>
+                  <TH>{tr('Status')}</TH>
+                  <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
                 </tr>
-              </thead>
+              </THead>
               <tbody>
                 {filteredInvoices.map((invoice) => (
-                  <tr
-                    key={invoice.id}
-                    className="border-t border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30"
-                  >
-                    <td className="px-4 py-3">
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {invoice.invoice_number}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
+                  <TR key={invoice.id}>
+                    <TD numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                      {invoice.invoice_number}
+                    </TD>
+                    <TD>
                       <div className="flex items-center gap-2">
                         <Building2 size={14} className="text-gray-400" />
                         <div>
                           <div className="text-gray-900 dark:text-white">
-                            {invoice.tenants?.name || '-'}
+                            {invoice.tenants?.name || ''}
                           </div>
                           <div className="text-xs text-gray-500">
                             {invoice.tenants?.email}
                           </div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                    </TD>
+                    <TD muted numeric className="whitespace-nowrap">
                       {new Date(invoice.issue_date).toLocaleDateString('pl-PL')}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                    </TD>
+                    <TD muted numeric className="whitespace-nowrap">
                       {new Date(invoice.due_date).toLocaleDateString('pl-PL')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {formatPrice(invoice.total)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TD>
+                    <TD numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                      {formatPrice(invoice.total)}
+                    </TD>
+                    <TD>
                       {getStatusBadge(invoice.status)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    </TD>
+                    <TD align="right">
                       <div className="relative inline-block">
                         <button
                           onClick={() => setShowActions(showActions === invoice.id ? null : invoice.id)}
-                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                          className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-opacity ${showActions === invoice.id ? '' : 'opacity-60 group-hover/row:opacity-100'}`}
                         >
                           <MoreVertical size={16} className="text-gray-500" />
                         </button>
@@ -213,12 +206,11 @@ export default function AdminInvoicesList() {
                           </div>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))}
               </tbody>
-            </table>
-          </div>
+          </DataTable>
         )}
       </div>
 

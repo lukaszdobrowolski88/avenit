@@ -6,6 +6,7 @@ import Modal from '../../../components/Modal';
 import { songLabel, programLabel, formatDate, todayIso, startOfYearIso } from '../lib/serveApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 
 const emptyForm = () => ({
   song_id: '', program_id: '', used_date: todayIso(), ccli_number: '', note: '',
@@ -179,28 +180,26 @@ export default function CcliTab({ songs, songsById, programs, programsById, camp
             <p className="text-gray-500 dark:text-gray-400">Brak wykonań w wybranym zakresie dat.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 font-semibold">Pieśń</th>
-                  <th className="px-4 py-3 font-semibold">Autor</th>
-                  <th className="px-4 py-3 font-semibold">Nr CCLI</th>
-                  <th className="px-4 py-3 font-semibold text-right">Liczba wykonań</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.map(r => (
-                  <tr key={r.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{r.title}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{r.author || <span className="text-gray-400">—</span>}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{r.ccli || <span className="text-gray-400">—</span>}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-accent-primary dark:text-accent-primary-light tabular-nums">{r.count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Pieśń</TH>
+                <TH>Autor</TH>
+                <TH>Nr CCLI</TH>
+                <TH align="right">Liczba wykonań</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {report.map(r => (
+                <TR key={r.id}>
+                  <TD className="font-medium text-gray-900 dark:text-white">{r.title}</TD>
+                  <TD muted>{r.author || null}</TD>
+                  <TD muted numeric>{r.ccli || null}</TD>
+                  <TD align="right" numeric className="font-semibold text-accent-primary dark:text-accent-primary-light">{r.count}</TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
 
@@ -215,36 +214,34 @@ export default function CcliTab({ songs, songsById, programs, programsById, camp
         ) : usages.length === 0 ? (
           <div className="p-10 text-center text-gray-400 text-sm">Brak wpisów.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 font-semibold">Data</th>
-                  <th className="px-4 py-3 font-semibold">Pieśń</th>
-                  <th className="px-4 py-3 font-semibold">Program</th>
-                  <th className="px-4 py-3 font-semibold">Nr CCLI</th>
-                  <th className="px-4 py-3 font-semibold">Notatka</th>
-                  <th className="px-4 py-3 font-semibold text-right">Akcje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usages.map(u => (
-                  <tr key={u.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(u.used_date)}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{u.song_id ? songLabel(songsById[u.song_id]) : 'Pieśń spoza katalogu'}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.program_id && programsById[u.program_id] ? programLabel(programsById[u.program_id]) : <span className="text-gray-400">—</span>}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.ccli_number || <span className="text-gray-400">—</span>}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.note || <span className="text-gray-400">—</span>}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => remove(u)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={15} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Data</TH>
+                <TH>Pieśń</TH>
+                <TH>Program</TH>
+                <TH>Nr CCLI</TH>
+                <TH>Notatka</TH>
+                <TH align="right"><span className="sr-only">Akcje</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {usages.map(u => (
+                <TR key={u.id}>
+                  <TD muted numeric className="whitespace-nowrap">{formatDate(u.used_date)}</TD>
+                  <TD className="font-medium text-gray-900 dark:text-white">{u.song_id ? songLabel(songsById[u.song_id]) : 'Pieśń spoza katalogu'}</TD>
+                  <TD muted>{u.program_id && programsById[u.program_id] ? programLabel(programsById[u.program_id]) : null}</TD>
+                  <TD muted numeric>{u.ccli_number || null}</TD>
+                  <TD muted>{u.note || null}</TD>
+                  <TD align="right">
+                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                      <button onClick={() => remove(u)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={15} /></button>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
 
