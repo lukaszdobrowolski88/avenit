@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
@@ -30,6 +31,7 @@ import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { confirmDialog } from '../../lib/dialog';
+import { buildSongTagList, readLegacyTags, clearLegacyTags, saveSongTags, SONG_TAGS_KEY } from './songTags';
 
 
 // Hook to calculate dropdown position with smart positioning (up/down)
@@ -1269,6 +1271,8 @@ export default function WorshipModule() {
   const [editingTag, setEditingTag] = useState(null);
   const [editingTagValue, setEditingTagValue] = useState('');
   const [newTagInput, setNewTagInput] = useState('');
+  const [showAllTags, setShowAllTags] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Służby z team_roles
   const [worshipRoles, setWorshipRoles] = useState([]);
@@ -1414,8 +1418,15 @@ export default function WorshipModule() {
   };
 
   const saveExpense = async () => {
-    if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      toast.error(tr('Wypełnij wymagane pola'));
+    const missingFields = [
+      !expenseForm.payment_date && tr('Data'),
+      !expenseForm.amount && tr('Kwota (PLN)'),
+      !expenseForm.description && tr('Pozycja budżetowa'),
+      !expenseForm.contractor && tr('Kontrahent'),
+      !expenseForm.responsible_person && tr('Osoba odpowiedzialna'),
+    ].filter(Boolean);
+    if (missingFields.length) {
+      toast.error(tr('Uzupełnij: {fields}', { fields: missingFields.join(', ') }));
       return;
     }
 
@@ -1456,11 +1467,13 @@ export default function WorshipModule() {
     }
   };
 
-  async function fetchData() {
-    setLoading(true);
+  // quiet = odświeżenie po zapisie bez zamiany całego modułu w spinner (lista i przewinięcie zostają).
+  async function fetchData({ quiet = false } = {}) {
+    if (!quiet) setLoading(true);
     try {
       const { data: t } = await supabase.from('worship_team').select('*').order('full_name');
       const { data: s } = await supabase.from('songs').select('*').order('title');
+      const { data: dictRow } = await supabase.from('app_settings').select('value').eq('key', SONG_TAGS_KEY).maybeSingle().then((r) => r, () => ({ data: null }));
 
       // Pobierz dane zalogowanego użytkownika
       const { data: { user } } = await supabase.auth.getUser();
@@ -1479,24 +1492,39 @@ export default function WorshipModule() {
       setTeam(t || []);
       setSongs(s || []);
 
-      // Pobierz unikalne tagi z wszystkich pieśni + z localStorage
-      const tagsSet = new Set();
-      (s || []).forEach(song => {
-        if (Array.isArray(song.tags)) {
-          song.tags.forEach(tag => tagsSet.add(tag));
-        }
-      });
-      // Dodaj tagi zapisane w localStorage
-      try {
-        const savedTags = JSON.parse(localStorage.getItem('worship_custom_tags') || '[]');
-        savedTags.forEach(tag => tagsSet.add(tag));
-      } catch (e) {}
-      setAllUniqueTags([...tagsSet].sort());
+      // Tagi = wspólny słownik w bazie (app_settings `song_tags`) + tagi użyte na pieśniach.
+      // Stare tagi zapisane tylko w tej przeglądarce (localStorage) przenosimy do słownika.
+      const dict = buildSongTagList({ dictValue: dictRow?.value });
+      const legacy = readLegacyTags();
+      setAllUniqueTags(buildSongTagList({ dictValue: dict, songs: s || [], legacy }));
+      if (legacy.length && legacy.some((tg) => !dict.some((d) => d.toLowerCase() === tg.toLowerCase()))) {
+        const { tags: merged, error } = await saveSongTags({ action: 'merge', tags: legacy });
+        if (!error && merged) clearLegacyTags();
+      } else if (legacy.length) {
+        clearLegacyTags();
+      }
     } catch (err) {
-      console.error('Błąd pobierania danych:', err);
+      toast.error(err, { fallback: tr('Nie udało się wczytać danych zespołu. Odśwież stronę.') });
     }
-    setLoading(false);
+    if (!quiet) setLoading(false);
   }
+
+  // Głęboki link (np. z wyszukiwarki ⌘K): /worship?song=<id> otwiera kartę pieśni.
+  const deepSongId = searchParams.get('song');
+  useEffect(() => {
+    if (!deepSongId || loading) return;
+    const song = songs.find((x) => String(x.id) === String(deepSongId));
+    if (song) { setActiveTab('songs'); setShowSongDetails(song); }
+    else toast.info(tr('Nie znaleziono tej pieśni. Mogła zostać usunięta.'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepSongId, loading]);
+
+  const closeSongDetails = () => {
+    setShowSongDetails(null);
+    if (searchParams.get('song')) {
+      setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete('song'); return p; }, { replace: true });
+    }
+  };
 
   const saveMember = async () => {
     try {
@@ -1504,7 +1532,8 @@ export default function WorshipModule() {
 
       if (memberForm.id) {
         const { id, ...updateData } = memberForm;
-        await supabase.from('worship_team').update(updateData).eq('id', memberForm.id);
+        const { error } = await supabase.from('worship_team').update(updateData).eq('id', memberForm.id);
+        if (error) throw error;
       } else {
         const { id, ...rest } = memberForm;
         const { data: newMember, error } = await supabase.from('worship_team').insert([rest]).select().single();
@@ -1514,30 +1543,38 @@ export default function WorshipModule() {
 
       // Zapisz przypisania do służb
       if (memberId) {
-        // Usuń obecne przypisania
-        await supabase
-          .from('team_member_roles')
-          .delete()
-          .eq('member_id', String(memberId))
-          .eq('member_table', 'worship_team');
-
-        // Dodaj nowe przypisania
-        if (selectedMemberRoles.length > 0) {
-          const assignments = selectedMemberRoles.map(roleId => ({
+        // Tylko zmiany: dopisz nowe służby, usuń odznaczone (bez kasowania wszystkiego naraz —
+        // błąd w połowie nie zostawi osoby bez służb).
+        const current = memberRoles.filter((mr) => String(mr.member_id) === String(memberId)).map((mr) => mr.role_id);
+        const toAdd = selectedMemberRoles.filter((rid) => !current.includes(rid));
+        const toRemove = current.filter((rid) => !selectedMemberRoles.includes(rid));
+        if (toAdd.length > 0) {
+          const assignments = toAdd.map(roleId => ({
             member_id: String(memberId),
             member_table: 'worship_team',
             role_id: roleId
           }));
-          await supabase.from('team_member_roles').insert(assignments);
+          const { error } = await supabase.from('team_member_roles').insert(assignments);
+          if (error) throw error;
+        }
+        if (toRemove.length > 0) {
+          const { error } = await supabase
+            .from('team_member_roles')
+            .delete()
+            .eq('member_id', String(memberId))
+            .eq('member_table', 'worship_team')
+            .in('role_id', toRemove);
+          if (error) throw error;
         }
       }
 
+      toast.success(memberForm.id ? tr('Zapisano: {name}', { name: memberForm.full_name }) : tr('Dodano: {name}', { name: memberForm.full_name }));
       setShowMemberModal(false);
       setSelectedMemberRoles([]);
-      fetchData();
+      fetchData({ quiet: true });
       fetchWorshipRoles(); // Odśwież przypisania
     } catch (err) {
-      toast.error(tr('Błąd: ') + err.message);
+      toast.error(err, { fallback: tr('Nie udało się zapisać członka zespołu.') });
     }
   };
 
@@ -1557,18 +1594,20 @@ export default function WorshipModule() {
       .map(r => r.name);
   };
 
-  const deleteMember = async (id) => {
-    if(await confirmDialog(tr('Usunąć?'))) {
-      await supabase.from('worship_team').delete().eq('id', id);
-      fetchData();
-    }
+  const deleteMember = async (m) => {
+    if (!await confirmDialog({ title: tr('Usunąć „{name}” z zespołu?', { name: m.full_name }), message: tr('Osoba zniknie z listy członków zespołu i z jego służb. Zostanie w bazie członków kościoła.'), confirmLabel: tr('Usuń z zespołu'), danger: true })) return;
+    const { error } = await supabase.from('worship_team').delete().eq('id', m.id);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się usunąć osoby z zespołu.') }); return; }
+    toast.success(tr('Usunięto: {name}', { name: m.full_name }));
+    fetchData({ quiet: true });
   };
 
-  const deleteSong = async (id) => {
-    if(await confirmDialog(tr('Usunąć pieśń?'))) {
-      await supabase.from('songs').delete().eq('id', id);
-      fetchData();
-    }
+  const deleteSong = async (song) => {
+    if (!await confirmDialog({ title: tr('Usunąć pieśń „{title}”?', { title: song.title }), message: tr('Zniknie z Bazy pieśni. Programy, w których była, zachowają jej tytuł. Tej operacji nie można cofnąć.'), confirmLabel: tr('Usuń pieśń'), danger: true })) return;
+    const { error } = await supabase.from('songs').delete().eq('id', song.id);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się usunąć pieśni.') }); return; }
+    toast.success(tr('Usunięto pieśń „{title}”', { title: song.title }));
+    fetchData({ quiet: true });
   };
 
   const removeTagFromSong = async (songId, tagToRemove) => {
@@ -1577,13 +1616,9 @@ export default function WorshipModule() {
 
     const updatedTags = (song.tags || []).filter(t => t !== tagToRemove);
 
-    try {
-      await supabase.from('songs').update({ tags: updatedTags }).eq('id', songId);
-      // Aktualizuj stan lokalnie
-      setSongs(prev => prev.map(s => s.id === songId ? { ...s, tags: updatedTags } : s));
-    } catch (err) {
-      console.error('Błąd usuwania tagu:', err);
-    }
+    const { error } = await supabase.from('songs').update({ tags: updatedTags }).eq('id', songId);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się usunąć tagu z pieśni.') }); return; }
+    setSongs(prev => prev.map(s => s.id === songId ? { ...s, tags: updatedTags } : s));
   };
 
   // Zmiana nazwy tagu we wszystkich pieśniach
@@ -1594,9 +1629,12 @@ export default function WorshipModule() {
 
     try {
       for (const song of songsWithTag) {
-        const updatedTags = song.tags.map(t => t === oldTag ? newTag.trim() : t);
-        await supabase.from('songs').update({ tags: updatedTags }).eq('id', song.id);
+        const updatedTags = [...new Set(song.tags.map(t => t === oldTag ? newTag.trim() : t))];
+        const { error } = await supabase.from('songs').update({ tags: updatedTags }).eq('id', song.id);
+        if (error) throw error;
       }
+      // Słownik w bazie (dla tagów jeszcze nieużytych na pieśniach).
+      await saveSongTags({ action: 'rename', tag: oldTag, to: newTag.trim() });
 
       // Aktualizuj stan lokalnie
       setSongs(prev => prev.map(s => {
@@ -1614,22 +1652,31 @@ export default function WorshipModule() {
 
       setEditingTag(null);
       setEditingTagValue('');
+      toast.success(tr('Zmieniono nazwę tagu na „{tag}”', { tag: newTag.trim() }));
     } catch (err) {
-      console.error('Błąd zmiany nazwy tagu:', err);
+      toast.error(err, { fallback: tr('Nie udało się zmienić nazwy tagu we wszystkich pieśniach.') });
+      fetchData({ quiet: true });
     }
   };
 
   // Usunięcie tagu ze wszystkich pieśni
   const deleteTagGlobally = async (tagToDelete) => {
-    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tag "{tag}" ze wszystkich pieśni?', { tag: tagToDelete }))) return;
-
     const songsWithTag = songs.filter(s => Array.isArray(s.tags) && s.tags.includes(tagToDelete));
+    if (!await confirmDialog({
+      title: tr('Usunąć tag „{tag}”?', { tag: tagToDelete }),
+      message: songsWithTag.length ? tr('Tag zniknie ze wszystkich pieśni, które go mają ({n}).', { n: songsWithTag.length }) : tr('Tag nie jest użyty w żadnej pieśni.'),
+      confirmLabel: tr('Usuń tag'),
+      danger: true,
+    })) return;
 
     try {
       for (const song of songsWithTag) {
         const updatedTags = song.tags.filter(t => t !== tagToDelete);
-        await supabase.from('songs').update({ tags: updatedTags }).eq('id', song.id);
+        const { error } = await supabase.from('songs').update({ tags: updatedTags }).eq('id', song.id);
+        if (error) throw error;
       }
+      const { error: dictErr } = await saveSongTags({ action: 'remove', tag: tagToDelete });
+      if (dictErr) throw dictErr;
 
       // Aktualizuj stan lokalnie
       setSongs(prev => prev.map(s => {
@@ -1642,45 +1689,32 @@ export default function WorshipModule() {
       // Usuń z listy unikalnych tagów
       setAllUniqueTags(prev => prev.filter(t => t !== tagToDelete));
 
-      // Usuń z localStorage
-      try {
-        const savedTags = JSON.parse(localStorage.getItem('worship_custom_tags') || '[]');
-        const updatedSavedTags = savedTags.filter(t => t !== tagToDelete);
-        localStorage.setItem('worship_custom_tags', JSON.stringify(updatedSavedTags));
-      } catch (e) {}
-
       // Wyczyść filtr jeśli był ustawiony na usunięty tag
       if (tagFilter === tagToDelete) {
         setTagFilter('');
       }
+      toast.success(tr('Usunięto tag „{tag}”', { tag: tagToDelete }));
     } catch (err) {
-      console.error('Błąd usuwania tagu:', err);
+      toast.error(err, { fallback: tr('Nie udało się usunąć tagu.') });
+      fetchData({ quiet: true });
     }
   };
 
-  // Dodanie nowego tagu (globalnie - będzie dostępny w liście)
-  const addNewTag = () => {
+  // Dodanie nowego tagu do wspólnego słownika w bazie — widzą go wszyscy liderzy, na każdym urządzeniu.
+  const addNewTag = async () => {
     const trimmedTag = newTagInput.trim();
     if (!trimmedTag) return;
 
     // Sprawdź czy tag już istnieje (case-insensitive)
     if (allUniqueTags.some(t => t.toLowerCase() === trimmedTag.toLowerCase())) {
-      toast.error(tr('Tag "{tag}" już istnieje w bazie.', { tag: trimmedTag }));
+      toast.error(tr('Tag „{tag}” już istnieje.', { tag: trimmedTag }));
       return;
     }
 
-    // Dodaj do listy unikalnych tagów
-    setAllUniqueTags(prev => [...prev, trimmedTag].sort());
-
-    // Zapisz do localStorage
-    try {
-      const savedTags = JSON.parse(localStorage.getItem('worship_custom_tags') || '[]');
-      if (!savedTags.includes(trimmedTag)) {
-        savedTags.push(trimmedTag);
-        localStorage.setItem('worship_custom_tags', JSON.stringify(savedTags));
-      }
-    } catch (e) {}
-
+    const { error } = await saveSongTags({ action: 'add', tag: trimmedTag });
+    if (error) { toast.error(error, { fallback: tr('Nie udało się zapisać tagu. Spróbuj ponownie.') }); return; }
+    setAllUniqueTags(prev => [...new Set([...prev, trimmedTag])].sort((a, b) => a.localeCompare(b, 'pl')));
+    toast.success(tr('Dodano tag „{tag}”', { tag: trimmedTag }));
     setNewTagInput('');
   };
 
@@ -1700,7 +1734,7 @@ export default function WorshipModule() {
     { id: 'wall', label: t('Tablica'), icon: MessageSquare },
     { id: 'events', label: t('Wydarzenia'), icon: Calendar },
     { id: 'schedule', label: t('Grafik'), icon: Calendar, tour: 'grafik-tab' },
-    { id: 'songs', label: t('Baza Pieśni'), icon: Music },
+    { id: 'songs', label: tr('Baza pieśni'), icon: Music },
     ...(hasTabAccess('worship', 'members') ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
     ...(hasTabAccess('worship', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
     ...(hasTabAccess('worship', 'members') ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
@@ -1737,11 +1771,11 @@ export default function WorshipModule() {
       {activeTab === 'songs' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[40] transition-colors">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
-          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Baza Pieśni')}</h2>
+          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Baza pieśni')}</h2>
           <div className="flex gap-2 w-full sm:w-auto">
             <button onClick={() => setShowProgramsManager(true)} className="flex-1 sm:flex-none bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"><Calendar size={16}/> {tr('Programy')}</button>
-            <button onClick={() => setShowTagsModal(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-accent-primary-lighter dark:border-accent-primary-dark hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/60 dark:hover:to-accent-secondary-darkest/60 transition flex items-center justify-center gap-2"><Tag size={16}/> <span className="hidden sm:inline">{t('Zarządzaj')}</span> {tr('Tagi')}</button>
-            <button onClick={() => { setSongForm({}); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-secondary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> <span className="hidden sm:inline">{tr('Dodaj')}</span> {tr('Pieśń')}</button>
+            <button onClick={() => setShowTagsModal(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-accent-primary-lighter dark:border-accent-primary-dark hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/60 dark:hover:to-accent-secondary-darkest/60 transition flex items-center justify-center gap-2"><Tag size={16} aria-hidden="true" /> <span className="hidden sm:inline">{tr('Zarządzaj tagami')}</span><span className="sm:hidden">{tr('Tagi')}</span></button>
+            <button onClick={() => { setSongForm({}); setSongModalKey(k => k + 1); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-secondary-light/50 transition flex items-center justify-center gap-2"><Plus size={18} aria-hidden="true" /> {tr('Dodaj pieśń')}</button>
           </div>
         </div>
         
@@ -1757,11 +1791,15 @@ export default function WorshipModule() {
             </div>
           </div>
           {/* Lista wszystkich tagów z bazy - filtrowane po wpisanym tekście */}
-          {allUniqueTags.length > 0 && (
+          {allUniqueTags.length > 0 && (() => {
+            const matching = allUniqueTags.filter(tag => !tagFilter || tag.toLowerCase().includes(tagFilter.toLowerCase()));
+            const LIMIT = 12; // jeden wiersz zamiast ściany 50+ tagów
+            const visible = showAllTags || tagFilter ? matching : matching.slice(0, LIMIT);
+            const hidden = matching.length - visible.length;
+            return (
             <div className="flex gap-2 flex-wrap items-center">
               <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{tr('Tagi:')}</span>
-              {allUniqueTags
-                .filter(tag => !tagFilter || tag.toLowerCase().includes(tagFilter.toLowerCase()))
+              {visible
                 .map(tag => (
                   <button
                     key={tag}
@@ -1775,8 +1813,19 @@ export default function WorshipModule() {
                     {tag}
                   </button>
                 ))}
+              {hidden > 0 && (
+                <button type="button" onClick={() => setShowAllTags(true)} className="px-3 py-1.5 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300 hover:underline">
+                  {tr('+{n} więcej', { n: hidden })}
+                </button>
+              )}
+              {showAllTags && !tagFilter && matching.length > LIMIT && (
+                <button type="button" onClick={() => setShowAllTags(false)} className="px-3 py-1.5 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300 hover:underline">
+                  {tr('Zwiń')}
+                </button>
+              )}
             </div>
-          )}
+            );
+          })()}
         </div>
 
         <DataTable>
@@ -1793,9 +1842,11 @@ export default function WorshipModule() {
           <tbody>
             {filteredSongs.map(s => (
               <TR key={s.id}>
-                <TD className="font-semibold text-gray-900 dark:text-white">{s.title}</TD>
+                <TD className="font-semibold text-gray-900 dark:text-white">
+                  <button type="button" onClick={() => setShowSongDetails(s)} className="text-left hover:text-accent-primary dark:hover:text-accent-primary-light hover:underline">{s.title}</button>
+                </TD>
                 <TD muted>{s.author || ''}</TD>
-                <TD className="tabular-nums font-bold text-accent-primary dark:text-accent-primary-light">{s.key}</TD>
+                <TD className="tabular-nums font-bold text-accent-primary dark:text-accent-primary-light">{s.key || ''}</TD>
                 <TD muted numeric>{s.tempo || ''}</TD>
                 <TD>
                   <div className="flex gap-1 flex-wrap">
@@ -1804,10 +1855,11 @@ export default function WorshipModule() {
                         {tag}
                         <button
                           onClick={(e) => { e.stopPropagation(); removeTagFromSong(s.id, tag); }}
-                          className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-red-500 transition-opacity"
                           title={t('Usuń tag')}
+                          aria-label={tr('Usuń tag {tag} z pieśni {title}', { tag, title: s.title })}
                         >
-                          <X size={12} />
+                          <X size={12} aria-hidden="true" />
                         </button>
                       </span>
                     )) : null}
@@ -1818,13 +1870,21 @@ export default function WorshipModule() {
                     <button onClick={() => setShowSongDetails(s)} className="text-gray-800 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">{t('Szczegóły')}</button>
                     <button onClick={() => setAddToProgramSong(s)} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-primary-dark dark:hover:text-accent-primary font-medium transition flex items-center gap-1" title={t('Dodaj do programu jako sugerowaną pieśń')}><Calendar size={14}/> {tr('Do programu')}</button>
                     <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">{tr('Edytuj')}</button>
-                    <button onClick={() => deleteSong(s.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
+                    <button onClick={() => deleteSong(s)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
                   </div>
                 </TD>
               </TR>
             ))}
           </tbody>
         </DataTable>
+        {filteredSongs.length === 0 && (
+          songFilter || tagFilter ? (
+            <EmptyState icon={Search} title={tr('Brak pieśni pasujących do wyszukiwania')}
+              action={<Button variant="secondary" onClick={() => { setSongFilter(''); setTagFilter(''); }}>{tr('Wyczyść filtry')}</Button>} />
+          ) : (
+            <EmptyState icon={Music} title={tr('Baza pieśni jest pusta')} subtitle={tr('Dodaj pierwszą pieśń przyciskiem „Dodaj pieśń”.')} />
+          )
+        )}
       </section>
       )}
 
@@ -1832,7 +1892,7 @@ export default function WorshipModule() {
       {activeTab === 'members' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[30] transition-colors">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
-          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Członkowie Zespołu')}</h2>
+          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Członkowie zespołu')}</h2>
           <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', status: 'Aktywny', phone: '', email: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="w-full sm:w-auto bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
         </div>
         <DataTable tableClassName="min-w-[800px]">
@@ -1869,7 +1929,7 @@ export default function WorshipModule() {
                   <TD align="right">
                     <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
                       <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">{tr('Edytuj')}</button>
-                      <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
+                      <button onClick={() => deleteMember(m)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
                     </div>
                   </TD>
                 </TR>
@@ -2005,7 +2065,8 @@ export default function WorshipModule() {
                 title: (data.title || '').trim(),
                 author: (data.author || '').trim(),
                 category: (data.category || '').trim(),
-                key: (data.key || 'C').trim(),
+                // Bez wybranej tonacji zostaje pusta — nie udajemy „C”, którego nikt nie ustalił.
+                key: (data.key || '').trim() || null,
                 tempo: data.tempo ? parseFloat(data.tempo) : null,
                 meter: (data.meter || '').trim(),
                 tags: Array.isArray(data.tags) ? data.tags : [],
@@ -2025,16 +2086,15 @@ export default function WorshipModule() {
               }
 
               if (error) {
-                console.error('Supabase error:', error);
-                toast.error(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
+                toast.error(error, { fallback: tr('Nie udało się zapisać pieśni.') });
                 return;
               }
 
+              toast.success(data.id ? tr('Zapisano pieśń „{title}”', { title: cleanData.title }) : tr('Dodano pieśń „{title}”', { title: cleanData.title }));
               setShowSongModal(false);
-              fetchData();
+              fetchData({ quiet: true });
             } catch (err) {
-              console.error('Exception:', err);
-              toast.error(tr('Błąd: ') + (err.message || tr('Nie udało się zapisać pieśni')));
+              toast.error(err, { fallback: tr('Nie udało się zapisać pieśni.') });
             }
           }}
           onCancel={() => setShowSongModal(false)}
@@ -2044,11 +2104,11 @@ export default function WorshipModule() {
       {showSongDetails && (
         <SongDetailsModal
           song={showSongDetails}
-          onClose={() => setShowSongDetails(null)}
+          onClose={closeSongDetails}
           onEdit={() => {
             // Skopiuj dane pieśni i zamknij modal szczegółów
             const songData = { ...showSongDetails };
-            setShowSongDetails(null);
+            closeSongDetails();
             // Ustaw dane i otwórz formularz edycji (z nowym key żeby wymusić remount)
             setSongForm(songData);
             setSongModalKey(k => k + 1);
@@ -2064,7 +2124,7 @@ export default function WorshipModule() {
         closeOnBackdrop={false}
         size="md"
         icon={Tag}
-        title={tr('Zarządzanie Tagami')}
+        title={tr('Zarządzanie tagami')}
         footer={
           <Button variant="secondary" onClick={() => { setShowTagsModal(false); setEditingTag(null); setEditingTagValue(''); setNewTagInput(''); }}>
             {tr('Zamknij')}
@@ -2073,7 +2133,7 @@ export default function WorshipModule() {
       >
           <div className="p-6">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              {tr('Dodaj nowe tagi lub edytuj/usuń istniejące. Zmiany zostaną zastosowane globalnie.')}
+              {tr('Tagi są wspólne dla wszystkich liderów. Zmiana nazwy albo usunięcie tagu dotyczy wszystkich pieśni.')}
             </p>
 
             {/* Pole dodawania nowego tagu */}
@@ -2139,7 +2199,7 @@ export default function WorshipModule() {
                           <div className="flex-1">
                             <span className="font-medium text-gray-800 dark:text-gray-200">{tag}</span>
                             <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                              ({songCount} {songCount === 1 ? tr('pieśń') : songCount < 5 ? tr('pieśni') : tr('pieśni')})
+                              ({songCount === 1 ? tr('1 pieśń') : tr('{n} pieśni', { n: songCount })})
                             </span>
                           </div>
                           <button

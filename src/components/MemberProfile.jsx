@@ -6,6 +6,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { openProtectedFile } from '../lib/protectedFiles';
 import { tr, appLocale } from '../i18n';
+import { plural } from '../modules/HomeGroups/homeGroupUtils';
 import ResponsiveTabs from './ResponsiveTabs';
 import Modal from './Modal';
 import Button from './Button';
@@ -52,8 +53,12 @@ function Row({ icon: Icon, label, children }) {
   );
 }
 
+const yearsLabel = (n) => plural(n, tr('{n} rok', { n }), tr('{n} lata', { n }), tr('{n} lat', { n }));
+
 // Read-only profil członka. Samodzielnie dociąga nadchodzące zapisy na wydarzenia.
-export default function MemberProfile({ member, members = [], homeGroups = [], households = [], getMinistryLabels, onClose, onEdit }) {
+// homeGroupLinks — grupy osoby z obu źródeł ([{ id, name, role }], liczone w Członkach);
+// bez niego zostaje stare zachowanie (tylko members.home_group_id).
+export default function MemberProfile({ member, members = [], homeGroups = [], homeGroupLinks = null, households = [], getMinistryLabels, onClose, onEdit }) {
   const [events, setEvents] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const canCare = useCan('module:care');
@@ -111,7 +116,10 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
 
   if (!member || !document.body) return null;
 
-  const homeGroupName = member.home_group_id ? homeGroups.find((g) => g.id === member.home_group_id)?.name : null;
+  const groupLinks = Array.isArray(homeGroupLinks)
+    ? homeGroupLinks
+    : (member.home_group_id ? [{ id: member.home_group_id, name: homeGroups.find((g) => g.id === member.home_group_id)?.name, role: 'member' }].filter((g) => g.name) : []);
+  const hasFormTags = Array.isArray(member.tags) && member.tags.length > 0;
   const household = member.household_id ? households.find((h) => h.id === member.household_id) : null;
   const householdMembers = member.household_id
     ? members.filter((m) => m.household_id === member.household_id && m.id !== member.id)
@@ -160,7 +168,9 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
           </div>
 
           <div className="py-2">
-            <Row icon={Home} label={tr('Grupa domowa')}>{homeGroupName}</Row>
+            <Row icon={Home} label={groupLinks.length > 1 ? tr('Grupy domowe') : tr('Grupa domowa')}>
+              {groupLinks.length > 0 && groupLinks.map((g) => `${g.name}${g.role === 'leader' ? ` (${tr('lider')})` : ''}`).join(', ')}
+            </Row>
             <Row icon={Users} label={tr('Rodzina')}>
               {household && (
                 <div>
@@ -173,7 +183,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
             </Row>
             <Row icon={Cake} label={tr('Data urodzenia')}>
               {member.birth_date && (
-                <span>{fmtDate(member.birth_date)}{ageFrom(member.birth_date) != null ? ` · ${tr('{n} lat', { n: ageFrom(member.birth_date) })}` : ''}</span>
+                <span>{fmtDate(member.birth_date)}{ageFrom(member.birth_date) != null ? ` · ${yearsLabel(ageFrom(member.birth_date))}` : ''}</span>
               )}
             </Row>
             <Row icon={Calendar} label={tr('W kościele od')}>{fmtDate(member.join_date)}</Row>
@@ -185,7 +195,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
             </Row>
           </div>
 
-          {member.tags && member.tags.length > 0 && (
+          {!canCare && hasFormTags && (
             <div className="py-3">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
                 <Tag size={14} /> {tr('Tagi')}
@@ -198,7 +208,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
             </div>
           )}
 
-          {member.notes && (
+          {!canCare && member.notes && (
             <div className="py-3">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
                 <StickyNote size={14} /> {tr('Notatki')}
@@ -216,7 +226,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
                   <CalendarCheck size={14} /> {tr('Frekwencja')}
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-200">
-                  {tr('Ostatnie 90 dni:')} <b>{last90}</b> {last90 === 1 ? tr('obecność') : tr('obecności')} · {tr('łącznie {n}', { n: attendance.length })}
+                  {tr('Ostatnie 90 dni:')} <b>{last90}</b> {plural(last90, tr('obecność'), tr('obecności'), tr('obecności'))} · {tr('łącznie {n}', { n: attendance.length })}
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {attendance.slice(0, 8).map((a, i) => (
@@ -247,17 +257,40 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
             </div>
           )}
 
-          {/* Opieka i CRM — wtopione zakładki (widoczne tylko z dostępem do modułu Opieka) */}
+          {/* Opieka duszpasterska — wtopione zakładki (widoczne tylko z dostępem do modułu Opieka).
+              Notatka i tagi z formularza osoby (members.notes/tags) są pokazywane w tych samych
+              zakładkach co wpisy Opieki (member_notes/member_tags) — jedno miejsce zamiast dwóch. */}
           {canCare && member?.id && (
             <div className="py-3">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
-                <HeartHandshake size={14} /> {tr('Opieka i CRM')}
+                <HeartHandshake size={14} aria-hidden="true" /> {tr('Opieka duszpasterska')}
               </div>
               <ResponsiveTabs tabs={CARE_TABS.map((ct) => ({ ...ct, label: tr(ct.label) }))} activeTab={careTab} onChange={setCareTab} />
               <div className="mt-3">
+                {careTab === 'notes' && member.notes && (
+                  <div className="mb-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1.5">
+                      <StickyNote size={13} aria-hidden="true" /> {tr('Notatka z karty osoby')}
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{member.notes}</p>
+                    {onEdit && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">{tr('Zmienisz ją przyciskiem „Edytuj”. Poniżej notatki z opieki duszpasterskiej.')}</p>}
+                  </div>
+                )}
                 {careTab === 'notes' && <NotesTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
                 {careTab === 'care' && <CareLogTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
                 {careTab === 'milestones' && <MilestonesTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
+                {careTab === 'tags' && hasFormTags && (
+                  <div className="mb-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">
+                      <Tag size={13} aria-hidden="true" /> {tr('Tagi z karty osoby (filtr listy członków)')}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {member.tags.map((tg) => (
+                        <span key={tg} className="text-xs px-2.5 py-1 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">{tg}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {careTab === 'tags' && <TagsTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
                 {careTab === 'custom' && <CustomValuesTab key={member.id} member={member} fields={careFields} onGoToDefinitions={onClose} />}
               </div>

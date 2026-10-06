@@ -70,6 +70,7 @@ const MODULES = [
   'budget-proposal-notify',
   'event-assignments-patch',
   'mailing-unsubscribe',
+  'song-tags',
 ];
 
 export async function registerFunctions(app) {

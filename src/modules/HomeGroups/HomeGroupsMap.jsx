@@ -7,61 +7,86 @@ import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
+import {
+  inPoland, distanceKm, medianPoint, viewboxAround, nominatimSearchUrl, isOutlier, groupLeaders, plural, normalizeWeekday,
+} from './homeGroupUtils';
 
-// Geokodowanie adresów przez Nominatim (OSM) — cache w pamięci + localStorage, rate-limit.
+// Geokodowanie adresów przez Nominatim (OSM) zawężone do Polski (countrycodes=pl) i z podpowiedzią
+// okolicy kościoła (viewbox wokół już znanych grup). Wynik spoza Polski albo daleko od pozostałych
+// grup traktujemy jak „nie znaleziono” — wcześniej „lokalizacja zmienna” lądowała w Kalifornii,
+// a mapa oddalała się na cały Atlantyk. Cache w pamięci + localStorage (nowy prefiks — stare,
+// niezawężone wyniki są ignorowane).
+const CACHE_PREFIX = 'hggeo2:';
 const mem = {};
-async function geocode(address) {
+const cacheKey = (a, vb) => `${CACHE_PREFIX}${String(a || '').trim().toLowerCase()}${vb ? `@${vb}` : ''}`;
+const readCache = (key) => {
+  if (key in mem) return { hit: true, value: mem[key] };
+  try {
+    const cached = localStorage.getItem(key);
+    if (cached !== null) { const v = JSON.parse(cached); mem[key] = v; return { hit: true, value: v }; }
+  } catch { /* prywatny tryb — bez cache */ }
+  return { hit: false, value: null };
+};
+async function geocode(address, viewbox = null) {
   const a = String(address || '').trim();
   if (!a) return null;
-  const key = 'hggeo:' + a.toLowerCase();
-  if (key in mem) return mem[key];
-  const cached = localStorage.getItem(key);
-  if (cached !== null) { const v = JSON.parse(cached); mem[key] = v; return v; }
+  const key = cacheKey(a, viewbox);
+  const c = readCache(key);
+  if (c.hit) return c.value;
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(a)}`);
+    const res = await fetch(nominatimSearchUrl(a, { viewbox }));
     const data = await res.json();
-    const v = data && data[0] ? { lat: +data[0].lat, lon: +data[0].lon } : null;
-    localStorage.setItem(key, JSON.stringify(v)); mem[key] = v; return v;
+    const hit = data && data[0] ? { lat: +data[0].lat, lon: +data[0].lon } : null;
+    const v = hit && inPoland(hit.lat, hit.lon) ? hit : null;
+    mem[key] = v;
+    try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* ignore */ }
+    return v;
   } catch { return null; }
 }
-const wasCached = (address) => {
-  const key = 'hggeo:' + String(address || '').trim().toLowerCase();
-  return (key in mem) || localStorage.getItem(key) !== null;
+const wasCached = (address, viewbox) => readCache(cacheKey(address, viewbox)).hit;
+
+// Zapisane współrzędne grupy (web: lat/lng, serwer mobilki: latitude/longitude) — tylko z Polski.
+const storedPoint = (g) => {
+  const lat = g.lat ?? g.latitude; const lon = g.lng ?? g.longitude;
+  if (lat == null || lon == null) return null;
+  return inPoland(lat, lon) ? { lat: Number(lat), lon: Number(lon) } : null;
 };
 
-// Odległość w km (Haversine).
-function distanceKm(a, b) {
-  const R = 6371, toRad = (d) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat), dLon = toRad(b.lon - a.lon);
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
-}
-
+// Pinezki w kolorach marki: słód (grupa) i kurkuma (najbliższa / Twój adres).
+const SLOD = '#2A2312';
+const KURKUMA = '#FFBE0B';
 const groupIcon = (highlight) => L.divIcon({
   className: '', iconSize: [22, 22], iconAnchor: [11, 22],
-  html: `<div style="background:${highlight ? '#10b981' : '#6366f1'};width:20px;height:20px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
+  html: `<div style="background:${highlight ? KURKUMA : SLOD};width:20px;height:20px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
 });
 const userIcon = () => L.divIcon({
   className: '', iconSize: [18, 18], iconAnchor: [9, 9],
-  html: `<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 3px rgba(239,68,68,.35)"></div>`,
+  html: `<div style="background:${KURKUMA};width:14px;height:14px;border-radius:50%;border:3px solid ${SLOD};box-shadow:0 0 0 3px rgba(255,190,11,.35)"></div>`,
 });
 
-export default function HomeGroupsMap({ groups = [], leaders = [] }) {
+const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dayText = (d) => { const n = normalizeWeekday(d); return n ? tr(n) : (d || ''); };
+
+export default function HomeGroupsMap({ groups = [], leaders = [], members = [] }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const groupLayerRef = useRef(null);
   const userLayerRef = useRef(null);
   const [loading, setLoading] = useState(false);
-  const [missing, setMissing] = useState(0);
+  const [missing, setMissing] = useState([]); // grupy bez rozpoznanego adresu (nazwy)
   const [coords, setCoords] = useState({});       // groupId -> {lat,lon}
   const [address, setAddress] = useState('');
   const [userPoint, setUserPoint] = useState(null);
   const [searching, setSearching] = useState(false);
 
   const withAddress = useMemo(() => groups.filter((g) => (g.address || g.location || '').trim()), [groups]);
-  const leaderName = (id) => leaders.find((l) => l.id === id)?.full_name;
+  const leaderNames = (g) => groupLeaders(g, members, leaders).map((l) => l.full_name).filter(Boolean).join(', ');
+  const tooltip = (g) => {
+    const ln = leaderNames(g);
+    return `<b>${escapeHtml(g.name)}</b>${g.meeting_day ? `<br>${escapeHtml(dayText(g.meeting_day))} ${escapeHtml(String(g.meeting_time || '').slice(0, 5))}` : ''}${ln ? `<br>${escapeHtml(tr('Lider'))}: ${escapeHtml(ln)}` : ''}`;
+  };
 
-  // Inicjalizacja mapy raz.
+  // Inicjalizacja mapy raz (widok startowy: Polska).
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return;
     const map = L.map(containerRef.current, { scrollWheelZoom: true }).setView([52.0, 19.4], 6);
@@ -78,37 +103,42 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
     if (!mapRef.current || !groupLayerRef.current) return;
     let alive = true;
     (async () => {
-      setLoading(true); setMissing(0);
+      setLoading(true); setMissing([]);
       groupLayerRef.current.clearLayers();
-      const found = {}; const pts = []; let miss = 0;
+      const found = {};
+      // 1) Zapisane współrzędne (tylko z Polski) → środek „okolicy kościoła” do podpowiedzi geokoderowi.
+      withAddress.forEach((g) => { const p = storedPoint(g); if (p) found[g.id] = p; });
+      const center = medianPoint(Object.values(found));
+      const viewbox = viewboxAround(center);
+      // 2) Brakujące (albo zapisane spoza Polski) — geokoduj i ZAPISZ.
       for (const g of withAddress) {
-        // Współrzędne z bazy → bez geokodowania (szybko). Inaczej geokoduj i ZAPISZ.
-        if (g.lat != null && g.lng != null) {
-          const geo = { lat: Number(g.lat), lon: Number(g.lng) };
-          found[g.id] = geo; pts.push([geo.lat, geo.lon]);
-          const ln = leaderName(g.leader_id);
-          L.marker([geo.lat, geo.lon], { icon: groupIcon(false) })
-            .bindTooltip(`<b>${g.name}</b>${g.meeting_day ? `<br>${g.meeting_day} ${g.meeting_time || ''}` : ''}${ln ? `<br>${tr('Lider')}: ${ln}` : ''}`, { direction: 'top' })
-            .addTo(groupLayerRef.current);
-          continue;
-        }
+        if (found[g.id]) continue;
         const addr = g.address || g.location;
-        const cachedBefore = wasCached(addr);
-        const geo = await geocode(addr);
+        const cachedBefore = wasCached(addr, viewbox);
+        const geo = await geocode(addr, viewbox);
         if (!alive) return;
         if (geo) {
+          found[g.id] = geo;
           supabase.from('home_groups').update({ lat: geo.lat, lng: geo.lon }).eq('id', g.id).then(() => {}, () => {}); // best-effort zapis
-          found[g.id] = geo; pts.push([geo.lat, geo.lon]);
-          const ln = leaderName(g.leader_id);
-          L.marker([geo.lat, geo.lon], { icon: groupIcon(false) })
-            .bindTooltip(`<b>${g.name}</b>${g.meeting_day ? `<br>${g.meeting_day} ${g.meeting_time || ''}` : ''}${ln ? `<br>${tr('Lider')}: ${ln}` : ''}`, { direction: 'top' })
-            .addTo(groupLayerRef.current);
-        } else miss++;
+        } else if (g.lat != null || g.lng != null) {
+          // Zapisana pomyłka (np. Kalifornia) — czyścimy, żeby nie wracała.
+          supabase.from('home_groups').update({ lat: null, lng: null }).eq('id', g.id).then(() => {}, () => {});
+        }
         if (!cachedBefore) await new Promise((r) => setTimeout(r, 1100));
       }
       if (!alive) return;
-      setCoords(found); setMissing(miss); setLoading(false);
-      if (pts.length && !userPoint) mapRef.current.fitBounds(pts, { padding: [40, 40], maxZoom: 13 });
+      // 3) Odrzuć punkty odstające (daleko od pozostałych grup) — zwykle źle rozpoznany wolny tekst.
+      const pts = Object.entries(found);
+      const accepted = {};
+      pts.forEach(([id, p]) => { if (!isOutlier(p, pts.filter(([o]) => o !== id).map(([, q]) => q))) accepted[id] = p; });
+      const miss = withAddress.filter((g) => !accepted[g.id]).map((g) => g.name);
+      withAddress.forEach((g) => {
+        const geo = accepted[g.id]; if (!geo) return;
+        L.marker([geo.lat, geo.lon], { icon: groupIcon(false), title: g.name }).bindTooltip(tooltip(g), { direction: 'top' }).addTo(groupLayerRef.current);
+      });
+      setCoords(accepted); setMissing(miss); setLoading(false);
+      const bounds = Object.values(accepted).map((p) => [p.lat, p.lon]);
+      if (bounds.length && !userPoint) mapRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     })();
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,14 +156,14 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
   const setUserAt = (geo, label) => {
     setUserPoint(geo);
     userLayerRef.current.clearLayers();
-    L.marker([geo.lat, geo.lon], { icon: userIcon() }).bindTooltip(label, { direction: 'top' }).addTo(userLayerRef.current);
+    L.marker([geo.lat, geo.lon], { icon: userIcon() }).bindTooltip(escapeHtml(label), { direction: 'top' }).addTo(userLayerRef.current);
   };
   const searchNearest = async () => {
     if (!address.trim()) return;
     setSearching(true);
     try {
-      const geo = await geocode(address);
-      if (!geo) { setUserPoint(null); return; }
+      const geo = await geocode(address, viewboxAround(medianPoint(Object.values(coords))));
+      if (!geo) { setUserPoint(null); toast.info(tr('Nie znaleźliśmy tego adresu w Polsce. Dopisz miasto, np. „Legnicka 10, Wrocław”.')); return; }
       setUserAt(geo, tr('Twój adres'));
     } finally { setSearching(false); }
   };
@@ -157,20 +187,24 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
     groupLayerRef.current.clearLayers();
     withAddress.forEach((g) => {
       const geo = coords[g.id]; if (!geo) return;
-      const ln = leaderName(g.leader_id);
-      L.marker([geo.lat, geo.lon], { icon: groupIcon(g.id === closest.g.id) })
-        .bindTooltip(`<b>${g.name}</b>${g.meeting_day ? `<br>${g.meeting_day} ${g.meeting_time || ''}` : ''}${ln ? `<br>${tr('Lider')}: ${ln}` : ''}`, { direction: 'top' })
+      L.marker([geo.lat, geo.lon], { icon: groupIcon(g.id === closest.g.id), title: g.name })
+        .bindTooltip(tooltip(g), { direction: 'top' })
         .addTo(groupLayerRef.current);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nearest]);
 
+  const n = withAddress.length;
+  const groupsWithAddress = plural(n, tr('{n} grupa z adresem', { n }), tr('{n} grupy z adresem', { n }), tr('{n} grup z adresem', { n }));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
           <input
+            type="search"
+            aria-label={tr('Twój adres')}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') searchNearest(); }}
@@ -178,21 +212,28 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
             className="w-full pl-9 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
         </div>
-        <button onClick={searchNearest} disabled={searching} className="px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-60">
-          {searching ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />} {tr('Znajdź najbliższą')}
+        <button type="button" onClick={searchNearest} disabled={searching} className="px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-60">
+          {searching ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Navigation size={16} aria-hidden="true" />} {tr('Znajdź najbliższą')}
         </button>
-        <button onClick={useMyLocation} disabled={searching} title={tr('Użyj mojej lokalizacji')} className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center gap-2 disabled:opacity-60">
-          <LocateFixed size={16} /> <span className="sm:hidden lg:inline">{tr('Moja lokalizacja')}</span>
+        <button type="button" onClick={useMyLocation} disabled={searching} title={tr('Użyj mojej lokalizacji')} aria-label={tr('Użyj mojej lokalizacji')} className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center gap-2 disabled:opacity-60">
+          <LocateFixed size={16} aria-hidden="true" /> <span className="sm:hidden lg:inline">{tr('Moja lokalizacja')}</span>
         </button>
       </div>
 
-      <div className="flex items-center gap-2 text-sm text-gray-500">
-        <MapPin size={15} /> {withAddress.length} {tr('grup z adresem')}
-        {loading && <Spinner size={14} label={tr('geokodowanie…')} />}
-        {!loading && missing > 0 && <span className="text-amber-500">· {missing} {tr('bez współrzędnych')}</span>}
+      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <MapPin size={15} aria-hidden="true" /> {groupsWithAddress}
+        {loading && <Spinner size={14} label={tr('Szukam adresów na mapie…')} />}
+        {!loading && missing.length > 0 && (
+          <span className="text-amber-700 dark:text-amber-400" title={missing.join(', ')}>
+            · {tr('nie znaleziono na mapie: {names}', { names: missing.join(', ') })}
+          </span>
+        )}
       </div>
+      {!loading && missing.length > 0 && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">{tr('Wpisz w edycji grupy pełny adres (ulica, numer, miasto) w polu „Adres (do mapy)”.')}</p>
+      )}
 
-      <div ref={containerRef} className="w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height: 460 }} />
+      <div ref={containerRef} role="region" aria-label={tr('Mapa grup domowych')} className="w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height: 460 }} />
 
       {userPoint && (
         <div>
@@ -202,13 +243,13 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
           ) : (
             <div className="space-y-2">
               {nearest.slice(0, 5).map(({ g, km }, i) => (
-                <div key={g.id} className={`flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-emerald-300 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-900/10' : 'border-gray-200 dark:border-gray-700'}`}>
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white ${i === 0 ? 'bg-emerald-500' : 'bg-accent-primary'}`}><MapPin size={18} /></div>
+                <div key={g.id} className={`flex items-center gap-3 p-3 rounded-xl border ${i === 0 ? 'border-accent-primary bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/20' : 'border-gray-200 dark:border-gray-700'}`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${i === 0 ? 'bg-accent-primary text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'}`}><MapPin size={18} aria-hidden="true" /></div>
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-gray-800 dark:text-gray-100 truncate">{g.name}{i === 0 && <span className="ml-2 text-[10px] font-semibold text-emerald-600">{tr('najbliżej')}</span>}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{g.address || g.location}{g.meeting_day ? ` · ${g.meeting_day} ${g.meeting_time || ''}` : ''}</div>
+                    <div className="font-semibold text-gray-800 dark:text-gray-100 truncate">{g.name}{i === 0 && <span className="ml-2 text-[11px] font-semibold text-accent-primary-dark dark:text-accent-primary-light">{tr('najbliżej')}</span>}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{g.address || g.location}{g.meeting_day ? ` · ${dayText(g.meeting_day)} ${String(g.meeting_time || '').slice(0, 5)}` : ''}</div>
                   </div>
-                  <div className="font-bold text-gray-700 dark:text-gray-200 shrink-0">{km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`}</div>
+                  <div className="font-bold text-gray-700 dark:text-gray-200 shrink-0 tabular-nums">{km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`}</div>
                 </div>
               ))}
             </div>

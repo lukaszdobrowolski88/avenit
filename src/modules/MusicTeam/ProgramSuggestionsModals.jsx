@@ -62,7 +62,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedProgramId, setSelectedProgramId] = useState(null);
-  const [songKey, setSongKey] = useState(song?.key || 'C');
+  const [songKey, setSongKey] = useState(song?.key || ''); // bez tonacji pieśni — nie zakładamy „C”
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [existingProgramIds, setExistingProgramIds] = useState(new Set());
@@ -120,15 +120,16 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
         if (error.code === '23505') {
           toast.error(tr('Ta pieśń jest już przypisana do tego programu.'));
         } else {
-          toast.error(tr('Błąd zapisu: ') + error.message);
+          toast.error(error, { fallback: tr('Nie udało się dodać pieśni do programu.') });
         }
         setSaving(false);
         return;
       }
+      toast.success(tr('Dodano „{title}” do propozycji programu', { title: song.title }));
       onSaved?.();
       onClose();
     } catch (err) {
-      toast.error(tr('Błąd: ') + err.message);
+      toast.error(err, { fallback: tr('Nie udało się dodać pieśni do programu.') });
       setSaving(false);
     }
   };
@@ -224,7 +225,8 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
                 <button
                   key={k}
                   type="button"
-                  onClick={() => setSongKey(k)}
+                  onClick={() => setSongKey(songKey === k ? '' : k)}
+                  aria-pressed={songKey === k}
                   className={`py-2 text-xs font-bold rounded-lg transition-all
                     ${songKey === k
                       ? 'bg-gradient-to-b from-accent-primary-light to-accent-primary text-white shadow-lg shadow-accent-primary-light/25'
@@ -438,32 +440,44 @@ function ProgramSongsEditor({ program, songs, onBack }) {
     const next = arrayMove(items, oldIndex, newIndex);
     setItems(next);
     // persist new order
-    try {
-      await Promise.all(next.map((it, idx) =>
-        supabase.from('program_song_suggestions').update({ sort_order: idx }).eq('id', it.id)
-      ));
-    } catch (e) {
-      console.error('Błąd zapisu kolejności', e);
-    }
+    const results = await Promise.all(next.map((it, idx) =>
+      supabase.from('program_song_suggestions').update({ sort_order: idx }).eq('id', it.id).then((r) => r, (e) => ({ error: e }))
+    ));
+    const failed = results.find((r) => r?.error);
+    if (failed) { toast.error(failed.error, { fallback: tr('Nie udało się zapisać kolejności.') }); reload(); }
   };
 
+  // Zapis optymistyczny z cofnięciem przy błędzie (wcześniej błąd był połykany).
   const handleChangeKey = async (id, newKey) => {
+    const before = items;
     setItems(prev => prev.map(i => i.id === id ? { ...i, song_key: newKey } : i));
-    await supabase.from('program_song_suggestions').update({ song_key: newKey }).eq('id', id);
+    const { error } = await supabase.from('program_song_suggestions').update({ song_key: newKey }).eq('id', id);
+    if (error) { setItems(before); toast.error(error, { fallback: tr('Nie udało się zmienić tonacji.') }); }
   };
 
   const handleSaveNote = async (id) => {
     const value = noteDraft.trim() || null;
+    const before = items;
     setItems(prev => prev.map(i => i.id === id ? { ...i, note: value } : i));
     setEditingNoteId(null);
     setNoteDraft('');
-    await supabase.from('program_song_suggestions').update({ note: value }).eq('id', id);
+    const { error } = await supabase.from('program_song_suggestions').update({ note: value }).eq('id', id);
+    if (error) { setItems(before); toast.error(error, { fallback: tr('Nie udało się zapisać notatki.') }); }
   };
 
   const handleDelete = async (id) => {
-    if (!await confirmDialog(tr('Usunąć pieśń z propozycji?'))) return;
+    const it = items.find((i) => i.id === id);
+    const title = (songs || []).find((s) => s.id === it?.song_id)?.title;
+    if (!await confirmDialog({
+      title: title ? tr('Usunąć „{title}” z propozycji?', { title }) : tr('Usunąć pieśń z propozycji?'),
+      message: tr('Pieśń zostanie w Bazie pieśni.'),
+      confirmLabel: tr('Usuń z propozycji'),
+      danger: true,
+    })) return;
+    const before = items;
     setItems(prev => prev.filter(i => i.id !== id));
-    await supabase.from('program_song_suggestions').delete().eq('id', id);
+    const { error } = await supabase.from('program_song_suggestions').delete().eq('id', id);
+    if (error) { setItems(before); toast.error(error, { fallback: tr('Nie udało się usunąć pieśni z propozycji.') }); }
   };
 
   const handleAddSong = async (song) => {
@@ -480,7 +494,7 @@ function ProgramSongsEditor({ program, songs, onBack }) {
       if (error.code === '23505') {
         toast.error(tr('Ta pieśń jest już przypisana do tego programu.'));
       } else {
-        toast.error(tr('Błąd: ') + error.message);
+        toast.error(error, { fallback: tr('Nie udało się dodać pieśni.') });
       }
       return;
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, PlusCircle, Music, Hash, Check, Upload, FileText, Link as LinkIcon, Trash2, Edit3, AlignJustify, Minus, Plus, CornerDownLeft, Undo2, Redo2, Keyboard, Type, Bold, Italic } from 'lucide-react';
+import { X, PlusCircle, Music, Hash, Check, Upload, FileText, Link as LinkIcon, Trash2, Edit3, AlignJustify, Minus, Plus, CornerDownLeft, Undo2, Redo2, Keyboard, Type, Bold, Italic, SlidersHorizontal } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import CustomSelect from '../../components/CustomSelect';
 import { tr } from '../../i18n';
@@ -8,6 +8,16 @@ import { confirmDialog } from '../../lib/dialog';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
+import { plural } from '../HomeGroups/homeGroupUtils';
+
+// Długość widocznego tekstu edytora akordów (bez znaczników HTML i pomocniczych znaków taktów).
+export const visibleChordsLength = (html) => String(html || '')
+  .replace(/<br\s*\/?>/gi, '\n')
+  .replace(/<[^>]*>/g, '')
+  .replace(/&nbsp;/g, ' ')
+  .replace(/&[a-z]+;|&#\d+;/gi, 'x')
+  .replace(/\u200B/g, '')
+  .length;
 
 // --- STAŁE DANYCH ---
 const KEYS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
@@ -568,6 +578,9 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
   const [editingDescription, setEditingDescription] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const chordsTextareaRef = useRef(null);
+  const titleInputRef = useRef(null);
+  const [titleError, setTitleError] = useState('');
+  const [showFormatting, setShowFormatting] = useState(false); // rzadziej używane formatowanie schowane
 
   // Ustawienia edytora akordów
   const [chordsLineHeight, setChordsLineHeight] = useState(1.8);
@@ -629,7 +642,14 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
   }, [formData.key, editorKey]);
 
   const handleSubmit = async () => {
-    if (!formData.title) return toast.error(tr('Podaj tytuł pieśni'));
+    if (!String(formData.title || '').trim()) {
+      // Pole tytułu jest na zakładce „Informacje podstawowe” — przenosimy tam i zaznaczamy pole.
+      setTitleError(tr('Podaj tytuł pieśni.'));
+      setActiveTab('basic');
+      setTimeout(() => titleInputRef.current?.focus(), 0);
+      toast.error(tr('Podaj tytuł pieśni.'));
+      return;
+    }
 
     // Formatuj akordy w chords_bars przed zapisem (zgodnie z wytycznymi PDF)
     // Rozmiary: główna litera = bazowy, modyfikatory = -2pt, slash/bas = -1pt, znaki przy basie = -3pt
@@ -640,7 +660,6 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
         : formData.chords_bars
     };
 
-    console.log('SongForm handleSubmit - formattedData:', formattedData);
     await onSave(formattedData);
   };
 
@@ -1109,14 +1128,14 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
       onClose={requestClose}
       closeOnBackdrop={false}
       size="full"
-      title={formData.id ? tr('Edycja Pieśni') : tr('Nowa Pieśń')}
+      title={formData.id ? tr('Edytuj pieśń') : tr('Nowa pieśń')}
       subtitle={tr('Uzupełnij szczegóły utworu')}
       footer={<>
         <Button variant="secondary" onClick={requestClose}>
           {tr('Anuluj')}
         </Button>
         <Button onClick={handleSubmit}>
-          {tr('Zapisz Pieśń')}
+          {tr('Zapisz pieśń')}
         </Button>
       </>}
     >
@@ -1124,20 +1143,29 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
         <div className="p-6">
           
           {/* TABS */}
-          <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
+          <div role="tablist" aria-label={tr('Części formularza pieśni')} className="flex flex-wrap gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit max-w-full">
             <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'basic'}
               onClick={() => setActiveTab('basic')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'basic' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
             >
-              {tr('Informacje Podstawowe')}
+              {tr('Informacje podstawowe')}{titleError && <span className="ml-1 text-red-600 dark:text-red-400" aria-hidden="true">•</span>}
             </button>
             <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'lyrics'}
               onClick={() => setActiveTab('lyrics')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'lyrics' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
             >
-              {tr('Tekst i Chwyty')}
+              {tr('Tekst i chwyty')}
             </button>
             <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'attachments'}
               onClick={() => setActiveTab('attachments')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'attachments' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
             >
@@ -1151,19 +1179,25 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
               {/* Rząd 1: Tytuł i Autor */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł')}</label>
-                  <input 
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
-                    placeholder={tr('Np. Jak wielki jest Bóg')}
+                  <label htmlFor="song-title" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł *')}</label>
+                  <input
+                    id="song-title"
+                    ref={titleInputRef}
+                    aria-invalid={!!titleError}
+                    aria-describedby={titleError ? 'song-title-err' : undefined}
+                    className={`w-full px-4 py-3 rounded-xl border bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 outline-none transition ${titleError ? 'border-red-400 dark:border-red-500 focus:ring-red-300/40' : 'border-gray-200 dark:border-gray-700 focus:ring-accent-primary-light/20'}`}
+                    placeholder={tr('np. Jak wielki jest Bóg')}
                     value={formData.title}
-                    onChange={e => setFormData({...formData, title: e.target.value})}
+                    onChange={e => { setFormData({...formData, title: e.target.value}); if (titleError) setTitleError(''); }}
                   />
+                  {titleError && <p id="song-title-err" className="mt-1 ml-1 text-xs text-red-600 dark:text-red-400">{titleError}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Autor')}</label>
-                  <input 
+                  <label htmlFor="song-author" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Autor')}</label>
+                  <input
+                    id="song-author"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
-                    placeholder={tr('Np. Chris Tomlin')}
+                    placeholder={tr('np. Chris Tomlin')}
                     value={formData.author}
                     onChange={e => setFormData({...formData, author: e.target.value})}
                   />
@@ -1172,35 +1206,39 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
 
               {/* Rząd 2: Dane Muzyczne */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <CustomSelect
-                  label={tr('Tonacja')}
-                  options={KEYS}
-                  value={formData.key}
-                  onChange={val => setFormData({...formData, key: val})}
-                  placeholder={tr('Klucz')}
-                  icon={Music}
-                />
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Metrum')}</label>
+                  <CustomSelect
+                    label={tr('Tonacja')}
+                    options={[{ value: '', label: tr('Nie ustalono') }, ...KEYS.map((k) => ({ value: k, label: k }))]}
+                    value={formData.key || ''}
+                    onChange={val => setFormData({...formData, key: val})}
+                    placeholder={tr('Nie ustalono')}
+                    icon={Music}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="song-meter" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Metrum')}</label>
                   <div className="relative">
-                    <Hash size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Hash size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
                     <input
+                      id="song-meter"
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
-                      placeholder="4/4"
+                      placeholder={tr('np. 4/4')}
                       value={formData.meter}
                       onChange={e => setFormData({...formData, meter: e.target.value})}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tempo (BPM)')}</label>
+                  <label htmlFor="song-tempo" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tempo (BPM)')}</label>
                   <input
+                    id="song-tempo"
                     type="number"
                     step="0.1"
                     min="1"
                     max="300"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
-                    placeholder="120"
+                    placeholder={tr('np. 120')}
                     value={formData.tempo}
                     onChange={e => setFormData({...formData, tempo: e.target.value})}
                   />
@@ -1222,8 +1260,9 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full min-h-[500px]">
                  {/* KOLUMNA 1: CZYSTY TEKST */}
                  <div className="flex flex-col h-full">
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tekst Pieśni (Lyrics)')}</label>
+                    <label htmlFor="song-lyrics" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tekst pieśni')}</label>
                     <textarea
+                      id="song-lyrics"
                       className="flex-1 w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition resize-none font-mono text-sm leading-relaxed"
                       placeholder={tr('Wpisz tekst tutaj...')}
                       value={formData.lyrics}
@@ -1299,9 +1338,20 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           })}
 
                         </div>
+
+                        {/* Rzadziej używane formatowanie (pogrubienie, rozmiary, odstęp wierszy) — za przyciskiem */}
+                        <button
+                          type="button"
+                          onClick={() => setShowFormatting((v) => !v)}
+                          aria-expanded={showFormatting}
+                          className={`ml-auto h-7 px-2.5 flex items-center gap-1.5 rounded border text-[11px] font-semibold transition ${showFormatting ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 border-accent-primary-light text-accent-primary-dark dark:text-accent-primary-light' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                        >
+                          <SlidersHorizontal size={13} aria-hidden="true" /> {tr('Formatowanie')}
+                        </button>
                       </div>
 
-                      {/* Rząd 1: Formatowanie tekstu (zaznaczenia) */}
+                      {/* Rząd 1: Formatowanie tekstu (zaznaczenia) — rozwijane */}
+                      {showFormatting && (
                       <div className="flex flex-wrap items-center gap-3 mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
                         {/* Formatowanie */}
                         <div className="flex items-center gap-1">
@@ -1326,7 +1376,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         {/* Rozmiar czcionki dla zaznaczenia */}
                         <div className="flex items-center gap-1.5">
                           <Type size={14} className="text-gray-400" />
-                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{tr('Rozmiar:')}</span>
+                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{tr('Rozmiar zaznaczenia:')}</span>
                           {[1, 2, 3, 4, 5, 6, 7].map((size) => (
                             <button
                               key={size}
@@ -1343,8 +1393,11 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
 
                         {/* Globalna czcionka bazowa */}
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{tr('Baza:')}</span>
+                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{tr('Wielkość tekstu:')}</span>
                           <button
+                            type="button"
+                            aria-label={tr('Mniejszy tekst')}
+                            title={tr('Mniejszy tekst')}
                             onClick={() => setChordsFontSize(Math.max(10, chordsFontSize - 2))}
                             className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
                           >
@@ -1352,6 +1405,9 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           </button>
                           <span className="w-10 text-center text-xs font-mono font-bold text-gray-700 dark:text-gray-200">{chordsFontSize}px</span>
                           <button
+                            type="button"
+                            aria-label={tr('Większy tekst')}
+                            title={tr('Większy tekst')}
                             onClick={() => setChordsFontSize(Math.min(24, chordsFontSize + 2))}
                             className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
                           >
@@ -1364,8 +1420,11 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         {/* Interlinia */}
                         <div className="flex items-center gap-1.5">
                           <AlignJustify size={14} className="text-gray-400" />
-                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{tr('Interlinia:')}</span>
+                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{tr('Odstęp wierszy:')}</span>
                           <button
+                            type="button"
+                            aria-label={tr('Mniejszy odstęp wierszy')}
+                            title={tr('Mniejszy odstęp wierszy')}
                             onClick={() => setChordsLineHeight(Math.max(1.2, chordsLineHeight - 0.2))}
                             className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
                           >
@@ -1373,6 +1432,9 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           </button>
                           <span className="w-8 text-center text-xs font-mono font-bold text-gray-700 dark:text-gray-200">{chordsLineHeight.toFixed(1)}</span>
                           <button
+                            type="button"
+                            aria-label={tr('Większy odstęp wierszy')}
+                            title={tr('Większy odstęp wierszy')}
                             onClick={() => setChordsLineHeight(Math.min(3.0, chordsLineHeight + 0.2))}
                             className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
                           >
@@ -1380,6 +1442,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           </button>
                         </div>
                       </div>
+                      )}
 
                       {/* Rząd 2: Szybkie wstawianie */}
                       <div className="flex flex-wrap gap-1.5">
@@ -1407,43 +1470,47 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor(' '.repeat(TAB_SIZE)); }}
-                          className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-bold rounded-md border border-blue-200 dark:border-blue-800 transition"
+                          className="px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-200 dark:border-gray-600 transition"
                           title={tr('Duża spacja ({n} znaków) lub Tab', { n: TAB_SIZE })}
                         >
-                          TAB
+                          {tr('Odstęp')}
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor(' '.repeat(SMALL_TAB_SIZE)); }}
-                          className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-bold rounded-md border border-blue-200 dark:border-blue-800 transition"
+                          className="px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-200 dark:border-gray-600 transition"
                           title={tr('Mała spacja ({n} znaków) lub Shift+Tab', { n: SMALL_TAB_SIZE })}
                         >
-                          SPC
+                          {tr('Mały odstęp')}
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor('\n'); }}
-                          className="px-2.5 py-1 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300 text-[11px] font-bold rounded-md border border-green-200 dark:border-green-800 transition flex items-center gap-1"
+                          className="px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-200 dark:border-gray-600 transition flex items-center gap-1"
                           title={tr('Nowa linia')}
+                          aria-label={tr('Nowa linia')}
                         >
-                          <CornerDownLeft size={10} />
+                          <CornerDownLeft size={10} aria-hidden="true" />
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor('\n────────────────────────────────\n'); }}
-                          className="px-2.5 py-1 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-300 dark:border-gray-500 transition"
+                          className="px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-200 dark:border-gray-600 transition"
                           title={tr('Linia pozioma (separator)')}
+                          aria-label={tr('Linia pozioma (separator)')}
                         >
                           ───
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor('×2'); }}
-                          className="px-2.5 py-1 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 text-[11px] font-bold rounded-md border border-red-200 dark:border-red-800 transition font-mono"
+                          className="px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-200 dark:border-gray-600 transition font-mono"
                           title={tr('Znak powtórzenia')}
+                          aria-label={tr('Znak powtórzenia')}
                         >
                           ×2
                         </button>
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor('𝄆  𝄇'); }}
-                          className="px-2.5 py-1 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-[11px] font-bold rounded-md border border-purple-200 dark:border-purple-800 transition font-mono"
+                          className="px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-200 dark:border-gray-600 transition font-mono"
                           title={tr('Znaki repetycji')}
+                          aria-label={tr('Znaki repetycji')}
                         >
                           𝄆 𝄇
                         </button>
@@ -1478,7 +1545,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         </button>
                       </div>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
-                        {tr('{n} znaków', { n: (formData.chords_bars || '').length })}
+                        {(() => { const n = visibleChordsLength(formData.chords_bars); return plural(n, tr('{n} znak', { n }), tr('{n} znaki', { n }), tr('{n} znaków', { n })); })()}
                       </span>
                     </div>
 
@@ -1571,7 +1638,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                     disabled={!newLink}
                     className="px-6 py-2.5 bg-gradient-to-r from-accent-secondary-light to-accent-primary-light text-white rounded-xl font-bold text-sm hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {tr('Dodaj Link')}
+                    {tr('Dodaj link')}
                   </button>
                 </div>
               </div>
