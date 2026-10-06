@@ -14,6 +14,7 @@ import useShares from '../Materials/hooks/useShares';
 import ShareModal from '../Materials/components/ShareModal';
 import FilePreviewModal from '../Materials/components/FilePreviewModal';
 import { tr } from '../../i18n';
+import { confirmDialog } from '../../lib/dialog';
 
 const fileUrl = (path) => supabase.storage.from('materials').getPublicUrl(path).data.publicUrl;
 const fmtSize = (b) => (!b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
@@ -69,10 +70,11 @@ export default function EventMaterialsTab({ event, canManage }) {
         team_type: teamType, uploaded_by: email,
       }).select().single();
       if (insErr) throw insErr;
-      await supabase.from('event_materials').insert({ event_id: event.id, file_id: mf.id });
+      const { error: linkErr } = await supabase.from('event_materials').insert({ event_id: event.id, file_id: mf.id });
+      if (linkErr) throw linkErr;
       await loadLinked();
       toast.success(tr('Dodano materiał'));
-    } catch (e) { toast.error(e.message || tr('Błąd dodawania materiału')); }
+    } catch (e) { toast.error(e, { fallback: tr('Nie udało się dodać materiału. Spróbuj ponownie.') }); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
@@ -86,20 +88,27 @@ export default function EventMaterialsTab({ event, canManage }) {
     setPickList((data || []).filter((f) => !linkedIds.has(f.id)));
   };
 
+  // Supabase-owy klient zwraca { error } (nie rzuca) — sprawdzamy jawnie, żeby nie udawać sukcesu.
   const attach = async (file) => {
-    try {
-      await supabase.from('event_materials').insert({ event_id: event.id, file_id: file.id });
-      setPickList((prev) => (prev || []).filter((f) => f.id !== file.id));
-      await loadLinked();
-      toast.success(tr('Podpięto materiał'));
-    } catch (e) { toast.error(e.message || tr('Błąd')); }
+    const { error } = await supabase.from('event_materials').insert({ event_id: event.id, file_id: file.id });
+    if (error) { toast.error(error, { fallback: tr('Nie udało się podpiąć materiału.') }); return; }
+    setPickList((prev) => (prev || []).filter((f) => f.id !== file.id));
+    await loadLinked();
+    toast.success(tr('Podpięto materiał'));
   };
 
   const unlink = async (file) => {
-    try {
-      await supabase.from('event_materials').delete().eq('event_id', event.id).eq('file_id', file.id);
-      await loadLinked();
-    } catch (e) { toast.error(e.message || tr('Błąd')); }
+    const ok = await confirmDialog({
+      title: tr('Odpiąć materiał?'),
+      message: tr('„{name}” zniknie z tego wydarzenia. Plik zostaje w Materiałach.', { name: file.name || '' }),
+      confirmLabel: tr('Odepnij'),
+      danger: true,
+    });
+    if (!ok) return;
+    const { error } = await supabase.from('event_materials').delete().eq('event_id', event.id).eq('file_id', file.id);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się odpiąć materiału.') }); return; }
+    toast.success(tr('Odpięto materiał'));
+    await loadLinked();
   };
 
   const startRename = (file) => { setRenameId(file.id); setRenameVal(file.name || ''); };
@@ -108,11 +117,10 @@ export default function EventMaterialsTab({ event, canManage }) {
     if (!name) { setRenameId(null); return; }
     const oldExt = (file.name || '').includes('.') ? file.name.split('.').pop() : '';
     if (oldExt && !name.toLowerCase().endsWith('.' + oldExt.toLowerCase())) name = `${name}.${oldExt}`;
-    try {
-      await supabase.from('materials_files').update({ name, updated_at: new Date().toISOString() }).eq('id', file.id);
-      setRenameId(null);
-      await loadLinked();
-    } catch (e) { toast.error(e.message || tr('Błąd zmiany nazwy')); }
+    const { error } = await supabase.from('materials_files').update({ name, updated_at: new Date().toISOString() }).eq('id', file.id);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się zmienić nazwy.') }); return; }
+    setRenameId(null);
+    await loadLinked();
   };
 
   if (linked === null) return <Spinner center size={24} />;
@@ -121,10 +129,10 @@ export default function EventMaterialsTab({ event, canManage }) {
 
   const FileActions = ({ f }) => (
     <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-      <button onClick={() => setPreviewIdx(linked.findIndex((x) => x.id === f.id))} title={tr('Podgląd')} className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Eye size={16} /></button>
-      {canManage && <button onClick={() => setShareItem({ file_id: f.id, name: f.name })} title={tr('Udostępnij')} className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Share2 size={16} /></button>}
-      {canManage && <button onClick={() => startRename(f)} title={tr('Zmień nazwę')} className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Pencil size={15} /></button>}
-      {canManage && <button onClick={() => unlink(f)} title={tr('Odepnij od wydarzenia')} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800"><Trash2 size={16} /></button>}
+      <button onClick={() => setPreviewIdx(linked.findIndex((x) => x.id === f.id))} title={tr('Podgląd')} aria-label={tr('Podgląd: {name}', { name: f.name || '' })} className="p-1.5 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Eye size={16} aria-hidden="true" /></button>
+      {canManage && <button onClick={() => setShareItem({ file_id: f.id, name: f.name })} title={tr('Udostępnij')} aria-label={tr('Udostępnij: {name}', { name: f.name || '' })} className="p-1.5 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Share2 size={16} aria-hidden="true" /></button>}
+      {canManage && <button onClick={() => startRename(f)} title={tr('Zmień nazwę')} aria-label={tr('Zmień nazwę: {name}', { name: f.name || '' })} className="p-1.5 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Pencil size={15} aria-hidden="true" /></button>}
+      {canManage && <button onClick={() => unlink(f)} title={tr('Odepnij od wydarzenia')} aria-label={tr('Odepnij od wydarzenia: {name}', { name: f.name || '' })} className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"><Trash2 size={16} aria-hidden="true" /></button>}
     </div>
   );
 

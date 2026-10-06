@@ -1,63 +1,163 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
   Calendar as CalIcon, ChevronLeft, ChevronRight,
   Plus, CheckCircle, Clock, Video, Music, X, Save,
   Users, HeartHandshake, Home, Baby, Trash2,
-  ChevronDown, MapPin, AlignLeft, Search, Check,
-  FileText, LayoutGrid, List, LayoutList, Columns, CalendarPlus, ListTodo,
-  Filter, PanelLeftClose, PanelLeft, AlertTriangle
+  MapPin, Search, Check,
+  LayoutGrid, List, LayoutList, Columns, CalendarPlus, ListTodo,
+  Filter
 } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import PageHeader from '../components/PageHeader';
-import ProgramEditorModal from './Programs/ProgramEditorModal';
-import EventRSVP from '../components/EventRSVP';
+import { CreateEventModal } from './Events/EventsModule';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useModules } from '../hooks/useModules';
 import { useModuleCalendars } from '../hooks/useModuleLabel';
 import { useT } from '../i18n';
 import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
-import { DateInput, TimeField } from '../components/pickers';
+import { TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
 
-// --- MODAL POTWIERDZENIA USUNIĘCIA ---
+// --- POMOCNICZE (czyste funkcje — testy w CalendarModule.test.js) ---
 
-const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, title, message }) => (
-  <Modal
-    isOpen={isOpen}
-    onClose={onClose}
-    title={title}
-    icon={AlertTriangle}
-    size="sm"
-    zIndex={110}
-    closeOnBackdrop={false}
-    footer={<>
-      <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
-      <Button variant="danger" icon={Trash2} onClick={onConfirm}>{tr('Usuń')}</Button>
-    </>}
-  >
-    <div className="p-6">
-      <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
-    </div>
-  </Modal>
-);
+const pad2 = (n) => String(n).padStart(2, '0');
+// Dzień LOKALNY 'YYYY-MM-DD' (toISOString dawał dzień UTC — między 00:00 a 02:00 „wczoraj”).
+export const localYmd = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const hhmm = (v) => (v ? String(v).slice(0, 5) : '');
+
+// 'YYYY-MM-DD' (+ opcjonalnie 'HH:MM') → Date w czasie lokalnym, bez przesunięcia przez UTC.
+export function localDateTime(dateStr, timeStr) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr || ''));
+  if (!m) return null;
+  const [hh, mm] = String(timeStr || '').split(':').map(Number);
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), hh || 0, mm || 0);
+}
+
+// Godzina końca nie może być przed (ani równa) początkiem — porównanie 'HH:MM'.
+export const endNotAfterStart = (start, end) => {
+  const s = hhmm(start);
+  const e = hhmm(end);
+  return !!(s && e && e <= s);
+};
+
+// Zadanie: due_date bywa TIMESTAMPTZ (pełny znacznik) albo DATE ('YYYY-MM-DD'); godzina lokalna
+// jest w osobnej kolumnie due_time — to ona jest źródłem prawdy (dawniej czytaliśmy godzinę
+// z ciągu UTC, więc 10:00 pokazywało się jako 08:00, a każde „Zapisz” przesuwało o 2 h).
+export function readTaskWhen(task) {
+  const raw = task?.due_date;
+  if (!raw) return null;
+  const s = String(raw);
+  let date;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    date = localDateTime(s);
+  } else {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    date = d;
+  }
+  let time = hhmm(task.due_time);
+  if (!time && s.length > 10 && !/T00:00(:00(\.0+)?)?(Z|[+-]00(:?00)?)?$/.test(s)) {
+    time = `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+  }
+  const ymd = localYmd(date);
+  return { ymd, time, date: localDateTime(ymd, time) };
+}
+
+// Zapis terminu zadania: lokalna data + godzina z jawnym przesunięciem strefy, np.
+// '2026-10-11T10:00:00+02:00' — poprawne dla TIMESTAMPTZ, a kolumna DATE weźmie z tego sam dzień.
+export function taskDueDateValue(dateStr, timeStr) {
+  const d = localDateTime(dateStr, timeStr || '00:00');
+  if (!d) return null;
+  const off = -d.getTimezoneOffset();
+  const a = Math.abs(off);
+  const sign = off >= 0 ? '+' : '-';
+  return `${String(dateStr).slice(0, 10)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:00${sign}${pad2(Math.floor(a / 60))}:${pad2(a % 60)}`;
+}
+
+// Moduł wydarzenia → „kalendarz” (filtr po lewej). Wydarzenia ogólne i programy = 'program'.
+const MODULE_TEAM = {
+  worship: { emoji: '🎵', team: 'worship' },
+  media: { emoji: '🎬', team: 'media' },
+  atmosfera: { emoji: '💚', team: 'atmosfera' },
+  kids: { emoji: '👶', team: 'kids' },
+  homegroups: { emoji: '🏠', team: 'groups' },
+  mlodziezowka: { emoji: '🎉', team: 'mlodziezowka' },
+};
+const isModuleKey = (k) => k && k !== 'general' && k !== 'program';
+
+// Jedna lista wpisów kalendarza z trzech źródeł. Klucze z prefiksem (ev_/prog_/task_) —
+// id programu i wydarzenia mogą być równe, a React gubił wtedy wpisy (zdublowany klucz).
+// Program podpięty do wydarzenia (events.program_id) nie jest osobnym wpisem — to plan tego
+// wydarzenia (wcześniej ta sama niedziela była w kalendarzu dwa razy).
+export function buildCalendarEntries({ programs = [], events = [], tasks = [] } = {}) {
+  const all = [];
+  const linked = new Set((events || []).map((e) => e?.program_id).filter((v) => v != null).map(String));
+
+  (events || []).forEach((ev) => {
+    if (!ev?.date) return;
+    const date = localDateTime(ev.date, ev.time);
+    if (!date || isNaN(date.getTime())) return;
+    const raw = { ...ev, due_time: hhmm(ev.time), end_time: hhmm(ev.end_time) };
+    if (isModuleKey(ev.module_key)) {
+      const meta = MODULE_TEAM[ev.module_key] || { emoji: '📅', team: ev.module_key };
+      all.push({ id: `ev_${ev.id}`, type: 'event', team: meta.team, title: `${meta.emoji} ${ev.title || ''}`.trim(), date, raw });
+    } else {
+      all.push({ id: `ev_${ev.id}`, type: 'event', team: 'program', title: ev.title || tr('Wydarzenie'), date, raw });
+    }
+  });
+
+  (programs || []).forEach((p) => {
+    if (!p?.date || linked.has(String(p.id))) return;
+    const date = localDateTime(p.date);
+    if (!date) return;
+    all.push({ id: `prog_${p.id}`, type: 'program', team: 'program', title: p.title || tr('Program nabożeństwa'), date, raw: { ...p, due_time: '', end_time: '' } });
+  });
+
+  (tasks || []).forEach((t) => {
+    const when = readTaskWhen(t);
+    if (!when) return;
+    all.push({
+      id: `task_${t.id}`,
+      type: 'task',
+      team: t.team || 'media',
+      title: t.title,
+      date: when.date,
+      status: t.status,
+      // „Surowa” data i godzina lokalna do edycji (ModalAddTask).
+      raw: { ...t, due_date: when.ymd, due_time: when.time, end_time: hhmm(t.end_time) },
+    });
+  });
+
+  return all;
+}
 
 // --- KONFIGURACJA ZESPOŁÓW I DANYCH ---
 
+// Etykiety tu to tylko zapas — na ekranie pokazujemy nazwę modułu z Ustawień (teamLabel).
 const TEAMS = {
-  program: { label: tr('Nabożeństwa'), color: 'pink', icon: Music },
-  media: { label: tr('Media Team'), color: 'orange', icon: Video },
+  program: { label: tr('Ogólne i nabożeństwa'), color: 'pink', icon: Music },
+  media: { label: tr('Media'), color: 'orange', icon: Video },
   atmosfera: { label: tr('Atmosfera'), color: 'teal', icon: HeartHandshake },
-  worship: { label: tr('Zespół Uwielbienia'), color: 'purple', icon: Music },
-  kids: { label: tr('Małe Avenit'), color: 'yellow', icon: Baby },
-  groups: { label: tr('Grupy Domowe'), color: 'blue', icon: Home },
+  worship: { label: tr('Uwielbienie'), color: 'purple', icon: Music },
+  kids: { label: tr('Dzieci'), color: 'yellow', icon: Baby },
+  groups: { label: tr('Grupy domowe'), color: 'blue', icon: Home },
   mlodziezowka: { label: tr('Młodzieżówka'), color: 'rose', icon: Users },
 };
+// Klucz „kalendarza” → klucz modułu (do nazwy z app_modules).
+const TEAM_MODULE = { media: 'media', atmosfera: 'atmosfera', worship: 'worship', kids: 'kids', groups: 'homegroups', mlodziezowka: 'mlodziezowka' };
+// Kolor kalendarza = kropka (bez pionowych pasków-akcentów).
+const DOT = {
+  pink: 'bg-accent-primary-light', orange: 'bg-accent-secondary-light', purple: 'bg-purple-500',
+  teal: 'bg-teal-500', blue: 'bg-blue-500', yellow: 'bg-amber-500', rose: 'bg-rose-500', gray: 'bg-gray-400',
+};
+const dotClass = (team) => DOT[TEAMS[team]?.color] || DOT.gray;
 
 // --- HELPERY UI ---
 
@@ -87,48 +187,46 @@ function useDropdownPosition(triggerRef, isOpen) {
   return coords;
 }
 
-const CustomDatePicker = ({ value, onChange }) => {
+const CustomDatePicker = ({ value, onChange, invalid = false }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
+  const [viewDate, setViewDate] = useState(() => localDateTime(value) || new Date());
   const triggerRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
 
-  useEffect(() => { if (value) setViewDate(new Date(value)); }, [value]);
+  useEffect(() => { const d = localDateTime(value); if (d) setViewDate(d); }, [value]);
 
   const handleDayClick = (day) => {
-    const d = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const dayStr = String(d.getDate()).padStart(2, '0');
-    onChange(`${d.getFullYear()}-${month}-${dayStr}`);
+    onChange(localYmd(new Date(viewDate.getFullYear(), viewDate.getMonth(), day)));
     setIsOpen(false);
   };
 
   const { days, firstDay } = getDaysInMonth(viewDate);
   const daysArray = Array.from({ length: days }, (_, i) => i + 1);
   const emptyDays = Array.from({ length: firstDay });
+  const shown = localDateTime(value);
 
   return (
     <div className="relative w-full">
-      <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full h-[42px] px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light transition">
-        <CalIcon size={16} className="text-accent-primary dark:text-accent-primary-light" />
+      <button type="button" ref={triggerRef} onClick={() => setIsOpen(!isOpen)} aria-invalid={invalid || undefined} className={`w-full h-[42px] px-3 bg-white dark:bg-gray-800 border rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light transition ${invalid ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'}`}>
+        <CalIcon size={16} className="text-accent-primary dark:text-accent-primary-light" aria-hidden="true" />
         <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-          {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
+          {shown ? shown.toLocaleDateString(appLocale()) : tr('Wybierz datę')}
         </span>
-      </div>
+      </button>
       {isOpen && coords.width > 0 && document.body && createPortal(
         <div className="fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100 w-[280px]" style={{ ...(coords.openUpward ? { bottom: `calc(100vh - ${coords.top}px)` } : { top: coords.top }), left: coords.left }}>
            <div className="flex justify-between items-center mb-4">
-             <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronLeft size={18} /></button>
+             <button type="button" aria-label={tr('Poprzedni miesiąc')} onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronLeft size={18} /></button>
              <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
-             <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronRight size={18} /></button>
+             <button type="button" aria-label={tr('Następny miesiąc')} onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronRight size={18} /></button>
            </div>
-           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
+           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
            <div className="grid grid-cols-7 gap-1">
              {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
              {daysArray.map(d => {
-               const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+               const dateStr = `${viewDate.getFullYear()}-${pad2(viewDate.getMonth() + 1)}-${pad2(d)}`;
                return (
-                 <button key={d} onClick={(e) => { e.stopPropagation(); handleDayClick(d); }} className={`h-8 w-8 rounded-lg text-xs font-medium transition ${value === dateStr ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+                 <button type="button" key={d} onClick={(e) => { e.stopPropagation(); handleDayClick(d); }} className={`h-8 w-8 rounded-lg text-xs font-medium transition ${value === dateStr ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
                    {d}
                  </button>
                )
@@ -140,14 +238,15 @@ const CustomDatePicker = ({ value, onChange }) => {
   );
 };
 
-const CustomTimePicker = ({ value, onChange, placeholder = tr('Wybierz') }) => {
+const CustomTimePicker = ({ value, onChange, placeholder = tr('Wybierz'), invalid = false }) => {
   return (
     <div className="relative w-full">
       <TimeField
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-[42px] px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-200 font-medium hover:border-accent-primary-light focus:border-accent-primary-light focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition cursor-pointer"
+        aria-invalid={invalid || undefined}
+        className={`w-full h-[42px] px-3 bg-white dark:bg-gray-800 border rounded-xl text-sm text-gray-700 dark:text-gray-200 font-medium hover:border-accent-primary-light focus:border-accent-primary-light focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition cursor-pointer ${invalid ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
       />
     </div>
   );
@@ -161,6 +260,8 @@ const getDaysInMonth = (date) => {
   return { days, firstDay: firstDay === 0 ? 6 : firstDay - 1 };
 };
 
+const FieldError = ({ children }) => (children ? <p className="text-xs text-red-600 dark:text-red-400 mt-1 ml-1" role="alert">{children}</p> : null);
+
 // --- MODAL WYBORU TYPU (WYDARZENIE VS ZADANIE) ---
 
 const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
@@ -170,7 +271,7 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
       isOpen
       onClose={onClose}
       title={t('Co chcesz dodać?')}
-      subtitle={date ? new Date(date).toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) : t('Wybierz typ')}
+      subtitle={date ? localDateTime(date).toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) : t('Wybierz typ')}
       icon={Plus}
       size="sm"
       closeOnBackdrop={false}
@@ -200,7 +301,7 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
             </div>
             <div className="text-center">
               <div className="font-bold text-gray-800 dark:text-white">{t('Zadanie')}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t('Do zrobienia, reminder...')}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('Do zrobienia, przypomnienie...')}</div>
             </div>
           </button>
         </div>
@@ -209,31 +310,32 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
   );
 };
 
-// --- MODAL WYBORU KATEGORII WYDARZENIA ---
+// --- MODAL WYBORU KALENDARZA WYDARZENIA ---
 
-// Lista służb do wyboru przy dodawaniu wydarzenia
+// Znane kalendarze służb (nazwa na ekranie = nazwa modułu z Ustawień, tu tylko zapas).
 const MINISTRY_CALENDARS = [
-  { key: 'worship', icon: '🎵', title: tr('Zespół Uwielbienia'), color: 'from-purple-500 to-indigo-500', description: tr('Próby, koncerty, nabożeństwa') },
-  { key: 'media', icon: '🎬', title: tr('Media Team'), color: 'from-accent-secondary-light to-red-500', description: tr('Produkcje, streaming, szkolenia') },
-  { key: 'atmosfera', icon: '💚', title: tr('Atmosfera Team'), color: 'from-teal-500 to-green-500', description: tr('Spotkania, integracje') },
-  { key: 'kids', icon: '👶', title: tr('Małe Avenit'), color: 'from-yellow-500 to-amber-500', description: tr('Zajęcia, warsztaty, wycieczki') },
-  { key: 'homegroups', icon: '🏠', title: tr('Grupy Domowe'), color: 'from-blue-500 to-cyan-500', description: tr('Spotkania grupowe') },
-  { key: 'mlodziezowka', icon: '🎉', title: tr('Młodzieżówka'), color: 'from-accent-primary-light to-rose-500', description: tr('Wydarzenia młodzieżowe') }
+  { key: 'worship', icon: '🎵', title: tr('Uwielbienie'), description: tr('Próby, koncerty, nabożeństwa') },
+  { key: 'media', icon: '🎬', title: tr('Media'), description: tr('Produkcje, streaming, szkolenia') },
+  { key: 'atmosfera', icon: '💚', title: tr('Atmosfera'), description: tr('Spotkania, integracje') },
+  { key: 'kids', icon: '👶', title: tr('Dzieci'), description: tr('Zajęcia, warsztaty, wycieczki') },
+  { key: 'homegroups', icon: '🏠', title: tr('Grupy domowe'), description: tr('Spotkania grupowe') },
+  { key: 'mlodziezowka', icon: '🎉', title: tr('Młodzieżówka'), description: tr('Wydarzenia młodzieżowe') }
 ];
 
-const ModalSelectEventCategory = ({ date, categories, ministries, onClose, onSelectCategory, onSelectMinistry }) => {
+const ModalSelectEventCategory = ({ date, ministries, onClose, onSelectCategory, onSelectMinistry }) => {
   return (
     <Modal
       isOpen
       onClose={onClose}
       title={tr('Wybierz kalendarz')}
-      subtitle={date ? new Date(date).toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
+      subtitle={date ? localDateTime(date).toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
       icon={CalendarPlus}
       closeOnBackdrop={false}
     >
       <div className="p-6">
         <div className="space-y-2">
-          {/* Nabożeństwo - zawsze na górze */}
+          {/* Nabożeństwo - zawsze na górze. Tworzy WYDARZENIE (grafik służb jest na wydarzeniu,
+              program podpina się na jego stronie) — nic nie zapisuje, zanim klikniesz „Utwórz”. */}
           <button
             onClick={() => onSelectCategory('nabożeństwo')}
             className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-2 border-accent-primary-lighter dark:border-accent-primary-dark rounded-xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:shadow-md transition group"
@@ -243,7 +345,7 @@ const ModalSelectEventCategory = ({ date, categories, ministries, onClose, onSel
             </div>
             <div className="text-left flex-1">
               <div className="font-bold text-gray-800 dark:text-white">{tr('Nabożeństwo')}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{tr('Pełny program z pieśniami i służbami')}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{tr('Grafik służb i program dodasz na stronie wydarzenia')}</div>
             </div>
           </button>
 
@@ -254,12 +356,12 @@ const ModalSelectEventCategory = ({ date, categories, ministries, onClose, onSel
               onClick={() => onSelectMinistry(ministry.key)}
               className="w-full flex items-center gap-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:bg-accent-primary-lightest/50 dark:hover:bg-accent-primary-darkest/10 transition group"
             >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${ministry.color} flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition text-2xl`}>
+              <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover:scale-105 transition text-2xl" aria-hidden="true">
                 {ministry.icon}
               </div>
               <div className="text-left flex-1">
                 <div className="font-bold text-gray-800 dark:text-white">{ministry.title}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">{ministry.description}</div>
+                {ministry.description && <div className="text-xs text-gray-500 dark:text-gray-400">{ministry.description}</div>}
               </div>
             </button>
           ))}
@@ -269,230 +371,49 @@ const ModalSelectEventCategory = ({ date, categories, ministries, onClose, onSel
   );
 };
 
-// --- MODAL OGÓLNEGO WYDARZENIA (nie Nabożeństwo) ---
-
-const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) => {
-  const t = useT();
-  const [event, setEvent] = useState(initialEvent || {
-    title: '',
-    description: '',
-    category: category || '',
-    date: new Date().toISOString().split('T')[0],
-    time: '10:00',
-    end_time: '12:00',
-    location: ''
-  });
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  useEffect(() => {
-    if (initialEvent) {
-      setEvent({
-        ...initialEvent,
-        category: initialEvent.category || category || '',
-        location: initialEvent.location || '',
-        description: initialEvent.description || ''
-      });
-    }
-  }, [initialEvent, category]);
-
-  const handleSubmit = async () => {
-    if (!event.title) return toast.error(tr('Podaj tytuł wydarzenia'));
-
-    const payload = {
-      title: event.title,
-      description: event.description || '',
-      category: event.category || category,
-      date: event.date,
-      time: event.time || '10:00',
-      end_time: event.end_time || '',
-      location: event.location || '',
-      registration_required: !!event.registration_required,
-      max_participants: event.max_participants ? parseInt(event.max_participants) : null
-    };
-
-    if (event.id) payload.id = event.id;
-
-    onSave(payload);
-    onClose();
-  };
-
-  const handleDeleteClick = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = () => {
-    onDelete(event.id);
-    setShowDeleteConfirm(false);
-    onClose();
-  };
-
-  return (
-    <Modal
-      isOpen
-      onClose={onClose}
-      title={event.id ? t('Edytuj Wydarzenie') : t('Nowe Wydarzenie')}
-      icon={CalendarPlus}
-      closeOnBackdrop={false}
-      footer={<>
-        {event.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={handleDeleteClick}>{tr('Usuń')}</Button>}
-        <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
-        <Button data-tour="cal-event-save" icon={Save} onClick={handleSubmit}>{t('Zapisz')}</Button>
-      </>}
-    >
-      <div className="p-6">
-        <div className="mb-6">
-          <span className="inline-block px-3 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light text-xs font-bold rounded-full">
-            {tr(event.category || category)}
-          </span>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Tytuł')}</label>
-            <input
-              autoFocus
-              data-tour="cal-event-title"
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
-              value={event.title}
-              onChange={e => setEvent({...event, title: e.target.value})}
-              placeholder={t('Nazwa wydarzenia')}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Data')}</label>
-            <CustomDatePicker value={event.date} onChange={v => setEvent({...event, date: v})} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina rozpoczęcia')}</label>
-              <CustomTimePicker
-                value={event.time}
-                onChange={v => setEvent({...event, time: v})}
-                placeholder={tr('Wybierz')}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina zakończenia')}</label>
-              <CustomTimePicker
-                value={event.end_time || ''}
-                onChange={v => setEvent({...event, end_time: v})}
-                placeholder={tr('Opcjonalnie')}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Miejsce')}</label>
-            <div className="relative">
-              <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm"
-                value={event.location || ''}
-                onChange={e => setEvent({...event, location: e.target.value})}
-                placeholder={t('np. Sala główna')}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Opis')}</label>
-            <textarea
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none"
-              value={event.description || ''}
-              onChange={e => setEvent({...event, description: e.target.value})}
-              placeholder={t('Szczegóły wydarzenia...')}
-            />
-          </div>
-
-          {/* Zapisy (RSVP) */}
-          <div className="pt-1">
-            <label className="flex items-center justify-between gap-3 cursor-pointer">
-              <span className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                <Users size={16} className="text-accent-primary" /> {t('Zapisy na wydarzenie')}
-              </span>
-              <input
-                type="checkbox"
-                className="w-5 h-5 rounded accent-[color:var(--accent-primary,#6366f1)]"
-                checked={!!event.registration_required}
-                onChange={e => setEvent({...event, registration_required: e.target.checked})}
-              />
-            </label>
-            {event.registration_required && (
-              <div className="mt-3">
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Limit miejsc (opcjonalnie)')}</label>
-                <input
-                  type="number"
-                  min="0"
-                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm"
-                  value={event.max_participants || ''}
-                  onChange={e => setEvent({...event, max_participants: e.target.value})}
-                  placeholder={t('np. 30 — puste = bez limitu')}
-                />
-                {event.id && (
-                  <EventRSVP eventId={event.id} maxParticipants={event.max_participants} />
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        <ConfirmDeleteModal
-          isOpen={showDeleteConfirm}
-          onClose={() => setShowDeleteConfirm(false)}
-          onConfirm={handleConfirmDelete}
-          title={tr('Usuń wydarzenie')}
-          message={tr('Czy na pewno chcesz usunąć to wydarzenie? Tej operacji nie można cofnąć.')}
-        />
-      </div>
-    </Modal>
-  );
-};
-
 // --- TASK MODAL ---
 
-const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
+const ModalAddTask = ({ initialTask, teamOptions, onClose, onSave, onDelete }) => {
   const t = useT();
-  const [task, setTask] = useState(initialTask || {
+  const [task, setTask] = useState(() => ({
     title: '',
     description: '',
     team: 'media',
-    due_date: new Date().toISOString().split('T')[0],
+    due_date: localYmd(),
     due_time: '10:00',
     end_time: '11:00',
     location: '',
-    status: 'Do zrobienia'
-  });
+    status: 'Do zrobienia',
+    ...(initialTask || {}),
+  }));
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
       if (initialTask) {
-          setTask({
+          setTask((prev) => ({
+              ...prev,
               ...initialTask,
               location: initialTask.location || '',
               description: initialTask.description || '',
               end_time: initialTask.end_time || ''
-          });
+          }));
       }
   }, [initialTask]);
 
-  const handleDateChange = (val) => {
-      setTask(prev => ({...prev, due_date: val}));
-  };
-
-  const handleSubmit = () => {
-    if (!task.title) return toast.error(tr('Podaj tytuł'));
-
-    const dateStr = task.due_date;
-    const timeStr = task.due_time || '00:00';
-
-    // Tworzymy datę w formacie ISO z offsetem, aby baza zapisała to poprawnie
-    const localDate = new Date(`${dateStr}T${timeStr}:00`);
+  // Zapis: walidacja przy polach, okno zamyka się DOPIERO po udanym zapisie (rodzic zwraca true).
+  const handleSubmit = async () => {
+    const next = {};
+    if (!task.title?.trim()) next.title = tr('Podaj tytuł zadania.');
+    if (!task.due_date) next.due_date = tr('Wybierz datę.');
+    if (endNotAfterStart(task.due_time, task.end_time)) next.end_time = tr('Koniec musi być później niż początek.');
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
     const payload = {
-        title: task.title,
+        title: task.title.trim(),
         description: task.description || '',
         team: task.team || 'media',
-        due_date: localDate.toISOString(), // Pełny timestamp ISO
+        due_date: taskDueDateValue(task.due_date, task.due_time),
         due_time: task.due_time || null,
         end_time: task.end_time || null,
         location: task.location || '',
@@ -501,41 +422,46 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
 
     if (task.id) payload.id = task.id;
 
-    onSave(payload);
-    onClose();
+    if (await onSave(payload)) onClose();
   };
 
   return (
     <Modal
       isOpen
       onClose={onClose}
-      title={task.id ? t('Edytuj Zadanie') : t('Nowe Zadanie')}
+      title={task.id ? t('Edytuj zadanie') : t('Nowe zadanie')}
       icon={task.id ? CheckCircle : Plus}
       closeOnBackdrop={false}
       footer={<>
-        {task.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={() => onDelete(task.id)}>{tr('Usuń')}</Button>}
+        {task.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={() => onDelete(task)}>{tr('Usuń')}</Button>}
         <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
         <Button icon={Save} onClick={handleSubmit}>{t('Zapisz')}</Button>
       </>}
     >
       <div className="p-6 space-y-4">
         <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Tytuł')}</label>
-          <input autoFocus className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary/20 outline-none" value={task.title} onChange={e => setTask({...task, title: e.target.value})} placeholder={t('Co jest do zrobienia?')} />
+          <label htmlFor="cal-task-title" className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Tytuł')}</label>
+          <input id="cal-task-title" autoFocus aria-invalid={!!errors.title || undefined} className={`w-full px-3 py-2 border rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary/20 outline-none ${errors.title ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'}`} value={task.title} onChange={e => setTask({...task, title: e.target.value})} placeholder={t('Co jest do zrobienia?')} />
+          <FieldError>{errors.title}</FieldError>
         </div>
         <div className="grid grid-cols-2 gap-4">
-           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Kategoria')}</label><CustomSelect value={task.team} onChange={v => setTask({...task, team: v})} options={Object.entries(TEAMS).filter(([k]) => k !== 'program').map(([k, v]) => ({ value: k, label: v.label }))} /></div>
-           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Miejsce')}</label><div className="relative"><MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm" value={task.location || ''} onChange={e => setTask({...task, location: e.target.value})} placeholder={t('np. Biuro')} /></div></div>
+           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Kategoria')}</label><CustomSelect value={task.team} onChange={v => setTask({...task, team: v})} options={teamOptions} /></div>
+           <div><label htmlFor="cal-task-location" className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Miejsce')}</label><div className="relative"><MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" /><input id="cal-task-location" className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm" value={task.location || ''} onChange={e => setTask({...task, location: e.target.value})} placeholder={t('np. Biuro')} /></div></div>
         </div>
         <div>
           <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Data')}</label>
-          <CustomDatePicker value={task.due_date} onChange={handleDateChange} />
+          <CustomDatePicker value={task.due_date} onChange={(val) => setTask(prev => ({...prev, due_date: val}))} invalid={!!errors.due_date} />
+          <FieldError>{errors.due_date}</FieldError>
         </div>
         <div className="grid grid-cols-2 gap-4">
            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina rozpoczęcia')}</label><CustomTimePicker value={task.due_time} onChange={v => setTask({...task, due_time: v})} placeholder={tr('Od')} /></div>
-           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina zakończenia')}</label><CustomTimePicker value={task.end_time} onChange={v => setTask({...task, end_time: v})} placeholder={tr('Do')} /></div>
+           <div>
+             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina zakończenia')}</label>
+             <CustomTimePicker value={task.end_time} onChange={v => setTask({...task, end_time: v})} placeholder={tr('Do')} invalid={!!errors.end_time} />
+             <FieldError>{errors.end_time}</FieldError>
+           </div>
         </div>
-        <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Opis')}</label><textarea className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none" value={task.description || ''} onChange={e => setTask({...task, description: e.target.value})} placeholder={t('Szczegóły zadania...')} /></div>
+        <div><label htmlFor="cal-task-desc" className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Opis')}</label><textarea id="cal-task-desc" className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none" value={task.description || ''} onChange={e => setTask({...task, description: e.target.value})} placeholder={t('Szczegóły zadania...')} /></div>
       </div>
     </Modal>
   );
@@ -553,244 +479,21 @@ const EventBadge = ({ event, onClick }) => {
     rose: "bg-rose-100 text-rose-700 border-rose-200",
   };
   const style = colors[teamConfig.color] || colors.orange;
+  const start = event.raw?.due_time || '';
+  const timeDisplay = start ? (event.raw?.end_time ? `${start}–${event.raw.end_time}` : start) : '';
 
-  // Formatowanie czasu z raw data, aby uniknąć konwersji stref czasowych
-  let timeDisplay = "";
-  if (event.raw) {
-      // Próbujemy wziąć wprost due_time jeśli istnieje, a jak nie to parsować datę
-      if (event.raw.due_time && event.raw.due_time.length === 5) {
-         timeDisplay = event.raw.end_time ? `${event.raw.due_time} - ${event.raw.end_time}` : event.raw.due_time;
-      } else if (event.raw.due_date && event.raw.due_date.includes('T')) {
-          const parts = event.raw.due_date.split('T')[1].split(':');
-          timeDisplay = `${parts[0]}:${parts[1]}`;
-      }
-  }
-
+  // Chip min. 12 px (było 10/9 px — „Naboże…” nieczytelne); godzina w podpowiedzi i w nazwie dla czytników.
   return (
-    <div onClick={e => { e.stopPropagation(); onClick(event); }} className={`text-[10px] px-1.5 py-1 rounded-md border mb-1 cursor-pointer truncate flex items-center gap-1 transition hover:brightness-95 ${style}`}>
-      <div className={`w-1.5 h-1.5 rounded-full bg-current opacity-50`} />
-      <span className="truncate font-medium">{event.title}</span>
-      {timeDisplay && <span className="ml-auto opacity-60 text-[9px]">{timeDisplay}</span>}
-    </div>
-  );
-};
-
-
-// --- UNIWERSALNY MODAL WYDARZEŃ SŁUŻB ---
-
-const MINISTRY_EVENT_CONFIG = {
-  mlodziezowka: {
-    icon: '🎉',
-    title: tr('Młodzieżówka'),
-    defaultType: 'spotkanie',
-    types: [
-      { value: 'spotkanie', label: tr('Spotkanie') },
-      { value: 'wyjazd', label: tr('Wyjazd') },
-      { value: 'integracja', label: tr('Integracja') },
-      { value: 'inne', label: tr('Inne') }
-    ]
-  },
-  worship: {
-    icon: '🎵',
-    title: tr('Zespół Uwielbienia'),
-    defaultType: 'proba',
-    types: [
-      { value: 'proba', label: tr('Próba') },
-      { value: 'koncert', label: tr('Koncert') },
-      { value: 'nabozesnstwo', label: tr('Nabożeństwo') },
-      { value: 'warsztat', label: tr('Warsztat') },
-      { value: 'inne', label: tr('Inne') }
-    ]
-  },
-  media: {
-    icon: '🎬',
-    title: tr('Media Team'),
-    defaultType: 'produkcja',
-    types: [
-      { value: 'produkcja', label: tr('Produkcja') },
-      { value: 'szkolenie', label: tr('Szkolenie') },
-      { value: 'streaming', label: tr('Streaming') },
-      { value: 'inne', label: tr('Inne') }
-    ]
-  },
-  atmosfera: {
-    icon: '💚',
-    title: tr('Atmosfera Team'),
-    defaultType: 'spotkanie',
-    types: [
-      { value: 'spotkanie', label: tr('Spotkanie') },
-      { value: 'szkolenie', label: tr('Szkolenie') },
-      { value: 'integracja', label: tr('Integracja') },
-      { value: 'inne', label: tr('Inne') }
-    ]
-  },
-  kids: {
-    icon: '👶',
-    title: tr('Małe Avenit'),
-    defaultType: 'zajecia',
-    types: [
-      { value: 'zajecia', label: tr('Zajęcia') },
-      { value: 'wycieczka', label: tr('Wycieczka') },
-      { value: 'warsztat', label: tr('Warsztat') },
-      { value: 'przedstawienie', label: tr('Przedstawienie') },
-      { value: 'inne', label: tr('Inne') }
-    ]
-  },
-  homegroups: {
-    icon: '🏠',
-    title: tr('Grupy Domowe'),
-    defaultType: 'spotkanie',
-    types: [
-      { value: 'spotkanie', label: tr('Spotkanie') },
-      { value: 'integracja', label: tr('Integracja') },
-      { value: 'szkolenie', label: tr('Szkolenie') },
-      { value: 'inne', label: tr('Inne') }
-    ]
-  }
-};
-
-const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config: configProp, fields = [] }) => {
-  const config = configProp || MINISTRY_EVENT_CONFIG[ministry];
-  const [eventForm, setEventForm] = useState({
-    id: event?.id || null,
-    title: event?.title?.replace(/^[\p{Emoji}\p{Emoji_Presentation}\p{Extended_Pictographic}]+\s*/gu, '') || '', // Usuwa tylko emoji z początku
-    description: event?.description || '',
-    start_date: event?.start_date ? event.start_date.split('T')[0] : '',
-    event_time: event?.due_time || '',
-    end_time: event?.end_time || '',
-    location: event?.location || '',
-    max_participants: event?.max_participants || '',
-    event_type: event?.event_type || config?.defaultType || 'spotkanie',
-    custom: event?.custom || {}
-  });
-  const setCustom = (key, val) => setEventForm((f) => ({ ...f, custom: { ...f.custom, [key]: val } }));
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!eventForm.title.trim()) {
-      toast.error(tr('Tytuł wydarzenia jest wymagany'));
-      return;
-    }
-
-    const eventData = {
-      title: eventForm.title.trim(),
-      description: eventForm.description.trim(),
-      start_date: eventForm.start_date ? `${String(eventForm.start_date).slice(0, 10)}T${eventForm.event_time || '00:00'}:00.000Z` : null,
-      end_time: eventForm.end_time || null,
-      location: eventForm.location,
-      max_participants: eventForm.max_participants ? parseInt(eventForm.max_participants) : null,
-      event_type: eventForm.event_type || config?.defaultType,
-      custom: eventForm.custom || {}
-    };
-
-    onSave(eventForm.id, eventData);
-  };
-
-  const handleDeleteClick = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = () => {
-    onDelete(eventForm.id);
-    setShowDeleteConfirm(false);
-    onClose();
-  };
-
-  if (!config) return null;
-
-  return (
-    <Modal
-      isOpen
-      onClose={onClose}
-      size="md"
-      title={`${eventForm.id ? tr('Edytuj wydarzenie') : tr('Nowe wydarzenie')} — ${config.title}`}
-      footer={<>
-        {eventForm.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={handleDeleteClick}>{tr('Usuń')}</Button>}
-        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
-        <Button icon={Save} onClick={handleSubmit}>{tr('Zapisz')}</Button>
-      </>}
+    <button
+      type="button"
+      onClick={e => { e.stopPropagation(); onClick(event); }}
+      title={timeDisplay ? `${event.title} · ${timeDisplay}` : event.title}
+      className={`w-full text-left text-xs px-1.5 py-1 rounded-md border mb-1 cursor-pointer truncate flex items-center gap-1 transition hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${style}`}
     >
-      <div className="p-6 space-y-4">
-        <div>
-          <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł')}</label>
-          <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Nazwa wydarzenia')} value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
-          <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={3} placeholder={tr('Szczegóły wydarzenia...')} value={eventForm.description || ''} onChange={e => setEventForm({...eventForm, description: e.target.value})} />
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Data')}</label>
-            <CustomDatePicker value={eventForm.start_date} onChange={val => setEventForm({...eventForm, start_date: val})} />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Początek')}</label>
-            <CustomTimePicker value={eventForm.event_time || ''} onChange={v => setEventForm({...eventForm, event_time: v})} placeholder={tr('Od')} />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Koniec')}</label>
-            <CustomTimePicker value={eventForm.end_time || ''} onChange={v => setEventForm({...eventForm, end_time: v})} placeholder={tr('Do')} />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Lokalizacja')}</label>
-          <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Sala główna, Kościół...')} value={eventForm.location || ''} onChange={e => setEventForm({...eventForm, location: e.target.value})} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Maks. osób')}</label>
-            <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={eventForm.max_participants || ''} onChange={e => setEventForm({...eventForm, max_participants: e.target.value})} />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Typ')}</label>
-            <CustomSelect
-              value={eventForm.event_type}
-              onChange={val => setEventForm({...eventForm, event_type: val})}
-              options={config.types}
-            />
-          </div>
-        </div>
-
-        {fields.length > 0 && (
-          <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-gray-800">
-            {fields.map((f) => (
-              <div key={f.id || f.field_key}>
-                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{f.label}</label>
-                {f.field_type === 'dropdown' ? (
-                  <CustomSelect
-                    value={eventForm.custom?.[f.field_key] || ''}
-                    onChange={(val) => setCustom(f.field_key, val)}
-                    options={[{ value: '', label: '—' }, ...((f.options || []).map((o) => ({ value: o, label: o })))]}
-                  />
-                ) : f.field_type === 'date' ? (
-                  <DateInput value={eventForm.custom?.[f.field_key] || ''} onChange={(e) => setCustom(f.field_key, e.target.value)} />
-                ) : (
-                  <input
-                    type={f.field_type === 'number' ? 'number' : 'text'}
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                    value={eventForm.custom?.[f.field_key] || ''}
-                    onChange={(e) => setCustom(f.field_key, e.target.value)}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <ConfirmDeleteModal
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleConfirmDelete}
-        title={tr('Usuń wydarzenie')}
-        message={tr('Czy na pewno chcesz usunąć to wydarzenie z {name}? Tej operacji nie można cofnąć.', { name: config.title })}
-      />
-    </Modal>
+      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 shrink-0" aria-hidden="true" />
+      {start && <span className="opacity-70 tabular-nums shrink-0">{start}</span>}
+      <span className="truncate font-medium">{event.title}</span>
+    </button>
   );
 };
 
@@ -799,55 +502,39 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
 
 export default function CalendarModule({ embedded = false } = {}) {
   const t = useT();
-  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
+  const navigate = useNavigate();
+  const { withCampusFilter, selectedCampusId } = useCampusQuery();
   const { modules: allModules, tabs: allTabs } = useModules();
-  // Picker „Wybierz kalendarz" = znane kalendarze + KAŻDY włączony moduł z zakładką „Wydarzenia"
-  // (component_type='events'). Znane trzymają ładne meta; custom dostają fallback. Bez regresji:
-  // znana lista jest zawsze, custom tylko dochodzą.
-  const ministryCalendars = React.useMemo(() => {
-    const list = [...MINISTRY_CALENDARS];
-    const have = new Set(list.map((m) => m.key));
+  const calMap = useModuleCalendars();
+  const moduleByKey = useMemo(() => new Map((allModules || []).map((m) => [m.key, m])), [allModules]);
+  // Nazwa kalendarza = nazwa modułu z Ustawień (zamiast „Małe Avenit” / „Media Team” na sztywno).
+  const teamLabel = (key) => {
+    const mk = TEAM_MODULE[key];
+    const lbl = mk ? moduleByKey.get(mk)?.label : null;
+    return lbl || TEAMS[key]?.label || moduleByKey.get(key)?.label || key || tr('Wydarzenie');
+  };
+  // Picker „Wybierz kalendarz" = znane kalendarze (o ile moduł nie jest wyłączony) + KAŻDY
+  // włączony moduł z zakładką „Wydarzenia" (component_type='events').
+  const ministryCalendars = useMemo(() => {
+    const list = [];
+    MINISTRY_CALENDARS.forEach((c) => {
+      const m = moduleByKey.get(c.key);
+      if (m && !m.is_enabled) return;
+      list.push({ ...c, title: m?.label || c.title });
+    });
+    const have = new Set(MINISTRY_CALENDARS.map((m) => m.key));
     (allModules || []).forEach((m) => {
       if (have.has(m.key) || !m.is_enabled) return;
       if (!(allTabs[m.id] || []).some((tb) => tb.component_type === 'events')) return;
-      list.push({ key: m.key, icon: '📅', title: m.label || m.key, color: 'from-gray-400 to-gray-500', description: '' });
+      list.push({ key: m.key, icon: '📅', title: m.label || m.key, description: '' });
     });
     return list;
-  }, [allModules, allTabs]);
-  const knownMinistryKeys = ['worship', 'media', 'atmosfera', 'kids', 'homegroups'];
-  const moduleEventConfig = (key) => ({
-    icon: '📅',
-    title: ministryCalendars.find((c) => c.key === key)?.title || key,
-    defaultType: 'spotkanie',
-    types: [
-      { value: 'spotkanie', label: t('Spotkanie') },
-      { value: 'wydarzenie', label: t('Wydarzenie') },
-      { value: 'szkolenie', label: tr('Szkolenie') },
-      { value: 'inne', label: t('Inne') },
-    ],
-  });
-  // Skonfigurowane typy (app_settings) + pola własne (event_custom_fields) per moduł —
-  // żeby modale otwierane z PICKERA kalendarza honorowały to samo co zakładka modułu.
-  const calMap = useModuleCalendars();
-  const [eventFields, setEventFields] = useState({});
-  useEffect(() => {
-    supabase.from('event_custom_fields').select('*').order('sort_order', { ascending: true })
-      .then(({ data }) => {
-        const g = {};
-        (data || []).forEach((f) => { (g[f.module_key] = g[f.module_key] || []).push(f); });
-        setEventFields(g);
-      }).catch(() => setEventFields({}));
-  }, []);
-  const ministryConfig = (key) => {
-    const base = MINISTRY_EVENT_CONFIG[key] || moduleEventConfig(key);
-    const cfgTypes = calMap[key]?.types;
-    return cfgTypes?.length ? { ...base, types: cfgTypes } : base;
-  };
+  }, [allModules, allTabs, moduleByKey]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
-  const [songs, setSongs] = useState([]);
   const [visibleTeams, setVisibleTeams] = useState(() => {
-    const saved = localStorage.getItem('calendarVisibleTeams');
+    let saved = null;
+    try { saved = localStorage.getItem('calendarVisibleTeams'); } catch { saved = null; }
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -863,24 +550,14 @@ export default function CalendarModule({ embedded = false } = {}) {
   });
   const [modals, setModals] = useState({
     addTask: null,
-    editProgram: null,
     selectType: null,      // { date: 'YYYY-MM-DD' } - modal wyboru typu
-    selectCategory: null,  // { date: 'YYYY-MM-DD' } - modal wyboru kategorii wydarzenia
-    addEvent: null,        // { date, category } - modal dodawania ogólnego wydarzenia
-    worshipEvent: null,    // { event data } - modal edycji wydarzenia Zespołu Uwielbienia
-    mediaEvent: null,      // { event data } - modal edycji wydarzenia Media Team
-    atmosferaEvent: null,  // { event data } - modal edycji wydarzenia Atmosfera Team
-    kidsEvent: null,       // { event data } - modal edycji wydarzenia Małe Avenit
-    homegroupsEvent: null, // { event data } - modal edycji wydarzenia Grup Domowych
-    moduleEvent: null      // { moduleKey, ...event } - generyczny modal wydarzenia dowolnego modułu (custom)
+    selectCategory: null,  // { date: 'YYYY-MM-DD' } - modal wyboru kalendarza wydarzenia
+    createEvent: null,     // { date, title?, module_key?, event_type? } - wspólny formularz „Nowe wydarzenie”
   });
   const [view, setView] = useState('month');
-  const [eventCategories, setEventCategories] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchExpanded, setSearchExpanded] = useState(false);
-  const searchInputRef = useRef(null);
 
   // Śledzenie rozmiaru okna dla responsywności
   useEffect(() => {
@@ -891,478 +568,120 @@ export default function CalendarModule({ embedded = false } = {}) {
 
   // Zapisz wybrane kalendarze do localStorage przy każdej zmianie
   useEffect(() => {
-    localStorage.setItem('calendarVisibleTeams', JSON.stringify(visibleTeams));
+    try { localStorage.setItem('calendarVisibleTeams', JSON.stringify(visibleTeams)); } catch { /* tryb prywatny */ }
   }, [visibleTeams]);
 
   useEffect(() => {
       fetchEvents();
-      fetchSongs();
-      fetchEventCategories();
-  }, [currentDate.getMonth(), selectedCampusId]);
-
-  const fetchEventCategories = async () => {
-    const { data } = await supabase.from('app_dictionaries').select('*').eq('category', 'event_category');
-    if (data) setEventCategories(data);
-  };
-
-  const fetchSongs = async () => {
-      const { data } = await supabase.from('songs').select('*');
-      if (data) setSongs(data);
-  }
+  }, [currentDate.getMonth(), selectedCampusId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchEvents = async () => {
-    const { data: prog } = await withCampusFilter(supabase.from('programs').select('*'));
-    const { data: task } = await supabase.from('tasks').select('*');
-    const { data: eventsData } = await withCampusFilter(supabase.from('events').select('*'));
-    const all = [];
-
-    prog?.forEach(p => all.push({ id: p.id, type: 'program', team: 'program', title: p.title || tr('Nabożeństwo'), date: new Date(p.date), raw: p }));
-
-    // Jeden model: WSZYSTKIE wydarzenia (ogólne + modułowe) są w tabeli `events`.
-    // Rozróżnienie po `module_key`: brak/general/program → ogólne (różowe jak program),
-    // konkretny moduł → wydarzenie modułu (kolor/emoji zespołu, klik otwiera modal służby).
-    const TEAM_META = {
-      worship:    { emoji: '🎵', team: 'worship',   type: 'worship_event' },
-      media:      { emoji: '🎬', team: 'media',     type: 'media_event' },
-      atmosfera:  { emoji: '💚', team: 'atmosfera', type: 'atmosfera_event' },
-      kids:       { emoji: '👶', team: 'kids',      type: 'kids_event' },
-      homegroups: { emoji: '🏠', team: 'groups',    type: 'homegroups_event' },
-      // Młodzieżówka od migracji 078 też w `events` — edycja generycznym modalem modułu.
-      mlodziezowka: { emoji: '🎉', team: 'mlodziezowka', type: 'module_event' },
-    };
-    const isModuleKey = (k) => k && k !== 'general' && k !== 'program';
-    eventsData?.forEach(ev => {
-        if (!ev.date) return;
-        const d = new Date(ev.date);
-        if (isNaN(d.getTime())) return;
-        const timeStr = ev.time || '10:00';
-        const sd = `${String(ev.date).slice(0, 10)}T${(ev.time || '00:00')}:00.000Z`; // reconstrukt dla modala służby
-        if (isModuleKey(ev.module_key)) {
-            const meta = TEAM_META[ev.module_key] || { emoji: '📅', team: ev.module_key, type: 'module_event' };
-            all.push({
-                id: `${ev.module_key}_${ev.id}`,
-                type: meta.type,
-                team: meta.team,
-                title: `${meta.emoji} ${ev.title}`,
-                date: d,
-                raw: { ...ev, start_date: sd, due_time: timeStr },
-            });
-        } else {
-            all.push({
-                id: ev.id,
-                type: 'event',
-                team: 'program', // Wyświetlamy jak program (różowe)
-                title: ev.title,
-                date: d,
-                raw: { ...ev, due_time: timeStr },
-            });
-        }
-    });
-
-    task?.forEach(t => {
-        if (!t.due_date) return;
-        const d = new Date(t.due_date);
-        if (isNaN(d.getTime())) return;
-
-        // FIX 2: Pobieranie czasu bezpośrednio ze stringa ISO, aby uniknąć przesunięć
-        // Format ISO: YYYY-MM-DDTHH:MM:SS
-        let timeStr = '00:00';
-        let dateStr = t.due_date.split('T')[0];
-
-        if (t.due_date.includes('T')) {
-           const timePart = t.due_date.split('T')[1];
-           const [h, m] = timePart.split(':');
-           timeStr = `${h}:${m}`;
-        }
-
-        all.push({
-            id: t.id,
-            type: 'task',
-            team: t.team || 'media',
-            title: t.title,
-            date: d,
-            status: t.status,
-            // Przekazujemy "surową" godzinę i datę do edycji
-            raw: {
-                ...t,
-                due_time: timeStr,
-                due_date: dateStr
-            }
-        });
-    });
-
-    setEvents(all.filter(e => e.date));
+    const [progRes, taskRes, evRes] = await Promise.all([
+      withCampusFilter(supabase.from('programs').select('id, title, date, campus_id, type_id')),
+      supabase.from('tasks').select('*'),
+      withCampusFilter(supabase.from('events').select('id, title, module_key, event_type, date, time, end_time, location, description, program_id, campus_id, is_archived')),
+    ]);
+    if (progRes.error || taskRes.error || evRes.error) {
+      toast.error(progRes.error || taskRes.error || evRes.error, { fallback: tr('Nie udało się wczytać całego kalendarza. Odśwież stronę.') });
+    }
+    setEvents(buildCalendarEntries({ programs: progRes.data || [], events: evRes.data || [], tasks: taskRes.data || [] }));
   };
 
-  const handleSaveTask = async (taskData) => { 
-      let error = null;
-      if (taskData.id) {
-          const { error: e } = await supabase.from('tasks').update(taskData).eq('id', taskData.id);
-          error = e;
-      } else {
-          const { error: e } = await supabase.from('tasks').insert([taskData]); 
-          error = e;
-      }
-
+  // Zapis zadania — zwraca true/false, modal zamyka się tylko po sukcesie.
+  const handleSaveTask = async (taskData) => {
+      const { id, ...row } = taskData;
+      const { error } = id
+        ? await supabase.from('tasks').update(row).eq('id', id)
+        : await supabase.from('tasks').insert([row]);
       if (error) {
-          toast.error(tr('Błąd zapisu: {msg}', { msg: error.message }));
-          console.error(error);
-      } else {
-          fetchEvents(); 
+          toast.error(error, { fallback: tr('Nie udało się zapisać zadania. Spróbuj ponownie.') });
+          return false;
       }
+      toast.success(id ? tr('Zapisano zadanie') : tr('Dodano zadanie'));
+      fetchEvents();
+      return true;
   };
 
-  const handleDeleteTask = async (id) => {
-      if (await confirmDialog(tr('Czy na pewno chcesz usunąć to zadanie?'))) {
-          await supabase.from('tasks').delete().eq('id', id);
-          setModals({...modals, addTask: null});
-          fetchEvents();
+  const handleDeleteTask = async (task) => {
+      const ok = await confirmDialog({
+        title: tr('Usunąć zadanie?'),
+        message: tr('Zadanie „{title}” zniknie z kalendarza. Tej operacji nie można cofnąć.', { title: task?.title || '' }),
+        isDelete: true,
+      });
+      if (!ok) return;
+      const { error } = await supabase.from('tasks').delete().eq('id', task.id);
+      if (error) {
+        toast.error(error, { fallback: tr('Nie udało się usunąć zadania.') });
+        return;
       }
-  }
-
-  const handleSaveProgram = async () => { fetchEvents(); };
-
-  const handleDeleteProgram = async (programId) => {
-    fetchEvents();
-  };
-
-  // Obsługa zapisywania ogólnych wydarzeń
-  const handleSaveEvent = async (eventData) => {
-    let error = null;
-    if (eventData.id) {
-      const { error: e } = await supabase.from('events').update(eventData).eq('id', eventData.id);
-      error = e;
-    } else {
-      const { error: e } = await supabase.from('events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
-      error = e;
-    }
-
-    if (error) {
-      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
-      console.error(error);
-    } else {
+      toast.success(tr('Usunięto zadanie'));
+      setModals((m) => ({ ...m, addTask: null }));
       fetchEvents();
-    }
-  };
-
-  const handleDeleteEvent = async (id) => {
-    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('events').delete().eq('id', id);
-      setModals({...modals, addEvent: null});
-      fetchEvents();
-    }
-  };
-
-  // Obsługa zapisywania wydarzeń Zespołu Uwielbienia
-  // Mapuje eventData z ModalMinistryEvent (start_date ISO) na kolumny wspólnej `events` (date + time).
-  const toEventRow = (eventData, moduleKey) => {
-    const { start_date, team_type, ...rest } = eventData;
-    const row = {
-      ...rest,
-      date: start_date ? start_date.split('T')[0] : null,
-      time: start_date && start_date.includes('T') ? start_date.split('T')[1].substring(0, 5) : null,
-    };
-    if (moduleKey) row.module_key = moduleKey;
-    return row;
-  };
-
-  // Generyczny zapis/usuwanie wydarzenia dowolnego modułu (picker → moduleEvent).
-  const handleSaveModuleEvent = async (moduleKey, id, eventData) => {
-    let error = null;
-    if (id) {
-      const { error: e } = await supabase.from('events').update(toEventRow(eventData)).eq('id', id);
-      error = e;
-    } else {
-      const { error: e } = await supabase.from('events').insert([{ ...toEventRow(eventData, moduleKey), campus_id: campusIdForInsert }]);
-      error = e;
-    }
-    if (error) toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
-    else { setModals((m) => ({ ...m, moduleEvent: null })); fetchEvents(); }
-  };
-  const handleDeleteModuleEvent = async (id) => {
-    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('events').delete().eq('id', id);
-      setModals((m) => ({ ...m, moduleEvent: null }));
-      fetchEvents();
-    }
-  };
-
-  const handleSaveWorshipEvent = async (id, eventData) => {
-    let error = null;
-    if (id) {
-      const { error: e } = await supabase.from('events').update(toEventRow(eventData)).eq('id', id);
-      error = e;
-    } else {
-      const { error: e } = await supabase.from('events').insert([{ ...toEventRow(eventData, 'worship'), campus_id: campusIdForInsert }]);
-      error = e;
-    }
-    if (error) {
-      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
-    } else {
-      setModals({...modals, worshipEvent: null});
-      fetchEvents();
-    }
-  };
-
-  const handleDeleteWorshipEvent = async (id) => {
-    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('events').delete().eq('id', id);
-      setModals({...modals, worshipEvent: null});
-      fetchEvents();
-    }
-  };
-
-  // Obsługa zapisywania wydarzeń Media Team
-  const handleSaveMediaEvent = async (id, eventData) => {
-    let error = null;
-    if (id) {
-      const { error: e } = await supabase.from('events').update(toEventRow(eventData)).eq('id', id);
-      error = e;
-    } else {
-      const { error: e } = await supabase.from('events').insert([{ ...toEventRow(eventData, 'media'), campus_id: campusIdForInsert }]);
-      error = e;
-    }
-    if (error) {
-      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
-    } else {
-      setModals({...modals, mediaEvent: null});
-      fetchEvents();
-    }
-  };
-
-  const handleDeleteMediaEvent = async (id) => {
-    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('events').delete().eq('id', id);
-      setModals({...modals, mediaEvent: null});
-      fetchEvents();
-    }
-  };
-
-  // Obsługa zapisywania wydarzeń Atmosfera Team
-  const handleSaveAtmosferaEvent = async (id, eventData) => {
-    let error = null;
-    if (id) {
-      const { error: e } = await supabase.from('events').update(toEventRow(eventData)).eq('id', id);
-      error = e;
-    } else {
-      const { error: e } = await supabase.from('events').insert([{ ...toEventRow(eventData, 'atmosfera'), campus_id: campusIdForInsert }]);
-      error = e;
-    }
-    if (error) {
-      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
-    } else {
-      setModals({...modals, atmosferaEvent: null});
-      fetchEvents();
-    }
-  };
-
-  const handleDeleteAtmosferaEvent = async (id) => {
-    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('events').delete().eq('id', id);
-      setModals({...modals, atmosferaEvent: null});
-      fetchEvents();
-    }
-  };
-
-  // Obsługa zapisywania wydarzeń Małe Avenit
-  const handleSaveKidsEvent = async (id, eventData) => {
-    let error = null;
-    if (id) {
-      const { error: e } = await supabase.from('events').update(toEventRow(eventData)).eq('id', id);
-      error = e;
-    } else {
-      const { error: e } = await supabase.from('events').insert([{ ...toEventRow(eventData, 'kids'), campus_id: campusIdForInsert }]);
-      error = e;
-    }
-    if (error) {
-      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
-    } else {
-      setModals({...modals, kidsEvent: null});
-      fetchEvents();
-    }
-  };
-
-  const handleDeleteKidsEvent = async (id) => {
-    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('events').delete().eq('id', id);
-      setModals({...modals, kidsEvent: null});
-      fetchEvents();
-    }
-  };
-
-  // Obsługa zapisywania wydarzeń Grup Domowych
-  const handleSaveHomegroupsEvent = async (id, eventData) => {
-    let error = null;
-    if (id) {
-      const { error: e } = await supabase.from('events').update(toEventRow(eventData)).eq('id', id);
-      error = e;
-    } else {
-      const { error: e } = await supabase.from('events').insert([{ ...toEventRow(eventData, 'homegroups'), campus_id: campusIdForInsert }]);
-      error = e;
-    }
-    if (error) {
-      toast.error(tr('Błąd zapisu wydarzenia: {msg}', { msg: error.message }));
-    } else {
-      setModals({...modals, homegroupsEvent: null});
-      fetchEvents();
-    }
-  };
-
-  const handleDeleteHomegroupsEvent = async (id) => {
-    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('events').delete().eq('id', id);
-      setModals({...modals, homegroupsEvent: null});
-      fetchEvents();
-    }
   };
 
   // Flow dodawania: kliknięcie na + otwiera modal wyboru typu
   const handleAddClick = (dateStr) => {
-    setModals({...modals, selectType: { date: dateStr }});
+    setModals((m) => ({ ...m, selectType: { date: dateStr } }));
   };
 
-  // Po wyborze "Wydarzenie" - otwórz modal kategorii
+  // Po wyborze "Wydarzenie" - otwórz modal kalendarza
   const handleSelectEvent = () => {
-    const date = modals.selectType?.date;
-    setModals({...modals, selectType: null, selectCategory: { date }});
+    setModals((m) => ({ ...m, selectType: null, selectCategory: { date: m.selectType?.date } }));
   };
 
   // Po wyborze "Zadanie" - otwórz modal zadania
   const handleSelectTask = () => {
-    const date = modals.selectType?.date;
-    setModals({
-      ...modals,
+    setModals((m) => ({
+      ...m,
       selectType: null,
-      addTask: { due_date: date, due_time: '10:00', end_time: '11:00', team: 'media' }
-    });
+      addTask: { due_date: m.selectType?.date || localYmd(), due_time: '10:00', end_time: '11:00', team: 'media' }
+    }));
   };
 
-  // Po wyborze kategorii wydarzenia
-  const handleSelectCategory = async (category) => {
-    const date = modals.selectCategory?.date;
-
-    if (category.toLowerCase() === 'nabożeństwo') {
-      // Utwórz nowy program i otwórz edytor
-      const { data, error } = await supabase.from('programs').insert([{
-        date: date,
-        schedule: [],
-        zespol: { lider: '', piano: '', gitara_akustyczna: '', gitara_elektryczna: '', bas: '', wokale: '', cajon: '', notatki: '', absencja: '' },
-        atmosfera_team: { przygotowanie: '', witanie: '' },
-        produkcja: { naglosnienie: '', propresenter: '', social: '', host: '' },
-        scena: { prowadzenie: '', czytanie: '', kazanie: '', modlitwa: '', wieczerza: '', ogloszenia: '' },
-        szkolka: { mlodsza: '', srednia: '', starsza: '' },
-        campus_id: campusIdForInsert
-      }]).select().single();
-
-      if (error) {
-        toast.error(tr('Błąd tworzenia nabożeństwa: ') + error.message);
-        return;
-      }
-
-      setModals({...modals, selectCategory: null, editProgram: data.id});
-      fetchEvents();
-    } else {
-      // Otwórz modal ogólnego wydarzenia
-      setModals({
-        ...modals,
-        selectCategory: null,
-        addEvent: { date, category, title: '', time: '10:00' }
-      });
-    }
+  // Typ „nabożeństwo” z konfiguracji kalendarza ogólnego (jeśli admin go nazwał inaczej), inaczej domyślny.
+  const serviceEventType = () => {
+    const types = calMap?.general?.types || [];
+    const hit = types.find((x) => /nabo[zż]e[nń]stw/i.test(`${x?.value || ''} ${x?.label || ''}`));
+    return hit?.value || 'nabożeństwo';
   };
 
-  // Po wyborze służby (kalendarza) - otwórz odpowiedni modal wydarzenia
+  // „Nabożeństwo” → ten sam formularz co „Nowe wydarzenie” (z datą i nazwą). NIC nie zapisujemy,
+  // dopóki użytkownik nie kliknie „Utwórz” — dawniej sam wybór kafla tworzył pusty program.
+  const handleSelectCategory = (category) => {
+    if (String(category).toLowerCase() !== 'nabożeństwo') return;
+    setModals((m) => ({
+      ...m,
+      selectCategory: null,
+      createEvent: { date: m.selectCategory?.date || '', title: tr('Nabożeństwo'), event_type: serviceEventType(), time: '10:00' },
+    }));
+  };
+
+  // Kalendarz służby → ten sam formularz z ustawionym modułem.
   const handleSelectMinistry = (ministryKey) => {
-    const date = modals.selectCategory?.date;
-    const modalKey = ministryKey === 'worship' ? 'worshipEvent' :
-                     ministryKey === 'media' ? 'mediaEvent' :
-                     ministryKey === 'atmosfera' ? 'atmosferaEvent' :
-                     ministryKey === 'kids' ? 'kidsEvent' :
-                     ministryKey === 'homegroups' ? 'homegroupsEvent' : null;
-
-    if (modalKey) {
-      setModals({
-        ...modals,
-        selectCategory: null,
-        [modalKey]: {
-          id: null,
-          title: '',
-          description: '',
-          start_date: date,
-          due_time: '10:00',
-          end_time: '11:00',
-          location: '',
-          max_participants: null,
-          event_type: MINISTRY_EVENT_CONFIG[ministryKey]?.defaultType || 'spotkanie'
-        }
-      });
-    } else {
-      // Moduł spoza znanej piątki (np. custom) → generyczny modal wydarzenia modułu.
-      setModals({
-        ...modals,
-        selectCategory: null,
-        moduleEvent: {
-          moduleKey: ministryKey,
-          id: null, title: '', description: '',
-          start_date: date, due_time: '10:00', end_time: '11:00',
-          location: '', max_participants: null, event_type: 'spotkanie'
-        }
-      });
-    }
+    setModals((m) => ({
+      ...m,
+      selectCategory: null,
+      createEvent: { date: m.selectCategory?.date || '', module_key: ministryKey },
+    }));
   };
 
-  // Obsługa kliknięcia w wydarzenie na kalendarzu
+  // Klik w kalendarzu: wydarzenie → jego strona (jeden edytor zamiast starego modala),
+  // program bez wydarzenia → edytor programu, zadanie → okno zadania.
   const handleEventClick = (ev) => {
-    // Wydarzenia z poszczególnych służb
-    if (ev.type === 'worship_event') {
-      const realId = ev.id.replace('worship_', '');
-      setModals({...modals, worshipEvent: { ...ev.raw, id: realId }});
-      return;
-    }
-    if (ev.type === 'media_event') {
-      const realId = ev.id.replace('media_', '');
-      setModals({...modals, mediaEvent: { ...ev.raw, id: realId }});
-      return;
-    }
-    if (ev.type === 'atmosfera_event') {
-      const realId = ev.id.replace('atmosfera_', '');
-      setModals({...modals, atmosferaEvent: { ...ev.raw, id: realId }});
-      return;
-    }
-    if (ev.type === 'kids_event') {
-      const realId = ev.id.replace('kids_', '');
-      setModals({...modals, kidsEvent: { ...ev.raw, id: realId }});
-      return;
-    }
-    if (ev.type === 'homegroups_event') {
-      const realId = ev.id.replace('homegroups_', '');
-      setModals({...modals, homegroupsEvent: { ...ev.raw, id: realId }});
-      return;
-    }
-    if (ev.type === 'module_event') {
-      // Wydarzenie modułu spoza znanej piątki (custom) — generyczny modal.
-      setModals({...modals, moduleEvent: { ...ev.raw, moduleKey: ev.raw.module_key }});
-      return;
-    }
-    if (ev.type === 'program') {
-      setModals({...modals, editProgram: ev.id});
-    } else if (ev.type === 'event') {
-      setModals({...modals, addEvent: ev.raw});
-    } else {
-      setModals({...modals, addTask: ev.raw});
-    }
+    if (ev.type === 'task') { setModals((m) => ({ ...m, addTask: ev.raw })); return; }
+    if (ev.type === 'program') { navigate(`/programs/${ev.raw.id}`); return; }
+    navigate(`/wydarzenie/${ev.raw.id}`);
   };
 
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  const today = () => setCurrentDate(new Date());
 
   const { days, firstDay } = getDaysInMonth(currentDate);
   const daysArray = Array.from({ length: days }, (_, i) => i + 1);
   const emptyDays = Array.from({ length: firstDay });
   const filteredEvents = events.filter(e => {
-    // Filtruj po widocznych zespołach
-    if (!visibleTeams.includes(e.team)) return false;
+    // Filtruj po widocznych kalendarzach (kalendarze spoza listy — np. własne moduły — zawsze widoczne)
+    if (TEAMS[e.team] && !visibleTeams.includes(e.team)) return false;
 
     // Filtruj po wyszukiwaniu
     if (searchQuery.trim()) {
@@ -1370,281 +689,15 @@ export default function CalendarModule({ embedded = false } = {}) {
       const titleMatch = e.title?.toLowerCase().includes(query);
       const descMatch = e.raw?.description?.toLowerCase().includes(query);
       const locationMatch = e.raw?.location?.toLowerCase().includes(query);
-      const teamLabel = TEAMS[e.team]?.label?.toLowerCase().includes(query);
-      return titleMatch || descMatch || locationMatch || teamLabel;
+      const teamMatch = teamLabel(e.team)?.toLowerCase().includes(query);
+      return titleMatch || descMatch || locationMatch || teamMatch;
     }
 
     return true;
   });
+  const taskTeamOptions = Object.keys(TEAMS).filter((k) => k !== 'program').map((k) => ({ value: k, label: teamLabel(k) }));
 
   // --- RENDER LOGIC FOR VIEWS ---
-
-  // Nowy mobilny widok kalendarza (inspirowany Smart Calendar)
-  const renderMobileScheduleView = () => {
-    const [selectedDate, setSelectedDate] = useState(currentDate);
-    const [mobileViewMode, setMobileViewMode] = useState('day'); // 'day' | 'week' | 'month'
-
-    // Pobierz dni tygodnia dla wybranej daty
-    const getWeekDays = () => {
-      const curr = new Date(selectedDate);
-      const first = curr.getDate() - curr.getDay() + 1; // Poniedziałek
-      return Array.from({length: 7}, (_, i) => {
-        const d = new Date(curr);
-        d.setDate(first + i);
-        return d;
-      });
-    };
-
-    const weekDays = getWeekDays();
-    const dayEvents = filteredEvents.filter(e =>
-      e.date.getDate() === selectedDate.getDate() &&
-      e.date.getMonth() === selectedDate.getMonth() &&
-      e.date.getFullYear() === selectedDate.getFullYear()
-    );
-
-    // Godziny timeline (6:00 - 22:00)
-    const hours = Array.from({length: 17}, (_, i) => i + 6);
-
-    // Grupuj wydarzenia po godzinie rozpoczęcia
-    const getEventPosition = (ev) => {
-      let h, m;
-      if (ev.raw?.due_time) {
-        [h, m] = ev.raw.due_time.split(':').map(Number);
-      } else {
-        h = ev.date.getHours() || 10;
-        m = ev.date.getMinutes() || 0;
-      }
-      return { hour: h, minute: m };
-    };
-
-    return (
-      <div className="flex flex-col h-full bg-white dark:bg-gray-900">
-        {/* Header z miesiącem i rokiem */}
-        <div className="px-4 pt-4 pb-2">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {selectedDate.toLocaleDateString(appLocale(), { month: 'long' })}
-                <span className="text-accent-primary-light ml-2">{selectedDate.getFullYear()}</span>
-              </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-600 dark:text-gray-400"
-              >
-                <Filter size={18} />
-              </button>
-              <button
-                onClick={() => {
-                  const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
-                  handleAddClick(dateStr);
-                }}
-                className="p-2 bg-accent-primary-light rounded-xl text-white shadow-lg shadow-accent-primary-light/30"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-          </div>
-
-          {/* Przełącznik widoku: Schedule / Day / Week / Month */}
-          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4">
-            {[
-              { id: 'day', label: t('Dzień') },
-              { id: 'week', label: t('Tydzień') },
-              { id: 'month', label: t('Miesiąc') },
-            ].map(v => (
-              <button
-                key={v.id}
-                onClick={() => setMobileViewMode(v.id)}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${
-                  mobileViewMode === v.id
-                    ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Mini kalendarz tygodniowy */}
-          <div className="flex items-center justify-between mb-2">
-            <button
-              onClick={() => {
-                const newDate = new Date(selectedDate);
-                newDate.setDate(newDate.getDate() - 7);
-                setSelectedDate(newDate);
-                setCurrentDate(newDate);
-              }}
-              className="p-1 text-gray-400"
-            >
-              <ChevronLeft size={20} />
-            </button>
-
-            <div className="flex gap-1 flex-1 justify-center">
-              {weekDays.map((d, i) => {
-                const isSelected = d.getDate() === selectedDate.getDate() &&
-                                   d.getMonth() === selectedDate.getMonth();
-                const isToday = d.getDate() === new Date().getDate() &&
-                                d.getMonth() === new Date().getMonth() &&
-                                d.getFullYear() === new Date().getFullYear();
-                const hasEvents = filteredEvents.some(e =>
-                  e.date.getDate() === d.getDate() &&
-                  e.date.getMonth() === d.getMonth()
-                );
-
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setSelectedDate(d);
-                      setCurrentDate(d);
-                    }}
-                    className={`flex flex-col items-center py-2 px-2.5 rounded-2xl transition min-w-[40px] ${
-                      isSelected
-                        ? 'bg-accent-primary-light text-white shadow-lg shadow-accent-primary-light/30'
-                        : isToday
-                          ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
-                          : 'text-gray-600 dark:text-gray-400'
-                    }`}
-                  >
-                    <span className={`text-[10px] font-medium uppercase ${isSelected ? 'text-accent-primary-lighter' : 'text-gray-400 dark:text-gray-500'}`}>
-                      {d.toLocaleDateString(appLocale(), { weekday: 'short' }).slice(0, 2)}
-                    </span>
-                    <span className={`text-lg font-bold ${isSelected ? '' : ''}`}>
-                      {d.getDate()}
-                    </span>
-                    {hasEvents && !isSelected && (
-                      <div className="w-1 h-1 rounded-full bg-accent-primary-light mt-0.5" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => {
-                const newDate = new Date(selectedDate);
-                newDate.setDate(newDate.getDate() + 7);
-                setSelectedDate(newDate);
-                setCurrentDate(newDate);
-              }}
-              className="p-1 text-gray-400"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        </div>
-
-        {/* Timeline widok dnia */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="relative">
-            {hours.map((h, idx) => {
-              const hourEvents = dayEvents.filter(ev => {
-                const pos = getEventPosition(ev);
-                return pos.hour === h;
-              });
-
-              return (
-                <div key={h} className="flex min-h-[60px] border-b border-gray-100 dark:border-gray-800">
-                  {/* Godzina */}
-                  <div className="w-16 flex-shrink-0 py-2 pr-3 text-right">
-                    <span className={`text-xs font-medium ${
-                      h === 12 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'
-                    }`}>
-                      {h === 12 ? tr('Południe') : `${String(h).padStart(2, '0')}:00`}
-                    </span>
-                  </div>
-
-                  {/* Wydarzenia */}
-                  <div className="flex-1 py-1 pr-4 space-y-1">
-                    {hourEvents.map(ev => {
-                      const pos = getEventPosition(ev);
-                      const teamColor = TEAMS[ev.team]?.color || 'gray';
-                      const colorClasses = {
-                        pink: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-l-accent-primary-light text-accent-primary-darkest dark:text-accent-primary-lighter',
-                        orange: 'bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/20 border-l-accent-secondary-light text-accent-secondary-darkest dark:text-accent-secondary-lighter',
-                        purple: 'bg-purple-50 dark:bg-purple-900/20 border-l-purple-500 text-purple-900 dark:text-purple-100',
-                        teal: 'bg-teal-50 dark:bg-teal-900/20 border-l-teal-500 text-teal-900 dark:text-teal-100',
-                        blue: 'bg-blue-50 dark:bg-blue-900/20 border-l-blue-500 text-blue-900 dark:text-blue-100',
-                        yellow: 'bg-amber-50 dark:bg-amber-900/20 border-l-amber-500 text-amber-900 dark:text-amber-100',
-                        rose: 'bg-rose-50 dark:bg-rose-900/20 border-l-rose-500 text-rose-900 dark:text-rose-100',
-                        gray: 'bg-gray-50 dark:bg-gray-800 border-l-gray-400 text-gray-900 dark:text-gray-100',
-                      };
-
-                      return (
-                        <div
-                          key={ev.id}
-                          onClick={() => handleEventClick(ev)}
-                          className={`p-3 rounded-xl border-l-4 cursor-pointer hover:shadow-md transition ${colorClasses[teamColor]}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-sm truncate">{ev.title}</h4>
-                            <div className="w-5 h-5 rounded-md bg-white/50 dark:bg-gray-700/50 flex items-center justify-center flex-shrink-0 ml-2">
-                              <CheckCircle size={12} className="text-gray-400" />
-                            </div>
-                          </div>
-                          <p className="text-xs opacity-70 mt-0.5">
-                            {String(pos.hour).padStart(2, '0')}:{String(pos.minute).padStart(2, '0')} - {TEAMS[ev.team]?.label || tr('Wydarzenie')}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Linia aktualnej godziny */}
-            {selectedDate.getDate() === new Date().getDate() &&
-             selectedDate.getMonth() === new Date().getMonth() && (
-              <div
-                className="absolute left-14 right-4 border-t-2 border-red-400 z-10 pointer-events-none"
-                style={{
-                  top: `${((new Date().getHours() - 6) * 60 + new Date().getMinutes()) / 60 * 60}px`
-                }}
-              >
-                <div className="absolute -left-2 -top-1.5 w-3 h-3 bg-red-400 rounded-full" />
-              </div>
-            )}
-          </div>
-
-          {/* Pusty stan */}
-          {dayEvents.length === 0 && (
-            <EmptyState
-              icon={CalIcon}
-              title={t('Brak wydarzeń w tym dniu')}
-              action={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  icon={Plus}
-                  onClick={() => {
-                    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
-                    handleAddClick(dateStr);
-                  }}
-                >
-                  {tr('Dodaj wydarzenie')}
-                </Button>
-              }
-            />
-          )}
-        </div>
-
-        {/* FAB - Floating Action Button */}
-        <button
-          onClick={() => {
-            const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
-            handleAddClick(dateStr);
-          }}
-          className="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-2xl shadow-lg shadow-accent-primary-light/40 flex items-center justify-center text-white hover:shadow-xl transition transform hover:scale-105"
-        >
-          <Plus size={24} />
-        </button>
-      </div>
-    );
-  };
 
   // Wrapper dla mobilnego widoku schedule z własnym stanem
   const MobileScheduleWrapper = () => {
@@ -1791,7 +844,8 @@ export default function CalendarModule({ embedded = false } = {}) {
                                 d.getFullYear() === new Date().getFullYear();
                 const hasEvents = filteredEvents.some(e =>
                   e.date.getDate() === d.getDate() &&
-                  e.date.getMonth() === d.getMonth()
+                  e.date.getMonth() === d.getMonth() &&
+                  e.date.getFullYear() === d.getFullYear()
                 );
 
                 return (
@@ -1809,7 +863,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                     }`}
                   >
-                    <span className={`text-[9px] font-medium uppercase ${isSelected ? 'text-accent-primary-lighter' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-[11px] font-medium uppercase ${isSelected ? 'text-accent-primary-lighter' : 'text-gray-400 dark:text-gray-500'}`}>
                       {d.toLocaleDateString(appLocale(), { weekday: 'short' }).slice(0, 2)}
                     </span>
                     <span className="text-base font-bold">
@@ -1851,41 +905,28 @@ export default function CalendarModule({ embedded = false } = {}) {
               {dayEvents.length > 0 ? (
                 <div className="space-y-2">
                   {dayEvents.map(ev => {
-                    const teamColor = TEAMS[ev.team]?.color || 'gray';
-                    const colorClasses = {
-                      pink: 'bg-gradient-to-r from-accent-primary-lightest to-accent-primary-lighter/50 dark:from-accent-primary-darkest/30 dark:to-accent-primary-darkest/10 border-l-accent-primary-light',
-                      orange: 'bg-gradient-to-r from-accent-secondary-lightest to-accent-secondary-lighter/50 dark:from-accent-secondary-darkest/30 dark:to-accent-secondary-darkest/10 border-l-accent-secondary-light',
-                      purple: 'bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-purple-900/30 dark:to-purple-900/10 border-l-purple-500',
-                      teal: 'bg-gradient-to-r from-teal-50 to-teal-100/50 dark:from-teal-900/30 dark:to-teal-900/10 border-l-teal-500',
-                      blue: 'bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-900/10 border-l-blue-500',
-                      yellow: 'bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/30 dark:to-amber-900/10 border-l-amber-500',
-                      rose: 'bg-gradient-to-r from-rose-50 to-rose-100/50 dark:from-rose-900/30 dark:to-rose-900/10 border-l-rose-500',
-                      gray: 'bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-800/50 border-l-gray-400',
-                    };
-
                     return (
                       <div
                         key={ev.id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => handleEventClick(ev)}
-                        className={`p-3 rounded-xl border-l-4 cursor-pointer active:scale-[0.98] transition ${colorClasses[teamColor]}`}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEventClick(ev); } }}
+                        className="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer active:scale-[0.98] transition flex gap-2.5"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm text-gray-900 dark:text-white truncate">{ev.title}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                              {ev.raw?.due_time
-                                ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time)
-                                : tr('Cały dzień')} • {TEAMS[ev.team]?.label || tr('Wydarzenie')}
+                        <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${dotClass(ev.team)}`} aria-hidden="true" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm text-gray-900 dark:text-white truncate">{ev.title}</h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {ev.raw?.due_time
+                              ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time)
+                              : tr('Cały dzień')} • {teamLabel(ev.team)}
+                          </p>
+                          {ev.raw?.location && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate flex items-center gap-1">
+                              <MapPin size={12} aria-hidden="true" /> {ev.raw.location}
                             </p>
-                            {ev.raw?.location && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
-                                📍 {ev.raw.location}
-                              </p>
-                            )}
-                          </div>
-                          <div className="w-7 h-7 rounded-lg bg-white/70 dark:bg-gray-700/70 flex items-center justify-center flex-shrink-0">
-                            <CheckCircle size={16} className="text-gray-400" />
-                          </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -1973,25 +1014,19 @@ export default function CalendarModule({ embedded = false } = {}) {
                     {dayEventsForWeek.length > 0 && (
                       <div className="space-y-1.5 ml-13">
                         {dayEventsForWeek.slice(0, 3).map(ev => {
-                          const teamColor = TEAMS[ev.team]?.color || 'gray';
                           return (
                             <div
                               key={ev.id}
+                              role="button"
+                              tabIndex={0}
                               onClick={(e) => { e.stopPropagation(); handleEventClick(ev); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleEventClick(ev); } }}
                               className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700"
                             >
-                              <div className={`w-1 h-8 rounded-full flex-shrink-0 ${
-                                teamColor === 'pink' ? 'bg-accent-primary-light' :
-                                teamColor === 'orange' ? 'bg-accent-secondary-light' :
-                                teamColor === 'purple' ? 'bg-purple-500' :
-                                teamColor === 'teal' ? 'bg-teal-500' :
-                                teamColor === 'blue' ? 'bg-blue-500' :
-                                teamColor === 'yellow' ? 'bg-amber-500' :
-                                teamColor === 'rose' ? 'bg-rose-500' : 'bg-gray-400'
-                              }`} />
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass(ev.team)}`} aria-hidden="true" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{ev.title}</p>
-                                <p className="text-[10px] text-gray-500">{ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''}</p>
+                                <p className="text-[11px] text-gray-500">{ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''}</p>
                               </div>
                             </div>
                           );
@@ -2013,26 +1048,20 @@ export default function CalendarModule({ embedded = false } = {}) {
                 {dayEvents.length > 0 ? (
                   <div className="space-y-2">
                     {dayEvents.map(ev => {
-                      const teamColor = TEAMS[ev.team]?.color || 'gray';
                       return (
                         <div
                           key={ev.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => handleEventClick(ev)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEventClick(ev); } }}
                           className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-pointer active:scale-[0.98] transition"
                         >
-                          <div className={`w-1 h-10 rounded-full flex-shrink-0 ${
-                            teamColor === 'pink' ? 'bg-accent-primary-light' :
-                            teamColor === 'orange' ? 'bg-accent-secondary-light' :
-                            teamColor === 'purple' ? 'bg-purple-500' :
-                            teamColor === 'teal' ? 'bg-teal-500' :
-                            teamColor === 'blue' ? 'bg-blue-500' :
-                            teamColor === 'yellow' ? 'bg-amber-500' :
-                            teamColor === 'rose' ? 'bg-rose-500' : 'bg-gray-400'
-                          }`} />
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass(ev.team)}`} aria-hidden="true" />
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 dark:text-white truncate">{ev.title}</p>
                             <p className="text-xs text-gray-500">
-                              {ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''} • {TEAMS[ev.team]?.label || tr('Wydarzenie')}
+                              {ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''} • {teamLabel(ev.team)}
                             </p>
                           </div>
                         </div>
@@ -2065,7 +1094,8 @@ export default function CalendarModule({ embedded = false } = {}) {
                   const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
                   const dayEventsMonth = filteredEvents.filter(e =>
                     e.date.getDate() === d &&
-                    e.date.getMonth() === currentDate.getMonth()
+                    e.date.getMonth() === currentDate.getMonth() &&
+                    e.date.getFullYear() === currentDate.getFullYear()
                   );
                   const isToday = d === new Date().getDate() &&
                                   currentDate.getMonth() === new Date().getMonth() &&
@@ -2093,16 +1123,10 @@ export default function CalendarModule({ embedded = false } = {}) {
                       {dayEventsMonth.length > 0 && (
                         <div className="flex gap-0.5 mt-0.5">
                           {dayEventsMonth.slice(0, 3).map((ev, idx) => {
-                            const color = TEAMS[ev.team]?.color || 'gray';
                             return (
                               <div
                                 key={idx}
-                                className={`w-1 h-1 rounded-full ${
-                                  isSelected ? 'bg-white/70' :
-                                  color === 'pink' ? 'bg-accent-primary-light' :
-                                  color === 'orange' ? 'bg-accent-secondary-light' :
-                                  color === 'purple' ? 'bg-purple-500' : 'bg-gray-400'
-                                }`}
+                                className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white/70' : dotClass(ev.team)}`}
                               />
                             );
                           })}
@@ -2129,26 +1153,20 @@ export default function CalendarModule({ embedded = false } = {}) {
                 {monthDayEvents.length > 0 ? (
                   <div className="space-y-2">
                     {monthDayEvents.map(ev => {
-                      const teamColor = TEAMS[ev.team]?.color || 'gray';
                       return (
                         <div
                           key={ev.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => handleEventClick(ev)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEventClick(ev); } }}
                           className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-pointer active:scale-[0.98] transition"
                         >
-                          <div className={`w-1 h-10 rounded-full flex-shrink-0 ${
-                            teamColor === 'pink' ? 'bg-accent-primary-light' :
-                            teamColor === 'orange' ? 'bg-accent-secondary-light' :
-                            teamColor === 'purple' ? 'bg-purple-500' :
-                            teamColor === 'teal' ? 'bg-teal-500' :
-                            teamColor === 'blue' ? 'bg-blue-500' :
-                            teamColor === 'yellow' ? 'bg-amber-500' :
-                            teamColor === 'rose' ? 'bg-rose-500' : 'bg-gray-400'
-                          }`} />
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass(ev.team)}`} aria-hidden="true" />
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 dark:text-white truncate">{ev.title}</p>
                             <p className="text-xs text-gray-500">
-                              {ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''} • {TEAMS[ev.team]?.label || tr('Wydarzenie')}
+                              {ev.raw?.due_time ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time) : ''} • {teamLabel(ev.team)}
                             </p>
                           </div>
                         </div>
@@ -2205,12 +1223,12 @@ export default function CalendarModule({ embedded = false } = {}) {
           {daysArray.map(d => {
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
             const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const dayEvents = filteredEvents.filter(e => e.date.getDate() === d && e.date.getMonth() === currentDate.getMonth());
+            const dayEvents = filteredEvents.filter(e => e.date.getDate() === d && e.date.getMonth() === currentDate.getMonth() && e.date.getFullYear() === currentDate.getFullYear());
             return (
               <div key={d} className="bg-white dark:bg-gray-900 min-h-[60px] lg:min-h-[100px] p-1 lg:p-2 relative group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
                 <div className="flex justify-between items-center mb-0.5 lg:mb-1">
                   <span className={`text-xs lg:text-sm font-bold w-5 h-5 lg:w-7 lg:h-7 flex items-center justify-center rounded-full ${d === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300'}`}>{d}</span>
-                  <button onClick={() => handleAddClick(dateStr)} className="opacity-0 group-hover:opacity-100 p-0.5 lg:p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-400"><Plus size={12} /></button>
+                  <button onClick={() => handleAddClick(dateStr)} aria-label={tr('Dodaj w dniu {d}', { d })} title={tr('Dodaj')} className="opacity-0 group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 p-0.5 lg:p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-400"><Plus size={14} /></button>
                 </div>
                 <div className="space-y-0.5 lg:space-y-1 overflow-y-auto max-h-[40px] lg:max-h-[100px] custom-scrollbar">
                   {/* Mobile: pokaż max 2 wydarzenia */}
@@ -2219,7 +1237,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                       <EventBadge key={ev.id} event={ev} onClick={() => handleEventClick(ev)} />
                     ))}
                     {dayEvents.length > 2 && (
-                      <div className="text-[9px] text-gray-400 text-center">+{dayEvents.length - 2}</div>
+                      <div className="text-[11px] text-gray-400 text-center">+{dayEvents.length - 2}</div>
                     )}
                   </div>
                   {/* Desktop: pokaż wszystkie */}
@@ -2260,7 +1278,7 @@ export default function CalendarModule({ embedded = false } = {}) {
           <div className="h-[calc(100%-70px)] grid grid-cols-7 divide-x divide-gray-100 dark:divide-gray-700/50 overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900">
             {weekDays.map(d => {
               const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-              const dayEvents = filteredEvents.filter(e => e.date.getDate() === d.getDate() && e.date.getMonth() === d.getMonth());
+              const dayEvents = filteredEvents.filter(e => e.date.getDate() === d.getDate() && e.date.getMonth() === d.getMonth() && e.date.getFullYear() === d.getFullYear());
               return (
                 <div key={d.toString()} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition min-h-[200px]">
                   {dayEvents.map(ev => <EventBadge key={ev.id} event={ev} onClick={() => handleEventClick(ev)} />)}
@@ -2275,7 +1293,7 @@ export default function CalendarModule({ embedded = false } = {}) {
         <div className="lg:hidden flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 p-3 space-y-3">
           {weekDays.map(d => {
             const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            const dayEvents = filteredEvents.filter(e => e.date.getDate() === d.getDate() && e.date.getMonth() === d.getMonth());
+            const dayEvents = filteredEvents.filter(e => e.date.getDate() === d.getDate() && e.date.getMonth() === d.getMonth() && e.date.getFullYear() === d.getFullYear());
             const isToday = d.getDate() === new Date().getDate() && d.getMonth() === new Date().getMonth();
             return (
               <div key={d.toString()} className={`p-3 rounded-xl border ${isToday ? 'border-accent-primary-light dark:border-accent-primary bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/20' : 'border-gray-200 dark:border-gray-700'}`}>
@@ -2307,7 +1325,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   };
 
   const renderDayView = () => {
-      const dayEvents = filteredEvents.filter(e => e.date.getDate() === currentDate.getDate() && e.date.getMonth() === currentDate.getMonth());
+      const dayEvents = filteredEvents.filter(e => e.date.getDate() === currentDate.getDate() && e.date.getMonth() === currentDate.getMonth() && e.date.getFullYear() === currentDate.getFullYear());
       const hours = Array.from({length: 15}, (_, i) => i + 8); // 08:00 - 22:00
 
       return (
@@ -2363,7 +1381,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                                 {String(h).padStart(2,'0')}:{String(m).padStart(2,'0')}{ev.raw?.end_time ? ` - ${ev.raw.end_time}` : ''}
                             </div>
                             <div className="font-bold truncate text-xs lg:text-base">{ev.title}</div>
-                            <div className="text-[10px] lg:text-xs opacity-60 truncate hidden lg:block">{TEAMS[ev.team]?.label}</div>
+                            <div className="text-[10px] lg:text-xs opacity-60 truncate hidden lg:block">{teamLabel(ev.team)}</div>
                         </div>
                     );
                 })}
@@ -2388,25 +1406,16 @@ export default function CalendarModule({ embedded = false } = {}) {
         <div className="flex-1 bg-white dark:bg-gray-900 overflow-y-auto custom-scrollbar p-3 lg:p-6">
              <div className="max-w-4xl mx-auto space-y-1 lg:space-y-2">
                  {sortedEvents.map(ev => (
-                     <div key={ev.id} onClick={() => handleEventClick(ev)} className="flex items-center gap-2 lg:gap-4 p-2 lg:p-3 rounded-lg lg:rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 last:border-0 cursor-pointer transition">
+                     <div key={ev.id} role="button" tabIndex={0} onClick={() => handleEventClick(ev)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEventClick(ev); } }} className="flex items-center gap-2 lg:gap-4 p-2 lg:p-3 rounded-lg lg:rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 last:border-0 cursor-pointer transition">
                          <div className="w-12 lg:w-16 text-center flex-shrink-0">
                              <div className="text-[10px] lg:text-xs text-gray-400 uppercase font-bold">{ev.date.toLocaleDateString(appLocale(), {month: 'short'})}</div>
                              <div className="text-lg lg:text-xl font-bold text-gray-800 dark:text-white">{ev.date.getDate()}</div>
                          </div>
-                         <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
-                           TEAMS[ev.team]?.color === 'pink' ? 'bg-accent-primary-light' :
-                           TEAMS[ev.team]?.color === 'rose' ? 'bg-rose-500' :
-                           TEAMS[ev.team]?.color === 'orange' ? 'bg-accent-secondary-light' :
-                           TEAMS[ev.team]?.color === 'purple' ? 'bg-purple-500' :
-                           TEAMS[ev.team]?.color === 'teal' ? 'bg-teal-500' :
-                           TEAMS[ev.team]?.color === 'blue' ? 'bg-blue-500' :
-                           TEAMS[ev.team]?.color === 'yellow' ? 'bg-yellow-500' :
-                           'bg-gray-300'
-                         }`}></div>
+                         <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotClass(ev.team)}`} aria-hidden="true" />
                          <div className="flex-1 min-w-0">
                              <h4 className="font-bold text-sm lg:text-base text-gray-800 dark:text-gray-200 truncate">{ev.title}</h4>
                              <div className="text-[10px] lg:text-xs text-gray-500 flex gap-2 lg:gap-3 mt-0.5 flex-wrap">
-                                 <span className="truncate">{TEAMS[ev.team]?.label || ev.raw?.category}</span>
+                                 <span className="truncate">{teamLabel(ev.team)}</span>
                                  {ev.raw?.due_time && <span>• {ev.raw.due_time}{ev.raw?.end_time ? ` - ${ev.raw.end_time}` : ''}</span>}
                              </div>
                          </div>
@@ -2422,14 +1431,14 @@ export default function CalendarModule({ embedded = false } = {}) {
     <div className={`${embedded ? 'h-full' : 'h-[calc(100vh-3rem)]'} flex flex-col gap-2 lg:gap-4`}>
       {/* MOBILE VIEW - Nowy widok kalendarza */}
       <div className="lg:hidden h-full">
-        <MobileScheduleWrapper />
+        {MobileScheduleWrapper()}
       </div>
 
       {/* DESKTOP VIEW - Stary layout */}
       <div className="hidden lg:flex lg:flex-col lg:gap-4 h-full">
         {/* HEADER */}
         <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-           {!embedded && <PageHeader cover={false} moduleKey="calendar" icon={CalIcon} title={t('Kalendarz')} subtitle={tr('Zarządzanie wydarzeniami i zadaniami')} />}
+           {!embedded && <PageHeader cover={false} moduleKey="calendar" icon={CalIcon} title={t('Wydarzenia')} subtitle={tr('Wydarzenia i zadania w kalendarzu')} />}
 
            {/* Search bar - pełne pole */}
            <div className="flex-1 max-w-md mx-4">
@@ -2464,7 +1473,8 @@ export default function CalendarModule({ embedded = false } = {}) {
                 { id: 'month', icon: LayoutGrid, label: t('Miesiąc') },
                 { id: 'week', icon: Columns, label: t('Tydzień') },
                 { id: 'day', icon: LayoutList, label: t('Dzień') },
-                { id: 'list', icon: List, label: t('Lista') },
+                // Osadzony w „Wydarzeniach” — tam jest już widok Lista (nie dublujemy drugiej „Listy”).
+                ...(embedded ? [] : [{ id: 'list', icon: List, label: t('Lista') }]),
               ].map(v => (
                 <button
                   key={v.id}
@@ -2501,7 +1511,7 @@ export default function CalendarModule({ embedded = false } = {}) {
           </div>
 
           <div className="flex-1 p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-y-auto">
-            <h3 className="font-bold text-gray-500 uppercase text-xs mb-4 tracking-wider">{t('Twoje Kalendarze')}</h3>
+            <h3 className="font-bold text-gray-500 uppercase text-xs mb-4 tracking-wider">{t('Twoje kalendarze')}</h3>
             <div className="space-y-2">
               {Object.entries(TEAMS).map(([key, cfg]) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition select-none">
@@ -2511,11 +1521,11 @@ export default function CalendarModule({ embedded = false } = {}) {
                     checked={visibleTeams.includes(key)}
                     onChange={() => setVisibleTeams(p => p.includes(key) ? p.filter(k => k !== key) : [...p, key])}
                   />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{cfg.label}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{teamLabel(key)}</span>
                 </label>
               ))}
             </div>
-            <button data-tour="cal-add" onClick={() => { handleAddClick(new Date().toISOString().split('T')[0]); setSidebarOpen(false); }} className="w-full mt-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl shadow-lg shadow-accent-primary-light/30 flex items-center justify-center gap-2 hover:shadow-accent-primary-light/50 transition transform hover:-translate-y-0.5">
+            <button data-tour="cal-add" onClick={() => { handleAddClick(localYmd()); setSidebarOpen(false); }} className="w-full mt-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl shadow-lg shadow-accent-primary-light/30 flex items-center justify-center gap-2 hover:shadow-accent-primary-light/50 transition transform hover:-translate-y-0.5">
               <Plus size={18} /> {tr('Dodaj')}
             </button>
           </div>
@@ -2556,7 +1566,7 @@ export default function CalendarModule({ embedded = false } = {}) {
             </div>
 
             <div className="mb-6">
-              <h3 className="font-bold text-gray-500 uppercase text-xs mb-3 tracking-wider">{t('Twoje Kalendarze')}</h3>
+              <h3 className="font-bold text-gray-500 uppercase text-xs mb-3 tracking-wider">{t('Twoje kalendarze')}</h3>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(TEAMS).map(([key, cfg]) => {
                   const isActive = visibleTeams.includes(key);
@@ -2572,7 +1582,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                       }`}
                     >
                       <TeamIcon size={18} />
-                      <span className="text-sm font-medium truncate">{cfg.label}</span>
+                      <span className="text-sm font-medium truncate">{teamLabel(key)}</span>
                       {isActive && <Check size={16} className="ml-auto text-accent-primary" />}
                     </button>
                   );
@@ -2602,7 +1612,7 @@ export default function CalendarModule({ embedded = false } = {}) {
       {modals.selectType && (
         <ModalSelectType
           date={modals.selectType.date}
-          onClose={() => setModals({...modals, selectType: null})}
+          onClose={() => setModals((m) => ({ ...m, selectType: null }))}
           onSelectTask={handleSelectTask}
           onSelectEvent={handleSelectEvent}
         />
@@ -2611,96 +1621,28 @@ export default function CalendarModule({ embedded = false } = {}) {
       {modals.selectCategory && (
         <ModalSelectEventCategory
           date={modals.selectCategory.date}
-          categories={eventCategories}
           ministries={ministryCalendars}
-          onClose={() => setModals({...modals, selectCategory: null})}
+          onClose={() => setModals((m) => ({ ...m, selectCategory: null }))}
           onSelectCategory={handleSelectCategory}
           onSelectMinistry={handleSelectMinistry}
         />
       )}
 
-      {modals.addEvent && (
-        <ModalAddEvent
-          initialEvent={modals.addEvent}
-          category={modals.addEvent.category}
-          onClose={() => setModals({...modals, addEvent: null})}
-          onSave={handleSaveEvent}
-          onDelete={handleDeleteEvent}
+      {/* Ten sam formularz co „Nowe wydarzenie” w module Wydarzenia — po utworzeniu otwiera stronę wydarzenia. */}
+      {modals.createEvent && (
+        <CreateEventModal
+          initial={modals.createEvent}
+          onClose={() => setModals((m) => ({ ...m, createEvent: null }))}
         />
       )}
 
-      {modals.addTask && <ModalAddTask initialTask={modals.addTask} onClose={() => setModals({...modals, addTask: null})} onSave={handleSaveTask} onDelete={handleDeleteTask} />}
-      {modals.editProgram && <ProgramEditorModal programId={modals.editProgram} onClose={() => setModals({...modals, editProgram: null})} onSave={handleSaveProgram} onDelete={handleDeleteProgram} />}
-
-      {modals.worshipEvent && (
-        <ModalMinistryEvent
-          event={modals.worshipEvent}
-          ministry="worship"
-          config={ministryConfig('worship')}
-          fields={eventFields['worship'] || []}
-          onClose={() => setModals({...modals, worshipEvent: null})}
-          onSave={handleSaveWorshipEvent}
-          onDelete={handleDeleteWorshipEvent}
-        />
-      )}
-
-      {modals.mediaEvent && (
-        <ModalMinistryEvent
-          event={modals.mediaEvent}
-          ministry="media"
-          config={ministryConfig('media')}
-          fields={eventFields['media'] || []}
-          onClose={() => setModals({...modals, mediaEvent: null})}
-          onSave={handleSaveMediaEvent}
-          onDelete={handleDeleteMediaEvent}
-        />
-      )}
-
-      {modals.atmosferaEvent && (
-        <ModalMinistryEvent
-          event={modals.atmosferaEvent}
-          ministry="atmosfera"
-          config={ministryConfig('atmosfera')}
-          fields={eventFields['atmosfera'] || []}
-          onClose={() => setModals({...modals, atmosferaEvent: null})}
-          onSave={handleSaveAtmosferaEvent}
-          onDelete={handleDeleteAtmosferaEvent}
-        />
-      )}
-
-      {modals.kidsEvent && (
-        <ModalMinistryEvent
-          event={modals.kidsEvent}
-          ministry="kids"
-          config={ministryConfig('kids')}
-          fields={eventFields['kids'] || []}
-          onClose={() => setModals({...modals, kidsEvent: null})}
-          onSave={handleSaveKidsEvent}
-          onDelete={handleDeleteKidsEvent}
-        />
-      )}
-
-      {modals.homegroupsEvent && (
-        <ModalMinistryEvent
-          event={modals.homegroupsEvent}
-          ministry="homegroups"
-          config={ministryConfig('homegroups')}
-          fields={eventFields['homegroups'] || []}
-          onClose={() => setModals({...modals, homegroupsEvent: null})}
-          onSave={handleSaveHomegroupsEvent}
-          onDelete={handleDeleteHomegroupsEvent}
-        />
-      )}
-
-      {modals.moduleEvent && (
-        <ModalMinistryEvent
-          event={modals.moduleEvent}
-          ministry={modals.moduleEvent.moduleKey}
-          config={ministryConfig(modals.moduleEvent.moduleKey)}
-          fields={eventFields[modals.moduleEvent.moduleKey] || []}
-          onClose={() => setModals({...modals, moduleEvent: null})}
-          onSave={(id, d) => handleSaveModuleEvent(modals.moduleEvent.moduleKey, id, d)}
-          onDelete={handleDeleteModuleEvent}
+      {modals.addTask && (
+        <ModalAddTask
+          initialTask={modals.addTask}
+          teamOptions={taskTeamOptions}
+          onClose={() => setModals((m) => ({ ...m, addTask: null }))}
+          onSave={handleSaveTask}
+          onDelete={handleDeleteTask}
         />
       )}
     </div>

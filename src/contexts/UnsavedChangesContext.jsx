@@ -63,7 +63,8 @@ export function UnsavedChangesProvider({ children }) {
   // Obsługa zapisu i nawigacji
   const handleSaveAndNavigate = async () => {
     if (onSaveCallback) {
-      await onSaveCallback();
+      // Nieudany zapis (callback zwraca false) — zostajemy na stronie, zmiany nie przepadają.
+      if ((await onSaveCallback()) === false) return;
     }
     setShowWarningModal(false);
     setHasUnsavedChanges(false);

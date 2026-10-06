@@ -10,6 +10,7 @@ import { useT } from '../../i18n';
 import * as LucideIcons from 'lucide-react';
 import { tr, appLocale } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
+import { toast } from '../../lib/toast';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
@@ -25,6 +26,22 @@ function DynamicIcon({ name, size = 20, className = '' }) {
   const Icon = LucideIcons[name] || Calendar;
   return <Icon size={size} className={className} />;
 }
+
+const pad2 = (n) => String(n).padStart(2, '0');
+// Dzień LOKALNY (toISOString dawał dzień UTC — między 00:00 a 02:00 „wczoraj”).
+const localYmd = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+// 'YYYY-MM-DD' (także z doklejonym czasem) → Date lokalnie, bez przesunięcia UTC.
+const localDate = (v) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+};
+// Polska odmiana liczebnika: 1 element, 2–4 elementy (poza 12–14), 5+ elementów.
+const plural = (n, one, few, many) => {
+  if (n === 1) return one;
+  const d = n % 10;
+  const t = n % 100;
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
+};
 
 // Domyślne sekcje zespołów
 const ALL_SECTIONS = [
@@ -62,7 +79,8 @@ export default function ProgramsList() {
   }, [selectedCampusId]);
 
   const fetchPrograms = async () => {
-    const { data } = await withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false });
+    const { data, error } = await withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false });
+    if (error) toast.error(error, { fallback: tr('Nie udało się wczytać programów. Odśwież stronę.') });
     setPrograms(data || []);
   };
 
@@ -70,30 +88,64 @@ export default function ProgramsList() {
     const { data, error } = await supabase.from('program_types').select('*').order('sort_order');
     if (!error && data) {
       setProgramTypes(data);
+    } else if (error?.code === '42P01') {
+      // Tabela kategorii jeszcze nie istnieje — jedna domyślna kategoria tylko do wyświetlenia.
+      setProgramTypes([{ id: null, name: tr('Nabożeństwo niedzielne'), icon: 'Church', color: '#6366f1', visible_sections: ALL_SECTIONS.map(s => s.key), is_default: true, sort_order: 0, is_active: true }]);
     } else {
-      // Table may not exist yet - use default
-      setProgramTypes([{ id: null, name: 'Nabożeństwo niedzielne', icon: 'Church', color: '#6366f1', visible_sections: ALL_SECTIONS.map(s => s.key), is_default: true, sort_order: 0, is_active: true }]);
+      // Inny błąd (np. sieć) — nie podstawiamy fikcyjnej kategorii, mówimy co się stało.
+      toast.error(error, { fallback: tr('Nie udało się wczytać kategorii programów.') });
+      setProgramTypes([]);
     }
   };
 
-  const handleDelete = async (id, e) => {
+  // Usunięcie programu: potwierdzenie z nazwą i skutkiem → najpierw sam rekord (ze sprawdzeniem
+  // błędu — przy 403 nic nie ruszamy), dopiero potem sprzątanie: odpięcie od wydarzeń
+  // (events.program_id nie ma klucza obcego, więc samo by nie zniknęło).
+  const handleDelete = async (program, e) => {
     e.stopPropagation();
-    if (await confirmDialog(t('Czy na pewno chcesz usunąć ten program?'))) {
-      await supabase.from('programs').delete().eq('id', id);
+    const name = programName(program);
+    const { data: linked } = await supabase.from('events').select('id, title').eq('program_id', program.id);
+    const linkedCount = (linked || []).length;
+    const ok = await confirmDialog({
+      title: tr('Usunąć program?'),
+      message: linkedCount
+        ? tr('Program „{name}” zostanie usunięty i odpięty od wydarzeń ({n}). Wydarzenia i ich grafik służb zostają. Tej operacji nie można cofnąć.', { name, n: linkedCount })
+        : tr('Program „{name}” zostanie usunięty. Tej operacji nie można cofnąć.', { name }),
+      isDelete: true,
+    });
+    if (!ok) return;
+    const { error } = await supabase.from('programs').delete().eq('id', program.id);
+    if (error) {
+      toast.error(error, { fallback: tr('Nie udało się usunąć programu.') });
       fetchPrograms();
+      return;
     }
+    if (linkedCount) {
+      const { error: unlinkErr } = await supabase.from('events').update({ program_id: null }).eq('program_id', program.id);
+      if (unlinkErr) toast.info(tr('Usunięto program, ale wydarzenie może jeszcze pokazywać pusty plan — odepnij go na stronie wydarzenia.'));
+    }
+    toast.success(tr('Usunięto program „{name}”', { name }));
+    fetchPrograms();
   };
 
+  // Duplikat: ta sama godzina tygodnia, 7 dni później (a nie „dziś”), bez przypisań do osób.
   const handleDuplicate = async (program, e) => {
     e.stopPropagation();
     const { id, created_at, updated_at, ...rest } = program;
+    const src = localDate(program.date);
+    const next = src ? new Date(src.getFullYear(), src.getMonth(), src.getDate() + 7) : new Date();
     const newProgram = {
       ...rest,
-      date: new Date().toISOString().split('T')[0],
-      campus_id: campusIdForInsert,
+      date: localYmd(next),
+      campus_id: campusIdForInsert ?? program.campus_id ?? null,
     };
-    const { data } = await supabase.from('programs').insert([newProgram]).select();
-    if (data?.[0]) navigate(`/programs/${data[0].id}`);
+    const { data, error } = await supabase.from('programs').insert([newProgram]).select();
+    if (error || !data?.[0]) {
+      toast.error(error || tr('Nie udało się zduplikować programu.'), { fallback: tr('Nie udało się zduplikować programu.') });
+      return;
+    }
+    toast.success(tr('Utworzono kopię programu na {date}', { date: next.toLocaleDateString(appLocale()) }));
+    navigate(`/programs/${data[0].id}`);
   };
 
   const handleNewProgram = async (typeId) => {
@@ -103,39 +155,58 @@ export default function ProgramsList() {
   // --- Type CRUD ---
   const openNewType = () => {
     setTypeForm({ id: null, name: '', icon: 'Calendar', color: '#6366f1', visible_sections: ALL_SECTIONS.map(s => s.key), is_active: true });
+    setTypeNameError('');
     setShowTypeModal(true);
   };
 
   const openEditType = (type, e) => {
     e?.stopPropagation();
     setTypeForm({ ...type, visible_sections: type.visible_sections || ALL_SECTIONS.map(s => s.key) });
+    setTypeNameError('');
     setShowTypeModal(true);
   };
 
+  const [typeNameError, setTypeNameError] = useState('');
   const saveType = async () => {
-    if (!typeForm.name.trim()) return;
+    if (!typeForm.name.trim()) { setTypeNameError(tr('Podaj nazwę kategorii.')); return; }
+    setTypeNameError('');
 
+    const row = {
+      name: typeForm.name.trim(), icon: typeForm.icon, color: typeForm.color,
+      visible_sections: typeForm.visible_sections, is_active: typeForm.is_active
+    };
+    let error;
     if (typeForm.id) {
-      await supabase.from('program_types').update({
-        name: typeForm.name, icon: typeForm.icon, color: typeForm.color,
-        visible_sections: typeForm.visible_sections, is_active: typeForm.is_active
-      }).eq('id', typeForm.id);
+      ({ error } = await supabase.from('program_types').update(row).eq('id', typeForm.id));
     } else {
       const maxSort = programTypes.length > 0 ? Math.max(...programTypes.map(t => t.sort_order || 0)) + 1 : 0;
-      await supabase.from('program_types').insert({
-        name: typeForm.name, icon: typeForm.icon, color: typeForm.color,
-        visible_sections: typeForm.visible_sections, is_active: typeForm.is_active, sort_order: maxSort
-      });
+      ({ error } = await supabase.from('program_types').insert({ ...row, sort_order: maxSort }));
     }
+    if (error) {
+      toast.error(error, { fallback: tr('Nie udało się zapisać kategorii.') });
+      return;
+    }
+    toast.success(typeForm.id ? tr('Zapisano kategorię') : tr('Dodano kategorię'));
     setShowTypeModal(false);
     fetchProgramTypes();
   };
 
-  const deleteType = async (typeId, e) => {
+  const deleteType = async (type, e) => {
     e?.stopPropagation();
-    if (!await confirmDialog(t('Usunąć ten typ? Programy tego typu zachowają dane ale stracą przypisanie do typu.'))) return;
-    await supabase.from('program_types').delete().eq('id', typeId);
+    const ok = await confirmDialog({
+      title: tr('Usunąć kategorię?'),
+      message: tr('Kategoria „{name}” zostanie usunięta. Programy z tej kategorii zachowają dane, ale trafią do „Bez kategorii”.', { name: type?.name || '' }),
+      isDelete: true,
+    });
+    if (!ok) return false;
+    const { error } = await supabase.from('program_types').delete().eq('id', type.id);
+    if (error) {
+      toast.error(error, { fallback: tr('Nie udało się usunąć kategorii.') });
+      return false;
+    }
+    toast.success(tr('Usunięto kategorię'));
     fetchProgramTypes();
+    return true;
   };
 
   const toggleSectionVisibility = (sectionKey) => {
@@ -156,7 +227,11 @@ export default function ProgramsList() {
     return (p.date || '').toLowerCase().includes(search) || (p.title || '').toLowerCase().includes(search);
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = localYmd();
+  // Wiele kampusów = pigułka kampusu ma sens; przy jednym kampusie to szum.
+  const multiCampus = campuses.length > 1;
+  // Tytuł zawsze w tym samym miejscu, data zawsze w podtytule (dawniej raz data była tytułem, raz podtytułem).
+  const programName = (p) => p?.title || tr('Program');
 
   const sortPrograms = (list) => [...list].sort((a, b) => {
     const dateA = new Date(a.date);
@@ -176,14 +251,16 @@ export default function ProgramsList() {
 
   const formatDateFull = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const date = new Date(dateString);
+    const date = localDate(dateString);
+    if (!date) return tr('Bez daty');
     const formatted = date.toLocaleDateString(appLocale(), options);
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
 
   // --- Components ---
   const ProgramCard = ({ p, typeColor }) => {
-    const campus = showCampus ? campusById[p.campus_id] : null;
+    const campus = showCampus && multiCampus ? campusById[p.campus_id] : null;
+    const n = p.schedule?.length || 0;
     return (
       <div
         onClick={() => navigate(`/programs/${p.id}`)}
@@ -195,10 +272,10 @@ export default function ProgramsList() {
             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: typeColor || '#ec4899' }} />
             <div className="min-w-0">
               <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">
-                {p.title || formatDateFull(p.date)}
+                {programName(p)}
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                {p.title ? formatDateFull(p.date) + ' · ' : ''}{p.schedule?.length || 0} {t('elementów')}
+              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {formatDateFull(p.date)} · {plural(n, tr('{n} element', { n }), tr('{n} elementy', { n }), tr('{n} elementów', { n }))}
               </div>
             </div>
           </div>
@@ -213,15 +290,15 @@ export default function ProgramsList() {
                 {campus.name}
               </span>
             )}
-            {!campus && showCampus && p.campus_id == null && (
+            {!campus && showCampus && multiCampus && p.campus_id == null && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-400 dark:text-gray-500" title={t('Brak przypisanego kampusu')}>
                 <MapPin size={11} />
                 {t('Bez kampusu')}
               </span>
             )}
-            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
-              <button onClick={(e) => handleDuplicate(p, e)} className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition" title={t('Duplikuj')}><Copy size={14} /></button>
-              <button onClick={(e) => handleDelete(p.id, e)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-lg hover:bg-red-100 transition" title={t('Usuń')}><Trash2 size={14} /></button>
+            <div className="flex gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition">
+              <button onClick={(e) => handleDuplicate(p, e)} className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition" title={t('Duplikuj (za tydzień)')} aria-label={tr('Duplikuj program „{name}”', { name: programName(p) })}><Copy size={14} aria-hidden="true" /></button>
+              <button onClick={(e) => handleDelete(p, e)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 rounded-lg hover:bg-red-100 transition" title={t('Usuń')} aria-label={tr('Usuń program „{name}”', { name: programName(p) })}><Trash2 size={14} aria-hidden="true" /></button>
             </div>
           </div>
         </div>
@@ -244,14 +321,14 @@ export default function ProgramsList() {
             </div>
             <h2 className="font-bold text-gray-800 dark:text-white text-base">{type.name}</h2>
             <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
-              {upcoming.length > 0 ? t('{n} nadchodzących', { n: upcoming.length }) : ''}
+              {upcoming.length > 0 ? plural(upcoming.length, tr('{n} nadchodzący', { n: upcoming.length }), tr('{n} nadchodzące', { n: upcoming.length }), tr('{n} nadchodzących', { n: upcoming.length })) : ''}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={(e) => openEditType(type, e)}
               className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-700 rounded-lg transition"
-              title={t('Edytuj typ')}
+              title={t('Edytuj kategorię')}
             >
               <Edit3 size={14} />
             </button>
@@ -308,14 +385,14 @@ export default function ProgramsList() {
             moduleKey="programs"
             icon={ClipboardList}
             title={t('Programy')}
-            subtitle={t('Zarządzaj programami wydarzeń')}
+            subtitle={t('Plany przebiegu nabożeństw i wydarzeń — podpinasz je na stronie wydarzenia')}
             actions={
               <button
                 onClick={openNewType}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition text-sm font-medium"
               >
                 <Plus size={16} />
-                {t('Nowy typ')}
+                {t('Nowa kategoria programu')}
               </button>
             }
           />
@@ -346,7 +423,8 @@ export default function ProgramsList() {
         ))}
 
         {/* Unassigned programs (legacy, no type_id) */}
-        {unassignedPrograms.length > 0 && activeTypes.some(t => t.id !== null) && (
+        {/* Ukryta, gdy nie ma w niej nadchodzących programów (pusta sekcja „(0)” była szumem). */}
+        {unassignedPrograms.some(p => p.date >= today) && activeTypes.some(t => t.id !== null) && (
           <div className="mb-8">
             <div className="flex items-center gap-2.5 mb-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
@@ -390,10 +468,10 @@ export default function ProgramsList() {
         onClose={() => setShowTypeModal(false)}
         closeOnBackdrop={false}
         size="sm"
-        title={typeForm.id ? t('Edytuj typ wydarzenia') : t('Nowy typ wydarzenia')}
+        title={typeForm.id ? t('Edytuj kategorię programu') : t('Nowa kategoria programu')}
         footer={<>
           {typeForm.id && !typeForm.is_default && (
-            <Button variant="danger" className="mr-auto" onClick={(e) => { deleteType(typeForm.id, e); setShowTypeModal(false); }}>
+            <Button variant="danger" className="mr-auto" onClick={async (e) => { if (await deleteType(typeForm, e)) setShowTypeModal(false); }}>
               {t('Usuń')}
             </Button>
           )}
@@ -401,20 +479,23 @@ export default function ProgramsList() {
             {t('Anuluj')}
           </Button>
           <Button onClick={saveType}>
-            {typeForm.id ? t('Zapisz zmiany') : t('Utwórz typ')}
+            {typeForm.id ? t('Zapisz zmiany') : t('Utwórz kategorię')}
           </Button>
         </>}
       >
             <div className="p-6 space-y-5">
               {/* Name */}
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Nazwa *')}</label>
+                <label htmlFor="program-type-name" className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Nazwa *')}</label>
                 <input
-                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white mt-1"
+                  id="program-type-name"
+                  aria-invalid={!!typeNameError || undefined}
+                  className={`w-full p-3 rounded-xl border bg-white dark:bg-gray-700 text-gray-800 dark:text-white mt-1 ${typeNameError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-600'}`}
                   placeholder={t('np. Spotkanie modlitewne')}
                   value={typeForm.name}
-                  onChange={e => setTypeForm({ ...typeForm, name: e.target.value })}
+                  onChange={e => { setTypeForm({ ...typeForm, name: e.target.value }); if (typeNameError) setTypeNameError(''); }}
                 />
+                {typeNameError && <p className="text-xs text-red-600 dark:text-red-400 mt-1 ml-1" role="alert">{typeNameError}</p>}
               </div>
 
               {/* Icon */}

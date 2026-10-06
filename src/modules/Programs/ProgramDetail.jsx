@@ -990,7 +990,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                           handleChange('customAttachments', [...(item.customAttachments || []), newAtt]);
                         } catch (err) {
                           console.error('Upload error:', err);
-                          toast.error(tr('Błąd uploadu pliku'));
+                          toast.error(tr('Nie udało się przesłać pliku. Spróbuj ponownie.'));
                         }
                         e.target.value = '';
                       }}
@@ -2060,6 +2060,7 @@ export default function ProgramDetail() {
   const [songSuggestions, setSongSuggestions] = useState([]);
   const [worshipTeam, setWorshipTeam] = useState([]);
   const [isSending, setIsSending] = useState(false);
+  const savingRef = useRef(false); // strażnik podwójnego zapisu (handleSave)
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProgram, setIsLoadingProgram] = useState(!isNewProgram);
 
@@ -2194,7 +2195,7 @@ export default function ProgramDetail() {
         .insert([templateData]);
 
       if (error) throw error;
-      toast.error(tr('Szablon został zapisany!'));
+      toast.success(tr('Zapisano szablon'));
       fetchTemplates();
     } catch (err) {
       console.error('Błąd zapisywania szablonu:', err);
@@ -2213,12 +2214,10 @@ export default function ProgramDetail() {
 
   const handleDeleteTemplate = async (templateId) => {
     if (!await confirmDialog(tr('Czy na pewno chcesz usunąć ten szablon?'))) return;
-    try {
-      await supabase.from('program_templates').delete().eq('id', templateId);
-      fetchTemplates();
-    } catch (err) {
-      console.error('Błąd usuwania szablonu:', err);
-    }
+    const { error } = await supabase.from('program_templates').delete().eq('id', templateId);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się usunąć szablonu.') }); return; }
+    toast.success(tr('Usunięto szablon'));
+    fetchTemplates();
   };
 
   const fetchProgram = async (programId) => {
@@ -2379,7 +2378,23 @@ export default function ProgramDetail() {
     }
   };
 
+  // Zapis programu — zwraca true (zapisano) / false (błąd lub walidacja). Strażnik chroni przed
+  // podwójnym kliknięciem (dawniej 3× „Zapisz” na nowym programie = 3 programy).
   const handleSave = async () => {
+    if (savingRef.current) return false;
+    if (!program.date) {
+      toast.error(tr('Wybierz datę programu.'));
+      return false;
+    }
+    savingRef.current = true;
+    try {
+      return await doHandleSave();
+    } finally {
+      savingRef.current = false;
+    }
+  };
+
+  const doHandleSave = async () => {
     // Only send known base DB columns
     // Map globalNotes to the DB 'notes' column before saving
     const programToSave = { ...program };
@@ -2436,8 +2451,8 @@ export default function ProgramDetail() {
     }
 
     if (result.error) {
-      toast.error(tr('Błąd zapisu: ') + result.error.message);
-      return;
+      toast.error(result.error, { fallback: tr('Nie udało się zapisać programu. Zmiany są nadal na ekranie — spróbuj ponownie.') });
+      return false;
     }
 
     const savedProgramId = program.id || result.data?.[0]?.id;
@@ -2454,7 +2469,8 @@ export default function ProgramDetail() {
       setProgram(result.data[0]);
     }
     setOriginalProgram(JSON.parse(JSON.stringify(program)));
-    toast.success(tr('Zapisano!'));
+    toast.success(tr('Zapisano program'));
+    return true;
   };
 
   const syncWorshipAssignments = async (programId) => {
@@ -2602,9 +2618,9 @@ export default function ProgramDetail() {
       const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, optionsToUse);
 
       if (result.success) {
-        toast.error(tr('PDF został pobrany i zapisany w chmurze!'));
+        toast.success(tr('Pobrano PDF i zapisano kopię w plikach'));
       } else {
-        toast.error(tr('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.'));
+        toast.info(tr('PDF pobrany na dysk, ale nie udało się zapisać kopii w plikach.'));
       }
     } catch (error) {
       console.error('Critical error saving PDF:', error);
@@ -2766,7 +2782,8 @@ export default function ProgramDetail() {
   };
 
   const handleSaveAndProceed = async () => {
-    await handleSave();
+    // Nie wychodzimy z edytora, gdy zapis się nie udał — inaczej zmiany przepadają.
+    if (!(await handleSave())) return;
     setShowUnsavedModal(false);
     if (pendingAction?.type === 'navigate') {
       navigate(pendingAction.payload);
@@ -2887,14 +2904,14 @@ export default function ProgramDetail() {
                 <span className="hidden sm:inline">ProPresenter</span>
               </button>
 
-              <button
+              <Button
                 data-tour="prog-save"
+                icon={Save}
                 onClick={handleSave}
-                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 lg:px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary-light hover:from-accent-primary-dark hover:to-accent-secondary text-white rounded-lg shadow-lg shadow-accent-primary-light/20 hover:shadow-accent-primary-light/30 transition-all font-medium text-sm"
+                className="flex-1 lg:flex-none"
               >
-                <Save size={18} />
-                <span className="hidden sm:inline">{t('Zapisz')}</span>
-              </button>
+                {t('Zapisz')}
+              </Button>
               </div>
             </div>
           </div>

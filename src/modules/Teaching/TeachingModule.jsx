@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
@@ -9,7 +10,6 @@ import {
   Calendar, BookOpen, Users, Plus, Edit3, Trash2, X, Loader2,
   MessageSquare, ChevronDown, ChevronUp, Image as ImageIcon, Check, Mail, ArrowLeft, FolderOpen
 } from 'lucide-react';
-import { useUserRole } from '../../hooks/useUserRole';
 import { useTabAccess } from '../../components/Can';
 import SermonsModule from '../Sermons/SermonsModule';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -24,6 +24,8 @@ import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
 import { confirmDialog } from '../../lib/dialog';
+import { patchEventAssignments, scheduleSaveErrorMessage } from '../../hooks/useScheduleAssignments';
+import { TEACHING_KEY, buildTeachingRows, teachingOps, seriesSermons, normName, plural } from './teachingSchedule';
 
 // ================== TABLE SELECT COMPONENT ==================
 
@@ -145,23 +147,26 @@ const TableSelect = ({ options, value, onChange, placeholder }) => {
 
 // ================== SCHEDULE TABLE ==================
 
-const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
+// Grafik nauczania = wydarzenia-nabożeństwa (te same niedziele co w grafikach Uwielbienia i Mediów).
+// Zapis pola: events.assignments.teaching[pole] przez atomową fn (onUpdateField zwraca true/false).
+const ScheduleTable = ({ rows, speakers, series, onUpdateField }) => {
+  const navigate = useNavigate();
   const { getCampus } = useCampusBadge();
   const [expandedMonths, setExpandedMonths] = useState({});
 
-  const groupedPrograms = programs.reduce((acc, prog) => {
-    if (!prog.date) return acc;
-    const date = new Date(prog.date);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  const groupedRows = rows.reduce((acc, row) => {
+    if (!row.date) return acc;
+    const key = row.date.slice(0, 7);
     if (!acc[key]) acc[key] = [];
-    acc[key].push(prog);
+    acc[key].push(row);
     return acc;
   }, {});
 
-  const sortedMonths = Object.keys(groupedPrograms).sort().reverse();
+  const sortedMonths = Object.keys(groupedRows).sort().reverse();
 
   useEffect(() => {
-    const currentMonthKey = new Date().toISOString().slice(0, 7);
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     setExpandedMonths(prev => ({ ...prev, [currentMonthKey]: true }));
   }, []);
 
@@ -175,13 +180,9 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
     return date.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
   };
 
-  const formatDateShort = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(appLocale(), {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+  const formatDateShort = (ymd) => {
+    const [y, m, d] = String(ymd).split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString(appLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   const speakerOptions = [
@@ -191,20 +192,16 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
 
   const seriesOptions = [
     { value: '', label: tr('-- Wybierz --') },
-    ...series.map(s => ({ value: s.id, label: s.name }))
+    ...series.filter(s => s.is_active !== false).map(s => ({ value: s.id, label: s.name }))
   ];
-
-  const updateTeachingField = async (programId, field, value) => {
-    const programToUpdate = programs.find(p => p.id === programId);
-    if (!programToUpdate) return;
-    const currentTeaching = programToUpdate.teaching || {};
-    const updatedTeaching = { ...currentTeaching, [field]: value };
-    await onUpdateProgram(programId, { teaching: updatedTeaching });
-  };
+  // Seria już wpisana, ale nieaktywna — dalej widoczna w swojej komórce.
+  const seriesOptionsFor = (current) => (current && !seriesOptions.some(o => String(o.value) === String(current))
+    ? [...seriesOptions, ...series.filter(s => String(s.id) === String(current)).map(s => ({ value: s.id, label: `${s.name} (${tr('nieaktywna')})` }))]
+    : seriesOptions);
 
   const columns = [
     { key: 'speaker_id', label: tr('Mówca'), type: 'select', options: speakerOptions },
-    { key: 'series_id', label: tr('Seria'), type: 'select', options: seriesOptions },
+    { key: 'series_id', label: tr('Seria'), type: 'select', options: null },
     { key: 'title', label: tr('Tytuł kazania'), type: 'text' },
     { key: 'scripture', label: tr('Fragment'), type: 'text' },
     { key: 'main_point', label: tr('Główna myśl'), type: 'text' },
@@ -223,6 +220,7 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
           >
             <button
               onClick={() => toggleMonth(monthKey)}
+              aria-expanded={!!isExpanded}
               className={`w-full px-6 py-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 flex justify-between items-center transition border-b border-gray-200 dark:border-gray-700 ${isExpanded ? 'rounded-t-2xl' : 'rounded-2xl'}`}
             >
               <span className="font-bold text-gray-800 dark:text-gray-100 text-sm uppercase tracking-wider">{formatMonthName(monthKey)}</span>
@@ -233,37 +231,49 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
               <DataTable flush className="pb-4 rounded-b-2xl" tableClassName="min-w-max">
                   <THead>
                     <tr>
-                      <TH className="w-24 min-w-[90px]">{tr('Data')}</TH>
+                      <TH className="w-24 min-w-[120px]">{tr('Nabożeństwo')}</TH>
                       {columns.map(col => (
                         <TH key={col.key} className="min-w-[130px]">{col.label}</TH>
                       ))}
                     </tr>
                   </THead>
                   <tbody className="relative">
-                    {groupedPrograms[monthKey]
-                      .sort((a, b) => new Date(a.date) - new Date(b.date))
-                      .map((prog) => (
-                        <TR key={prog.id} className="relative">
+                    {groupedRows[monthKey].map((row) => (
+                        <TR key={row.id} className="relative">
                           <TD numeric className="font-medium whitespace-nowrap">
                             <div className="flex flex-col gap-1 items-start">
-                              <span>{formatDateShort(prog.date)}</span>
-                              <CampusBadge campus={getCampus(prog.campus_id)} />
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/wydarzenie/${row.id}`)}
+                                className="text-left hover:text-accent-primary focus:outline-none focus-visible:underline"
+                                title={tr('Otwórz wydarzenie')}
+                              >
+                                <span className="block">{formatDateShort(row.date)}{row.time ? ` ${row.time}` : ''}</span>
+                                {row.title && <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 max-w-[11rem] truncate">{row.title}</span>}
+                              </button>
+                              <CampusBadge campus={getCampus(row.campus_id)} />
                             </div>
                           </TD>
                           {columns.map(col => (
                             <TD key={col.key} className="relative">
                               {col.type === 'select' ? (
                                 <TableSelect
-                                  options={col.options}
-                                  value={prog.teaching?.[col.key] || ''}
-                                  onChange={(val) => updateTeachingField(prog.id, col.key, val || null)}
+                                  options={col.key === 'series_id' ? seriesOptionsFor(row.teaching?.series_id) : col.options}
+                                  value={row.teaching?.[col.key] || ''}
+                                  onChange={(val) => onUpdateField(row, col.key, val || null)}
                                 />
                               ) : (
                                 <input
-                                  className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
+                                  key={`${row.id}_${col.key}_${row.teaching?.[col.key] || ''}`}
+                                  aria-label={`${col.label} — ${formatDateShort(row.date)}`}
+                                  className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-400 dark:placeholder-gray-500 text-gray-700 dark:text-gray-300"
                                   placeholder={tr('Wpisz...')}
-                                  defaultValue={prog.teaching?.[col.key] || ''}
-                                  onBlur={(e) => updateTeachingField(prog.id, col.key, e.target.value)}
+                                  defaultValue={row.teaching?.[col.key] || ''}
+                                  onBlur={(e) => {
+                                    const v = e.target.value;
+                                    if ((row.teaching?.[col.key] || '') === v) return; // bez zmian — bez zapisu
+                                    onUpdateField(row, col.key, v);
+                                  }}
                                 />
                               )}
                             </TD>
@@ -280,7 +290,9 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
       {sortedMonths.length === 0 && (
         <EmptyState
           icon={Calendar}
-          title={tr('Brak programów nabożeństw. Dodaj programy w module "Programy".')}
+          title={tr('Brak nabożeństw w kalendarzu')}
+          subtitle={tr('Dodaj wydarzenie „Nabożeństwo” w module Wydarzenia — pojawi się tutaj i w grafikach zespołów.')}
+          action={<Button variant="outline" size="sm" icon={Calendar} onClick={() => navigate('/wydarzenia')}>{tr('Przejdź do wydarzeń')}</Button>}
           className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700"
         />
       )}
@@ -339,12 +351,8 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
   const handleSave = async () => {
     if (!form.name.trim()) return toast.error(tr('Podaj imię i nazwisko mówcy'));
 
-    if (editingSpeaker) {
-      await onEdit(editingSpeaker.id, form);
-    } else {
-      await onAdd(form);
-    }
-    setShowModal(false);
+    const ok = editingSpeaker ? await onEdit(editingSpeaker.id, form) : await onAdd(form);
+    if (ok) setShowModal(false);
   };
 
   return (
@@ -393,13 +401,15 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
             <div className="flex gap-2 mt-4 justify-end">
               <button
                 onClick={() => openEdit(speaker)}
-                className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                aria-label={tr('Edytuj mówcę {name}', { name: speaker.name })}
+                className="p-2 text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
               >
                 <Edit3 size={16} />
               </button>
               <button
-                onClick={() => onDelete(speaker.id)}
-                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                onClick={() => onDelete(speaker)}
+                aria-label={tr('Usuń mówcę {name}', { name: speaker.name })}
+                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
               >
                 <Trash2 size={16} />
               </button>
@@ -453,7 +463,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
               className="hidden"
               onChange={handlePhotoUpload}
             />
-            <span className="text-xs text-gray-400 mt-2">{tr('Kliknij aby dodać zdjęcie')}</span>
+            <span className="text-xs text-gray-400 mt-2">{tr('Kliknij, aby dodać zdjęcie')}</span>
           </div>
 
           <div>
@@ -502,7 +512,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
 
 // ================== SERIES SECTION (TILES) ==================
 
-function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) {
+function SeriesSection({ series, rows, programs, sermons, speakers, onAdd, onEdit, onDelete, onAddSermon }) {
   const [showModal, setShowModal] = useState(false);
   const [editingSeries, setEditingSeries] = useState(null);
   const [selectedSeries, setSelectedSeries] = useState(null);
@@ -571,29 +581,28 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
   const handleSave = async () => {
     if (!form.name.trim()) return toast.error(tr('Podaj nazwę serii'));
 
-    if (editingSeries) {
-      await onEdit(editingSeries.id, form);
-    } else {
-      await onAdd(form);
-    }
+    const ok = editingSeries ? await onEdit(editingSeries, form) : await onAdd(form);
+    if (!ok) return; // okno zostaje otwarte, dane nie przepadają
     setShowModal(false);
+    // Szczegóły otwartej serii pokazują od razu nową nazwę/opis.
+    if (editingSeries && selectedSeries?.id === editingSeries.id) setSelectedSeries({ ...selectedSeries, ...form });
   };
 
-  // Get sermons for a series
-  const getSermonsForSeries = (seriesId) => {
-    return programs
-      .filter(p => p.teaching?.series_id === seriesId)
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  // Kazania serii = grafik (wydarzenia) + stare programy + biblioteka „Kazania” (po nazwie serii).
+  const getSermonsForSeries = (s) => seriesSermons(s, { rows, programs, sermons, speakers });
+  const fmtDay = (ymd, opts) => {
+    const [y, m, d] = String(ymd || '').split('-').map(Number);
+    return y ? new Date(y, (m || 1) - 1, d || 1).toLocaleDateString(appLocale(), opts) : '';
   };
 
   // Render detail view for selected series
   if (selectedSeries) {
-    const sermons = getSermonsForSeries(selectedSeries.id);
+    const sermonsList = getSermonsForSeries(selectedSeries);
 
     return (
       <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {/* Header with cover image */}
-        <div className="relative h-48 bg-gradient-to-br from-purple-600 to-accent-primary">
+        <div className="relative h-48 bg-gradient-to-br from-gray-700 to-gray-900">
           {selectedSeries.graphics?.[0] && (
             <img
               src={selectedSeries.graphics[0].url}
@@ -604,6 +613,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <button
             onClick={() => setSelectedSeries(null)}
+            aria-label={tr('Wróć do listy serii')}
             className="absolute top-4 left-4 p-2 bg-white/20 backdrop-blur-sm rounded-xl text-white hover:bg-white/30 transition"
           >
             <ArrowLeft size={20} />
@@ -617,6 +627,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
           <div className="absolute top-4 right-4 flex gap-2">
             <button
               onClick={(e) => openEdit(selectedSeries, e)}
+              aria-label={tr('Edytuj serię')}
               className="p-2 bg-white/20 backdrop-blur-sm rounded-xl text-white hover:bg-white/30 transition"
             >
               <Edit3 size={18} />
@@ -656,96 +667,80 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
 
           {/* Sermons list */}
           <div>
-            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase mb-4">
-              {tr('Kazania w serii')} ({sermons.length})
-            </h3>
-            {sermons.length > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase">
+                {tr('Kazania w serii')} ({sermonsList.length})
+              </h3>
+              {onAddSermon && (
+                <Button size="sm" icon={Plus} onClick={() => onAddSermon(selectedSeries)}>{tr('Dodaj kazanie do serii')}</Button>
+              )}
+            </div>
+            {sermonsList.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sermons.map((sermon, idx) => {
-                  const speaker = speakers.find(s => s.id === sermon.teaching?.speaker_id);
-
-                  return (
+                {sermonsList.map((sermon, idx) => (
                     <div
-                      key={sermon.id}
-                      className="group bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:border-accent-primary-light dark:hover:border-accent-primary transition-all duration-300"
+                      key={sermon.key}
+                      className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:border-accent-primary-light dark:hover:border-accent-primary transition-all duration-300"
                     >
                       {/* Card header with number */}
-                      <div className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light px-4 py-3 flex items-center justify-between">
+                      <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 dark:border-gray-700">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-sm">
+                          <div className="w-8 h-8 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold text-sm">
                             {idx + 1}
                           </div>
-                          <span className="text-white/90 text-sm font-medium">
-                            {new Date(sermon.date).toLocaleDateString(appLocale(), {
-                              weekday: 'short',
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric'
-                            })}
+                          <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">
+                            {sermon.date ? fmtDay(sermon.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : tr('Bez daty')}
                           </span>
                         </div>
+                        {sermon.sources?.includes('library') && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300" title={tr('Jest w archiwum kazań')}>
+                            {sermon.isPublished ? tr('Opublikowane') : tr('W archiwum')}
+                          </span>
+                        )}
                       </div>
 
                       {/* Card content */}
                       <div className="p-4">
-                        <h4 className="font-bold text-gray-800 dark:text-gray-100 text-lg mb-2 line-clamp-2 min-h-[3.5rem]">
-                          {sermon.teaching?.title || tr('Bez tytułu')}
+                        <h4 className="font-bold text-gray-800 dark:text-gray-100 text-lg mb-2 line-clamp-2">
+                          {sermon.title || tr('Bez tytułu')}
                         </h4>
 
-                        {/* Speaker */}
-                        {speaker && (
-                          <div className="flex items-center gap-2 mb-3">
-                            {speaker.photo_url ? (
-                              <img
-                                src={speaker.photo_url}
-                                alt={speaker.name}
-                                className="w-8 h-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-xs font-bold">
-                                {speaker.name.charAt(0)}
-                              </div>
-                            )}
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {speaker.name}
-                            </span>
+                        {sermon.speaker && (
+                          <div className="flex items-center gap-2 mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <Users size={14} className="text-gray-400" aria-hidden="true" /> {sermon.speaker}
                           </div>
                         )}
 
-                        {/* Scripture */}
-                        {sermon.teaching?.scripture && (
+                        {sermon.scripture && (
                           <div className="flex items-center gap-2 mb-3">
-                            <BookOpen size={14} className="text-accent-primary-light shrink-0" />
+                            <BookOpen size={14} className="text-accent-primary-light shrink-0" aria-hidden="true" />
                             <span className="text-sm text-accent-primary dark:text-accent-primary-light font-medium">
-                              {sermon.teaching.scripture}
+                              {sermon.scripture}
                             </span>
                           </div>
                         )}
 
-                        {/* Main point */}
-                        {sermon.teaching?.main_point && (
+                        {sermon.main_point && (
                           <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 bg-gray-100 dark:bg-gray-800 rounded-xl p-3 italic">
-                            "{sermon.teaching.main_point}"
+                            "{sermon.main_point}"
                           </p>
                         )}
 
-                        {/* Notes indicator */}
-                        {sermon.teaching?.notes && (
-                          <div className="mt-3 flex items-center gap-1 text-xs text-gray-400">
-                            <MessageSquare size={12} />
+                        {sermon.notes && (
+                          <div className="mt-3 flex items-center gap-1 text-xs text-gray-500">
+                            <MessageSquare size={12} aria-hidden="true" />
                             <span>{tr('Zawiera notatki')}</span>
                           </div>
                         )}
                       </div>
                     </div>
-                  );
-                })}
+                ))}
               </div>
             ) : (
               <EmptyState
                 icon={BookOpen}
-                title={tr('Brak kazań przypisanych do tej serii')}
-                subtitle={tr('Przypisz kazania w zakładce "Grafik"')}
+                title={tr('Ta seria nie ma jeszcze kazań')}
+                subtitle={tr('Dodaj kazanie do serii albo wybierz tę serię przy nabożeństwie w zakładce „Grafik”.')}
                 className="bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700"
               />
             )}
@@ -770,16 +765,20 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {series.map(s => {
-          const sermonsCount = getSermonsForSeries(s.id).length;
+          const sermonsCount = getSermonsForSeries(s).length;
 
           return (
             <div
               key={s.id}
+              role="button"
+              tabIndex={0}
               onClick={() => setSelectedSeries(s)}
+              onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setSelectedSeries(s); } }}
+              aria-label={tr('Otwórz serię {name}', { name: s.name })}
               className="group cursor-pointer bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:border-accent-primary-light dark:hover:border-accent-primary transition-all duration-300"
             >
               {/* Cover image */}
-              <div className="h-40 bg-gradient-to-br from-purple-500 to-accent-primary-light relative overflow-hidden">
+              <div className="h-40 bg-gradient-to-br from-gray-700 to-gray-900 relative overflow-hidden">
                 {s.graphics && s.graphics[0] ? (
                   <img
                     src={s.graphics[0].url}
@@ -803,16 +802,18 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                   {s.is_active !== false ? tr('Aktywna') : tr('Nieaktywna')}
                 </span>
                 {/* Action buttons */}
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => openEdit(s, e)}
-                    className="p-1.5 bg-white/20 backdrop-blur-sm rounded-lg text-white hover:bg-white/30 transition"
+                    aria-label={tr('Edytuj serię {name}', { name: s.name })}
+                    className="p-1.5 bg-black/30 backdrop-blur-sm rounded-lg text-white hover:bg-black/50 transition"
                   >
                     <Edit3 size={14} />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(s.id); }}
-                    className="p-1.5 bg-white/20 backdrop-blur-sm rounded-lg text-white hover:bg-red-500/80 transition"
+                    onClick={(e) => { e.stopPropagation(); onDelete(s); }}
+                    aria-label={tr('Usuń serię {name}', { name: s.name })}
+                    className="p-1.5 bg-black/30 backdrop-blur-sm rounded-lg text-white hover:bg-red-600/90 transition"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -832,7 +833,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                     </span>
                   )}
                   <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-full font-medium">
-                    {sermonsCount} {sermonsCount === 1 ? tr('kazanie') : sermonsCount < 5 ? tr('kazania') : tr('kazań')}
+                    {plural(sermonsCount, tr('{n} kazanie', { n: sermonsCount }), tr('{n} kazania', { n: sermonsCount }), tr('{n} kazań', { n: sermonsCount }))}
                   </span>
                 </div>
               </div>
@@ -952,21 +953,23 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
 // ================== MAIN MODULE ==================
 
 export default function TeachingModule() {
-  const { userRole } = useUserRole();
   const hasTabAccess = useTabAccess();
-  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
+  const { withCampusFilter, selectedCampusId } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('wall');
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState({ email: '', name: '' });
 
   const [speakers, setSpeakers] = useState([]);
   const [series, setSeries] = useState([]);
-  const [programs, setPrograms] = useState([]);
+  const [rows, setRows] = useState([]);          // wiersze grafiku = wydarzenia-nabożeństwa
+  const [programs, setPrograms] = useState([]);  // stare programy (programs.teaching) — zapas i historia serii
+  const [sermons, setSermons] = useState([]);    // biblioteka „Kazania” (do liczby kazań w seriach)
+  const [sermonPreset, setSermonPreset] = useState(null);
 
   useEffect(() => {
     fetchData();
     fetchCurrentUser();
-  }, [selectedCampusId]);
+  }, [selectedCampusId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -983,41 +986,68 @@ export default function TeachingModule() {
     }
   };
 
+  const fetchSermons = useCallback(async () => {
+    const { data } = await withCampusFilter(supabase.from('sermons').select('id, title, series, sermon_date, speaker, scripture_ref, is_published'));
+    setSermons(data || []);
+  }, [withCampusFilter]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [speakersRes, seriesRes, programsRes] = await Promise.all([
+      const [speakersRes, seriesRes, eventsRes, programsRes, rulesRes] = await Promise.all([
         supabase.from('teaching_speakers').select('*').order('name'),
         supabase.from('teaching_series').select('*').order('start_date', { ascending: false }),
-        withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false })
+        // Ten sam zbiór co grafiki Uwielbienia/Mediów: wydarzenia (nie programy).
+        withCampusFilter(supabase.from('events').select('id, title, date, time, module_key, event_type, program_id, team_types, assignments, campus_id')),
+        withCampusFilter(supabase.from('programs').select('id, date, title, teaching, campus_id')),
+        supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle(),
       ]);
+      const firstErr = speakersRes.error || seriesRes.error || eventsRes.error;
+      if (firstErr) toast.error(firstErr, { fallback: tr('Nie udało się wczytać wszystkich danych nauczania. Odśwież stronę.') });
 
-      if (speakersRes.data) setSpeakers(speakersRes.data);
-      if (seriesRes.data) setSeries(seriesRes.data);
-      if (programsRes.data) setPrograms(programsRes.data);
+      let rules = [];
+      try {
+        const v = rulesRes?.data?.value;
+        rules = v ? (typeof v === 'string' ? JSON.parse(v) : v) : [];
+      } catch { rules = []; }
+
+      setSpeakers(speakersRes.data || []);
+      setSeries(seriesRes.data || []);
+      setPrograms(programsRes.data || []);
+      setRows(buildTeachingRows(eventsRes.data || [], Array.isArray(rules) ? rules : [], programsRes.data || []));
+      await fetchSermons();
     } catch (err) {
-      console.error('Error fetching data:', err);
+      toast.error(err, { fallback: tr('Nie udało się wczytać danych nauczania. Odśwież stronę.') });
     }
     setLoading(false);
   };
 
-  // SPEAKERS CRUD
+  // SPEAKERS CRUD — zwracają true/false (okno zamyka się tylko po sukcesie)
   const addSpeaker = async (data) => {
     const { error } = await supabase.from('teaching_speakers').insert([data]);
-    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
+    if (error) { toast.error(error, { fallback: tr('Nie udało się dodać mówcy.') }); return false; }
+    toast.success(tr('Dodano mówcę'));
     fetchData();
+    return true;
   };
 
   const editSpeaker = async (id, data) => {
     const { error } = await supabase.from('teaching_speakers').update(data).eq('id', id);
-    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
+    if (error) { toast.error(error, { fallback: tr('Nie udało się zapisać mówcy.') }); return false; }
+    toast.success(tr('Zapisano mówcę'));
     fetchData();
+    return true;
   };
 
-  const deleteSpeaker = async (id) => {
-    if (!await confirmDialog(tr('Usunąć tego mówcę?'))) return;
-    const { error } = await supabase.from('teaching_speakers').delete().eq('id', id);
-    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
+  const deleteSpeaker = async (speaker) => {
+    if (!await confirmDialog({
+      title: tr('Usunąć mówcę?'),
+      message: tr('{name} zniknie z listy mówców i z wyboru w grafiku. Wpisy w grafiku zostaną bez mówcy.', { name: speaker?.name || '' }),
+      isDelete: true,
+    })) return;
+    const { error } = await supabase.from('teaching_speakers').delete().eq('id', speaker.id);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się usunąć mówcy.') }); return; }
+    toast.success(tr('Usunięto mówcę'));
     fetchData();
   };
 
@@ -1025,42 +1055,70 @@ export default function TeachingModule() {
   // Puste daty z formularza ('') → null (kolumny date nie przyjmują pustego stringa).
   const cleanSeries = (data) => ({
     ...data,
+    name: String(data.name || '').trim(),
     start_date: data.start_date || null,
     end_date: data.end_date || null,
   });
   const addSeries = async (data) => {
     const { error } = await supabase.from('teaching_series').insert([cleanSeries(data)]);
-    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
+    if (error) { toast.error(error, { fallback: tr('Nie udało się dodać serii.') }); return false; }
+    toast.success(tr('Dodano serię'));
     fetchData();
+    return true;
   };
 
-  const editSeries = async (id, data) => {
-    const { error } = await supabase.from('teaching_series').update(cleanSeries(data)).eq('id', id);
-    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
-    fetchData();
-  };
-
-  const deleteSeries = async (id) => {
-    if (!await confirmDialog(tr('Usunąć tę serię?'))) return;
-    const { error } = await supabase.from('teaching_series').delete().eq('id', id);
-    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
-    fetchData();
-  };
-
-  // PROGRAM UPDATE (for teaching data)
-  const handleProgramUpdate = async (id, updates) => {
-    // Optimistic update
-    setPrograms(prev => prev.map(p => {
-      if (p.id === id) {
-        if (updates.teaching) {
-          return { ...p, ...updates, teaching: { ...p.teaching, ...updates.teaching } };
-        }
-        return { ...p, ...updates };
+  // Kazania w bibliotece łączą się z serią po NAZWIE — przy zmianie nazwy przepinamy je na nową.
+  const editSeries = async (prev, data) => {
+    const row = cleanSeries(data);
+    const { error } = await supabase.from('teaching_series').update(row).eq('id', prev.id);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się zapisać serii.') }); return false; }
+    if (prev.name && normName(prev.name) !== normName(row.name)) {
+      const ids = sermons.filter((x) => normName(x.series) === normName(prev.name)).map((x) => x.id);
+      if (ids.length) {
+        const { error: e2 } = await supabase.from('sermons').update({ series: row.name }).in('id', ids);
+        if (e2) toast.error(e2, { fallback: tr('Zapisano serię, ale nie udało się przepiąć kazań na nową nazwę.') });
       }
-      return p;
-    }));
+    }
+    toast.success(tr('Zapisano serię'));
+    fetchData();
+    return true;
+  };
 
-    await supabase.from('programs').update(updates).eq('id', id);
+  const deleteSeries = async (s) => {
+    if (!await confirmDialog({
+      title: tr('Usunąć serię?'),
+      message: tr('Seria „{name}” zostanie usunięta. Kazania zostają, ale bez przypisanej serii. Tej operacji nie można cofnąć.', { name: s?.name || '' }),
+      isDelete: true,
+    })) return;
+    const { error } = await supabase.from('teaching_series').delete().eq('id', s.id);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się usunąć serii.') }); return; }
+    // Sprzątanie PO udanym usunięciu: kazania z biblioteki tracą nazwę nieistniejącej serii.
+    const ids = sermons.filter((x) => normName(x.series) === normName(s.name)).map((x) => x.id);
+    if (ids.length) {
+      const { error: e2 } = await supabase.from('sermons').update({ series: null }).in('id', ids);
+      if (e2) toast.error(e2, { fallback: tr('Usunięto serię, ale nie udało się odpiąć od niej kazań.') });
+    }
+    toast.success(tr('Usunięto serię'));
+    fetchData();
+  };
+
+  // GRAFIK: zapis jednego pola kazania na wydarzeniu (atomowo, bez nadpisywania innych służb).
+  // Stan zmieniamy dopiero po udanym zapisie — przy błędzie wpisany tekst zostaje w polu.
+  const handleTeachingUpdate = async (row, field, value) => {
+    const { assignments, error } = await patchEventAssignments(row.id, teachingOps(row, field, value));
+    if (error) {
+      toast.error(scheduleSaveErrorMessage(error));
+      return false;
+    }
+    const saved = assignments?.[TEACHING_KEY] || { ...(row.teaching || {}), [field]: value || undefined };
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, teaching: Object.fromEntries(Object.entries(saved).filter(([, v]) => v != null && v !== '')), legacyFromProgram: false } : r)));
+    return true;
+  };
+
+  // „Dodaj kazanie do serii” → zakładka Kazania z otwartym formularzem i wybraną serią.
+  const addSermonToSeries = (s) => {
+    setSermonPreset({ series: s.name, nonce: Date.now() });
+    setActiveTab('kazania');
   };
 
   if (loading) {
@@ -1074,7 +1132,7 @@ export default function TeachingModule() {
       {/* TAB NAVIGATION */}
       <ResponsiveTabs moduleKey="teaching"
         tabs={[
-          { id: 'wall', label: tr('Tablica'), icon: MessageSquare },
+          { id: 'wall', label: tr('Wiadomości'), icon: MessageSquare },
           { id: 'schedule', label: tr('Grafik'), icon: Calendar, tour: 'teaching-schedule-tab' },
           { id: 'series', label: tr('Serie'), icon: BookOpen },
           ...(hasTabAccess('teaching', 'speakers') ? [{ id: 'speakers', label: tr('Mówcy'), icon: Users }] : []),
@@ -1098,14 +1156,15 @@ export default function TeachingModule() {
 
       {activeTab === 'schedule' && (
         <section data-tour="teaching-schedule-section" className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Grafik Nauczania')}</h2>
+          <div className="flex flex-wrap justify-between items-center gap-2 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Grafik nauczania')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Te same nabożeństwa co w grafikach zespołów. Zmiany zapisują się po wyjściu z pola.')}</p>
           </div>
           <ScheduleTable
-            programs={programs}
+            rows={rows}
             speakers={speakers}
             series={series}
-            onUpdateProgram={handleProgramUpdate}
+            onUpdateField={handleTeachingUpdate}
           />
         </section>
       )}
@@ -1113,11 +1172,14 @@ export default function TeachingModule() {
       {activeTab === 'series' && (
         <SeriesSection
           series={series}
+          rows={rows}
           programs={programs}
+          sermons={sermons}
           speakers={speakers}
           onAdd={addSeries}
           onEdit={editSeries}
           onDelete={deleteSeries}
+          onAddSermon={addSermonToSeries}
         />
       )}
 
@@ -1137,7 +1199,7 @@ export default function TeachingModule() {
       )}
 
       {activeTab === 'kazania' && (
-        <SermonsModule embedded />
+        <SermonsModule embedded createPreset={sermonPreset} onChanged={fetchSermons} />
       )}
     </div>
   );

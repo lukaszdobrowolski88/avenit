@@ -65,7 +65,7 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, date }) => {
       zIndex={110}
       size="sm"
       icon={AlertTriangle}
-      title={tr('Usuń nabożeństwo')}
+      title={tr('Usuń program')}
       footer={<>
         <Button variant="secondary" onClick={onClose}>
           {tr('Anuluj')}
@@ -77,7 +77,7 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, date }) => {
     >
       <div className="p-6">
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          {tr('Czy na pewno chcesz usunąć nabożeństwo z dnia')} <span className="font-medium text-gray-700 dark:text-gray-300">{formattedDate}</span>? {tr('Tej operacji nie można cofnąć.')}
+          {tr('Czy na pewno chcesz usunąć program z dnia')} <span className="font-medium text-gray-700 dark:text-gray-300">{formattedDate}</span>? {tr('Program zostanie odpięty od wydarzeń (wydarzenia i ich grafik zostają). Tej operacji nie można cofnąć.')}
         </p>
       </div>
     </Modal>
@@ -959,6 +959,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Temat lekcji')}</label>
           <input
+            aria-label={tr('Temat lekcji')}
             className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.temat || ''}
             onChange={e => handleFieldChange('temat', e.target.value)}
@@ -982,6 +983,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Młodsza')}</label>
               <input
+                aria-label={tr('Grupa Młodsza')}
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.mlodsza || ''}
                 onChange={e => handleFieldChange('mlodsza', e.target.value)}
@@ -990,6 +992,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Średnia')}</label>
               <input
+                aria-label={tr('Grupa Średnia')}
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.srednia || ''}
                 onChange={e => handleFieldChange('srednia', e.target.value)}
@@ -998,6 +1001,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Starsza')}</label>
               <input
+                aria-label={tr('Grupa Starsza')}
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.starsza || ''}
                 onChange={e => handleFieldChange('starsza', e.target.value)}
@@ -1018,6 +1022,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki')}</label>
           <input
+            aria-label={tr('Notatki')}
             className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.notatki || ''}
             onChange={e => handleFieldChange('notatki', e.target.value)}
@@ -1240,11 +1245,25 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
     }
   };
 
+  // Zapis programu — zwraca true/false. Okno zamyka się DOPIERO po udanym zapisie
+  // (dawniej zamykało się zawsze, a błąd 403/500 kasował 20 minut pracy bez słowa).
+  const persistProgram = async () => {
+    const { id, created_at, updated_at, ...row } = program;
+    const { error } = await supabase.from('programs').update(row).eq('id', id);
+    if (error) {
+      toast.error(error, { fallback: tr('Nie udało się zapisać programu. Twoje zmiany są nadal w oknie — spróbuj ponownie.') });
+      return false;
+    }
+    setOriginalProgram(JSON.parse(JSON.stringify(program)));
+    toast.success(tr('Zapisano program'));
+    if (onSave) onSave();
+    return true;
+  };
+
   // Zapisz i zamknij
   const handleSaveAndClose = async () => {
-    await supabase.from('programs').update(program).eq('id', program.id);
+    if (!(await persistProgram())) return;
     setShowUnsavedModal(false);
-    if (onSave) onSave();
     onClose();
   };
 
@@ -1254,17 +1273,20 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
     onClose();
   };
 
-  // Usuń nabożeństwo
+  // Usuń program: najpierw sam rekord (ze sprawdzeniem błędu — przy 403 nic nie ruszamy),
+  // potem sprzątanie: odpięcie od wydarzeń (events.program_id nie ma klucza obcego).
   const handleDeleteProgram = async () => {
-    try {
-      await supabase.from('programs').delete().eq('id', program.id);
-      setShowDeleteModal(false);
-      if (onDelete) onDelete(program.id);
-      onClose();
-    } catch (error) {
-      console.error('Błąd usuwania programu:', error);
-      toast.error(tr('Wystąpił błąd podczas usuwania nabożeństwa.'));
+    const { error } = await supabase.from('programs').delete().eq('id', program.id);
+    if (error) {
+      toast.error(error, { fallback: tr('Nie udało się usunąć programu.') });
+      return;
     }
+    const { error: unlinkErr } = await supabase.from('events').update({ program_id: null }).eq('program_id', program.id);
+    if (unlinkErr) toast.info(tr('Usunięto program, ale wydarzenie może jeszcze pokazywać pusty plan — odepnij go na stronie wydarzenia.'));
+    toast.success(tr('Usunięto program'));
+    setShowDeleteModal(false);
+    if (onDelete) onDelete(program.id);
+    onClose();
   };
 
   useEffect(() => {
@@ -1334,10 +1356,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
   }, [programId]);
 
   const handleSave = async () => {
-    await supabase.from('programs').update(program).eq('id', program.id);
-    setOriginalProgram(JSON.parse(JSON.stringify(program))); // Zaktualizuj oryginał po zapisie
-    if (onSave) onSave();
-    onClose();
+    if (await persistProgram()) onClose();
   };
 
   const handleDragEnd = (event) => {
@@ -1391,9 +1410,9 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
       const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, songPagesMode);
 
       if (result.success) {
-        toast.error(tr('PDF został pobrany i zapisany w chmurze!'));
+        toast.success(tr('Pobrano PDF i zapisano kopię w plikach'));
       } else {
-        toast.error(tr('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.'));
+        toast.info(tr('PDF pobrany na dysk, ale nie udało się zapisać kopii w plikach.'));
       }
     } catch (error) {
       console.error('Critical error saving PDF:', error);
@@ -1434,14 +1453,14 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
       closeOnBackdrop={false}
       size="full"
       icon={Music}
-      title={tr('Edycja Nabożeństwa')}
+      title={tr('Edycja programu')}
       footer={<>
             <Button
               variant="danger"
               className="mr-auto"
               icon={Trash2}
               onClick={() => setShowDeleteModal(true)}
-              title={tr('Usuń nabożeństwo')}
+              title={tr('Usuń program')}
             >
               <span className="hidden sm:inline">{tr('Usuń')}</span>
             </Button>
@@ -1520,7 +1539,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
                 onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})}
                 className="hidden sm:block bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-4 py-2.5 rounded-xl font-bold hover:shadow-lg transition"
               >
-                {tr('+ Dodaj Element')}
+                {tr('+ Dodaj element')}
               </button>
             </div>
             <div className="bg-white/50 dark:bg-gray-900/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-inner overflow-hidden overflow-x-auto">
@@ -1552,7 +1571,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
               onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})}
               className="sm:hidden w-full mt-4 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-4 py-3 rounded-xl font-bold hover:shadow-lg transition"
             >
-              {tr('+ Dodaj Element')}
+              {tr('+ Dodaj element')}
             </button>
           </div>
 

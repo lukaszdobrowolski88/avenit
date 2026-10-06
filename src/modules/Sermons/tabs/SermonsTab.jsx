@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, Podcast, Filter, Link as LinkIcon, Check, Music, Video, BookOpen } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Podcast, Filter, Link as LinkIcon, Check, Music, Video, BookOpen, FilterX } from 'lucide-react';
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
@@ -14,19 +14,24 @@ import { DateInput } from '../../../components/pickers';
 import { confirmDialog, promptDialog } from '../../../lib/dialog';
 import { tr } from '../../../i18n';
 
-const emptyForm = {
-  title: '', speaker: '', series: '', sermon_date: new Date().toISOString().slice(0, 10),
+const localToday = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const makeEmptyForm = () => ({
+  title: '', speaker: '', series: '', sermon_date: localToday(),
   scripture_ref: '', description: '', audio_url: '', video_url: '', notes: '',
   slug: '', is_published: false,
-};
+});
 
-export default function SermonsTab({ sermons, loading, campusIdForInsert, refresh, teachingSeries = [] }) {
+export default function SermonsTab({ sermons, loading, campusIdForInsert, refresh, teachingSeries = [], speakers = [], createPreset = null }) {
   const [search, setSearch] = useState('');
   const [seriesFilter, setSeriesFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(makeEmptyForm);
+  const [titleError, setTitleError] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
@@ -78,9 +83,13 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
     });
   }, [sermons, search, seriesFilter, statusFilter]);
 
-  const openCreate = () => {
-    setEditing(null); setForm(emptyForm); setSlugTouched(false); setModalOpen(true);
+  const openCreate = (preset = {}) => {
+    setEditing(null); setForm({ ...makeEmptyForm(), ...preset }); setSlugTouched(false); setTitleError(''); setModalOpen(true);
   };
+  // „Dodaj kazanie do serii” z zakładki Serie → formularz z ustawioną serią.
+  useEffect(() => {
+    if (createPreset?.nonce) openCreate({ series: createPreset.series || '' });
+  }, [createPreset?.nonce]); // eslint-disable-line react-hooks/exhaustive-deps
   const openEdit = (item) => {
     setEditing(item);
     setForm({
@@ -91,11 +100,12 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
       slug: item.slug || slugify(item.title), is_published: !!item.is_published,
     });
     setSlugTouched(true); // przy edycji nie nadpisuj istniejącego slugu automatycznie
+    setTitleError('');
     setModalOpen(true);
   };
 
   const save = async () => {
-    if (!form.title.trim()) { toast.error(tr('Podaj tytuł kazania.')); return; }
+    if (!form.title.trim()) { setTitleError(tr('Podaj tytuł kazania.')); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -123,28 +133,33 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
         if (error) throw error;
       }
       setModalOpen(false);
+      toast.success(editing ? tr('Zapisano kazanie') : tr('Dodano kazanie'));
       refresh();
     } catch (err) {
-      console.error('Save sermon error:', err);
-      toast.error(tr('Nie udało się zapisać kazania: {msg}', { msg: err.message || err }));
+      toast.error(err, { fallback: tr('Nie udało się zapisać kazania. Spróbuj ponownie.') });
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (item) => {
-    if (!await confirmDialog(tr('Usunąć kazanie „{title}"?', { title: item.title }))) return;
+    if (!await confirmDialog({
+      title: tr('Usunąć kazanie?'),
+      message: tr('Kazanie „{title}” zniknie z archiwum, a jego publiczny link przestanie działać. Tej operacji nie można cofnąć.', { title: item.title }),
+      isDelete: true,
+    })) return;
     try {
       const { error } = await supabase.from('sermons').delete().eq('id', item.id);
       if (error) throw error;
+      toast.success(tr('Usunięto kazanie'));
       refresh();
     } catch (err) {
-      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
+      toast.error(err, { fallback: tr('Nie udało się usunąć kazania.') });
     }
   };
 
   const copyPublicLink = async (item) => {
-    if (!item.slug) { toast.error(tr('To kazanie nie ma jeszcze slugu — otwórz edycję i zapisz, aby go wygenerować.')); return; }
+    if (!item.slug) { toast.error(tr('To kazanie nie ma jeszcze publicznego linku. Otwórz edycję i zapisz, aby go utworzyć.')); return; }
     const url = `${window.location.origin}/sermon/${item.slug}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -170,7 +185,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
         </div>
         <div className="w-44"><CustomSelect value={seriesFilter} onChange={setSeriesFilter} options={seriesOptions} compact icon={Filter} /></div>
         <div className="w-40"><CustomSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} compact /></div>
-        <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
+        <button onClick={() => openCreate()} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
           <Plus size={16} /> {tr('Dodaj kazanie')}
         </button>
       </div>
@@ -186,7 +201,13 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
         {loading ? (
           <Spinner center />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Podcast} title={tr('Brak kazań dla wybranych filtrów.')} />
+          (search.trim() || seriesFilter || statusFilter) ? (
+            <EmptyState icon={FilterX} title={tr('Żadne kazanie nie pasuje do filtrów.')}
+              action={<Button variant="outline" size="sm" icon={FilterX} onClick={() => { setSearch(''); setSeriesFilter(''); setStatusFilter(''); }}>{tr('Wyczyść filtry')}</Button>} />
+          ) : (
+            <EmptyState icon={Podcast} title={tr('Nie ma jeszcze żadnego kazania.')}
+              action={<Button size="sm" icon={Plus} onClick={() => openCreate()}>{tr('Dodaj kazanie')}</Button>} />
+          )
         ) : (
           <DataTable flush>
             <THead>
@@ -234,8 +255,8 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
                       >
                         {copiedId === item.id ? <Check size={15} className="text-emerald-500" /> : <LinkIcon size={15} />}
                       </button>
-                      <button onClick={() => openEdit(item)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
-                      <button onClick={() => remove(item)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
+                      <button onClick={() => openEdit(item)} title={tr('Edytuj')} aria-label={tr('Edytuj kazanie „{title}”', { title: item.title })} className="p-2 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} aria-hidden="true" /></button>
+                      <button onClick={() => remove(item)} title={tr('Usuń')} aria-label={tr('Usuń kazanie „{title}”', { title: item.title })} className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} aria-hidden="true" /></button>
                     </div>
                   </TD>
                 </TR>
@@ -258,14 +279,21 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
       >
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł')}</label>
-            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={tr('np. Łaska większa niż grzech')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <label htmlFor="sermon-title" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł')}</label>
+            <input id="sermon-title" value={form.title} onChange={e => { setForm(f => ({ ...f, title: e.target.value })); if (titleError) setTitleError(''); }} placeholder={tr('np. Łaska większa niż grzech')}
+              aria-invalid={!!titleError || undefined}
+              className={`w-full px-4 py-3 rounded-xl border bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 ${titleError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'}`} />
+            {titleError && <p className="text-xs text-red-600 dark:text-red-400 mt-1 ml-1" role="alert">{titleError}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Mówca')}</label>
-              <input value={form.speaker} onChange={e => setForm(f => ({ ...f, speaker: e.target.value }))} placeholder={tr('np. Jan Kowalski')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              <label htmlFor="sermon-speaker" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Mówca')}</label>
+              {/* Podpowiedzi z zakładki „Mówcy” (lista), wpis spoza listy też jest dozwolony. */}
+              <input id="sermon-speaker" list="sermon-speakers" value={form.speaker} onChange={e => setForm(f => ({ ...f, speaker: e.target.value }))} placeholder={tr('Wybierz z listy mówców lub wpisz')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              <datalist id="sermon-speakers">
+                {(speakers || []).map((sp) => <option key={sp.id} value={sp.name} />)}
+              </datalist>
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Seria')}</label>
@@ -295,7 +323,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('URL audio')}</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Link do nagrania audio')}</label>
             <input value={form.audio_url} onChange={e => setForm(f => ({ ...f, audio_url: e.target.value }))} placeholder="https://.../kazanie.mp3" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
 
@@ -314,8 +342,11 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
             <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Slug (link publiczny)')}</label>
+          {/* Końcówka linku to rzadko zmieniana rzecz — schowana pod „Zaawansowane”. */}
+          <details className="group">
+            <summary className="text-xs font-semibold text-gray-500 dark:text-gray-400 cursor-pointer select-none ml-1">{tr('Zaawansowane')}</summary>
+          <div className="mt-2">
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Końcówka linku publicznego')}</label>
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">/sermon/</span>
               <input
@@ -325,8 +356,9 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
               />
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">{tr('Generowany automatycznie z tytułu; możesz nadpisać.')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-1">{tr('Tworzona automatycznie z tytułu; możesz ją zmienić.')}</p>
           </div>
+          </details>
 
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" checked={form.is_published} onChange={e => setForm(f => ({ ...f, is_published: e.target.checked }))} className="rounded accent-emerald-500" />

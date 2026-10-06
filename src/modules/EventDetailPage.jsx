@@ -30,6 +30,7 @@ const genToken = () => (typeof crypto !== 'undefined' && crypto.randomUUID)
   : (Math.random().toString(36).slice(2) + Date.now().toString(36));
 
 const DEFAULT_TYPES = [
+  { value: 'nabożeństwo', label: 'Nabożeństwo' },
   { value: 'spotkanie', label: 'Spotkanie' },
   { value: 'wydarzenie', label: 'Wydarzenie' },
   { value: 'szkolenie', label: 'Szkolenie' },
