@@ -19,6 +19,7 @@ import EventMaterialsTab from './Events/EventMaterialsTab';
 import Modal from '../components/Modal';
 import { useModuleCalendar, useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
 import { useCan } from '../components/Can';
+import { DateInput, TimeField } from '../components/pickers';
 
 const genToken = () => (typeof crypto !== 'undefined' && crypto.randomUUID)
   ? crypto.randomUUID().replace(/-/g, '')
@@ -364,11 +365,11 @@ export default function EventDetailPage() {
           </div>
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Początek</label>
-            <input type="time" value={ev.time || ''} onChange={(e) => save({ time: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+            <TimeField value={ev.time || ''} onChange={(e) => save({ time: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
           </div>
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Koniec</label>
-            <input type="time" value={ev.end_time || ''} onChange={(e) => save({ end_time: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+            <TimeField value={ev.end_time || ''} onChange={(e) => save({ end_time: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
           </div>
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Typ</label>
@@ -539,7 +540,7 @@ export default function EventDetailPage() {
           {ev.registration_required && (
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Rejestracja do (termin)</label>
-              <input type="date" value={String(ev.registration_deadline || '').slice(0, 10)}
+              <DateInput value={String(ev.registration_deadline || '').slice(0, 10)}
                 onChange={(e) => save({ registration_deadline: e.target.value || null })}
                 className="w-full sm:w-56 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
             </div>
@@ -586,7 +587,7 @@ export default function EventDetailPage() {
                 <button onClick={() => save({ prices: [...(ev.prices || []), { label: '', amount: null }] })} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><span className="text-base leading-none">＋</span> Dodaj cenę</button>
                 <div className="pt-1">
                   <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Płatność do (termin)</label>
-                  <input type="date" value={String(ev.payment_deadline || '').slice(0, 10)}
+                  <DateInput value={String(ev.payment_deadline || '').slice(0, 10)}
                     onChange={(e) => save({ payment_deadline: e.target.value || null })}
                     className="w-full sm:w-56 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
                 </div>

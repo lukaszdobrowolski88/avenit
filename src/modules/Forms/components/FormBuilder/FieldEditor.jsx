@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { FIELD_TYPES, VISIBILITY_OPERATORS } from '../../utils/fieldTypes';
 import { tr } from '../../../../i18n';
+import { DateInput } from '../../../../components/pickers';
 
 export default function FieldEditor({ field, allFields = [], onUpdate }) {
   const [newOption, setNewOption] = useState('');
@@ -651,8 +652,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                         className="flex-1 min-w-0 px-2 py-1 text-xs bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-900 dark:text-white"
                       />
                       <span className="text-[10px] text-gray-400 flex-shrink-0">do</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={tier.until || ''}
                         onChange={(e) => {
                           const tiers = [...(field.priceConfig?.datePricing?.tiers || [])];

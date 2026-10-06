@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Trash2, Copy, Asterisk } from 'lucide-react';
 import { FIELD_TYPES } from '../../utils/fieldTypes';
 import { tr } from '../../../../i18n';
+import { DateInput } from '../../../../components/pickers';
 
 export default function FieldItem({
   field,
@@ -96,8 +97,7 @@ export default function FieldItem({
 
       case 'date':
         return (
-          <input
-            type="date"
+          <DateInput
             disabled
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-400"
           />

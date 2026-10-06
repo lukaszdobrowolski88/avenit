@@ -7,6 +7,7 @@ import { useBuilder, useBuilderActions } from './BuilderContext';
 import CollectionEditor from './CollectionEditor';
 import StyleSection from './StyleSection';
 import SimpleRichEditor from '../../../../components/SimpleRichEditor';
+import { DateTimeInput } from '../../../../components/pickers';
 
 // ── Drobne kontrolki ────────────────────────────────────────────────────────
 const Label = ({ children }) => (
@@ -165,7 +166,7 @@ export default function Inspector() {
           <Text label="Etykieta" value={p.label} onChange={(v) => setProp('label', v)} />
           <div>
             <Label>{tr('Data i godzina')}</Label>
-            <input type="datetime-local" value={p.target || ''} onChange={(e) => setProp('target', e.target.value)} className={inputCls} />
+            <DateTimeInput value={p.target || ''} onChange={(e) => setProp('target', e.target.value)} className={inputCls} />
           </div>
         </>
       )}

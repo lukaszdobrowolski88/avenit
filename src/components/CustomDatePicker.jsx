@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { tr } from '../i18n';
+import { stopOutside } from './pickers/useAnchoredPopover';
+
+// „YYYY-MM-DD” (albo ISO z API „…T00:00:00.000Z”) → data lokalna, bez przesunięcia strefy.
+const parseYmd = (v) => {
+  const [y, m, d] = String(v || '').slice(0, 10).split('-').map(Number);
+  return y && m && d ? new Date(y, m - 1, d) : null;
+};
+const toYmd = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 
 function useDropdownPosition(triggerRef, isOpen) {
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, openUpward: false });
@@ -10,7 +18,7 @@ function useDropdownPosition(triggerRef, isOpen) {
     if (isOpen && triggerRef.current) {
       const updatePosition = () => {
         const rect = triggerRef.current.getBoundingClientRect();
-        const dropdownMaxHeight = 300; // datepicker is taller
+        const dropdownMaxHeight = 380; // kalendarz + stopka „Dziś/Wyczyść”
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
         const openUpward = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
@@ -39,18 +47,26 @@ function useDropdownPosition(triggerRef, isOpen) {
   return coords;
 }
 
-export default function CustomDatePicker({ label, value, onChange, placeholder = tr('Wybierz datę'), compact = false }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
+export default function CustomDatePicker({ label, value, onChange, placeholder = tr('Wybierz datę'), compact = false, min, max, disabled = false, autoFocus = false, onClose, clearable = true }) {
+  const [isOpen, setIsOpen] = useState(!!autoFocus && !disabled);
+  const [viewDate, setViewDate] = useState(parseYmd(value) || new Date());
+  const valueYmd = value ? String(value).slice(0, 10) : '';
+  const minYmd = min ? String(min).slice(0, 10) : '';
+  const maxYmd = max ? String(max).slice(0, 10) : '';
+  const outOfRange = (ymd) => (minYmd && ymd < minYmd) || (maxYmd && ymd > maxYmd);
+  const wasOpen = useRef(isOpen);
   const [view, setView] = useState('days'); // 'days' | 'months' | 'years' — szybka nawigacja (np. data urodzenia)
   const triggerRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
 
   // Po zamknięciu wróć do widoku dni (następne otwarcie startuje standardowo).
   useEffect(() => { if (!isOpen) setView('days'); }, [isOpen]);
+  // Zamknięcie panelu = „blur” pola (np. komórka tabeli wraca do trybu podglądu).
+  useEffect(() => { if (wasOpen.current && !isOpen) onClose?.(); wasOpen.current = isOpen; }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (value) setViewDate(new Date(value));
+    const d = parseYmd(value);
+    if (d) setViewDate(d);
   }, [value]);
 
   useEffect(() => {
@@ -77,11 +93,9 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
   const pickMonth = (m) => { setViewDate(new Date(viewDate.getFullYear(), m, 1)); setView('days'); };
 
   const handleDayClick = (day) => {
-    const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
-    const year = newDate.getFullYear();
-    const month = String(newDate.getMonth() + 1).padStart(2, '0');
-    const d = String(newDate.getDate()).padStart(2, '0');
-    onChange(`${year}-${month}-${d}`);
+    const ymd = toYmd(new Date(viewDate.getFullYear(), viewDate.getMonth(), day));
+    if (outOfRange(ymd)) return;
+    onChange(ymd);
     setIsOpen(false);
   };
 
@@ -97,18 +111,19 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
   const blanks = Array.from({ length: startDay }, (_, i) => i);
 
   const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
-  const displayValue = value ? new Date(value).toLocaleDateString('pl-PL') : '';
+  const displayValue = parseYmd(value)?.toLocaleDateString('pl-PL') || '';
   const decadeStart = Math.floor(viewDate.getFullYear() / 12) * 12;
   const monthShort = Array.from({ length: 12 }, (_, i) => new Date(2000, i, 1).toLocaleDateString('pl-PL', { month: 'short' }));
-  const selDate = value ? new Date(value) : null;
+  const selDate = parseYmd(value);
+  const todayYmd = toYmd(new Date());
 
   return (
     <div className="relative w-full">
       {label && <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{label}</label>}
       <div
         ref={triggerRef}
-        onClick={() => setIsOpen(!isOpen)}
-        className={`ui-field w-full ${compact ? 'px-2 py-1 text-xs h-[26px]' : 'px-4 py-3'} border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`ui-field w-full ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${compact ? 'px-2 py-1 text-xs h-[26px]' : 'px-4 py-3'} border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
           ${isOpen
             ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
             : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
@@ -125,6 +140,7 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
 
       {isOpen && coords.width > 0 && document.body && createPortal(
         <div
+          {...stopOutside}
           className="portal-datepicker fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100"
           style={{
             ...(coords.openUpward
@@ -154,15 +170,18 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
             {blanks.map(b => <div key={`blank-${b}`} />)}
             {days.map(day => {
               const currentDayStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-              const isSelected = value === currentDayStr;
-              const isToday = new Date().toDateString() === new Date(viewDate.getFullYear(), viewDate.getMonth(), day).toDateString();
+              const isSelected = valueYmd === currentDayStr;
+              const isToday = todayYmd === currentDayStr;
+              const off = outOfRange(currentDayStr);
 
               return (
                 <button
                   key={day}
+                  type="button"
+                  disabled={off}
                   onClick={() => handleDayClick(day)}
                   className={`h-8 w-8 rounded-lg text-xs font-medium transition flex items-center justify-center
-                    ${isSelected
+                    ${off ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : isSelected
                       ? 'bg-accent-primary text-white shadow-md shadow-accent-primary-light/30'
                       : isToday
                         ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark'
@@ -174,6 +193,18 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
                 </button>
               );
             })}
+          </div>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+            <button type="button" disabled={outOfRange(todayYmd)} onClick={() => { onChange(todayYmd); setIsOpen(false); }}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-accent-primary dark:text-accent-primary-light hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40">
+              {tr('Dziś')}
+            </button>
+            {clearable && valueYmd && (
+              <button type="button" onClick={() => { onChange(''); setIsOpen(false); }}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+                {tr('Wyczyść')}
+              </button>
+            )}
           </div>
           </>)}
 

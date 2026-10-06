@@ -4,6 +4,7 @@ import { supabase, getCachedUser } from '../../../../lib/supabase';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import { toast } from '../../../../lib/toast';
+import { DateInput, TimeField } from '../../../../components/pickers';
 
 export default function SessionManager({ onSessionChange }) {
   const [sessions, setSessions] = useState([]);
@@ -145,8 +146,7 @@ export default function SessionManager({ onSessionChange }) {
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                 Data
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={formData.session_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, session_date: e.target.value }))}
                 className={inputClasses}
@@ -157,8 +157,7 @@ export default function SessionManager({ onSessionChange }) {
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                   Start
                 </label>
-                <input
-                  type="time"
+                <TimeField
                   value={formData.start_time}
                   onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
                   className={inputClasses}
@@ -168,8 +167,7 @@ export default function SessionManager({ onSessionChange }) {
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                   Koniec
                 </label>
-                <input
-                  type="time"
+                <TimeField
                   value={formData.end_time}
                   onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
                   className={inputClasses}

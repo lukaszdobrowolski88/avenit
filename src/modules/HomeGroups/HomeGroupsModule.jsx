@@ -27,6 +27,7 @@ import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
 import { DataTable, THead, TH, TR, TD, EmptyRow, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
+import { DateInput, TimeField } from '../../components/pickers';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -1152,8 +1153,7 @@ export default function HomeGroupsModule() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Godzina')}</label>
-                      <input
-                        type="time"
+                      <TimeField
                         className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                         value={groupForm.meeting_time}
                         onChange={(e) => setGroupForm({...groupForm, meeting_time: e.target.value})}
@@ -1611,8 +1611,7 @@ export default function HomeGroupsModule() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Data')}</label>
-                <input
-                  type="date"
+                <DateInput
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={expenseForm.payment_date}
                   onChange={(e) => setExpenseForm({...expenseForm, payment_date: e.target.value})}

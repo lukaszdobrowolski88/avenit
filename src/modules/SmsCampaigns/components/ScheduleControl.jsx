@@ -1,6 +1,7 @@
 import React from 'react';
 import { Send, Clock, Sparkles, Moon } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { DateTimeInput, TimeField } from '../../../components/pickers';
 
 const MODES = [
   { id: 'now', label: tr('Wyślij teraz'), icon: Send, description: tr('SMS idą natychmiast po zapisie.') },
@@ -43,8 +44,7 @@ export default function ScheduleControl({
       {sendMode === 'scheduled' && (
         <div>
           <label className="text-xs text-gray-500 mb-1 block">{tr('Data i godzina wysyłki')}</label>
-          <input
-            type="datetime-local"
+          <DateTimeInput
             value={scheduledAt ? toLocalDatetime(scheduledAt) : ''}
             onChange={e => onChange({ scheduledAt: e.target.value ? new Date(e.target.value).toISOString() : null })}
             className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
@@ -78,8 +78,7 @@ export default function ScheduleControl({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Cisza nocna od</label>
-              <input
-                type="time"
+              <TimeField
                 value={quietHoursStart || ''}
                 onChange={e => onChange({ quietHoursStart: e.target.value || null })}
                 className="w-full px-2 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded"
@@ -87,8 +86,7 @@ export default function ScheduleControl({
             </div>
             <div>
               <label className="text-xs text-gray-500 mb-1 block">do</label>
-              <input
-                type="time"
+              <TimeField
                 value={quietHoursEnd || ''}
                 onChange={e => onChange({ quietHoursEnd: e.target.value || null })}
                 className="w-full px-2 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded"

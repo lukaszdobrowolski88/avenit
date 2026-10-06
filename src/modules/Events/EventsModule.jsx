@@ -17,6 +17,7 @@ import { useModules } from '../../hooks/useModules';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import EventsListView from './EventsListView';
+import { DateInput } from '../../components/pickers';
 
 // Domyślne moduły-kalendarze w pickerze (gdy admin nic nie skonfiguruje w Ustawieniach).
 const DEFAULT_EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
@@ -141,7 +142,7 @@ function CreateEventModal({ onClose }) {
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Data')}</label>
-            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
+            <DateInput value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
               className="w-full px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
           </div>
           <div>

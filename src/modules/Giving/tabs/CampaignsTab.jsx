@@ -6,6 +6,7 @@ import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, memberName } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DateInput } from '../../../components/pickers';
 
 const emptyForm = { name: '', description: '', goal_amount: '', fund_id: '', start_date: '', end_date: '', is_active: true };
 const emptyPledge = { member_id: '', donor_name: '', pledge_amount: '', note: '' };
@@ -238,11 +239,11 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Początek</label>
-                  <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <DateInput value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Koniec</label>
-                  <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <DateInput value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
               <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">

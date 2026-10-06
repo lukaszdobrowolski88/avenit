@@ -17,6 +17,7 @@ import { buildReportModel, toCsvBlob, toXlsxBlob, reportElToPdfBlob, printReport
 import { IncomeExpenseBarChart, CashFlowAreaChart, CategoryDonut, YoYBars } from './finance/ReportCharts';
 import { usePermissions } from '../contexts/PermissionsContext';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
+import { DateInput } from '../components/pickers';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -2165,9 +2166,9 @@ const FinanceModule = () => {
               )}
               {reportMode === 'custom' && (
                 <div className="flex items-center gap-2">
-                  <input type="date" value={reportAnchor.from || reportRange.from} onChange={(e) => setReportAnchor((a) => ({ ...a, from: e.target.value }))} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200" />
+                  <DateInput value={reportAnchor.from || reportRange.from} onChange={(e) => setReportAnchor((a) => ({ ...a, from: e.target.value }))} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200" />
                   <span className="text-gray-400">–</span>
-                  <input type="date" value={reportAnchor.to || reportRange.to} onChange={(e) => setReportAnchor((a) => ({ ...a, to: e.target.value }))} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200" />
+                  <DateInput value={reportAnchor.to || reportRange.to} onChange={(e) => setReportAnchor((a) => ({ ...a, to: e.target.value }))} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200" />
                 </div>
               )}
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-300 ml-1">{reportRange.label}</span>
@@ -2588,12 +2589,12 @@ const FinanceModule = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Następne wykonanie')}</label>
-                  <input type="date" value={recurringForm.next_run_date} onChange={(e) => setRecurringForm({ ...recurringForm, next_run_date: e.target.value })}
+                  <DateInput value={recurringForm.next_run_date} onChange={(e) => setRecurringForm({ ...recurringForm, next_run_date: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Koniec (opcjonalnie)')}</label>
-                  <input type="date" value={recurringForm.end_date} onChange={(e) => setRecurringForm({ ...recurringForm, end_date: e.target.value })}
+                  <DateInput value={recurringForm.end_date} onChange={(e) => setRecurringForm({ ...recurringForm, end_date: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
                 </div>
               </div>
@@ -3127,7 +3128,7 @@ const FinanceModule = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Termin płatności')}</label>
-                  <input type="date" value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
+                  <DateInput value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
                 </div>
               </div>

@@ -10,6 +10,7 @@ import {
   toLocalInputValue, localInputToIso, formatDateTime, formatTime, formatDuration,
   addWeeks, newUuid, startOfDay,
 } from '../lib/roomsApi';
+import { DateTimeInput } from '../../../components/pickers';
 
 function defaultTimes() {
   const start = new Date();
@@ -349,11 +350,11 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Początek</label>
-                  <input type="datetime-local" value={form.start_at} onChange={e => { setForm(f => ({ ...f, start_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <DateTimeInput value={form.start_at} onChange={e => { setForm(f => ({ ...f, start_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Koniec</label>
-                  <input type="datetime-local" value={form.end_at} onChange={e => { setForm(f => ({ ...f, end_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <DateTimeInput value={form.end_at} onChange={e => { setForm(f => ({ ...f, end_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
 
