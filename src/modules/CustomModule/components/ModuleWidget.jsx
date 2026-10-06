@@ -20,13 +20,13 @@ import FinanceWidget from './FinanceWidget';
 export const WIDGET_TYPES = ['events', 'tasks', 'finance', 'members', 'wall', 'schedule', 'duty', 'materials', 'equipment', 'gallery', 'links', 'contacts', 'faq', 'announcements', 'poll'];
 
 // Widgety renderujące WŁASNĄ kartę-sekcję — nie owijać ich dodatkowym <section>.
-export const SELF_WRAPPING_WIDGETS = new Set(['finance']);
+export const SELF_WRAPPING_WIDGETS = new Set(['finance', 'tasks']);
 
 // Jedno miejsce montujące gotowe widgety danych. Używane przez CustomModule
 // (zakładki „klasyczne") ORAZ przez kreator graficzny (element 'widget'), aby ich
 // zachowanie było IDENTYCZNE wszędzie i zgodne z modułami systemowymi. Widget sam
 // dociąga bieżącego użytkownika (email/nazwa), więc oba miejsca użycia są bezobsługowe.
-export default function ModuleWidget({ widgetType, moduleKey, moduleName, moduleId, tabId, canEdit = true }) {
+export default function ModuleWidget({ widgetType, moduleKey, moduleName, moduleId, tabId, canEdit = true, inCard = false }) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
 
@@ -47,7 +47,7 @@ export default function ModuleWidget({ widgetType, moduleKey, moduleName, module
     // Zadania modułu = Tablica (silnik Projektów), jak Media/Młodzieżówka/Grupy domowe. Przy
     // pierwszym otwarciu stare zadania z custom_<key>_tasks są jednorazowo kopiowane na tablicę
     // (źródło zostaje nietknięte — patrz Boards/lib/legacyImport.js).
-    case 'tasks':     return <ModuleBoard sourceKind={`custom_${moduleKey}_tasks`} moduleKey={moduleKey} title={moduleName ? `Zadania — ${moduleName}` : 'Zadania'} />;
+    case 'tasks':     return <ModuleBoard sourceKind={`custom_${moduleKey}_tasks`} moduleKey={moduleKey} title={moduleName ? `Zadania — ${moduleName}` : 'Zadania'} card={!inCard} />;
     case 'finance':   return <FinanceWidget moduleKey={moduleKey} moduleName={moduleName} />;
     case 'members':   return <MembersTab moduleKey={moduleKey} moduleName={moduleName} />;
     case 'wall':      return <WallTab ministry={moduleKey} currentUserEmail={email} currentUserName={name} />;
