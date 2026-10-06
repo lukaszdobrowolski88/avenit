@@ -14,11 +14,11 @@ import DonorsTab from './tabs/DonorsTab';
 import { tr } from '../../i18n';
 
 const TABS = [
-  { id: 'overview', label: 'Pulpit', icon: LayoutDashboard },
+  { id: 'overview', label: 'Przegląd', icon: LayoutDashboard },
   { id: 'donations', label: 'Darowizny', icon: Receipt },
   { id: 'donors', label: 'Darczyńcy', icon: Users },
   { id: 'recurring', label: 'Cykliczne', icon: Repeat },
-  { id: 'campaigns', label: 'Kampanie', icon: Target, tour: 'giving-campaigns-tab' },
+  { id: 'campaigns', label: 'Zbiórki', icon: Target, tour: 'giving-campaigns-tab' },
   { id: 'funds', label: 'Fundusze', icon: FolderOpen },
   { id: 'statements', label: 'Zestawienia PIT', icon: FileText },
 ];
@@ -63,7 +63,7 @@ export default function GivingModule() {
 
   return (
     <div className="space-y-6">
-      <PageHeader moduleKey="giving" icon={Gift} title={tr('Dawanie')} subtitle={tr('Darowizny, dawanie cykliczne, kampanie i zestawienia roczne')} />
+      <PageHeader moduleKey="giving" icon={Gift} title={tr('Dawanie')} subtitle={tr('Darowizny, dawanie cykliczne, zbiórki i zestawienia roczne')} />
 
       {/* Zakładki */}
       <ResponsiveTabs moduleKey="giving" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />

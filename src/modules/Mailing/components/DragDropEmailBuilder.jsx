@@ -378,13 +378,20 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedBlockId, blocks, clipboard, historyIndex]);
 
+  // Funkcje rodzica w refach: updateHtml nie zmienia się przy każdym renderze rodzica,
+  // więc efekt [blocks, updateHtml] nie wpada w nieskończoną pętlę (UXD-12).
+  const onChangeRef = useRef(onChange);
+  const onBlocksChangeRef = useRef(onBlocksChange);
+  onChangeRef.current = onChange;
+  onBlocksChangeRef.current = onBlocksChange;
+
   // Aktualizuj HTML gdy zmienią się bloki
   const updateHtml = useCallback((newBlocks, settings = emailSettings) => {
     const html = blocksToHtml(newBlocks, settings);
-    onChange?.(html);
+    onChangeRef.current?.(html);
     // Eksportuj też bloki JSON dla łatwiejszego późniejszego ładowania
-    onBlocksChange?.(newBlocks);
-  }, [onChange, onBlocksChange, emailSettings]);
+    onBlocksChangeRef.current?.(newBlocks);
+  }, [emailSettings]);
 
   // Dodaj do historii
   const addToHistory = useCallback((newBlocks) => {
@@ -739,7 +746,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                 onClick={undo}
                 disabled={historyIndex <= 0}
                 className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm"
-                title={tr('Cofnij (Ctrl+Z)')}
+                title={tr('Cofnij (Ctrl+Z)')} aria-label={tr('Cofnij (Ctrl+Z)')}
               >
                 <Undo size={16} className="text-gray-600 dark:text-gray-400" />
               </button>
@@ -747,7 +754,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                 onClick={redo}
                 disabled={historyIndex >= history.length - 1}
                 className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm"
-                title={tr('Ponów (Ctrl+Shift+Z)')}
+                title={tr('Ponów (Ctrl+Shift+Z)')} aria-label={tr('Ponów (Ctrl+Shift+Z)')}
               >
                 <Redo size={16} className="text-gray-600 dark:text-gray-400" />
               </button>
@@ -759,7 +766,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
               onClick={clearAll}
               disabled={blocks.length === 0}
               className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-              title={tr('Wyczyść wszystko')}
+              title={tr('Wyczyść wszystko')} aria-label={tr('Wyczyść wszystko')}
             >
               <RotateCcw size={16} className="text-gray-500" />
             </button>
@@ -769,14 +776,14 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <button
               onClick={() => setViewMode('desktop')}
               className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'desktop' ? 'bg-white dark:bg-gray-600 shadow-md text-accent-primary-light' : 'text-gray-500 hover:text-gray-700'}`}
-              title={tr('Widok desktop')}
+              title={tr('Widok desktop')} aria-label={tr('Widok desktop')}
             >
               <Monitor size={16} />
             </button>
             <button
               onClick={() => setViewMode('mobile')}
               className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'mobile' ? 'bg-white dark:bg-gray-600 shadow-md text-accent-primary-light' : 'text-gray-500 hover:text-gray-700'}`}
-              title={tr('Widok mobile')}
+              title={tr('Widok mobile')} aria-label={tr('Widok mobile')}
             >
               <Smartphone size={16} />
             </button>
@@ -786,7 +793,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <button
               onClick={() => setShowHtml(!showHtml)}
               className={`p-2 rounded-lg transition-all duration-200 ${showHtml ? 'bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 text-accent-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500'}`}
-              title={tr('Pokaż HTML')}
+              title={tr('Pokaż HTML')} aria-label={tr('Pokaż HTML')}
             >
               <Code size={16} />
             </button>
@@ -975,7 +982,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                   navigator.clipboard.writeText(v.key);
                 }}
                 className="px-2.5 py-1 text-xs font-medium bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-accent-primary dark:text-accent-primary-light rounded-lg hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30 transition-all duration-200 border border-accent-primary-lighter/50 dark:border-accent-primary/30 hover:shadow-sm hover:scale-105 active:scale-95"
-                title={tr('{desc} - kliknij aby skopiować', { desc: tr(v.description) })}
+                title={tr('{desc} – kliknij, aby skopiować', { desc: tr(v.description) })}
               >
                 {v.key}
               </button>
@@ -1093,7 +1100,7 @@ function BlockRenderer({
         <button
           onMouseDown={(e) => e.stopPropagation()}
           className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg cursor-grab hover:bg-white dark:hover:bg-gray-600 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 transition-all duration-200"
-          title={tr('Przeciągnij')}
+          title={tr('Przeciągnij')} aria-label={tr('Przeciągnij')}
         >
           <GripVertical size={14} className="text-gray-500" />
         </button>
@@ -1101,7 +1108,7 @@ function BlockRenderer({
           <button
             onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
             className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white dark:hover:bg-gray-600 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200"
-            title={tr('Przesuń w górę (Alt+↑)')}
+            title={tr('Przesuń w górę (Alt+↑)')} aria-label={tr('Przesuń w górę (Alt+↑)')}
           >
             <ArrowUp size={14} className="text-gray-500" />
           </button>
@@ -1110,7 +1117,7 @@ function BlockRenderer({
           <button
             onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
             className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white dark:hover:bg-gray-600 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 hover:translate-y-0.5 transition-all duration-200"
-            title={tr('Przesuń w dół (Alt+↓)')}
+            title={tr('Przesuń w dół (Alt+↓)')} aria-label={tr('Przesuń w dół (Alt+↓)')}
           >
             <ArrowDown size={14} className="text-gray-500" />
           </button>
@@ -1124,14 +1131,14 @@ function BlockRenderer({
         <button
           onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
           className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 hover:border-blue-300 transition-all duration-200 group/btn"
-          title={tr('Duplikuj (Ctrl+D)')}
+          title={tr('Duplikuj (Ctrl+D)')} aria-label={tr('Duplikuj (Ctrl+D)')}
         >
           <Copy size={14} className="text-blue-500 group-hover/btn:text-blue-600" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
           className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-red-50 dark:hover:bg-red-900/30 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 hover:border-red-300 transition-all duration-200 group/btn"
-          title={tr('Usuń (Delete)')}
+          title={tr('Usuń (Delete)')} aria-label={tr('Usuń (Delete)')}
         >
           <Trash2 size={14} className="text-red-500 group-hover/btn:text-red-600" />
         </button>
@@ -1889,7 +1896,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
                 onClick={() => applyPresetGradient(preset)}
                 className="h-8 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden hover:ring-2 hover:ring-accent-primary-light transition-all"
                 style={{ background: `linear-gradient(135deg, ${preset.color1}, ${preset.color2})` }}
-                title={tr(preset.name)}
+                title={tr(preset.name)} aria-label={tr(preset.name)}
               />
             ))}
           </div>
@@ -1990,7 +1997,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
               className="w-full px-4 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-accent-primary-light dark:hover:border-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/10 transition-all text-center"
             >
               <Upload size={20} className="mx-auto mb-2 text-gray-400" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">{tr('Kliknij aby wybrać obraz')}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{tr('Kliknij, aby wybrać obraz')}</span>
             </button>
           )}
           <p className="text-[10px] text-gray-400 dark:text-gray-500">
@@ -2663,7 +2670,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
             <button
               onClick={handleImageUpload}
               className="px-3 py-2 bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary transition-colors"
-              title={tr('Prześlij obraz')}
+              title={tr('Prześlij obraz')} aria-label={tr('Prześlij obraz')}
             >
               <Upload size={16} />
             </button>

@@ -3,7 +3,8 @@ import { Plus, Edit2, Trash2, Repeat, Pause, Play } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
-import { formatMoney, formatDate, frequencyLabel, memberName, GIVING_METHODS, GIVING_FREQUENCIES, computeNextRun } from '../lib/givingApi';
+import { formatMoney, formatDate, frequencyLabel, memberName, GIVING_METHODS, GIVING_FREQUENCIES, computeNextRun, nextRunAfterEdit, localDateStr } from '../lib/givingApi';
+import MemberPicker from '../components/MemberPicker';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import Button from '../../../components/Button';
@@ -13,10 +14,10 @@ import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
 import { tr } from '../../../i18n';
 
-const emptyForm = {
+const emptyForm = () => ({
   member_id: '', donor_name: '', fund_id: '', amount: '', frequency: 'monthly',
-  day_of_month: '', method: 'transfer', start_date: new Date().toISOString().slice(0, 10), end_date: '',
-};
+  day_of_month: '', method: 'transfer', start_date: localDateStr(), end_date: '',
+});
 
 export default function RecurringTab({ funds, members, membersById, campusIdForInsert, withCampusFilter }) {
   const [plans, setPlans] = useState([]);
@@ -46,22 +47,18 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
 
   const fundsById = useMemo(() => { const m = {}; (funds || []).forEach(f => { m[f.id] = f; }); return m; }, [funds]);
 
-  const memberOptions = useMemo(() => [
-    { value: '', label: tr('— darczyńca spoza bazy —') },
-    ...(members || []).map(m => ({ value: m.id, label: memberName(m) })),
-  ], [members]);
   const fundOptions = useMemo(() => [
     { value: '', label: tr('— bez funduszu —') },
     ...(funds || []).map(f => ({ value: f.id, label: f.name })),
   ], [funds]);
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setModalOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(emptyForm()); setModalOpen(true); };
   const openEdit = (p) => {
     setEditing(p);
     setForm({
       member_id: p.member_id || '', donor_name: p.donor_name || '', fund_id: p.fund_id || '',
       amount: String(p.amount ?? ''), frequency: p.frequency || 'monthly', day_of_month: p.day_of_month || '',
-      method: p.method || 'transfer', start_date: p.start_date || new Date().toISOString().slice(0, 10), end_date: p.end_date || '',
+      method: p.method || 'transfer', start_date: p.start_date || localDateStr(), end_date: p.end_date || '',
     });
     setModalOpen(true);
   };
@@ -69,6 +66,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
   const save = async () => {
     if (!form.amount || Number(form.amount) <= 0) { toast.error(tr('Podaj kwotę.')); return; }
     if (!form.member_id && !form.donor_name) { toast.error(tr('Wskaż członka lub podaj darczyńcę.')); return; }
+    if (form.end_date && form.start_date && form.end_date < form.start_date) { toast.error(tr('Data końca jest wcześniejsza niż początek planu.')); return; }
     setSaving(true);
     try {
       const payload = {
@@ -76,7 +74,10 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
         amount: Number(form.amount), frequency: form.frequency, method: form.method,
         day_of_month: form.day_of_month ? Number(form.day_of_month) : null,
         start_date: form.start_date, end_date: form.end_date || null,
-        next_run_date: computeNextRun(form.frequency, new Date(form.start_date), form.day_of_month ? Number(form.day_of_month) : null),
+        // Edycja nie cofa terminu w przeszłość (to dopisywało dodatkową należną darowiznę).
+        next_run_date: editing
+          ? nextRunAfterEdit(editing, form)
+          : computeNextRun(form.frequency, form.start_date, form.day_of_month ? Number(form.day_of_month) : null),
       };
       if (editing) {
         const { error } = await supabase.from('giving_recurring').update(payload).eq('id', editing.id);
@@ -87,6 +88,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
         const { error } = await supabase.from('giving_recurring').insert(payload);
         if (error) throw error;
       }
+      toast.success(editing ? tr('Zapisano zmiany planu') : tr('Dodano plan cykliczny'));
       setModalOpen(false);
       load();
     } catch (err) {
@@ -105,7 +107,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
   };
 
   const remove = async (p) => {
-    if (!await confirmDialog(tr('Usunąć ten plan cykliczny?'))) return;
+    if (!await confirmDialog(tr('Usunąć plan cykliczny „{name}” ({amount})? Nowe należne darowizny z tego planu przestaną powstawać.', { name: donorName(p), amount: formatMoney(p.amount, p.currency) }))) return;
     try {
       const { error } = await supabase.from('giving_recurring').delete().eq('id', p.id);
       if (error) throw error;
@@ -165,10 +167,10 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
                     <StatusPill color={p.is_active ? STATUS_COLORS.success : STATUS_COLORS.neutral}>{p.is_active ? tr('Aktywny') : tr('Wstrzymany')}</StatusPill>
                   </TD>
                   <TD align="right">
-                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                        <button onClick={() => toggleActive(p)} title={p.is_active ? tr('Wstrzymaj') : tr('Wznów')} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700">{p.is_active ? <Pause size={15} /> : <Play size={15} />}</button>
-                        <button onClick={() => openEdit(p)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
-                        <button onClick={() => remove(p)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
+                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <button onClick={() => toggleActive(p)} title={p.is_active ? tr('Wstrzymaj') : tr('Wznów')} aria-label={p.is_active ? tr('Wstrzymaj') : tr('Wznów')} className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700">{p.is_active ? <Pause size={15} /> : <Play size={15} />}</button>
+                        <button onClick={() => openEdit(p)} title={tr('Edytuj')} aria-label={tr('Edytuj plan')} className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
+                        <button onClick={() => remove(p)} title={tr('Usuń')} aria-label={tr('Usuń plan')} className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
                     </div>
                   </TD>
                 </TR>
@@ -184,30 +186,31 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
         title={editing ? tr('Edytuj plan') : tr('Nowy plan cykliczny')}
         footer={<>
           <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>{tr('Anuluj')}</Button>
-          <Button onClick={save} loading={saving}>{tr('Zapisz')}</Button>
+          <Button onClick={save} loading={saving}>{editing ? tr('Zapisz zmiany') : tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
-              <CustomSelect label={tr('Darczyńca (członek)')} value={form.member_id} onChange={v => setForm(f => ({ ...f, member_id: v }))} options={memberOptions} />
+              <MemberPicker label={tr('Darczyńca (członek)')} value={form.member_id} onChange={v => setForm(f => ({ ...f, member_id: v }))} members={members} />
               {!form.member_id && (
-                <input value={form.donor_name} onChange={e => setForm(f => ({ ...f, donor_name: e.target.value }))} placeholder={tr('Imię i nazwisko darczyńcy')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                <input value={form.donor_name} onChange={e => setForm(f => ({ ...f, donor_name: e.target.value }))} placeholder={tr('Imię i nazwisko darczyńcy')} aria-label={tr('Imię i nazwisko darczyńcy')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               )}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kwota (PLN)')}</label>
-                  <input type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kwota (zł)')}</label>
+                  <input type="number" step="0.01" min="0" inputMode="decimal" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
                 <CustomSelect label={tr('Częstotliwość')} value={form.frequency} onChange={v => setForm(f => ({ ...f, frequency: v }))} options={GIVING_FREQUENCIES.map((o) => ({ ...o, label: tr(o.label) }))} />
               </div>
               <CustomSelect label={tr('Fundusz')} value={form.fund_id} onChange={v => setForm(f => ({ ...f, fund_id: v }))} options={fundOptions} />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <CustomSelect label={tr('Metoda')} value={form.method} onChange={v => setForm(f => ({ ...f, method: v }))} options={GIVING_METHODS.map((o) => ({ ...o, label: tr(o.label) }))} />
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Dzień miesiąca')}</label>
                   <input type="number" min="1" max="28" value={form.day_of_month} onChange={e => setForm(f => ({ ...f, day_of_month: e.target.value }))} placeholder={tr('np. 10')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  {Number(form.day_of_month) > 28 && <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{tr('Najpóźniej 28. dnia — krótsze miesiące nie mają 29–31.')}</p>}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Początek')}</label>
                   <DateInput value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
@@ -217,7 +220,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
                   <DateInput value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
-              <p className="text-xs text-gray-400">{tr('Plany są ewidencją zobowiązań. Automatyczne pobrania online podłączymy w kroku integracji Przelewy24/BLIK.')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Plan to deklaracja regularnej wpłaty. W dniu płatności pojawi się w Darowiznach jako „Oczekująca” — oznacz ją jako zaksięgowaną, gdy pieniądze wpłyną.')}</p>
             </div>
       </Modal>
     </div>

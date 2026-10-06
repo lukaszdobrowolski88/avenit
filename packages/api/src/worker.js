@@ -4,6 +4,7 @@
 // Harmonogram (jak w oryginalnych cronach):
 //  - push-campaign-dispatch  co 1 min
 //  - sms-campaign-dispatch   co 1 min
+//  - send-mailing-campaign   co 1 min (Mailing: zaplanowane + dokańczanie wysyłki)
 //  - push-campaign-receipts  co 5 min
 //  - sms-campaign-receipts   co 5 min
 //  - sync-mail               co 5 min
@@ -15,7 +16,7 @@ const log = (...args) => console.log(new Date().toISOString(), '[worker]', ...ar
 
 async function activeTenants() {
   const { rows } = await platformPool.query(
-    `SELECT slug, db_name FROM tenants WHERE status IN ('trial', 'active')`
+    `SELECT slug, subdomain, name, db_name FROM tenants WHERE status IN ('trial', 'active')`
   );
   return rows;
 }
@@ -41,6 +42,8 @@ async function forEachTenant(jobName, moduleName) {
     try {
       await mod.runForTenant(getTenantPool(t.db_name), {
         tenantSlug: t.slug,
+        tenantSubdomain: t.subdomain || t.slug,
+        tenantName: t.name,
         log: (...a) => log(`[${t.slug}]`, ...a),
       });
     } catch (err) {
@@ -68,6 +71,9 @@ cron.schedule('* * * * *', exclusive(() => forEachTenant('sms-dispatch', 'sms-ca
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('push-receipts', 'push-campaign-receipts')));
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('sms-receipts', 'sms-campaign-receipts')));
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('sync-mail', 'sync-mail')));
+// Mailing: co minutę — zaplanowane maile, którym minął termin, oraz dokańczanie wysyłki
+// rozpoczętej przez „Wyślij teraz” (paczkami, z pominięciem wypisanych).
+cron.schedule('* * * * *', exclusive(() => forEachTenant('mailing', 'send-mailing-campaign')));
 cron.schedule('*/15 * * * *', exclusive(() => forEachTenant('board-automations', 'board-automations-run')));
 
 // Automatyzacje: co 5 min — auto-zapis nowych oraz wykonanie należnych kroków.

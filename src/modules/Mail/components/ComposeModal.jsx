@@ -223,6 +223,9 @@ export default function ComposeModal({
 
       {/* Modal */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={draft.subject || tr('Nowa wiadomość')}
         className={`
           relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700
           flex flex-col overflow-hidden transition-all duration-300
@@ -246,7 +249,7 @@ export default function ComposeModal({
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              title={isFullscreen ? tr('Zmniejsz') : tr('Pełny ekran')}
+              title={isFullscreen ? tr('Zmniejsz') : tr('Pełny ekran')} aria-label={isFullscreen ? tr('Zmniejsz') : tr('Pełny ekran')}
             >
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             </button>
@@ -255,6 +258,8 @@ export default function ComposeModal({
                 onSaveDraft();
                 onClose();
               }}
+              aria-label={tr('Zamknij i zapisz szkic')}
+              title={tr('Zamknij i zapisz szkic')}
               className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
             >
               <X size={20} />
@@ -274,7 +279,7 @@ export default function ComposeModal({
                   className="inline-flex items-center gap-1 px-3 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light text-sm rounded-full"
                 >
                   {email}
-                  <button onClick={() => removeEmail('to', email)} className="hover:text-accent-primary-darkest ml-1">
+                  <button onClick={() => removeEmail('to', email)} aria-label={tr('Usuń adres {email}', { email })} className="hover:text-accent-primary-darkest ml-1">
                     <X size={14} />
                   </button>
                 </span>
@@ -310,7 +315,7 @@ export default function ComposeModal({
                     className="inline-flex items-center gap-1 px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-full"
                   >
                     {email}
-                    <button onClick={() => removeEmail('cc', email)}><X size={14} /></button>
+                    <button onClick={() => removeEmail('cc', email)} aria-label={tr('Usuń adres {email}', { email })}><X size={14} /></button>
                   </span>
                 ))}
                 <input
@@ -340,7 +345,7 @@ export default function ComposeModal({
                     className="inline-flex items-center gap-1 px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-full"
                   >
                     {email}
-                    <button onClick={() => removeEmail('bcc', email)}><X size={14} /></button>
+                    <button onClick={() => removeEmail('bcc', email)} aria-label={tr('Usuń adres {email}', { email })}><X size={14} /></button>
                   </span>
                 ))}
                 <input
@@ -414,28 +419,28 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('bold')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Pogrubienie (Ctrl+B)')}
+            title={tr('Pogrubienie (Ctrl+B)')} aria-label={tr('Pogrubienie (Ctrl+B)')}
           >
             <Bold size={16} />
           </button>
           <button
             onClick={() => execCommand('italic')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Kursywa (Ctrl+I)')}
+            title={tr('Kursywa (Ctrl+I)')} aria-label={tr('Kursywa (Ctrl+I)')}
           >
             <Italic size={16} />
           </button>
           <button
             onClick={() => execCommand('underline')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Podkreślenie (Ctrl+U)')}
+            title={tr('Podkreślenie (Ctrl+U)')} aria-label={tr('Podkreślenie (Ctrl+U)')}
           >
             <Underline size={16} />
           </button>
           <button
             onClick={() => execCommand('strikeThrough')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Przekreślenie')}
+            title={tr('Przekreślenie')} aria-label={tr('Przekreślenie')}
           >
             <Strikethrough size={16} />
           </button>
@@ -446,28 +451,28 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('formatBlock', 'h1')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Nagłówek 1')}
+            title={tr('Nagłówek 1')} aria-label={tr('Nagłówek 1')}
           >
             <Heading1 size={16} />
           </button>
           <button
             onClick={() => execCommand('formatBlock', 'h2')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Nagłówek 2')}
+            title={tr('Nagłówek 2')} aria-label={tr('Nagłówek 2')}
           >
             <Heading2 size={16} />
           </button>
           <button
             onClick={() => execCommand('formatBlock', 'h3')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Nagłówek 3')}
+            title={tr('Nagłówek 3')} aria-label={tr('Nagłówek 3')}
           >
             <Heading3 size={16} />
           </button>
           <button
             onClick={() => execCommand('formatBlock', 'p')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Paragraf')}
+            title={tr('Paragraf')} aria-label={tr('Paragraf')}
           >
             <Type size={16} />
           </button>
@@ -478,14 +483,14 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('insertUnorderedList')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Lista punktowana')}
+            title={tr('Lista punktowana')} aria-label={tr('Lista punktowana')}
           >
             <List size={16} />
           </button>
           <button
             onClick={() => execCommand('insertOrderedList')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Lista numerowana')}
+            title={tr('Lista numerowana')} aria-label={tr('Lista numerowana')}
           >
             <ListOrdered size={16} />
           </button>
@@ -496,21 +501,21 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('justifyLeft')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Wyrównaj do lewej')}
+            title={tr('Wyrównaj do lewej')} aria-label={tr('Wyrównaj do lewej')}
           >
             <AlignLeft size={16} />
           </button>
           <button
             onClick={() => execCommand('justifyCenter')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Wyrównaj do środka')}
+            title={tr('Wyrównaj do środka')} aria-label={tr('Wyrównaj do środka')}
           >
             <AlignCenter size={16} />
           </button>
           <button
             onClick={() => execCommand('justifyRight')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Wyrównaj do prawej')}
+            title={tr('Wyrównaj do prawej')} aria-label={tr('Wyrównaj do prawej')}
           >
             <AlignRight size={16} />
           </button>
@@ -521,14 +526,14 @@ export default function ComposeModal({
           <button
             onClick={insertLink}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Wstaw link')}
+            title={tr('Wstaw link')} aria-label={tr('Wstaw link')}
           >
             <Link2 size={16} />
           </button>
           <button
             onClick={() => imageInputRef.current?.click()}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Wstaw obraz')}
+            title={tr('Wstaw obraz')} aria-label={tr('Wstaw obraz')}
           >
             <Image size={16} />
           </button>
@@ -544,7 +549,7 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('formatBlock', 'blockquote')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Cytat')}
+            title={tr('Cytat')} aria-label={tr('Cytat')}
           >
             <Quote size={16} />
           </button>
@@ -556,7 +561,7 @@ export default function ComposeModal({
             <button
               onClick={() => setShowColorPicker(!showColorPicker)}
               className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex items-center gap-1"
-              title={tr('Kolor tekstu')}
+              title={tr('Kolor tekstu')} aria-label={tr('Kolor tekstu')}
             >
               <Palette size={16} />
               <ChevronDown size={12} />
@@ -589,14 +594,14 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('undo')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Cofnij (Ctrl+Z)')}
+            title={tr('Cofnij (Ctrl+Z)')} aria-label={tr('Cofnij (Ctrl+Z)')}
           >
             <Undo size={16} />
           </button>
           <button
             onClick={() => execCommand('redo')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title={tr('Ponów (Ctrl+Y)')}
+            title={tr('Ponów (Ctrl+Y)')} aria-label={tr('Ponów (Ctrl+Y)')}
           >
             <Redo size={16} />
           </button>
@@ -660,6 +665,7 @@ export default function ComposeModal({
                   </span>
                   <button
                     onClick={() => onRemoveAttachment(att.id)}
+                    aria-label={tr('Usuń załącznik')}
                     className="text-gray-400 hover:text-red-500 ml-1"
                   >
                     <X size={14} />
@@ -767,7 +773,7 @@ export default function ComposeModal({
               }
             }}
             className="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-            title={tr('Usuń wiadomość')}
+            title={tr('Usuń wiadomość')} aria-label={tr('Usuń wiadomość')}
           >
             <Trash2 size={18} />
           </button>

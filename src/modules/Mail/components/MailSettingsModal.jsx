@@ -207,7 +207,7 @@ export default function MailSettingsModal({
                   <div className="text-sm text-blue-700 dark:text-blue-300">
                     <p className="font-medium mb-1">{tr('Informacja o kontach zewnętrznych')}</p>
                     <p>
-                      {tr('Możesz połączyć zewnętrzne konta email (Gmail, Outlook, inne) aby odbierać i wysyłać wiadomości bezpośrednio z tej aplikacji. Wymaga to podania danych IMAP/SMTP twojego dostawcy poczty.')}
+                      {tr('Możesz połączyć zewnętrzne konta e-mail (Gmail, Outlook, inne), aby odbierać i wysyłać wiadomości bezpośrednio z tej aplikacji. Wymaga to podania danych IMAP/SMTP Twojego dostawcy poczty.')}
                     </p>
                     <p className="mt-2 flex items-center gap-1">
                       <Star size={14} className="text-amber-500" />
@@ -258,7 +258,7 @@ export default function MailSettingsModal({
                         {!account.system_default && (
                           <button
                             onClick={() => onSetSystemDefault(account.id)}
-                            title={tr('Ustaw jako konto systemowe')}
+                            title={tr('Ustaw jako konto systemowe')} aria-label={tr('Ustaw jako konto systemowe')}
                             className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
                           >
                             <Star size={16} />
@@ -266,7 +266,7 @@ export default function MailSettingsModal({
                         )}
                         <button
                           onClick={() => handleEditAccount(account)}
-                          title={tr('Edytuj ustawienia')}
+                          title={tr('Edytuj ustawienia')} aria-label={tr('Edytuj ustawienia')}
                           className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                         >
                           <Edit2 size={16} />
@@ -274,7 +274,7 @@ export default function MailSettingsModal({
                         <button
                           onClick={() => handleSyncMail(account)}
                           disabled={syncingAccount === account.id}
-                          title={tr('Synchronizuj pocztę')}
+                          title={tr('Synchronizuj pocztę')} aria-label={tr('Synchronizuj pocztę')}
                           className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50"
                         >
                           {syncingAccount === account.id ? (
@@ -403,7 +403,7 @@ export default function MailSettingsModal({
 
                   <div>
                     <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      {editingAccountId ? tr('Nowe hasło (pozostaw puste aby nie zmieniać)') : tr('Hasło aplikacji')}
+                      {editingAccountId ? tr('Nowe hasło (pozostaw puste, aby nie zmieniać)') : tr('Hasło aplikacji')}
                     </label>
                     <div className="relative">
                       <input
@@ -416,6 +416,7 @@ export default function MailSettingsModal({
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? tr('Ukryj hasło') : tr('Pokaż hasło')}
                         className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

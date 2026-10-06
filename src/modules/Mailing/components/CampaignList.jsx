@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import {
   Send, Clock, FileText, MoreVertical, Edit, Copy, Trash2, Eye,
   CheckCircle, XCircle, AlertCircle, Mail, Users, Calendar,
-  TrendingUp, MousePointer, ArrowRight, Sparkles
+  TrendingUp, MousePointer, ArrowRight, Sparkles, Plus
 } from 'lucide-react';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useT } from '../../../i18n';
 import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import Button from '../../../components/Button';
 
 const STATUS_CONFIG = {
   draft: {
@@ -61,7 +62,7 @@ const STATUS_CONFIG = {
   }
 };
 
-export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats }) {
+export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats, onCreate }) {
   const t = useT();
   const [filter, setFilter] = useState('all');
   const [menuOpen, setMenuOpen] = useState(null);
@@ -107,7 +108,6 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
     return (
       <div className="text-center py-16 px-4">
         <div className="relative inline-block mb-6">
-          <div className="absolute inset-0 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-3xl blur-xl opacity-30 animate-pulse" />
           <div className="relative w-20 h-20 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-3xl flex items-center justify-center shadow-xl">
             <Mail className="w-10 h-10 text-white" />
           </div>
@@ -118,10 +118,11 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
           {t('Stwórz swój pierwszy mail i dotrzyj do swojej społeczności')}
         </p>
-        <div className="flex items-center justify-center gap-2 text-sm text-accent-primary-light dark:text-accent-primary-light">
-          <span>{t('Kliknij "Nowy mail" aby rozpocząć')}</span>
-          <ArrowRight size={14} className="animate-bounce-x" />
-        </div>
+        {onCreate && (
+          <div className="flex justify-center">
+            <Button icon={Plus} onClick={onCreate}>{t('Nowy mail')}</Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -200,7 +201,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                     <button
                       onClick={(e) => { e.stopPropagation(); onEdit(campaign); }}
                       className="p-2 bg-accent-primary-light rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title={t('Edytuj')}
+                      title={t('Edytuj')} aria-label={t('Edytuj')}
                     >
                       <Edit size={18} className="text-white" />
                     </button>
@@ -208,7 +209,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                       <button
                         onClick={(e) => { e.stopPropagation(); onViewStats(campaign); }}
                         className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:scale-110 transition-transform"
-                        title={t('Statystyki')}
+                        title={t('Statystyki')} aria-label={t('Statystyki')}
                       >
                         <TrendingUp size={18} className="text-gray-700 dark:text-gray-300" />
                       </button>
@@ -248,6 +249,8 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                   <div className="relative">
                     <button
                       onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === campaign.id ? null : campaign.id); }}
+                      aria-label={tr('Więcej akcji')}
+                      aria-expanded={menuOpen === campaign.id}
                       className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
                       <MoreVertical size={16} className="text-gray-500" />

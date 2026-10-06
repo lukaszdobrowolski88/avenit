@@ -69,6 +69,7 @@ const MODULES = [
   'finance-report-email',
   'budget-proposal-notify',
   'event-assignments-patch',
+  'mailing-unsubscribe',
 ];
 
 export async function registerFunctions(app) {
@@ -94,7 +95,9 @@ export async function registerFunctions(app) {
     const route = mod.routePath || `/api/fn/${name}`;
     // rateLimit (publiczne formularze) — limit per IP, jak przy rejestracji/logowaniu.
     const routeOpts = { preHandler, ...(mod.rateLimit ? { config: { rateLimit: mod.rateLimit } } : {}) };
-    app[method](route, routeOpts, mod.default);
+    // methods: kilka metod pod tą samą ścieżką (np. wypis z mailingu: GET strona, POST jednym kliknięciem).
+    const methods = Array.isArray(mod.methods) && mod.methods.length ? mod.methods.map((m) => m.toLowerCase()) : [method];
+    for (const m of methods) app[m](route, routeOpts, mod.default);
     if (mod.routePath && mod.routePathAlias) {
       app[method](mod.routePathAlias, routeOpts, mod.default);
     }

@@ -96,7 +96,7 @@ export function useRecipients() {
         const { data: unsubscribedData } = await supabase
           .from('email_unsubscribes')
           .select('email');
-        unsubscribedEmails = (unsubscribedData || []).map(u => u.email);
+        unsubscribedEmails = (unsubscribedData || []).map(u => String(u.email || '').toLowerCase());
       } catch (err) {
         // Tabela może jeszcze nie istnieć
         console.warn('email_unsubscribes table not available yet');
@@ -159,8 +159,9 @@ export function useRecipients() {
 
       // Dodaj unikalne, nie-wypisane osoby
       segmentRecipients.forEach(user => {
-        if (user?.email && !recipientEmails.has(user.email) && !unsubscribed.includes(user.email)) {
-          recipientEmails.add(user.email);
+        const key = String(user?.email || '').trim().toLowerCase();
+        if (key && !recipientEmails.has(key) && !unsubscribed.includes(key)) {
+          recipientEmails.add(key);
           recipients.push(user);
         }
       });
@@ -173,18 +174,18 @@ export function useRecipients() {
   const getSegmentCount = useCallback((segmentType, segmentId) => {
     switch (segmentType) {
       case 'all':
-        return allUsers.filter(u => !unsubscribed.includes(u.email)).length;
+        return allUsers.filter(u => !unsubscribed.includes(String(u.email || '').toLowerCase())).length;
 
       case 'ministry':
         const ministry = ministries.find(m => m.id === segmentId || m.key === segmentId);
         return ministry?.members?.filter(m =>
-          m.email && !unsubscribed.includes(m.email)
+          m.email && !unsubscribed.includes(String(m.email || '').toLowerCase())
         ).length || 0;
 
       case 'home_group':
         const group = homeGroups.find(g => g.id === segmentId);
         return group?.members?.filter(m =>
-          m.email && !unsubscribed.includes(m.email)
+          m.email && !unsubscribed.includes(String(m.email || '').toLowerCase())
         ).length || 0;
 
       default:
@@ -199,7 +200,7 @@ export function useRecipients() {
     const lowerQuery = query.toLowerCase();
     return allUsers
       .filter(user =>
-        !unsubscribed.includes(user.email) &&
+        !unsubscribed.includes(String(user.email || '').toLowerCase()) &&
         (user.email?.toLowerCase().includes(lowerQuery) ||
          user.full_name?.toLowerCase().includes(lowerQuery))
       )
@@ -216,43 +217,52 @@ export function useRecipients() {
     getRecipientsBySegments,
     getSegmentCount,
     searchUsers,
-    totalActive: allUsers.filter(u => !unsubscribed.includes(u.email)).length,
+    totalActive: allUsers.filter(u => !unsubscribed.includes(String(u.email || '').toLowerCase())).length,
     totalUnsubscribed: unsubscribed.length
   };
 }
 
-// Zapisz segmenty kampanii do bazy
-export async function saveSegments(campaignId, segments) {
-  try {
-    // Usuń stare segmenty
-    await supabase
-      .from('email_recipient_segments')
-      .delete()
-      .eq('campaign_id', campaignId);
+// Zapisz segmenty kampanii do bazy (oraz ręcznie dodane adresy jako segment „custom”,
+// żeby po ponownym otwarciu maila lista odbiorców była taka sama).
+export async function saveSegments(campaignId, segments, customEmails = []) {
+  // Usuń stare segmenty
+  const { error: deleteError } = await supabase
+    .from('email_recipient_segments')
+    .delete()
+    .eq('campaign_id', campaignId);
+  if (deleteError) throw deleteError;
 
-    if (segments.length === 0) return;
-
-    // Dodaj nowe segmenty
-    // Dla służb (ministry) id jest stringiem (key), nie UUID - zapisujemy go w segment_name
-    const segmentsToInsert = segments.map(segment => {
-      // Sprawdź czy id jest poprawnym UUID
+  // Dla służb (ministry) id jest stringiem (key), nie UUID - zapisujemy go w segment_name
+  const segmentsToInsert = segments
+    .filter(segment => segment.type !== 'custom')
+    .map(segment => {
       const isValidUUID = segment.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment.id);
-
       return {
         campaign_id: campaignId,
         segment_type: segment.type,
         segment_id: isValidUUID ? segment.id : null,
-        segment_name: segment.name || segment.id || null // Dla służb zapisujemy key w segment_name
+        segment_name: segment.name || segment.id || null,
+        name: segment.name || segment.id || segment.type
       };
     });
 
-    const { error } = await supabase
-      .from('email_recipient_segments')
-      .insert(segmentsToInsert);
-
-    if (error) throw error;
-  } catch (err) {
-    console.error('Error saving segments:', err);
-    throw err;
+  const emails = [...new Set((customEmails || []).filter(Boolean))];
+  if (emails.length > 0) {
+    segmentsToInsert.push({
+      campaign_id: campaignId,
+      segment_type: 'custom',
+      segment_id: null,
+      segment_name: 'custom',
+      name: 'custom',
+      filters: { emails }
+    });
   }
+
+  if (segmentsToInsert.length === 0) return;
+
+  const { error } = await supabase
+    .from('email_recipient_segments')
+    .insert(segmentsToInsert);
+
+  if (error) throw error;
 }

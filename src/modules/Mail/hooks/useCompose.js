@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { toast } from '../../../lib/toast';
 import { tr, appLocale } from '../../../i18n';
 
 const INITIAL_DRAFT = {
@@ -147,6 +148,7 @@ export default function useCompose(accountId, userEmail) {
   const sendMessage = useCallback(async (sentFolderId) => {
     if (!accountId || draft.to.length === 0) {
       setError(tr('Brak odbiorców'));
+      toast.error(tr('Dodaj co najmniej jednego odbiorcę.'));
       return false;
     }
 
@@ -194,6 +196,11 @@ export default function useCompose(accountId, userEmail) {
     } catch (err) {
       console.error('Error sending message:', err);
       setError(err.message);
+      // Serwer zwraca ludzkie komunikaty po polsku (z tłumaczeniami); techniczne zamieniamy na ogólny.
+      const msg = err?.message && !/^HTTP \d+/.test(err.message)
+        ? tr(err.message)
+        : tr('Nie udało się wysłać wiadomości. Spróbuj ponownie za chwilę.');
+      toast.error(msg);
       return false;
     } finally {
       setSending(false);

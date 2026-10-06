@@ -3,7 +3,8 @@ import { Plus, Search, Edit2, Trash2, Receipt, Filter, Download } from 'lucide-r
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
-import { formatMoney, formatDate, methodLabel, statusLabel, donorLabel, memberName, GIVING_METHODS, GIVING_STATUSES } from '../lib/givingApi';
+import { formatMoney, formatDate, methodLabel, statusLabel, donorLabel, memberName, GIVING_METHODS, GIVING_STATUSES, donationTotals, localDateStr } from '../lib/givingApi';
+import MemberPicker, { foldText } from '../components/MemberPicker';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import Button from '../../../components/Button';
@@ -15,11 +16,15 @@ import { tr } from '../../../i18n';
 
 const currentYear = new Date().getFullYear();
 
-const emptyForm = {
+// Data liczona przy otwarciu formularza i w czasie lokalnym — wpłata wpisana 1 stycznia nocą
+// nie trafia już do poprzedniego roku PIT.
+const emptyForm = () => ({
   member_id: '', donor_name: '', donor_email: '', donor_address: '',
-  fund_id: '', amount: '', donation_date: new Date().toISOString().slice(0, 10),
+  fund_id: '', amount: '', donation_date: localDateStr(),
   method: 'transfer', status: 'completed', note: '', is_anonymous: false, receipt_number: '',
-};
+});
+
+const STATUS_PILL = { completed: STATUS_COLORS.success, pending: STATUS_COLORS.warning, failed: STATUS_COLORS.danger, refunded: STATUS_COLORS.neutral };
 
 export default function DonationsTab({ funds, members, membersById, campusIdForInsert, withCampusFilter, refreshShared }) {
   const [donations, setDonations] = useState([]);
@@ -28,6 +33,8 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
   const [yearFilter, setYearFilter] = useState(currentYear);
   const [fundFilter, setFundFilter] = useState('');
   const [methodFilter, setMethodFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [loadError, setLoadError] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -46,9 +53,11 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
       const { data, error } = await q;
       if (error) throw error;
       setDonations(data || []);
+      setLoadError(false);
     } catch (err) {
       console.error('Load donations error:', err);
       setDonations([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -61,15 +70,17 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
   }, [funds]);
 
   const filtered = useMemo(() => {
-    const s = search.trim().toLowerCase();
-    if (!s) return donations;
-    return donations.filter(d => {
-      const name = donorLabel(d, membersById).toLowerCase();
-      return name.includes(s) || (d.note || '').toLowerCase().includes(s) || (d.receipt_number || '').toLowerCase().includes(s);
+    const s = foldText(search.trim());
+    const byStatus = statusFilter ? donations.filter((d) => d.status === statusFilter) : donations;
+    if (!s) return byStatus;
+    return byStatus.filter(d => {
+      const name = foldText(donorLabel(d, membersById));
+      return name.includes(s) || foldText(d.note).includes(s) || foldText(d.receipt_number).includes(s);
     });
-  }, [donations, search, membersById]);
+  }, [donations, search, membersById, statusFilter]);
 
-  const total = useMemo(() => filtered.reduce((sum, d) => sum + (Number(d.amount) || 0), 0), [filtered]);
+  // „Suma” = tylko zaksięgowane (jak Pulpit i Darczyńcy); oczekujące osobno.
+  const totals = useMemo(() => donationTotals(filtered), [filtered]);
 
   const yearOptions = useMemo(() => {
     const years = [];
@@ -77,13 +88,13 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
     return years;
   }, []);
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setModalOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(emptyForm()); setModalOpen(true); };
   const openEdit = (d) => {
     setEditing(d);
     setForm({
       member_id: d.member_id || '', donor_name: d.donor_name || '', donor_email: d.donor_email || '',
       donor_address: d.donor_address || '', fund_id: d.fund_id || '', amount: String(d.amount ?? ''),
-      donation_date: d.donation_date || new Date().toISOString().slice(0, 10), method: d.method || 'transfer',
+      donation_date: d.donation_date || localDateStr(), method: d.method || 'transfer',
       status: d.status || 'completed', note: d.note || '', is_anonymous: !!d.is_anonymous, receipt_number: d.receipt_number || '',
     });
     setModalOpen(true);
@@ -120,6 +131,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
         const { error } = await supabase.from('donations').insert(payload);
         if (error) throw error;
       }
+      toast.success(editing ? tr('Zapisano zmiany darowizny') : tr('Dodano darowiznę {amount}', { amount: formatMoney(payload.amount) }));
       setModalOpen(false);
       load();
     } catch (err) {
@@ -131,7 +143,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
   };
 
   const remove = async (d) => {
-    if (!await confirmDialog(tr('Usunąć tę darowiznę?'))) return;
+    if (!await confirmDialog(tr('Usunąć darowiznę {amount} ({name}, {date})? Zniknie też z zestawień PIT.', { amount: formatMoney(d.amount, d.currency), name: d.is_anonymous ? tr('Anonimowo') : donorLabel(d, membersById), date: formatDate(d.donation_date) }))) return;
     try {
       const { error } = await supabase.from('donations').delete().eq('id', d.id);
       if (error) throw error;
@@ -157,10 +169,13 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
     URL.revokeObjectURL(url);
   };
 
-  const memberOptions = useMemo(() => [
-    { value: '', label: tr('— darczyńca spoza bazy —') },
-    ...(members || []).map(m => ({ value: m.id, label: memberName(m) })),
-  ], [members]);
+  // Podpowiedź przy wpisywaniu osoby spoza bazy: „to chyba nasz członek” (unikamy duplikatów w PIT).
+  const similarMember = useMemo(() => {
+    const n = foldText(form.donor_name).trim();
+    if (form.member_id || n.length < 3) return null;
+    return (members || []).find((m) => foldText(memberName(m)) === n)
+      || (members || []).find((m) => foldText(m.last_name).length > 2 && n.includes(foldText(m.last_name)) && n.includes(foldText(m.first_name))) || null;
+  }, [form.donor_name, form.member_id, members]);
 
   const fundOptionsAll = useMemo(() => [
     { value: '', label: tr('Wszystkie fundusze') },
@@ -186,7 +201,8 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
         </div>
         <div className="w-32"><CustomSelect value={yearFilter} onChange={setYearFilter} options={yearOptions} compact /></div>
         <div className="w-44"><CustomSelect value={fundFilter} onChange={setFundFilter} options={fundOptionsAll} compact icon={Filter} /></div>
-        <button onClick={exportCsv} className="px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-sm">
+        <div className="w-44"><CustomSelect value={statusFilter} onChange={setStatusFilter} options={[{ value: '', label: tr('Wszystkie statusy') }, ...GIVING_STATUSES.map((o) => ({ ...o, label: tr(o.label) }))]} compact /></div>
+        <button onClick={exportCsv} aria-label={tr('Eksport CSV')} className="px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-sm">
           <Download size={16} /> CSV
         </button>
         <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
@@ -195,18 +211,45 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
       </div>
 
       {/* Podsumowanie */}
-      <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">{tr('Pozycji:')} <b className="text-gray-900 dark:text-white">{filtered.length}</b></span>
-        <span className="text-gray-500 dark:text-gray-400">{tr('Suma:')} <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(total)}</b></span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <span className="text-gray-600 dark:text-gray-300">{tr('Liczba darowizn:')} <b className="text-gray-900 dark:text-white">{filtered.length}</b></span>
+        <span className="text-gray-600 dark:text-gray-300">{tr('Zaksięgowano:')} <b className="text-gray-900 dark:text-white tabular-nums">{formatMoney(totals.completed)}</b></span>
+        {totals.pendingCount > 0 && (
+          <span className="text-gray-600 dark:text-gray-300">{tr('+ {amount} oczekuje na wpłatę ({n})', { amount: formatMoney(totals.pending), n: totals.pendingCount })}</span>
+        )}
       </div>
 
       {/* Lista */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <Spinner center />
+        ) : loadError ? (
+          <EmptyState icon={Receipt} title={tr('Nie udało się wczytać darowizn.')} action={<Button variant="secondary" onClick={load}>{tr('Spróbuj ponownie')}</Button>} />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Receipt} title={tr('Brak darowizn dla wybranych filtrów.')} />
+          (search || statusFilter || fundFilter || methodFilter) ? (
+            <EmptyState icon={Receipt} title={tr('Brak darowizn pasujących do filtrów.')} action={<Button variant="secondary" onClick={() => { setSearch(''); setStatusFilter(''); setFundFilter(''); setMethodFilter(''); }}>{tr('Wyczyść filtry')}</Button>} />
+          ) : (
+            <EmptyState icon={Receipt} title={tr('Brak darowizn w roku {year}.', { year: yearFilter })} action={<Button onClick={openCreate}><Plus size={16} /> {tr('Dodaj darowiznę')}</Button>} />
+          )
         ) : (
+          <>
+          {/* Telefon: kwota i status zawsze widoczne (tabela przewijała się poza ekran). */}
+          <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700/60">
+            {filtered.map(d => (
+              <div key={d.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{d.is_anonymous ? tr('Anonimowo') : donorLabel(d, membersById)}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{formatDate(d.donation_date)} · {tr(methodLabel(d.method))}{d.fund_id && fundsById[d.fund_id] ? ` · ${fundsById[d.fund_id].name}` : ''}</div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">{formatMoney(d.amount, d.currency)}</div>
+                  <StatusPill color={STATUS_PILL[d.status] || STATUS_COLORS.neutral}>{tr(statusLabel(d.status))}</StatusPill>
+                </div>
+                <button onClick={() => openEdit(d)} className="p-2 rounded-lg text-gray-500 dark:text-gray-400" aria-label={tr('Edytuj darowiznę')}><Edit2 size={15} /></button>
+              </div>
+            ))}
+          </div>
+          <div className="hidden sm:block">
           <DataTable flush>
             <THead>
               <tr>
@@ -238,20 +281,22 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
                   <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(d.amount, d.currency)}</TD>
                   <TD muted>{tr(methodLabel(d.method))}</TD>
                   <TD>
-                    <StatusPill color={d.status === 'completed' ? STATUS_COLORS.success : d.status === 'pending' ? STATUS_COLORS.warning : STATUS_COLORS.danger}>
+                    <StatusPill color={STATUS_PILL[d.status] || STATUS_COLORS.neutral}>
                       {tr(statusLabel(d.status))}
                     </StatusPill>
                   </TD>
                   <TD align="right">
-                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(d)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
-                      <button onClick={() => remove(d)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
+                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <button onClick={() => openEdit(d)} className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700" title={tr('Edytuj')} aria-label={tr('Edytuj darowiznę')}><Edit2 size={15} /></button>
+                      <button onClick={() => remove(d)} className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700" title={tr('Usuń')} aria-label={tr('Usuń darowiznę')}><Trash2 size={15} /></button>
                     </div>
                   </TD>
                 </TR>
               ))}
             </tbody>
           </DataTable>
+          </div>
+          </>
         )}
       </div>
 
@@ -262,25 +307,31 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
         title={editing ? tr('Edytuj darowiznę') : tr('Nowa darowizna')}
         footer={<>
           <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>{tr('Anuluj')}</Button>
-          <Button onClick={save} loading={saving}>{tr('Zapisz')}</Button>
+          <Button onClick={save} loading={saving}>{editing ? tr('Zapisz zmiany') : tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
-              <CustomSelect label={tr('Darczyńca (członek)')} value={form.member_id} onChange={v => setForm(f => ({ ...f, member_id: v }))} options={memberOptions} placeholder={tr('Wybierz członka...')} />
+              <MemberPicker label={tr('Darczyńca (członek)')} value={form.member_id} onChange={v => setForm(f => ({ ...f, member_id: v }))} members={members} />
 
               {!form.member_id && (
                 <div className="grid grid-cols-1 gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
-                  <input value={form.donor_name} onChange={e => setForm(f => ({ ...f, donor_name: e.target.value }))} placeholder={tr('Imię i nazwisko darczyńcy (spoza bazy)')} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input value={form.donor_email} onChange={e => setForm(f => ({ ...f, donor_email: e.target.value }))} placeholder={tr('E-mail')} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                    <input value={form.donor_address} onChange={e => setForm(f => ({ ...f, donor_address: e.target.value }))} placeholder={tr('Adres (do PIT)')} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <input value={form.donor_name} onChange={e => setForm(f => ({ ...f, donor_name: e.target.value }))} placeholder={tr('Imię i nazwisko darczyńcy (spoza bazy)')} aria-label={tr('Imię i nazwisko darczyńcy (spoza bazy)')} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  {similarMember && (
+                    <div className="text-xs text-gray-700 dark:text-gray-200 flex flex-wrap items-center gap-2">
+                      <span>{tr('W bazie jest osoba „{name}”.', { name: memberName(similarMember) })}</span>
+                      <button type="button" onClick={() => setForm(f => ({ ...f, member_id: similarMember.id, donor_name: '' }))} className="font-semibold underline underline-offset-2">{tr('Wybierz ją')}</button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input value={form.donor_email} onChange={e => setForm(f => ({ ...f, donor_email: e.target.value }))} placeholder={tr('E-mail')} aria-label={tr('E-mail')} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                    <input value={form.donor_address} onChange={e => setForm(f => ({ ...f, donor_address: e.target.value }))} placeholder={tr('Adres (do PIT)')} aria-label={tr('Adres (do PIT)')} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                   </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kwota (PLN)')}</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kwota (zł)')}</label>
                   <input type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0,00" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
                 <div>
@@ -291,7 +342,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
 
               <CustomSelect label={tr('Fundusz / cel')} value={form.fund_id} onChange={v => setForm(f => ({ ...f, fund_id: v }))} options={fundOptionsForm} />
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <CustomSelect label={tr('Metoda')} value={form.method} onChange={v => setForm(f => ({ ...f, method: v }))} options={GIVING_METHODS.map((o) => ({ ...o, label: tr(o.label) }))} />
                 <CustomSelect label={tr('Status')} value={form.status} onChange={v => setForm(f => ({ ...f, status: v }))} options={GIVING_STATUSES.map((o) => ({ ...o, label: tr(o.label) }))} />
               </div>

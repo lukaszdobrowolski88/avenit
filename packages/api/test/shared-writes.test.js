@@ -66,3 +66,13 @@ test('wydatki: zatwierdzenie/opłacenie tylko z action:finance:approve', () => {
   enforceExpenseApproval({ table: 'expense_transactions', op: 'insert', values: { status: 'submitted', amount: 10 } }, lider);
   enforceExpenseApproval({ table: 'expense_transactions', op: 'update', values: { status: 'approved' } }, resolverWith('action:finance:approve'));
 });
+
+test('wydatek lidera bez statusu trafia do akceptacji (nie domyślne approved/opłacony)', () => {
+  const q = { table: 'expense_transactions', op: 'insert', values: [{ amount: 50, description: 'Struny' }] };
+  enforceExpenseApproval(q, resolverWith('res:expense_transactions:create'));
+  assert.equal(q.values[0].status, 'submitted');
+  assert.equal(q.values[0].is_paid, false);
+  const admin = { table: 'expense_transactions', op: 'insert', values: [{ amount: 50 }] };
+  enforceExpenseApproval(admin, null);
+  assert.equal(admin.values[0].status, undefined);
+});

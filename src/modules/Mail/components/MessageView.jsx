@@ -220,6 +220,7 @@ export default function MessageView({
         {onBack && (
           <button
             onClick={onBack}
+            aria-label={tr('Wstecz')}
             className="lg:hidden p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} />
@@ -254,6 +255,7 @@ export default function MessageView({
 
         <button
           onClick={() => onToggleStar(message.id)}
+          aria-label={message.is_starred ? tr('Usuń gwiazdkę') : tr('Oznacz gwiazdką')}
           className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <Star
@@ -270,7 +272,7 @@ export default function MessageView({
               setShowMoveMenu(!showMoveMenu);
             }}
             className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title={tr('Przenieś')}
+            title={tr('Przenieś')} aria-label={tr('Przenieś')}
           >
             <FolderInput size={18} />
           </button>
@@ -300,7 +302,7 @@ export default function MessageView({
               setShowLabelMenu(!showLabelMenu);
             }}
             className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title={tr('Etykiety')}
+            title={tr('Etykiety')} aria-label={tr('Etykiety')}
           >
             <Tag size={18} />
           </button>
@@ -332,7 +334,7 @@ export default function MessageView({
         <button
           onClick={() => onDelete(message.id)}
           className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-          title={tr('Usuń')}
+          title={tr('Usuń')} aria-label={tr('Usuń')}
         >
           <Trash2 size={18} />
         </button>
@@ -421,7 +423,7 @@ export default function MessageView({
                   <button
                     onClick={() => onDownloadAttachment(attachment)}
                     className="p-2 text-gray-500 hover:text-accent-primary-light hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                    title={tr('Pobierz')}
+                    title={tr('Pobierz')} aria-label={tr('Pobierz')}
                   >
                     <Download size={16} />
                   </button>

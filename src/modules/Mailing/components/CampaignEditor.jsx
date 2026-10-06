@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, ArrowRight, Check, Send, Clock, Save, Eye, X,
   FileText, Edit3, Users, CheckCircle, Loader, MousePointer, Code,
-  Calendar, Mail, TestTube, Sparkles, ChevronRight
+  Calendar, Mail, TestTube, ChevronRight, AlertCircle
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useCampaigns } from '../hooks/useCampaigns';
@@ -33,16 +33,48 @@ const EDITOR_MODES = {
   html: { id: 'html', label: 'Kod HTML', icon: Code, description: 'Dla zaawansowanych - edytuj surowy HTML' }
 };
 
+const RECIPIENT_CHUNK = 500;
+
+// Czy HTML ma prawdziwą treść (tekst albo obrazek), a nie tylko pusty szkielet z edytora.
+function hasRealContent(html) {
+  const s = String(html || '');
+  if (/<img\b/i.test(s)) return true;
+  return s
+    .replace(/<head[\s\S]*?<\/head>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .trim().length > 0;
+}
+
+// ISO (UTC) → wartość pola daty i godziny w czasie lokalnym (YYYY-MM-DDTHH:mm).
+function toLocalInput(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+// Komunikaty z serwera są po polsku i mają tłumaczenia w słowniku; techniczne błędy zamieniamy na ludzki tekst.
+function serverMessage(error, fallback) {
+  const msg = error?.message;
+  if (!msg || /^HTTP \d+/.test(msg) || /column|relation|syntax|violates|uuid/i.test(msg)) return fallback;
+  return tr(msg);
+}
+
 export default function CampaignEditor({ campaign, templateId, onClose, onSave }) {
   const canSend = useCan('action:mailing:send');
   const [currentStep, setCurrentStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showTestSend, setShowTestSend] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [editorMode, setEditorMode] = useState('dragdrop');
   const [editorModeInitialized, setEditorModeInitialized] = useState(false);
   const [formDataInitialized, setFormDataInitialized] = useState(false);
+  // Id zapisanego maila — po pierwszym zapisie kolejne zapisy aktualizują ten sam wiersz (bez duplikatów).
+  const [campaignId, setCampaignId] = useState(campaign?.id || null);
   const [formData, setFormData] = useState({
     name: campaign?.name || '',
     subject: campaign?.subject || '',
@@ -53,11 +85,17 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
   });
   const [selectedSegments, setSelectedSegments] = useState([]);
   const [selectedEmails, setSelectedEmails] = useState([]);
-  const [testEmail, setTestEmail] = useState('');
+  const [myEmail, setMyEmail] = useState('');
 
   const { createCampaign, updateCampaign, getCampaign } = useCampaigns();
   const { getTemplate } = useTemplates();
   const { getRecipientsBySegments } = useRecipients();
+
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getUser().then(({ data }) => { if (alive) setMyEmail(data?.user?.email || ''); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   // Załaduj szablon jeśli podano templateId
   useEffect(() => {
@@ -68,8 +106,8 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
           if (template) {
             setFormData(prev => ({
               ...prev,
-              subject: template.subject,
-              html_content: template.html_content,
+              subject: template.subject || '',
+              html_content: template.html_content || '',
               json_design: template.json_design || null,
               template_id: template.id
             }));
@@ -86,6 +124,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
           }
         } catch (err) {
           console.error('Error loading template:', err);
+          toast.error(tr('Nie udało się wczytać szablonu.'));
         }
       }
     };
@@ -100,22 +139,24 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
           const fullCampaign = await getCampaign(campaign.id);
           if (fullCampaign) {
             setFormData({
-              name: fullCampaign.name,
-              subject: fullCampaign.subject,
-              html_content: fullCampaign.html_content,
+              name: fullCampaign.name || '',
+              subject: fullCampaign.subject || '',
+              html_content: fullCampaign.html_content || '',
               json_design: fullCampaign.json_design || null,
               template_id: fullCampaign.template_id,
               scheduled_at: fullCampaign.scheduled_at
             });
             setFormDataInitialized(true);
-            // Załaduj segmenty
-            if (fullCampaign.segments) {
-              setSelectedSegments(fullCampaign.segments.map(s => ({
-                type: s.segment_type,
-                id: s.segment_id || (s.segment_type === 'ministry' ? s.segment_name : null),
-                name: s.segment_name
-              })));
-            }
+            // Załaduj segmenty (i ręcznie dodane adresy zapisane jako segment „custom”)
+            const segs = fullCampaign.segments || [];
+            setSelectedSegments(segs.filter(s => s.segment_type && s.segment_type !== 'custom').map(s => ({
+              type: s.segment_type,
+              id: s.segment_id || (s.segment_type === 'ministry' ? s.segment_name : null),
+              name: s.segment_name
+            })));
+            const custom = segs.find(s => s.segment_type === 'custom');
+            const emails = Array.isArray(custom?.filters?.emails) ? custom.filters.emails : [];
+            if (emails.length > 0) setSelectedEmails(emails.map(email => ({ email, full_name: email })));
             // Jeśli kampania ma json_design, użyj kreatora wizualnego
             // W przeciwnym razie jeśli ma HTML, użyj edytora tekstu
             if (!editorModeInitialized) {
@@ -129,218 +170,230 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
           }
         } catch (err) {
           console.error('Error loading campaign:', err);
+          toast.error(tr('Nie udało się wczytać maila. Odśwież stronę i spróbuj ponownie.'));
         }
       }
     };
     loadCampaign();
   }, [campaign?.id, getCampaign, formDataInitialized, editorModeInitialized]);
 
-  const handleSave = async (status = 'draft') => {
+  // Stabilne funkcje dla edytorów — nowa funkcja przy każdym renderze wpędzała kreator w pętlę renderowania.
+  const handleHtmlChange = useCallback((html) => {
+    setFormData(prev => (prev.html_content === html ? prev : { ...prev, html_content: html }));
+  }, []);
+  const handleBlocksChange = useCallback((blocks) => {
+    setFormData(prev => (prev.json_design === blocks ? prev : { ...prev, json_design: blocks }));
+  }, []);
+
+  const recipientSegments = () => [
+    ...selectedSegments,
+    ...(selectedEmails.length > 0 ? [{ type: 'custom', emails: selectedEmails.map(e => e.email) }] : [])
+  ];
+
+  // Zapis maila jako szkic + segmenty + pełna lista odbiorców. Rzuca błąd, gdy cokolwiek się nie zapisze.
+  // Status „zaplanowany”/„wysyłany” ustawia dopiero serwer (send-mailing-campaign) po sprawdzeniu uprawnień.
+  const persistCampaign = async () => {
+    const campaignData = {
+      name: formData.name.trim(),
+      subject: formData.subject.trim(),
+      html_content: formData.html_content || '',
+      json_design: formData.json_design || null,
+      template_id: formData.template_id || null,
+      scheduled_at: formData.scheduled_at || null,
+      status: 'draft'
+    };
+
+    const saved = campaignId
+      ? await updateCampaign(campaignId, campaignData)
+      : await createCampaign(campaignData);
+    if (!saved?.id) throw new Error('save failed');
+    if (!campaignId) setCampaignId(saved.id);
+
+    await saveSegments(saved.id, selectedSegments, selectedEmails.map(e => e.email));
+
+    // Odbiorcy: zawsze zastępujemy listę bieżącym wyborem (także gdy wyczyszczono wszystkich).
+    const { error: deleteError } = await supabase
+      .from('email_campaign_recipients')
+      .delete()
+      .eq('campaign_id', saved.id);
+    if (deleteError) throw deleteError;
+
+    const rows = getRecipientsBySegments(recipientSegments()).map(r => {
+      const personName = r.full_name && r.full_name !== r.email ? r.full_name : (r.name || null);
+      return { campaign_id: saved.id, email: r.email, name: personName, status: 'pending' };
+    });
+    for (let i = 0; i < rows.length; i += RECIPIENT_CHUNK) {
+      const { error } = await supabase.from('email_campaign_recipients').insert(rows.slice(i, i + RECIPIENT_CHUNK));
+      if (error) throw error;
+    }
+    return { saved, recipientCount: rows.length };
+  };
+
+  const wasScheduled = campaign?.status === 'scheduled';
+  // Wysłany / wysyłany mail jest tylko do podglądu — zapis wyczyściłby historię odbiorców i pozwolił wysłać go drugi raz.
+  const locked = campaign?.status === 'sent' || campaign?.status === 'sending';
+  const lockedNotice = () => toast.info(tr('Ten mail został już wysłany, więc zmian nie da się zapisać. Użyj „Duplikuj” na liście maili, żeby przygotować nową wersję.'));
+
+  const handleSave = async () => {
+    if (locked) { lockedNotice(); return; }
+    if (!formData.name.trim()) {
+      toast.error(tr('Podaj nazwę maila, żeby go zapisać.'));
+      setCurrentStep(0);
+      return;
+    }
+    setSaving(true);
     try {
-      setSaving(true);
-
-      const campaignData = {
-        ...formData,
-        status
-      };
-
-      let savedCampaign;
-
-      if (campaign?.id) {
-        savedCampaign = await updateCampaign(campaign.id, campaignData);
+      const { saved } = await persistCampaign();
+      // Edycja zaplanowanego maila: po zapisie zostaje zaplanowany na ten sam termin.
+      if (wasScheduled && canSend && formData.scheduled_at && new Date(formData.scheduled_at) > new Date()) {
+        const { error } = await supabase.functions.invoke('send-mailing-campaign', {
+          body: { campaign_id: saved.id, action: 'schedule', scheduled_at: formData.scheduled_at }
+        });
+        if (error) {
+          toast.error(tr('Zapisano zmiany, ale mail nie jest już zaplanowany: {msg}', { msg: serverMessage(error, tr('spróbuj zaplanować go ponownie.')) }));
+        } else {
+          toast.success(tr('Zapisano. Wysyłka nadal zaplanowana na {date}.', { date: new Date(formData.scheduled_at).toLocaleString(appLocale()) }));
+        }
       } else {
-        savedCampaign = await createCampaign(campaignData);
+        toast.success(tr('Zapisano szkic maila.'));
       }
-
-      // Zapisz segmenty
-      await saveSegments(savedCampaign.id, selectedSegments);
-
-      // Dodaj odbiorców
-      const recipients = getRecipientsBySegments([
-        ...selectedSegments,
-        ...(selectedEmails.length > 0 ? [{ type: 'custom', emails: selectedEmails.map(e => e.email) }] : [])
-      ]);
-
-      if (recipients.length > 0) {
-        await supabase
-          .from('email_campaign_recipients')
-          .delete()
-          .eq('campaign_id', savedCampaign.id);
-
-        const recipientsToInsert = recipients.map(r => ({
-          campaign_id: savedCampaign.id,
-          email: r.email,
-          full_name: r.full_name || r.name || null,
-          status: 'pending'
-        }));
-
-        await supabase
-          .from('email_campaign_recipients')
-          .insert(recipientsToInsert);
-      }
-
       onSave?.();
     } catch (err) {
       console.error('Error saving campaign:', err);
-      toast.error(tr('Błąd podczas zapisywania maila'));
+      toast.error(tr('Nie udało się zapisać maila. Spróbuj ponownie.'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleSend = async () => {
-    if (!await confirmDialog(tr('Czy na pewno chcesz wysłać tego maila? Ta operacja jest nieodwracalna.'))) {
-      return;
-    }
+    if (locked) { lockedNotice(); return; }
+    const ok = await confirmDialog({
+      title: tr('Wysłać mail?'),
+      message: tr('Mail „{name}” trafi teraz do {n} osób. Tej operacji nie da się cofnąć.', { name: formData.name.trim(), n: totalRecipients }),
+      confirmLabel: tr('Wyślij teraz'),
+      danger: false
+    });
+    if (!ok) return;
 
+    setSaving(true);
     try {
-      setSaving(true);
-
-      const campaignData = {
-        ...formData,
-        status: 'sending'
-      };
-
-      let savedCampaign;
-
-      if (campaign?.id) {
-        savedCampaign = await updateCampaign(campaign.id, campaignData);
-      } else {
-        savedCampaign = await createCampaign(campaignData);
-      }
-
-      await saveSegments(savedCampaign.id, selectedSegments);
-
-      const recipients = getRecipientsBySegments([
-        ...selectedSegments,
-        ...(selectedEmails.length > 0 ? [{ type: 'custom', emails: selectedEmails.map(e => e.email) }] : [])
-      ]);
-
-      if (recipients.length > 0) {
-        await supabase
-          .from('email_campaign_recipients')
-          .delete()
-          .eq('campaign_id', savedCampaign.id);
-
-        const recipientsToInsert = recipients.map(r => ({
-          campaign_id: savedCampaign.id,
-          email: r.email,
-          full_name: r.full_name || r.name || null,
-          status: 'pending'
-        }));
-
-        const { error: recipientsError } = await supabase
-          .from('email_campaign_recipients')
-          .insert(recipientsToInsert);
-
-        if (recipientsError) throw recipientsError;
-      }
-
+      let saved;
       try {
-        const { data, error } = await supabase.functions.invoke('send-mailing-campaign', {
-          body: { campaign_id: savedCampaign.id }
-        });
-
-        if (error) {
-          await updateCampaign(savedCampaign.id, { status: 'scheduled' });
-          toast.error(tr('Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.'));
-          onSave?.();
-          return;
-        }
-
-        toast.success(tr('Mail wysłany! Wysłano: {sent}, Błędy: {failed}', { sent: data?.batch_results?.sent || 0, failed: data?.batch_results?.failed || 0 }));
-        onSave?.();
-      } catch (funcError) {
-        await updateCampaign(savedCampaign.id, { status: 'scheduled' });
-        toast.error(tr('Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.'));
-        onSave?.();
+        ({ saved } = await persistCampaign());
+      } catch (err) {
+        console.error('Error saving campaign before send:', err);
+        toast.error(tr('Nie udało się zapisać maila przed wysyłką. Spróbuj ponownie.'));
+        return;
       }
-    } catch (err) {
-      console.error('Error sending campaign:', err);
-      toast.error(tr('Błąd podczas wysyłania maila'));
+
+      const { data, error } = await supabase.functions.invoke('send-mailing-campaign', {
+        body: { campaign_id: saved.id }
+      });
+      if (error) {
+        // Mail zostaje szkicem — nic nie wyszło, można spróbować ponownie.
+        toast.error(serverMessage(error, tr('Nie udało się wysłać maila. Zapisaliśmy go jako szkic — spróbuj ponownie za chwilę.')));
+        return;
+      }
+
+      const sent = data?.sent || 0;
+      const total = data?.total || totalRecipients;
+      const remaining = data?.remaining || 0;
+      const failed = data?.failed || 0;
+      if (remaining > 0) {
+        toast.success(tr('Wysyłka ruszyła: wysłano {sent} z {total}. Pozostałe maile wyjdą automatycznie w ciągu kilku minut.', { sent, total }));
+      } else {
+        toast.success(tr('Mail wysłany do {sent} osób.', { sent }));
+      }
+      if (failed > 0) {
+        toast.error(tr('Nie udało się wysłać do {failed} osób. Sprawdź ich adresy e-mail.', { failed }));
+      }
+      onSave?.();
     } finally {
       setSaving(false);
     }
   };
 
+  // Test: bieżąca treść na adres zalogowanej osoby — bez zapisu i bez zmiany statusu maila.
   const handleTestSend = async () => {
-    if (!testEmail || !testEmail.includes('@')) {
-      toast.error(tr('Wprowadź poprawny adres email'));
+    if (!formData.subject.trim() || !hasRealContent(formData.html_content)) {
+      toast.error(tr('Uzupełnij temat i treść maila, zanim wyślesz test.'));
       return;
     }
-
+    setTesting(true);
     try {
-      setSaving(true);
-
-      // Zapisz kampanię tymczasowo jako szkic
-      const campaignData = { ...formData, status: 'draft' };
-      let savedCampaign;
-
-      if (campaign?.id) {
-        savedCampaign = await updateCampaign(campaign.id, campaignData);
-      } else {
-        savedCampaign = await createCampaign(campaignData);
-      }
-
-      // Wyślij testowy email
       const { data, error } = await supabase.functions.invoke('send-mailing-campaign', {
-        body: {
-          campaign_id: savedCampaign.id,
-          test_email: testEmail,
-          batch_size: 1
-        }
+        body: { test: true, test_subject: formData.subject, test_html_content: formData.html_content }
       });
-
       if (error) {
-        toast.error(tr('Błąd wysyłki testowej: {msg}', { msg: error.message }));
-      } else {
-        toast.success(tr('Email testowy wysłany na: {email}', { email: testEmail }));
-        setShowTestSend(false);
+        toast.error(serverMessage(error, tr('Nie udało się wysłać maila testowego. Spróbuj ponownie za chwilę.')));
+        return;
       }
-    } catch (err) {
-      toast.error(tr('Błąd podczas wysyłania testowego emaila'));
+      toast.success(tr('Mail testowy wysłany na {email}.', { email: data?.to || myEmail }));
+      setShowTestSend(false);
     } finally {
-      setSaving(false);
+      setTesting(false);
     }
   };
 
   const handleSchedule = async () => {
+    if (locked) { lockedNotice(); return; }
     if (!formData.scheduled_at) {
       toast.info(tr('Wybierz datę i godzinę wysyłki'));
       return;
     }
-
+    if (new Date(formData.scheduled_at) <= new Date()) {
+      toast.error(tr('Wybierz termin w przyszłości.'));
+      return;
+    }
+    setSaving(true);
     try {
-      setSaving(true);
-      await handleSave('scheduled');
-      toast.error(tr('Mail zaplanowany na: {date}', { date: new Date(formData.scheduled_at).toLocaleString(appLocale()) }));
+      let saved;
+      try {
+        ({ saved } = await persistCampaign());
+      } catch (err) {
+        console.error('Error saving campaign before schedule:', err);
+        toast.error(tr('Nie udało się zapisać maila. Spróbuj ponownie.'));
+        return;
+      }
+      const { error } = await supabase.functions.invoke('send-mailing-campaign', {
+        body: { campaign_id: saved.id, action: 'schedule', scheduled_at: formData.scheduled_at }
+      });
+      if (error) {
+        toast.error(serverMessage(error, tr('Nie udało się zaplanować wysyłki. Mail zapisaliśmy jako szkic.')));
+        return;
+      }
+      toast.success(tr('Mail zaplanowany na {date}.', { date: new Date(formData.scheduled_at).toLocaleString(appLocale()) }));
       setShowSchedule(false);
-    } catch (err) {
-      toast.error(tr('Błąd podczas planowania maila'));
+      onSave?.();
     } finally {
       setSaving(false);
     }
   };
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 0:
-        return formData.name.trim() && formData.subject.trim();
-      case 1:
-        return formData.html_content.trim();
-      case 2:
-        return selectedSegments.length > 0 || selectedEmails.length > 0;
-      case 3:
-        return true;
-      default:
-        return false;
+  const totalRecipients = getRecipientsBySegments(recipientSegments()).length;
+  const contentReady = hasRealContent(formData.html_content);
+
+  // Czy dany krok jest kompletny (ptaszek w kroczku tylko wtedy).
+  const stepValid = (index) => {
+    switch (index) {
+      case 0: return Boolean(formData.name.trim() && formData.subject.trim());
+      case 1: return contentReady;
+      case 2: return totalRecipients > 0;
+      default: return true;
     }
   };
 
-  const totalRecipients = getRecipientsBySegments([
-    ...selectedSegments,
-    ...(selectedEmails.length > 0 ? [{ type: 'custom', emails: selectedEmails.map(e => e.email) }] : [])
-  ]).length;
+  const canProceed = () => (currentStep >= 3 ? true : stepValid(currentStep));
+
+  // Braki pokazywane w podsumowaniu (z przejściem do właściwego kroku).
+  const missing = [
+    !formData.name.trim() && { key: 'name', step: 0, text: tr('Brak nazwy maila') },
+    !formData.subject.trim() && { key: 'subject', step: 0, text: tr('Brak tematu wiadomości') },
+    !contentReady && { key: 'content', step: 1, text: tr('Brak treści') },
+    totalRecipients === 0 && { key: 'recipients', step: 2, text: tr('Nie wybrano odbiorców') }
+  ].filter(Boolean);
+  const readyToSend = missing.length === 0;
 
   return (
     <div className="space-y-8">
@@ -349,33 +402,40 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
+            aria-label={tr('Zamknij edytor')}
+            title={tr('Zamknij edytor')}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
           >
             <X size={20} className="text-gray-500" />
           </button>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-            {campaign ? tr('Edytuj mail') : tr('Nowy mail')}
+            {locked ? tr('Wysłany mail') : campaign ? tr('Edytuj mail') : tr('Nowy mail')}
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {canSend && (
           <button
             onClick={() => setShowTestSend(true)}
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
-            title={tr('Wyślij email testowy')}
+            title={tr('Wyślij mail testowy do siebie')}
+            aria-label={tr('Wyślij mail testowy do siebie')}
           >
             <TestTube size={16} />
             <span className="hidden sm:inline">{tr('Test')}</span>
           </button>
+          )}
           <button
             onClick={() => setShowPreview(true)}
+            aria-label={tr('Podgląd')}
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
           >
             <Eye size={16} />
             <span className="hidden sm:inline">{tr('Podgląd')}</span>
           </button>
           <button
-            onClick={() => handleSave('draft')}
-            disabled={saving}
+            onClick={handleSave}
+            disabled={saving || locked}
+            aria-label={tr('Zapisz')}
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all disabled:opacity-50"
           >
             {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
@@ -389,29 +449,38 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         {STEPS.map((step, index) => {
           const StepIcon = step.icon;
           const isActive = index === currentStep;
-          const isCompleted = index < currentStep;
+          const valid = stepValid(index);
+          // Ptaszek tylko dla kroku naprawdę uzupełnionego; pominięty z brakami — ostrzeżenie.
+          const isCompleted = index < currentStep && index < 3 && valid;
+          const hasGaps = index < currentStep && index < 3 && !valid;
           const isLast = index === STEPS.length - 1;
 
           return (
             <React.Fragment key={step.id}>
               <button
                 onClick={() => setCurrentStep(index)}
+                aria-current={isActive ? 'step' : undefined}
+                title={hasGaps ? tr('Ten krok ma braki') : undefined}
                 className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md'
                     : isCompleted
-                      ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                      : hasGaps
+                        ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
               >
                 <span className={`flex items-center justify-center w-6 h-6 rounded-lg transition-all ${
                   isActive
                     ? 'bg-white/20'
                     : isCompleted
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700'
+                      ? 'bg-emerald-600 text-white'
+                      : hasGaps
+                        ? 'bg-amber-100 dark:bg-amber-800/40'
+                        : 'bg-gray-100 dark:bg-gray-700'
                 }`}>
-                  {isCompleted ? <Check size={14} /> : <StepIcon size={14} />}
+                  {isCompleted ? <Check size={14} /> : hasGaps ? <AlertCircle size={14} /> : <StepIcon size={14} />}
                 </span>
                 {tr(step.label)}
               </button>
@@ -540,8 +609,8 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               <DragDropEmailBuilder
                 content={formData.html_content}
                 jsonBlocks={formData.json_design}
-                onChange={(html) => setFormData(prev => ({ ...prev, html_content: html }))}
-                onBlocksChange={(blocks) => setFormData(prev => ({ ...prev, json_design: blocks }))}
+                onChange={handleHtmlChange}
+                onBlocksChange={handleBlocksChange}
               />
             )}
 
@@ -549,7 +618,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               <div className="p-6">
                 <EmailEditor
                   content={formData.html_content}
-                  onChange={(html) => setFormData(prev => ({ ...prev, html_content: html }))}
+                  onChange={handleHtmlChange}
                   placeholder={tr('Napisz treść wiadomości...')}
                 />
               </div>
@@ -629,11 +698,42 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 </div>
               </div>
 
+              {locked && (
+                <div className="rounded-2xl bg-gray-50 dark:bg-gray-900/50 p-4 text-sm text-gray-700 dark:text-gray-300" role="status">
+                  {campaign?.status === 'sending'
+                    ? tr('Ten mail jest właśnie wysyłany. Pozostali odbiorcy dostaną go automatycznie w ciągu kilku minut.')
+                    : tr('Ten mail został już wysłany. Żeby wysłać go ponownie, użyj „Duplikuj” na liście maili.')}
+                </div>
+              )}
+
+              {/* Braki — co trzeba uzupełnić przed wysyłką (z przejściem do kroku) */}
+              {!locked && missing.length > 0 && (
+                <div className="rounded-2xl bg-amber-50 dark:bg-amber-900/20 p-4" role="status">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                    {tr('Zanim wyślesz, uzupełnij:')}
+                  </p>
+                  <ul className="space-y-1.5">
+                    {missing.map(m => (
+                      <li key={m.key}>
+                        <button
+                          type="button"
+                          onClick={() => setCurrentStep(m.step)}
+                          className="inline-flex items-center gap-2 text-sm text-amber-900 dark:text-amber-200 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary rounded"
+                        >
+                          <AlertCircle size={14} aria-hidden="true" />
+                          {tr('{what} — przejdź do kroku „{step}”', { what: m.text, step: tr(STEPS[m.step].label) })}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
                 <button
-                  onClick={() => handleSave('draft')}
-                  disabled={saving}
+                  onClick={handleSave}
+                  disabled={saving || locked}
                   className="group flex items-center justify-center gap-2 px-6 py-3.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all disabled:opacity-50"
                 >
                   <Save size={18} className="group-hover:text-accent-primary-light transition-colors" />
@@ -642,7 +742,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 {canSend && (<>
                 <button
                   onClick={() => setShowSchedule(true)}
-                  disabled={saving || totalRecipients === 0}
+                  disabled={saving || !readyToSend || locked}
                   className="group flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-accent-primary-light text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition-all disabled:opacity-50"
                 >
                   <Calendar size={18} />
@@ -651,7 +751,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 <button
                   data-tour="mail-send"
                   onClick={handleSend}
-                  disabled={saving || totalRecipients === 0}
+                  disabled={saving || !readyToSend || locked}
                   className="group flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl hover:shadow-accent-primary-light/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {saving ? <Loader size={18} className="animate-spin" /> : <Send size={18} className="group-hover:translate-x-0.5 transition-transform" />}
@@ -696,39 +796,33 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         />
       )}
 
-      {/* Test Send Modal */}
+      {/* Test Send Modal — test idzie zawsze na adres zalogowanej osoby */}
       <Modal
         isOpen={showTestSend}
         onClose={() => setShowTestSend(false)}
         closeOnBackdrop={false}
-        title={tr('Wyślij email testowy')}
+        title={tr('Wyślij mail testowy')}
         subtitle={tr('Sprawdź przed wysyłką')}
         icon={TestTube}
         size="sm"
         footer={<>
           <Button variant="secondary" onClick={() => setShowTestSend(false)}>{tr('Anuluj')}</Button>
-          <Button icon={Mail} onClick={handleTestSend} disabled={!testEmail} loading={saving}>
+          <Button icon={Mail} onClick={handleTestSend} disabled={!myEmail} loading={testing}>
             {tr('Wyślij test')}
           </Button>
         </>}
       >
         <div className="p-6 space-y-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {tr('Wyślij testową wersję emaila na wskazany adres, aby sprawdzić jak będzie wyglądać przed wysłaniem do odbiorców.')}
+            {tr('Wyślemy bieżącą wersję maila na Twój adres, żeby sprawdzić, jak wygląda w skrzynce. Mail nie zostanie zapisany ani wysłany do odbiorców.')}
           </p>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {tr('Adres email')}
-            </label>
-            <input
-              type="email"
-              value={testEmail}
-              onChange={(e) => setTestEmail(e.target.value)}
-              placeholder="twoj@email.pl"
-              className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all"
-            />
+          <div className="rounded-xl bg-gray-50 dark:bg-gray-900/50 px-4 py-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Twój adres')}</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white break-all">{myEmail || '—'}</p>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {tr('Zmienne, np. {{imie}}, zostaną wypełnione Twoimi danymi.')}
+          </p>
         </div>
       </Modal>
 
@@ -758,9 +852,9 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               {tr('Data i godzina wysyłki')}
             </label>
             <DateTimeInput
-              value={formData.scheduled_at ? formData.scheduled_at.slice(0, 16) : ''}
+              value={toLocalInput(formData.scheduled_at)}
               onChange={(e) => setFormData(prev => ({ ...prev, scheduled_at: e.target.value ? new Date(e.target.value).toISOString() : null }))}
-              min={new Date().toISOString().slice(0, 16)}
+              min={toLocalInput(new Date().toISOString())}
               className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-amber-500 transition-all"
             />
           </div>

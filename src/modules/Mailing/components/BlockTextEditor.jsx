@@ -310,7 +310,7 @@ export default function BlockTextEditor({
                       : 'border-gray-300 dark:border-gray-600'
                   }`}
                   style={{ backgroundColor: color.value || '#ffffff' }}
-                  title={tr(color.name)}
+                  title={tr(color.name)} aria-label={tr(color.name)}
                 />
               ))}
             </div>

@@ -21,10 +21,12 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
         .eq('status', 'completed')
         .order('donation_date', { ascending: false });
       q = withCampusFilter(q);
-      const { data } = await q;
+      const { data, error } = await q;
+      if (error) throw error;
       setDonations(data || []);
     } catch (err) {
       console.error('Overview load error:', err);
+      toast.error(tr('Nie udało się wczytać podsumowania darowizn.'));
     } finally { setLoading(false); }
   }, [withCampusFilter, year]);
 
@@ -62,7 +64,7 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
     { label: tr('Suma {year}', { year }), value: formatMoney(stats.totalYear), icon: TrendingUp, tint: 'from-emerald-500 to-teal-500' },
     { label: tr('Ten miesiąc'), value: formatMoney(stats.totalMonth), icon: Calendar, tint: 'from-blue-500 to-indigo-500' },
     { label: tr('Darczyńcy'), value: stats.donors, icon: Users, tint: 'from-violet-500 to-purple-500' },
-    { label: tr('Darowizn'), value: stats.count, icon: Receipt, tint: 'from-amber-500 to-orange-500' },
+    { label: tr('Liczba darowizn'), value: stats.count, icon: Receipt, tint: 'from-amber-500 to-orange-500' },
   ];
 
   if (loading) return <Spinner center />;

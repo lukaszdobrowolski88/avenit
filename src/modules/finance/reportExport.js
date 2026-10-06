@@ -3,6 +3,7 @@
 import { saveAs } from 'file-saver';
 import { bucketsForRange } from './reportRange';
 import { appLocale } from '../../i18n';
+import { isCountedExpense, matchesBudgetItem } from './money';
 // Ciężkie zależności (xlsx, jspdf, html2canvas) ładowane dynamicznie dopiero przy eksporcie,
 // żeby nie powiększać głównego chunku modułu Finanse.
 
@@ -27,7 +28,11 @@ function groupSorted(rows, keyFn, colorFn) {
  * Buduje wspólny model raportu dla danego zakresu.
  * @param {{range, income, expense, budget, expenseCategories?, prevIncome?, prevExpense?}} p
  */
-export function buildReportModel({ range, income = [], expense = [], budget = [], expenseCategories = [], prevIncome = null, prevExpense = null }) {
+export function buildReportModel({ range, income = [], expense: allExpense = [], budget = [], expenseCategories = [], prevIncome = null, prevExpense = null }) {
+  // Do bilansu, wykresów i realizacji wchodzą tylko wydatki zatwierdzone/opłacone.
+  // Wnioski czekające, szkice i odrzucone widać osobno w sekcji „Status wydatków”.
+  const expense = allExpense.filter(isCountedExpense);
+  const pendingExpense = allExpense.filter((e) => e.status === 'submitted' || e.status === 'draft');
   const totalIncome = income.reduce((a, r) => a + num(r.amount), 0);
   const totalExpense = expense.reduce((a, r) => a + num(r.amount), 0);
 
@@ -41,14 +46,15 @@ export function buildReportModel({ range, income = [], expense = [], budget = []
 
   const colorFor = (name) => expenseCategories.find((c) => c.name === name)?.color || null;
 
-  // Realizacja budżetu wg służby (kruche dopasowanie po category+description, jak w istniejącym kodzie).
+  // Realizacja budżetu WYDATKÓW wg służby (plan przychodów to nie służba — pomijamy).
+  // Dopasowanie po służbie + opisie pozycji (bez względu na wielkość liter i spacje).
   const stats = {};
-  budget.forEach((item) => {
+  budget.filter((item) => item.kind !== 'income').forEach((item) => {
     const cat = item.category || '—';
     if (!stats[cat]) stats[cat] = { planned: 0, realized: 0 };
     stats[cat].planned += num(item.planned_amount);
     stats[cat].realized += expense
-      .filter((e) => e.category === item.category && e.description === item.description)
+      .filter((e) => matchesBudgetItem(e, item))
       .reduce((a, e) => a + num(e.amount), 0);
   });
   const budgetExecution = Object.entries(stats).map(([category, s]) => ({
@@ -65,7 +71,7 @@ export function buildReportModel({ range, income = [], expense = [], budget = []
   // Status wydatków (workflow akceptacji/płatności).
   const STATUS_ORDER = ['draft', 'submitted', 'approved', 'rejected', 'paid'];
   const statusMap = {};
-  expense.forEach((e) => { const s = e.status || 'approved'; (statusMap[s] = statusMap[s] || { amount: 0, count: 0 }).amount += num(e.amount); statusMap[s].count++; });
+  allExpense.forEach((e) => { const s = e.status || 'approved'; (statusMap[s] = statusMap[s] || { amount: 0, count: 0 }).amount += num(e.amount); statusMap[s].count++; });
   const expenseStatus = Object.entries(statusMap)
     .map(([status, v]) => ({ status, amount: v.amount, count: v.count }))
     .sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
@@ -87,6 +93,10 @@ export function buildReportModel({ range, income = [], expense = [], budget = []
     biggestExpense: topExpenses[0] || null,
     unpaidTotal: unpaidInvoices.reduce((a, e) => a + e.amount, 0),
     unpaidCount: unpaidInvoices.length,
+    pendingTotal: pendingExpense.reduce((a, e) => a + num(e.amount), 0),
+    pendingCount: pendingExpense.length,
+    plannedExpense: budget.filter((b) => b.kind !== 'income').reduce((a, b) => a + num(b.planned_amount), 0),
+    plannedIncome: budget.filter((b) => b.kind === 'income').reduce((a, b) => a + num(b.planned_amount), 0),
   };
 
   const model = {
@@ -102,12 +112,12 @@ export function buildReportModel({ range, income = [], expense = [], budget = []
     expenseStatus,
     unpaidInvoices,
     budgetExecution,
-    raw: { income, expense, budget },
+    raw: { income, expense: allExpense, budget },
   };
 
   if (prevIncome != null && prevExpense != null) {
     const pi = prevIncome.reduce((a, r) => a + num(r.amount), 0);
-    const pe = prevExpense.reduce((a, r) => a + num(r.amount), 0);
+    const pe = prevExpense.filter(isCountedExpense).reduce((a, r) => a + num(r.amount), 0);
     model.yoy = {
       income: { now: totalIncome, prev: pi },
       expense: { now: totalExpense, prev: pe },

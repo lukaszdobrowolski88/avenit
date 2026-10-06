@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useT } from '../../../i18n';
 import {
   Send, Eye, MousePointer, AlertTriangle, UserMinus,
@@ -7,9 +7,15 @@ import {
 } from 'lucide-react';
 import { tr, appLocale } from '../../../i18n';
 
-export default function CampaignStats({ campaigns }) {
+export default function CampaignStats({ campaigns, initialCampaignId = null }) {
   const t = useT();
-  const [selectedCampaignId, setSelectedCampaignId] = useState(null);
+  // „Statystyki” z karty maila otwierają od razu rozwinięte statystyki tego maila.
+  const [selectedCampaignId, setSelectedCampaignId] = useState(initialCampaignId);
+  useEffect(() => {
+    if (!initialCampaignId) return;
+    const el = document.getElementById(`campaign-stats-${initialCampaignId}`);
+    el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  }, [initialCampaignId]);
   const [timeRange, setTimeRange] = useState('all'); // 'week', 'month', 'all'
 
   // Filtruj kampanie według czasu
@@ -233,6 +239,7 @@ export default function CampaignStats({ campaigns }) {
             return (
               <div
                 key={campaign.id}
+                id={`campaign-stats-${campaign.id}`}
                 className={`p-5 transition-all duration-200 ${
                   isExpanded ? 'bg-gradient-to-br from-accent-primary-lightest/50 to-accent-secondary-lightest/30 dark:from-accent-primary-darkest/10 dark:to-accent-secondary-darkest/10' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/30'
                 }`}
@@ -267,6 +274,8 @@ export default function CampaignStats({ campaigns }) {
                     </div>
                     <button
                       onClick={() => setSelectedCampaignId(isExpanded ? null : campaign.id)}
+                      aria-label={isExpanded ? tr('Zwiń statystyki') : tr('Pokaż statystyki')}
+                      aria-expanded={isExpanded}
                       className={`p-2.5 rounded-xl transition-all duration-200 ${
                         isExpanded
                           ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30'

@@ -251,14 +251,14 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                     <button
                       onClick={(e) => { e.stopPropagation(); setPreviewTemplate(template); }}
                       className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title={tr('Podgląd')}
+                      title={tr('Podgląd')} aria-label={tr('Podgląd')}
                     >
                       <Eye size={18} className="text-gray-700 dark:text-gray-300" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onSelectTemplate(template.id); }}
                       className="p-2 bg-accent-primary-light rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title={tr('Użyj szablonu')}
+                      title={tr('Użyj szablonu')} aria-label={tr('Użyj szablonu')}
                     >
                       <Edit size={18} className="text-white" />
                     </button>
@@ -394,7 +394,8 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
         })}
       </div>
 
-      {filteredTemplates.length === 0 && (
+      {/* Gdy kategoria jest pusta, a obok stoi kafelek „Nowy szablon”, nie dublujemy komunikatu. */}
+      {filteredTemplates.length === 0 && (searchQuery || showFavoritesOnly || !onCreateTemplate) && (
         <EmptyState
           icon={FileText}
           title={showFavoritesOnly ? tr('Brak ulubionych szablonów') : tr('Brak szablonów w tej kategorii')}
@@ -479,10 +480,10 @@ function TemplatePreviewModal({
                 ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
-            title={tr('Widok desktop')}
+            title={tr('Widok na komputerze')}
           >
             <Monitor size={16} />
-            <span className="text-xs font-medium hidden sm:inline">{tr('Desktop')}</span>
+            <span className="text-xs font-medium hidden sm:inline">{tr('Komputer')}</span>
           </button>
           <button
             onClick={() => onDeviceChange('mobile')}
@@ -491,10 +492,10 @@ function TemplatePreviewModal({
                 ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
-            title={tr('Widok mobile')}
+            title={tr('Widok na telefonie')}
           >
             <Smartphone size={16} />
-            <span className="text-xs font-medium hidden sm:inline">{tr('Mobile')}</span>
+            <span className="text-xs font-medium hidden sm:inline">{tr('Telefon')}</span>
           </button>
         </div>
 
@@ -506,7 +507,7 @@ function TemplatePreviewModal({
               ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500'
               : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-amber-500'
           }`}
-          title={isFavorite ? tr('Usuń z ulubionych') : tr('Dodaj do ulubionych')}
+          title={isFavorite ? tr('Usuń z ulubionych') : tr('Dodaj do ulubionych')} aria-label={isFavorite ? tr('Usuń z ulubionych') : tr('Dodaj do ulubionych')}
         >
           <Star size={18} className={isFavorite ? 'fill-amber-500' : ''} />
         </button>

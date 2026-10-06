@@ -137,9 +137,30 @@ export function enforceExpenseApproval(q, resolver) {
   if (!resolver || q.table !== 'expense_transactions' || !['insert', 'upsert', 'update'].includes(q.op)) return;
   if (resolver.can('action:finance:approve')) return;
   for (const r of rowsOf(q)) {
+    // Domyślne wartości w bazie to status='approved' i is_paid=true — wydatek dodany przez lidera
+    // z zakładki zespołu (bez statusu) wliczał się od razu jako zatwierdzony i opłacony.
+    if (q.op !== 'update') {
+      if (r.status == null) r.status = 'submitted';
+      if (r.is_paid == null) r.is_paid = false;
+    }
     const decides = (r.status != null && DECISION_STATUSES.has(String(r.status)))
       || r.is_paid === true || r.paid_date != null || r.approved_by != null || r.approved_at != null;
     if (decides) throw new ApiError(403, 'Zatwierdzanie i opłacanie wydatków wymaga uprawnienia do zatwierdzania finansów');
   }
 }
 
+
+// Mailing: status „wysyłane/zaplanowane/wysłane” ustawia wyłącznie funkcja wysyłki (sprawdza
+// action:mailing:send). Przez /api/db dało się ustawić `sending`/`scheduled` i worker wysłał
+// mail do wszystkich z pominięciem uprawnienia do wysyłki.
+const CAMPAIGN_SEND_STATUSES = new Set(['sending', 'scheduled', 'sent']);
+export function enforceCampaignStatus(q, resolver) {
+  if (q.table !== 'email_campaigns' || !['insert', 'upsert', 'update'].includes(q.op)) return;
+  if (resolver && resolver.can('action:mailing:send')) return;
+  if (!resolver) return; // admin / tryb legacy
+  for (const r of rowsOf(q)) {
+    if (r.status != null && CAMPAIGN_SEND_STATUSES.has(String(r.status))) {
+      throw new ApiError(403, 'Wysyłkę i planowanie maili uruchamia osoba z uprawnieniem do wysyłki');
+    }
+  }
+}

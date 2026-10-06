@@ -5,6 +5,7 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { config } from '../config.js';
 import { decryptPassword } from '../lib/mailcrypto.js';
+import { emailListParam } from './send-mail.js';
 
 export const name = 'sync-mail';
 
@@ -205,7 +206,8 @@ async function syncAccount(pool, payload) {
       LIMIT 1`,
     [payload.account_id]
   );
-  const lastUid = lastMessageRows[0]?.imap_uid || 0;
+  // imap_uid to BIGINT — pg zwraca go jako tekst, a porównanie niżej musi być liczbowe.
+  const lastUid = Number(lastMessageRows[0]?.imap_uid) || 0;
 
   // Pobierz wiadomości z IMAP.
   const messages = await fetchImapMessages(
@@ -248,8 +250,9 @@ async function syncAccount(pool, payload) {
           sanitizeText(msg.messageId),
           sanitizeText(msg.from?.address) || '',
           sanitizeText(msg.from?.name) || '',
-          msg.to?.map((t) => sanitizeText(t.address) || '').filter(Boolean) || [],
-          msg.cc?.map((c) => sanitizeText(c.address) || '').filter(Boolean) || [],
+          // to_emails/cc_emails: jsonb albo text[] — postać dobiera emailListParam.
+          await emailListParam(pool, msg.to?.map((t) => sanitizeText(t.address) || '').filter(Boolean) || []),
+          await emailListParam(pool, msg.cc?.map((c) => sanitizeText(c.address) || '').filter(Boolean) || []),
           sanitizedSubject,
           sanitizedHtml,
           bodyText,
@@ -294,7 +297,8 @@ async function syncAccount(pool, payload) {
 
 // Rdzeń logiki dla workera cron: synchronizuje WSZYSTKIE zewnętrzne konta IMAP tenanta.
 export async function runForTenant(pool, ctx) {
-  const log = ctx?.log || console;
+  // ctx.log z workera to funkcja (nie obiekt console) — wcześniej log.error rzucał TypeError.
+  const logError = typeof ctx?.log === 'function' ? ctx.log : (...a) => console.error(...a);
   let accounts = [];
   try {
     const res = await pool.query(
@@ -312,7 +316,7 @@ export async function runForTenant(pool, ctx) {
       const { body } = await syncAccount(pool, { account_id: acc.id });
       results.push({ account_id: acc.id, ...body });
     } catch (err) {
-      log.error(`sync-mail: konto ${acc.id} — ${err.message}`);
+      logError(`sync-mail: konto ${acc.id} — ${err.message}`);
       results.push({ account_id: acc.id, error: err.message });
     }
   }
@@ -321,10 +325,19 @@ export async function runForTenant(pool, ctx) {
 
 export default async function handler(req, reply) {
   try {
-    const { status, body } = await syncAccount(req.db, req.body || {});
+    const payload = req.body || {};
+    // Synchronizować (i testować) można tylko własną skrzynkę — konto ma odszyfrowywane hasło.
+    if (payload.account_id) {
+      const { rows } = await req.db.query(`SELECT user_email FROM mail_accounts WHERE id = $1`, [payload.account_id]);
+      const owner = String(rows[0]?.user_email || '').toLowerCase();
+      if (rows[0] && owner !== String(req.user?.email || '').toLowerCase()) {
+        return reply.code(403).send({ error: 'Możesz synchronizować tylko swoją skrzynkę pocztową.' });
+      }
+    }
+    const { status, body } = await syncAccount(req.db, payload);
     return reply.code(status).send(body);
   } catch (err) {
     req.log.error({ err }, 'Sync mail error');
-    return reply.code(500).send({ error: err.message });
+    return reply.code(500).send({ error: 'Nie udało się pobrać poczty. Sprawdź ustawienia skrzynki i spróbuj ponownie.' });
   }
 }

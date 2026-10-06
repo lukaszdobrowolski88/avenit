@@ -4,14 +4,14 @@ import { supabase } from '../../../lib/supabase';
 import { personalizeHtml } from '../utils/emailVariables';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { useCan } from '../../../components/Can';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 
 export default function CampaignPreview({ subject, htmlContent, onClose }) {
   const [viewMode, setViewMode] = useState('desktop'); // 'desktop' | 'mobile'
-  const [testEmail, setTestEmail] = useState('');
+  const canSend = useCan('action:mailing:send');
   const [sending, setSending] = useState(false);
-  const [showTestForm, setShowTestForm] = useState(false);
 
   // Przygotuj podgląd z przykładowymi danymi
   const previewHtml = personalizeHtml(htmlContent, {
@@ -22,37 +22,23 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
     baseUrl: window.location.origin
   });
 
+  // Test idzie zawsze na adres zalogowanej osoby (serwer bierze go z sesji), bez zapisu maila.
   const handleSendTest = async () => {
-    if (!testEmail.trim()) {
-      toast.error(tr('Podaj adres email'));
+    if (!String(subject || '').trim() || !String(htmlContent || '').trim()) {
+      toast.error(tr('Uzupełnij temat i treść maila, zanim wyślesz test.'));
       return;
     }
-
+    setSending(true);
     try {
-      setSending(true);
-
-      // Wywołaj Edge Function do wysyłki testowej
       const { data, error } = await supabase.functions.invoke('send-mailing-campaign', {
-        body: {
-          test_email: testEmail,
-          test_subject: subject,
-          test_html_content: htmlContent
-        }
+        body: { test: true, test_subject: subject, test_html_content: htmlContent }
       });
-
       if (error) {
-        throw new Error(error.message || tr('Błąd wysyłki'));
+        const msg = error.message && !/^HTTP \d+/.test(error.message) ? tr(error.message) : tr('Nie udało się wysłać maila testowego. Spróbuj ponownie za chwilę.');
+        toast.error(msg);
+        return;
       }
-
-      if (data?.success) {
-        toast.success(tr('Email testowy wysłany na: {email}', { email: testEmail }));
-        setShowTestForm(false);
-      } else {
-        throw new Error(data?.error || tr('Nie udało się wysłać'));
-      }
-    } catch (err) {
-      console.error('Error sending test:', err);
-      toast.error(tr('Błąd podczas wysyłania testu: {msg}', { msg: err.message }));
+      toast.success(tr('Mail testowy wysłany na {email}.', { email: data?.to || '' }));
     } finally {
       setSending(false);
     }
@@ -81,6 +67,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
         <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
           <button
             onClick={() => setViewMode('desktop')}
+            aria-pressed={viewMode === 'desktop'}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
               viewMode === 'desktop'
                 ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
@@ -88,10 +75,11 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
             }`}
           >
             <Monitor size={16} />
-            <span className="text-xs font-medium hidden sm:inline">{tr('Desktop')}</span>
+            <span className="text-xs font-medium hidden sm:inline">{tr('Komputer')}</span>
           </button>
           <button
             onClick={() => setViewMode('mobile')}
+            aria-pressed={viewMode === 'mobile'}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
               viewMode === 'mobile'
                 ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
@@ -99,40 +87,23 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
             }`}
           >
             <Smartphone size={16} />
-            <span className="text-xs font-medium hidden sm:inline">{tr('Mobile')}</span>
+            <span className="text-xs font-medium hidden sm:inline">{tr('Telefon')}</span>
           </button>
         </div>
 
-        <Button
-          variant={showTestForm ? 'primary' : 'outline'}
-          size="sm"
-          icon={Send}
-          onClick={() => setShowTestForm(!showTestForm)}
-        >
-          {tr('Test')}
-        </Button>
+        {canSend && (
+          <Button
+            variant="outline"
+            size="sm"
+            icon={Send}
+            onClick={handleSendTest}
+            loading={sending}
+            title={tr('Wyślij mail testowy do siebie')}
+          >
+            {tr('Wyślij test do siebie')}
+          </Button>
+        )}
       </div>
-
-      {/* Test email form */}
-      {showTestForm && (
-        <div className="px-6 py-4 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-b border-accent-primary-lighter/50 dark:border-accent-primary-dark/50">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 relative">
-              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="email"
-                value={testEmail}
-                onChange={(e) => setTestEmail(e.target.value)}
-                placeholder={tr('Wpisz adres email do testu...')}
-                className="w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all"
-              />
-            </div>
-            <Button icon={Send} onClick={handleSendTest} loading={sending}>
-              {tr('Wyślij')}
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Subject preview */}
       <div className="px-6 py-4 bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-200/50 dark:border-gray-700/50">

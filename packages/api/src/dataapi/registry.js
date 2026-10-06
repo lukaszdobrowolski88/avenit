@@ -218,7 +218,8 @@ export const REGISTRY = {
 
   // ── Mail (klient pocztowy) ──────────────────────────────────────────────
   mail_accounts: T('module:mail', {
-    hiddenColumns: ['smtp_password_encrypted', 'imap_password_encrypted'],
+    // Sekrety skrzynek nigdy nie wychodzą przez /api/db (zapis — tak, odczyt — tylko funkcje serwera).
+    hiddenColumns: ['encrypted_password', 'smtp_password', 'smtp_password_encrypted', 'imap_password_encrypted'],
   }),
   mail_messages: T('module:mail', {
     relationships: {
@@ -279,13 +280,13 @@ export const REGISTRY = {
   email_campaigns: T('module:mailing', {
     relationships: {
       template: { table: 'email_templates', column: 'template_id', type: 'one' },
-      creator: { table: 'app_users', column: 'created_by', type: 'one' },
+      creator: { table: 'app_users', column: 'created_by', references: 'email', type: 'one' },
     },
   }),
   email_campaign_recipients: T('module:mailing'),
   email_recipient_segments: T('module:mailing'),
   email_templates: T('module:mailing', {
-    relationships: { creator: { table: 'app_users', column: 'created_by', type: 'one' } },
+    relationships: { creator: { table: 'app_users', column: 'created_by', references: 'email', type: 'one' } },
   }),
   email_unsubscribes: T('module:mailing'),
   // Poczta (klient)

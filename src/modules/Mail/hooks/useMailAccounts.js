@@ -1,14 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 
 export default function useMailAccounts(userEmail) {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Konto wewnętrzne zakładamy najwyżej raz na adres (wcześniej błąd odczytu → insert → odczyt → …
+  // dawał pętlę setek zapisów i wieczny spinner).
+  const ensureAttemptedRef = useRef(null);
 
   // Pobierz konta email użytkownika
   const fetchAccounts = useCallback(async () => {
-    if (!userEmail) return;
+    if (!userEmail) {
+      setLoading(false);
+      return false;
+    }
 
     try {
       setLoading(true);
@@ -22,9 +28,11 @@ export default function useMailAccounts(userEmail) {
       if (fetchError) throw fetchError;
       setAccounts(data || []);
       setError(null);
+      return true;
     } catch (err) {
       console.error('Error fetching mail accounts:', err);
-      setError(err.message);
+      setError(err.message || 'fetch failed');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -35,13 +43,16 @@ export default function useMailAccounts(userEmail) {
     fetchAccounts();
   }, [fetchAccounts]);
 
-  // Utwórz konto wewnętrzne (jeśli nie istnieje)
+  // Utwórz konto wewnętrzne (jeśli nie istnieje) — jedna próba na adres; ponowienie przez retry().
   const ensureInternalAccount = useCallback(async () => {
     if (!userEmail) return null;
 
     // Sprawdź czy istnieje konto wewnętrzne
     const existingInternal = accounts.find(a => a.account_type === 'internal');
     if (existingInternal) return existingInternal;
+
+    if (ensureAttemptedRef.current === userEmail) return null;
+    ensureAttemptedRef.current = userEmail;
 
     try {
       const { data, error: createError } = await supabase
@@ -57,13 +68,22 @@ export default function useMailAccounts(userEmail) {
       if (createError) throw createError;
 
       await fetchAccounts();
+      // Gdyby odczyt nie zwrócił jeszcze nowego konta — użyj zapisanego wiersza (bez wiecznego spinnera).
+      if (data) setAccounts(prev => (prev.length ? prev : [data]));
       return data;
     } catch (err) {
       console.error('Error creating internal mail account:', err);
-      setError(err.message);
+      setError(err.message || 'create failed');
       return null;
     }
   }, [userEmail, accounts, fetchAccounts]);
+
+  // „Spróbuj ponownie” po błędzie: pozwól na kolejną próbę założenia konta i odczytaj konta jeszcze raz.
+  const retry = useCallback(async () => {
+    ensureAttemptedRef.current = null;
+    setError(null);
+    return fetchAccounts();
+  }, [fetchAccounts]);
 
   // Utwórz konto zewnętrzne
   const createExternalAccount = useCallback(async (accountData) => {
@@ -282,6 +302,7 @@ export default function useMailAccounts(userEmail) {
     loading,
     error,
     refetch: fetchAccounts,
+    retry,
     ensureInternalAccount,
     createExternalAccount,
     updateAccount,
