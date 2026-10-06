@@ -50,6 +50,8 @@ const MODULES = [
   'send-assignment-invites',
   'board-form-get',
   'board-form-submit',
+  'public-form-get',
+  'public-form-submit',
   'admin-set-user-password',
   'approve-user',
   'admin-create-user',
@@ -89,9 +91,11 @@ export async function registerFunctions(app) {
       : (cap ? [app.requireUser, app.block2FAPending, requireCapability(cap)] : [app.requireUser, app.block2FAPending]);
     // routePath pozwala funkcji nadpisać ścieżkę (np. ical z tokenem w URL).
     const route = mod.routePath || `/api/fn/${name}`;
-    app[method](route, { preHandler }, mod.default);
+    // rateLimit (publiczne formularze) — limit per IP, jak przy rejestracji/logowaniu.
+    const routeOpts = { preHandler, ...(mod.rateLimit ? { config: { rateLimit: mod.rateLimit } } : {}) };
+    app[method](route, routeOpts, mod.default);
     if (mod.routePath && mod.routePathAlias) {
-      app[method](mod.routePathAlias, { preHandler }, mod.default);
+      app[method](mod.routePathAlias, routeOpts, mod.default);
     }
   }
 }

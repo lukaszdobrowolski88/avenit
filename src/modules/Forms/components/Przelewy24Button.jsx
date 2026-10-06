@@ -39,7 +39,8 @@ export default function Przelewy24Button({
 
   // Rejestracja transakcji w Przelewy24
   const registerTransaction = async () => {
-    if (!merchantId || !crcKey) {
+    // Podpis transakcji robi serwer (klucze z konfiguracji) — przeglądarka nie potrzebuje sekretów.
+    if (!merchantId) {
       setError(tr('Brak konfiguracji Przelewy24. Skontaktuj się z administratorem.'));
       return;
     }
@@ -57,8 +58,6 @@ export default function Przelewy24Button({
       const { data, error: fnError } = await supabase.functions.invoke('przelewy24-create-payment', {
         body: {
           merchantId,
-          crcKey,
-          apiKey,
           amount: amountInGrosze,
           currency,
           description,

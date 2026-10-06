@@ -4,8 +4,6 @@ import { useParams } from 'react-router-dom';
 import { AlertCircle, Lock } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import FormRenderer from '../components/FormRenderer';
-import { useFormResponses } from '../hooks/useFormResponses';
-import { useFormEmails } from '../hooks/useFormEmails';
 import { checkSeatAvailability } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
@@ -18,8 +16,6 @@ export default function PublicFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const { submitResponse } = useFormResponses(formId);
-  const { sendFormSubmissionEmails } = useFormEmails();
 
   useEffect(() => {
     fetchForm();
@@ -27,18 +23,13 @@ export default function PublicFormPage() {
 
   const fetchForm = async () => {
     try {
-      const { data, error: fetchError } = await supabase
-        .from('forms')
-        .select('*')
-        .eq('id', formId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      if (data.status !== 'published') {
-        setError('form_not_available');
+      // Publiczny endpoint — strona działa też dla gości bez konta (dane API wymagają sesji).
+      const { data: res, error: fetchError } = await supabase.functions.invoke('public-form-get', { body: { formId } });
+      if (fetchError) {
+        setError(fetchError.message === 'form_not_available' ? 'form_not_available' : 'not_found');
         return;
       }
+      const data = res.form;
 
       if (data.settings?.limitResponses && data.response_count >= data.settings.limitResponses) {
         setError('limit_reached');
@@ -79,50 +70,22 @@ export default function PublicFormPage() {
       delete cleanAnswers._payment;
       delete cleanAnswers._totalPrice;
 
-      // Znajdz email w odpowiedziach
-      const emailField = form.fields?.find(f => f.type === 'email');
-      const respondentEmail = emailField ? cleanAnswers[emailField.id] : null;
-
-      // Znajdz imie w odpowiedziach
-      const nameField = form.fields?.find(f =>
-        f.type === 'text' &&
-        (f.label?.toLowerCase().includes('imie') ||
-         f.label?.toLowerCase().includes('imię') ||
-         f.label?.toLowerCase().includes('name') ||
-         f.label?.toLowerCase().includes('nazwisko'))
-      );
-      const respondentName = nameField ? cleanAnswers[nameField.id] : '';
-
-      const result = await submitResponse(cleanAnswers, {
-        email: respondentEmail,
-        name: respondentName
+      // Zapis i e-maile (potwierdzenie, przelew, powiadomienie admina) robi serwer.
+      const { error: submitError } = await supabase.functions.invoke('public-form-submit', {
+        body: { formId: form.id, answers: cleanAnswers, totalPrice, paymentMethod: selectedPaymentMethod },
       });
-
-      if (result.success) {
-        setIsSubmitted(true);
-
-        // Wyslij emaile w tle (nie blokuj UI)
-        sendFormSubmissionEmails({
-          formSettings: form.settings,
-          formTitle: form.title,
-          formId: form.id,
-          answers: cleanAnswers,
-          fields: form.fields || [],
-          totalPrice,
-          selectedPaymentMethod
-        }).then(emailResults => {
-          console.log('Email results:', emailResults);
-        }).catch(emailError => {
-          console.error('Error sending emails:', emailError);
-        });
-
-        if (form.settings?.redirectUrl) {
-          setTimeout(() => {
-            window.location.href = form.settings.redirectUrl;
-          }, 2000);
+      if (submitError) {
+        if (['form_closed', 'limit_reached', 'form_not_available'].includes(submitError.message)) {
+          setError(submitError.message);
+          return;
         }
-      } else {
-        throw new Error(result.error);
+        throw new Error(submitError.message);
+      }
+      setIsSubmitted(true);
+      if (form.settings?.redirectUrl) {
+        setTimeout(() => {
+          window.location.href = form.settings.redirectUrl;
+        }, 2000);
       }
     } catch (err) {
       console.error('Error submitting form:', err);

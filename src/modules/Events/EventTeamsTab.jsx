@@ -55,9 +55,10 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
     let alive = true;
     (async () => {
       try {
-        const { data } = await supabase.from('app_modules').select('module_key, label, is_system');
-        const custom = (data || []).filter((m) => m?.module_key && m.is_system === false)
-          .map((m) => ({ value: m.module_key, label: m.label || m.module_key }));
+        // Kolumna klucza modułu to `key` (nie module_key).
+        const { data } = await supabase.from('app_modules').select('key, label, is_system');
+        const custom = (data || []).filter((m) => m?.key && m.is_system === false)
+          .map((m) => ({ value: m.key, label: m.label || m.key }));
         const seen = new Set();
         const merged = [...SYSTEM_TEAM_OPTIONS, ...custom].filter((o) => (seen.has(o.value) ? false : seen.add(o.value)));
         if (alive) setTeamOptions(merged);

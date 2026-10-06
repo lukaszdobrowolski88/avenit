@@ -67,7 +67,8 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
         responsible_person: form.responsible_person,
         documents: [],
         tags: [],
-        ministry,
+        // Lista wydatków modułu filtruje po team_type (kolumny „ministry” nie ma w bazie — zapis się wywracał).
+        team_type: ministry,
       }]);
       if (error) throw error;
       setShowModal(false);

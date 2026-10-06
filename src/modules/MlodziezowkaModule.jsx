@@ -506,8 +506,7 @@ export default function MlodziezowkaModule() {
           full_name: leaderForm.full_name,
           email: leaderForm.email,
           phone: leaderForm.phone,
-          role: leaderForm.role,
-          created_by: currentUserEmail
+          role: leaderForm.role
         }]);
         if (error) throw error;
       }
