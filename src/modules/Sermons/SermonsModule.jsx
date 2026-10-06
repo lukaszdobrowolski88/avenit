@@ -52,7 +52,7 @@ export default function SermonsModule({ embedded = false }) {
   const shared = { sermons, loading, campusIdForInsert, withCampusFilter, refresh: loadSermons, teachingSeries };
 
   return (
-    <div className={embedded ? 'space-y-6' : 'max-w-7xl mx-auto space-y-6'}>
+    <div className="space-y-6">
       {/* Nagłówek (pomijany przy osadzeniu) */}
       {!embedded && (
         <PageHeader moduleKey="sermons" icon={Podcast} title="Kazania" subtitle="Publiczne archiwum kazań — audio, wideo i odnośniki biblijne" />

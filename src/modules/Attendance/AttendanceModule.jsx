@@ -46,7 +46,7 @@ export default function AttendanceModule() {
   const shared = { members, membersById, campusIdForInsert, withCampusFilter };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader moduleKey="attendance" icon={ClipboardCheck} title="Frekwencja" subtitle="Obecność dorosłych na nabożeństwach, spotkaniach i modlitwach — z analityką trendów" />
 
       {/* Zakładki */}

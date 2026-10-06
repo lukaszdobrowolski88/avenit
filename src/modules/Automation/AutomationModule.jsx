@@ -48,7 +48,7 @@ export default function AutomationModule() {
   const shared = { members, membersById, campusIdForInsert, withCampusFilter, selectedCampusId };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader moduleKey="automation" icon={Workflow} title="Automatyzacje" subtitle="Silnik automatyzacji i ścieżki asymilacji nowych gości" />
 
       {/* Notka o workerze */}

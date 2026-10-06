@@ -97,7 +97,7 @@ export default function CareModule({ embedded = false }) {
   const goToDefinitions = useCallback(() => setView('fields'), []);
 
   return (
-    <div className={embedded ? 'space-y-6' : 'max-w-7xl mx-auto space-y-6'}>
+    <div className="space-y-6">
       {!embedded && (
         <PageHeader moduleKey="care" icon={HeartPulse} title="Opieka i CRM" subtitle="Notatki, opieka duszpasterska, kamienie milowe, tagi i pola własne członków" />
       )}
