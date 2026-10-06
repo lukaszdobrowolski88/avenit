@@ -7,6 +7,7 @@ import { slugify, formatDate, parseVideo } from '../lib/sermonsApi';
 import { bibleUrl } from '../lib/bible';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 const emptyForm = {
   title: '', speaker: '', series: '', sermon_date: new Date().toISOString().slice(0, 10),
@@ -185,65 +186,60 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
             <p className="text-gray-500 dark:text-gray-400">Brak kazań dla wybranych filtrów.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 font-semibold">Tytuł</th>
-                  <th className="px-4 py-3 font-semibold">Mówca</th>
-                  <th className="px-4 py-3 font-semibold">Seria</th>
-                  <th className="px-4 py-3 font-semibold">Data</th>
-                  <th className="px-4 py-3 font-semibold">Media</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold text-right">Akcje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(item => (
-                  <tr key={item.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 dark:text-white">{item.title}</div>
-                      {item.scripture_ref && (
-                        <span className="inline-flex items-center gap-1 text-xs text-accent-primary dark:text-accent-primary-light">
-                          <BookOpen size={12} /> {item.scripture_ref}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{item.speaker || '—'}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{item.series || '—'}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{item.sermon_date ? formatDate(item.sermon_date) : '—'}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-gray-400">
-                        {item.audio_url && <Music size={15} className="text-accent-primary dark:text-accent-primary-light" title="Audio" />}
-                        {item.video_url && <Video size={15} className="text-accent-primary dark:text-accent-primary-light" title="Wideo" />}
-                        {!item.audio_url && !item.video_url && <span className="text-xs">—</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        item.is_published
-                          ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                      }`}>{item.is_published ? 'Opublikowane' : 'Szkic'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => copyPublicLink(item)}
-                          title="Kopiuj link publiczny"
-                          className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          {copiedId === item.id ? <Check size={15} className="text-emerald-500" /> : <LinkIcon size={15} />}
-                        </button>
-                        <button onClick={() => openEdit(item)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
-                        <button onClick={() => remove(item)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Tytuł</TH>
+                <TH>Mówca</TH>
+                <TH>Seria</TH>
+                <TH>Data</TH>
+                <TH>Media</TH>
+                <TH>Status</TH>
+                <TH align="right"><span className="sr-only">Akcje</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filtered.map(item => (
+                <TR key={item.id}>
+                  <TD>
+                    <div className="font-medium text-gray-900 dark:text-white">{item.title}</div>
+                    {item.scripture_ref && (
+                      <span className="inline-flex items-center gap-1 text-xs text-accent-primary dark:text-accent-primary-light">
+                        <BookOpen size={12} /> {item.scripture_ref}
+                      </span>
+                    )}
+                  </TD>
+                  <TD muted>{item.speaker || ''}</TD>
+                  <TD muted>{item.series || ''}</TD>
+                  <TD muted numeric className="whitespace-nowrap">{item.sermon_date ? formatDate(item.sermon_date) : ''}</TD>
+                  <TD>
+                    <div className="flex items-center gap-2 text-gray-400">
+                      {item.audio_url && <Music size={15} className="text-accent-primary dark:text-accent-primary-light" title="Audio" />}
+                      {item.video_url && <Video size={15} className="text-accent-primary dark:text-accent-primary-light" title="Wideo" />}
+                    </div>
+                  </TD>
+                  <TD>
+                    <StatusPill color={item.is_published ? STATUS_COLORS.success : STATUS_COLORS.neutral}>
+                      {item.is_published ? 'Opublikowane' : 'Szkic'}
+                    </StatusPill>
+                  </TD>
+                  <TD align="right">
+                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => copyPublicLink(item)}
+                        title="Kopiuj link publiczny"
+                        className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        {copiedId === item.id ? <Check size={15} className="text-emerald-500" /> : <LinkIcon size={15} />}
+                      </button>
+                      <button onClick={() => openEdit(item)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
+                      <button onClick={() => remove(item)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
 

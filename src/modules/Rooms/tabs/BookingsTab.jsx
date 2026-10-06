@@ -5,6 +5,7 @@ import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 import {
   toLocalInputValue, localInputToIso, formatDateTime, formatTime, formatDuration,
   addWeeks, newUuid, startOfDay,
@@ -272,58 +273,56 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
             <p className="text-gray-500 dark:text-gray-400">Brak rezerwacji dla wybranych filtrów.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 font-semibold">Zasób</th>
-                  <th className="px-4 py-3 font-semibold">Tytuł</th>
-                  <th className="px-4 py-3 font-semibold">Początek</th>
-                  <th className="px-4 py-3 font-semibold">Koniec</th>
-                  <th className="px-4 py-3 font-semibold">Zarezerwował</th>
-                  <th className="px-4 py-3 font-semibold text-right">Akcje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(b => {
-                  const r = resourceById[b.resource_id];
-                  return (
-                    <tr key={b.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: r?.color || '#94a3b8' }} />
-                          {r?.name || <span className="text-gray-400">— usunięty —</span>}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                          {b.title || <span className="text-gray-400">bez tytułu</span>}
-                          {b.recurrence_group && (
-                            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-accent-primary-lightest text-accent-primary dark:bg-accent-primary-darkest/30 dark:text-accent-primary-light">
-                              <Repeat size={10} /> cykl
-                            </span>
-                          )}
-                        </div>
-                        {b.note && <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{b.note}</div>}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDateTime(b.start_at)}</td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                        {formatTime(b.end_at)}
-                        <span className="block text-xs text-gray-400">{formatDuration(b.start_at, b.end_at)}</span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{b.booked_by || <span className="text-gray-400">—</span>}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => openEdit(b)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
-                          <button onClick={() => remove(b)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Zasób</TH>
+                <TH>Tytuł</TH>
+                <TH>Początek</TH>
+                <TH>Koniec</TH>
+                <TH>Zarezerwował</TH>
+                <TH align="right"><span className="sr-only">Akcje</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filtered.map(b => {
+                const r = resourceById[b.resource_id];
+                return (
+                  <TR key={b.id}>
+                    <TD>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: r?.color || '#94a3b8' }} />
+                        {r?.name || <span className="text-gray-400">— usunięty —</span>}
+                      </span>
+                    </TD>
+                    <TD>
+                      <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                        {b.title || <span className="text-gray-400">bez tytułu</span>}
+                        {b.recurrence_group && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-accent-primary-lightest text-accent-primary dark:bg-accent-primary-darkest/30 dark:text-accent-primary-light">
+                            <Repeat size={10} /> cykl
+                          </span>
+                        )}
+                      </div>
+                      {b.note && <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{b.note}</div>}
+                    </TD>
+                    <TD muted numeric className="whitespace-nowrap">{formatDateTime(b.start_at)}</TD>
+                    <TD muted numeric className="whitespace-nowrap">
+                      {formatTime(b.end_at)}
+                      <span className="block text-xs text-gray-400">{formatDuration(b.start_at, b.end_at)}</span>
+                    </TD>
+                    <TD muted className="whitespace-nowrap">{b.booked_by || ''}</TD>
+                    <TD align="right">
+                      <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                        <button onClick={() => openEdit(b)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
+                        <button onClick={() => remove(b)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
+                      </div>
+                    </TD>
+                  </TR>
+                );
+              })}
+            </tbody>
+          </DataTable>
         )}
       </div>
 

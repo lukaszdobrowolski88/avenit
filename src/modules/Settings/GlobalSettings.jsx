@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import {
   List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen, Building2,
   CheckCircle, AlertCircle, Upload, Eye,
-  Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers, Plug,
+  Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, Check, ChevronDown, ChevronUp, Layers, Plug,
   Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2, UserPlus, Clock, Download
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
@@ -22,6 +22,7 @@ import SubscriptionInfo from './components/SubscriptionInfo';
 import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
@@ -1529,60 +1530,73 @@ export default function GlobalSettings() {
                 <button onClick={clearSelection} className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:underline ml-auto">{tr('Wyczyść')}</button>
               </div>
             )}
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
-              <table className="w-full text-sm text-left bg-white dark:bg-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4 w-10"><input type="checkbox" checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length} onChange={() => setSelectedUserIds(prev => prev.size === filteredUsers.length ? new Set() : new Set(filteredUsers.map(u => u.id)))} /></th><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Kampus')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4">{t('Ostatnie logowanie')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
-                  {filteredUsers.map(user => {
-                    const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
-                    const isSuperAdmin = user.is_super_admin === true;
-                    const st = user.status || (user.is_active ? 'active' : 'blocked');
-                    const loginLocked = user.locked_until && new Date(user.locked_until).getTime() > Date.now();
-                    const invitedPending = user.invited_at && !user.last_login_at;
-                    return (
-                      <tr key={user.id} className={`hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-600 transition text-gray-800 dark:text-gray-200 ${isSuperAdmin ? 'bg-yellow-50/30 dark:bg-yellow-900/10' : ''}`}>
-                        <td className="p-4 w-10"><input type="checkbox" checked={selectedUserIds.has(user.id)} onChange={() => toggleSelectUser(user.id)} /></td>
-                        <td className="p-4 font-medium flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light'}`}>
+            <DataTable>
+              <THead>
+                <tr>
+                  <TH className="w-10"><input type="checkbox" checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length} onChange={() => setSelectedUserIds(prev => prev.size === filteredUsers.length ? new Set() : new Set(filteredUsers.map(u => u.id)))} /></TH>
+                  <TH>{t('Użytkownik')}</TH>
+                  <TH>{t('Email')}</TH>
+                  <TH>{t('Rola')}</TH>
+                  {campuses.length > 0 && <TH>{t('Kampus')}</TH>}
+                  <TH>{t('Status')}</TH>
+                  <TH>{t('Ostatnie logowanie')}</TH>
+                  <TH align="right"><span className="sr-only">{t('Akcje')}</span></TH>
+                </tr>
+              </THead>
+              <tbody>
+                {filteredUsers.map(user => {
+                  const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
+                  const isSuperAdmin = user.is_super_admin === true;
+                  const st = user.status || (user.is_active ? 'active' : 'blocked');
+                  const loginLocked = user.locked_until && new Date(user.locked_until).getTime() > Date.now();
+                  const invitedPending = user.invited_at && !user.last_login_at;
+                  return (
+                    <TR key={user.id} selected={selectedUserIds.has(user.id)}>
+                      <TD className="w-10"><input type="checkbox" checked={selectedUserIds.has(user.id)} onChange={() => toggleSelectUser(user.id)} /></TD>
+                      <TD className="font-medium text-gray-900 dark:text-white">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase shrink-0 ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light'}`}>
                             {(user.full_name || user.email || '?').charAt(0)}
                           </div>
                           {user.full_name || 'Brak imienia'}
-                          {isSuperAdmin && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded font-bold">SUPERADMIN</span>}
-                        </td>
-                        <td className="p-4 text-gray-600 dark:text-gray-400">{user.email}</td>
-                        <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary dark:text-accent-secondary-light'}`}>{roleLabel}</span></td>
-                        {campuses.length > 0 && <td className="p-4 text-gray-500 dark:text-gray-400 text-sm">{campuses.find(c => c.id === user.campus_id)?.name || <span className="text-gray-300 dark:text-gray-600">—</span>}</td>}
-                        <td className="p-4">
-                          <div className="flex flex-col gap-1 items-start">
-                            <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin || st === 'pending'} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border ${st === 'active' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : st === 'pending' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'} ${isSuperAdmin || st === 'pending' ? 'opacity-70 cursor-default' : ''}`}>
-                              {st === 'active' ? <UserCheck size={12}/> : st === 'pending' ? <Clock size={12}/> : <UserX size={12}/>} {st === 'active' ? tr('Aktywny') : st === 'pending' ? tr('Oczekujący') : tr('Zablokowany')}
+                          {isSuperAdmin && <StatusPill color={STATUS_COLORS.warning}>SUPERADMIN</StatusPill>}
+                        </div>
+                      </TD>
+                      <TD muted>{user.email}</TD>
+                      <TD><StatusPill color={isSuperAdmin ? STATUS_COLORS.warning : STATUS_COLORS.accent}>{roleLabel}</StatusPill></TD>
+                      {campuses.length > 0 && <TD muted>{campuses.find(c => c.id === user.campus_id)?.name || null}</TD>}
+                      <TD>
+                        <div className="flex flex-col gap-1 items-start">
+                          <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin || st === 'pending'} className={`rounded-full transition ${isSuperAdmin || st === 'pending' ? 'opacity-70 cursor-default' : 'hover:opacity-80'}`}>
+                            <StatusPill color={st === 'active' ? STATUS_COLORS.success : st === 'pending' ? STATUS_COLORS.warning : STATUS_COLORS.danger}>
+                              {st === 'active' ? tr('Aktywny') : st === 'pending' ? tr('Oczekujący') : tr('Zablokowany')}
+                            </StatusPill>
+                          </button>
+                          {loginLocked && (
+                            <button onClick={() => unlockLogin(user)} title={tr('Zablokowane logowanie po nieudanych próbach — kliknij, aby odblokować')} className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline">
+                              <KeyRound size={11}/> {tr('Odblokuj logowanie')}
                             </button>
-                            {loginLocked && (
-                              <button onClick={() => unlockLogin(user)} title={tr('Zablokowane logowanie po nieudanych próbach — kliknij, aby odblokować')} className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline">
-                                <KeyRound size={11}/> {tr('Odblokuj logowanie')}
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-4 text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : invitedPending ? <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">{tr('zaproszono')}</span> : <span className="text-gray-300 dark:text-gray-600">{tr('nigdy')}</span>}</td>
-                        <td className="p-4 text-right whitespace-nowrap">
-                          <div className="flex justify-end gap-2">
-                          <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setRequire2FA(!!user.totp_required); setShowUserModal(true); }} title={t('Edytuj')} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
-                          {invitedPending && (
-                            <button onClick={() => resendInvite(user.id)} title={tr('Ponów zaproszenie')} className="text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Mail size={16}/></button>
                           )}
-                          {user.totp_enabled && (
-                            <button onClick={() => resetUser2FA(user)} title={tr('Zresetuj 2FA')} className="text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-600 p-2 rounded-lg"><KeyRound size={16}/></button>
-                          )}
-                          <button onClick={() => deleteUser(user.id)} title={t('Usuń')} className="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Trash2 size={16}/></button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </TD>
+                      <TD muted numeric className="whitespace-nowrap">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : invitedPending ? <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">{tr('zaproszono')}</span> : <span className="text-gray-300 dark:text-gray-600">{tr('nigdy')}</span>}</TD>
+                      <TD align="right" className="whitespace-nowrap">
+                        <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                        <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setRequire2FA(!!user.totp_required); setShowUserModal(true); }} title={t('Edytuj')} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
+                        {invitedPending && (
+                          <button onClick={() => resendInvite(user.id)} title={tr('Ponów zaproszenie')} className="text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Mail size={16}/></button>
+                        )}
+                        {user.totp_enabled && (
+                          <button onClick={() => resetUser2FA(user)} title={tr('Zresetuj 2FA')} className="text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-600 p-2 rounded-lg"><KeyRound size={16}/></button>
+                        )}
+                        <button onClick={() => deleteUser(user.id)} title={t('Usuń')} className="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Trash2 size={16}/></button>
+                        </div>
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </tbody>
+            </DataTable>
           </div>
         )}
 

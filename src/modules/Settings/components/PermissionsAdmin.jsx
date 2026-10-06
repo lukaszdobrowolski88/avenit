@@ -7,6 +7,7 @@ import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 import { ChevronDown, ChevronRight, Shield, Plus, Trash2, Users, Sliders, HeartHandshake } from 'lucide-react';
 import MinistryMemberships from './MinistryMemberships';
+import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 
 const KIND_STYLE = {
   module: 'font-semibold text-gray-800 dark:text-gray-100',
@@ -181,26 +182,33 @@ export default function PermissionsAdmin() {
         <h3 className="font-semibold">{tr('Role')}</h3>
         <button onClick={() => setShowNewRole(true)} className="px-3 py-1.5 rounded-lg bg-accent-primary text-white text-sm inline-flex items-center gap-1"><Plus size={14} /> {tr('Nowa rola')}</button>
       </div>
-      <table className="w-full text-sm">
-        <thead><tr className="text-left text-gray-500 border-b border-gray-100 dark:border-gray-700"><th className="py-2">{tr('Rola')}</th><th>{tr('Opis')}</th><th>{tr('Systemowa')}</th><th></th></tr></thead>
+      <DataTable>
+        <THead>
+          <tr>
+            <TH>{tr('Rola')}</TH>
+            <TH>{tr('Opis')}</TH>
+            <TH>{tr('Systemowa')}</TH>
+            <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
+          </tr>
+        </THead>
         <tbody>
           {roles.map((r) => (
-            <tr key={r.key} className="border-b border-gray-50 dark:border-gray-800">
-              <td className="py-2 font-medium">{r.label}{r.is_admin && ' ★'}</td>
-              <td className="text-gray-500">{r.description}</td>
-              <td>{r.is_system ? '✓' : '—'}</td>
-              <td className="text-right">
+            <TR key={r.key}>
+              <TD className="font-medium text-gray-900 dark:text-white">{r.label}{r.is_admin && ' ★'}</TD>
+              <TD muted>{r.description}</TD>
+              <TD muted>{r.is_system ? '✓' : null}</TD>
+              <TD align="right">
                 {!r.is_system && (
-                  <button className="text-rose-500" onClick={async () => {
+                  <button className="text-rose-500 opacity-60 group-hover/row:opacity-100 transition-opacity" onClick={async () => {
                     if (!window.confirm(tr('Usunąć rolę?') + ` ${r.label}`)) return;
                     try { await supabase.from('app_roles').delete().eq('key', r.key); await load(); flash(tr('Usunięto')); } catch (e) { setErr(e.message); }
                   }}><Trash2 size={15} /></button>
                 )}
-              </td>
-            </tr>
+              </TD>
+            </TR>
           ))}
         </tbody>
-      </table>
+      </DataTable>
       {showNewRole && <NewRole onClose={() => setShowNewRole(false)} onCreated={async () => { setShowNewRole(false); await load(); flash(tr('Rola utworzona')); }} roles={roles} />}
     </div>
   );

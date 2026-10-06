@@ -25,6 +25,7 @@ import html2canvas from 'html2canvas';
 import { PitchShifter } from 'soundtouchjs';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 
 
 // Hook to calculate dropdown position with smart positioning (up/down)
@@ -1787,52 +1788,52 @@ export default function WorshipModule() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
-          <table className="w-full text-left text-sm align-middle">
-            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="p-4">{tr('Tytuł')}</th>
-                <th className="p-4">Autor</th>
-                <th className="p-4">Tonacja</th>
-                <th className="p-4">Tempo</th>
-                <th className="p-4">{tr('Tagi')}</th>
-                <th className="p-4 text-right">{tr('Akcje')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredSongs.map(s => (
-                <tr key={s.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-800/50 transition">
-                  <td className="p-4 font-bold text-gray-800 dark:text-gray-200">{s.title}</td>
-                  <td className="p-4 text-gray-600 dark:text-gray-400">{s.author || "-"}</td>
-                  <td className="p-4 font-mono font-bold text-accent-primary dark:text-accent-primary-light">{s.key}</td>
-                  <td className="p-4 text-gray-600 dark:text-gray-400">{s.tempo || "-"}</td>
-                  <td className="p-4">
-                    <div className="flex gap-1 flex-wrap">
-                      {Array.isArray(s.tags) && s.tags.length > 0 ? s.tags.map((tag, i) => (
-                        <span key={i} className="bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 px-2 py-1 text-xs rounded-full text-accent-primary-dark dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark font-medium flex items-center gap-1 group">
-                          {tag}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); removeTagFromSong(s.id, tag); }}
-                            className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
-                            title={t('Usuń tag')}
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      )) : <span className="text-gray-400 text-xs">-</span>}
-                    </div>
-                  </td>
-                  <td className="p-4 text-right flex justify-end gap-2">
+        <DataTable>
+          <THead>
+            <tr>
+              <TH>{tr('Tytuł')}</TH>
+              <TH>Autor</TH>
+              <TH>Tonacja</TH>
+              <TH>Tempo</TH>
+              <TH>{tr('Tagi')}</TH>
+              <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
+            </tr>
+          </THead>
+          <tbody>
+            {filteredSongs.map(s => (
+              <TR key={s.id}>
+                <TD className="font-semibold text-gray-900 dark:text-white">{s.title}</TD>
+                <TD muted>{s.author || ''}</TD>
+                <TD className="font-mono font-bold text-accent-primary dark:text-accent-primary-light">{s.key}</TD>
+                <TD muted numeric>{s.tempo || ''}</TD>
+                <TD>
+                  <div className="flex gap-1 flex-wrap">
+                    {Array.isArray(s.tags) && s.tags.length > 0 ? s.tags.map((tag, i) => (
+                      <span key={i} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-2 py-0.5 text-xs rounded-full text-accent-primary-dark dark:text-accent-primary-light font-medium flex items-center gap-1 group">
+                        {tag}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeTagFromSong(s.id, tag); }}
+                          className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
+                          title={t('Usuń tag')}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    )) : null}
+                  </div>
+                </TD>
+                <TD align="right">
+                  <div className="flex justify-end items-center gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
                     <button onClick={() => setShowSongDetails(s)} className="text-gray-800 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">{t('Szczegóły')}</button>
                     <button onClick={() => setAddToProgramSong(s)} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-primary-dark dark:hover:text-accent-primary font-medium transition flex items-center gap-1" title={t('Dodaj do programu jako sugerowaną pieśń')}><Calendar size={14}/> Do programu</button>
                     <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">{tr('Edytuj')}</button>
                     <button onClick={() => deleteSong(s.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </TD>
+              </TR>
+            ))}
+          </tbody>
+        </DataTable>
       </section>
       )}
 
@@ -1843,52 +1844,48 @@ export default function WorshipModule() {
           <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Członkowie Zespołu')}</h2>
           <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', status: 'Aktywny', phone: '', email: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="w-full sm:w-auto bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> Dodaj członka</button>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm min-w-[800px]">
-            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="p-4">{tr('Imię i nazwisko')}</th>
-                <th className="p-4">{tr('Służby')}</th>
-                <th className="p-4">{tr('Status')}</th>
-                <th className="p-4">{tr('Telefon')}</th>
-                <th className="p-4">{tr('Email')}</th>
-                <th className="p-4 text-right">{tr('Akcje')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {team.map(m => {
-                const roleNames = getMemberRoleNames(m.id);
-                return (
-                  <tr key={m.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-800/50 transition">
-                    <td className="p-4 font-medium text-gray-800 dark:text-gray-200">{m.full_name}</td>
-                    <td className="p-4">
-                      <div className="flex flex-wrap gap-1">
-                        {roleNames.length > 0 ? (
-                          roleNames.map((name, idx) => (
-                            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark">
-                              {name}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500 text-xs italic">Brak przypisanych</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4"><span className="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-xs font-medium border border-green-200 dark:border-green-800">{m.status}</span></td>
-                    <td className="p-4 text-gray-600 dark:text-gray-400">{m.phone}</td>
-                    <td className="p-4 text-gray-600 dark:text-gray-400">{m.email}</td>
-                    <td className="p-4 text-right flex justify-end gap-2">
+        <DataTable tableClassName="min-w-[800px]">
+          <THead>
+            <tr>
+              <TH>{tr('Imię i nazwisko')}</TH>
+              <TH>{tr('Służby')}</TH>
+              <TH>{tr('Status')}</TH>
+              <TH>{tr('Telefon')}</TH>
+              <TH>{tr('Email')}</TH>
+              <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
+            </tr>
+          </THead>
+          <tbody>
+            {team.map(m => {
+              const roleNames = getMemberRoleNames(m.id);
+              return (
+                <TR key={m.id}>
+                  <TD className="font-medium text-gray-900 dark:text-white">{m.full_name}</TD>
+                  <TD>
+                    <div className="flex flex-wrap gap-1">
+                      {roleNames.length > 0 ? (
+                        roleNames.map((name, idx) => (
+                          <StatusPill key={idx} color={STATUS_COLORS.accent}>{name}</StatusPill>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500 text-xs italic">Brak przypisanych</span>
+                      )}
+                    </div>
+                  </TD>
+                  <TD>{m.status && <StatusPill color={STATUS_COLORS.success}>{m.status}</StatusPill>}</TD>
+                  <TD muted numeric>{m.phone}</TD>
+                  <TD muted>{m.email}</TD>
+                  <TD align="right">
+                    <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
                       <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">{tr('Edytuj')}</button>
                       <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          </div>
-        </div>
+                    </div>
+                  </TD>
+                </TR>
+              );
+            })}
+          </tbody>
+        </DataTable>
       </section>
       )}
 

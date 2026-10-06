@@ -6,14 +6,18 @@ import { useModuleRecords } from '../../../hooks/useModuleRecords';
 import { evaluateVisibility } from '../../Forms/utils/fieldTypes';
 import { STATUS_COLORS } from '../../Settings/components/ModuleBuilder/builderElements';
 import { toast } from '../../../lib/toast';
+import { DataTable, THead, TH, TR, TD, StatusPill } from '../../../components/ui/DataTable';
+
+// Typy pól renderowane cyframi (tabular-nums w tabeli).
+const NUMERIC_FIELD_TYPES = ['number', 'currency', 'date'];
 
 const statusColor = (field, value) => {
   const o = (field.options || []).find((x) => x.value === value);
   return o?.color || STATUS_COLORS[Math.max(0, (field.options || []).findIndex((x) => x.value === value)) % STATUS_COLORS.length];
 };
 
-function formatValue(field, value) {
-  if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) return '—';
+function formatValue(field, value, empty = '—') {
+  if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) return empty;
   switch (field.type) {
     case 'checkbox': return value ? tr('Tak') : tr('Nie');
     case 'select': return (field.options || []).find((o) => o.value === value)?.label || value;
@@ -23,7 +27,7 @@ function formatValue(field, value) {
     }
     case 'status': {
       const o = (field.options || []).find((x) => x.value === value);
-      return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: statusColor(field, value) }}>{o?.label || value}</span>;
+      return <StatusPill color={statusColor(field, value)}>{o?.label || value}</StatusPill>;
     }
     case 'tags': {
       const arr = Array.isArray(value) ? value : [value];
@@ -469,28 +473,26 @@ export default function CollectionView({ element, ctx }) {
       ) : displayed.length === 0 ? (
         <div className="py-10 text-center text-gray-400 text-sm">{tr('Brak wyników dla wyszukiwania.')}</div>
       ) : view === 'table' ? (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500">
-                {fields.map((f) => (
-                  <th key={f.key} className="py-2 px-3 font-medium cursor-pointer select-none" onClick={() => toggleSort(f.key)}>
-                    <span className="inline-flex items-center gap-1">{f.label}<ArrowUpDown size={12} className={sortField === f.key ? 'text-accent-primary' : 'text-gray-300'} /></span>
-                  </th>
-                ))}
-                <th className="py-2 px-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayed.map((rec) => (
-                <tr key={rec.id} className="border-b border-gray-100 dark:border-gray-800">
-                  {fields.map((f) => <td key={f.key} className="py-2 px-3 text-gray-800 dark:text-gray-200">{formatValue(f, rec.data?.[f.key])}</td>)}
-                  <td className="py-2 px-3 text-right"><RowActions rec={rec} /></td>
-                </tr>
+        <DataTable>
+          <THead>
+            <tr>
+              {fields.map((f) => (
+                <TH key={f.key} className="cursor-pointer select-none" onClick={() => toggleSort(f.key)}>
+                  <span className="inline-flex items-center gap-1">{f.label}<ArrowUpDown size={12} className={sortField === f.key ? 'text-accent-primary' : 'text-gray-300'} /></span>
+                </TH>
               ))}
-            </tbody>
-          </table>
-        </div>
+              <TH></TH>
+            </tr>
+          </THead>
+          <tbody>
+            {displayed.map((rec) => (
+              <TR key={rec.id}>
+                {fields.map((f) => <TD key={f.key} numeric={NUMERIC_FIELD_TYPES.includes(f.type)}>{formatValue(f, rec.data?.[f.key], null)}</TD>)}
+                <TD align="right"><div className="inline-flex opacity-60 group-hover/row:opacity-100 transition-opacity"><RowActions rec={rec} /></div></TD>
+              </TR>
+            ))}
+          </tbody>
+        </DataTable>
       ) : view === 'cards' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {displayed.map((rec) => (

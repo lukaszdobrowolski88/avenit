@@ -7,6 +7,7 @@ import {
 import { supabase } from '../../../lib/supabase';
 import { formatPLN } from '../utils/smsEncoding';
 import { tr } from '../../../i18n';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 export default function CampaignStats({ campaign, onClose }) {
   const t = useT();
@@ -153,36 +154,34 @@ export default function CampaignStats({ campaign, onClose }) {
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500">{t('Brak rekordów dla tego filtra.')}</div>
         ) : (
-          <div className="overflow-auto max-h-[60vh]">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
-                <tr>
-                  <Th>{tr('Telefon')}</Th>
-                  <Th>{tr('Email')}</Th>
-                  <Th>{tr('Status')}</Th>
-                  <Th>Wariant</Th>
-                  <Th>Dostarczone</Th>
-                  <Th>{tr('Odpowiedź')}</Th>
-                  <Th>Pkt</Th>
-                  <Th>{tr('Błąd')}</Th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {filtered.map(r => (
-                  <tr key={r.id}>
-                    <Td className="font-mono">{r.phone ? `+${r.phone}` : '—'}</Td>
-                    <Td>{r.user_email || '—'}</Td>
-                    <Td><StatusPill status={r.status} /></Td>
-                    <Td>{r.variant || '—'}</Td>
-                    <Td>{fmt(r.delivered_at)}</Td>
-                    <Td>{fmt(r.replied_at)}</Td>
-                    <Td>{r.points ?? '—'}</Td>
-                    <Td className="text-red-600 text-xs">{r.error || '—'}</Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush className="max-h-[60vh] overflow-y-auto">
+            <THead sticky>
+              <tr>
+                <TH>{tr('Telefon')}</TH>
+                <TH>{tr('Email')}</TH>
+                <TH>{tr('Status')}</TH>
+                <TH>Wariant</TH>
+                <TH>Dostarczone</TH>
+                <TH>{tr('Odpowiedź')}</TH>
+                <TH>Pkt</TH>
+                <TH>{tr('Błąd')}</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filtered.map(r => (
+                <TR key={r.id}>
+                  <TD numeric className="font-mono">{r.phone ? `+${r.phone}` : ''}</TD>
+                  <TD>{r.user_email || ''}</TD>
+                  <TD><RecipientStatus status={r.status} /></TD>
+                  <TD muted>{r.variant || ''}</TD>
+                  <TD muted numeric>{fmt(r.delivered_at)}</TD>
+                  <TD muted numeric>{fmt(r.replied_at)}</TD>
+                  <TD muted numeric>{r.points ?? ''}</TD>
+                  <TD className="text-red-600 dark:text-red-400 text-xs">{r.error || ''}</TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
     </div>
@@ -205,26 +204,19 @@ function Stat({ icon: Icon, label, value, percent, subtitle, color }) {
   );
 }
 
-function StatusPill({ status }) {
+function RecipientStatus({ status }) {
   const map = {
-    pending:    { label: tr('Oczekuje'),    color: 'gray' },
-    queued:     { label: tr('Kolejka'),     color: 'gray' },
-    sent:       { label: tr('Wysłany'),     color: 'blue' },
-    delivered:  { label: tr('Dostarczony'), color: 'emerald' },
-    replied:    { label: tr('Odpowiedź'),   color: 'violet' },
-    failed:     { label: tr('Błąd'),        color: 'red' },
-    suppressed: { label: tr('Pominięty'),   color: 'amber' },
+    pending:    { label: tr('Oczekuje'),    color: STATUS_COLORS.neutral },
+    queued:     { label: tr('Kolejka'),     color: STATUS_COLORS.neutral },
+    sent:       { label: tr('Wysłany'),     color: STATUS_COLORS.info },
+    delivered:  { label: tr('Dostarczony'), color: STATUS_COLORS.success },
+    replied:    { label: tr('Odpowiedź'),   color: STATUS_COLORS.accent },
+    failed:     { label: tr('Błąd'),        color: STATUS_COLORS.danger },
+    suppressed: { label: tr('Pominięty'),   color: STATUS_COLORS.warning },
   };
-  const c = map[status] || { label: status, color: 'gray' };
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs bg-${c.color}-100 dark:bg-${c.color}-900/30 text-${c.color}-700 dark:text-${c.color}-400`}>
-      {c.label}
-    </span>
-  );
+  const c = map[status] || { label: status, color: STATUS_COLORS.neutral };
+  return <StatusPill color={c.color}>{c.label}</StatusPill>;
 }
 
-const Th = ({ children }) => <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">{children}</th>;
-const Td = ({ children, className = '' }) => <td className={`px-3 py-2 text-sm text-gray-700 dark:text-gray-300 ${className}`}>{children}</td>;
-
-function fmt(s) { return s ? new Date(s).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
+function fmt(s) { return s ? new Date(s).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''; }
 function pct(v, total) { return total > 0 ? Math.round(v / total * 100) : 0; }

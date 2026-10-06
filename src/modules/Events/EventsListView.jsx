@@ -12,6 +12,7 @@ import CustomSelect from '../../components/CustomSelect';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import { toast } from '../../lib/toast';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 
 const CalendarModule = lazy(() => import('../CalendarModule'));
 
@@ -162,52 +163,49 @@ export default function EventsListView() {
             title={archiveF === 'archive' ? 'Archiwum jest puste' : 'Brak wydarzeń'}
             subtitle={archiveF === 'archive' ? 'Wydarzenia przeszłe i zarchiwizowane pojawią się tutaj.' : 'Dodaj wydarzenie przyciskiem „Nowe wydarzenie".'} />
         ) : viewMode === 'list' ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100 dark:border-gray-800">
-                  <th className="px-4 py-2.5 font-semibold">Data</th>
-                  <th className="px-4 py-2.5 font-semibold">Wydarzenie</th>
-                  <th className="px-4 py-2.5 font-semibold hidden sm:table-cell">Typ</th>
-                  <th className="px-4 py-2.5 font-semibold hidden md:table-cell">Moduł</th>
-                  <th className="px-4 py-2.5 font-semibold hidden lg:table-cell">Miejsce</th>
-                  <th className="px-4 py-2.5 font-semibold text-right"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((e) => (
-                  <tr key={e.id} onClick={() => navigate(`/wydarzenie/${e.id}`)}
-                    className="border-b border-gray-50 dark:border-gray-800/50 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer group">
-                    <td className="px-4 py-2.5 whitespace-nowrap text-gray-600 dark:text-gray-300">
-                      {fmtDate(e.date)}{e.time && <span className="text-gray-400"> {fmtTime(e.time)}</span>}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-medium text-gray-900 dark:text-gray-100 truncate">{e.title || '—'}</span>
-                        {e.is_paid && <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">płatne</span>}
-                        {e.registration_required && <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">rejestracja</span>}
-                        {e.is_archived && <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300">archiwum</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 hidden sm:table-cell text-gray-500 dark:text-gray-400">{e.event_type || '—'}</td>
-                    <td className="px-4 py-2.5 hidden md:table-cell text-gray-500 dark:text-gray-400">{moduleLabel(e.module_key)}</td>
-                    <td className="px-4 py-2.5 hidden lg:table-cell text-gray-500 dark:text-gray-400">
-                      {e.location ? <span className="inline-flex items-center gap-1"><MapPin size={12} className="text-gray-400" />{e.location}</span> : '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-right whitespace-nowrap" onClick={(ev) => ev.stopPropagation()}>
-                      {isArch(e) ? (e.is_archived && (
-                        <button onClick={() => setArchived(e.id, false)} title="Przywróć"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition"><RotateCcw size={16} /></button>
-                      )) : (
-                        <button onClick={() => setArchived(e.id, true)} title="Archiwizuj"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition"><Archive size={16} /></button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable>
+            <THead>
+              <tr>
+                <TH>Data</TH>
+                <TH>Wydarzenie</TH>
+                <TH className="hidden sm:table-cell">Typ</TH>
+                <TH className="hidden md:table-cell">Moduł</TH>
+                <TH className="hidden lg:table-cell">Miejsce</TH>
+                <TH align="right"></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filtered.map((e) => (
+                <TR key={e.id} onClick={() => navigate(`/wydarzenie/${e.id}`)}>
+                  <TD muted numeric className="whitespace-nowrap">
+                    {fmtDate(e.date)}{e.time && <span className="text-gray-400"> {fmtTime(e.time)}</span>}
+                  </TD>
+                  <TD>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-medium text-gray-900 dark:text-gray-100 truncate">{e.title || ''}</span>
+                      {e.is_paid && <StatusPill color={STATUS_COLORS.warning} className="shrink-0">płatne</StatusPill>}
+                      {e.registration_required && <StatusPill color={STATUS_COLORS.info} className="shrink-0">rejestracja</StatusPill>}
+                      {e.is_archived && <StatusPill color={STATUS_COLORS.accent} className="shrink-0">archiwum</StatusPill>}
+                    </div>
+                  </TD>
+                  <TD muted className="hidden sm:table-cell">{e.event_type || ''}</TD>
+                  <TD muted className="hidden md:table-cell">{moduleLabel(e.module_key)}</TD>
+                  <TD muted className="hidden lg:table-cell">
+                    {e.location ? <span className="inline-flex items-center gap-1"><MapPin size={12} className="text-gray-400" />{e.location}</span> : null}
+                  </TD>
+                  <TD align="right" className="whitespace-nowrap" onClick={(ev) => ev.stopPropagation()}>
+                    {isArch(e) ? (e.is_archived && (
+                      <button onClick={() => setArchived(e.id, false)} title="Przywróć"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover/row:opacity-100 transition"><RotateCcw size={16} /></button>
+                    )) : (
+                      <button onClick={() => setArchived(e.id, true)} title="Archiwizuj"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover/row:opacity-100 transition"><Archive size={16} /></button>
+                    )}
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {filtered.map((e) => {

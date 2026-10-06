@@ -29,6 +29,7 @@ import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 export default function PaymentsView({ forms }) {
   const [payments, setPayments] = useState([]);
@@ -529,22 +530,10 @@ export default function PaymentsView({ forms }) {
     );
   };
 
-  const getMethodBadge = (method) => {
-    const colors = {
-      transfer: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-      paypal: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
-      przelewy24: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
-      cash: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-      card: 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
-    };
-
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${colors[method] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
-        <CreditCard size={12} />
-        {getMethodName(method)}
-      </span>
-    );
-  };
+  // Metoda płatności to nie status — jeden neutralny kolor (bez „tęczy”, decyzja właściciela).
+  const getMethodBadge = (method) => (
+    <StatusPill color={STATUS_COLORS.neutral}>{getMethodName(method)}</StatusPill>
+  );
 
   if (loading) {
     return (
@@ -825,114 +814,95 @@ export default function PaymentsView({ forms }) {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Uczestnik
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Formularz
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Kwota
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Metoda
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Data
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Akcje
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredPayments.map((payment) => (
-                  <tr
-                    key={payment.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-full flex items-center justify-center text-white font-semibold">
-                          {payment.participantName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {payment.participantName}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {payment.participantEmail}
-                          </p>
-                        </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Uczestnik</TH>
+                <TH>Formularz</TH>
+                <TH>Kwota</TH>
+                <TH>Status</TH>
+                <TH>Metoda</TH>
+                <TH>Data</TH>
+                <TH align="right"><span className="sr-only">Akcje</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filteredPayments.map((payment) => (
+                <TR key={payment.id}>
+                  <TD>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-full flex items-center justify-center text-white font-semibold">
+                        {payment.participantName.charAt(0).toUpperCase()}
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
-                        <FileText size={14} />
-                        {payment.formTitle}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {formatPrice(payment.amount, payment.currency)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {getStatusBadge(payment.status)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {getMethodBadge(payment.method)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       <div>
-                        <p>{formatDate(payment.submittedAt)}</p>
-                        {payment.paidAt && (
-                          <p className="text-xs text-green-600 dark:text-green-400">
-                            Opłacono: {formatDate(payment.paidAt)}
-                          </p>
-                        )}
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {payment.participantName}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {payment.participantEmail}
+                        </p>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        {payment.status === 'pending' ? (
-                          <button
-                            onClick={() => markAsPaid(payment.id)}
-                            className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                            title={tr('Oznacz jako opłacone')}
-                          >
-                            <Check size={18} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => markAsPending(payment.id)}
-                            className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
-                            title={tr('Cofnij płatność')}
-                          >
-                            <Clock size={18} />
-                          </button>
-                        )}
+                    </div>
+                  </TD>
+                  <TD muted>
+                    <span className="inline-flex items-center gap-1.5">
+                      <FileText size={14} />
+                      {payment.formTitle}
+                    </span>
+                  </TD>
+                  <TD numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                    {formatPrice(payment.amount, payment.currency)}
+                  </TD>
+                  <TD>
+                    <StatusPill color={payment.status === 'paid' ? STATUS_COLORS.success : STATUS_COLORS.warning}>
+                      {payment.status === 'paid' ? tr('Opłacone') : 'Oczekuje'}
+                    </StatusPill>
+                  </TD>
+                  <TD>
+                    {getMethodBadge(payment.method)}
+                  </TD>
+                  <TD muted numeric className="whitespace-nowrap">
+                    <div>
+                      <p>{formatDate(payment.submittedAt)}</p>
+                      {payment.paidAt && (
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          Opłacono: {formatDate(payment.paidAt)}
+                        </p>
+                      )}
+                    </div>
+                  </TD>
+                  <TD align="right">
+                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                      {payment.status === 'pending' ? (
                         <button
-                          onClick={() => setSelectedPayment(payment)}
-                          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                          title={tr('Szczegóły')}
+                          onClick={() => markAsPaid(payment.id)}
+                          className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                          title={tr('Oznacz jako opłacone')}
                         >
-                          <Edit2 size={18} />
+                          <Check size={18} />
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      ) : (
+                        <button
+                          onClick={() => markAsPending(payment.id)}
+                          className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                          title={tr('Cofnij płatność')}
+                        >
+                          <Clock size={18} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setSelectedPayment(payment)}
+                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        title={tr('Szczegóły')}
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
 

@@ -14,6 +14,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 
 export default function Dashboard() {
   const { getTenants } = useTenants();
@@ -192,52 +193,47 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Plany subskrypcji
           </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                  <th className="pb-3 font-medium">Plan</th>
-                  <th className="pb-3 font-medium text-center">Aktywnych</th>
-                  <th className="pb-3 font-medium text-center">W trialu</th>
-                  <th className="pb-3 font-medium text-center">{tr('Miesięcznych')}</th>
-                  <th className="pb-3 font-medium text-center">Rocznych</th>
-                  <th className="pb-3 font-medium text-right">MRR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.planStats.map(plan => (
-                  <tr
-                    key={plan.id}
-                    className="border-b border-gray-100 dark:border-gray-700/50 last:border-0"
-                  >
-                    <td className="py-3">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {plan.name}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {formatPrice(plan.price_monthly)}/mies.
-                      </div>
-                    </td>
-                    <td className="py-3 text-center font-medium text-gray-900 dark:text-white">
-                      {plan.activeCount}
-                    </td>
-                    <td className="py-3 text-center text-gray-600 dark:text-gray-400">
-                      {plan.trialCount}
-                    </td>
-                    <td className="py-3 text-center text-gray-600 dark:text-gray-400">
-                      {plan.monthlyCount}
-                    </td>
-                    <td className="py-3 text-center text-gray-600 dark:text-gray-400">
-                      {plan.yearlyCount}
-                    </td>
-                    <td className="py-3 text-right font-medium text-green-600 dark:text-green-400">
-                      {formatPrice(plan.mrr)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Plan</TH>
+                <TH align="center">Aktywnych</TH>
+                <TH align="center">W trialu</TH>
+                <TH align="center">{tr('Miesięcznych')}</TH>
+                <TH align="center">Rocznych</TH>
+                <TH align="right">MRR</TH>
+              </tr>
+            </THead>
+            <tbody>
+              {stats.planStats.map(plan => (
+                <TR key={plan.id}>
+                  <TD>
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      {plan.name}
+                    </div>
+                    <div className="text-xs text-gray-500 tabular-nums">
+                      {formatPrice(plan.price_monthly)}/mies.
+                    </div>
+                  </TD>
+                  <TD align="center" numeric className="font-medium text-gray-900 dark:text-white">
+                    {plan.activeCount}
+                  </TD>
+                  <TD align="center" muted numeric>
+                    {plan.trialCount}
+                  </TD>
+                  <TD align="center" muted numeric>
+                    {plan.monthlyCount}
+                  </TD>
+                  <TD align="center" muted numeric>
+                    {plan.yearlyCount}
+                  </TD>
+                  <TD align="right" numeric className="font-medium text-green-600 dark:text-green-400">
+                    {formatPrice(plan.mrr)}
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         </div>
       )}
     </div>

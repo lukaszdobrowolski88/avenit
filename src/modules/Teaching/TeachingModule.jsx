@@ -19,6 +19,7 @@ import { GraduationCap, Podcast } from 'lucide-react';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
 
 // ================== TABLE SELECT COMPONENT ==================
 
@@ -225,29 +226,28 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
             </button>
 
             {isExpanded && (
-              <div className="overflow-x-auto pb-4 bg-white dark:bg-gray-900 rounded-b-2xl">
-                <table className="w-full text-left border-collapse min-w-max">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
-                      <th className="p-3 font-semibold w-24 min-w-[90px]">{tr('Data')}</th>
+              <DataTable flush className="pb-4 rounded-b-2xl" tableClassName="min-w-max">
+                  <THead>
+                    <tr>
+                      <TH className="w-24 min-w-[90px]">{tr('Data')}</TH>
                       {columns.map(col => (
-                        <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
+                        <TH key={col.key} className="min-w-[130px]">{col.label}</TH>
                       ))}
                     </tr>
-                  </thead>
-                  <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-800 relative">
+                  </THead>
+                  <tbody className="relative">
                     {groupedPrograms[monthKey]
                       .sort((a, b) => new Date(a.date) - new Date(b.date))
                       .map((prog) => (
-                        <tr key={prog.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition relative">
-                          <td className="p-3 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs">
+                        <TR key={prog.id} className="relative">
+                          <TD numeric className="font-medium whitespace-nowrap">
                             <div className="flex flex-col gap-1 items-start">
                               <span>{formatDateShort(prog.date)}</span>
                               <CampusBadge campus={getCampus(prog.campus_id)} />
                             </div>
-                          </td>
+                          </TD>
                           {columns.map(col => (
-                            <td key={col.key} className="p-2 relative">
+                            <TD key={col.key} className="relative">
                               {col.type === 'select' ? (
                                 <TableSelect
                                   options={col.options}
@@ -262,13 +262,12 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
                                   onBlur={(e) => updateTeachingField(prog.id, col.key, e.target.value)}
                                 />
                               )}
-                            </td>
+                            </TD>
                           ))}
-                        </tr>
+                        </TR>
                       ))}
                   </tbody>
-                </table>
-              </div>
+              </DataTable>
             )}
           </div>
         );

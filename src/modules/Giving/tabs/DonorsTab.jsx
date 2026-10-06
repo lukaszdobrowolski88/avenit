@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { formatMoney, formatDate, memberName, methodLabel, statusLabel } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 const currentYear = new Date().getFullYear();
 
@@ -294,41 +295,39 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                     <p className="text-gray-500 dark:text-gray-400">Brak darowizn.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                          <th className="px-4 py-3 font-semibold">Data</th>
-                          <th className="px-4 py-3 font-semibold">Fundusz</th>
-                          <th className="px-4 py-3 font-semibold text-right">Kwota</th>
-                          <th className="px-4 py-3 font-semibold">Metoda</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selected.items
-                          .slice()
-                          .sort((a, b) => (b.donation_date || '').localeCompare(a.donation_date || ''))
-                          .map(d => (
-                            <tr key={d.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                              <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(d.donation_date)}</td>
-                              <td className="px-4 py-3">
-                                {d.fund_id ? (
-                                  <span className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                                    <span className="w-2 h-2 rounded-full" style={{ background: fundsById[d.fund_id]?.color || '#94a3b8' }} />
-                                    {fundsById[d.fund_id]?.name || '—'}
-                                  </span>
-                                ) : <span className="text-gray-400">—</span>}
-                              </td>
-                              <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(d.amount, d.currency)}</td>
-                              <td className="px-4 py-3">
-                                <span className="text-gray-600 dark:text-gray-300">{methodLabel(d.method)}</span>
-                                {d.status === 'pending' && <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">{statusLabel(d.status)}</span>}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <DataTable flush>
+                    <THead>
+                      <tr>
+                        <TH>Data</TH>
+                        <TH>Fundusz</TH>
+                        <TH align="right">Kwota</TH>
+                        <TH>Metoda</TH>
+                      </tr>
+                    </THead>
+                    <tbody>
+                      {selected.items
+                        .slice()
+                        .sort((a, b) => (b.donation_date || '').localeCompare(a.donation_date || ''))
+                        .map(d => (
+                          <TR key={d.id}>
+                            <TD muted numeric className="whitespace-nowrap">{formatDate(d.donation_date)}</TD>
+                            <TD muted>
+                              {d.fund_id ? (
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full" style={{ background: fundsById[d.fund_id]?.color || '#94a3b8' }} />
+                                  {fundsById[d.fund_id]?.name || ''}
+                                </span>
+                              ) : null}
+                            </TD>
+                            <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(d.amount, d.currency)}</TD>
+                            <TD muted>
+                              <span>{methodLabel(d.method)}</span>
+                              {d.status === 'pending' && <StatusPill color={STATUS_COLORS.warning} className="ml-2">{statusLabel(d.status)}</StatusPill>}
+                            </TD>
+                          </TR>
+                        ))}
+                    </tbody>
+                  </DataTable>
                 )}
               </div>
             </div>

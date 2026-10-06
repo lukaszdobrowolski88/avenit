@@ -6,6 +6,7 @@ import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, methodLabel, statusLabel, donorLabel, memberName, GIVING_METHODS, GIVING_STATUSES } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 const currentYear = new Date().getFullYear();
 
@@ -204,55 +205,51 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
             <p className="text-gray-500 dark:text-gray-400">Brak darowizn dla wybranych filtrów.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 font-semibold">Data</th>
-                  <th className="px-4 py-3 font-semibold">Darczyńca</th>
-                  <th className="px-4 py-3 font-semibold">Fundusz</th>
-                  <th className="px-4 py-3 font-semibold text-right">Kwota</th>
-                  <th className="px-4 py-3 font-semibold">Metoda</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold text-right">Akcje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(d => (
-                  <tr key={d.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(d.donation_date)}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 dark:text-white">{donorLabel(d, membersById)}</div>
-                      {d.member_id && <span className="text-xs text-accent-primary dark:text-accent-primary-light">członek</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {d.fund_id ? (
-                        <span className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                          <span className="w-2 h-2 rounded-full" style={{ background: fundsById[d.fund_id]?.color || '#94a3b8' }} />
-                          {fundsById[d.fund_id]?.name || '—'}
-                        </span>
-                      ) : <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(d.amount, d.currency)}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{methodLabel(d.method)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        d.status === 'completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : d.status === 'pending' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                        : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                      }`}>{statusLabel(d.status)}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => openEdit(d)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
-                        <button onClick={() => remove(d)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable flush>
+            <THead>
+              <tr>
+                <TH>Data</TH>
+                <TH>Darczyńca</TH>
+                <TH>Fundusz</TH>
+                <TH align="right">Kwota</TH>
+                <TH>Metoda</TH>
+                <TH>Status</TH>
+                <TH align="right"><span className="sr-only">Akcje</span></TH>
+              </tr>
+            </THead>
+            <tbody>
+              {filtered.map(d => (
+                <TR key={d.id}>
+                  <TD muted numeric className="whitespace-nowrap">{formatDate(d.donation_date)}</TD>
+                  <TD>
+                    <div className="font-medium text-gray-900 dark:text-white">{donorLabel(d, membersById)}</div>
+                    {d.member_id && <span className="text-xs text-gray-400 dark:text-gray-500">członek</span>}
+                  </TD>
+                  <TD muted>
+                    {d.fund_id ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full" style={{ background: fundsById[d.fund_id]?.color || '#94a3b8' }} />
+                        {fundsById[d.fund_id]?.name || ''}
+                      </span>
+                    ) : null}
+                  </TD>
+                  <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(d.amount, d.currency)}</TD>
+                  <TD muted>{methodLabel(d.method)}</TD>
+                  <TD>
+                    <StatusPill color={d.status === 'completed' ? STATUS_COLORS.success : d.status === 'pending' ? STATUS_COLORS.warning : STATUS_COLORS.danger}>
+                      {statusLabel(d.status)}
+                    </StatusPill>
+                  </TD>
+                  <TD align="right">
+                    <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                      <button onClick={() => openEdit(d)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
+                      <button onClick={() => remove(d)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
 

@@ -9,6 +9,7 @@ import CustomSelect from '../../components/CustomSelect';
 import Modal from '../../components/Modal';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 
 const EVENT_TYPES = [
   { value: 'service', label: 'Nabożeństwo' },
@@ -562,9 +563,9 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
   };
 
   const badge = (s) => {
-    const map = { yes: ['Będę', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'], no: ['Nie będę', 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'], maybe: ['Może', 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'], pending: ['Oczekuje', 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'] };
-    const [lbl, cls] = map[s] || map.pending;
-    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>{lbl}</span>;
+    const map = { yes: ['Będę', STATUS_COLORS.success], no: ['Nie będę', STATUS_COLORS.danger], maybe: ['Może', STATUS_COLORS.warning], pending: ['Oczekuje', STATUS_COLORS.neutral] };
+    const [lbl, color] = map[s] || map.pending;
+    return <StatusPill color={color}>{lbl}</StatusPill>;
   };
 
   return (
@@ -603,30 +604,28 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                <th className="px-4 py-3 font-semibold">Osoba</th>
-                <th className="px-4 py-3 font-semibold">Kontakt</th>
-                <th className="px-4 py-3 font-semibold">Odpowiedź</th>
-                <th className="px-4 py-3 font-semibold text-right">Link</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invs.map(i => (
-                <tr key={i.id} className="border-b border-gray-50 dark:border-gray-700/50">
-                  <td className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">{i.name}{i.status === 'yes' && i.guests_count > 0 ? <span className="text-xs text-gray-400"> +{i.guests_count}</span> : ''}</td>
-                  <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs">{i.email || i.phone || '—'}</td>
-                  <td className="px-4 py-2.5">{badge(i.status)}</td>
-                  <td className="px-4 py-2.5 text-right">
-                    <button onClick={() => copyLink(i.token)} className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Copy size={14} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable flush>
+          <THead>
+            <tr>
+              <TH>Osoba</TH>
+              <TH>Kontakt</TH>
+              <TH>Odpowiedź</TH>
+              <TH align="right">Link</TH>
+            </tr>
+          </THead>
+          <tbody>
+            {invs.map(i => (
+              <TR key={i.id}>
+                <TD className="font-medium text-gray-900 dark:text-white">{i.name}{i.status === 'yes' && i.guests_count > 0 ? <span className="text-xs text-gray-400 tabular-nums"> +{i.guests_count}</span> : ''}</TD>
+                <TD muted>{i.email || i.phone || ''}</TD>
+                <TD>{badge(i.status)}</TD>
+                <TD align="right">
+                  <button onClick={() => copyLink(i.token)} className="p-1.5 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700 opacity-60 group-hover/row:opacity-100 transition-opacity"><Copy size={14} /></button>
+                </TD>
+              </TR>
+            ))}
+          </tbody>
+        </DataTable>
       </div>
     </div>
   );
