@@ -69,10 +69,13 @@ export default function NotificationCenter() {
       {/* Przycisk powiadomień */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors relative"
+        className="w-11 h-11 sm:w-9 sm:h-9 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors relative"
         title={t('Powiadomienia')}
+        aria-label={unreadCount > 0 ? t('Powiadomienia, nowe: {n}', { n: unreadCount }) : t('Powiadomienia')}
+        aria-haspopup="true"
+        aria-expanded={isOpen}
       >
-        <Bell size={20} />
+        <Bell size={20} aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
             {unreadCount > 99 ? '99+' : unreadCount}
