@@ -23,6 +23,22 @@ html[data-color-preset="avenit"] {
   --gray-950: 18 15 8;
   color: #2A2312;
 }
+/* Tryb ciemny: grafit z odrobiną ciepła zamiast brązu słodu (kilka warstw brązu = „błoto”).
+   Papier i kurkuma zostają jako jasne akcenty — jak key visual: ciemne tło, jasny tekst, kurkuma. */
+html.dark[data-color-preset="avenit"] {
+  --gray-50: 246 244 240;
+  --gray-100: 236 234 229;
+  --gray-200: 218 215 209;
+  --gray-300: 190 186 179;
+  --gray-400: 154 150 143;
+  --gray-500: 122 118 111;
+  --gray-600: 80 78 74;
+  --gray-700: 50 49 46;
+  --gray-800: 31 30 29;
+  --gray-900: 23 22 21;
+  --gray-950: 14 14 13;
+  color: #F3F1EC;
+}
 
 /* ── Akcje: kurkuma ze słodowym tekstem (jak „Do programu”, FAB, aktywna zakładka w apce) ── */
 html[data-color-preset="avenit"] :is(button, a, label, summary, [role="button"], [role="tab"], input[type="submit"]):is(
@@ -208,7 +224,7 @@ html[data-color-preset="avenit"] [data-tone][data-tone][data-tone="3"] { backgro
 html[data-color-preset="avenit"] [data-tone][data-tone][data-tone] :is(svg, span, .text-white) { color: inherit !important; }
 /* Tryb ciemny: papier → ciemny papier, jasna kurkuma → przygaszona, słód → kurkuma (słód zlałby się z tłem). */
 html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="0"] { background-color: rgb(var(--gray-700)) !important; color: #F6F4EE !important; }
-html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="1"] { background-color: #3A2E0C !important; color: #FFBE0B !important; }
+html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="1"] { background-color: rgb(var(--gray-700)) !important; color: #FFBE0B !important; }
 html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="2"] { background-color: #FFBE0B !important; color: #2A2312 !important; }
 html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="3"] { background-color: #FFBE0B !important; color: #2A2312 !important; }
 html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone] :is(svg, span, .text-white) { color: inherit !important; }
@@ -229,11 +245,12 @@ html[data-color-preset="avenit"] .brand-today { background-color: #2A2312; color
 html[data-color-preset="avenit"] .brand-today-label { color: #FFBE0B; }
 html[data-color-preset="avenit"] .brand-today-num { color: #FFBE0B; }
 html[data-color-preset="avenit"] .brand-today-text { color: #CFC8B6; }
-html.dark[data-color-preset="avenit"] .brand-hero { background-color: #3A2E0C; color: #F6F4EE; }
-html.dark[data-color-preset="avenit"] .brand-hero-chip { background-color: rgba(255, 190, 11, 0.16); color: #FFBE0B; }
-html.dark[data-color-preset="avenit"] .brand-hero-muted { color: #CFC8B6; }
-html.dark[data-color-preset="avenit"] .brand-hero-arrow { background-color: #FFBE0B; color: #2A2312; }
-html.dark[data-color-preset="avenit"] .brand-today { background-color: rgb(var(--gray-800)); }
+html.dark[data-color-preset="avenit"] .brand-hero { background-color: #FFBE0B; color: #2A2312; }
+html.dark[data-color-preset="avenit"] .brand-hero-chip { background-color: rgba(255, 255, 255, 0.55); color: #2A2312; }
+html.dark[data-color-preset="avenit"] .brand-hero-muted { color: #4A3D16; }
+html.dark[data-color-preset="avenit"] .brand-hero-arrow { background-color: #2A2312; color: #FFBE0B; }
+html.dark[data-color-preset="avenit"] .brand-today { background-color: rgb(var(--gray-800)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+html.dark[data-color-preset="avenit"] .brand-today-text { color: rgb(var(--gray-300)); }
 
 /* Aktywna zakładka: gruba kreska w kurkumie i słodowy, pogrubiony tekst (jak w apce). */
 html[data-color-preset="avenit"] button.border-b-2.border-accent-primary {
@@ -254,4 +271,50 @@ html[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-selected
 html[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-selected="true"] * { color: #CFC8B6 !important; }
 html[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-selected="true"] :is(.tabular-nums, svg) { color: #FFBE0B !important; }
 /* W ciemnym słód = tło karty, więc wybrany kafelek dostaje przygaszoną kurkumę. */
-html.dark[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-selected="true"] { background-color: #3A2E0C !important; }
+html.dark[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-selected="true"] { background-color: rgb(var(--gray-700)) !important; box-shadow: inset 0 0 0 2px #FFBE0B !important; }
+
+/* ═══ Dopracowanie (forma jak w aplikacji i na grafikach marki) ═════════════════════════════ */
+
+/* CTA-pigułki: przyciski akcji i miękkie przyciski drugorzędne w pełni zaokrąglone. */
+html[data-color-preset="avenit"] :is(button, a, label, summary, [role="button"], input[type="submit"]):is(
+  .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
+  .from-accent-secondary, .from-accent-secondary-light,
+  .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
+  .bg-accent-secondary, .bg-accent-secondary-light
+):is(.rounded-lg, .rounded-xl, .rounded-2xl) { border-radius: 9999px !important; }
+html[data-color-preset="avenit"]:not(.dark) :is(button, a):is(.bg-white, .border):is(.rounded-lg, .rounded-xl):not(:has(input)):not(.w-full):not(.flex-col) { border-radius: 9999px !important; }
+
+/* Karty łagodniej zaokrąglone (aplikacja: 22–26 px). */
+html[data-color-preset="avenit"] :is(div, section, article, aside, nav):is(.bg-white, .bg-white\/90, .bg-white\/80, .bg-white\/70, .bg-white\/60, .bg-white\/50).rounded-2xl:not(.ui-field):not(.absolute):not(.fixed) { border-radius: 1.5rem !important; }
+html[data-color-preset="avenit"] :is(div, section, article, aside, nav):is(.bg-white, .bg-white\/90, .bg-white\/80, .bg-white\/70, .bg-white\/60, .bg-white\/50).rounded-3xl:not(.ui-field):not(.absolute):not(.fixed) { border-radius: 1.75rem !important; }
+
+/* Nagłówki jak na grafikach marki: ciasny tracking, pełna waga. */
+html[data-color-preset="avenit"] :is(h1, h2) { letter-spacing: -0.025em; }
+html[data-color-preset="avenit"] h2:is(.font-bold, .font-semibold) { font-weight: 800; }
+html[data-color-preset="avenit"] h3:is(.font-bold, .font-semibold) { letter-spacing: -0.015em; }
+
+/* Nagłówki tabel = etykiety sekcji z aplikacji: musztarda, wersaliki, rozstrzelone. */
+html[data-color-preset="avenit"]:not(.dark) th { color: #8A6606 !important; letter-spacing: 0.08em; }
+html.dark[data-color-preset="avenit"] th { color: rgb(var(--gray-400)) !important; }
+
+/* Puste stany w widżetach: kółko w jasnej kurkumie z musztardową ikoną zamiast szarego kwadratu. */
+html[data-color-preset="avenit"] :is(div, span):is(.w-12, .w-14, .w-16, .w-20).rounded-2xl:is(.bg-gray-100, .bg-gray-50):has(> svg) {
+  border-radius: 9999px !important;
+  background-color: #FFF1C2 !important;
+}
+html[data-color-preset="avenit"] :is(div, span):is(.w-12, .w-14, .w-16, .w-20).rounded-2xl:is(.bg-gray-100, .bg-gray-50) > svg { color: #8A6606 !important; }
+html.dark[data-color-preset="avenit"] :is(div, span):is(.w-12, .w-14, .w-16, .w-20).rounded-2xl:is(.bg-gray-100, .bg-gray-50):has(> svg) { background-color: rgb(var(--gray-700)) !important; }
+html.dark[data-color-preset="avenit"] :is(div, span):is(.w-12, .w-14, .w-16, .w-20).rounded-2xl:is(.bg-gray-100, .bg-gray-50) > svg { color: #FFBE0B !important; }
+
+/* Fokus z klawiatury — kurkuma. */
+html[data-color-preset="avenit"] :is(button, a, [role="button"], [role="tab"]):focus-visible { outline: 2px solid #FFBE0B; outline-offset: 2px; }
+
+/* Przyciski drugorzędne na szarym tle (wariant secondary) też jako pigułki. */
+html[data-color-preset="avenit"] :is(button, a):is(.bg-gray-100, .bg-gray-50):is(.rounded-lg, .rounded-xl):not(.w-full):not(.flex-col) { border-radius: 9999px !important; }
+
+/* Kafle statusów (przychody/wydatki itp.) i szare panele — miękkie tło bez ramki, jak karty w aplikacji.
+   Tylko klasa tła na początku tokenu (hover:bg-… się nie liczy). */
+html[data-color-preset="avenit"]:not(.dark) :is(div, section):is([class^="bg-emerald-50"], [class*=" bg-emerald-50"], [class^="bg-green-50"], [class*=" bg-green-50"], [class^="bg-red-50"], [class*=" bg-red-50"], [class^="bg-rose-50"], [class*=" bg-rose-50"], [class^="bg-blue-50"], [class*=" bg-blue-50"], [class^="bg-amber-50"], [class*=" bg-amber-50"], [class^="bg-yellow-50"], [class*=" bg-yellow-50"], [class^="bg-orange-50"], [class*=" bg-orange-50"], [class^="bg-teal-50"], [class*=" bg-teal-50"], [class^="bg-gray-50"], [class*=" bg-gray-50"]):is(.rounded-xl, .rounded-2xl) {
+  border-color: transparent !important;
+  border-radius: 1.25rem !important;
+}
