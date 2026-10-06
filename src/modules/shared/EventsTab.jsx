@@ -204,6 +204,19 @@ const MINISTRY_CONFIG = {
     ],
     color: 'yellow'
   },
+  mlodziezowka: {
+    tableName: 'events', teamType: 'mlodziezowka',
+    icon: '🔥',
+    title: 'Młodzieżówka',
+    defaultType: 'spotkanie',
+    types: [
+      { value: 'spotkanie', label: tr('Spotkanie') },
+      { value: 'wyjazd', label: tr('Wyjazd') },
+      { value: 'warsztat', label: 'Warsztat' },
+      { value: 'inne', label: tr('Inne') }
+    ],
+    color: 'pink'
+  },
   homegroups: {
     tableName: 'module_events', teamType: 'homegroups',
     icon: '🏠',

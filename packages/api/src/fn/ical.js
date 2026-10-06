@@ -41,8 +41,8 @@ const addHour = (t) => {
 };
 
 // Preferencje modułów służb (UserSettings) → module_key wydarzeń.
-const MODULE_PREFS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups'];
-const MODULE_LABEL = { worship: 'Uwielbienie', media: 'Media', atmosfera: 'Atmosfera', kids: 'Dzieci', homegroups: 'Grupy Domowe' };
+const MODULE_PREFS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
+const MODULE_LABEL = { worship: 'Uwielbienie', media: 'Media', atmosfera: 'Atmosfera', kids: 'Dzieci', homegroups: 'Grupy Domowe', mlodziezowka: 'Młodzieżówka' };
 
 function vevent(e) {
   // Całodniowe (bez godziny): DTSTART;VALUE=DATE, DTEND = dzień po ostatnim.
@@ -155,22 +155,6 @@ export default async function handler(req, reply) {
       events.push(vtodo({
         uid: uid(t.id, 'task'), summary: t.title, description: t.description || '',
         due: ymd(t.due_date).replace(/-/g, ''), dtstamp, status: t.status,
-      }));
-    }
-  }
-
-  // Młodzieżówka ma jeszcze własną tabelę wydarzeń (start_date).
-  if (prefs.mlodziezowka) {
-    const { rows } = await req.db.query(
-      `SELECT * FROM mlodziezowka_events WHERE start_date >= $1 AND start_date <= $2`,
-      [from.toISOString(), to.toISOString()]
-    ).catch(() => ({ rows: [] }));
-    for (const ev of rows) {
-      const start = new Date(ev.start_date);
-      events.push(vevent({
-        uid: uid(ev.id, 'mlodziezowka'), summary: ev.title, description: ev.description || '', location: ev.location || '',
-        dtstart: fmtUtc(start), dtstamp, categories: ['Młodzieżówka', ev.event_type || ''].filter(Boolean),
-        status: 'CONFIRMED',
       }));
     }
   }

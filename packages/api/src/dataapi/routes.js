@@ -15,12 +15,13 @@ import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } 
 //   kontakt z rodzicem), choć gospodarstwa należą do modułu Członkowie.
 const EMBED_CROSS_MODULE_ALLOW = new Set(['checkins>households']);
 
-// Stare tabele wydarzeń modułów usunięte migracją 077 (wszystko jest w `events`). Starsze
+// Stare tabele wydarzeń modułów usunięte migracjami 077/078 (wszystko jest w `events`). Starsze
 // wersje aplikacji mobilnej mogą jeszcze o nie pytać — odczyt zwraca pustą listę zamiast
 // błędu (ekran kalendarza się nie wywraca), zapis: 410 z prośbą o aktualizację.
 const RETIRED_TABLES = new Set([
   'worship_events', 'media_events', 'atmosfera_events', 'kids_events',
   'homegroups_events', 'ministry_events', 'module_events',
+  'mlodziezowka_events', // migracja 078
 ]);
 
 // Propozycje budżetu: team_type, pod którym zakładka Finanse zespołu (shared/FinanceTab,

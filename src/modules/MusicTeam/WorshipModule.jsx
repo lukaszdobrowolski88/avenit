@@ -19,7 +19,6 @@ import PageHeader from '../../components/PageHeader';
 import { useUserRole } from '../../hooks/useUserRole';
 import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
-import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
 import { useT } from '../../i18n';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -1257,20 +1256,10 @@ export default function WorshipModule() {
   const [activeTab, setActiveTab] = useState('wall');
   const [team, setTeam] = useState([]);
   const [songs, setSongs] = useState([]);
-  const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState({ email: '', name: '' });
   const [addToProgramSong, setAddToProgramSong] = useState(null);
   const [showProgramsManager, setShowProgramsManager] = useState(false);
-
-  // Hook do zarządzania przypisaniami do służby
-  const {
-    assignments,
-    fetchAssignmentsForPrograms,
-    createAssignment,
-    removeAssignment,
-    sendInvitesForProgram
-  } = useScheduleAssignments();
 
   const [showSongModal, setShowSongModal] = useState(false);
   const [songModalKey, setSongModalKey] = useState(0); // Key do wymuszenia remount SongForm
@@ -1480,7 +1469,6 @@ export default function WorshipModule() {
     try {
       const { data: t } = await supabase.from('worship_team').select('*').order('full_name');
       const { data: s } = await supabase.from('songs').select('*').order('title');
-      const { data: p } = await withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false });
 
       // Pobierz dane zalogowanego użytkownika
       const { data: { user } } = await supabase.auth.getUser();
@@ -1498,13 +1486,6 @@ export default function WorshipModule() {
 
       setTeam(t || []);
       setSongs(s || []);
-      setPrograms(p || []);
-
-      // Pobierz przypisania dla programów
-      if (p && p.length > 0) {
-        const programIds = p.map(prog => prog.id);
-        await fetchAssignmentsForPrograms(programIds);
-      }
 
       // Pobierz unikalne tagi z wszystkich pieśni + z localStorage
       const tagsSet = new Set();
@@ -1709,19 +1690,6 @@ export default function WorshipModule() {
     } catch (e) {}
 
     setNewTagInput('');
-  };
-
-  const handleProgramUpdate = async (id, updates) => {
-    setPrograms(prev => prev.map(p => {
-      if (p.id === id) {
-        if (updates.zespol) {
-          return { ...p, ...updates, zespol: { ...p.zespol, ...updates.zespol } };
-        }
-        return { ...p, ...updates };
-      }
-      return p;
-    }));
-    await supabase.from('programs').update(updates).eq('id', id);
   };
 
   const filteredSongs = songs.filter(s =>
