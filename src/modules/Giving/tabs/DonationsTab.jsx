@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Receipt, Filter, Download } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Receipt, Filter, Download } from 'lucide-react';
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, methodLabel, statusLabel, donorLabel, memberName, GIVING_METHODS, GIVING_STATUSES } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
@@ -202,10 +204,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
         {loading ? (
           <Spinner center />
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <Receipt size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">Brak darowizn dla wybranych filtrów.</p>
-          </div>
+          <EmptyState icon={Receipt} title="Brak darowizn dla wybranych filtrów." />
         ) : (
           <DataTable flush>
             <THead>
@@ -256,14 +255,16 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
       </div>
 
       {/* Modal */}
-      <Modal isOpen={modalOpen}>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && setModalOpen(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editing ? 'Edytuj darowiznę' : 'Nowa darowizna'}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-            </div>
-            <div className="p-5 space-y-4">
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => !saving && setModalOpen(false)}
+        title={editing ? 'Edytuj darowiznę' : 'Nowa darowizna'}
+        footer={<>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
+          <Button onClick={save} loading={saving}>Zapisz</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               <CustomSelect label="Darczyńca (członek)" value={form.member_id} onChange={v => setForm(f => ({ ...f, member_id: v }))} options={memberOptions} placeholder="Wybierz członka..." />
 
               {!form.member_id && (
@@ -309,12 +310,6 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
                 Darowizna anonimowa
               </label>
             </div>
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
-              <button onClick={() => setModalOpen(false)} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              <button onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
-            </div>
-          </div>
-        </div>
       </Modal>
     </div>
   );

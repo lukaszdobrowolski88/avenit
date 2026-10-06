@@ -5,6 +5,7 @@ import { formatPrice } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { DateInput, TimeField } from '../../../components/pickers';
+import Spinner from '../../../components/Spinner';
 
 export default function FieldRenderer({
   field,
@@ -395,7 +396,7 @@ export default function FieldRenderer({
               {uploadProgress !== null && (
                 <div className="absolute inset-0 bg-white/90 dark:bg-gray-800/90 rounded-xl flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-16 h-16 rounded-full border-4 border-accent-primary-lighter border-t-accent-primary-light animate-spin mx-auto mb-2"></div>
+                    <Spinner size={40} className="mb-2" />
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Przesyłanie... {uploadProgress}%
                     </p>
@@ -535,7 +536,7 @@ export default function FieldRenderer({
               {uploadProgress !== null && (
                 <div className="absolute inset-0 bg-white/90 dark:bg-gray-800/90 rounded-xl flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-16 h-16 rounded-full border-4 border-accent-primary-lighter border-t-accent-primary-light animate-spin mx-auto mb-2"></div>
+                    <Spinner size={40} className="mb-2" />
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Przesyłanie... {uploadProgress}%
                     </p>

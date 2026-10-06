@@ -17,6 +17,7 @@ import EventRSVP from '../components/EventRSVP';
 import EventTeamsTab from './Events/EventTeamsTab';
 import EventMaterialsTab from './Events/EventMaterialsTab';
 import Modal from '../components/Modal';
+import Button from '../components/Button';
 import { useModuleCalendar, useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
 import { useCan } from '../components/Can';
 import { DateInput, TimeField } from '../components/pickers';
@@ -794,8 +795,17 @@ function EventInviteModal({ event, ensureCampaign, existingMemberIds = [], onClo
   };
 
   return (
-    <Modal isOpen onClose={onClose} size="md" title={`Wyślij zaproszenia — ${event.title || ''}`}>
-      <div className="p-5 space-y-4">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      title={`Wyślij zaproszenia — ${event.title || ''}`}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button icon={Send} onClick={send} loading={busy} disabled={sel.size === 0}>Wyślij ({sel.size})</Button>
+      </>}
+    >
+      <div className="p-6 space-y-4">
         <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
           {fmtDate(event.date) || '—'}{event.time ? `, ${event.time}` : ''}{event.location ? ` · ${event.location}` : ''}
         </div>
@@ -833,10 +843,6 @@ function EventInviteModal({ event, ensureCampaign, existingMemberIds = [], onClo
             })}
           </div>
         </div>
-      </div>
-      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Anuluj</button>
-        <button onClick={send} disabled={busy || sel.size === 0} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60 flex items-center gap-1.5"><Send size={15} /> Wyślij ({sel.size})</button>
       </div>
     </Modal>
   );
@@ -1057,8 +1063,17 @@ function VisibilityBuilderModal({ initial, onClose, onSave }) {
   }, [members, search]);
 
   return (
-    <Modal isOpen onClose={onClose} size="md" title="Zaawansowane audytorium — kto widzi">
-      <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      title="Zaawansowane audytorium — kto widzi"
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button onClick={() => onSave(toSegments(s))}>Zapisz widoczność</Button>
+      </>}
+    >
+      <div className="p-6 space-y-4">
         <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
           Wydarzenie zobaczy osoba pasująca do <b>któregokolwiek</b> z zaznaczonych kryteriów. Administratorzy widzą zawsze.
         </p>
@@ -1108,10 +1123,6 @@ function VisibilityBuilderModal({ initial, onClose, onSave }) {
             </div>
           </>
         )}
-      </div>
-      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Anuluj</button>
-        <button onClick={() => onSave(toSegments(s))} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">Zapisz widoczność</button>
       </div>
     </Modal>
   );

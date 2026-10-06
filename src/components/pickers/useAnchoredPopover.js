@@ -34,7 +34,8 @@ export function useOutsideClose(open, refs, onClose) {
       if (refs.some((r) => r.current && r.current.contains(e.target))) return;
       onClose();
     };
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    // preventDefault: Modal (nasłuch na window) wie, że Esc zamknął tylko wybierak, nie okno.
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
     return () => {

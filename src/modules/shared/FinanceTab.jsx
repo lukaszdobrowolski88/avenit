@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ChevronDown, ChevronUp, FileText, X } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, FileText, Wallet } from 'lucide-react';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import TabHeader from '../../components/TabHeader';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
 import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
@@ -95,13 +98,17 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
         </div>
       } />
 
-      {showProposal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowProposal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between mb-5">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Propozycja do budżetu')}</h3>
-              <button onClick={() => setShowProposal(false)} className="text-gray-500 dark:text-gray-400"><X size={22} /></button>
-            </div>
+      <Modal
+        isOpen={showProposal}
+        onClose={() => setShowProposal(false)}
+        title={tr('Propozycja do budżetu')}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowProposal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={submitProposal} loading={savingProp}>{tr('Zgłoś')}</Button>
+        </>}
+      >
+          <div className="p-6">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Trafi do zatwierdzenia w module Finanse.')} {tr('Służba')}: <span className="font-semibold text-gray-700 dark:text-gray-200">{ministry}</span></p>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
@@ -131,20 +138,12 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Uzasadnienie (opcjonalnie)')}</label>
                 <textarea rows={2} value={prop.note} onChange={(e) => setProp({ ...prop, note: e.target.value })} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
               </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowProposal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">{tr('Anuluj')}</button>
-                <button onClick={submitProposal} disabled={savingProp} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium disabled:opacity-60">{savingProp ? tr('Wysyłanie…') : tr('Zgłoś')}</button>
-              </div>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
 
       {planItems.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          <p className="mb-4">{t('Brak pozycji budżetowych dla tej służby')}</p>
-          <p className="text-sm">{t('Dodaj pozycje budżetowe w module Finanse')}</p>
-        </div>
+        <EmptyState icon={Wallet} title={t('Brak pozycji budżetowych dla tej służby')} subtitle={t('Dodaj pozycje budżetowe w module Finanse')} />
       ) : (
         <>
           <DataTable>

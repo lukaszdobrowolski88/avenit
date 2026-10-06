@@ -1,13 +1,17 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   FileText, Calendar, Megaphone, Newspaper, Plus, Edit, Copy, Trash2,
-  MoreVertical, Loader, X, Eye, Search, Monitor, Smartphone, Star,
+  MoreVertical, X, Eye, Search, Monitor, Smartphone, Star,
   Sparkles, Heart, Gift, Bell, Users, Church, BookOpen, Music
 } from 'lucide-react';
 import { useTemplates, TEMPLATE_CATEGORIES } from '../hooks/useTemplates';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
+import Spinner from '../../../components/Spinner';
 
 const CATEGORY_ICONS = {
   general: FileText,
@@ -127,11 +131,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
   }, [templates, activeCategory, showFavoritesOnly, favorites, searchQuery]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader className="w-8 h-8 text-accent-primary-light animate-spin" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   return (
@@ -395,22 +395,15 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
       </div>
 
       {filteredTemplates.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-gray-400" />
-          </div>
-          <p className="text-gray-500 dark:text-gray-400 mb-2">
-            {showFavoritesOnly ? tr('Brak ulubionych szablonów') : tr('Brak szablonów w tej kategorii')}
-          </p>
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="text-sm text-accent-primary-light hover:text-accent-primary"
-            >
+        <EmptyState
+          icon={FileText}
+          title={showFavoritesOnly ? tr('Brak ulubionych szablonów') : tr('Brak szablonów w tej kategorii')}
+          action={searchQuery && (
+            <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
               {tr('Wyczyść wyszukiwanie')}
-            </button>
+            </Button>
           )}
-        </div>
+        />
       )}
 
       {/* Modal podglądu szablonu */}
@@ -445,142 +438,109 @@ function TemplatePreviewModal({
   const CategoryIcon = CATEGORY_ICONS[template.category] || FileText;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light p-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl">
-                <CategoryIcon size={22} className="text-white" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">
-                  {template.name}
-                </h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm text-white/80">
-                    {EXTENDED_CATEGORIES[template.category]?.label || tr('Ogólne')}
-                  </span>
-                  {template.is_system && (
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-white/20 text-white rounded-full">
-                      <Sparkles size={10} />
-                      Systemowy
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Przełącznik urządzenia */}
-              <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-xl p-1">
-                <button
-                  onClick={() => onDeviceChange('desktop')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-                    device === 'desktop'
-                      ? 'bg-white text-accent-primary shadow-lg'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
-                  title="Widok desktop"
-                >
-                  <Monitor size={16} />
-                  <span className="text-xs font-medium hidden sm:inline">Desktop</span>
-                </button>
-                <button
-                  onClick={() => onDeviceChange('mobile')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-                    device === 'mobile'
-                      ? 'bg-white text-accent-primary shadow-lg'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
-                  title="Widok mobile"
-                >
-                  <Smartphone size={16} />
-                  <span className="text-xs font-medium hidden sm:inline">Mobile</span>
-                </button>
-              </div>
-
-              {/* Ulubiony */}
-              <button
-                onClick={onToggleFavorite}
-                className={`p-2.5 rounded-xl transition-all ${
-                  isFavorite
-                    ? 'bg-white text-amber-500'
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-                title={isFavorite ? tr('Usuń z ulubionych') : 'Dodaj do ulubionych'}
-              >
-                <Star size={18} className={isFavorite ? 'fill-amber-500' : ''} />
-              </button>
-
-              {/* Zamknij */}
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-white/20 rounded-xl transition-colors"
-              >
-                <X size={20} className="text-white" />
-              </button>
-            </div>
-          </div>
+    <Modal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={false}
+      title={template.name}
+      subtitle={
+        <span className="inline-flex items-center gap-2">
+          {EXTENDED_CATEGORIES[template.category]?.label || tr('Ogólne')}
+          {template.is_system && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">
+              <Sparkles size={10} />
+              Systemowy
+            </span>
+          )}
+        </span>
+      }
+      icon={CategoryIcon}
+      size="xl"
+      footer={<>
+        <div className="mr-auto text-sm text-gray-500 dark:text-gray-400 min-w-0">
+          {template.subject && (
+            <span className="flex items-center gap-2">
+              <span className="font-medium">Temat:</span> {template.subject}
+            </span>
+          )}
         </div>
-
-        {/* Podgląd */}
-        <div className="flex-1 overflow-auto bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 p-6 flex justify-center">
-          <div
-            className={`bg-white shadow-2xl rounded-2xl overflow-hidden transition-all duration-500 ${
-              device === 'mobile' ? 'w-[375px]' : 'w-full max-w-[700px]'
+        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button icon={Edit} onClick={onUseTemplate}>{tr('Użyj szablonu')}</Button>
+      </>}
+    >
+      {/* Pasek narzędzi: urządzenie + ulubiony */}
+      <div className="px-6 py-3 flex items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-700">
+        {/* Przełącznik urządzenia */}
+        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+          <button
+            onClick={() => onDeviceChange('desktop')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+              device === 'desktop'
+                ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
-            style={{ minHeight: '500px' }}
+            title="Widok desktop"
           >
-            <iframe
-              srcDoc={`
-                <!DOCTYPE html>
-                <html>
-                  <head>
-                    <meta charset="utf-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1">
-                    <style>
-                      body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-                      img { max-width: 100%; height: auto; }
-                    </style>
-                  </head>
-                  <body>${template.html_content}</body>
-                </html>
-              `}
-              className="w-full h-full min-h-[500px] border-0"
-              title={tr('Podgląd szablonu')}
-            />
-          </div>
+            <Monitor size={16} />
+            <span className="text-xs font-medium hidden sm:inline">Desktop</span>
+          </button>
+          <button
+            onClick={() => onDeviceChange('mobile')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+              device === 'mobile'
+                ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+            title="Widok mobile"
+          >
+            <Smartphone size={16} />
+            <span className="text-xs font-medium hidden sm:inline">Mobile</span>
+          </button>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between p-5 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/80 dark:bg-gray-800/50">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {template.subject && (
-              <span className="flex items-center gap-2">
-                <span className="font-medium">Temat:</span> {template.subject}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onClose}
-              className="px-5 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all font-medium"
-            >
-              Anuluj
-            </button>
-            <button
-              onClick={onUseTemplate}
-              className="group px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl flex items-center gap-2"
-            >
-              <Edit size={16} className="group-hover:scale-110 transition-transform" />
-              {tr('Użyj szablonu')}
-            </button>
-          </div>
+        {/* Ulubiony */}
+        <button
+          onClick={onToggleFavorite}
+          className={`p-2.5 rounded-xl transition-all ${
+            isFavorite
+              ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500'
+              : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-amber-500'
+          }`}
+          title={isFavorite ? tr('Usuń z ulubionych') : 'Dodaj do ulubionych'}
+        >
+          <Star size={18} className={isFavorite ? 'fill-amber-500' : ''} />
+        </button>
+      </div>
+
+      {/* Podgląd */}
+      <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 p-6 flex justify-center">
+        <div
+          className={`bg-white shadow-2xl rounded-2xl overflow-hidden transition-all duration-500 ${
+            device === 'mobile' ? 'w-[375px]' : 'w-full max-w-[700px]'
+          }`}
+          style={{ minHeight: '500px' }}
+        >
+          <iframe
+            srcDoc={`
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <meta charset="utf-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1">
+                  <style>
+                    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+                    img { max-width: 100%; height: auto; }
+                  </style>
+                </head>
+                <body>${template.html_content}</body>
+              </html>
+            `}
+            className="w-full h-full min-h-[500px] border-0"
+            title={tr('Podgląd szablonu')}
+          />
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

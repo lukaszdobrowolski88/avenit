@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useCheckin } from '../hooks/useCheckin';
 import VirtualKeypad from './VirtualKeypad';
-import { Search, Check, CheckCircle, Loader2 } from 'lucide-react';
+import { Search, Check, CheckCircle, Loader2, ClipboardList } from 'lucide-react';
 import { tr } from '../../../../i18n';
+import EmptyState from '../../../../components/EmptyState';
 
 export default function CheckoutScreen({ session }) {
   const [searchValue, setSearchValue] = useState('');
@@ -104,9 +105,7 @@ export default function CheckoutScreen({ session }) {
 
   if (!session) {
     return (
-      <div className="p-10 text-center text-gray-500 dark:text-gray-400">
-        {tr('Brak aktywnej sesji. Przejdź do ustawień, aby utworzyć sesję.')}
-      </div>
+      <EmptyState icon={ClipboardList} title={tr('Brak aktywnej sesji. Przejdź do ustawień, aby utworzyć sesję.')} />
     );
   }
 

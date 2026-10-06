@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Podcast, Filter, Link as LinkIcon, Check, Music, Video, BookOpen } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Podcast, Filter, Link as LinkIcon, Check, Music, Video, BookOpen } from 'lucide-react';
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
@@ -7,6 +7,8 @@ import { slugify, formatDate, parseVideo } from '../lib/sermonsApi';
 import { bibleUrl } from '../lib/bible';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog, promptDialog } from '../../../lib/dialog';
@@ -183,10 +185,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
         {loading ? (
           <Spinner center />
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <Podcast size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">Brak kazań dla wybranych filtrów.</p>
-          </div>
+          <EmptyState icon={Podcast} title="Brak kazań dla wybranych filtrów." />
         ) : (
           <DataTable flush>
             <THead>
@@ -246,95 +245,92 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
       </div>
 
       {/* Modal */}
-      <Modal isOpen={modalOpen}>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && setModalOpen(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editing ? 'Edytuj kazanie' : 'Nowe kazanie'}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => !saving && setModalOpen(false)}
+        title={editing ? 'Edytuj kazanie' : 'Nowe kazanie'}
+        size="lg"
+        footer={<>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
+          <Button onClick={save} loading={saving}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
+            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Łaska większa niż grzech" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Mówca</label>
+              <input value={form.speaker} onChange={e => setForm(f => ({ ...f, speaker: e.target.value }))} placeholder="np. Jan Kowalski" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
-                <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Łaska większa niż grzech" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Mówca</label>
-                  <input value={form.speaker} onChange={e => setForm(f => ({ ...f, speaker: e.target.value }))} placeholder="np. Jan Kowalski" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Seria</label>
-                  <CustomSelect value={form.series || ''} onChange={(val) => setForm(f => ({ ...f, series: val }))} options={seriesSelectOptions} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
-                  <DateInput value={form.sermon_date} onChange={e => setForm(f => ({ ...f, sermon_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Odnośnik biblijny</label>
-                  <input value={form.scripture_ref} onChange={e => setForm(f => ({ ...f, scripture_ref: e.target.value }))} placeholder="np. J 3,16" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                  {form.scripture_ref && bibleUrl(form.scripture_ref) && (
-                    <a href={bibleUrl(form.scripture_ref)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 ml-1 text-xs text-accent-primary dark:text-accent-primary-light hover:underline">
-                      <BookOpen size={12} /> Podgląd fragmentu (UBG)
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Opis</label>
-                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Krótki opis / streszczenie kazania" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">URL audio</label>
-                <input value={form.audio_url} onChange={e => setForm(f => ({ ...f, audio_url: e.target.value }))} placeholder="https://.../kazanie.mp3" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">URL wideo (YouTube / Vimeo)</label>
-                <input value={form.video_url} onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))} placeholder="https://www.youtube.com/watch?v=..." className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                {form.video_url && parseVideo(form.video_url).provider && parseVideo(form.video_url).provider !== 'other' && (
-                  <span className="inline-flex items-center gap-1 mt-1 ml-1 text-xs text-emerald-600 dark:text-emerald-400">
-                    <Check size={12} /> Rozpoznano: {parseVideo(form.video_url).provider === 'youtube' ? 'YouTube' : 'Vimeo'} (osadzenie w odtwarzaczu)
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki / konspekt</label>
-                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Slug (link publiczny)</label>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">/sermon/</span>
-                  <input
-                    value={form.slug}
-                    onChange={e => { setSlugTouched(true); setForm(f => ({ ...f, slug: e.target.value })); }}
-                    placeholder="auto z tytułu"
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">Generowany automatycznie z tytułu; możesz nadpisać.</p>
-              </div>
-
-              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-                <input type="checkbox" checked={form.is_published} onChange={e => setForm(f => ({ ...f, is_published: e.target.checked }))} className="rounded accent-emerald-500" />
-                Opublikowane (widoczne pod linkiem publicznym)
-              </label>
-            </div>
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
-              <button onClick={() => setModalOpen(false)} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              <button onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Seria</label>
+              <CustomSelect value={form.series || ''} onChange={(val) => setForm(f => ({ ...f, series: val }))} options={seriesSelectOptions} />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+              <DateInput value={form.sermon_date} onChange={e => setForm(f => ({ ...f, sermon_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Odnośnik biblijny</label>
+              <input value={form.scripture_ref} onChange={e => setForm(f => ({ ...f, scripture_ref: e.target.value }))} placeholder="np. J 3,16" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              {form.scripture_ref && bibleUrl(form.scripture_ref) && (
+                <a href={bibleUrl(form.scripture_ref)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1 ml-1 text-xs text-accent-primary dark:text-accent-primary-light hover:underline">
+                  <BookOpen size={12} /> Podgląd fragmentu (UBG)
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Opis</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Krótki opis / streszczenie kazania" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">URL audio</label>
+            <input value={form.audio_url} onChange={e => setForm(f => ({ ...f, audio_url: e.target.value }))} placeholder="https://.../kazanie.mp3" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">URL wideo (YouTube / Vimeo)</label>
+            <input value={form.video_url} onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))} placeholder="https://www.youtube.com/watch?v=..." className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            {form.video_url && parseVideo(form.video_url).provider && parseVideo(form.video_url).provider !== 'other' && (
+              <span className="inline-flex items-center gap-1 mt-1 ml-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <Check size={12} /> Rozpoznano: {parseVideo(form.video_url).provider === 'youtube' ? 'YouTube' : 'Vimeo'} (osadzenie w odtwarzaczu)
+              </span>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki / konspekt</label>
+            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Slug (link publiczny)</label>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">/sermon/</span>
+              <input
+                value={form.slug}
+                onChange={e => { setSlugTouched(true); setForm(f => ({ ...f, slug: e.target.value })); }}
+                placeholder="auto z tytułu"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">Generowany automatycznie z tytułu; możesz nadpisać.</p>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+            <input type="checkbox" checked={form.is_published} onChange={e => setForm(f => ({ ...f, is_published: e.target.checked }))} className="rounded accent-emerald-500" />
+            Opublikowane (widoczne pod linkiem publicznym)
+          </label>
         </div>
       </Modal>
     </div>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Cake, Gift } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 const WINDOW_DAYS = 30;
 
@@ -53,22 +55,11 @@ export default function BirthdaysWidget() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   if (items.length === 0) {
-    return (
-      <div className="text-center py-6">
-        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-          <Cake size={24} className="text-pink-500" />
-        </div>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">{tr('Brak urodzin w najbliższym czasie')}</p>
-      </div>
-    );
+    return <EmptyState compact icon={Cake} title={tr('Brak urodzin w najbliższym czasie')} />;
   }
 
   const whenLabel = (days, next) => {

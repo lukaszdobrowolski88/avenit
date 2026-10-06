@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Check, Search, Loader2, CalendarCheck } from 'lucide-react';
+import { Check, Search, Loader2, CalendarCheck, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import CustomDatePicker from '../components/CustomDatePicker';
+import Spinner from '../components/Spinner';
+import EmptyState from '../components/EmptyState';
 import { tr } from '../i18n';
 
 const KINDS = ['nabożeństwo', 'spotkanie', 'grupa domowa', 'wydarzenie'];
@@ -102,9 +104,7 @@ export default function AttendanceTab({ members = [] }) {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-gray-400 py-6 justify-center">
-          <Loader2 size={18} className="animate-spin" /> Ładowanie…
-        </div>
+        <Spinner center label="Ładowanie…" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {filtered.map((m) => {
@@ -124,7 +124,7 @@ export default function AttendanceTab({ members = [] }) {
               </button>
             );
           })}
-          {filtered.length === 0 && <div className="col-span-full text-center text-sm text-gray-400 py-6">{tr('Brak osób')}</div>}
+          {filtered.length === 0 && <div className="col-span-full"><EmptyState icon={Users} title={tr('Brak osób')} compact /></div>}
         </div>
       )}
     </section>

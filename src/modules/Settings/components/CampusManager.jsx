@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { Plus, Edit3, Trash2, X, MapPin, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Edit3, Trash2, MapPin, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { confirmDialog } from '../../../lib/dialog';
 
 export default function CampusManager({ onMessage }) {
@@ -114,11 +117,7 @@ export default function CampusManager({ onMessage }) {
       </div>
 
       {campuses.length === 0 ? (
-        <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-          <MapPin size={48} className="mx-auto mb-3 opacity-50" />
-          <p className="font-medium">{tr('Brak kampusów')}</p>
-          <p className="text-sm mt-1">{t('Dodaj pierwszy kampus, aby włączyć tryb multi-campus.')}</p>
-        </div>
+        <EmptyState icon={MapPin} title={tr('Brak kampusów')} subtitle={t('Dodaj pierwszy kampus, aby włączyć tryb multi-campus.')} />
       ) : (
         <div className="space-y-2">
           {campuses.map((campus, index) => (
@@ -156,44 +155,43 @@ export default function CampusManager({ onMessage }) {
       )}
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{form.id ? tr('Edytuj kampus') : tr('Nowy kampus')}</h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"><X /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Nazwa *')}</label>
-                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="np. Kampus Centrum" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Adres')}</label>
-                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('ul. Przykładowa 1')} value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Miasto</label>
-                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="Warszawa" value={form.city || ''} onChange={e => setForm({ ...form, city: e.target.value })} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Strefa czasowa</label>
-                <select className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" value={form.timezone || 'Europe/Warsaw'} onChange={e => setForm({ ...form, timezone: e.target.value })}>
-                  <option value="Europe/Warsaw">Europe/Warsaw</option>
-                  <option value="Europe/London">Europe/London</option>
-                  <option value="Europe/Berlin">Europe/Berlin</option>
-                  <option value="America/New_York">America/New_York</option>
-                  <option value="America/Chicago">America/Chicago</option>
-                  <option value="America/Los_Angeles">America/Los_Angeles</option>
-                </select>
-              </div>
-              <button onClick={save} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-2 hover:shadow-lg transition">
-                Zapisz
-              </button>
-            </div>
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        closeOnBackdrop={false}
+        size="sm"
+        title={form.id ? tr('Edytuj kampus') : tr('Nowy kampus')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
+          <Button onClick={save}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Nazwa *')}</label>
+            <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="np. Kampus Centrum" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Adres')}</label>
+            <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('ul. Przykładowa 1')} value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Miasto</label>
+            <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="Warszawa" value={form.city || ''} onChange={e => setForm({ ...form, city: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Strefa czasowa</label>
+            <select className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" value={form.timezone || 'Europe/Warsaw'} onChange={e => setForm({ ...form, timezone: e.target.value })}>
+              <option value="Europe/Warsaw">Europe/Warsaw</option>
+              <option value="Europe/London">Europe/London</option>
+              <option value="Europe/Berlin">Europe/Berlin</option>
+              <option value="America/New_York">America/New_York</option>
+              <option value="America/Chicago">America/Chicago</option>
+              <option value="America/Los_Angeles">America/Los_Angeles</option>
+            </select>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

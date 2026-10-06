@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Spinner from '../../components/Spinner';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -275,9 +278,11 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
       })}
 
       {sortedMonths.length === 0 && (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-          {tr('Brak programów nabożeństw. Dodaj programy w module "Programy".')}
-        </div>
+        <EmptyState
+          icon={Calendar}
+          title={tr('Brak programów nabożeństw. Dodaj programy w module "Programy".')}
+          className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700"
+        />
       )}
     </div>
   );
@@ -402,116 +407,95 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
           </div>
         ))}
         {speakers.length === 0 && (
-          <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-            {tr('Brak mówców. Dodaj pierwszego mówcę.')}
-          </div>
+          <EmptyState icon={Users} title={tr('Brak mówców. Dodaj pierwszego mówcę.')} className="col-span-full" />
         )}
       </div>
 
       {/* Modal */}
-      {showModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                {editingSpeaker ? tr('Edytuj mówcę') : tr('Dodaj mówcę')}
-              </h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Photo upload */}
-              <div className="flex flex-col items-center">
-                <div className="relative group">
-                  {form.photo_url ? (
-                    <img
-                      src={form.photo_url}
-                      alt=""
-                      className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-3xl font-bold border-4 border-white dark:border-gray-700 shadow-lg">
-                      {form.name ? form.name.charAt(0).toUpperCase() : '?'}
-                    </div>
-                  )}
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="absolute bottom-0 right-0 bg-accent-primary-light text-white p-2 rounded-full shadow-lg hover:bg-accent-primary transition"
-                  >
-                    {uploading ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
-                  </button>
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        closeOnBackdrop={false}
+        size="sm"
+        title={editingSpeaker ? tr('Edytuj mówcę') : tr('Dodaj mówcę')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
+          <Button onClick={handleSave}>{editingSpeaker ? 'Zapisz' : 'Dodaj'}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          {/* Photo upload */}
+          <div className="flex flex-col items-center">
+            <div className="relative group">
+              {form.photo_url ? (
+                <img
+                  src={form.photo_url}
+                  alt=""
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-3xl font-bold border-4 border-white dark:border-gray-700 shadow-lg">
+                  {form.name ? form.name.charAt(0).toUpperCase() : '?'}
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoUpload}
-                />
-                <span className="text-xs text-gray-400 mt-2">{tr('Kliknij aby dodać zdjęcie')}</span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  {tr('Imię i nazwisko *')}
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
-                  placeholder={tr('Jan Kowalski')}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Adres e-mail
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
-                  placeholder="jan.kowalski@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Bio / Opis
-                </label>
-                <textarea
-                  value={form.bio}
-                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white resize-none"
-                  placeholder={tr('Krótki opis mówcy...')}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-6">
+              )}
               <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute bottom-0 right-0 bg-accent-primary-light text-white p-2 rounded-full shadow-lg hover:bg-accent-primary transition"
               >
-                Anuluj
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium"
-              >
-                {editingSpeaker ? 'Zapisz' : 'Dodaj'}
+                {uploading ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
               </button>
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+            />
+            <span className="text-xs text-gray-400 mt-2">{tr('Kliknij aby dodać zdjęcie')}</span>
           </div>
-        </div>,
-        document.body
-      )}
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+              {tr('Imię i nazwisko *')}
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
+              placeholder={tr('Jan Kowalski')}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Adres e-mail
+            </label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
+              placeholder="jan.kowalski@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Bio / Opis
+            </label>
+            <textarea
+              value={form.bio}
+              onChange={(e) => setForm({ ...form, bio: e.target.value })}
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white resize-none"
+              placeholder={tr('Krótki opis mówcy...')}
+            />
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }
@@ -758,11 +742,12 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                 })}
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-                <BookOpen size={40} className="mx-auto mb-3 opacity-50" />
-                <p>{tr('Brak kazań przypisanych do tej serii')}</p>
-                <p className="text-sm mt-1">{tr('Przypisz kazania w zakładce "Grafik"')}</p>
-              </div>
+              <EmptyState
+                icon={BookOpen}
+                title={tr('Brak kazań przypisanych do tej serii')}
+                subtitle={tr('Przypisz kazania w zakładce "Grafik"')}
+                className="bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700"
+              />
             )}
           </div>
         </div>
@@ -855,133 +840,111 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
           );
         })}
         {series.length === 0 && (
-          <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-            {tr('Brak serii. Dodaj pierwszą serię nauczania.')}
-          </div>
+          <EmptyState icon={BookOpen} title={tr('Brak serii. Dodaj pierwszą serię nauczania.')} className="col-span-full" />
         )}
       </div>
 
       {/* Modal */}
-      {showModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                {editingSeries ? tr('Edytuj serię') : tr('Dodaj serię')}
-              </h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Nazwa serii *
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
-                  placeholder="Np. Fundamenty wiary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Fragment biblijny
-                </label>
-                <input
-                  type="text"
-                  value={form.scripture}
-                  onChange={(e) => setForm({ ...form, scripture: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
-                  placeholder="Np. List do Rzymian 1-8"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Opis serii
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white resize-none"
-                  placeholder={tr('Krótki opis serii...')}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <CustomDatePicker
-                  label={tr('Data rozpoczęcia')}
-                  value={form.start_date}
-                  onChange={(val) => setForm({ ...form, start_date: val })}
-                />
-                <CustomDatePicker
-                  label={tr('Data zakończenia')}
-                  value={form.end_date}
-                  onChange={(val) => setForm({ ...form, end_date: val })}
-                />
-              </div>
-
-              <label className="flex items-center gap-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300 text-accent-primary focus:ring-accent-primary"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {tr('Seria aktywna')} <span className="text-gray-400">({tr('do wyboru przy kazaniu')})</span>
-                </span>
-              </label>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Grafiki
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {form.graphics.map((g, i) => (
-                    <div key={i} className="relative group">
-                      <img src={g.url} alt="" className="w-20 h-20 rounded-lg object-cover" />
-                      <button
-                        onClick={() => removeGraphic(i)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light transition">
-                  <ImageIcon size={20} className="text-gray-400" />
-                  <span className="text-sm text-gray-500">{uploading ? tr('Przesyłanie...') : 'Dodaj grafiki'}</span>
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
-                </label>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl"
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium"
-              >
-                {editingSeries ? 'Zapisz' : 'Dodaj'}
-              </button>
-            </div>
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        closeOnBackdrop={false}
+        title={editingSeries ? tr('Edytuj serię') : tr('Dodaj serię')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
+          <Button onClick={handleSave}>{editingSeries ? 'Zapisz' : 'Dodaj'}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Nazwa serii *
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
+              placeholder="Np. Fundamenty wiary"
+            />
           </div>
-        </div>,
-        document.body
-      )}
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Fragment biblijny
+            </label>
+            <input
+              type="text"
+              value={form.scripture}
+              onChange={(e) => setForm({ ...form, scripture: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
+              placeholder="Np. List do Rzymian 1-8"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Opis serii
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white resize-none"
+              placeholder={tr('Krótki opis serii...')}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <CustomDatePicker
+              label={tr('Data rozpoczęcia')}
+              value={form.start_date}
+              onChange={(val) => setForm({ ...form, start_date: val })}
+            />
+            <CustomDatePicker
+              label={tr('Data zakończenia')}
+              value={form.end_date}
+              onChange={(val) => setForm({ ...form, end_date: val })}
+            />
+          </div>
+
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+              className="w-4 h-4 rounded border-gray-300 text-accent-primary focus:ring-accent-primary"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              {tr('Seria aktywna')} <span className="text-gray-400">({tr('do wyboru przy kazaniu')})</span>
+            </span>
+          </label>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Grafiki
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {form.graphics.map((g, i) => (
+                <div key={i} className="relative group">
+                  <img src={g.url} alt="" className="w-20 h-20 rounded-lg object-cover" />
+                  <button
+                    onClick={() => removeGraphic(i)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light transition">
+              <ImageIcon size={20} className="text-gray-400" />
+              <span className="text-sm text-gray-500">{uploading ? tr('Przesyłanie...') : 'Dodaj grafiki'}</span>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            </label>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }
@@ -1101,11 +1064,7 @@ export default function TeachingModule() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={48} />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   return (

@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarDays, MapPin, ChevronRight, CalendarCheck } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
+import Button from '../../../components/Button';
 import { TONE } from '../../../lib/brandTone';
 
 // Kolory znaczników wg kategorii wydarzenia (spójne z modułem Kalendarz).
@@ -58,27 +61,17 @@ export default function UpcomingEventsWidget() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   if (events.length === 0) {
     return (
-      <div className="text-center py-6">
-        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-          <CalendarCheck size={24} className="text-indigo-500" />
-        </div>
-        <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">{tr('Brak nadchodzących wydarzeń')}</p>
-        <button
-          onClick={() => navigate('/calendar')}
-          className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light font-medium hover:underline"
-        >
-          {tr('Otwórz kalendarz')}
-        </button>
-      </div>
+      <EmptyState
+        compact
+        icon={CalendarCheck}
+        title={tr('Brak nadchodzących wydarzeń')}
+        action={<Button variant="outline" size="sm" onClick={() => navigate('/calendar')}>{tr('Otwórz kalendarz')}</Button>}
+      />
     );
   }
 

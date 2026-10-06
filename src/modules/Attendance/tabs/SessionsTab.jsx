@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Search, Edit2, Trash2, X, ClipboardList, Filter, ChevronRight, ArrowLeft, Users, UserPlus, Check } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, ClipboardList, Filter, ChevronRight, ArrowLeft, Users, UserPlus, Check } from 'lucide-react';
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { SESSION_TYPES, sessionTypeLabel, sessionTypeColor, sessionAttendance, memberName, formatDate } from '../lib/attendanceApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
@@ -187,10 +189,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
         {loading ? (
           <Spinner center />
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <ClipboardList size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">Brak sesji dla wybranych filtrów.</p>
-          </div>
+          <EmptyState icon={ClipboardList} title="Brak sesji dla wybranych filtrów." />
         ) : (
           <DataTable flush>
             <THead>
@@ -239,42 +238,38 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
       </div>
 
       {/* Modal dodaj/edytuj */}
-      <Modal isOpen={modalOpen}>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && setModalOpen(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editing ? 'Edytuj sesję' : 'Nowa sesja'}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł (opcjonalnie)</label>
-                <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Nabożeństwo niedzielne" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-              </div>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => !saving && setModalOpen(false)}
+        title={editing ? 'Edytuj sesję' : 'Nowa sesja'}
+        footer={<>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
+          <Button data-tour="att-session-save" onClick={save} loading={saving}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł (opcjonalnie)</label>
+            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Nabożeństwo niedzielne" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+          </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
-                  <DateInput data-tour="att-session-date" value={form.session_date} onChange={e => setForm(f => ({ ...f, session_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                </div>
-                <CustomSelect label="Typ" value={form.session_type} onChange={v => setForm(f => ({ ...f, session_type: v }))} options={typeOptionsForm} />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Szybka liczba obecnych (headcount)</label>
-                <input type="number" min="0" step="1" value={form.headcount} onChange={e => setForm(f => ({ ...f, headcount: e.target.value }))} placeholder="np. 120" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                <p className="text-xs text-gray-400 mt-1 ml-1">Użyj tego pola dla szybkiego zliczenia. Imienną listę obecnych odznaczysz w szczegółach sesji.</p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatka</label>
-                <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
-              </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+              <DateInput data-tour="att-session-date" value={form.session_date} onChange={e => setForm(f => ({ ...f, session_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
-              <button onClick={() => setModalOpen(false)} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              <button data-tour="att-session-save" onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
-            </div>
+            <CustomSelect label="Typ" value={form.session_type} onChange={v => setForm(f => ({ ...f, session_type: v }))} options={typeOptionsForm} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Szybka liczba obecnych (headcount)</label>
+            <input type="number" min="0" step="1" value={form.headcount} onChange={e => setForm(f => ({ ...f, headcount: e.target.value }))} placeholder="np. 120" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <p className="text-xs text-gray-400 mt-1 ml-1">Użyj tego pola dla szybkiego zliczenia. Imienną listę obecnych odznaczysz w szczegółach sesji.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatka</label>
+            <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
           </div>
         </div>
       </Modal>
@@ -424,7 +419,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
             {loading ? (
               <Spinner center />
             ) : filteredMembers.length === 0 ? (
-              <div className="p-10 text-center text-gray-400">Brak członków w bazie dla tego kampusu.</div>
+              <EmptyState icon={Users} title="Brak członków w bazie dla tego kampusu." compact />
             ) : (
               <ul className="divide-y divide-gray-50 dark:divide-gray-700/50">
                 {filteredMembers.map(m => {
@@ -466,7 +461,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
             <button onClick={addGuest} disabled={addingGuest || !guestName.trim()} className="px-3 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md disabled:opacity-60"><Plus size={16} /></button>
           </div>
           {guestRecords.length === 0 ? (
-            <p className="text-sm text-gray-400">Brak gości.</p>
+            <EmptyState icon={UserPlus} title="Brak gości." compact />
           ) : (
             <ul className="space-y-2">
               {guestRecords.map(g => (

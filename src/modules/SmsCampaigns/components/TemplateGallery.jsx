@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Sparkles, MessageSquare, Save, X, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Sparkles, MessageSquare, Save } from 'lucide-react';
 import { useSmsTemplates } from '../hooks/useSmsTemplates';
 import { SENDER_MAX, BODY_MAX } from '../constants';
 import { smsAnalysis } from '../utils/smsEncoding';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import Spinner from '../../../components/Spinner';
 
 export default function TemplateGallery({ onUseTemplate }) {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = useSmsTemplates();
@@ -20,7 +23,7 @@ export default function TemplateGallery({ onUseTemplate }) {
     try { await deleteTemplate(t.id); } catch (e) { toast.error(e.message); }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>;
+  if (loading) return <Spinner center label={tr('Ładowanie...')} />;
 
   return (
     <div>
@@ -107,52 +110,43 @@ function TemplateEditor({ template, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-lg w-full">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-            {template ? 'Edytuj szablon' : 'Nowy szablon SMS'}
-          </h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          <input
-            value={form.name}
-            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Nazwa szablonu"
-            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
-          />
-          <input
-            value={form.default_sender}
-            maxLength={SENDER_MAX}
-            onChange={e => setForm(f => ({ ...f, default_sender: e.target.value }))}
-            placeholder={tr('Domyślny nadawca (opcjonalnie)')}
-            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono"
-          />
-          <textarea
-            value={form.body}
-            maxLength={BODY_MAX}
-            onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-            placeholder={tr('Treść SMS-a...')}
-            rows={4}
-            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
-          />
-          <p className="text-xs text-gray-500">
-            {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
-          </p>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Anuluj')}</button>
-          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50">
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Zapisz
-          </button>
-        </div>
+    <Modal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={false}
+      title={template ? 'Edytuj szablon' : 'Nowy szablon SMS'}
+      size="md"
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button icon={Save} onClick={handleSave} loading={saving}>Zapisz</Button>
+      </>}
+    >
+      <div className="p-6 space-y-3">
+        <input
+          value={form.name}
+          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+          placeholder="Nazwa szablonu"
+          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
+        />
+        <input
+          value={form.default_sender}
+          maxLength={SENDER_MAX}
+          onChange={e => setForm(f => ({ ...f, default_sender: e.target.value }))}
+          placeholder={tr('Domyślny nadawca (opcjonalnie)')}
+          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono"
+        />
+        <textarea
+          value={form.body}
+          maxLength={BODY_MAX}
+          onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+          placeholder={tr('Treść SMS-a...')}
+          rows={4}
+          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
+        />
+        <p className="text-xs text-gray-500">
+          {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
+        </p>
       </div>
-    </div>
+    </Modal>
   );
 }

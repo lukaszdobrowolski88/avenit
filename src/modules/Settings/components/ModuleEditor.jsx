@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Save, AlertCircle } from 'lucide-react';
+import { Save, AlertCircle } from 'lucide-react';
 import IconPicker from './IconPicker';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 import { supabase } from '../../../lib/supabase';
 import { invalidateModuleLabels } from '../../../hooks/useModuleLabel';
 import { useT } from '../../../i18n';
@@ -110,153 +111,128 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
 
   if (!document.body) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[150]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h3 className="font-bold text-xl text-gray-900 dark:text-white">
-            {isEditing ? tr('Edytuj moduł') : tr('Nowy moduł')}
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
-          >
-            <X size={20} className="text-gray-500" />
-          </button>
-        </div>
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={false}
+      zIndex={150}
+      title={isEditing ? tr('Edytuj moduł') : tr('Nowy moduł')}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button icon={Save} onClick={handleSubmit} loading={saving}>Zapisz</Button>
+      </>}
+    >
+      <div className="p-6 space-y-5">
+        {errors.submit && (
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+            <AlertCircle size={16} />
+            {errors.submit}
+          </div>
+        )}
 
-        {/* Content */}
-        <div className="p-6 space-y-5">
-          {errors.submit && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-              <AlertCircle size={16} />
-              {errors.submit}
-            </div>
+        {/* Nazwa modułu */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+            {tr('Nazwa modułu')}
+          </label>
+          <input
+            type="text"
+            value={form.label}
+            onChange={(e) => setForm({ ...form, label: e.target.value })}
+            placeholder={t('np. Mój nowy moduł')}
+            className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
+              ${errors.label
+                ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
+                : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
+              } focus:outline-none focus:ring-2`}
+          />
+          {errors.label && (
+            <p className="mt-1 text-xs text-red-500">{errors.label}</p>
           )}
-
-          {/* Nazwa modułu */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              {tr('Nazwa modułu')}
-            </label>
-            <input
-              type="text"
-              value={form.label}
-              onChange={(e) => setForm({ ...form, label: e.target.value })}
-              placeholder={t('np. Mój nowy moduł')}
-              className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
-                ${errors.label
-                  ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
-                } focus:outline-none focus:ring-2`}
-            />
-            {errors.label && (
-              <p className="mt-1 text-xs text-red-500">{errors.label}</p>
-            )}
-          </div>
-
-          {/* Klucz modułu */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Klucz (slug)
-            </label>
-            <input
-              type="text"
-              value={form.key}
-              onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase() })}
-              placeholder="np. moj_modul"
-              disabled={isEditing && module?.is_system}
-              className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
-                ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
-                ${errors.key
-                  ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
-                } focus:outline-none focus:ring-2`}
-            />
-            {errors.key && (
-              <p className="mt-1 text-xs text-red-500">{errors.key}</p>
-            )}
-            {isEditing && module?.is_system && (
-              <p className="mt-1 text-xs text-gray-400">{t('Klucz modułu systemowego nie może być zmieniony')}</p>
-            )}
-          </div>
-
-          {/* Ścieżka URL */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              {tr('Ścieżka URL')}
-            </label>
-            <input
-              type="text"
-              value={form.path}
-              onChange={(e) => setForm({ ...form, path: e.target.value })}
-              placeholder="np. /moj-modul"
-              disabled={isEditing && module?.is_system}
-              className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
-                ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
-                ${errors.path
-                  ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
-                } focus:outline-none focus:ring-2`}
-            />
-            {errors.path && (
-              <p className="mt-1 text-xs text-red-500">{errors.path}</p>
-            )}
-          </div>
-
-          {/* Ikona */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Ikona
-            </label>
-            <IconPicker
-              value={form.icon}
-              onChange={(icon) => setForm({ ...form, icon })}
-            />
-            {errors.icon && (
-              <p className="mt-1 text-xs text-red-500">{errors.icon}</p>
-            )}
-          </div>
-
-          {/* Kolor akcentu */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              {tr('Kolor modułu')}
-            </label>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button type="button" onClick={() => setColor('')}
-                className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] text-gray-400 ${!color ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900 border-gray-300' : 'border-gray-200 dark:border-gray-700'}`}
-                title={tr('Domyślny (gradient)')}>—</button>
-              {MODULE_COLORS.map((c) => (
-                <button type="button" key={c} onClick={() => setColor(c)}
-                  className={`w-8 h-8 rounded-full transition ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900' : ''}`}
-                  style={{ backgroundColor: c }} />
-              ))}
-            </div>
-            <p className="mt-1.5 text-xs text-gray-400">{tr('Kolor kafelka-ikony w nagłówku modułu. „—" = domyślny gradient.')}</p>
-          </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition font-medium"
-          >
-            Anuluj
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save size={16} />
-            {saving ? tr('Zapisuję...') : 'Zapisz'}
-          </button>
+        {/* Klucz modułu */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+            Klucz (slug)
+          </label>
+          <input
+            type="text"
+            value={form.key}
+            onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase() })}
+            placeholder="np. moj_modul"
+            disabled={isEditing && module?.is_system}
+            className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
+              ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
+              ${errors.key
+                ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
+                : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
+              } focus:outline-none focus:ring-2`}
+          />
+          {errors.key && (
+            <p className="mt-1 text-xs text-red-500">{errors.key}</p>
+          )}
+          {isEditing && module?.is_system && (
+            <p className="mt-1 text-xs text-gray-400">{t('Klucz modułu systemowego nie może być zmieniony')}</p>
+          )}
+        </div>
+
+        {/* Ścieżka URL */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+            {tr('Ścieżka URL')}
+          </label>
+          <input
+            type="text"
+            value={form.path}
+            onChange={(e) => setForm({ ...form, path: e.target.value })}
+            placeholder="np. /moj-modul"
+            disabled={isEditing && module?.is_system}
+            className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
+              ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
+              ${errors.path
+                ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
+                : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
+              } focus:outline-none focus:ring-2`}
+          />
+          {errors.path && (
+            <p className="mt-1 text-xs text-red-500">{errors.path}</p>
+          )}
+        </div>
+
+        {/* Ikona */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+            Ikona
+          </label>
+          <IconPicker
+            value={form.icon}
+            onChange={(icon) => setForm({ ...form, icon })}
+          />
+          {errors.icon && (
+            <p className="mt-1 text-xs text-red-500">{errors.icon}</p>
+          )}
+        </div>
+
+        {/* Kolor akcentu */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+            {tr('Kolor modułu')}
+          </label>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button type="button" onClick={() => setColor('')}
+              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] text-gray-400 ${!color ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900 border-gray-300' : 'border-gray-200 dark:border-gray-700'}`}
+              title={tr('Domyślny (gradient)')}>—</button>
+            {MODULE_COLORS.map((c) => (
+              <button type="button" key={c} onClick={() => setColor(c)}
+                className={`w-8 h-8 rounded-full transition ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900' : ''}`}
+                style={{ backgroundColor: c }} />
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-gray-400">{tr('Kolor kafelka-ikony w nagłówku modułu. „—" = domyślny gradient.')}</p>
         </div>
       </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }

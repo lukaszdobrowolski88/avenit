@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import { formatMoney, formatDate, memberName } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 const currentYear = new Date().getFullYear();
 
@@ -154,10 +155,7 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? <Spinner center />
         : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <FileText size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">Brak darowizn do zestawienia za {year}.</p>
-          </div>
+          <EmptyState icon={FileText} title={`Brak darowizn do zestawienia za ${year}.`} />
         ) : (
           <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
             {filtered.map(d => (

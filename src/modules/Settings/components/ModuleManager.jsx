@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, GripVertical, Pencil, Trash2, Lock, Layers, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, Lock, Layers, ToggleLeft, ToggleRight } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import {
   DndContext,
@@ -22,6 +22,10 @@ import { supabase } from '../../../lib/supabase';
 import ModuleEditor from './ModuleEditor';
 import TabManager from './TabManager';
 import EventConfigModal from './EventConfigModal';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
+import Spinner from '../../../components/Spinner';
 import { MODULE_TEMPLATES, iconForType } from './moduleTemplates';
 import { WIDGET_TYPES } from '../../CustomModule/components/ModuleWidget';
 import { callAi } from '../../AI/lib/aiApi';
@@ -380,9 +384,7 @@ export default function ModuleManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 size={32} className="animate-spin text-accent-primary-light" />
-      </div>
+      <Spinner center />
     );
   }
 
@@ -453,94 +455,90 @@ export default function ModuleManager() {
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="text-center py-12 text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-          <Layers size={48} className="mx-auto mb-4 opacity-50" />
-          <p>{t('Brak modułów')}</p>
-          <p className="text-sm mt-1">{t('Kliknij "Dodaj moduł" aby dodać pierwszy')}</p>
-        </div>
+        <EmptyState
+          icon={Layers}
+          title={t('Brak modułów')}
+          subtitle={t('Kliknij "Dodaj moduł" aby dodać pierwszy')}
+          className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl"
+        />
       )}
 
       {/* Template Picker Modal */}
-      {templatePickerOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[130]">
-          <div className="absolute inset-0" onClick={() => setTemplatePickerOpen(false)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[85vh] overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between mb-1">
-              <h4 className="font-bold text-lg text-gray-800 dark:text-white">{tr('Nowy moduł')}</h4>
-              <button onClick={() => setTemplatePickerOpen(false)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><Icons.X size={18} /></button>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Zacznij od gotowego szablonu (moduł + zestaw zakładek) albo zbuduj od zera.')}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button onClick={() => { setTemplatePickerOpen(false); setAiError(''); setAiOpen(true); }}
-                className="flex items-start gap-3 p-4 rounded-xl border border-accent-primary/40 bg-accent-primary/5 hover:border-accent-primary hover:shadow-md text-left">
-                <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><Icons.Sparkles size={20} /></span>
-                <div>
-                  <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr('Zbuduj z AI')}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{tr('Opisz moduł, a AI dobierze zakładki')}</div>
+      <Modal
+        isOpen={templatePickerOpen}
+        onClose={() => setTemplatePickerOpen(false)}
+        zIndex={130}
+        size="lg"
+        title={tr('Nowy moduł')}
+        subtitle={tr('Zacznij od gotowego szablonu (moduł + zestaw zakładek) albo zbuduj od zera.')}
+      >
+        <div className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button onClick={() => { setTemplatePickerOpen(false); setAiError(''); setAiOpen(true); }}
+              className="flex items-start gap-3 p-4 rounded-xl border border-accent-primary/40 bg-accent-primary/5 hover:border-accent-primary hover:shadow-md text-left">
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><Icons.Sparkles size={20} /></span>
+              <div>
+                <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr('Zbuduj z AI')}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{tr('Opisz moduł, a AI dobierze zakładki')}</div>
+              </div>
+            </button>
+            <button onClick={() => handlePickTemplate(null)}
+              className="flex items-start gap-3 p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:bg-accent-primary/5 text-left">
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 bg-gray-100 dark:bg-gray-800 shrink-0"><Icons.Plus size={20} /></span>
+              <div>
+                <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr('Pusty moduł')}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{tr('Zbuduj zakładka po zakładce z palety elementów')}</div>
+              </div>
+            </button>
+            {[...MODULE_TEMPLATES, ...userTemplates].map((tpl) => {
+              const TplIcon = Icons[tpl.icon] || Icons.Square;
+              return (
+                <div key={tpl.key} className="group relative">
+                  <button onClick={() => handlePickTemplate(tpl)}
+                    className="w-full flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:shadow-md text-left">
+                    <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><TplIcon size={20} /></span>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm flex items-center gap-1.5">{tpl.custom ? tpl.name : tr(tpl.name)}{tpl.custom && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-accent-primary/10 text-accent-primary">{tr('własny')}</span>}</div>
+                      <div className="text-xs text-gray-400 mt-0.5 line-clamp-2">{tpl.custom ? tpl.description : tr(tpl.description)}</div>
+                      <div className="text-[11px] text-accent-primary mt-1">{tpl.tabs.length} {tr('zakładek')}</div>
+                    </div>
+                  </button>
+                  {tpl.custom && (
+                    <button onClick={async () => { if (await confirmDialog(tr('Usunąć ten szablon?'))) persistUserTemplates(userTemplates.filter((x) => x.key !== tpl.key)); }}
+                      title={tr('Usuń szablon')} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Icons.Trash2 size={14} /></button>
+                  )}
                 </div>
-              </button>
-              <button onClick={() => handlePickTemplate(null)}
-                className="flex items-start gap-3 p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:bg-accent-primary/5 text-left">
-                <span className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 bg-gray-100 dark:bg-gray-800 shrink-0"><Icons.Plus size={20} /></span>
-                <div>
-                  <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr('Pusty moduł')}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{tr('Zbuduj zakładka po zakładce z palety elementów')}</div>
-                </div>
-              </button>
-              {[...MODULE_TEMPLATES, ...userTemplates].map((tpl) => {
-                const TplIcon = Icons[tpl.icon] || Icons.Square;
-                return (
-                  <div key={tpl.key} className="group relative">
-                    <button onClick={() => handlePickTemplate(tpl)}
-                      className="w-full flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:shadow-md text-left">
-                      <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><TplIcon size={20} /></span>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm flex items-center gap-1.5">{tpl.custom ? tpl.name : tr(tpl.name)}{tpl.custom && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-accent-primary/10 text-accent-primary">{tr('własny')}</span>}</div>
-                        <div className="text-xs text-gray-400 mt-0.5 line-clamp-2">{tpl.custom ? tpl.description : tr(tpl.description)}</div>
-                        <div className="text-[11px] text-accent-primary mt-1">{tpl.tabs.length} {tr('zakładek')}</div>
-                      </div>
-                    </button>
-                    {tpl.custom && (
-                      <button onClick={async () => { if (await confirmDialog(tr('Usunąć ten szablon?'))) persistUserTemplates(userTemplates.filter((x) => x.key !== tpl.key)); }}
-                        title={tr('Usuń szablon')} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Icons.Trash2 size={14} /></button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+              );
+            })}
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* AI Module Generator Modal */}
-      {aiOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[140]">
-          <div className="absolute inset-0" onClick={() => !aiBusy && setAiOpen(false)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg p-6">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center text-white bg-gradient-to-br from-accent-primary to-accent-secondary"><Icons.Sparkles size={18} /></span>
-              <h4 className="font-bold text-lg text-gray-800 dark:text-white">{tr('Zbuduj moduł z AI')}</h4>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Opisz do czego moduł ma służyć — AI dobierze nazwę, ikonę i zakładki. Zestaw potwierdzisz w kolejnym kroku.')}</p>
-            <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={3} autoFocus
-              placeholder={tr('np. Moduł dla zespołu fotografów: harmonogram sesji, galeria zdjęć, sprzęt i lista kontaktów')}
-              className="w-full text-sm bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2.5 outline-none resize-none" />
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {[tr('Zespół fotografów'), tr('Kawiarnia / kawiarenka'), tr('Grupa wolontariuszy'), tr('Biblioteka zasobów')].map((s) => (
-                <button key={s} onClick={() => setAiPrompt(s)} disabled={aiBusy} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary/50">{s}</button>
-              ))}
-            </div>
-            {aiError && <div className="mt-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{aiError}</div>}
-            <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setAiOpen(false)} disabled={aiBusy} className="text-sm text-gray-500 px-4 py-2">{tr('Anuluj')}</button>
-              <button onClick={handleAiGenerate} disabled={aiBusy || !aiPrompt.trim()}
-                className="text-sm bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-lg disabled:opacity-50 flex items-center gap-2">
-                {aiBusy ? <Icons.Loader2 size={15} className="animate-spin" /> : <Icons.Sparkles size={15} />} {aiBusy ? tr('Generuję…') : tr('Generuj')}
-              </button>
-            </div>
+      <Modal
+        isOpen={aiOpen}
+        onClose={() => !aiBusy && setAiOpen(false)}
+        zIndex={140}
+        icon={Icons.Sparkles}
+        title={tr('Zbuduj moduł z AI')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setAiOpen(false)} disabled={aiBusy}>{tr('Anuluj')}</Button>
+          <Button icon={Icons.Sparkles} onClick={handleAiGenerate} loading={aiBusy} disabled={!aiPrompt.trim()}>{tr('Generuj')}</Button>
+        </>}
+      >
+        <div className="p-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Opisz do czego moduł ma służyć — AI dobierze nazwę, ikonę i zakładki. Zestaw potwierdzisz w kolejnym kroku.')}</p>
+          <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={3} autoFocus
+            placeholder={tr('np. Moduł dla zespołu fotografów: harmonogram sesji, galeria zdjęć, sprzęt i lista kontaktów')}
+            className="w-full text-sm bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2.5 outline-none resize-none" />
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {[tr('Zespół fotografów'), tr('Kawiarnia / kawiarenka'), tr('Grupa wolontariuszy'), tr('Biblioteka zasobów')].map((s) => (
+              <button key={s} onClick={() => setAiPrompt(s)} disabled={aiBusy} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary/50">{s}</button>
+            ))}
           </div>
+          {aiError && <div className="mt-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{aiError}</div>}
         </div>
-      )}
+      </Modal>
 
       {/* Module Editor Modal */}
       {editorOpen && (
@@ -578,34 +576,26 @@ export default function ModuleManager() {
       )}
 
       {/* Delete Confirmation */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[130]">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">
-              {tr('Usunąć moduł?')}
-            </h4>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Czy na pewno chcesz usunąć moduł "{deleteConfirm.label}"?
-              Zostaną również usunięte wszystkie zakładki tego modułu.
-              Tej operacji nie można cofnąć.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition"
-              >
-                {tr('Usuń')}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        closeOnBackdrop={false}
+        zIndex={130}
+        size="sm"
+        title={tr('Usunąć moduł?')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Anuluj</Button>
+          <Button variant="danger" onClick={confirmDelete}>{tr('Usuń')}</Button>
+        </>}
+      >
+        <div className="p-6">
+          <p className="text-gray-600 dark:text-gray-400">
+            Czy na pewno chcesz usunąć moduł "{deleteConfirm?.label}"?
+            Zostaną również usunięte wszystkie zakładki tego modułu.
+            Tej operacji nie można cofnąć.
+          </p>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

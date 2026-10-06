@@ -28,6 +28,9 @@ import RsvpSummaryWidget from './widgets/RsvpSummaryWidget';
 import GivingMonthWidget from './widgets/GivingMonthWidget';
 import AttendanceWidget from './widgets/AttendanceWidget';
 import { tr } from '../../i18n';
+import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
+import Button from '../../components/Button';
 
 const WIDGET_ICONS = {
   ministry: Calendar,
@@ -138,10 +141,7 @@ export default function PersonalDashboard({ user }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 dark:text-gray-400">{t('Ładowanie pulpitu...')}</p>
-        </div>
+        <Spinner size={32} label={t('Ładowanie pulpitu...')} />
       </div>
     );
   }
@@ -233,7 +233,7 @@ export default function PersonalDashboard({ user }) {
       {/* Saving indicator */}
       {saving && (
         <div className="fixed bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-          <div className="w-4 h-4 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
+          <Spinner size={16} />
           <span className="text-sm text-gray-600 dark:text-gray-300">{tr('Zapisywanie...')}</span>
         </div>
       )}
@@ -269,23 +269,12 @@ export default function PersonalDashboard({ user }) {
           })}
         </DashboardGrid>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-            <Settings size={40} className="text-gray-400" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
-            {tr('Brak widocznych widgetów')}
-          </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            {tr('Wszystkie widgety są ukryte. Kliknij "Dostosuj", aby je włączyć.')}
-          </p>
-          <button
-            onClick={() => setShowCustomizer(true)}
-            className="px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg transition-all"
-          >
-            Dostosuj pulpit
-          </button>
-        </div>
+        <EmptyState
+          icon={Settings}
+          title={tr('Brak widocznych widgetów')}
+          subtitle={tr('Wszystkie widgety są ukryte. Kliknij "Dostosuj", aby je włączyć.')}
+          action={<Button onClick={() => setShowCustomizer(true)}>Dostosuj pulpit</Button>}
+        />
       )}
 
       {/* Layout Customizer Modal */}

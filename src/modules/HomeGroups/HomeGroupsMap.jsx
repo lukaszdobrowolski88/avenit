@@ -5,6 +5,8 @@ import { Loader2, MapPin, Search, Navigation, LocateFixed } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 
 // Geokodowanie adresów przez Nominatim (OSM) — cache w pamięci + localStorage, rate-limit.
 const mem = {};
@@ -186,7 +188,7 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
 
       <div className="flex items-center gap-2 text-sm text-gray-500">
         <MapPin size={15} /> {withAddress.length} {tr('grup z adresem')}
-        {loading && <span className="flex items-center gap-1 text-accent-primary"><Loader2 size={13} className="animate-spin" /> {tr('geokodowanie…')}</span>}
+        {loading && <Spinner size={14} label={tr('geokodowanie…')} />}
         {!loading && missing > 0 && <span className="text-amber-500">· {missing} {tr('bez współrzędnych')}</span>}
       </div>
 
@@ -196,7 +198,7 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
         <div>
           <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">{tr('Najbliższe grupy')}</h4>
           {nearest.length === 0 ? (
-            <p className="text-sm text-gray-400">{tr('Brak grup z rozpoznanym adresem.')}</p>
+            <EmptyState compact icon={MapPin} title={tr('Brak grup z rozpoznanym adresem.')} />
           ) : (
             <div className="space-y-2">
               {nearest.slice(0, 5).map(({ g, km }, i) => (

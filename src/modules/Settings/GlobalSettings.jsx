@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
-  List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen, Building2,
+  List, Plus, Trash2, Settings, Grid, Users, Shield, BookOpen, Building2,
   CheckCircle, AlertCircle, Upload, Eye,
   Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, Check, ChevronDown, ChevronUp, Layers, Plug,
   Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2, UserPlus, Clock, Download
@@ -22,6 +21,8 @@ import SubscriptionInfo from './components/SubscriptionInfo';
 import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { tr } from '../../i18n';
@@ -1650,139 +1651,135 @@ export default function GlobalSettings() {
       </div>
 
       {/* MODAL DODAWANIA UŻYTKOWNIKA (DARK MODE) */}
-      {showUserModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-2rem)] flex flex-col">
-            <div className="flex justify-between items-center px-6 pt-6 pb-4 flex-shrink-0">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Użytkownik')}</h3>
-              <button onClick={() => setShowUserModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"><X/></button>
+      <Modal
+        isOpen={showUserModal}
+        onClose={() => setShowUserModal(false)}
+        closeOnBackdrop={false}
+        size="sm"
+        title={t('Użytkownik')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowUserModal(false)}>Anuluj</Button>
+          <Button onClick={saveUser} loading={isCreatingAuthUser}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Imię i nazwisko')}</label>
+            <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('Jan Kowalski')} value={userForm.full_name || ''} onChange={e => setUserForm({...userForm, full_name: e.target.value})} />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Email (Login)</label>
+            <input type="email" className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="jan@example.com" value={userForm.email || ''} onChange={e => setUserForm({...userForm, email: e.target.value})} />
+          </div>
+          {!userForm.id && (
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                {tr('Użytkownik otrzyma email z linkiem do ustawienia własnego hasła.')}
+              </p>
             </div>
-            <div className="px-6 pb-2 overflow-y-auto flex-1 min-h-0 space-y-4">
-              <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Imię i nazwisko')}</label>
-                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('Jan Kowalski')} value={userForm.full_name || ''} onChange={e => setUserForm({...userForm, full_name: e.target.value})} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Email (Login)</label>
-                <input type="email" className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="jan@example.com" value={userForm.email || ''} onChange={e => setUserForm({...userForm, email: e.target.value})} />
-              </div>
-              {!userForm.id && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                  <p className="text-sm text-blue-800 dark:text-blue-300">
-                    {tr('Użytkownik otrzyma email z linkiem do ustawienia własnego hasła.')}
-                  </p>
-                </div>
-              )}
-              <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">Rola w systemie</label>
-                <CustomSelect options={definedRoles.filter(r => r.key !== 'superadmin').map(r => ({value: r.key, label: r.label}))} value={userForm.role} onChange={v => setUserForm({...userForm, role: v})} placeholder={t('Wybierz rolę...')} />
-              </div>
-              {campuses.length > 0 && (
-                <div>
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">{tr('Kampus')}</label>
-                  <CustomSelect
-                    options={[{ value: '', label: t('Wszystkie kampusy (brak ograniczeń)') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
-                    value={userForm.campus_id ? String(userForm.campus_id) : ''}
-                    onChange={v => setUserForm({ ...userForm, campus_id: v ? parseInt(v, 10) : null })}
-                    placeholder={t('Wybierz kampus...')}
-                  />
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">{t('Użytkownik przypisany do kampusu widzi tylko dane tego kampusu.')}</p>
-                </div>
-              )}
-              {userForm.id && (
-                <div className="p-3 border border-gray-200 dark:border-gray-600 rounded-xl space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"><KeyRound size={13} /> {tr('Hasło (administrator)')}</div>
-                  <div className="flex gap-2">
-                    <input type="text" value={adminNewPassword} onChange={e => setAdminNewPassword(e.target.value)} placeholder={tr('Nowe hasło (min. 8 znaków)')}
-                      className="flex-1 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm" />
-                    <button type="button" onClick={handleAdminSetPassword} disabled={pwBusy || adminNewPassword.length < 8}
-                      className="px-3 py-2 bg-accent-primary text-white rounded-lg text-sm font-medium disabled:opacity-50 shrink-0 flex items-center gap-1.5">
-                      {pwBusy ? <Loader2 size={14} className="animate-spin" /> : null} {tr('Ustaw')}
-                    </button>
-                  </div>
-                  <button type="button" onClick={handleAdminSendReset} disabled={pwBusy || !userForm.email}
-                    className="w-full py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                    <Mail size={15} /> {tr('Wyślij link do resetu hasła')}
-                  </button>
-                  <p className="text-[11px] text-gray-400">{tr('„Ustaw" zmienia hasło od razu. „Wyślij link" pozwala użytkownikowi ustawić hasło samodzielnie.')}</p>
-                  <button type="button" onClick={() => forceLogoutUser(userForm.id)}
-                    className="w-full py-2 border border-amber-200 dark:border-amber-900/50 rounded-lg text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-center gap-2">
-                    <UserX size={15} /> {tr('Wyloguj ze wszystkich urządzeń')}
-                  </button>
-                </div>
-              )}
-              {!userForm.id && (
-                <div>
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">{t('Służby / Zespoły')}</label>
-                  <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
-                    <div className="flex flex-wrap gap-2">
-                      {teamDefinitions.map(team => {
-                        const isSelected = selectedTeams.includes(team.key);
-                        return (
-                          <button
-                            key={team.key}
-                            type="button"
-                            onClick={() => {
-                              if (isSelected) {
-                                setSelectedTeams(prev => prev.filter(k => k !== team.key));
-                              } else {
-                                setSelectedTeams(prev => [...prev, team.key]);
-                              }
-                            }}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
-                              isSelected
-                                ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
-                                : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
-                            }`}
-                          >
-                            {isSelected && <Check size={14} />}
-                            {team.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                      {tr('Użytkownik zostanie automatycznie dodany jako członek wybranych służb.')}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {!userForm.id && (
-                <div>
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">{t('Bezpieczeństwo')}</label>
-                  <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          checked={require2FA}
-                          onChange={(e) => setRequire2FA(e.target.checked)}
-                        />
-                        <div className={`w-11 h-6 rounded-full transition ${require2FA ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                          <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${require2FA ? 'translate-x-5' : ''}`}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-800 dark:text-white">Wymagaj weryfikacji dwuetapowej (2FA)</span>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                          {tr('Użytkownik będzie musiał skonfigurować 2FA przy pierwszym logowaniu')}
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              )}
+          )}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">Rola w systemie</label>
+            <CustomSelect options={definedRoles.filter(r => r.key !== 'superadmin').map(r => ({value: r.key, label: r.label}))} value={userForm.role} onChange={v => setUserForm({...userForm, role: v})} placeholder={t('Wybierz rolę...')} />
+          </div>
+          {campuses.length > 0 && (
+            <div>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">{tr('Kampus')}</label>
+              <CustomSelect
+                options={[{ value: '', label: t('Wszystkie kampusy (brak ograniczeń)') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
+                value={userForm.campus_id ? String(userForm.campus_id) : ''}
+                onChange={v => setUserForm({ ...userForm, campus_id: v ? parseInt(v, 10) : null })}
+                placeholder={t('Wybierz kampus...')}
+              />
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">{t('Użytkownik przypisany do kampusu widzi tylko dane tego kampusu.')}</p>
             </div>
-            <div className="px-6 py-4 flex-shrink-0 border-t border-gray-100 dark:border-gray-700">
-              <button onClick={saveUser} disabled={isCreatingAuthUser} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed">
-                {isCreatingAuthUser ? 'Tworzenie konta...' : 'Zapisz'}
+          )}
+          {userForm.id && (
+            <div className="p-3 border border-gray-200 dark:border-gray-600 rounded-xl space-y-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"><KeyRound size={13} /> {tr('Hasło (administrator)')}</div>
+              <div className="flex gap-2">
+                <input type="text" value={adminNewPassword} onChange={e => setAdminNewPassword(e.target.value)} placeholder={tr('Nowe hasło (min. 8 znaków)')}
+                  className="flex-1 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm" />
+                <button type="button" onClick={handleAdminSetPassword} disabled={pwBusy || adminNewPassword.length < 8}
+                  className="px-3 py-2 bg-accent-primary text-white rounded-lg text-sm font-medium disabled:opacity-50 shrink-0 flex items-center gap-1.5">
+                  {pwBusy ? <Loader2 size={14} className="animate-spin" /> : null} {tr('Ustaw')}
+                </button>
+              </div>
+              <button type="button" onClick={handleAdminSendReset} disabled={pwBusy || !userForm.email}
+                className="w-full py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                <Mail size={15} /> {tr('Wyślij link do resetu hasła')}
+              </button>
+              <p className="text-[11px] text-gray-400">{tr('„Ustaw" zmienia hasło od razu. „Wyślij link" pozwala użytkownikowi ustawić hasło samodzielnie.')}</p>
+              <button type="button" onClick={() => forceLogoutUser(userForm.id)}
+                className="w-full py-2 border border-amber-200 dark:border-amber-900/50 rounded-lg text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-center gap-2">
+                <UserX size={15} /> {tr('Wyloguj ze wszystkich urządzeń')}
               </button>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          )}
+          {!userForm.id && (
+            <div>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">{t('Służby / Zespoły')}</label>
+              <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
+                <div className="flex flex-wrap gap-2">
+                  {teamDefinitions.map(team => {
+                    const isSelected = selectedTeams.includes(team.key);
+                    return (
+                      <button
+                        key={team.key}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedTeams(prev => prev.filter(k => k !== team.key));
+                          } else {
+                            setSelectedTeams(prev => [...prev, team.key]);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        }`}
+                      >
+                        {isSelected && <Check size={14} />}
+                        {team.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                  {tr('Użytkownik zostanie automatycznie dodany jako członek wybranych służb.')}
+                </p>
+              </div>
+            </div>
+          )}
+          {!userForm.id && (
+            <div>
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">{t('Bezpieczeństwo')}</label>
+              <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={require2FA}
+                      onChange={(e) => setRequire2FA(e.target.checked)}
+                    />
+                    <div className={`w-11 h-6 rounded-full transition ${require2FA ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${require2FA ? 'translate-x-5' : ''}`}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-800 dark:text-white">Wymagaj weryfikacji dwuetapowej (2FA)</span>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {tr('Użytkownik będzie musiał skonfigurować 2FA przy pierwszym logowaniu')}
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

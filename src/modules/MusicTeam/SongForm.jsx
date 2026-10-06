@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { X, PlusCircle, Music, Hash, Check, Upload, FileText, Link as LinkIcon, Trash2, Edit3, AlignJustify, Minus, Plus, CornerDownLeft, Undo2, Redo2, Keyboard, Type, Bold, Italic } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import CustomSelect from '../../components/CustomSelect';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 
 // --- STAŁE DANYCH ---
 const KEYS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
@@ -536,21 +539,25 @@ const TagMultiSelect = ({ label, options, value = [], onChange }) => {
 
 // --- GŁÓWNY FORMULARZ ---
 
+const EMPTY_SONG = {
+  id: null,
+  title: '',
+  author: '',
+  category: '',
+  key: '',
+  tempo: '',
+  meter: '',
+  tags: [],
+  lyrics: '',
+  chords_bars: '',
+  sheet_music_url: '',
+  attachments: []
+};
+
 export default function SongForm({ initialData, onSave, onCancel, allTags = [] }) {
-  const [formData, setFormData] = useState({
-    id: null,
-    title: '',
-    author: '',
-    category: '',
-    key: '',
-    tempo: '',
-    meter: '',
-    tags: [],
-    lyrics: '',
-    chords_bars: '',
-    sheet_music_url: '',
-    attachments: []
-  });
+  const [formData, setFormData] = useState(EMPTY_SONG);
+  // Stan wyjściowy formularza — Esc/X/Anuluj pytają o potwierdzenie, gdy są niezapisane zmiany.
+  const baselineRef = useRef(JSON.stringify(EMPTY_SONG));
 
   const [activeTab, setActiveTab] = useState('basic'); // basic | lyrics | attachments
   const [availableTags, setAvailableTags] = useState([]);
@@ -580,7 +587,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
 
   useEffect(() => {
     if (initialData) {
-      setFormData({
+      const next = {
         ...initialData,
         tags: initialData.tags || [],
         title: initialData.title || '',
@@ -591,13 +598,28 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
         meter: initialData.meter || '',
         lyrics: initialData.lyrics || '',
         chords_bars: initialData.chords_bars || ''
-      });
+      };
+      setFormData(next);
+      baselineRef.current = JSON.stringify(next);
       // Ustaw tonację edytora na tonację pieśni
       if (initialData.key) {
         setEditorKey(initialData.key);
       }
     }
   }, [initialData]);
+
+  const requestClose = async () => {
+    if (JSON.stringify(formData) !== baselineRef.current) {
+      const ok = await confirmDialog({
+        title: tr('Zamknąć bez zapisywania?'),
+        message: tr('Zmiany w pieśni zostaną utracone.'),
+        confirmLabel: tr('Zamknij'),
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    onCancel();
+  };
 
   // Synchronizuj editorKey gdy zmieni się formData.key
   useEffect(() => {
@@ -1081,25 +1103,25 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
 
   if (!document.body) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-6xl rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[92vh] my-4">
-        
-        {/* HEADER */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-              {formData.id ? tr('Edycja Pieśni') : tr('Nowa Pieśń')}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Uzupełnij szczegóły utworu')}</p>
-          </div>
-          <button onClick={onCancel} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">
-            <X size={24} />
-          </button>
-        </div>
-
+  return (
+    <Modal
+      isOpen
+      onClose={requestClose}
+      closeOnBackdrop={false}
+      size="full"
+      title={formData.id ? tr('Edycja Pieśni') : tr('Nowa Pieśń')}
+      subtitle={tr('Uzupełnij szczegóły utworu')}
+      footer={<>
+        <Button variant="secondary" onClick={requestClose}>
+          Anuluj
+        </Button>
+        <Button onClick={handleSubmit}>
+          {tr('Zapisz Pieśń')}
+        </Button>
+      </>}
+    >
         {/* CONTENT - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="p-6">
           
           {/* TABS */}
           <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
@@ -1562,11 +1584,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                 </h3>
 
                 {(!formData.attachments || formData.attachments.length === 0) ? (
-                  <div className="text-center py-12 text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-                    <FileText size={40} className="mx-auto mb-3 opacity-50" />
-                    <p>{tr('Brak załączników')}</p>
-                    <p className="text-sm mt-1">{tr('Dodaj pliki lub linki powyżej')}</p>
-                  </div>
+                  <EmptyState compact icon={FileText} title={tr('Brak załączników')} subtitle={tr('Dodaj pliki lub linki powyżej')} />
                 ) : (
                   <div className="space-y-3">
                     {formData.attachments.map((att, idx) => (
@@ -1641,25 +1659,6 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
           )}
 
         </div>
-
-        {/* FOOTER */}
-        <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-b-3xl flex justify-end gap-3">
-          <button 
-            onClick={onCancel}
-            className="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 transition"
-          >
-            Anuluj
-          </button>
-          <button 
-            onClick={handleSubmit}
-            className="px-8 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-accent-primary to-accent-secondary hover:shadow-lg hover:shadow-accent-primary-light/30 transition transform hover:-translate-y-0.5"
-          >
-            {tr('Zapisz Pieśń')}
-          </button>
-        </div>
-
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }

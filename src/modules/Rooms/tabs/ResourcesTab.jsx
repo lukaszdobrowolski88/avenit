@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, X, Boxes, DoorOpen, Package, MapPin, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, Boxes, DoorOpen, Package, MapPin, Users } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { RESOURCE_TYPES, typeLabel, PRESET_COLORS } from '../lib/roomsApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { confirmDialog } from '../../../lib/dialog';
 
 const emptyForm = { name: '', type: 'room', capacity: '', color: '#3b82f6', location: '', is_active: true };
@@ -78,12 +80,11 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {loading && (
-          <Spinner center />
+          <div className="col-span-full"><Spinner center /></div>
         )}
         {!loading && (resources || []).length === 0 && (
-          <div className="col-span-full p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-            <Boxes size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">Brak zasobów. Dodaj pierwszą salę lub sprzęt.</p>
+          <div className="col-span-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+            <EmptyState icon={Boxes} title="Brak zasobów." subtitle="Dodaj pierwszą salę lub sprzęt." />
           </div>
         )}
         {!loading && (resources || []).map(r => {
@@ -115,51 +116,48 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
         })}
       </div>
 
-      <Modal isOpen={modalOpen}>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && setModalOpen(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editing ? 'Edytuj zasób' : 'Nowy zasób'}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwa</label>
-                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="np. Sala główna, Rzutnik" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-              </div>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => !saving && setModalOpen(false)}
+        title={editing ? 'Edytuj zasób' : 'Nowy zasób'}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
+          <Button onClick={save} loading={saving}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwa</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="np. Sala główna, Rzutnik" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+          </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <CustomSelect label="Typ" value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))} options={RESOURCE_TYPES} />
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Pojemność</label>
-                  <input type="number" min="0" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} placeholder="opcjonalnie" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Lokalizacja</label>
-                <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="np. Parter, Budynek B" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Kolor</label>
-                <div className="flex gap-2 flex-wrap">
-                  {PRESET_COLORS.map(c => (
-                    <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))} className={`w-8 h-8 rounded-full transition ${form.color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-800' : ''}`} style={{ background: c }} />
-                  ))}
-                </div>
-              </div>
-
-              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-                <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="rounded accent-emerald-500" />
-                Aktywny (dostępny do rezerwacji)
-              </label>
-            </div>
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
-              <button onClick={() => setModalOpen(false)} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              <button onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
+          <div className="grid grid-cols-2 gap-3">
+            <CustomSelect label="Typ" value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))} options={RESOURCE_TYPES} />
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Pojemność</label>
+              <input type="number" min="0" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} placeholder="opcjonalnie" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
           </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Lokalizacja</label>
+            <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="np. Parter, Budynek B" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Kolor</label>
+            <div className="flex gap-2 flex-wrap">
+              {PRESET_COLORS.map(c => (
+                <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))} className={`w-8 h-8 rounded-full transition ${form.color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900' : ''}`} style={{ background: c }} />
+              ))}
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+            <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="rounded accent-emerald-500" />
+            Aktywny (dostępny do rezerwacji)
+          </label>
         </div>
       </Modal>
     </div>

@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, User, Users, Check, Loader, Megaphone } from 'lucide-react';
+import { X, Search, User, Users, Check, Megaphone } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
+import Spinner from '../../../components/Spinner';
 
 export default function NewConversationModal({
   isOpen,
@@ -123,186 +127,164 @@ export default function NewConversationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-h-[80vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            Nowa rozmowa
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      title="Nowa rozmowa"
+      size="sm"
+      footer={mode !== 'direct' ? (
+        /* Stopka - dla grupy i kanału ogłoszeń */
+        <>
+          <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+          <Button
+            icon={mode === 'announcement' ? Megaphone : Users}
+            onClick={handleCreateGroup}
+            disabled={!groupName.trim() || selectedUsers.length === 0}
+            loading={creating}
           >
-            <X size={20} className="text-gray-500" />
-          </button>
-        </div>
+            {mode === 'announcement' ? tr('Utwórz kanał') : tr('Utwórz grupę')} ({selectedUsers.length} {selectedUsers.length === 1 ? tr('osoba') : selectedUsers.length < 5 ? tr('osoby') : tr('osób')})
+          </Button>
+        </>
+      ) : undefined}
+    >
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setMode('direct')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
+            ${mode === 'direct'
+              ? 'text-accent-primary border-b-2 border-accent-primary'
+              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }
+          `}
+        >
+          <User size={18} />
+          Prywatna
+        </button>
+        <button
+          onClick={() => setMode('group')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
+            ${mode === 'group'
+              ? 'text-accent-primary border-b-2 border-accent-primary'
+              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }
+          `}
+        >
+          <Users size={18} />
+          {tr('Grupa')}
+        </button>
+        <button
+          onClick={() => setMode('announcement')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
+            ${mode === 'announcement'
+              ? 'text-accent-primary border-b-2 border-accent-primary'
+              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }
+          `}
+        >
+          <Megaphone size={18} />
+          {tr('Ogłoszenia')}
+        </button>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => setMode('direct')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
-              ${mode === 'direct'
-                ? 'text-accent-primary border-b-2 border-accent-primary'
-                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              }
-            `}
-          >
-            <User size={18} />
-            Prywatna
-          </button>
-          <button
-            onClick={() => setMode('group')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
-              ${mode === 'group'
-                ? 'text-accent-primary border-b-2 border-accent-primary'
-                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              }
-            `}
-          >
-            <Users size={18} />
-            {tr('Grupa')}
-          </button>
-          <button
-            onClick={() => setMode('announcement')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
-              ${mode === 'announcement'
-                ? 'text-accent-primary border-b-2 border-accent-primary'
-                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              }
-            `}
-          >
-            <Megaphone size={18} />
-            {tr('Ogłoszenia')}
-          </button>
-        </div>
+      {/* Nazwa grupy / kanału */}
+      {mode !== 'direct' && (
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          {mode === 'announcement' && (
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+              <Megaphone size={13} className="text-amber-500" />
+              {tr('W kanale ogłoszeń piszą tylko administratorzy. Pozostali czytają i reagują.')}
+            </p>
+          )}
+          <input
+            type="text"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            placeholder={mode === 'announcement' ? t('Nazwa kanału ogłoszeń...') : t('Nazwa grupy...')}
+            className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
+          />
 
-        {/* Nazwa grupy / kanału */}
-        {mode !== 'direct' && (
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            {mode === 'announcement' && (
-              <p className="mb-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                <Megaphone size={13} className="text-amber-500" />
-                {tr('W kanale ogłoszeń piszą tylko administratorzy. Pozostali czytają i reagują.')}
-              </p>
-            )}
-            <input
-              type="text"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              placeholder={mode === 'announcement' ? t('Nazwa kanału ogłoszeń...') : t('Nazwa grupy...')}
-              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
-            />
-
-            {/* Wybrani użytkownicy */}
-            {selectedUsers.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {selectedUsers.map(user => (
-                  <div
-                    key={user.email}
-                    className="flex items-center gap-1 px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-full text-xs"
-                  >
-                    <span>{user.full_name || user.email}</span>
-                    <button
-                      onClick={() => handleUserSelect(user)}
-                      className="p-0.5 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark rounded-full"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Search */}
-        <div className="p-4">
-          <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              data-tour="komunikator-user-search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('Szukaj użytkowników...')}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
-            />
-          </div>
-        </div>
-
-        {/* User list */}
-        <div className="flex-1 overflow-y-auto px-2 pb-2 custom-scrollbar">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader size={24} className="animate-spin text-accent-primary" />
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              {tr('Nie znaleziono użytkowników')}
-            </div>
-          ) : (
-            <div data-tour="komunikator-users" className="space-y-1">
-              {filteredUsers.map(user => {
-                const isSelected = selectedUsers.some(u => u.email === user.email);
-                return (
+          {/* Wybrani użytkownicy */}
+          {selectedUsers.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {selectedUsers.map(user => (
+                <div
+                  key={user.email}
+                  className="flex items-center gap-1 px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-full text-xs"
+                >
+                  <span>{user.full_name || user.email}</span>
                   <button
-                    key={user.email}
                     onClick={() => handleUserSelect(user)}
-                    disabled={creating}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-left
-                      ${isSelected
-                        ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                      }
-                      disabled:opacity-50
-                    `}
+                    className="p-0.5 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark rounded-full"
                   >
-                    <UserAvatar user={user} size="md" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-white truncate">
-                        {user.full_name || t('Brak nazwy')}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {user.email}
-                      </p>
-                    </div>
-                    {mode !== 'direct' && isSelected && (
-                      <div className="w-5 h-5 bg-accent-primary rounded-full flex items-center justify-center">
-                        <Check size={14} className="text-white" />
-                      </div>
-                    )}
+                    <X size={12} />
                   </button>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>
+      )}
 
-        {/* Footer - dla grupy i kanału ogłoszeń */}
-        {mode !== 'direct' && (
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={handleCreateGroup}
-              disabled={!groupName.trim() || selectedUsers.length === 0 || creating}
-              className="w-full py-2.5 bg-accent-primary hover:bg-accent-primary text-white font-medium rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {creating ? (
-                <>
-                  <Loader size={18} className="animate-spin" />
-                  {tr('Tworzenie...')}
-                </>
-              ) : (
-                <>
-                  {mode === 'announcement' ? <Megaphone size={18} /> : <Users size={18} />}
-                  {mode === 'announcement' ? tr('Utwórz kanał') : tr('Utwórz grupę')} ({selectedUsers.length} {selectedUsers.length === 1 ? tr('osoba') : selectedUsers.length < 5 ? tr('osoby') : tr('osób')})
-                </>
-              )}
-            </button>
+      {/* Search */}
+      <div className="px-6 py-4">
+        <div className="relative">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            data-tour="komunikator-user-search"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('Szukaj użytkowników...')}
+            className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
+          />
+        </div>
+      </div>
+
+      {/* User list */}
+      <div className="px-4 pb-4">
+        {loading ? (
+          <Spinner center />
+        ) : filteredUsers.length === 0 ? (
+          <EmptyState compact icon={Search} title={tr('Nie znaleziono użytkowników')} />
+        ) : (
+          <div data-tour="komunikator-users" className="space-y-1">
+            {filteredUsers.map(user => {
+              const isSelected = selectedUsers.some(u => u.email === user.email);
+              return (
+                <button
+                  key={user.email}
+                  onClick={() => handleUserSelect(user)}
+                  disabled={creating}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-left
+                    ${isSelected
+                      ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                    }
+                    disabled:opacity-50
+                  `}
+                >
+                  <UserAvatar user={user} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-white truncate">
+                      {user.full_name || t('Brak nazwy')}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {user.email}
+                    </p>
+                  </div>
+                  {mode !== 'direct' && isSelected && (
+                    <div className="w-5 h-5 bg-accent-primary rounded-full flex items-center justify-center">
+                      <Check size={14} className="text-white" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   );
 }

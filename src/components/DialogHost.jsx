@@ -47,7 +47,7 @@ function DialogCard({ d, done }) {
   const confirmLabel = d.confirmLabel || (isPrompt ? tr('Zapisz') : d.isDelete ? tr('Usuń') : tr('Potwierdź'));
 
   return (
-    <div className="fixed inset-0 z-[10050] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200000] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150" onMouseDown={cancel} />
       <div
         role="alertdialog"

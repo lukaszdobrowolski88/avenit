@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { supabase, getCachedUser } from '../../lib/supabase';
 import {
   User, Lock, Camera, Save, Loader2, CheckCircle, AlertCircle, Mail, Key, Bell, BellOff, Smartphone, FileText, Code, Eye,
-  Shield, ShieldCheck, ShieldOff, KeyRound, RefreshCw, Copy, Download, Calendar, Link, ExternalLink, QrCode, X
+  Shield, ShieldCheck, ShieldOff, KeyRound, RefreshCw, Copy, Download, Calendar, Link, ExternalLink, QrCode
 } from 'lucide-react';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
 import TwoFactorSetup from '../../components/TwoFactorSetup';
 import PageHeader from '../../components/PageHeader';
 import Spinner from '../../components/Spinner';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import { tr, useT } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
 
@@ -705,10 +708,15 @@ export default function UserSettings() {
 
                 {/* Modal z kodami zapasowymi */}
                 {showBackupCodes && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-                      <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Kody zapasowe</h4>
-
+                  <Modal
+                    isOpen
+                    onClose={() => setShowBackupCodes(false)}
+                    closeOnBackdrop={false}
+                    size="sm"
+                    title="Kody zapasowe"
+                    footer={<Button variant="secondary" onClick={() => setShowBackupCodes(false)}>Zamknij</Button>}
+                  >
+                    <div className="p-6">
                       <div className="space-y-2 mb-4">
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           Pozostało: <span className="font-medium text-emerald-600">{backupCodesData.unused.length}</span> z 10 kodów
@@ -721,20 +729,12 @@ export default function UserSettings() {
                       </div>
 
                       <div className="flex gap-2 mb-4">
-                        <button
-                          onClick={copyBackupCodes}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                        >
-                          <Copy size={16} />
+                        <Button variant="secondary" icon={Copy} onClick={copyBackupCodes} className="flex-1">
                           Kopiuj
-                        </button>
-                        <button
-                          onClick={downloadBackupCodes}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                        >
-                          <Download size={16} />
+                        </Button>
+                        <Button variant="secondary" icon={Download} onClick={downloadBackupCodes} className="flex-1">
                           Pobierz
-                        </button>
+                        </Button>
                       </div>
 
                       {/* Regeneracja kodów */}
@@ -750,24 +750,16 @@ export default function UserSettings() {
                             placeholder="000000"
                             className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-center font-mono tracking-widest"
                           />
-                          <button
+                          <Button
                             onClick={handleRegenerateBackupCodes}
-                            disabled={twoFactorLoading}
-                            className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center gap-1"
-                          >
-                            {twoFactorLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                          </button>
+                            loading={twoFactorLoading}
+                            icon={RefreshCw}
+                            aria-label="Wygeneruj nowe kody"
+                          />
                         </div>
                       </div>
-
-                      <button
-                        onClick={() => setShowBackupCodes(false)}
-                        className="w-full mt-4 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition"
-                      >
-                        Zamknij
-                      </button>
                     </div>
-                  </div>
+                  </Modal>
                 )}
 
                 {/* Wyłączanie 2FA */}
@@ -995,21 +987,19 @@ export default function UserSettings() {
 
             {/* Modal z kodem QR */}
             {showIcalQrCode && icalSubscription && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                      <QrCode size={20} className="text-accent-secondary dark:text-accent-secondary-light" />
-                      Kod QR kalendarza
-                    </h4>
-                    <button
-                      onClick={() => setShowIcalQrCode(false)}
-                      className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-
+              <Modal
+                isOpen
+                onClose={() => setShowIcalQrCode(false)}
+                closeOnBackdrop={false}
+                size="sm"
+                icon={QrCode}
+                title="Kod QR kalendarza"
+                footer={<>
+                  <Button variant="secondary" onClick={() => setShowIcalQrCode(false)}>Zamknij</Button>
+                  <Button icon={Copy} onClick={copyIcalUrl}>Kopiuj link</Button>
+                </>}
+              >
+                <div className="p-6">
                   <div className="flex justify-center mb-4">
                     <div className="p-4 bg-white rounded-xl">
                       <img
@@ -1020,27 +1010,11 @@ export default function UserSettings() {
                     </div>
                   </div>
 
-                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
                     {tr('Zeskanuj kod QR aparatem telefonu, aby dodać kalendarz do aplikacji')}
                   </p>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={copyIcalUrl}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                    >
-                      <Copy size={16} />
-                      Kopiuj link
-                    </button>
-                    <button
-                      onClick={() => setShowIcalQrCode(false)}
-                      className="flex-1 px-4 py-2 bg-accent-secondary text-white rounded-xl hover:bg-accent-secondary transition"
-                    >
-                      Zamknij
-                    </button>
-                  </div>
                 </div>
-              </div>
+              </Modal>
             )}
 
             {/* Instrukcja */}
@@ -1196,7 +1170,7 @@ export default function UserSettings() {
               )}
             </div>
             {sessions.length === 0 ? (
-              <p className="text-sm text-gray-400">{tr('Brak aktywnych sesji do wyświetlenia.')}</p>
+              <EmptyState compact icon={Smartphone} title={tr('Brak aktywnych sesji do wyświetlenia.')} />
             ) : (
               <div className="space-y-2">
                 {sessions.map(s => (

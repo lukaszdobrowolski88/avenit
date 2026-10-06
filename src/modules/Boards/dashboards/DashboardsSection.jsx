@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, BarChart3, MoreHorizontal, Trash2, Loader2 } from 'lucide-react';
+import { Plus, BarChart3, MoreHorizontal, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useDashboards } from '../hooks/useDashboards';
 import { tr } from '../../../i18n';
@@ -7,6 +7,8 @@ import { useCan } from '../../../components/Can';
 import DashboardView from './DashboardView';
 import Popover from '../components/Popover';
 import { confirmDialog } from '../../../lib/dialog';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 export default function DashboardsSection({ userEmail }) {
   const { dashboards, loading, createDashboard, updateDashboard, deleteDashboard } = useDashboards(userEmail);
@@ -45,11 +47,10 @@ export default function DashboardsSection({ userEmail }) {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-40 text-gray-400"><Loader2 className="animate-spin" size={26} /></div>
+        <Spinner center />
       ) : dashboards.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-          <BarChart3 size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">{canManage ? tr('Brak dashboardów. Utwórz pierwszy, by wizualizować dane tablic.') : tr('Brak dashboardów.')}</p>
+        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+          <EmptyState icon={BarChart3} title={canManage ? tr('Brak dashboardów. Utwórz pierwszy, by wizualizować dane tablic.') : tr('Brak dashboardów.')} />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

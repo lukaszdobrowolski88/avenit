@@ -15,6 +15,8 @@ import { tr } from '../../../i18n';
 import { useCan } from '../../../components/Can';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 
 const SECTIONS = [
   { id: 'compose', label: tr('Treść') },
@@ -247,31 +249,30 @@ export default function CampaignEditor({ campaign, template, onClose }) {
         </div>
       </div>
 
-      {showTestSend && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{tr('Wyślij test')}</h3>
-            <p className="text-sm text-gray-500 mb-4">{tr('SMS pójdzie tylko na podany numer. Naliczy się 1 SMS w SMSAPI.')}</p>
-            <input
-              type="tel"
-              value={testPhone}
-              onChange={e => setTestPhone(e.target.value)}
-              placeholder="+48 500 123 456"
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm mb-4 font-mono"
-            />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowTestSend(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Anuluj')}</button>
-              <button
-                onClick={handleTestSend}
-                disabled={sending || !testPhone}
-                className="px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50"
-              >
-                {sending ? tr('Wysyłanie...') : tr('Wyślij')}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={showTestSend}
+        onClose={() => setShowTestSend(false)}
+        closeOnBackdrop={false}
+        title={tr('Wyślij test')}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowTestSend(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={handleTestSend} disabled={!testPhone} loading={sending}>
+            {tr('Wyślij')}
+          </Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-500">{tr('SMS pójdzie tylko na podany numer. Naliczy się 1 SMS w SMSAPI.')}</p>
+          <input
+            type="tel"
+            value={testPhone}
+            onChange={e => setTestPhone(e.target.value)}
+            placeholder="+48 500 123 456"
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono"
+          />
         </div>
-      )}
+      </Modal>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">
         {/* Lewa kolumna */}

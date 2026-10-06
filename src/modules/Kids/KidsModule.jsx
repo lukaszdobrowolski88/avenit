@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Spinner from '../../components/Spinner';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -216,6 +218,9 @@ const TeacherMultiSelect = ({ teachers, selectedIds, onChange }) => {
 };
 
 // --- GŁÓWNY MODUŁ ---
+
+// teacher_ids to jsonb — starsze wiersze mają `{}` zamiast `[]` (dawny błąd zapisu pustych tablic).
+const asIdList = (v) => (Array.isArray(v) ? v : []);
 
 export default function KidsModule() {
   const t = useT();
@@ -466,7 +471,7 @@ export default function KidsModule() {
   const availableStudentOptions = availableStudents.map(s => ({ value: s.id, label: s.full_name }));
   const materialTypeOptions = ['Lekcja', 'Kolorowanka', 'Gra', 'Film', 'Książka', 'Inne'].map(t => ({ value: t, label: t }));
 
-  if (loading) return <div className="p-10 text-center"><Spinner size={48} className="mx-auto" /></div>;
+  if (loading) return <Spinner center />;
 
   return (
     <div className="space-y-8">
@@ -520,14 +525,14 @@ export default function KidsModule() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {groups.map(group => {
-            const teacherNames = (group.teacher_ids || []).map(tid => teachers.find(t => t.id === tid)?.full_name).filter(Boolean).join(', ');
+            const teacherNames = asIdList(group.teacher_ids).map(tid => teachers.find(t => t.id === tid)?.full_name).filter(Boolean).join(', ');
             const studentCount = students.filter(s => s.group_id === group.id).length;
             return (
               <div key={group.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 hover:shadow-lg transition">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">{group.name}</h3>
                   <div className="flex gap-1">
-                    <button onClick={() => { setGroupForm(group); setShowGroupModal(true); }} className="p-1.5 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-800 rounded-lg"><FileText size={16}/></button>
+                    <button onClick={() => { setGroupForm({ ...group, teacher_ids: asIdList(group.teacher_ids) }); setShowGroupModal(true); }} className="p-1.5 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-800 rounded-lg"><FileText size={16}/></button>
                     <button onClick={() => deleteGroup(group.id)} className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 rounded-lg"><Trash2 size={16}/></button>
                   </div>
                 </div>
@@ -664,57 +669,71 @@ export default function KidsModule() {
       )}
 
       {/* MODALE - BEZ ZMIAN */}
-      {showGroupModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6"><h3 className="font-bold text-xl text-gray-800 dark:text-white">Grupa Wiekowa</h3><button onClick={() => setShowGroupModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
-            <div className="space-y-4">
+      <Modal
+        isOpen={showGroupModal}
+        onClose={() => setShowGroupModal(false)}
+        closeOnBackdrop={false}
+        size="sm"
+        title="Grupa Wiekowa"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowGroupModal(false)}>{tr('Anuluj')}</Button>
+          <Button data-tour="kids-group-save" onClick={saveGroup}>{tr('Zapisz')}</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               <input data-tour="kids-group-name" className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Nazwa grupy')} value={groupForm.name} onChange={e => setGroupForm({...groupForm, name: e.target.value})} />
               <div><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nauczyciele')}</label><TeacherMultiSelect teachers={teachers} selectedIds={groupForm.teacher_ids || []} onChange={ids => setGroupForm({...groupForm, teacher_ids: ids})} /></div>
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Numer sali')} value={groupForm.room} onChange={e => setGroupForm({...groupForm, room: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Przedział wiekowy')} value={groupForm.age_range} onChange={e => setGroupForm({...groupForm, age_range: e.target.value})} />
-              <button data-tour="kids-group-save" onClick={saveGroup} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">{tr('Zapisz')}</button>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      {showGlobalStudentModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6"><h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Uczeń')}</h3><button onClick={() => setShowGlobalStudentModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
-            <div className="space-y-4">
+      </Modal>
+      <Modal
+        isOpen={showGlobalStudentModal}
+        onClose={() => setShowGlobalStudentModal(false)}
+        closeOnBackdrop={false}
+        size="sm"
+        title={t('Uczeń')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowGlobalStudentModal(false)}>{tr('Anuluj')}</Button>
+          <Button data-tour="kids-student-save" onClick={saveGlobalStudent}>{tr('Zapisz')}</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               <input data-tour="kids-student-name" className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Imię i nazwisko')} value={globalStudentForm.full_name} onChange={e => setGlobalStudentForm({...globalStudentForm, full_name: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Rocznik')} value={globalStudentForm.birth_year} onChange={e => setGlobalStudentForm({...globalStudentForm, birth_year: e.target.value})} />
               <CustomSelect options={householdOptions} value={globalStudentForm.household_id} onChange={v => setGlobalStudentForm({...globalStudentForm, household_id: v})} placeholder={t('Przypisz do rodziny...')} icon={Home} label="Rodzina" />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Kontakt do rodzica (opcjonalnie)')} value={globalStudentForm.parent_info} onChange={e => setGlobalStudentForm({...globalStudentForm, parent_info: e.target.value})} />
               <CustomSelect options={groupOptions} value={globalStudentForm.group_id} onChange={v => setGlobalStudentForm({...globalStudentForm, group_id: v})} placeholder={t('Przypisz do grupy...')} icon={Users} />
               <textarea className="w-full p-3 rounded-xl border resize-none dark:bg-gray-900 dark:border-gray-600 dark:text-white" rows={3} placeholder={t('Uwagi')} value={globalStudentForm.notes} onChange={e => setGlobalStudentForm({...globalStudentForm, notes: e.target.value})} />
-              <button data-tour="kids-student-save" onClick={saveGlobalStudent} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-2">{tr('Zapisz')}</button>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      {showTeacherModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6"><h3 className="font-bold text-xl text-gray-800 dark:text-white">Nauczyciel</h3><button onClick={() => setShowTeacherModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
-            <div className="space-y-4">
+      </Modal>
+      <Modal
+        isOpen={showTeacherModal}
+        onClose={() => setShowTeacherModal(false)}
+        closeOnBackdrop={false}
+        size="sm"
+        title="Nauczyciel"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowTeacherModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveTeacher}>{tr('Zapisz')}</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Imię i nazwisko')} value={teacherForm.full_name} onChange={e => setTeacherForm({...teacherForm, full_name: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Rola')} value={teacherForm.role} onChange={e => setTeacherForm({...teacherForm, role: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Telefon')} value={teacherForm.phone} onChange={e => setTeacherForm({...teacherForm, phone: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Email')} value={teacherForm.email} onChange={e => setTeacherForm({...teacherForm, email: e.target.value})} />
-              <button onClick={saveTeacher} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">{tr('Zapisz')}</button>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      {showGroupStudentsModal && currentGroup && document.body && createPortal(
-         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-3xl p-6 border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh]">
-            <div className="flex justify-between mb-4 pb-4 border-b dark:border-gray-700"><h3 className="font-bold text-xl text-gray-800 dark:text-white">Uczniowie: {currentGroup.name}</h3><button onClick={() => setShowGroupStudentsModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
+      </Modal>
+      {showGroupStudentsModal && currentGroup && (
+      <Modal
+        isOpen
+        onClose={() => setShowGroupStudentsModal(false)}
+        closeOnBackdrop={false}
+        size="xl"
+        title={`Uczniowie: ${currentGroup.name}`}
+      >
+          <div className="p-6">
             <div className="bg-accent-primary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
               <div className="flex-1"><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Dodaj ucznia</label><CustomSelect options={availableStudentOptions} value={attachStudentId} onChange={setAddStudentId} placeholder={tr('Wybierz...')} icon={UserPlus} /></div>
               <button onClick={attachStudentToGroup} className="bg-accent-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-accent-primary h-[46px]">{tr('Dodaj')}</button>
@@ -733,13 +752,17 @@ export default function KidsModule() {
               </DataTable>
             </div>
           </div>
-        </div>,
-        document.body
+      </Modal>
       )}
-      {showMaterialsModal && currentGroup && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl p-6 border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh]">
-            <div className="flex justify-between mb-4 pb-4 border-b dark:border-gray-700"><h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Materiały')}</h3><button onClick={() => setShowMaterialsModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
+      {showMaterialsModal && currentGroup && (
+      <Modal
+        isOpen
+        onClose={() => setShowMaterialsModal(false)}
+        closeOnBackdrop={false}
+        size="lg"
+        title={t('Materiały')}
+      >
+          <div className="p-6">
             <div className="bg-accent-secondary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 space-y-2">
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Nazwa')} value={materialForm.title} onChange={e => setMaterialForm({...materialForm, title: e.target.value})} />
               <div className="flex gap-2 items-center">
@@ -758,21 +781,22 @@ export default function KidsModule() {
               ))}
             </div>
           </div>
-        </div>,
-        document.body
+      </Modal>
       )}
 
       {/* MODAL: Add Expense */}
-      {showExpenseModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-4xl p-6 border border-gray-200 dark:border-gray-700 my-8">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">Nowy wydatek - {expenseForm.ministry}</h3>
-              <button onClick={() => setShowExpenseModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="space-y-4">
+      <Modal
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        closeOnBackdrop={false}
+        size="xl"
+        title={`Nowy wydatek - ${expenseForm.ministry}`}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
+          <Button onClick={saveExpense}>Zapisz</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               {/* Wiersz 1: Data i Kwota */}
               <div className="grid grid-cols-2 gap-4">
                 <CustomDatePicker
@@ -911,25 +935,8 @@ export default function KidsModule() {
                   ))}
                 </div>
               </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowExpenseModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={saveExpense}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
-                >
-                  Zapisz
-                </button>
-              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
 
     </div>
   );

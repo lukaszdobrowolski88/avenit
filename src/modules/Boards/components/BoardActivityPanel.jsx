@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Activity, Loader2 } from 'lucide-react';
+import { X, Activity } from 'lucide-react';
 import Modal from '../../../components/Modal';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 import { supabase } from '../../../lib/supabase';
 import { Avatar } from './cells/PeopleCell';
 
@@ -35,8 +37,8 @@ export default function BoardActivityPanel({ boardId, items, onClose, onOpenItem
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-          {rows === null && <div className="flex justify-center py-10 text-gray-400"><Loader2 className="animate-spin" size={24} /></div>}
-          {rows && rows.length === 0 && <div className="text-center text-sm text-gray-400 py-10">Brak zarejestrowanej aktywności.</div>}
+          {rows === null && <Spinner center />}
+          {rows && rows.length === 0 && <EmptyState compact icon={Activity} title="Brak zarejestrowanej aktywności." />}
           <div className="space-y-3">
             {rows && rows.map(a => (
               <div key={a.id} className="flex items-start gap-2 text-sm">

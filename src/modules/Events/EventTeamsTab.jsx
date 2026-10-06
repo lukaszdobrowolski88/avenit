@@ -11,6 +11,7 @@ import { toast } from '../../lib/toast';
 import { getCachedUser } from '../../lib/supabase';
 import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
 import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 import { confirmDialog } from '../../lib/dialog';
 
 const TEAM_MEMBER_TABLE = {
@@ -296,10 +297,12 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
       )}
 
       {!hasAnySection ? (
-        <div className="p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Brak służb na tym wydarzeniu.</p>
-          <p className="text-xs text-gray-400 mt-1">{managing ? 'Kliknij „Zarządzaj służbami", aby dodać służby lub własną sekcję.' : 'Służby nie zostały skonfigurowane.'}</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="Brak służb na tym wydarzeniu."
+          subtitle={managing ? 'Kliknij „Zarządzaj służbami", aby dodać służby lub własną sekcję.' : 'Służby nie zostały skonfigurowane.'}
+          compact
+        />
       ) : (effectiveTeamTypes.length > 0 && teamData === null) ? <Spinner center size={24} /> : (
         <div className="space-y-5">
           {sections.map((section) => {

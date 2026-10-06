@@ -15,6 +15,7 @@ import CustomValuesTab from './tabs/CustomValuesTab';
 import FieldDefsTab from './tabs/FieldDefsTab';
 import { memberName, memberInitials } from './lib/careApi';
 import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 
 const VIEW_TABS = [
   { id: 'people', label: 'Kartoteka', icon: Users },
@@ -128,7 +129,7 @@ export default function CareModule({ embedded = false }) {
                 {membersLoading ? (
                   <Spinner center />
                 ) : filtered.length === 0 ? (
-                  <div className="p-8 text-center text-gray-400 text-sm">Brak osób.</div>
+                  <EmptyState compact icon={Users} title="Brak osób." />
                 ) : (
                   filtered.map(m => {
                     const isActive = m.id === selectedId;
@@ -165,11 +166,8 @@ export default function CareModule({ embedded = false }) {
           {/* Prawy panel — wybrana osoba */}
           <div className={`${selected ? 'block' : 'hidden lg:block'}`}>
             {!selected ? (
-              <div className="h-full min-h-[300px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-                <div>
-                  <HeartPulse size={44} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">Wybierz osobę z listy, aby zobaczyć jej kartotekę opieki.</p>
-                </div>
+              <div className="h-full min-h-[300px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+                <EmptyState icon={HeartPulse} title="Wybierz osobę z listy, aby zobaczyć jej kartotekę opieki." />
               </div>
             ) : (
               <div className="space-y-4">

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import EmptyState from '../../../../components/EmptyState';
+import Spinner from '../../../../components/Spinner';
 import { supabase, getCachedUser } from '../../../../lib/supabase';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, CalendarClock } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import { toast } from '../../../../lib/toast';
 import { DateInput, TimeField } from '../../../../components/pickers';
@@ -200,12 +201,9 @@ export default function SessionManager({ onSessionChange }) {
 
       {/* Sessions list */}
       {loading ? (
-        <div className="flex items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
-          <Loader2 size={20} className="animate-spin" />
-          {tr('Ładowanie...')}
-        </div>
+        <Spinner center label={tr('Ładowanie...')} />
       ) : sessions.length === 0 ? (
-        <EmptyState title={tr('Brak sesji. Utwórz pierwszą sesję check-in.')} />
+        <EmptyState icon={CalendarClock} title={tr('Brak sesji. Utwórz pierwszą sesję check-in.')} />
       ) : (
         <div className="flex flex-col gap-3">
           {sessions.map((session) => (

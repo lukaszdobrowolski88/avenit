@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import Modal from '../components/Modal';
+import Button from '../components/Button';
+import EmptyState from '../components/EmptyState';
 import PageHeader from '../components/PageHeader';
 import ProgramEditorModal from './Programs/ProgramEditorModal';
 import EventRSVP from '../components/EventRSVP';
@@ -25,40 +27,25 @@ import { confirmDialog } from '../lib/dialog';
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA ---
 
-const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, title, message }) => {
-  if (!isOpen || !document.body) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={24} className="text-red-600 dark:text-red-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{title}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{message}</p>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-          >
-            Anuluj
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2"
-          >
-            <Trash2 size={16} /> Usuń
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
+const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, title, message }) => (
+  <Modal
+    isOpen={isOpen}
+    onClose={onClose}
+    title={title}
+    icon={AlertTriangle}
+    size="sm"
+    zIndex={110}
+    closeOnBackdrop={false}
+    footer={<>
+      <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+      <Button variant="danger" icon={Trash2} onClick={onConfirm}>Usuń</Button>
+    </>}
+  >
+    <div className="p-6">
+      <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+    </div>
+  </Modal>
+);
 
 // --- KONFIGURACJA ZESPOŁÓW I DANYCH ---
 
@@ -178,21 +165,17 @@ const getDaysInMonth = (date) => {
 
 const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
   const t = useT();
-  if (!document.body) return null;
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-          <X size={20} className="text-gray-500" />
-        </button>
-
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
-          <Plus size={24} className="text-accent-primary" /> {t('Co chcesz dodać?')}
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          {date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : t('Wybierz typ')}
-        </p>
-
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={t('Co chcesz dodać?')}
+      subtitle={date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : t('Wybierz typ')}
+      icon={Plus}
+      size="sm"
+      closeOnBackdrop={false}
+    >
+      <div className="p-6">
         <div className="grid grid-cols-2 gap-4">
           <button
             data-tour="cal-type-event"
@@ -210,9 +193,9 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
 
           <button
             onClick={onSelectTask}
-            className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-2xl hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-lg transition group"
+            className="flex flex-col items-center gap-3 p-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:shadow-lg transition group"
           >
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 group-hover:scale-110 transition">
+            <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:scale-110 transition">
               <ListTodo size={28} />
             </div>
             <div className="text-center">
@@ -222,7 +205,7 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
           </button>
         </div>
       </div>
-    </div>, document.body
+    </Modal>
   );
 };
 
@@ -239,21 +222,16 @@ const MINISTRY_CALENDARS = [
 ];
 
 const ModalSelectEventCategory = ({ date, categories, ministries, onClose, onSelectCategory, onSelectMinistry }) => {
-  if (!document.body) return null;
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-gray-200 dark:border-gray-700 relative max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-          <X size={20} className="text-gray-500" />
-        </button>
-
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
-          <CalendarPlus size={24} className="text-accent-primary" /> Wybierz kalendarz
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          {date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
-        </p>
-
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title="Wybierz kalendarz"
+      subtitle={date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
+      icon={CalendarPlus}
+      closeOnBackdrop={false}
+    >
+      <div className="p-6">
         <div className="space-y-2">
           {/* Nabożeństwo - zawsze na górze */}
           <button
@@ -287,7 +265,7 @@ const ModalSelectEventCategory = ({ date, categories, ministries, onClose, onSel
           ))}
         </div>
       </div>
-    </div>, document.body
+    </Modal>
   );
 };
 
@@ -348,19 +326,20 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
     onClose();
   };
 
-  if (!document.body) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-gray-200 dark:border-gray-700 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-          <X size={20} className="text-gray-500" />
-        </button>
-
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2">
-          <CalendarPlus size={24} className="text-accent-primary" />
-          {event.id ? t('Edytuj Wydarzenie') : t('Nowe Wydarzenie')}
-        </h2>
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={event.id ? t('Edytuj Wydarzenie') : t('Nowe Wydarzenie')}
+      icon={CalendarPlus}
+      closeOnBackdrop={false}
+      footer={<>
+        {event.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={handleDeleteClick}>Usuń</Button>}
+        <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
+        <Button data-tour="cal-event-save" icon={Save} onClick={handleSubmit}>{t('Zapisz')}</Button>
+      </>}
+    >
+      <div className="p-6">
         <div className="mb-6">
           <span className="inline-block px-3 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light text-xs font-bold rounded-full">
             {event.category || category}
@@ -458,22 +437,6 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
             )}
           </div>
         </div>
-
-        <div className="mt-6 flex justify-between items-center">
-          {event.id && onDelete ? (
-            <button onClick={handleDeleteClick} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1">
-              <Trash2 size={16}/> Usuń
-            </button>
-          ) : <div></div>}
-
-          <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">{t('Anuluj')}</button>
-            <button data-tour="cal-event-save" onClick={handleSubmit} className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg shadow-accent-primary-light/30 flex items-center gap-2 transition">
-              <Save size={16} /> {t('Zapisz')}
-            </button>
-          </div>
-        </div>
-
         <ConfirmDeleteModal
           isOpen={showDeleteConfirm}
           onClose={() => setShowDeleteConfirm(false)}
@@ -482,7 +445,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
           message={tr('Czy na pewno chcesz usunąć to wydarzenie? Tej operacji nie można cofnąć.')}
         />
       </div>
-    </div>, document.body
+    </Modal>
   );
 };
 
@@ -542,48 +505,39 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
     onClose();
   };
 
-  if (!document.body) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-gray-200 dark:border-gray-700 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><X size={20} className="text-gray-500" /></button>
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-            {task.id ? <CheckCircle size={24} className="text-blue-600" /> : <Plus size={24} className="text-blue-600" />} 
-            {task.id ? t('Edytuj Zadanie') : t('Nowe Zadanie')}
-        </h2>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Tytuł')}</label>
-            <input autoFocus className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary/20 outline-none" value={task.title} onChange={e => setTask({...task, title: e.target.value})} placeholder={t('Co jest do zrobienia?')} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Kategoria')}</label><CustomSelect value={task.team} onChange={v => setTask({...task, team: v})} options={Object.entries(TEAMS).filter(([k]) => k !== 'program').map(([k, v]) => ({ value: k, label: v.label }))} /></div>
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Miejsce')}</label><div className="relative"><MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm" value={task.location || ''} onChange={e => setTask({...task, location: e.target.value})} placeholder={t('np. Biuro')} /></div></div>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Data')}</label>
-            <CustomDatePicker value={task.due_date} onChange={handleDateChange} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina rozpoczęcia')}</label><CustomTimePicker value={task.due_time} onChange={v => setTask({...task, due_time: v})} placeholder={tr('Od')} /></div>
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina zakończenia')}</label><CustomTimePicker value={task.end_time} onChange={v => setTask({...task, end_time: v})} placeholder={tr('Do')} /></div>
-          </div>
-          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Opis')}</label><textarea className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none" value={task.description || ''} onChange={e => setTask({...task, description: e.target.value})} placeholder={t('Szczegóły zadania...')} /></div>
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={task.id ? t('Edytuj Zadanie') : t('Nowe Zadanie')}
+      icon={task.id ? CheckCircle : Plus}
+      closeOnBackdrop={false}
+      footer={<>
+        {task.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={() => onDelete(task.id)}>Usuń</Button>}
+        <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
+        <Button icon={Save} onClick={handleSubmit}>{t('Zapisz')}</Button>
+      </>}
+    >
+      <div className="p-6 space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Tytuł')}</label>
+          <input autoFocus className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary/20 outline-none" value={task.title} onChange={e => setTask({...task, title: e.target.value})} placeholder={t('Co jest do zrobienia?')} />
         </div>
-        <div className="mt-6 flex justify-between items-center">
-           {task.id && onDelete ? (
-              <button onClick={() => onDelete(task.id)} className="text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1"><Trash2 size={16}/> Usuń</button>
-           ) : <div></div>}
-           
-           <div className="flex gap-2">
-              <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">{t('Anuluj')}</button>
-              <button onClick={handleSubmit} className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:opacity-95 flex items-center gap-2 shadow-md transition"><Save size={16} /> {t('Zapisz')}</button>
-           </div>
+        <div className="grid grid-cols-2 gap-4">
+           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Kategoria')}</label><CustomSelect value={task.team} onChange={v => setTask({...task, team: v})} options={Object.entries(TEAMS).filter(([k]) => k !== 'program').map(([k, v]) => ({ value: k, label: v.label }))} /></div>
+           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Miejsce')}</label><div className="relative"><MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm" value={task.location || ''} onChange={e => setTask({...task, location: e.target.value})} placeholder={t('np. Biuro')} /></div></div>
         </div>
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Data')}</label>
+          <CustomDatePicker value={task.due_date} onChange={handleDateChange} />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina rozpoczęcia')}</label><CustomTimePicker value={task.due_time} onChange={v => setTask({...task, due_time: v})} placeholder={tr('Od')} /></div>
+           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina zakończenia')}</label><CustomTimePicker value={task.end_time} onChange={v => setTask({...task, end_time: v})} placeholder={tr('Do')} /></div>
+        </div>
+        <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Opis')}</label><textarea className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none" value={task.description || ''} onChange={e => setTask({...task, description: e.target.value})} placeholder={t('Szczegóły zadania...')} /></div>
       </div>
-    </div>, document.body
+    </Modal>
   );
 };
 
@@ -745,101 +699,97 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
   if (!config) return null;
 
   return (
-    <Modal isOpen onClose={onClose} size="md" title={`${config.icon} ${eventForm.id ? tr('Edytuj wydarzenie') : tr('Nowe wydarzenie')} — ${config.title}`}>
-      <div className="p-5 space-y-4">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      title={`${eventForm.id ? tr('Edytuj wydarzenie') : tr('Nowe wydarzenie')} — ${config.title}`}
+      footer={<>
+        {eventForm.id && onDelete && <Button variant="danger" icon={Trash2} className="mr-auto" onClick={handleDeleteClick}>Usuń</Button>}
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button icon={Save} onClick={handleSubmit}>Zapisz</Button>
+      </>}
+    >
+      <div className="p-6 space-y-4">
+        <div>
+          <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł')}</label>
+          <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Nazwa wydarzenia')} value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
+          <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={3} placeholder={tr('Szczegóły wydarzenia...')} value={eventForm.description || ''} onChange={e => setEventForm({...eventForm, description: e.target.value})} />
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł')}</label>
-            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Nazwa wydarzenia')} value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Data')}</label>
+            <CustomDatePicker value={eventForm.start_date} onChange={val => setEventForm({...eventForm, start_date: val})} />
           </div>
-
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
-            <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={3} placeholder={tr('Szczegóły wydarzenia...')} value={eventForm.description || ''} onChange={e => setEventForm({...eventForm, description: e.target.value})} />
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Początek')}</label>
+            <CustomTimePicker value={eventForm.event_time || ''} onChange={v => setEventForm({...eventForm, event_time: v})} placeholder={tr('Od')} />
           </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Data')}</label>
-              <CustomDatePicker value={eventForm.start_date} onChange={val => setEventForm({...eventForm, start_date: val})} />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Początek')}</label>
-              <CustomTimePicker value={eventForm.event_time || ''} onChange={v => setEventForm({...eventForm, event_time: v})} placeholder={tr('Od')} />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Koniec</label>
-              <CustomTimePicker value={eventForm.end_time || ''} onChange={v => setEventForm({...eventForm, end_time: v})} placeholder={tr('Do')} />
-            </div>
-          </div>
-
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Lokalizacja')}</label>
-            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Sala główna, Kościół...')} value={eventForm.location || ''} onChange={e => setEventForm({...eventForm, location: e.target.value})} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Maks. osób')}</label>
-              <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={eventForm.max_participants || ''} onChange={e => setEventForm({...eventForm, max_participants: e.target.value})} />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Typ</label>
-              <CustomSelect
-                value={eventForm.event_type}
-                onChange={val => setEventForm({...eventForm, event_type: val})}
-                options={config.types}
-              />
-            </div>
-          </div>
-
-          {fields.length > 0 && (
-            <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-gray-800">
-              {fields.map((f) => (
-                <div key={f.id || f.field_key}>
-                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{f.label}</label>
-                  {f.field_type === 'dropdown' ? (
-                    <CustomSelect
-                      value={eventForm.custom?.[f.field_key] || ''}
-                      onChange={(val) => setCustom(f.field_key, val)}
-                      options={[{ value: '', label: '—' }, ...((f.options || []).map((o) => ({ value: o, label: o })))]}
-                    />
-                  ) : f.field_type === 'date' ? (
-                    <DateInput value={eventForm.custom?.[f.field_key] || ''} onChange={(e) => setCustom(f.field_key, e.target.value)} />
-                  ) : (
-                    <input
-                      type={f.field_type === 'number' ? 'number' : 'text'}
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                      value={eventForm.custom?.[f.field_key] || ''}
-                      onChange={(e) => setCustom(f.field_key, e.target.value)}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex justify-between items-center gap-3 mt-6">
-            {eventForm.id && onDelete ? (
-              <button onClick={handleDeleteClick} className="px-4 py-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition font-medium flex items-center gap-2">
-                <Trash2 size={16} /> Usuń
-              </button>
-            ) : <div></div>}
-            <div className="flex gap-3">
-              <button onClick={onClose} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
-              <button onClick={handleSubmit} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium flex items-center gap-2">
-                <Save size={16} /> Zapisz
-              </button>
-            </div>
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Koniec</label>
+            <CustomTimePicker value={eventForm.end_time || ''} onChange={v => setEventForm({...eventForm, end_time: v})} placeholder={tr('Do')} />
           </div>
         </div>
 
-        <ConfirmDeleteModal
-          isOpen={showDeleteConfirm}
-          onClose={() => setShowDeleteConfirm(false)}
-          onConfirm={handleConfirmDelete}
-          title={tr('Usuń wydarzenie')}
-          message={`Czy na pewno chcesz usunąć to wydarzenie z ${config.title}? Tej operacji nie można cofnąć.`}
-        />
+        <div>
+          <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Lokalizacja')}</label>
+          <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Sala główna, Kościół...')} value={eventForm.location || ''} onChange={e => setEventForm({...eventForm, location: e.target.value})} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Maks. osób')}</label>
+            <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={eventForm.max_participants || ''} onChange={e => setEventForm({...eventForm, max_participants: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Typ</label>
+            <CustomSelect
+              value={eventForm.event_type}
+              onChange={val => setEventForm({...eventForm, event_type: val})}
+              options={config.types}
+            />
+          </div>
+        </div>
+
+        {fields.length > 0 && (
+          <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-gray-800">
+            {fields.map((f) => (
+              <div key={f.id || f.field_key}>
+                <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{f.label}</label>
+                {f.field_type === 'dropdown' ? (
+                  <CustomSelect
+                    value={eventForm.custom?.[f.field_key] || ''}
+                    onChange={(val) => setCustom(f.field_key, val)}
+                    options={[{ value: '', label: '—' }, ...((f.options || []).map((o) => ({ value: o, label: o })))]}
+                  />
+                ) : f.field_type === 'date' ? (
+                  <DateInput value={eventForm.custom?.[f.field_key] || ''} onChange={(e) => setCustom(f.field_key, e.target.value)} />
+                ) : (
+                  <input
+                    type={f.field_type === 'number' ? 'number' : 'text'}
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    value={eventForm.custom?.[f.field_key] || ''}
+                    onChange={(e) => setCustom(f.field_key, e.target.value)}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <ConfirmDeleteModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title={tr('Usuń wydarzenie')}
+        message={`Czy na pewno chcesz usunąć to wydarzenie z ${config.title}? Tej operacji nie można cofnąć.`}
+      />
     </Modal>
   );
 };
@@ -1662,21 +1612,23 @@ export default function CalendarModule({ embedded = false } = {}) {
 
           {/* Pusty stan */}
           {dayEvents.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4">
-                <CalIcon size={28} className="text-gray-400" />
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">{t('Brak wydarzeń w tym dniu')}</p>
-              <button
-                onClick={() => {
-                  const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
-                  handleAddClick(dateStr);
-                }}
-                className="mt-3 text-accent-primary-light text-sm font-medium flex items-center gap-1"
-              >
-                <Plus size={16} /> Dodaj wydarzenie
-              </button>
-            </div>
+            <EmptyState
+              icon={CalIcon}
+              title={t('Brak wydarzeń w tym dniu')}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={Plus}
+                  onClick={() => {
+                    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
+                    handleAddClick(dateStr);
+                  }}
+                >
+                  Dodaj wydarzenie
+                </Button>
+              }
+            />
           )}
         </div>
 
@@ -1940,21 +1892,25 @@ export default function CalendarModule({ embedded = false } = {}) {
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-3">
-                    <CalIcon size={24} className="text-gray-400" />
-                  </div>
-                  <p className="text-gray-400 dark:text-gray-500 text-sm mb-2">{t('Brak wydarzeń')}</p>
-                  <button
-                    onClick={() => {
-                      const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
-                      handleAddClick(dateStr);
-                    }}
-                    className="text-accent-primary-light text-sm font-medium flex items-center gap-1 pointer-events-auto"
-                  >
-                    <Plus size={16} /> Dodaj wydarzenie
-                  </button>
-                </div>
+                <EmptyState
+                  icon={CalIcon}
+                  title={t('Brak wydarzeń')}
+                  compact
+                  action={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={Plus}
+                      className="pointer-events-auto"
+                      onClick={() => {
+                        const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
+                        handleAddClick(dateStr);
+                      }}
+                    >
+                      Dodaj wydarzenie
+                    </Button>
+                  }
+                />
               )}
             </div>
           )}
@@ -2084,7 +2040,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                     })}
                   </div>
                 ) : (
-                  <p className="text-center text-gray-400 text-sm py-4">{t('Brak wydarzeń w tym dniu')}</p>
+                  <EmptyState icon={CalIcon} title={t('Brak wydarzeń w tym dniu')} compact />
                 )}
               </div>
             </div>
@@ -2200,7 +2156,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                     })}
                   </div>
                 ) : (
-                  <p className="text-center text-gray-400 text-sm py-4">{t('Brak wydarzeń')}</p>
+                  <EmptyState icon={CalIcon} title={t('Brak wydarzeń')} compact />
                 )}
               </div>
                 );
@@ -2456,7 +2412,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                          </div>
                      </div>
                  ))}
-                 {sortedEvents.length === 0 && <div className="text-center text-gray-400 py-10 text-sm lg:text-base">{t('Brak wydarzeń w tym miesiącu')}</div>}
+                 {sortedEvents.length === 0 && <EmptyState icon={CalIcon} title={t('Brak wydarzeń w tym miesiącu')} />}
              </div>
         </div>
       )

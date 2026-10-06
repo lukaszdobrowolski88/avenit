@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Users, Music, Zap, Sparkles, Baby, Home, Heart, UserCheck, Shield, ChevronRight, Inbox } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 import { getInitials, stringToColor } from '../../../utils/text';
 import { brandTone } from '../../../lib/brandTone';
 
@@ -216,11 +218,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   // Renderuj awatar nadawcy wiadomości
@@ -266,15 +264,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
 
       {/* Lista konwersacji */}
       {conversations.length === 0 ? (
-        <div className="text-center py-6">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-            <Inbox size={24} className="text-green-500" />
-          </div>
-          <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">{tr('Wszystko przeczytane!')}</p>
-          <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
-            {tr('Nie masz nowych wiadomości')}
-          </p>
-        </div>
+        <EmptyState compact icon={Inbox} title={tr('Wszystko przeczytane!')} subtitle={tr('Nie masz nowych wiadomości')} />
       ) : (
         <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
           {conversations.slice(0, 5).map(conv => {

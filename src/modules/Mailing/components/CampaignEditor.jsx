@@ -17,6 +17,8 @@ import { useCan } from '../../../components/Can';
 import { toast } from '../../../lib/toast';
 import { DateTimeInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 
 const STEPS = [
   { id: 'basics', label: 'Podstawy', icon: FileText },
@@ -695,144 +697,84 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       )}
 
       {/* Test Send Modal */}
-      {showTestSend && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl">
-                    <TestTube size={22} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">
-                      {tr('Wyślij email testowy')}
-                    </h3>
-                    <p className="text-sm text-white/80">
-                      {tr('Sprawdź przed wysyłką')}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowTestSend(false)}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
-                >
-                  <X size={20} className="text-white" />
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={showTestSend}
+        onClose={() => setShowTestSend(false)}
+        closeOnBackdrop={false}
+        title={tr('Wyślij email testowy')}
+        subtitle={tr('Sprawdź przed wysyłką')}
+        icon={TestTube}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowTestSend(false)}>Anuluj</Button>
+          <Button icon={Mail} onClick={handleTestSend} disabled={!testEmail} loading={saving}>
+            Wyślij test
+          </Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {tr('Wyślij testową wersję emaila na wskazany adres, aby sprawdzić jak będzie wyglądać przed wysłaniem do odbiorców.')}
+          </p>
 
-            <div className="p-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-                {tr('Wyślij testową wersję emaila na wskazany adres, aby sprawdzić jak będzie wyglądać przed wysłaniem do odbiorców.')}
-              </p>
-
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Adres email
-              </label>
-              <input
-                type="email"
-                value={testEmail}
-                onChange={(e) => setTestEmail(e.target.value)}
-                placeholder="twoj@email.pl"
-                className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all mb-6"
-              />
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowTestSend(false)}
-                  className="flex-1 px-5 py-3.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={handleTestSend}
-                  disabled={saving || !testEmail}
-                  className="group flex-1 px-5 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 font-medium shadow-lg shadow-accent-primary-light/30 hover:shadow-xl transition-all"
-                >
-                  {saving ? <Loader size={16} className="animate-spin" /> : <Mail size={16} className="group-hover:scale-110 transition-transform" />}
-                  Wyślij test
-                </button>
-              </div>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Adres email
+            </label>
+            <input
+              type="email"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              placeholder="twoj@email.pl"
+              className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all"
+            />
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Schedule Modal */}
-      {showSchedule && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-accent-primary to-accent-secondary-light p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl">
-                    <Calendar size={22} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">
-                      {tr('Zaplanuj wysyłkę')}
-                    </h3>
-                    <p className="text-sm text-white/80">
-                      {tr('Automatyczna wysyłka')}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowSchedule(false)}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
-                >
-                  <X size={20} className="text-white" />
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={showSchedule}
+        onClose={() => setShowSchedule(false)}
+        closeOnBackdrop={false}
+        title={tr('Zaplanuj wysyłkę')}
+        subtitle={tr('Automatyczna wysyłka')}
+        icon={Calendar}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowSchedule(false)}>Anuluj</Button>
+          <Button icon={Clock} onClick={handleSchedule} disabled={!formData.scheduled_at} loading={saving}>
+            Zaplanuj
+          </Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Wybierz datę i godzinę, o której mail zostanie automatycznie wysłany do {totalRecipients} odbiorców.
+          </p>
 
-            <div className="p-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-                Wybierz datę i godzinę, o której mail zostanie automatycznie wysłany do {totalRecipients} odbiorców.
-              </p>
-
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {tr('Data i godzina wysyłki')}
-              </label>
-              <DateTimeInput
-                value={formData.scheduled_at ? formData.scheduled_at.slice(0, 16) : ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, scheduled_at: e.target.value ? new Date(e.target.value).toISOString() : null }))}
-                min={new Date().toISOString().slice(0, 16)}
-                className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-amber-500 transition-all mb-6"
-              />
-
-              {formData.scheduled_at && (
-                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200/50 dark:border-amber-800/50">
-                  <p className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                    <Clock size={14} />
-                    Mail zostanie wysłany: <strong>{new Date(formData.scheduled_at).toLocaleString('pl-PL')}</strong>
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowSchedule(false)}
-                  className="flex-1 px-5 py-3.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={handleSchedule}
-                  disabled={saving || !formData.scheduled_at}
-                  className="group flex-1 px-5 py-3.5 bg-gradient-to-r from-accent-primary to-accent-secondary-light hover:from-accent-primary-dark hover:to-accent-secondary text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 font-medium shadow-lg shadow-accent-primary/30 hover:shadow-xl transition-all"
-                >
-                  {saving ? <Loader size={16} className="animate-spin" /> : <Clock size={16} className="group-hover:scale-110 transition-transform" />}
-                  Zaplanuj
-                </button>
-              </div>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {tr('Data i godzina wysyłki')}
+            </label>
+            <DateTimeInput
+              value={formData.scheduled_at ? formData.scheduled_at.slice(0, 16) : ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, scheduled_at: e.target.value ? new Date(e.target.value).toISOString() : null }))}
+              min={new Date().toISOString().slice(0, 16)}
+              className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-amber-500 transition-all"
+            />
           </div>
+
+          {formData.scheduled_at && (
+            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200/50 dark:border-amber-800/50">
+              <p className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                <Clock size={14} />
+                Mail zostanie wysłany: <strong>{new Date(formData.scheduled_at).toLocaleString('pl-PL')}</strong>
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

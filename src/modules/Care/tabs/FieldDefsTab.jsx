@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, X, SlidersHorizontal, GripVertical } from 'lucide-react';
+import { Plus, Edit2, Trash2, SlidersHorizontal, GripVertical } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import CustomSelect from '../../../components/CustomSelect';
 import { FIELD_TYPES, fieldTypeLabel, slugifyFieldKey } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
@@ -84,10 +86,7 @@ export default function FieldDefsTab({ fields, refreshFields }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {(fields || []).length === 0 && (
-          <div className="col-span-full p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-            <SlidersHorizontal size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">Brak zdefiniowanych pól. Dodaj pierwsze.</p>
-          </div>
+          <EmptyState icon={SlidersHorizontal} title="Brak zdefiniowanych pól." subtitle="Dodaj pierwsze." className="col-span-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
         )}
         {(fields || []).map(f => (
           <div key={f.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 flex items-start justify-between gap-3">
@@ -112,31 +111,28 @@ export default function FieldDefsTab({ fields, refreshFields }) {
         ))}
       </div>
 
-      <Modal isOpen={modalOpen}>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && setModalOpen(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editing ? 'Edytuj pole' : 'Nowe pole własne'}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Etykieta</label>
-                <input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="np. Rozmiar koszulki" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-              </div>
-              <CustomSelect label="Typ pola" value={form.field_type} onChange={v => setForm(f => ({ ...f, field_type: v }))} options={FIELD_TYPES} />
-              {form.field_type === 'select' && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Opcje (jedna w wierszu)</label>
-                  <textarea value={form.optionsText} onChange={e => setForm(f => ({ ...f, optionsText: e.target.value }))} rows={4} placeholder={'S\nM\nL\nXL'} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
-                </div>
-              )}
-            </div>
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700">
-              <button onClick={() => setModalOpen(false)} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              <button onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
-            </div>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => !saving && setModalOpen(false)}
+        title={editing ? 'Edytuj pole' : 'Nowe pole własne'}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
+          <Button onClick={save} loading={saving}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Etykieta</label>
+            <input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="np. Rozmiar koszulki" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
+          <CustomSelect label="Typ pola" value={form.field_type} onChange={v => setForm(f => ({ ...f, field_type: v }))} options={FIELD_TYPES} />
+          {form.field_type === 'select' && (
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Opcje (jedna w wierszu)</label>
+              <textarea value={form.optionsText} onChange={e => setForm(f => ({ ...f, optionsText: e.target.value }))} rows={4} placeholder={'S\nM\nL\nXL'} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
+            </div>
+          )}
         </div>
       </Modal>
     </div>

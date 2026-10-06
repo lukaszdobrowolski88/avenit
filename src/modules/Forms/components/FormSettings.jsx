@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Save, Upload, X, Image, DollarSign, CreditCard, Trash2, Mail, Bell, Clock, Edit3, Eye, AlertCircle, Code, Palette, Users, Package, Percent, Layout, Plus, Sparkles } from 'lucide-react';
+import { ChevronLeft, Save, Upload, X, Image, DollarSign, CreditCard, Trash2, Mail, Bell, Clock, Edit3, Eye, AlertCircle, Code, Palette, Users, Package, Percent, Layout, Plus, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useTemplates } from '../../Mailing/hooks/useTemplates';
 import { DEFAULT_FORM_EMAIL_TEMPLATES, FORM_EMAIL_VARIABLES } from '../utils/formEmailTemplates';
@@ -8,6 +8,7 @@ import GroupRegistrationSettings from './GroupRegistrationSettings';
 import AddonsSettings from './AddonsSettings';
 import DiscountSettings from './DiscountSettings';
 import { tr } from '../../../i18n';
+import Modal from '../../../components/Modal';
 
 export default function FormSettings({ settings, fields, onUpdate, onClose }) {
   const [localSettings, setLocalSettings] = useState(settings || {});
@@ -392,7 +393,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light transition-colors"
                   >
                     {uploadingImage === 'logo' ? (
-                      <div className="w-5 h-5 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
+                      <Loader2 size={20} className="animate-spin text-accent-primary-light" />
                     ) : (
                       <Upload size={18} />
                     )}
@@ -449,7 +450,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     className="w-full h-32 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light transition-colors"
                   >
                     {uploadingImage === 'header' ? (
-                      <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
+                      <Loader2 size={24} className="animate-spin text-accent-primary-light" />
                     ) : (
                       <>
                         <Upload size={24} />
@@ -506,7 +507,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     className="w-full h-32 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light transition-colors"
                   >
                     {uploadingImage === 'background' ? (
-                      <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
+                      <Loader2 size={24} className="animate-spin text-accent-primary-light" />
                     ) : (
                       <>
                         <Upload size={24} />
@@ -682,7 +683,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       disabled={uploadingImage === 'headerBg'}
                       className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-violet-400 hover:text-violet-500 transition-colors">
                       {uploadingImage === 'headerBg' ? (
-                        <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                        <Loader2 size={24} className="animate-spin text-accent-primary-light" />
                       ) : (
                         <><Upload size={20} /><span className="text-xs">{tr('Dodaj grafikę tła')}</span></>
                       )}
@@ -1941,34 +1942,27 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
       </div>
 
       {/* Modal podgladu szablonu */}
-      {previewTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="font-semibold text-gray-900 dark:text-white">
-                Podglad: {previewTemplate.name}
-              </h3>
-              <button
-                onClick={() => setPreviewTemplate(null)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                <X size={20} />
-              </button>
+      <Modal
+        isOpen={!!previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+        closeOnBackdrop={false}
+        title={previewTemplate ? `Podglad: ${previewTemplate.name}` : ''}
+        size="xl"
+      >
+        {previewTemplate && (
+          <div className="p-6">
+            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                <strong>Temat:</strong> {previewTemplate.subject}
+              </p>
             </div>
-            <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
-              <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  <strong>Temat:</strong> {previewTemplate.subject}
-                </p>
-              </div>
-              <div
-                className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
-                dangerouslySetInnerHTML={{ __html: previewTemplate.html_content }}
-              />
-            </div>
+            <div
+              className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+              dangerouslySetInnerHTML={{ __html: previewTemplate.html_content }}
+            />
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Modal edycji szablonu */}
       {editingTemplate && (

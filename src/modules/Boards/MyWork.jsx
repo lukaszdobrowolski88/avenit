@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { endOfWeek, format } from 'date-fns';
-import { Loader2, AlertCircle, CalendarClock, CalendarDays, CalendarRange, Circle, CheckCircle2 } from 'lucide-react';
+import { Inbox, AlertCircle, CalendarClock, CalendarDays, CalendarRange, Circle, CheckCircle2 } from 'lucide-react';
 import { useMyWork } from './hooks/useMyWork';
 import { tr } from '../../i18n';
+import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 
 const BUCKETS = [
   { key: 'overdue', label: 'Zaległe', icon: AlertCircle, tone: 'text-red-500' },
@@ -37,10 +39,10 @@ export default function MyWork({ userEmail, userName, onOpenBoard }) {
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Elementy przypisane do Ciebie ({who}) ze wszystkich tablic.', { who: userName || userEmail })}</p>
 
       {loading ? (
-        <div className="flex items-center justify-center h-48 text-gray-400"><Loader2 className="animate-spin" size={26} /></div>
+        <Spinner center />
       ) : rows.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-          Nie masz jeszcze przypisanych elementów. Dodaj się do kolumny „Osoby" w dowolnej tablicy.
+        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+          <EmptyState icon={Inbox} title="Nie masz jeszcze przypisanych elementów." subtitle={'Dodaj się do kolumny „Osoby" w dowolnej tablicy.'} />
         </div>
       ) : (
         <div className="space-y-6">

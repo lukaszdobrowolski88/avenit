@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { RUN_STATUSES, statusLabel, formatDateTime, memberName } from '../lib/automationApi';
 import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 export default function RunsTab({ membersById, withCampusFilter }) {
@@ -73,10 +74,7 @@ export default function RunsTab({ membersById, withCampusFilter }) {
         {loading ? (
           <Spinner center />
         ) : runs.length === 0 ? (
-          <div className="p-12 text-center">
-            <History size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">Brak uruchomień. Pojawią się tu po wykonaniu automatyzacji przez workera.</p>
-          </div>
+          <EmptyState icon={History} title="Brak uruchomień." subtitle="Pojawią się tu po wykonaniu automatyzacji przez workera." />
         ) : (
           <DataTable flush>
             <THead>

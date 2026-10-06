@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Plus, Save } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
+import Button from '../../components/Button';
 import CustomSelect from '../../components/CustomSelect';
 import TimeInput from '../../components/TimeInput';
 import HomeGroupVisibilityPicker, { buildHgSegments, firstGroupFromKeys } from './HomeGroupVisibilityPicker';
@@ -124,8 +125,17 @@ function CreateEventModal({ onClose }) {
   };
 
   return (
-    <Modal isOpen onClose={onClose} size="md" title={t('Nowe wydarzenie')}>
-      <div className="p-5 space-y-4">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      title={t('Nowe wydarzenie')}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
+        <Button icon={Save} onClick={create} loading={saving}>{t('Utwórz i otwórz')}</Button>
+      </>}
+    >
+      <div className="p-6 space-y-4">
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Tytuł')}</label>
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('Nazwa wydarzenia')}
@@ -162,12 +172,6 @@ function CreateEventModal({ onClose }) {
             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
         </div>
         <p className="text-xs text-gray-400">{t('Szczegóły (typ, opis, płatność, rejestracja, widoczność, pola własne) ustawisz na stronie wydarzenia.')}</p>
-      </div>
-      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{t('Anuluj')}</button>
-        <button onClick={create} disabled={saving} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60 flex items-center gap-1.5">
-          <Save size={15} /> {saving ? t('Tworzenie…') : t('Utwórz i otwórz')}
-        </button>
       </div>
     </Modal>
   );

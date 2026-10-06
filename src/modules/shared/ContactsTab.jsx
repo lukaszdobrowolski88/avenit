@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Phone, Mail, Pencil, Trash2, Contact, Loader2, X, Search } from 'lucide-react';
+import { Plus, Phone, Mail, Pencil, Trash2, Contact, Search } from 'lucide-react';
 import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
@@ -31,14 +34,17 @@ function ContactModal({ initial, onClose, onSave }) {
   );
 
   return (
-    <Modal isOpen className="flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{initial ? tr('Edytuj kontakt') : tr('Nowy kontakt')}</h2>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-        </div>
-        <div className="space-y-3">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={initial ? tr('Edytuj kontakt') : tr('Nowy kontakt')}
+      size="sm"
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button onClick={submit} loading={saving}>{tr('Zapisz')}</Button>
+      </>}
+    >
+        <div className="p-6 space-y-3">
           {field('name', tr('Imię i nazwisko'), tr('np. Jan Kowalski'))}
           {field('role', tr('Rola / funkcja'), tr('np. Lider grupy'))}
           <div className="grid grid-cols-2 gap-3">
@@ -51,13 +57,6 @@ function ContactModal({ initial, onClose, onSave }) {
               className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 outline-none resize-none" />
           </label>
         </div>
-        <div className="flex justify-end gap-2 mt-5">
-          <button onClick={onClose} className="text-sm text-gray-500 px-4 py-2">{tr('Anuluj')}</button>
-          <button onClick={submit} disabled={saving} className="text-sm bg-accent-primary text-white px-4 py-2 rounded-lg disabled:opacity-50 flex items-center gap-2">
-            {saving && <Loader2 size={15} className="animate-spin" />} {tr('Zapisz')}
-          </button>
-        </div>
-      </div>
     </Modal>
   );
 }
@@ -96,12 +95,9 @@ export default function ContactsTab({ moduleKey, moduleId, tabId, canEdit = true
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-40 text-gray-400"><Loader2 className="animate-spin" size={26} /></div>
+        <Spinner center />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-          <Contact size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">{records.length === 0 ? (canEdit ? tr('Brak kontaktów. Dodaj pierwszy.') : tr('Brak kontaktów.')) : tr('Brak wyników.')}</p>
-        </div>
+        <EmptyState icon={records.length === 0 ? Contact : Search} title={records.length === 0 ? (canEdit ? tr('Brak kontaktów. Dodaj pierwszy.') : tr('Brak kontaktów.')) : tr('Brak wyników.')} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((r) => {

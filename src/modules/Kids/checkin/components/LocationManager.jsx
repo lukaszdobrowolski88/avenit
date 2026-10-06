@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import EmptyState from '../../../../components/EmptyState';
+import Spinner from '../../../../components/Spinner';
 import { supabase } from '../../../../lib/supabase';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, DoorOpen } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import { toast } from '../../../../lib/toast';
 import { confirmDialog } from '../../../../lib/dialog';
@@ -270,12 +271,9 @@ export default function LocationManager({ onLocationsChange }) {
 
       {/* Locations list */}
       {loading ? (
-        <div className="flex items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
-          <Loader2 size={20} className="animate-spin" />
-          {tr('Ładowanie...')}
-        </div>
+        <Spinner center label={tr('Ładowanie...')} />
       ) : locations.length === 0 ? (
-        <EmptyState title={tr('Brak sal. Dodaj pierwszą salę dla dzieci.')} />
+        <EmptyState icon={DoorOpen} title={tr('Brak sal. Dodaj pierwszą salę dla dzieci.')} />
       ) : (
         <div className="flex flex-col gap-3">
           {locations.map((location) => (

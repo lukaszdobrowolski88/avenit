@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import Spinner from '../../../components/Spinner';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import {
   Search,
   Filter,
@@ -9,7 +12,6 @@ import {
   Calendar,
   DollarSign,
   FileText,
-  X,
   Check,
   Clock,
   Plus,
@@ -537,11 +539,7 @@ export default function PaymentsView({ forms }) {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={48} />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   return (
@@ -804,14 +802,12 @@ export default function PaymentsView({ forms }) {
       {/* Lista platnosci */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {filteredPayments.length === 0 ? (
-          <div className="p-12 text-center">
-            <CreditCard size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">
-              {searchQuery || selectedForm !== 'all' || statusFilter !== 'all'
-                ? tr('Brak płatności spełniających kryteria')
-                : tr('Brak zarejestrowanych płatności')}
-            </p>
-          </div>
+          <EmptyState
+            icon={CreditCard}
+            title={searchQuery || selectedForm !== 'all' || statusFilter !== 'all'
+              ? tr('Brak płatności spełniających kryteria')
+              : tr('Brak zarejestrowanych płatności')}
+          />
         ) : (
           <DataTable flush>
             <THead>
@@ -906,269 +902,246 @@ export default function PaymentsView({ forms }) {
       </div>
 
       {/* Modal szczegółów/edycji płatności */}
-      {selectedPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {tr('Szczegóły płatności')}
-              </h3>
-              <button
-                onClick={() => setSelectedPayment(null)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                <X size={20} />
-              </button>
+      <Modal
+        isOpen={!!selectedPayment}
+        onClose={() => setSelectedPayment(null)}
+        closeOnBackdrop={false}
+        title={tr('Szczegóły płatności')}
+        size="md"
+      >
+        {selectedPayment && (
+          <div className="p-6 space-y-6">
+            {/* Uczestnik */}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl flex items-center justify-center text-white text-xl font-bold">
+                {selectedPayment.participantName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white">
+                  {selectedPayment.participantName}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {selectedPayment.participantEmail}
+                </p>
+              </div>
             </div>
 
-            <div className="p-6 overflow-auto max-h-[calc(90vh-140px)] space-y-6">
-              {/* Uczestnik */}
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl flex items-center justify-center text-white text-xl font-bold">
-                  {selectedPayment.participantName.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {selectedPayment.participantName}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {selectedPayment.participantEmail}
-                  </p>
-                </div>
+            {/* Kwota i status */}
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {formatPrice(selectedPayment.amount, selectedPayment.currency)}
+                </p>
+                {getStatusBadge(selectedPayment.status)}
               </div>
-
-              {/* Kwota i status */}
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {formatPrice(selectedPayment.amount, selectedPayment.currency)}
-                  </p>
-                  {getStatusBadge(selectedPayment.status)}
-                </div>
-                <div className="flex gap-2">
-                  {selectedPayment.status === 'pending' ? (
-                    <button
-                      onClick={() => markAsPaid(selectedPayment.id)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-                    >
-                      <Check size={18} />
-                      {tr('Oznacz jako opłacone')}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => markAsPending(selectedPayment.id)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
-                    >
-                      <Clock size={18} />
-                      {tr('Cofnij płatność')}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Szczegóły */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Formularz
-                  </label>
-                  <p className="text-gray-900 dark:text-white">{selectedPayment.formTitle}</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    {tr('Metoda płatności')}
-                  </label>
-                  <select
-                    value={selectedPayment.method}
-                    onChange={(e) => updatePayment(selectedPayment.id, { method: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              <div className="flex gap-2">
+                {selectedPayment.status === 'pending' ? (
+                  <button
+                    onClick={() => markAsPaid(selectedPayment.id)}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                   >
-                    <option value="transfer">Przelew bankowy</option>
-                    <option value="paypal">PayPal</option>
-                    <option value="przelewy24">Przelewy24</option>
-                    <option value="cash">{tr('Gotówka')}</option>
-                    <option value="card">Karta</option>
-                  </select>
-                </div>
+                    <Check size={18} />
+                    {tr('Oznacz jako opłacone')}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => markAsPending(selectedPayment.id)}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                  >
+                    <Clock size={18} />
+                    {tr('Cofnij płatność')}
+                  </button>
+                )}
+              </div>
+            </div>
 
+            {/* Szczegóły */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Formularz
+                </label>
+                <p className="text-gray-900 dark:text-white">{selectedPayment.formTitle}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  {tr('Metoda płatności')}
+                </label>
+                <select
+                  value={selectedPayment.method}
+                  onChange={(e) => updatePayment(selectedPayment.id, { method: e.target.value })}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                >
+                  <option value="transfer">Przelew bankowy</option>
+                  <option value="paypal">PayPal</option>
+                  <option value="przelewy24">Przelewy24</option>
+                  <option value="cash">{tr('Gotówka')}</option>
+                  <option value="card">Karta</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Numer referencyjny / ID transakcji
+                </label>
+                <input
+                  type="text"
+                  value={selectedPayment.reference || ''}
+                  onChange={(e) => {
+                    setSelectedPayment(prev => ({ ...prev, reference: e.target.value }));
+                  }}
+                  onBlur={(e) => updatePayment(selectedPayment.id, { reference: e.target.value })}
+                  placeholder="np. numer przelewu lub ID PayPal"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Notatki
+                </label>
+                <textarea
+                  value={selectedPayment.notes || ''}
+                  onChange={(e) => {
+                    setSelectedPayment(prev => ({ ...prev, notes: e.target.value }));
+                  }}
+                  onBlur={(e) => updatePayment(selectedPayment.id, { notes: e.target.value })}
+                  placeholder={tr('Dodatkowe informacje o płatności...')}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Numer referencyjny / ID transakcji
+                    Data rejestracji
                   </label>
-                  <input
-                    type="text"
-                    value={selectedPayment.reference || ''}
-                    onChange={(e) => {
-                      setSelectedPayment(prev => ({ ...prev, reference: e.target.value }));
-                    }}
-                    onBlur={(e) => updatePayment(selectedPayment.id, { reference: e.target.value })}
-                    placeholder="np. numer przelewu lub ID PayPal"
-                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                  />
+                  <p className="text-gray-900 dark:text-white">
+                    {formatDate(selectedPayment.submittedAt)}
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Notatki
-                  </label>
-                  <textarea
-                    value={selectedPayment.notes || ''}
-                    onChange={(e) => {
-                      setSelectedPayment(prev => ({ ...prev, notes: e.target.value }));
-                    }}
-                    onBlur={(e) => updatePayment(selectedPayment.id, { notes: e.target.value })}
-                    placeholder={tr('Dodatkowe informacje o płatności...')}
-                    rows={3}
-                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white resize-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                {selectedPayment.paidAt && (
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Data rejestracji
+                      {tr('Data płatności')}
                     </label>
-                    <p className="text-gray-900 dark:text-white">
-                      {formatDate(selectedPayment.submittedAt)}
+                    <p className="text-green-600 dark:text-green-400">
+                      {formatDate(selectedPayment.paidAt)}
                     </p>
                   </div>
-                  {selectedPayment.paidAt && (
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                        {tr('Data płatności')}
-                      </label>
-                      <p className="text-green-600 dark:text-green-400">
-                        {formatDate(selectedPayment.paidAt)}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Modal dodawania płatności */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <Banknote size={20} className="text-green-500" />
-                {tr('Dodaj płatność')}
-              </h2>
-              <button onClick={() => setShowAddModal(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"><X size={20} /></button>
-            </div>
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        closeOnBackdrop={false}
+        title={tr('Dodaj płatność')}
+        icon={Banknote}
+        size="md"
+        footer={selectedUnpaid ? (
+          <>
+            <Button variant="secondary" onClick={() => setShowAddModal(false)}>Anuluj</Button>
+            <Button icon={Check} onClick={handleAddPayment}>Potwierdź płatność</Button>
+          </>
+        ) : undefined}
+      >
+        <div className="p-6">
+          {!selectedUnpaid ? (
+            <>
+              {/* Wyszukiwarka uczestników */}
+              <div className="relative mb-3">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type="text" value={unpaidSearch} onChange={(e) => setUnpaidSearch(e.target.value)}
+                  placeholder="Szukaj uczestnika..."
+                  className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+              </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
-              {!selectedUnpaid ? (
-                <>
-                  {/* Wyszukiwarka uczestników */}
-                  <div className="relative mb-3">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input type="text" value={unpaidSearch} onChange={(e) => setUnpaidSearch(e.target.value)}
-                      placeholder="Szukaj uczestnika..."
-                      className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
-                  </div>
-
-                  {loadingUnpaid ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {unpaidParticipants
-                        .filter(p => !unpaidSearch || p.name.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.email?.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.formTitle.toLowerCase().includes(unpaidSearch.toLowerCase()))
-                        .map(p => (
-                        <button key={p.id} onClick={() => { setSelectedUnpaid(p); setAddPaymentAmount(String(p.amount - (p.paidAmount || 0))); }}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
-                          <div className="w-9 h-9 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-sm font-semibold text-accent-primary">
-                            {(p.name || '?')[0]?.toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{p.name}</p>
-                            <p className="text-xs text-gray-500 truncate">{p.formTitle}</p>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatPrice(p.amount, p.currency)}</p>
-                            {p.paidAmount > 0 && (
-                              <p className="text-[10px] text-orange-500">wpłacono {formatPrice(p.paidAmount, p.currency)}</p>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                      {unpaidParticipants.filter(p => !unpaidSearch || p.name.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.email?.toLowerCase().includes(unpaidSearch.toLowerCase())).length === 0 && (
-                        <p className="text-center text-sm text-gray-400 py-8">{tr('Brak nieopłaconych uczestników')}</p>
-                      )}
-                    </div>
-                  )}
-                </>
+              {loadingUnpaid ? (
+                <Spinner center />
               ) : (
-                <>
-                  {/* Wybrany uczestnik */}
-                  <button onClick={() => setSelectedUnpaid(null)}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-3">
-                    <ChevronDown size={14} className="rotate-90" />Zmień uczestnika
-                  </button>
-
-                  <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-sm font-bold text-accent-primary">
-                        {(selectedUnpaid.name || '?')[0]?.toUpperCase()}
+                <div className="space-y-1">
+                  {unpaidParticipants
+                    .filter(p => !unpaidSearch || p.name.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.email?.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.formTitle.toLowerCase().includes(unpaidSearch.toLowerCase()))
+                    .map(p => (
+                    <button key={p.id} onClick={() => { setSelectedUnpaid(p); setAddPaymentAmount(String(p.amount - (p.paidAmount || 0))); }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
+                      <div className="w-9 h-9 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-sm font-semibold text-accent-primary">
+                        {(p.name || '?')[0]?.toUpperCase()}
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 dark:text-white">{selectedUnpaid.name}</p>
-                        <p className="text-xs text-gray-500">{selectedUnpaid.formTitle}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{p.name}</p>
+                        <p className="text-xs text-gray-500 truncate">{p.formTitle}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold">{formatPrice(selectedUnpaid.amount, selectedUnpaid.currency)}</p>
-                        {selectedUnpaid.paidAmount > 0 && (
-                          <p className="text-[10px] text-green-500">wpłacono {formatPrice(selectedUnpaid.paidAmount, selectedUnpaid.currency)}</p>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatPrice(p.amount, p.currency)}</p>
+                        {p.paidAmount > 0 && (
+                          <p className="text-[10px] text-orange-500">wpłacono {formatPrice(p.paidAmount, p.currency)}</p>
                         )}
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        Kwota wpłaty ({selectedUnpaid.currency})
-                      </label>
-                      <input type="number" min="0" step="0.01" value={addPaymentAmount}
-                        onChange={(e) => setAddPaymentAmount(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        {tr('Data płatności')}
-                      </label>
-                      <DateInput value={addPaymentDate}
-                        onChange={(e) => setAddPaymentDate(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
-                    </div>
-                  </div>
-                </>
+                    </button>
+                  ))}
+                  {unpaidParticipants.filter(p => !unpaidSearch || p.name.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.email?.toLowerCase().includes(unpaidSearch.toLowerCase())).length === 0 && (
+                    <EmptyState compact icon={User} title={tr('Brak nieopłaconych uczestników')} />
+                  )}
+                </div>
               )}
-            </div>
+            </>
+          ) : (
+            <>
+              {/* Wybrany uczestnik */}
+              <button onClick={() => setSelectedUnpaid(null)}
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-3">
+                <ChevronDown size={14} className="rotate-90" />Zmień uczestnika
+              </button>
 
-            {selectedUnpaid && (
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-                <button onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 transition-colors">
-                  Anuluj
-                </button>
-                <button onClick={handleAddPayment}
-                  className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
-                  <Check size={16} />Potwierdź płatność
-                </button>
+              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-sm font-bold text-accent-primary">
+                    {(selectedUnpaid.name || '?')[0]?.toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedUnpaid.name}</p>
+                    <p className="text-xs text-gray-500">{selectedUnpaid.formTitle}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold">{formatPrice(selectedUnpaid.amount, selectedUnpaid.currency)}</p>
+                    {selectedUnpaid.paidAmount > 0 && (
+                      <p className="text-[10px] text-green-500">wpłacono {formatPrice(selectedUnpaid.paidAmount, selectedUnpaid.currency)}</p>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Kwota wpłaty ({selectedUnpaid.currency})
+                  </label>
+                  <input type="number" min="0" step="0.01" value={addPaymentAmount}
+                    onChange={(e) => setAddPaymentAmount(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    {tr('Data płatności')}
+                  </label>
+                  <DateInput value={addPaymentDate}
+                    onChange={(e) => setAddPaymentDate(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+                </div>
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

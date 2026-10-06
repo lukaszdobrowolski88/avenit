@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CalendarCheck, Check, Clock } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 export default function RsvpSummaryWidget() {
   const [items, setItems] = useState([]);
@@ -42,15 +44,10 @@ export default function RsvpSummaryWidget() {
   }, []);
 
   if (loading) {
-    return <div className="flex items-center justify-center py-8"><div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" /></div>;
+    return <Spinner center />;
   }
   if (items.length === 0) {
-    return (
-      <div className="text-center py-6">
-        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"><CalendarCheck size={24} className="text-emerald-500" /></div>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">{tr('Brak nadchodzących zaproszeń')}</p>
-      </div>
-    );
+    return <EmptyState compact icon={CalendarCheck} title={tr('Brak nadchodzących zaproszeń')} />;
   }
   return (
     <div className="space-y-1 max-h-72 overflow-y-auto custom-scrollbar">

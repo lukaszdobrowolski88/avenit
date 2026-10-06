@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX } from 'lucide-react';
+import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX, Users, Calendar } from 'lucide-react';
 import { toast } from '../../lib/toast';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { useT } from '../../i18n';
@@ -414,11 +415,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   };
 
   if (loading) {
-    return (
-      <div className="p-10 text-center">
-        <Spinner size={32} className="mx-auto" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   return (
@@ -436,19 +433,9 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       </div>
 
       {members.length === 0 ? (
-        <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-          <p className="text-gray-500 dark:text-gray-400">{t('Brak członków w zespole')}</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {tr('Najpierw dodaj członków w zakładce "Służby"')}
-          </p>
-        </div>
+        <EmptyState icon={Users} title={t('Brak członków w zespole')} subtitle={tr('Najpierw dodaj członków w zakładce "Służby"')} />
       ) : sortedMonths.length === 0 ? (
-        <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-          <p className="text-gray-500 dark:text-gray-400">{t('Brak wydarzeń')}</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Dodaj wydarzenia w tym module albo przypisz tę służbę do typu wydarzenia w Ustawieniach.
-          </p>
-        </div>
+        <EmptyState icon={Calendar} title={t('Brak wydarzeń')} subtitle="Dodaj wydarzenia w tym module albo przypisz tę służbę do typu wydarzenia w Ustawieniach." />
       ) : (
         <div className="space-y-4">
           {sortedMonths.map(monthKey => {

@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, SlidersHorizontal, ListChecks, LayoutList, Users, ChevronUp, ChevronDown } from 'lucide-react';
 import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 import CustomSelect from '../../../components/CustomSelect';
 import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
@@ -156,8 +157,17 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
 
   return (
     <>
-      <Modal isOpen onClose={onClose} size="lg" title={`${tr('Wydarzenia')} — ${label}`}>
-        <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+      <Modal
+        isOpen
+        onClose={onClose}
+        size="lg"
+        title={`${tr('Wydarzenia')} — ${label}`}
+        footer={<>
+          <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+          <Button onClick={save} loading={saving}>{tr('Zapisz')}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-5">
           {/* Typy + Pola */}
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setShowTypes(true)} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
@@ -270,10 +280,6 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
               )}
             </div>
           )}
-        </div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
-          <button onClick={save} disabled={saving} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60">{saving ? tr('Zapisywanie…') : tr('Zapisz')}</button>
         </div>
       </Modal>
 

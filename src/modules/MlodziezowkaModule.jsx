@@ -24,6 +24,9 @@ import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
 import Spinner from '../components/Spinner';
+import Modal from '../components/Modal';
+import Button from '../components/Button';
+import EmptyState from '../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import { confirmDialog } from '../lib/dialog';
 
@@ -703,7 +706,7 @@ export default function MlodziezowkaModule() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center"><Spinner size={48} className="mx-auto" /></div>;
+  if (loading) return <Spinner center />;
   if (error) return <div className="p-10 text-red-600 dark:text-red-400">Błąd: {error}</div>;
 
   return (
@@ -821,343 +824,315 @@ export default function MlodziezowkaModule() {
       )}
 
       {/* MODAL ZADANIA */}
-      {showTaskModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto transition-opacity">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-4xl p-0 border border-gray-200 dark:border-gray-700 my-8 flex overflow-hidden h-[80vh] animate-in fade-in zoom-in duration-200">
-
-            <div className="w-3/5 p-8 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
-              <div className="flex justify-between mb-6">
-                <h3 className="font-bold text-2xl text-gray-900 dark:text-white">{taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}</h3>
-              </div>
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł zadania')}</label>
-                  <input className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
-                  <textarea className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <CustomDatePicker
-                      label="Termin"
-                      value={taskForm.due_date}
-                      onChange={val => setTaskForm({...taskForm, due_date: val})}
-                    />
-                  </div>
-                  <div>
-                    <CustomSelect
-                      label="Status"
-                      value={taskForm.status}
-                      onChange={val => setTaskForm({...taskForm, status: val})}
-                      options={STATUSES}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <CustomSelect
-                    label="Przypisana osoba (lider)"
-                    value={taskForm.assigned_to}
-                    onChange={val => setTaskForm({...taskForm, assigned_to: val})}
-                    options={[
-                      { value: null, label: t('Nie przypisano') },
-                      ...leaders.map(m => ({ value: m.id, label: m.full_name }))
-                    ]}
-                    placeholder={tr('Wybierz osobę...')}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Załącznik')}</label>
-                  <input type="file" className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-accent-primary-lightest dark:file:bg-accent-secondary-darkest/30 file:text-accent-primary dark:file:text-accent-secondary-light hover:file:bg-accent-primary-lighter dark:hover:file:bg-accent-secondary-darkest/50" onChange={handleFileUpload} />
-                  {taskForm.attachment && <div className="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg"><Paperclip size={14} />{taskForm.attachment.name}</div>}
-                </div>
-                <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
-                  {taskForm.id && <button onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }} className="px-4 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">{t('Usuń zadanie')}</button>}
-                  <button onClick={saveTask} className="px-6 py-3 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg transition">{tr('Zapisz zmiany')}</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="w-2/5 bg-gray-50/50 dark:bg-gray-800/30 p-6 flex flex-col">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2"><MessageSquare size={18}/> Komentarze</h4>
-                <button onClick={() => setShowTaskModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"><X size={20} className="text-gray-500 dark:text-gray-400"/></button>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
-                {!taskForm.id ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">{t('Zapisz zadanie, aby dodawać komentarze.')}</div> : loadingComments ? <Spinner center /> : comments.length === 0 ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">{t('Brak komentarzy. Bądź pierwszy!')}</div> : comments.map(comment => (
-                  <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-xs text-accent-primary dark:text-accent-secondary-light">{comment.author_name}</span>
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(comment.created_at).toLocaleString('pl-PL')}</span>
-                    </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
-                  </div>
-                ))}
-              </div>
-              {taskForm.id && <div className="mt-auto"><div className="relative"><textarea className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200" placeholder={t('Napisz komentarz...')} rows={2} value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); }}} /><button onClick={addComment} disabled={!newComment.trim()} className="absolute right-2 bottom-2 p-2 bg-accent-primary dark:bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed"><Send size={16} /></button></div></div>}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* MODAL CZŁONKA */}
-      {showMemberModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{memberForm.id ? tr('Edytuj członka') : tr('Nowy członek')}</h3>
-              <button onClick={() => setShowMemberModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400"><X size={20}/></button>
-            </div>
-            <div className="space-y-4">
+      <Modal
+        isOpen={showTaskModal}
+        onClose={() => setShowTaskModal(false)}
+        title={taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}
+        size="xl"
+        closeOnBackdrop={false}
+        footer={<>
+          {taskForm.id && <Button variant="danger" className="mr-auto" onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }}>{t('Usuń zadanie')}</Button>}
+          <Button onClick={saveTask}>{tr('Zapisz zmiany')}</Button>
+        </>}
+      >
+        <div className="flex h-[65vh]">
+          <div className="w-3/5 p-6 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
+            <div className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł zadania')}</label>
+                <input className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
               </div>
-
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
+                <textarea className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <CustomDatePicker
-                    label="Data urodzenia"
-                    value={memberForm.birth_date}
-                    onChange={val => setMemberForm({...memberForm, birth_date: val})}
+                    label="Termin"
+                    value={taskForm.due_date}
+                    onChange={val => setTaskForm({...taskForm, due_date: val})}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
-                  <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="+48 123 456 789" value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})} />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="jan@example.com" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki</label>
-                <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={2} placeholder={t('Dodatkowe informacje...')} value={memberForm.notes || ''} onChange={e => setMemberForm({...memberForm, notes: e.target.value})} />
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
-                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* MODAL LIDERA */}
-      {showLeaderModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{leaderForm.id ? 'Edytuj lidera' : 'Nowy lider'}</h3>
-              <button onClick={() => setShowLeaderModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400"><X size={20}/></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={leaderForm.full_name} onChange={e => setLeaderForm({...leaderForm, full_name: e.target.value})} />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Rola / Odpowiedzialność')}</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Główny lider, Koordynator...')} value={leaderForm.role || ''} onChange={e => setLeaderForm({...leaderForm, role: e.target.value})} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
-                  <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="+48 123 456 789" value={leaderForm.phone} onChange={e => setLeaderForm({...leaderForm, phone: e.target.value})} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
-                  <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="jan@example.com" value={leaderForm.email} onChange={e => setLeaderForm({...leaderForm, email: e.target.value})} />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowLeaderModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
-                <button onClick={saveLeader} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* MODAL: Add Expense */}
-      {showExpenseModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-4xl p-6 border border-gray-200 dark:border-gray-700 my-8">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Nowy wydatek - Młodzieżówka')}</h3>
-              <button onClick={() => setShowExpenseModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <CustomDatePicker
-                  label="Data dokumentu"
-                  value={expenseForm.payment_date}
-                  onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
-                />
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    value={expenseForm.amount}
-                    onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
-                    placeholder="0.00"
+                  <CustomSelect
+                    label="Status"
+                    value={taskForm.status}
+                    onChange={val => setTaskForm({...taskForm, status: val})}
+                    options={STATUSES}
                   />
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
-                  <input
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    value={expenseForm.contractor}
-                    onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
-                    placeholder={t('Nazwa firmy/osoby')}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Osoba odpowiedzialna')}</label>
-                  <input
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    value={expenseForm.responsible_person}
-                    onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
-                    placeholder={t('Imię i nazwisko')}
-                  />
-                </div>
-              </div>
-
               <div>
                 <CustomSelect
-                  label={tr('Pozycja budżetowa (opis kosztu)')}
-                  value={expenseForm.description}
-                  onChange={(value) => setExpenseForm({...expenseForm, description: value})}
+                  label="Przypisana osoba (lider)"
+                  value={taskForm.assigned_to}
+                  onChange={val => setTaskForm({...taskForm, assigned_to: val})}
                   options={[
-                    { value: '', label: t('Wybierz pozycję') },
-                    ...budgetItems.map(item => ({
-                      value: item.description,
-                      label: item.description
-                    }))
+                    { value: null, label: t('Nie przypisano') },
+                    ...leaders.map(m => ({ value: m.id, label: m.full_name }))
                   ]}
-                  placeholder={tr('Wybierz pozycję')}
+                  placeholder={tr('Wybierz osobę...')}
                 />
               </div>
-
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Szczegółowy opis')}</label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
-                  rows={2}
-                  value={expenseForm.detailed_description}
-                  onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
-                  placeholder={t('Dodatkowe informacje o wydatku...')}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Załączniki (opcjonalnie)')}</label>
-                <div className="space-y-2">
-                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-secondary-light dark:hover:border-accent-primary transition flex items-center gap-2">
-                    <Upload size={18} className="text-gray-400" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
-                    </span>
-                    <input
-                      type="file"
-                      onChange={handleExpenseFileUpload}
-                      className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                      disabled={uploadingFile}
-                      multiple
-                    />
-                  </label>
-                  {expenseForm.documents && expenseForm.documents.length > 0 && (
-                    <div className="space-y-2">
-                      {expenseForm.documents.map((doc, idx) => (
-                        <div key={idx} className="flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                          <span className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1 truncate">
-                            <FileText size={14} />
-                            {doc.name}
-                          </span>
-                          <button
-                            onClick={() => removeExpenseDocument(idx)}
-                            className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 ml-2 flex-shrink-0"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tagi')}</label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder={t('Nowy tag...')}
-                    onKeyPress={(e) => e.key === 'Enter' && addExpenseTag()}
-                  />
-                  <button
-                    onClick={addExpenseTag}
-                    className="px-4 py-2 bg-accent-primary text-white rounded-xl hover:bg-accent-primary transition"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
-                {expenseForm.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {expenseForm.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 bg-accent-primary-lightest dark:bg-accent-secondary-darkest/30 text-accent-primary dark:text-accent-secondary-light rounded-full text-xs flex items-center gap-1"
-                      >
-                        {tag}
-                        <button onClick={() => removeExpenseTag(tag)} className="hover:text-accent-secondary-darkest">
-                          <X size={12} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => setShowExpenseModal(false)}
-                  className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={saveExpense}
-                  className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg transition font-medium"
-                >
-                  Zapisz wydatek
-                </button>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Załącznik')}</label>
+                <input type="file" className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-accent-primary-lightest dark:file:bg-accent-secondary-darkest/30 file:text-accent-primary dark:file:text-accent-secondary-light hover:file:bg-accent-primary-lighter dark:hover:file:bg-accent-secondary-darkest/50" onChange={handleFileUpload} />
+                {taskForm.attachment && <div className="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg"><Paperclip size={14} />{taskForm.attachment.name}</div>}
               </div>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+
+          <div className="w-2/5 bg-gray-50/50 dark:bg-gray-800/30 p-6 flex flex-col">
+            <div className="flex items-center mb-4">
+              <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2"><MessageSquare size={18}/> Komentarze</h4>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
+              {!taskForm.id ? <EmptyState icon={MessageSquare} title={t('Zapisz zadanie, aby dodawać komentarze.')} compact /> : loadingComments ? <Spinner center /> : comments.length === 0 ? <EmptyState icon={MessageSquare} title={t('Brak komentarzy. Bądź pierwszy!')} compact /> : comments.map(comment => (
+                <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="font-bold text-xs text-accent-primary dark:text-accent-secondary-light">{comment.author_name}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(comment.created_at).toLocaleString('pl-PL')}</span>
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
+                </div>
+              ))}
+            </div>
+            {taskForm.id && <div className="mt-auto"><div className="relative"><textarea className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200" placeholder={t('Napisz komentarz...')} rows={2} value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); }}} /><button onClick={addComment} disabled={!newComment.trim()} className="absolute right-2 bottom-2 p-2 bg-accent-primary dark:bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed"><Send size={16} /></button></div></div>}
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL CZŁONKA */}
+      <Modal
+        isOpen={showMemberModal}
+        onClose={() => setShowMemberModal(false)}
+        title={memberForm.id ? tr('Edytuj członka') : tr('Nowy członek')}
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowMemberModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveMember}>{tr('Zapisz')}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
+            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <CustomDatePicker
+                label="Data urodzenia"
+                value={memberForm.birth_date}
+                onChange={val => setMemberForm({...memberForm, birth_date: val})}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
+              <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="+48 123 456 789" value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})} />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
+            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="jan@example.com" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki</label>
+            <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={2} placeholder={t('Dodatkowe informacje...')} value={memberForm.notes || ''} onChange={e => setMemberForm({...memberForm, notes: e.target.value})} />
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL LIDERA */}
+      <Modal
+        isOpen={showLeaderModal}
+        onClose={() => setShowLeaderModal(false)}
+        title={leaderForm.id ? 'Edytuj lidera' : 'Nowy lider'}
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowLeaderModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveLeader}>{tr('Zapisz')}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
+            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={leaderForm.full_name} onChange={e => setLeaderForm({...leaderForm, full_name: e.target.value})} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Rola / Odpowiedzialność')}</label>
+            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Główny lider, Koordynator...')} value={leaderForm.role || ''} onChange={e => setLeaderForm({...leaderForm, role: e.target.value})} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
+              <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="+48 123 456 789" value={leaderForm.phone} onChange={e => setLeaderForm({...leaderForm, phone: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
+              <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="jan@example.com" value={leaderForm.email} onChange={e => setLeaderForm({...leaderForm, email: e.target.value})} />
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL: Add Expense */}
+      <Modal
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        title={tr('Nowy wydatek - Młodzieżówka')}
+        size="xl"
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
+          <Button onClick={saveExpense}>Zapisz wydatek</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <CustomDatePicker
+              label="Data dokumentu"
+              value={expenseForm.payment_date}
+              onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
+            />
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+              <input
+                type="number"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
+              <input
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={expenseForm.contractor}
+                onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
+                placeholder={t('Nazwa firmy/osoby')}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Osoba odpowiedzialna')}</label>
+              <input
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={expenseForm.responsible_person}
+                onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
+                placeholder={t('Imię i nazwisko')}
+              />
+            </div>
+          </div>
+
+          <div>
+            <CustomSelect
+              label={tr('Pozycja budżetowa (opis kosztu)')}
+              value={expenseForm.description}
+              onChange={(value) => setExpenseForm({...expenseForm, description: value})}
+              options={[
+                { value: '', label: t('Wybierz pozycję') },
+                ...budgetItems.map(item => ({
+                  value: item.description,
+                  label: item.description
+                }))
+              ]}
+              placeholder={tr('Wybierz pozycję')}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Szczegółowy opis')}</label>
+            <textarea
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+              rows={2}
+              value={expenseForm.detailed_description}
+              onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
+              placeholder={t('Dodatkowe informacje o wydatku...')}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Załączniki (opcjonalnie)')}</label>
+            <div className="space-y-2">
+              <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-secondary-light dark:hover:border-accent-primary transition flex items-center gap-2">
+                <Upload size={18} className="text-gray-400" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
+                </span>
+                <input
+                  type="file"
+                  onChange={handleExpenseFileUpload}
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                  disabled={uploadingFile}
+                  multiple
+                />
+              </label>
+              {expenseForm.documents && expenseForm.documents.length > 0 && (
+                <div className="space-y-2">
+                  {expenseForm.documents.map((doc, idx) => (
+                    <div key={idx} className="flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                      <span className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1 truncate">
+                        <FileText size={14} />
+                        {doc.name}
+                      </span>
+                      <button
+                        onClick={() => removeExpenseDocument(idx)}
+                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 ml-2 flex-shrink-0"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tagi')}</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder={t('Nowy tag...')}
+                onKeyPress={(e) => e.key === 'Enter' && addExpenseTag()}
+              />
+              <button
+                onClick={addExpenseTag}
+                className="px-4 py-2 bg-accent-primary text-white rounded-xl hover:bg-accent-primary transition"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+            {expenseForm.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {expenseForm.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1 bg-accent-primary-lightest dark:bg-accent-secondary-darkest/30 text-accent-primary dark:text-accent-secondary-light rounded-full text-xs flex items-center gap-1"
+                  >
+                    {tag}
+                    <button onClick={() => removeExpenseTag(tag)} className="hover:text-accent-secondary-darkest">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

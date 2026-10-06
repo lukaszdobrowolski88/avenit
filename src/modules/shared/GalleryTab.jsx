@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Upload, Trash2, Image as ImageIcon, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Modal from '../../components/Modal';
+import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
@@ -57,12 +59,11 @@ export default function GalleryTab({ moduleKey, moduleId, tabId, canEdit = true 
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-40 text-gray-400"><Loader2 className="animate-spin" size={26} /></div>
+        <Spinner center />
       ) : items.length === 0 ? (
         <div onClick={() => canEdit && fileRef.current?.click()}
-          className={`text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl ${canEdit ? 'cursor-pointer hover:border-accent-primary/50' : ''}`}>
-          <ImageIcon size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">{canEdit ? tr('Brak zdjęć. Kliknij, aby dodać pierwsze.') : tr('Brak zdjęć.')}</p>
+          className={`border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl ${canEdit ? 'cursor-pointer hover:border-accent-primary/50' : ''}`}>
+          <EmptyState icon={ImageIcon} title={canEdit ? tr('Brak zdjęć. Kliknij, aby dodać pierwsze.') : tr('Brak zdjęć.')} />
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

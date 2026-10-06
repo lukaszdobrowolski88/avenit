@@ -11,6 +11,8 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 import { toast } from '../../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
@@ -78,23 +80,20 @@ export default function InvoicesList() {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <Loader2 size={32} className="animate-spin mx-auto text-accent-primary-light mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">{tr('Ładowanie faktur...')}</p>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <Spinner center label={tr('Ładowanie faktur...')} />
       </div>
     );
   }
 
   if (invoices.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <FileText size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          Brak faktur
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400">
-          {tr('Tutaj pojawią się Twoje faktury po dokonaniu pierwszej płatności.')}
-        </p>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <EmptyState
+          icon={FileText}
+          title="Brak faktur"
+          subtitle={tr('Tutaj pojawią się Twoje faktury po dokonaniu pierwszej płatności.')}
+        />
       </div>
     );
   }

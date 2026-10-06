@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { TAG_COLORS } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 export default function TagsTab({ member, campusIdForInsert, withCampusFilter }) {
   const [tags, setTags] = useState([]);
@@ -97,10 +98,7 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
       {loading ? (
         <Spinner center />
       ) : tags.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-          <TagIcon size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Brak tagów. Dodaj pierwszy.</p>
-        </div>
+        <EmptyState icon={TagIcon} title="Brak tagów." subtitle="Dodaj pierwszy." className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
       ) : (
         <div className="flex flex-wrap gap-2">
           {tags.map(item => (

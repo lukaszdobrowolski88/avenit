@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getSuggestedLocation, formatAge, formatAgeRange } from '../utils/ageCalculator';
-import { ArrowLeft, Check, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, AlertTriangle, Baby } from 'lucide-react';
 import { tr } from '../../../../i18n';
+import EmptyState from '../../../../components/EmptyState';
 
 export default function MemberCheckin({
   household,
@@ -76,9 +77,7 @@ export default function MemberCheckin({
       {/* Children list */}
       <div className="flex flex-col gap-4 w-full max-w-lg mb-8">
         {children.length === 0 ? (
-          <div className="text-center p-10 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-2xl text-amber-800 dark:text-amber-200">
-            Brak zarejestrowanych dzieci w tej rodzinie
-          </div>
+          <EmptyState icon={Baby} title="Brak zarejestrowanych dzieci w tej rodzinie" />
         ) : (
           children.map((child) => {
             const isSelected = selectedMembers[child.id];

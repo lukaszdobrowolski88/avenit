@@ -1,23 +1,52 @@
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 // Kanoniczny Modal. Dwa tryby (kompatybilne wstecznie):
 //  • CIENKI (bez onClose) — tylko portal + `fixed inset-0 z-[100]`. Dzieci dostarczają
-//    własny backdrop/panel. Zachowanie jak dotąd (29 istniejących użyć).
-//  • BOGATY (z onClose) — pełny shell: backdrop (klik = zamknij) + Esc + wyśrodkowany panel
-//    (rounded-2xl, border, shadow-xl, dark mode) + opcjonalny nagłówek z „X". Kanon audytu
-//    zamiast ~92 ręcznych nakładek bez klawiatury.
-//      <Modal isOpen onClose={fn} title="Tytuł" size="md">…treść (+ stopka)…</Modal>
+//    własny backdrop/panel.
+//  • BOGATY (z onClose) — pełny shell: backdrop (klik = zamknij) + Esc + wyśrodkowany panel.
+//    Z tytułem/stopką panel ma stały układ: nagłówek (tytuł, podtytuł, X) → przewijana treść →
+//    stopka z przyciskami (Anuluj po lewej od akcji głównej). Treść daje własny padding:
+//      <Modal isOpen onClose={close} title="Nowa sesja" size="md"
+//             footer={<><Button variant="secondary" onClick={close}>Anuluj</Button><Button onClick={save}>Zapisz</Button></>}>
+//        <div className="p-6 space-y-4">…pola…</div>
+//      </Modal>
+//    Bez tytułu i stopki — dzieci trafiają wprost do panelu (stary układ, np. Boards ItemPanel).
+//  zIndex — gdy okno musi leżeć nad innym oknem z wyższą warstwą; closeOnBackdrop={false} —
+//  klik w tło nie zamyka (formularze, w których łatwo stracić dane).
 const SIZES = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl', full: 'max-w-6xl' };
 
-export default function Modal({ isOpen, onClose, title, size = 'md', className = '', children }) {
+// Esc zamyka tylko najwyżej leżące okno (okna potrafią się zagnieżdżać).
+const openStack = [];
+
+export default function Modal({
+  isOpen, onClose, title, subtitle, icon: Icon, footer, size = 'md', className = '',
+  bodyClassName = '', zIndex, closeOnBackdrop = true, children,
+}) {
+  const id = useId();
+  // onClose przez ref: funkcja podana inline zmienia się przy każdym renderze rodzica, a ponowne
+  // zarejestrowanie przesuwałoby okno na szczyt stosu (Esc zamknąłby nie to okno).
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const closable = Boolean(onClose);
   useEffect(() => {
-    if (!isOpen || !onClose) return;
-    const h = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', h);
-    return () => document.removeEventListener('keydown', h);
-  }, [isOpen, onClose]);
+    if (!isOpen || !closable) return undefined;
+    openStack.push(id);
+    // Na window (nie document): wybieraki/listy w oknie obsługują Esc na document wcześniej
+    // i oznaczają je preventDefault — wtedy Esc zamyka tylko listę, nie całe okno.
+    const h = (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (openStack[openStack.length - 1] !== id) return;
+      closeRef.current?.();
+    };
+    window.addEventListener('keydown', h);
+    return () => {
+      window.removeEventListener('keydown', h);
+      const i = openStack.lastIndexOf(id);
+      if (i !== -1) openStack.splice(i, 1);
+    };
+  }, [isOpen, closable, id]);
 
   if (!isOpen || typeof document === 'undefined' || !document.body) return null;
 
@@ -26,25 +55,44 @@ export default function Modal({ isOpen, onClose, title, size = 'md', className =
     return createPortal(<div className={`fixed inset-0 z-[100] ${className}`}>{children}</div>, document.body);
   }
 
-  // Tryb bogaty — wspólny shell.
+  const structured = Boolean(title || footer);
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150" onClick={onClose} />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={zIndex ? { zIndex } : undefined}>
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150"
+        onClick={closeOnBackdrop ? onClose : undefined}
+      />
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative w-full ${SIZES[size] || SIZES.md} max-h-[90vh] overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl animate-in fade-in zoom-in-95 duration-150 ${className}`}
+        aria-label={typeof title === 'string' ? title : undefined}
+        className={`modal-panel relative w-full ${SIZES[size] || SIZES.md} max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl animate-in fade-in zoom-in-95 duration-150 ${structured ? 'flex flex-col overflow-hidden' : 'overflow-y-auto custom-scrollbar'} ${className}`}
       >
         {title && (
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 rounded-t-2xl z-10">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate pr-2">{title}</h2>
+          <div className="modal-head shrink-0 flex items-start gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            {Icon && (
+              <div data-tone={1} className="w-9 h-9 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light flex items-center justify-center shrink-0">
+                <Icon size={18} />
+              </div>
+            )}
+            <div className="min-w-0 flex-1 self-center">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{title}</h2>
+              {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
+            </div>
             <button onClick={onClose} aria-label="Zamknij"
-              className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 transition shrink-0">
+              className="p-1.5 -mr-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 transition shrink-0">
               <X size={18} />
             </button>
           </div>
         )}
-        {children}
+        {structured ? (
+          <div className={`modal-body flex-1 min-h-0 overflow-y-auto custom-scrollbar ${bodyClassName}`}>{children}</div>
+        ) : children}
+        {footer && (
+          <div className="modal-foot shrink-0 flex flex-wrap items-center justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            {footer}
+          </div>
+        )}
       </div>
     </div>,
     document.body

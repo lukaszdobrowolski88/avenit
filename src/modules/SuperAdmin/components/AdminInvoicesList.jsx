@@ -14,6 +14,8 @@ import {
 import { tr } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { confirmDialog } from '../../../lib/dialog';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 export default function AdminInvoicesList() {
   const { getInvoices, markAsPaid, cancelInvoice, loading } = useInvoices();
@@ -118,11 +120,9 @@ export default function AdminInvoicesList() {
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>
+          <Spinner center />
         ) : filteredInvoices.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            {tr('Brak faktur spełniających kryteria')}
-          </div>
+          <EmptyState icon={FileText} title={tr('Brak faktur spełniających kryteria')} />
         ) : (
           <DataTable flush>
               <THead>

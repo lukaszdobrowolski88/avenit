@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen, LayoutDashboard, LayoutGrid, Package, GalleryThumbnails, Link2, Contact, HelpCircle, Megaphone, BarChart3 } from 'lucide-react';
+import { Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen, LayoutDashboard, LayoutGrid, Package, GalleryThumbnails, Link2, Contact, HelpCircle, Megaphone, BarChart3 } from 'lucide-react';
 import IconPicker from './IconPicker';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 
@@ -127,145 +128,120 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
 
   if (!document.body) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[160]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
-          <h3 className="font-bold text-xl text-gray-900 dark:text-white">
-            {isEditing ? tr('Edytuj zakładkę') : tr('Nowa zakładka')}
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
-          >
-            <X size={20} className="text-gray-500" />
-          </button>
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={false}
+      zIndex={160}
+      title={isEditing ? tr('Edytuj zakładkę') : tr('Nowa zakładka')}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button icon={Save} onClick={handleSubmit} loading={saving}>Zapisz</Button>
+      </>}
+    >
+      <div className="p-6 space-y-5">
+        {errors.submit && (
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+            <AlertCircle size={16} />
+            {errors.submit}
+          </div>
+        )}
+
+        {/* Typ komponentu */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">
+            {tr('Typ zawartości')}
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {COMPONENT_TYPES.map(comp => {
+              const CompIcon = comp.icon;
+              const isSelected = form.component_type === comp.key;
+              return (
+                <button
+                  key={comp.key}
+                  type="button"
+                  onClick={() => setForm({ ...form, component_type: comp.key })}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    isSelected
+                      ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <CompIcon size={18} className={isSelected ? 'text-accent-primary' : 'text-gray-400'} />
+                    <span className={`font-medium text-sm ${isSelected ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {comp.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{comp.description}</p>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-5 overflow-y-auto flex-1">
-          {errors.submit && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-              <AlertCircle size={16} />
-              {errors.submit}
-            </div>
+        {/* Nazwa zakładki */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+            {tr('Nazwa zakładki')}
+          </label>
+          <input
+            type="text"
+            value={form.label}
+            onChange={(e) => setForm({ ...form, label: e.target.value })}
+            placeholder="np. Finanse"
+            className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
+              ${errors.label
+                ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
+                : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
+              } focus:outline-none focus:ring-2`}
+          />
+          {errors.label && (
+            <p className="mt-1 text-xs text-red-500">{errors.label}</p>
           )}
-
-          {/* Typ komponentu */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">
-              {tr('Typ zawartości')}
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {COMPONENT_TYPES.map(comp => {
-                const CompIcon = comp.icon;
-                const isSelected = form.component_type === comp.key;
-                return (
-                  <button
-                    key={comp.key}
-                    type="button"
-                    onClick={() => setForm({ ...form, component_type: comp.key })}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${
-                      isSelected
-                        ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <CompIcon size={18} className={isSelected ? 'text-accent-primary' : 'text-gray-400'} />
-                      <span className={`font-medium text-sm ${isSelected ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-700 dark:text-gray-300'}`}>
-                        {comp.label}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{comp.description}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Nazwa zakładki */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              {tr('Nazwa zakładki')}
-            </label>
-            <input
-              type="text"
-              value={form.label}
-              onChange={(e) => setForm({ ...form, label: e.target.value })}
-              placeholder="np. Finanse"
-              className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
-                ${errors.label
-                  ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
-                } focus:outline-none focus:ring-2`}
-            />
-            {errors.label && (
-              <p className="mt-1 text-xs text-red-500">{errors.label}</p>
-            )}
-          </div>
-
-          {/* Klucz zakładki */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Klucz (slug)
-            </label>
-            <input
-              type="text"
-              value={form.key}
-              onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase() })}
-              placeholder="np. finanse"
-              disabled={isEditing && tab?.is_system}
-              className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
-                ${isEditing && tab?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
-                ${errors.key
-                  ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
-                } focus:outline-none focus:ring-2`}
-            />
-            {errors.key && (
-              <p className="mt-1 text-xs text-red-500">{errors.key}</p>
-            )}
-            {isEditing && tab?.is_system && (
-              <p className="mt-1 text-xs text-gray-400">{t('Klucz zakładki systemowej nie może być zmieniony')}</p>
-            )}
-          </div>
-
-          {/* Ikona */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Ikona
-            </label>
-            <IconPicker
-              value={form.icon}
-              onChange={(icon) => setForm({ ...form, icon })}
-            />
-            {errors.icon && (
-              <p className="mt-1 text-xs text-red-500">{errors.icon}</p>
-            )}
-          </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 shrink-0">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition font-medium"
-          >
-            Anuluj
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save size={16} />
-            {saving ? tr('Zapisuję...') : 'Zapisz'}
-          </button>
+        {/* Klucz zakładki */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+            Klucz (slug)
+          </label>
+          <input
+            type="text"
+            value={form.key}
+            onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase() })}
+            placeholder="np. finanse"
+            disabled={isEditing && tab?.is_system}
+            className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
+              ${isEditing && tab?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
+              ${errors.key
+                ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
+                : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
+              } focus:outline-none focus:ring-2`}
+          />
+          {errors.key && (
+            <p className="mt-1 text-xs text-red-500">{errors.key}</p>
+          )}
+          {isEditing && tab?.is_system && (
+            <p className="mt-1 text-xs text-gray-400">{t('Klucz zakładki systemowej nie może być zmieniony')}</p>
+          )}
+        </div>
+
+        {/* Ikona */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+            Ikona
+          </label>
+          <IconPicker
+            value={form.icon}
+            onChange={(icon) => setForm({ ...form, icon })}
+          />
+          {errors.icon && (
+            <p className="mt-1 text-xs text-red-500">{errors.icon}</p>
+          )}
         </div>
       </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }

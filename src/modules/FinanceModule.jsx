@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import EmptyState from '../components/EmptyState';
 import Spinner from '../components/Spinner';
+import Modal from '../components/Modal';
+import Button from '../components/Button';
 import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Download, Printer, Repeat, CheckCircle, XCircle, Clock, Copy, AlertTriangle, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Settings, Banknote, CreditCard, FolderOpen, Mail, CalendarClock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createPortal } from 'react-dom';
@@ -1403,7 +1405,7 @@ const FinanceModule = () => {
           {loading ? (
             <Spinner center />
           ) : budgetItems.length === 0 ? (
-            <EmptyState title={`Brak pozycji budżetowych na rok ${selectedYear}`} />
+            <EmptyState icon={DollarSign} title={`Brak pozycji budżetowych na rok ${selectedYear}`} />
           ) : expenseBudgetItems.length === 0 ? null : (
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="px-4 py-2.5 bg-red-50 dark:bg-red-900/10 text-sm font-bold text-red-700 dark:text-red-300 flex items-center gap-2"><ArrowDownRight size={16} /> {tr('Planowane wydatki')}</div>
@@ -1666,7 +1668,7 @@ const FinanceModule = () => {
               <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><FileText size={18} /> {tr('Propozycje do budżetu')}</h3>
             </div>
             {proposals.filter((p) => p.status === 'pending').length === 0 ? (
-              <p className="text-sm text-gray-400">{tr('Brak oczekujących propozycji. Liderzy służb zgłaszają je z zakładki Finanse w swoim module.')}</p>
+              <EmptyState icon={FileText} title={tr('Brak oczekujących propozycji. Liderzy służb zgłaszają je z zakładki Finanse w swoim module.')} compact />
             ) : (
               <div className="space-y-2">
                 {proposals.filter((p) => p.status === 'pending').map((p) => (
@@ -1776,7 +1778,7 @@ const FinanceModule = () => {
           {loading ? (
             <Spinner center />
           ) : filteredIncomeTransactions.length === 0 ? (
-            <EmptyState title={incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : tr('Brak wpływów pasujących do filtrów')} />
+            <EmptyState icon={TrendingUp} title={incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : tr('Brak wpływów pasujących do filtrów')} />
           ) : (
             <DataTable>
                 <THead>
@@ -1967,7 +1969,7 @@ const FinanceModule = () => {
           {loading ? (
             <Spinner center />
           ) : filteredExpenseTransactions.length === 0 ? (
-            <EmptyState title={expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : tr('Brak wydatków pasujących do filtrów')} />
+            <EmptyState icon={Receipt} title={expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : tr('Brak wydatków pasujących do filtrów')} />
           ) : (
             <DataTable minWidth={900}>
                 <THead>
@@ -2105,7 +2107,7 @@ const FinanceModule = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{tr('Automatycznie generowane wpływy i wydatki (np. czynsz, pensje, stałe kolekty). Codziennie rano system tworzy należne pozycje.')}</p>
 
           {recurringItems.length === 0 ? (
-            <EmptyState icon={Repeat} title={tr('Brak planów cyklicznych')} description={tr('Dodaj pierwszy plan, aby automatyzować powtarzalne transakcje.')} />
+            <EmptyState icon={Repeat} title={tr('Brak planów cyklicznych')} subtitle={tr('Dodaj pierwszy plan, aby automatyzować powtarzalne transakcje.')} />
           ) : (
             <div className="space-y-2">
               {recurringItems.map((r) => {
@@ -2173,7 +2175,7 @@ const FinanceModule = () => {
                 </div>
               )}
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-300 ml-1">{reportRange.label}</span>
-              {reportLoading && <span className="text-xs text-gray-400">{tr('Ładowanie…')}</span>}
+              {reportLoading && <Spinner size={16} label={tr('Ładowanie…')} />}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -2347,7 +2349,7 @@ const FinanceModule = () => {
                       </div>
                     ))}
                   </div>
-                ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o wydatkach')}</p>}
+                ) : <EmptyState icon={Receipt} title={t('Brak danych o wydatkach')} compact />}
               </div>
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><CheckCircle size={20} className="text-accent-primary" />{tr('Status wydatków')}</h3>
@@ -2368,7 +2370,7 @@ const FinanceModule = () => {
                       });
                     })()}
                   </div>
-                ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o wydatkach')}</p>}
+                ) : <EmptyState icon={CheckCircle} title={t('Brak danych o wydatkach')} compact />}
               </div>
             </div>
 
@@ -2401,7 +2403,7 @@ const FinanceModule = () => {
                     })}
                   </tbody>
                 </DataTable>
-              ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak pozycji budżetowych')}</p>}
+              ) : <EmptyState icon={DollarSign} title={t('Brak pozycji budżetowych')} compact />}
             </div>
 
             {/* Nieopłacone zobowiązania / faktury */}
@@ -2455,926 +2457,843 @@ const FinanceModule = () => {
       )}
 
       {/* MODAL: Budget Item */}
-      {showCategoryModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowCategoryModal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between mb-5">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Kategorie finansów')}</h3>
-              <button onClick={() => setShowCategoryModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
+      <Modal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        title={tr('Kategorie finansów')}
+      >
+        <div className="p-6">
+          {/* Dodawanie nowej kategorii */}
+          <div className="flex flex-wrap items-end gap-2 mb-5 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
+              <input value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveCategory(); }}
+                placeholder={tr('np. Sprzęt, Kolekta')} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white" />
             </div>
-
-            {/* Dodawanie nowej kategorii */}
-            <div className="flex flex-wrap items-end gap-2 mb-5 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
-              <div className="flex-1 min-w-[140px]">
-                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
-                <input value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
-                  onKeyDown={(e) => { if (e.key === 'Enter') saveCategory(); }}
-                  placeholder={tr('np. Sprzęt, Kolekta')} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Rodzaj')}</label>
-                <select value={catForm.kind} onChange={(e) => setCatForm({ ...catForm, kind: e.target.value })}
-                  className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white">
-                  <option value="expense">{tr('Wydatek')}</option>
-                  <option value="income">{tr('Wpływ')}</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kolor')}</label>
-                <input type="color" value={catForm.color} onChange={(e) => setCatForm({ ...catForm, color: e.target.value })}
-                  className="w-10 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer p-0.5" />
-              </div>
-              <button onClick={saveCategory} className="px-4 py-2 rounded-lg bg-accent-primary text-white text-sm font-medium shrink-0">{tr('Dodaj')}</button>
+            <div>
+              <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Rodzaj')}</label>
+              <select value={catForm.kind} onChange={(e) => setCatForm({ ...catForm, kind: e.target.value })}
+                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white">
+                <option value="expense">{tr('Wydatek')}</option>
+                <option value="income">{tr('Wpływ')}</option>
+              </select>
             </div>
+            <div>
+              <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kolor')}</label>
+              <input type="color" value={catForm.color} onChange={(e) => setCatForm({ ...catForm, color: e.target.value })}
+                className="w-10 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer p-0.5" />
+            </div>
+            <button onClick={saveCategory} className="px-4 py-2 rounded-lg bg-accent-primary text-white text-sm font-medium shrink-0">{tr('Dodaj')}</button>
+          </div>
 
-            {/* Listy kategorii */}
-            {['income', 'expense'].map((kind) => (
-              <div key={kind} className="mb-4">
-                <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{kind === 'income' ? tr('Kategorie wpływów') : tr('Kategorie wydatków')}</div>
-                <div className="space-y-1.5">
-                  {categories.filter((c) => c.kind === kind).length === 0 && (
-                    <div className="text-sm text-gray-400 py-1">{tr('Brak kategorii')}</div>
-                  )}
-                  {categories.filter((c) => c.kind === kind).map((c) => (
-                    <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700">
-                      <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: c.color || '#6366f1' }} />
-                      <span className={`text-sm flex-1 ${c.is_active === false ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'}`}>{c.name}</span>
-                      <button onClick={() => toggleCategoryActive(c)} className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
-                        {c.is_active === false ? tr('Włącz') : tr('Wyłącz')}
+          {/* Listy kategorii */}
+          {['income', 'expense'].map((kind) => (
+            <div key={kind} className="mb-4">
+              <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{kind === 'income' ? tr('Kategorie wpływów') : tr('Kategorie wydatków')}</div>
+              <div className="space-y-1.5">
+                {categories.filter((c) => c.kind === kind).length === 0 && (
+                  <EmptyState icon={Tag} title={tr('Brak kategorii')} compact />
+                )}
+                {categories.filter((c) => c.kind === kind).map((c) => (
+                  <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: c.color || '#6366f1' }} />
+                    <span className={`text-sm flex-1 ${c.is_active === false ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'}`}>{c.name}</span>
+                    <button onClick={() => toggleCategoryActive(c)} className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                      {c.is_active === false ? tr('Włącz') : tr('Wyłącz')}
+                    </button>
+                    <button onClick={() => deleteCategory(c.id)} className="text-red-500 hover:text-red-600 p-1" title={tr('Usuń')}><Trash2 size={15} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Kontrahenci */}
+          <div className="mt-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Kontrahenci')}</div>
+            <div className="flex gap-2 mb-2">
+              <input value={vendorName} onChange={(e) => setVendorName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }}
+                placeholder={tr('np. Sklep muzyczny')} className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none text-gray-800 dark:text-gray-100" />
+              <button onClick={() => { if (vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }} className="px-3 rounded-lg bg-accent-primary text-white text-sm shrink-0">{tr('Dodaj')}</button>
+            </div>
+            <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
+              {vendors.length === 0 && <EmptyState icon={Users} title={tr('Brak kontrahentów (dodają się też automatycznie z wydatków).')} compact />}
+              {vendors.map((v) => (
+                <div key={v.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
+                  <span className="text-sm flex-1 truncate text-gray-800 dark:text-gray-100">{v.name}</span>
+                  <button onClick={() => deleteVendor(v.id)} className="text-red-500 hover:text-red-600 p-1" title={tr('Usuń')}><Trash2 size={14} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showRecurringModal}
+        onClose={() => setShowRecurringModal(false)}
+        title={recurringForm.id ? tr('Edytuj plan cykliczny') : tr('Nowy plan cykliczny')}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowRecurringModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveRecurring}>{tr('Zapisz')}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            {['expense', 'income'].map((k) => (
+              <button key={k} onClick={() => setRecurringForm({ ...recurringForm, kind: k, category: '' })}
+                className={`py-2 rounded-xl text-sm font-medium border transition ${recurringForm.kind === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                {k === 'expense' ? tr('Wydatek') : tr('Wpływ')}
+              </button>
+            ))}
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
+            <input value={recurringForm.title} onChange={(e) => setRecurringForm({ ...recurringForm, title: e.target.value })}
+              placeholder={tr('np. Czynsz, Pensja, Stała kolekta')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+              <input type="number" value={recurringForm.amount} onChange={(e) => setRecurringForm({ ...recurringForm, amount: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+            </div>
+            <CustomSelect
+              label={tr('Częstotliwość')}
+              value={recurringForm.frequency}
+              onChange={(val) => setRecurringForm({ ...recurringForm, frequency: val })}
+              options={[
+                { value: 'weekly', label: tr('co tydzień') }, { value: 'biweekly', label: tr('co 2 tygodnie') },
+                { value: 'monthly', label: tr('co miesiąc') }, { value: 'quarterly', label: tr('co kwartał') },
+                { value: 'yearly', label: tr('co rok') },
+              ]}
+            />
+          </div>
+          <CustomSelect
+            label={recurringForm.kind === 'income' ? tr('Typ wpływu') : tr('Służba (budżet)')}
+            value={recurringForm.category}
+            onChange={(val) => setRecurringForm({ ...recurringForm, category: val, team_type: recurringForm.kind === 'expense' ? val : recurringForm.team_type })}
+            options={[{ value: '', label: tr('— brak —') },
+              ...(recurringForm.kind === 'income'
+                ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
+                : (serviceOptions.length ? serviceOptions : []))]}
+            placeholder={tr('Wybierz')}
+          />
+          {recurringForm.kind === 'expense' && (
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
+              <input value={recurringForm.contractor} onChange={(e) => setRecurringForm({ ...recurringForm, contractor: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Następne wykonanie')}</label>
+              <DateInput value={recurringForm.next_run_date} onChange={(e) => setRecurringForm({ ...recurringForm, next_run_date: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Koniec (opcjonalnie)')}</label>
+              <DateInput value={recurringForm.end_date} onChange={(e) => setRecurringForm({ ...recurringForm, end_date: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showProposalModal}
+        onClose={() => setShowProposalModal(false)}
+        title={`${tr('Propozycja do budżetu')} ${selectedYear}`}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowProposalModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveProposal}>{tr('Zgłoś')}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            {[{ k: 'expense', l: tr('Wydatek') }, { k: 'income', l: tr('Przychód') }].map(({ k, l }) => (
+              <button key={k} type="button" onClick={() => setProposalForm({ ...proposalForm, kind: k })}
+                className={`py-2 rounded-xl text-sm font-medium border transition ${proposalForm.kind === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <CustomSelect
+            label={tr('Służba')}
+            value={proposalForm.team_type}
+            onChange={(val) => setProposalForm({ ...proposalForm, team_type: val })}
+            options={serviceOptions.length ? serviceOptions : []}
+            placeholder={tr('Wybierz służbę')}
+          />
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
+            <input value={proposalForm.description} onChange={(e) => setProposalForm({ ...proposalForm, description: e.target.value })}
+              placeholder={tr('np. Nowy mikrofon, wyjazd')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+            <input type="number" value={proposalForm.amount} onChange={(e) => setProposalForm({ ...proposalForm, amount: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="0.00" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Uzasadnienie (opcjonalnie)')}</label>
+            <textarea rows={2} value={proposalForm.note} onChange={(e) => setProposalForm({ ...proposalForm, note: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showReportEmailModal}
+        onClose={() => setShowReportEmailModal(false)}
+        title={tr('Wyślij raport')}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowReportEmailModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={sendReportEmail} loading={sendingReport}>{tr('Wyślij')}</Button>
+        </>}
+      >
+        <div className="p-6">
+          <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2"><Calendar size={15} /> {tr('Zakres')}: <span className="font-semibold text-gray-900 dark:text-white">{reportRange.label}</span></div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Podsumowanie okresu (przychody, wydatki, bilans, wykresy, kategorie) trafi na wskazane adresy.')}</p>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
+          <textarea
+            rows={3}
+            value={reportRecipients}
+            onChange={(e) => setReportRecipients(e.target.value)}
+            placeholder={tr('jan@parafia.pl, skarbnik@parafia.pl (oddziel przecinkiem lub enterem)')}
+            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+          />
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mt-4 mb-2">{tr('Załączniki')}</label>
+          <div className="flex flex-wrap gap-4">
+            {[['pdf', 'PDF'], ['xlsx', 'Excel (.xlsx)'], ['csv', 'CSV']].map(([k, lbl]) => (
+              <label key={k} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input type="checkbox" checked={!!reportAttachments[k]} onChange={(e) => setReportAttachments((a) => ({ ...a, [k]: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" />
+                {lbl}
+              </label>
+            ))}
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        title={tr('Harmonogram raportów')}
+        icon={CalendarClock}
+        footer={<>
+          {editingScheduleId && <Button variant="secondary" onClick={() => { setEditingScheduleId(null); setScheduleForm(emptySchedule); }}>{tr('Nowy')}</Button>}
+          <Button onClick={saveSchedule}>{editingScheduleId ? tr('Zapisz zmiany') : tr('Dodaj harmonogram')}</Button>
+        </>}
+      >
+        <div className="p-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Automatyczna wysyłka raportu za zakończony okres na wskazane adresy — 1. dnia nowego okresu.')}</p>
+
+          {schedules.length > 0 && (
+            <div className="space-y-2 mb-5">
+              {schedules.map((s) => (
+                <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{s.cadence === 'monthly' ? tr('Co miesiąc') : s.cadence === 'quarterly' ? tr('Co kwartał') : tr('Co rok')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{(s.recipients || []).join(', ')}</p>
+                    {s.next_run_date && <p className="text-[11px] text-gray-400">{tr('Następna wysyłka')}: {s.next_run_date}</p>}
+                  </div>
+                  <button onClick={() => toggleSchedule(s)} className={`text-xs px-2 py-1 rounded-lg ${s.is_active !== false ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'}`}>{s.is_active !== false ? tr('Aktywny') : tr('Wstrzymany')}</button>
+                  <button onClick={() => openEditSchedule(s)} className="text-gray-400 hover:text-accent-primary"><Edit2 size={16} /></button>
+                  <button onClick={() => deleteSchedule(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4">
+            <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200">{editingScheduleId ? tr('Edytuj harmonogram') : tr('Nowy harmonogram')}</h4>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Częstotliwość')}</label>
+              <CustomSelect value={scheduleForm.cadence} onChange={(v) => setScheduleForm((f) => ({ ...f, cadence: v }))} options={[{ value: 'monthly', label: tr('Co miesiąc') }, { value: 'quarterly', label: tr('Co kwartał') }, { value: 'yearly', label: tr('Co rok') }]} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
+              <textarea rows={2} value={scheduleForm.recipients} onChange={(e) => setScheduleForm((f) => ({ ...f, recipients: e.target.value }))} placeholder={tr('skarbnik@parafia.pl, zarzad@parafia.pl')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
+            </div>
+            <div className="flex items-center gap-5">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"><input type="checkbox" checked={!!scheduleForm.include_csv} onChange={(e) => setScheduleForm((f) => ({ ...f, include_csv: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" /> {tr('Załącz CSV')}</label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"><input type="checkbox" checked={!!scheduleForm.is_active} onChange={(e) => setScheduleForm((f) => ({ ...f, is_active: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" /> {tr('Aktywny')}</label>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {changeItem && (
+        <Modal
+          isOpen
+          onClose={() => setChangeItem(null)}
+          title={tr('Historia zmian kwoty')}
+          icon={Clock}
+          size="sm"
+          zIndex={110}
+        >
+          <div className="p-6 space-y-2">
+            {changeItem.map((a) => (
+              <div key={a.id} className="px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
+                <div className="font-medium text-gray-800 dark:text-gray-100">
+                  {Number(a.before?.planned_amount || 0).toLocaleString('pl-PL')} zł <span className="text-gray-400">→</span> {Number(a.after?.planned_amount || 0).toLocaleString('pl-PL')} zł
+                </div>
+                <div className="text-xs text-gray-400">{a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}</div>
+              </div>
+            ))}
+          </div>
+        </Modal>
+      )}
+
+      <Modal
+        isOpen={showBudgetHistory}
+        onClose={() => setShowBudgetHistory(false)}
+        title={`${tr('Historia budżetu')} ${selectedYear}`}
+      >
+        <div className="p-6">
+          <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Zapisane wersje')}</div>
+          {budgetVersions.length === 0 ? (
+            <EmptyState icon={Copy} title={tr('Brak zapisanych wersji. Użyj „Zapisz wersję”, aby zrobić migawkę.')} compact />
+          ) : (
+            <div className="space-y-1.5 mb-5">
+              {budgetVersions.map((v) => (
+                <div key={v.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
+                  <Copy size={14} className="text-gray-400 shrink-0" />
+                  <span className="font-medium text-gray-800 dark:text-gray-100 flex-1 truncate">{v.label}</span>
+                  <span className="text-xs text-gray-400">{Array.isArray(v.snapshot) ? v.snapshot.length : 0} {tr('poz.')} · {new Date(v.created_at).toLocaleDateString('pl-PL')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Ostatnie zmiany')}</div>
+          {budgetAudit.length === 0 ? (
+            <EmptyState icon={Clock} title={tr('Brak zapisanych zmian.')} compact />
+          ) : (
+            <div className="space-y-1.5">
+              {budgetAudit.map((a) => {
+                const AL = { created: tr('Dodano'), updated: tr('Zmieniono'), deleted: tr('Usunięto') };
+                const beforeAmt = a.before?.planned_amount, afterAmt = a.after?.planned_amount;
+                return (
+                  <div key={a.id} className="flex items-start gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${a.action === 'deleted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : a.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>{AL[a.action] || a.action}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-gray-800 dark:text-gray-100 truncate">{a.category}{a.description ? ` — ${a.description}` : ''}</div>
+                      <div className="text-xs text-gray-400">
+                        {a.action === 'updated' && beforeAmt != null && afterAmt != null && beforeAmt !== afterAmt
+                          ? `${Number(beforeAmt).toLocaleString('pl-PL')} → ${Number(afterAmt).toLocaleString('pl-PL')} zł · `
+                          : (afterAmt != null ? `${Number(afterAmt).toLocaleString('pl-PL')} zł · ` : '')}
+                        {a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showBudgetModal}
+        onClose={() => setShowBudgetModal(false)}
+        title={t('Nowa pozycja budżetowa')}
+        size="sm"
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowBudgetModal(false)}>Anuluj</Button>
+          <Button onClick={saveBudgetItem}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            {[{ k: 'expense', l: tr('Wydatek') }, { k: 'income', l: tr('Przychód') }].map(({ k, l }) => (
+              <button key={k} type="button" onClick={() => setBudgetForm({ ...budgetForm, kind: k })}
+                className={`py-2 rounded-xl text-sm font-medium border transition ${(budgetForm.kind || 'expense') === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+          {(budgetForm.kind || 'expense') === 'income' ? (
+            <CustomSelect
+              label={tr('Kategoria wpływu')}
+              value={budgetForm.category}
+              onChange={(val) => setBudgetForm({ ...budgetForm, category: val })}
+              options={incomeCategories.length > 0
+                ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
+                : [{ value: 'Kolekta', label: 'Kolekta' }, { value: 'Darowizny', label: 'Darowizny' }, { value: 'Inne', label: tr('Inne') }]}
+              placeholder={tr('Wybierz kategorię')}
+            />
+          ) : (
+            <CustomSelect
+              label={tr('Kategoria (Służba)')}
+              value={budgetForm.category}
+              onChange={(val) => setBudgetForm({...budgetForm, category: val})}
+              options={serviceOptions.length > 0 ? serviceOptions : [
+                // Fallback (gdyby app_modules się nie wczytało). WARTOŚĆ = team_type modułu.
+                { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
+                { value: 'MediaTeam', label: tr('MediaTeam') },
+                { value: 'AtmosferaTeam', label: 'AtmosferaTeam' },
+                { value: 'Grupy domowe', label: tr('Grupy domowe') },
+                { value: 'małe Avenit', label: tr('małe Avenit') },
+                { value: 'Mlodziezowka', label: tr('Młodzieżówka') }
+              ]}
+              placeholder={t('Wybierz służbę')}
+            />
+          )}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
+            <textarea
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+              rows={3}
+              value={budgetForm.description}
+              onChange={(e) => setBudgetForm({...budgetForm, description: e.target.value})}
+              placeholder={t('Opis kosztów')}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Planowana kwota (PLN)</label>
+              <input
+                type="number"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={budgetForm.planned_amount}
+                onChange={(e) => setBudgetForm({...budgetForm, planned_amount: e.target.value})}
+                placeholder="0.00"
+              />
+            </div>
+            <CustomSelect
+              label={tr('Okres')}
+              value={budgetForm.period_type || 'year'}
+              onChange={(val) => setBudgetForm({ ...budgetForm, period_type: val })}
+              options={[
+                { value: 'year', label: tr('Roczny') },
+                { value: 'quarter', label: tr('Kwartalny') },
+                { value: 'month', label: tr('Miesięczny') },
+              ]}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL: Income */}
+      <Modal
+        isOpen={showIncomeModal}
+        onClose={() => setShowIncomeModal(false)}
+        title={t('Nowy wpływ')}
+        size="sm"
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowIncomeModal(false)}>Anuluj</Button>
+          <Button data-tour="fin-income-save" onClick={saveIncome}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <CustomDatePicker
+            label={tr('Data wpływu')}
+            value={incomeForm.date}
+            onChange={(val) => setIncomeForm({...incomeForm, date: val})}
+          />
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+            <input
+              data-tour="fin-income-amount"
+              type="number"
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              value={incomeForm.amount}
+              onChange={(e) => setIncomeForm({...incomeForm, amount: e.target.value})}
+              placeholder="0.00"
+            />
+          </div>
+          <CustomSelect
+            label={tr('Typ wpływu')}
+            value={incomeForm.type}
+            onChange={(val) => setIncomeForm({...incomeForm, type: val})}
+            options={incomeCategories.length > 0
+              ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
+              : [
+                { value: 'Kolekta', label: 'Kolekta' },
+                { value: 'Darowizny', label: 'Darowizny' },
+                { value: 'Inne', label: tr('Inne') },
+              ]}
+          />
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Źródło')}</label>
+            <input
+              data-tour="fin-income-source"
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              value={incomeForm.source}
+              onChange={(e) => setIncomeForm({...incomeForm, source: e.target.value})}
+              placeholder={t('np. Kolekta niedzielna')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Notatka')}</label>
+            <textarea
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+              rows={2}
+              value={incomeForm.notes}
+              onChange={(e) => setIncomeForm({...incomeForm, notes: e.target.value})}
+              placeholder={t('Dodatkowe informacje')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                list="fin-tags"
+                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder={t('Dodaj tag')}
+                onKeyPress={(e) => e.key === 'Enter' && addTag(incomeForm, setIncomeForm)}
+              />
+              <datalist id="fin-tags">
+                {tagPalette.map((tg) => <option key={tg.id} value={tg.name} />)}
+              </datalist>
+              <button
+                onClick={() => addTag(incomeForm, setIncomeForm)}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {incomeForm.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
+                  style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
+                >
+                  <Tag size={12} />
+                  {tag}
+                  <button onClick={() => removeTag(tag, incomeForm, setIncomeForm)}>
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL: Expense */}
+      <Modal
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        title={t('Nowy wydatek')}
+        size="xl"
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
+          <Button onClick={saveExpense}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          {/* Wiersz 1: Data i Kwota */}
+          <div className="grid grid-cols-2 gap-4">
+            <CustomDatePicker
+              label="Data dokumentu"
+              value={expenseForm.payment_date}
+              onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
+            />
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+              <input
+                type="number"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          {/* Wiersz 2: Kontrahent i Osoba odpowiedzialna */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Kontrahent')}</label>
+              <input
+                list="fin-vendors"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={expenseForm.contractor}
+                onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
+                placeholder={t('Nazwa firmy/osoby')}
+              />
+              <datalist id="fin-vendors">
+                {vendors.map((v) => <option key={v.id} value={v.name} />)}
+              </datalist>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Osoba odpowiedzialna')}</label>
+              <input
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={expenseForm.responsible_person}
+                onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
+                placeholder={t('Imię i nazwisko')}
+              />
+            </div>
+          </div>
+
+          {/* Wiersz 3: Kategoria i Opis kosztu */}
+          <div className="grid grid-cols-2 gap-4">
+            <CustomSelect
+              label={tr('Kategoria (powiązana z budżetem)')}
+              value={expenseForm.category}
+              onChange={(val) => setExpenseForm({...expenseForm, category: val, description: ''})}
+              options={budgetCategories.length > 0 ? budgetCategories : [{ value: '', label: tr('Najpierw dodaj pozycje budżetowe') }]}
+              placeholder={t('Wybierz kategorię')}
+            />
+            {expenseForm.category && (
+              <CustomSelect
+                label={tr('Opis kosztu (z budżetu)')}
+                value={expenseForm.description}
+                onChange={(val) => setExpenseForm({...expenseForm, description: val})}
+                options={budgetItems
+                  .filter(item => item.category === expenseForm.category)
+                  .map(item => ({ value: item.description, label: item.description }))}
+                placeholder={t('Wybierz opis kosztu')}
+              />
+            )}
+          </div>
+
+          {/* Wiersz 3b: Kategoria kosztu (własna, niezależna od budżetu) */}
+          <div className="grid grid-cols-1">
+            <CustomSelect
+              label={tr('Kategoria kosztu (własna)')}
+              value={expenseForm.cost_category}
+              onChange={(val) => setExpenseForm({...expenseForm, cost_category: val})}
+              options={[{ value: '', label: tr('— brak —') }, ...expenseCategories.map((c) => ({ value: c.name, label: c.name }))]}
+              placeholder={t('Wybierz kategorię kosztu')}
+            />
+          </div>
+
+          {/* Wiersz 3c: Faktura (nr / termin / opłacone) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nr faktury (opcjonalnie)')}</label>
+              <input value={expenseForm.invoice_number} onChange={(e) => setExpenseForm({ ...expenseForm, invoice_number: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="FV/2026/..." />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Termin płatności')}</label>
+              <DateInput value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+              <input type="checkbox" className="w-4 h-4" checked={expenseForm.is_paid !== false} onChange={(e) => setExpenseForm({ ...expenseForm, is_paid: e.target.checked })} />
+              {tr('Opłacone')}
+            </label>
+            {!expenseForm.id && (
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                <input type="checkbox" className="w-4 h-4" checked={!!expenseForm.submit_for_approval} onChange={(e) => setExpenseForm({ ...expenseForm, submit_for_approval: e.target.checked })} />
+                {tr('Wniosek o zwrot / wyślij do akceptacji')}
+              </label>
+            )}
+          </div>
+
+          {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Szczegółowy opis')}</label>
+            <textarea
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+              rows={2}
+              value={expenseForm.detailed_description}
+              onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
+              placeholder={t('Dodatkowe informacje o wydatku...')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Załączniki (opcjonalnie)')}</label>
+            <div className="space-y-2">
+              <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
+                <Upload size={18} className="text-gray-400" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
+                </span>
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                  disabled={uploadingFile}
+                  multiple
+                />
+              </label>
+              {expenseForm.documents && expenseForm.documents.length > 0 && (
+                <div className="space-y-2">
+                  {expenseForm.documents.map((doc, idx) => (
+                    <div key={idx} className="flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                      <span className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1 truncate">
+                        <FileText size={14} />
+                        {doc.name}
+                      </span>
+                      <button
+                        onClick={() => removeDocument(idx)}
+                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 ml-2 flex-shrink-0"
+                      >
+                        <X size={14} />
                       </button>
-                      <button onClick={() => deleteCategory(c.id)} className="text-red-500 hover:text-red-600 p-1" title={tr('Usuń')}><Trash2 size={15} /></button>
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
-
-            {/* Kontrahenci */}
-            <div className="mt-2 pt-4 border-t border-gray-100 dark:border-gray-800">
-              <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Kontrahenci')}</div>
-              <div className="flex gap-2 mb-2">
-                <input value={vendorName} onChange={(e) => setVendorName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }}
-                  placeholder={tr('np. Sklep muzyczny')} className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none text-gray-800 dark:text-gray-100" />
-                <button onClick={() => { if (vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }} className="px-3 rounded-lg bg-accent-primary text-white text-sm shrink-0">{tr('Dodaj')}</button>
-              </div>
-              <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
-                {vendors.length === 0 && <div className="text-sm text-gray-400">{tr('Brak kontrahentów (dodają się też automatycznie z wydatków).')}</div>}
-                {vendors.map((v) => (
-                  <div key={v.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
-                    <span className="text-sm flex-1 truncate text-gray-800 dark:text-gray-100">{v.name}</span>
-                    <button onClick={() => deleteVendor(v.id)} className="text-red-500 hover:text-red-600 p-1" title={tr('Usuń')}><Trash2 size={14} /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {showRecurringModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowRecurringModal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 max-h-[88vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between mb-5">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{recurringForm.id ? tr('Edytuj plan cykliczny') : tr('Nowy plan cykliczny')}</h3>
-              <button onClick={() => setShowRecurringModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                {['expense', 'income'].map((k) => (
-                  <button key={k} onClick={() => setRecurringForm({ ...recurringForm, kind: k, category: '' })}
-                    className={`py-2 rounded-xl text-sm font-medium border transition ${recurringForm.kind === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>
-                    {k === 'expense' ? tr('Wydatek') : tr('Wpływ')}
-                  </button>
-                ))}
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
-                <input value={recurringForm.title} onChange={(e) => setRecurringForm({ ...recurringForm, title: e.target.value })}
-                  placeholder={tr('np. Czynsz, Pensja, Stała kolekta')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
-                  <input type="number" value={recurringForm.amount} onChange={(e) => setRecurringForm({ ...recurringForm, amount: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-                </div>
-                <CustomSelect
-                  label={tr('Częstotliwość')}
-                  value={recurringForm.frequency}
-                  onChange={(val) => setRecurringForm({ ...recurringForm, frequency: val })}
-                  options={[
-                    { value: 'weekly', label: tr('co tydzień') }, { value: 'biweekly', label: tr('co 2 tygodnie') },
-                    { value: 'monthly', label: tr('co miesiąc') }, { value: 'quarterly', label: tr('co kwartał') },
-                    { value: 'yearly', label: tr('co rok') },
-                  ]}
-                />
-              </div>
-              <CustomSelect
-                label={recurringForm.kind === 'income' ? tr('Typ wpływu') : tr('Służba (budżet)')}
-                value={recurringForm.category}
-                onChange={(val) => setRecurringForm({ ...recurringForm, category: val, team_type: recurringForm.kind === 'expense' ? val : recurringForm.team_type })}
-                options={[{ value: '', label: tr('— brak —') },
-                  ...(recurringForm.kind === 'income'
-                    ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
-                    : (serviceOptions.length ? serviceOptions : []))]}
-                placeholder={tr('Wybierz')}
-              />
-              {recurringForm.kind === 'expense' && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
-                  <input value={recurringForm.contractor} onChange={(e) => setRecurringForm({ ...recurringForm, contractor: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-                </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Następne wykonanie')}</label>
-                  <DateInput value={recurringForm.next_run_date} onChange={(e) => setRecurringForm({ ...recurringForm, next_run_date: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Koniec (opcjonalnie)')}</label>
-                  <DateInput value={recurringForm.end_date} onChange={(e) => setRecurringForm({ ...recurringForm, end_date: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowRecurringModal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">{tr('Anuluj')}</button>
-                <button onClick={saveRecurring} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium">{tr('Zapisz')}</button>
-              </div>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
-
-      {showProposalModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowProposalModal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 max-h-[88vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between mb-5">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Propozycja do budżetu')} {selectedYear}</h3>
-              <button onClick={() => setShowProposalModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                {[{ k: 'expense', l: tr('Wydatek') }, { k: 'income', l: tr('Przychód') }].map(({ k, l }) => (
-                  <button key={k} type="button" onClick={() => setProposalForm({ ...proposalForm, kind: k })}
-                    className={`py-2 rounded-xl text-sm font-medium border transition ${proposalForm.kind === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-              <CustomSelect
-                label={tr('Służba')}
-                value={proposalForm.team_type}
-                onChange={(val) => setProposalForm({ ...proposalForm, team_type: val })}
-                options={serviceOptions.length ? serviceOptions : []}
-                placeholder={tr('Wybierz służbę')}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                list="fin-tags"
+                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder={t('Dodaj tag')}
+                onKeyPress={(e) => e.key === 'Enter' && addTag(expenseForm, setExpenseForm)}
               />
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
-                <input value={proposalForm.description} onChange={(e) => setProposalForm({ ...proposalForm, description: e.target.value })}
-                  placeholder={tr('np. Nowy mikrofon, wyjazd')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
-                <input type="number" value={proposalForm.amount} onChange={(e) => setProposalForm({ ...proposalForm, amount: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="0.00" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Uzasadnienie (opcjonalnie)')}</label>
-                <textarea rows={2} value={proposalForm.note} onChange={(e) => setProposalForm({ ...proposalForm, note: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowProposalModal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">{tr('Anuluj')}</button>
-                <button onClick={saveProposal} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium">{tr('Zgłoś')}</button>
-              </div>
+              <datalist id="fin-tags">
+                {tagPalette.map((tg) => <option key={tg.id} value={tg.name} />)}
+              </datalist>
+              <button
+                onClick={() => addTag(expenseForm, setExpenseForm)}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {expenseForm.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
+                  style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
+                >
+                  <Tag size={12} />
+                  {tag}
+                  <button onClick={() => removeTag(tag, expenseForm, setExpenseForm)}>
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+        </div>
+      </Modal>
 
-      {showReportEmailModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowReportEmailModal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between mb-4">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Wyślij raport')}</h3>
-              <button onClick={() => setShowReportEmailModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
-            </div>
-            <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2"><Calendar size={15} /> {tr('Zakres')}: <span className="font-semibold text-gray-900 dark:text-white">{reportRange.label}</span></div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Podsumowanie okresu (przychody, wydatki, bilans, wykresy, kategorie) trafi na wskazane adresy.')}</p>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
-            <textarea
-              rows={3}
-              value={reportRecipients}
-              onChange={(e) => setReportRecipients(e.target.value)}
-              placeholder={tr('jan@parafia.pl, skarbnik@parafia.pl (oddziel przecinkiem lub enterem)')}
-              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
-            />
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mt-4 mb-2">{tr('Załączniki')}</label>
-            <div className="flex flex-wrap gap-4">
-              {[['pdf', 'PDF'], ['xlsx', 'Excel (.xlsx)'], ['csv', 'CSV']].map(([k, lbl]) => (
-                <label key={k} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                  <input type="checkbox" checked={!!reportAttachments[k]} onChange={(e) => setReportAttachments((a) => ({ ...a, [k]: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" />
-                  {lbl}
+      {/* MODAL: Account Balances */}
+      <Modal
+        isOpen={showBalanceModal}
+        onClose={() => setShowBalanceModal(false)}
+        title={`Stan początkowy kont - ${selectedYear}`}
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowBalanceModal(false)}>Anuluj</Button>
+          <Button onClick={saveAccountBalances}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-5">
+          {/* PLN Section */}
+          <div>
+            <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              Złotówki (PLN)
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  <CreditCard size={12} className="inline mr-1" />
+                  Rachunek bankowy
                 </label>
-              ))}
-            </div>
-            <div className="flex gap-3 pt-5">
-              <button onClick={() => setShowReportEmailModal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">{tr('Anuluj')}</button>
-              <button onClick={sendReportEmail} disabled={sendingReport} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium disabled:opacity-60">{sendingReport ? tr('Wysyłanie…') : tr('Wyślij')}</button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {showScheduleModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowScheduleModal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between mb-4">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white flex items-center gap-2"><CalendarClock size={20} /> {tr('Harmonogram raportów')}</h3>
-              <button onClick={() => setShowScheduleModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Automatyczna wysyłka raportu za zakończony okres na wskazane adresy — 1. dnia nowego okresu.')}</p>
-
-            {schedules.length > 0 && (
-              <div className="space-y-2 mb-5">
-                {schedules.map((s) => (
-                  <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{s.cadence === 'monthly' ? tr('Co miesiąc') : s.cadence === 'quarterly' ? tr('Co kwartał') : tr('Co rok')}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{(s.recipients || []).join(', ')}</p>
-                      {s.next_run_date && <p className="text-[11px] text-gray-400">{tr('Następna wysyłka')}: {s.next_run_date}</p>}
-                    </div>
-                    <button onClick={() => toggleSchedule(s)} className={`text-xs px-2 py-1 rounded-lg ${s.is_active !== false ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'}`}>{s.is_active !== false ? tr('Aktywny') : tr('Wstrzymany')}</button>
-                    <button onClick={() => openEditSchedule(s)} className="text-gray-400 hover:text-accent-primary"><Edit2 size={16} /></button>
-                    <button onClick={() => deleteSchedule(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4">
-              <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200">{editingScheduleId ? tr('Edytuj harmonogram') : tr('Nowy harmonogram')}</h4>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Częstotliwość')}</label>
-                <CustomSelect value={scheduleForm.cadence} onChange={(v) => setScheduleForm((f) => ({ ...f, cadence: v }))} options={[{ value: 'monthly', label: tr('Co miesiąc') }, { value: 'quarterly', label: tr('Co kwartał') }, { value: 'yearly', label: tr('Co rok') }]} />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
-                <textarea rows={2} value={scheduleForm.recipients} onChange={(e) => setScheduleForm((f) => ({ ...f, recipients: e.target.value }))} placeholder={tr('skarbnik@parafia.pl, zarzad@parafia.pl')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
-              </div>
-              <div className="flex items-center gap-5">
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"><input type="checkbox" checked={!!scheduleForm.include_csv} onChange={(e) => setScheduleForm((f) => ({ ...f, include_csv: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" /> {tr('Załącz CSV')}</label>
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"><input type="checkbox" checked={!!scheduleForm.is_active} onChange={(e) => setScheduleForm((f) => ({ ...f, is_active: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" /> {tr('Aktywny')}</label>
-              </div>
-              <div className="flex gap-3 pt-2">
-                {editingScheduleId && <button onClick={() => { setEditingScheduleId(null); setScheduleForm(emptySchedule); }} className="px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm">{tr('Nowy')}</button>}
-                <button onClick={saveSchedule} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium">{editingScheduleId ? tr('Zapisz zmiany') : tr('Dodaj harmonogram')}</button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {changeItem && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]" onClick={() => setChangeItem(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 max-h-[80vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between mb-4">
-              <h3 className="font-bold text-lg text-gray-800 dark:text-white flex items-center gap-2"><Clock size={18} /> {tr('Historia zmian kwoty')}</h3>
-              <button onClick={() => setChangeItem(null)} className="text-gray-500 dark:text-gray-400"><X size={22} /></button>
-            </div>
-            <div className="space-y-2">
-              {changeItem.map((a) => (
-                <div key={a.id} className="px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
-                  <div className="font-medium text-gray-800 dark:text-gray-100">
-                    {Number(a.before?.planned_amount || 0).toLocaleString('pl-PL')} zł <span className="text-gray-400">→</span> {Number(a.after?.planned_amount || 0).toLocaleString('pl-PL')} zł
-                  </div>
-                  <div className="text-xs text-gray-400">{a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {showBudgetHistory && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowBudgetHistory(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between mb-5">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Historia budżetu')} {selectedYear}</h3>
-              <button onClick={() => setShowBudgetHistory(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
-            </div>
-
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Zapisane wersje')}</div>
-            {budgetVersions.length === 0 ? (
-              <div className="text-sm text-gray-400 mb-4">{tr('Brak zapisanych wersji. Użyj „Zapisz wersję”, aby zrobić migawkę.')}</div>
-            ) : (
-              <div className="space-y-1.5 mb-5">
-                {budgetVersions.map((v) => (
-                  <div key={v.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
-                    <Copy size={14} className="text-gray-400 shrink-0" />
-                    <span className="font-medium text-gray-800 dark:text-gray-100 flex-1 truncate">{v.label}</span>
-                    <span className="text-xs text-gray-400">{Array.isArray(v.snapshot) ? v.snapshot.length : 0} {tr('poz.')} · {new Date(v.created_at).toLocaleDateString('pl-PL')}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Ostatnie zmiany')}</div>
-            {budgetAudit.length === 0 ? (
-              <div className="text-sm text-gray-400">{tr('Brak zapisanych zmian.')}</div>
-            ) : (
-              <div className="space-y-1.5">
-                {budgetAudit.map((a) => {
-                  const AL = { created: tr('Dodano'), updated: tr('Zmieniono'), deleted: tr('Usunięto') };
-                  const beforeAmt = a.before?.planned_amount, afterAmt = a.after?.planned_amount;
-                  return (
-                    <div key={a.id} className="flex items-start gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${a.action === 'deleted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : a.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>{AL[a.action] || a.action}</span>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-gray-800 dark:text-gray-100 truncate">{a.category}{a.description ? ` — ${a.description}` : ''}</div>
-                        <div className="text-xs text-gray-400">
-                          {a.action === 'updated' && beforeAmt != null && afterAmt != null && beforeAmt !== afterAmt
-                            ? `${Number(beforeAmt).toLocaleString('pl-PL')} → ${Number(afterAmt).toLocaleString('pl-PL')} zł · `
-                            : (afterAmt != null ? `${Number(afterAmt).toLocaleString('pl-PL')} zł · ` : '')}
-                          {a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {showBudgetModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Nowa pozycja budżetowa')}</h3>
-              <button onClick={() => setShowBudgetModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                {[{ k: 'expense', l: tr('Wydatek') }, { k: 'income', l: tr('Przychód') }].map(({ k, l }) => (
-                  <button key={k} type="button" onClick={() => setBudgetForm({ ...budgetForm, kind: k })}
-                    className={`py-2 rounded-xl text-sm font-medium border transition ${(budgetForm.kind || 'expense') === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-              {(budgetForm.kind || 'expense') === 'income' ? (
-                <CustomSelect
-                  label={tr('Kategoria wpływu')}
-                  value={budgetForm.category}
-                  onChange={(val) => setBudgetForm({ ...budgetForm, category: val })}
-                  options={incomeCategories.length > 0
-                    ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
-                    : [{ value: 'Kolekta', label: 'Kolekta' }, { value: 'Darowizny', label: 'Darowizny' }, { value: 'Inne', label: tr('Inne') }]}
-                  placeholder={tr('Wybierz kategorię')}
-                />
-              ) : (
-                <CustomSelect
-                  label={tr('Kategoria (Służba)')}
-                  value={budgetForm.category}
-                  onChange={(val) => setBudgetForm({...budgetForm, category: val})}
-                  options={serviceOptions.length > 0 ? serviceOptions : [
-                    // Fallback (gdyby app_modules się nie wczytało). WARTOŚĆ = team_type modułu.
-                    { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
-                    { value: 'MediaTeam', label: tr('MediaTeam') },
-                    { value: 'AtmosferaTeam', label: 'AtmosferaTeam' },
-                    { value: 'Grupy domowe', label: tr('Grupy domowe') },
-                    { value: 'małe Avenit', label: tr('małe Avenit') },
-                    { value: 'Mlodziezowka', label: tr('Młodzieżówka') }
-                  ]}
-                  placeholder={t('Wybierz służbę')}
-                />
-              )}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
-                  rows={3}
-                  value={budgetForm.description}
-                  onChange={(e) => setBudgetForm({...budgetForm, description: e.target.value})}
-                  placeholder={t('Opis kosztów')}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Planowana kwota (PLN)</label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    value={budgetForm.planned_amount}
-                    onChange={(e) => setBudgetForm({...budgetForm, planned_amount: e.target.value})}
-                    placeholder="0.00"
-                  />
-                </div>
-                <CustomSelect
-                  label={tr('Okres')}
-                  value={budgetForm.period_type || 'year'}
-                  onChange={(val) => setBudgetForm({ ...budgetForm, period_type: val })}
-                  options={[
-                    { value: 'year', label: tr('Roczny') },
-                    { value: 'quarter', label: tr('Kwartalny') },
-                    { value: 'month', label: tr('Miesięczny') },
-                  ]}
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowBudgetModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={saveBudgetItem}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
-                >
-                  Zapisz
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* MODAL: Income */}
-      {showIncomeModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Nowy wpływ')}</h3>
-              <button onClick={() => setShowIncomeModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <CustomDatePicker
-                label={tr('Data wpływu')}
-                value={incomeForm.date}
-                onChange={(val) => setIncomeForm({...incomeForm, date: val})}
-              />
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                 <input
-                  data-tour="fin-income-amount"
                   type="number"
+                  step="0.01"
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                  value={incomeForm.amount}
-                  onChange={(e) => setIncomeForm({...incomeForm, amount: e.target.value})}
+                  value={balanceForm.bank_pln}
+                  onChange={(e) => setBalanceForm({...balanceForm, bank_pln: e.target.value})}
                   placeholder="0.00"
                 />
               </div>
-              <CustomSelect
-                label={tr('Typ wpływu')}
-                value={incomeForm.type}
-                onChange={(val) => setIncomeForm({...incomeForm, type: val})}
-                options={incomeCategories.length > 0
-                  ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
-                  : [
-                    { value: 'Kolekta', label: 'Kolekta' },
-                    { value: 'Darowizny', label: 'Darowizny' },
-                    { value: 'Inne', label: tr('Inne') },
-                  ]}
-              />
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Źródło')}</label>
-                <input
-                  data-tour="fin-income-source"
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                  value={incomeForm.source}
-                  onChange={(e) => setIncomeForm({...incomeForm, source: e.target.value})}
-                  placeholder={t('np. Kolekta niedzielna')}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Notatka')}</label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
-                  rows={2}
-                  value={incomeForm.notes}
-                  onChange={(e) => setIncomeForm({...incomeForm, notes: e.target.value})}
-                  placeholder={t('Dodatkowe informacje')}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    list="fin-tags"
-                    className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder={t('Dodaj tag')}
-                    onKeyPress={(e) => e.key === 'Enter' && addTag(incomeForm, setIncomeForm)}
-                  />
-                  <datalist id="fin-tags">
-                    {tagPalette.map((tg) => <option key={tg.id} value={tg.name} />)}
-                  </datalist>
-                  <button
-                    onClick={() => addTag(incomeForm, setIncomeForm)}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {incomeForm.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
-                      style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
-                    >
-                      <Tag size={12} />
-                      {tag}
-                      <button onClick={() => removeTag(tag, incomeForm, setIncomeForm)}>
-                        <X size={12} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowIncomeModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  data-tour="fin-income-save"
-                  onClick={saveIncome}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
-                >
-                  Zapisz
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* MODAL: Expense */}
-      {showExpenseModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-4xl p-6 border border-gray-200 dark:border-gray-700 my-8">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Nowy wydatek')}</h3>
-              <button onClick={() => setShowExpenseModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {/* Wiersz 1: Data i Kwota */}
-              <div className="grid grid-cols-2 gap-4">
-                <CustomDatePicker
-                  label="Data dokumentu"
-                  value={expenseForm.payment_date}
-                  onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
-                />
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    value={expenseForm.amount}
-                    onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              {/* Wiersz 2: Kontrahent i Osoba odpowiedzialna */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Kontrahent')}</label>
-                  <input
-                    list="fin-vendors"
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    value={expenseForm.contractor}
-                    onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
-                    placeholder={t('Nazwa firmy/osoby')}
-                  />
-                  <datalist id="fin-vendors">
-                    {vendors.map((v) => <option key={v.id} value={v.name} />)}
-                  </datalist>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Osoba odpowiedzialna')}</label>
-                  <input
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    value={expenseForm.responsible_person}
-                    onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
-                    placeholder={t('Imię i nazwisko')}
-                  />
-                </div>
-              </div>
-
-              {/* Wiersz 3: Kategoria i Opis kosztu */}
-              <div className="grid grid-cols-2 gap-4">
-                <CustomSelect
-                  label={tr('Kategoria (powiązana z budżetem)')}
-                  value={expenseForm.category}
-                  onChange={(val) => setExpenseForm({...expenseForm, category: val, description: ''})}
-                  options={budgetCategories.length > 0 ? budgetCategories : [{ value: '', label: tr('Najpierw dodaj pozycje budżetowe') }]}
-                  placeholder={t('Wybierz kategorię')}
-                />
-                {expenseForm.category && (
-                  <CustomSelect
-                    label={tr('Opis kosztu (z budżetu)')}
-                    value={expenseForm.description}
-                    onChange={(val) => setExpenseForm({...expenseForm, description: val})}
-                    options={budgetItems
-                      .filter(item => item.category === expenseForm.category)
-                      .map(item => ({ value: item.description, label: item.description }))}
-                    placeholder={t('Wybierz opis kosztu')}
-                  />
-                )}
-              </div>
-
-              {/* Wiersz 3b: Kategoria kosztu (własna, niezależna od budżetu) */}
-              <div className="grid grid-cols-1">
-                <CustomSelect
-                  label={tr('Kategoria kosztu (własna)')}
-                  value={expenseForm.cost_category}
-                  onChange={(val) => setExpenseForm({...expenseForm, cost_category: val})}
-                  options={[{ value: '', label: tr('— brak —') }, ...expenseCategories.map((c) => ({ value: c.name, label: c.name }))]}
-                  placeholder={t('Wybierz kategorię kosztu')}
-                />
-              </div>
-
-              {/* Wiersz 3c: Faktura (nr / termin / opłacone) */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nr faktury (opcjonalnie)')}</label>
-                  <input value={expenseForm.invoice_number} onChange={(e) => setExpenseForm({ ...expenseForm, invoice_number: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="FV/2026/..." />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Termin płatności')}</label>
-                  <DateInput value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                  <input type="checkbox" className="w-4 h-4" checked={expenseForm.is_paid !== false} onChange={(e) => setExpenseForm({ ...expenseForm, is_paid: e.target.checked })} />
-                  {tr('Opłacone')}
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  <Banknote size={12} className="inline mr-1" />
+                  {tr('Gotówka')}
                 </label>
-                {!expenseForm.id && (
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                    <input type="checkbox" className="w-4 h-4" checked={!!expenseForm.submit_for_approval} onChange={(e) => setExpenseForm({ ...expenseForm, submit_for_approval: e.target.checked })} />
-                    {tr('Wniosek o zwrot / wyślij do akceptacji')}
-                  </label>
-                )}
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  value={balanceForm.cash_pln}
+                  onChange={(e) => setBalanceForm({...balanceForm, cash_pln: e.target.value})}
+                  placeholder="0.00"
+                />
               </div>
+            </div>
+          </div>
 
-              {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
+          {/* Currency Section */}
+          <div>
+            <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+              Waluta obca
+            </h4>
+            <div className="mb-3">
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Typ waluty')}</label>
+              <select
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={balanceForm.currency_type}
+                onChange={(e) => setBalanceForm({...balanceForm, currency_type: e.target.value})}
+              >
+                <option value="EUR">EUR - Euro</option>
+                <option value="USD">{tr('USD - Dolar amerykański')}</option>
+                <option value="GBP">GBP - Funt brytyjski</option>
+                <option value="CHF">CHF - Frank szwajcarski</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Szczegółowy opis')}</label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
-                  rows={2}
-                  value={expenseForm.detailed_description}
-                  onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
-                  placeholder={t('Dodatkowe informacje o wydatku...')}
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  <CreditCard size={12} className="inline mr-1" />
+                  Rachunek walutowy
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  value={balanceForm.bank_currency}
+                  onChange={(e) => setBalanceForm({...balanceForm, bank_currency: e.target.value})}
+                  placeholder="0.00"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Załączniki (opcjonalnie)')}</label>
-                <div className="space-y-2">
-                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
-                    <Upload size={18} className="text-gray-400" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
-                    </span>
-                    <input
-                      type="file"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                      disabled={uploadingFile}
-                      multiple
-                    />
-                  </label>
-                  {expenseForm.documents && expenseForm.documents.length > 0 && (
-                    <div className="space-y-2">
-                      {expenseForm.documents.map((doc, idx) => (
-                        <div key={idx} className="flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                          <span className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1 truncate">
-                            <FileText size={14} />
-                            {doc.name}
-                          </span>
-                          <button
-                            onClick={() => removeDocument(idx)}
-                            className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 ml-2 flex-shrink-0"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    list="fin-tags"
-                    className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder={t('Dodaj tag')}
-                    onKeyPress={(e) => e.key === 'Enter' && addTag(expenseForm, setExpenseForm)}
-                  />
-                  <datalist id="fin-tags">
-                    {tagPalette.map((tg) => <option key={tg.id} value={tg.name} />)}
-                  </datalist>
-                  <button
-                    onClick={() => addTag(expenseForm, setExpenseForm)}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {expenseForm.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
-                      style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
-                    >
-                      <Tag size={12} />
-                      {tag}
-                      <button onClick={() => removeTag(tag, expenseForm, setExpenseForm)}>
-                        <X size={12} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowExpenseModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={saveExpense}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
-                >
-                  Zapisz
-                </button>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  <Banknote size={12} className="inline mr-1" />
+                  {tr('Gotówka walutowa')}
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  value={balanceForm.cash_currency}
+                  onChange={(e) => setBalanceForm({...balanceForm, cash_currency: e.target.value})}
+                  placeholder="0.00"
+                />
               </div>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
 
-      {/* MODAL: Account Balances */}
-      {showBalanceModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">Stan początkowy kont - {selectedYear}</h3>
-              <button onClick={() => setShowBalanceModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="space-y-5">
-              {/* PLN Section */}
-              <div>
-                <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  Złotówki (PLN)
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                      <CreditCard size={12} className="inline mr-1" />
-                      Rachunek bankowy
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      value={balanceForm.bank_pln}
-                      onChange={(e) => setBalanceForm({...balanceForm, bank_pln: e.target.value})}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                      <Banknote size={12} className="inline mr-1" />
-                      {tr('Gotówka')}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      value={balanceForm.cash_pln}
-                      onChange={(e) => setBalanceForm({...balanceForm, cash_pln: e.target.value})}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Currency Section */}
-              <div>
-                <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-                  Waluta obca
-                </h4>
-                <div className="mb-3">
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Typ waluty')}</label>
-                  <select
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    value={balanceForm.currency_type}
-                    onChange={(e) => setBalanceForm({...balanceForm, currency_type: e.target.value})}
-                  >
-                    <option value="EUR">EUR - Euro</option>
-                    <option value="USD">{tr('USD - Dolar amerykański')}</option>
-                    <option value="GBP">GBP - Funt brytyjski</option>
-                    <option value="CHF">CHF - Frank szwajcarski</option>
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                      <CreditCard size={12} className="inline mr-1" />
-                      Rachunek walutowy
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      value={balanceForm.bank_currency}
-                      onChange={(e) => setBalanceForm({...balanceForm, bank_currency: e.target.value})}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                      <Banknote size={12} className="inline mr-1" />
-                      {tr('Gotówka walutowa')}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      value={balanceForm.cash_currency}
-                      onChange={(e) => setBalanceForm({...balanceForm, cash_currency: e.target.value})}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300">
-                <p className="font-medium mb-1">{t('💡 Wskazówka')}</p>
-                <p>Wprowadź stany kont na początek roku {selectedYear}. System automatycznie doliczy wpływy i wydatki, aby pokazać aktualny stan.</p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShowBalanceModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={saveAccountBalances}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
-                >
-                  Zapisz
-                </button>
-              </div>
-            </div>
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300">
+            <p className="font-medium mb-1">{t('💡 Wskazówka')}</p>
+            <p>Wprowadź stany kont na początek roku {selectedYear}. System automatycznie doliczy wpływy i wydatki, aby pokazać aktualny stan.</p>
           </div>
-        </div>,
-        document.body
-      )}
+        </div>
+      </Modal>
     </div>
   );
 };

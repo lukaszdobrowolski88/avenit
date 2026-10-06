@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useCampus } from '../../contexts/CampusContext';
@@ -18,6 +17,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { confirmDialog } from '../../lib/dialog';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
+import Spinner from '../../components/Spinner';
 
 const KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
@@ -130,23 +133,25 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
     }
   };
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="font-bold text-xl text-gray-800 dark:text-white">Dodaj do programu</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-[400px]">
-              <Music size={14} className="inline mr-1 text-accent-primary-light" />
-              {song?.title}
-            </p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400">
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="space-y-4 flex-1 overflow-y-auto">
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={false}
+      zIndex={110}
+      size="md"
+      title="Dodaj do programu"
+      subtitle={<><Music size={14} className="inline mr-1 text-accent-primary-light" />{song?.title}</>}
+      footer={<>
+        <Button variant="secondary" onClick={onClose} disabled={saving}>
+          Anuluj
+        </Button>
+        <Button icon={Plus} onClick={handleSave} loading={saving} disabled={!selectedProgramId}>
+          Dodaj do programu
+        </Button>
+      </>}
+    >
+        <div className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
               Wybierz program (od dzisiaj)
@@ -162,9 +167,9 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
             </div>
             <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 max-h-56 overflow-y-auto custom-scrollbar">
               {loading ? (
-                <div className="p-6 text-center text-sm text-gray-400">{tr('Ładowanie...')}</div>
+                <Spinner center />
               ) : filtered.length === 0 ? (
-                <div className="p-6 text-center text-sm text-gray-400">{tr('Brak nadchodzących programów')}</div>
+                <EmptyState compact icon={Calendar} title={tr('Brak nadchodzących programów')} />
               ) : (
                 filtered.map(p => {
                   const isSelected = selectedProgramId === p.id;
@@ -243,26 +248,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
             />
           </div>
         </div>
-
-        <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-          >
-            Anuluj
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!selectedProgramId || saving}
-            className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {saving ? 'Zapisywanie...' : (<><Plus size={16} />Dodaj do programu</>)}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }
 
@@ -314,26 +300,22 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
     );
   }, [programs, search]);
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-3xl border border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col">
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={false}
+      zIndex={110}
+      size="xl"
+      icon={!selectedProgram ? FolderOpen : undefined}
+      title={!selectedProgram ? 'Programy' : (selectedProgram.title || formatDateFull(selectedProgram.date))}
+      subtitle={!selectedProgram
+        ? 'Aktywne programy (od dzisiaj). Wybierz, by zarządzać przypisanymi pieśniami.'
+        : `${selectedProgram.title ? formatDateFull(selectedProgram.date) + ' · ' : ''}Sugerowane pieśni`}
+    >
         {!selectedProgram ? (
           <>
-            <div className="flex justify-between items-center px-6 pt-6 pb-3">
-              <div>
-                <h3 className="font-bold text-xl text-gray-800 dark:text-white flex items-center gap-2">
-                  <FolderOpen size={20} className="text-accent-primary-light" />
-                  Programy
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  Aktywne programy (od dzisiaj). Wybierz, by zarządzać przypisanymi pieśniami.
-                </p>
-              </div>
-              <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="px-6 pb-3">
+            <div className="px-6 pt-6 pb-3">
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                 <Search size={16} className="text-gray-400" />
                 <input
@@ -344,11 +326,11 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
                 />
               </div>
             </div>
-            <div className="px-6 pb-6 overflow-y-auto custom-scrollbar flex-1">
+            <div className="px-6 pb-6">
               {loading ? (
-                <div className="p-10 text-center text-sm text-gray-400">{tr('Ładowanie...')}</div>
+                <Spinner center />
               ) : filtered.length === 0 ? (
-                <div className="p-10 text-center text-sm text-gray-400">{tr('Brak nadchodzących programów')}</div>
+                <EmptyState compact icon={Calendar} title={tr('Brak nadchodzących programów')} />
               ) : (
                 <div className="grid gap-2">
                   {filtered.map(p => {
@@ -410,19 +392,16 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
                 setCounts(c);
               })();
             }}
-            onClose={onClose}
           />
         )}
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }
 
 // =====================================================================
 // Editor: lista przypisanych pieśni do wybranego programu
 // =====================================================================
-function ProgramSongsEditor({ program, songs, onBack, onClose }) {
+function ProgramSongsEditor({ program, songs, onBack }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingNoteId, setEditingNoteId] = useState(null);
@@ -514,40 +493,17 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
 
   return (
     <>
-      <div className="flex justify-between items-center px-6 pt-6 pb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400 shrink-0"
-            title={tr('Wróć do listy programów')}
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <div className="min-w-0">
-            <h3 className="font-bold text-xl text-gray-800 dark:text-white truncate">
-              {program.title || formatDateFull(program.date)}
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-              {program.title ? formatDateFull(program.date) + ' · ' : ''}
-              Sugerowane pieśni
-            </p>
-          </div>
-        </div>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400 shrink-0">
-          <X size={20} />
-        </button>
+      <div className="px-6 pt-4 pb-2">
+        <Button variant="ghost" size="sm" icon={ChevronLeft} onClick={onBack} title={tr('Wróć do listy programów')}>
+          {tr('Wróć do listy programów')}
+        </Button>
       </div>
 
-      <div className="px-6 pb-6 overflow-y-auto custom-scrollbar flex-1">
+      <div className="px-6 pb-6">
         {loading ? (
-          <div className="p-10 text-center text-sm text-gray-400">{tr('Ładowanie...')}</div>
+          <Spinner center />
         ) : items.length === 0 ? (
-          <div className="text-center py-10 px-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-            <Music size={32} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {tr('Brak pieśni przypisanych do tego programu.')}
-            </p>
-          </div>
+          <EmptyState compact icon={Music} title={tr('Brak pieśni przypisanych do tego programu.')} />
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>

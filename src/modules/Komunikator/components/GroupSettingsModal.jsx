@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, UserPlus, UserMinus, Crown, Loader, Users, Trash2, LogOut, Edit2, Check, Music, Zap, Baby, Heart, UserCheck, Home, Shield } from 'lucide-react';
+import { X, Search, UserPlus, UserMinus, Crown, Users, Trash2, LogOut, Edit2, Check, Music, Zap, Baby, Heart, UserCheck, Home, Shield } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import EmptyState from '../../../components/EmptyState';
+import Spinner from '../../../components/Spinner';
 
 // Ikony dla kanałów służb
 const ministryIcons = {
@@ -211,239 +214,230 @@ export default function GroupSettingsModal({
   if (!isOpen || !conversation) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-h-[80vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            {isMinistryChannel ? tr('Ustawienia kanału') : 'Ustawienia grupy'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition"
-          >
-            <X size={20} className="text-gray-500" />
-          </button>
-        </div>
-
-        {/* Group info */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            {isMinistryChannel ? (
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-accent-primary-light flex items-center justify-center text-white">
-                {(() => {
-                  const IconComponent = ministryIcons[conversation?.ministry_key] || Users;
-                  return <IconComponent size={28} />;
-                })()}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      title={isMinistryChannel ? tr('Ustawienia kanału') : 'Ustawienia grupy'}
+      size="sm"
+    >
+      {/* Group info */}
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          {isMinistryChannel ? (
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-accent-primary-light flex items-center justify-center text-white">
+              {(() => {
+                const IconComponent = ministryIcons[conversation?.ministry_key] || Users;
+                return <IconComponent size={28} />;
+              })()}
+            </div>
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white">
+              <Users size={28} />
+            </div>
+          )}
+          <div className="flex-1">
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder={isMinistryChannel ? getMinistryName(conversation?.ministry_key) : 'Nazwa grupy'}
+                  className="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={saving}
+                  className="p-1.5 bg-accent-primary hover:bg-accent-primary text-white rounded-full"
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingName(false);
+                    const displayName = isMinistryChannel
+                      ? (conversation?.name || getMinistryName(conversation?.ministry_key))
+                      : (conversation?.name || '');
+                    setNewName(displayName);
+                  }}
+                  className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
+                >
+                  <X size={16} />
+                </button>
               </div>
             ) : (
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white">
-                <Users size={28} />
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {isMinistryChannel
+                    ? (conversation.name || getMinistryName(conversation?.ministry_key))
+                    : conversation.name}
+                </h3>
+                {canEditName && (
+                  <button
+                    onClick={() => setEditingName(true)}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                    title={tr('Zmień nazwę')}
+                  >
+                    <Edit2 size={14} className="text-gray-500" />
+                  </button>
+                )}
               </div>
             )}
-            <div className="flex-1">
-              {editingName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder={isMinistryChannel ? getMinistryName(conversation?.ministry_key) : 'Nazwa grupy'}
-                    className="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleSaveName}
-                    disabled={saving}
-                    className="p-1.5 bg-accent-primary hover:bg-accent-primary text-white rounded-full"
-                  >
-                    <Check size={16} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingName(false);
-                      const displayName = isMinistryChannel
-                        ? (conversation?.name || getMinistryName(conversation?.ministry_key))
-                        : (conversation?.name || '');
-                      setNewName(displayName);
-                    }}
-                    className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {isMinistryChannel
-                      ? (conversation.name || getMinistryName(conversation?.ministry_key))
-                      : conversation.name}
-                  </h3>
-                  {canEditName && (
-                    <button
-                      onClick={() => setEditingName(true)}
-                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-                      title={tr('Zmień nazwę')}
-                    >
-                      <Edit2 size={14} className="text-gray-500" />
-                    </button>
-                  )}
-                </div>
-              )}
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {isMinistryChannel ? tr('Kanał służby • ') : ''}{participants.length} uczestników
-              </p>
-            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {isMinistryChannel ? tr('Kanał służby • ') : ''}{participants.length} uczestników
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setActiveTab('members')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
+            ${activeTab === 'members'
+              ? 'text-accent-primary border-b-2 border-accent-primary'
+              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }
+          `}
+        >
+          <Users size={18} />
+          {tr('Członkowie')}
+        </button>
+        {isAdmin && (
           <button
-            onClick={() => setActiveTab('members')}
+            onClick={() => setActiveTab('add')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
-              ${activeTab === 'members'
+              ${activeTab === 'add'
                 ? 'text-accent-primary border-b-2 border-accent-primary'
                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }
             `}
           >
-            <Users size={18} />
-            {tr('Członkowie')}
+            <UserPlus size={18} />
+            Dodaj
           </button>
-          {isAdmin && (
-            <button
-              onClick={() => setActiveTab('add')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
-                ${activeTab === 'add'
-                  ? 'text-accent-primary border-b-2 border-accent-primary'
-                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                }
-              `}
-            >
-              <UserPlus size={18} />
-              Dodaj
-            </button>
-          )}
-        </div>
+        )}
+      </div>
 
-        {/* Search */}
-        <div className="p-4">
-          <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={activeTab === 'members' ? tr('Szukaj członków...') : tr('Szukaj użytkowników...')}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
-            />
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-2 pb-2 custom-scrollbar">
-          {activeTab === 'members' ? (
-            // Lista członków
-            <div className="space-y-1">
-              {filteredParticipants.map(participant => (
-                <div
-                  key={participant.user_email}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                >
-                  <UserAvatar user={participant} size="md" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900 dark:text-white truncate">
-                        {participant.full_name || participant.user_email}
-                      </p>
-                      {participant.role === 'admin' && (
-                        <Crown size={14} className="text-amber-500 flex-shrink-0" />
-                      )}
-                      {participant.user_email === currentUserEmail && (
-                        <span className="text-xs text-gray-500">(Ty)</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {participant.user_email}
-                    </p>
-                  </div>
-
-                  {/* Akcje */}
-                  <div className="flex items-center gap-1">
-                    {isAdmin && participant.user_email !== currentUserEmail && (
-                      <>
-                        <button
-                          onClick={() => handleToggleAdmin(participant.user_email, participant.role)}
-                          disabled={saving}
-                          className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"
-                          title={participant.role === 'admin' ? tr('Usuń uprawnienia admina') : 'Nadaj uprawnienia admina'}
-                        >
-                          <Crown
-                            size={16}
-                            className={participant.role === 'admin' ? 'text-amber-500' : 'text-gray-400'}
-                          />
-                        </button>
-                        <button
-                          onClick={() => handleRemoveParticipant(participant.user_email)}
-                          disabled={saving}
-                          className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
-                          title={tr('Usuń z grupy')}
-                        >
-                          <UserMinus size={16} />
-                        </button>
-                      </>
-                    )}
-                    {participant.user_email === currentUserEmail && (
-                      <button
-                        onClick={() => handleRemoveParticipant(currentUserEmail)}
-                        disabled={saving}
-                        className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
-                        title={tr('Opuść grupę')}
-                      >
-                        <LogOut size={16} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            // Lista użytkowników do dodania
-            loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader size={24} className="animate-spin text-accent-primary" />
-              </div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                {searchQuery ? tr('Nie znaleziono użytkowników') : tr('Wszyscy użytkownicy są już w grupie')}
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {filteredUsers.map(user => (
-                  <button
-                    key={user.email}
-                    onClick={() => handleAddParticipant(user.email)}
-                    disabled={saving}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition text-left disabled:opacity-50"
-                  >
-                    <UserAvatar user={user} size="md" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-white truncate">
-                        {user.full_name || 'Brak nazwy'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {user.email}
-                      </p>
-                    </div>
-                    <UserPlus size={18} className="text-accent-primary flex-shrink-0" />
-                  </button>
-                ))}
-              </div>
-            )
-          )}
+      {/* Search */}
+      <div className="px-6 py-4">
+        <div className="relative">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={activeTab === 'members' ? tr('Szukaj członków...') : tr('Szukaj użytkowników...')}
+            className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
+          />
         </div>
       </div>
-    </div>
+
+      {/* Content */}
+      <div className="px-4 pb-4">
+        {activeTab === 'members' ? (
+          // Lista członków
+          <div className="space-y-1">
+            {filteredParticipants.map(participant => (
+              <div
+                key={participant.user_email}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              >
+                <UserAvatar user={participant} size="md" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-white truncate">
+                      {participant.full_name || participant.user_email}
+                    </p>
+                    {participant.role === 'admin' && (
+                      <Crown size={14} className="text-amber-500 flex-shrink-0" />
+                    )}
+                    {participant.user_email === currentUserEmail && (
+                      <span className="text-xs text-gray-500">(Ty)</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {participant.user_email}
+                  </p>
+                </div>
+
+                {/* Akcje */}
+                <div className="flex items-center gap-1">
+                  {isAdmin && participant.user_email !== currentUserEmail && (
+                    <>
+                      <button
+                        onClick={() => handleToggleAdmin(participant.user_email, participant.role)}
+                        disabled={saving}
+                        className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"
+                        title={participant.role === 'admin' ? tr('Usuń uprawnienia admina') : 'Nadaj uprawnienia admina'}
+                      >
+                        <Crown
+                          size={16}
+                          className={participant.role === 'admin' ? 'text-amber-500' : 'text-gray-400'}
+                        />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveParticipant(participant.user_email)}
+                        disabled={saving}
+                        className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
+                        title={tr('Usuń z grupy')}
+                      >
+                        <UserMinus size={16} />
+                      </button>
+                    </>
+                  )}
+                  {participant.user_email === currentUserEmail && (
+                    <button
+                      onClick={() => handleRemoveParticipant(currentUserEmail)}
+                      disabled={saving}
+                      className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
+                      title={tr('Opuść grupę')}
+                    >
+                      <LogOut size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          // Lista użytkowników do dodania
+          loading ? (
+            <Spinner center />
+          ) : filteredUsers.length === 0 ? (
+            <EmptyState
+              compact
+              icon={searchQuery ? Search : UserCheck}
+              title={searchQuery ? tr('Nie znaleziono użytkowników') : tr('Wszyscy użytkownicy są już w grupie')}
+            />
+          ) : (
+            <div className="space-y-1">
+              {filteredUsers.map(user => (
+                <button
+                  key={user.email}
+                  onClick={() => handleAddParticipant(user.email)}
+                  disabled={saving}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition text-left disabled:opacity-50"
+                >
+                  <UserAvatar user={user} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-white truncate">
+                      {user.full_name || 'Brak nazwy'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {user.email}
+                    </p>
+                  </div>
+                  <UserPlus size={18} className="text-accent-primary flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+          )
+        )}
+      </div>
+    </Modal>
   );
 }

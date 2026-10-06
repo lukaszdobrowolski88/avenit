@@ -4,6 +4,8 @@ import { TrendingUp, Users, Eye, MousePointer, XCircle, ArrowLeft, Download, Sen
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
+import EmptyState from '../../../components/EmptyState';
+import Spinner from '../../../components/Spinner';
 
 export default function CampaignStats({ campaign, onClose }) {
   const t = useT();
@@ -101,9 +103,9 @@ export default function CampaignStats({ campaign, onClose }) {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>
+          <Spinner center label={tr('Ładowanie...')} />
         ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">{t('Brak rekordów dla tego filtra.')}</div>
+          <EmptyState compact icon={Users} title={t('Brak rekordów dla tego filtra.')} />
         ) : (
           <DataTable flush className="max-h-[60vh] overflow-y-auto">
             <THead sticky>

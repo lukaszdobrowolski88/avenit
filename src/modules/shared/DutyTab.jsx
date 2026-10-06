@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Spinner from '../../components/Spinner';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Plus, Trash2, X, Check, Edit2, Users, ChevronDown } from 'lucide-react';
@@ -301,11 +304,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
   };
 
   if (loading) {
-    return (
-      <div className="p-10 text-center">
-        <Spinner size={32} className="mx-auto" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   return (
@@ -331,19 +330,9 @@ export default function DutyTab({ moduleKey, moduleName }) {
       </div>
 
       {members.length === 0 ? (
-        <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-          <Users size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">{t('Brak członków w zespole')}</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {tr('Najpierw dodaj członków w zakładce "Członkowie"')}
-          </p>
-        </div>
+        <EmptyState icon={Users} title={t('Brak członków w zespole')} subtitle={tr('Najpierw dodaj członków w zakładce "Członkowie"')} />
       ) : roles.length === 0 ? (
-        <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-          <Users size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium">{t('Brak zdefiniowanych służb')}</p>
-          <p className="text-sm mt-1">{t('Dodaj pierwszą służbę, aby móc przypisywać do niej członków zespołu')}</p>
-        </div>
+        <EmptyState icon={Users} title={t('Brak zdefiniowanych służb')} subtitle={t('Dodaj pierwszą służbę, aby móc przypisywać do niej członków zespołu')} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {roles.map(role => {
@@ -414,21 +403,18 @@ export default function DutyTab({ moduleKey, moduleName }) {
       )}
 
       {/* Modal dodawania/edycji służby */}
-      {showRoleModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                {roleForm.id ? tr('Edytuj służbę') : tr('Nowa służba')}
-              </h3>
-              <button
-                onClick={() => setShowRoleModal(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
+      <Modal
+        isOpen={showRoleModal}
+        onClose={() => setShowRoleModal(false)}
+        closeOnBackdrop={false}
+        title={roleForm.id ? tr('Edytuj służbę') : tr('Nowa służba')}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowRoleModal(false)}>Anuluj</Button>
+          <Button onClick={saveRole}>Zapisz</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
                   {tr('Nazwa służby')}
@@ -466,25 +452,8 @@ export default function DutyTab({ moduleKey, moduleName }) {
                   onChange={e => setRoleForm({ ...roleForm, description: e.target.value })}
                 />
               </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => setShowRoleModal(false)}
-                  className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={saveRole}
-                  className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium"
-                >
-                  Zapisz
-                </button>
-              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
     </div>
   );
 }
