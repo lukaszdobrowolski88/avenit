@@ -20,6 +20,7 @@ import { useModuleCalendars } from '../hooks/useModuleLabel';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
+import { TimeField } from '../components/pickers';
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA ---
 
@@ -154,8 +155,7 @@ const CustomDatePicker = ({ value, onChange }) => {
 const CustomTimePicker = ({ value, onChange, placeholder = 'Wybierz' }) => {
   return (
     <div className="relative w-full">
-      <input
-        type="time"
+      <TimeField
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
-import { Upload, X, File, MapPin, Calendar, Clock, DollarSign, Users, ImageIcon, Trash2 } from 'lucide-react';
+import { Upload, X, File, MapPin, DollarSign, Users, ImageIcon, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { DateInput, TimeField } from '../../../components/pickers';
 
 export default function FieldRenderer({
   field,
@@ -211,8 +212,7 @@ export default function FieldRenderer({
 
     case 'date':
       return (
-        <input
-          type="date"
+        <DateInput
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
@@ -242,35 +242,23 @@ export default function FieldRenderer({
     case 'date_start':
     case 'date_end':
       return (
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-            <Calendar size={18} />
-          </div>
-          <input
-            type="date"
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            disabled={disabled}
-            className={`${baseInputClass} pl-11`}
-          />
-        </div>
+        // Ikona jest już w polu wyboru — bez osobnej nakładki.
+        <DateInput
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+        />
       );
 
     case 'time_start':
     case 'time_end':
       return (
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-            <Clock size={18} />
-          </div>
-          <input
-            type="time"
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            disabled={disabled}
-            className={`${baseInputClass} pl-11`}
-          />
-        </div>
+        // Ikona jest już w polu wyboru — bez osobnej nakładki.
+        <TimeField
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+        />
       );
 
     case 'price':

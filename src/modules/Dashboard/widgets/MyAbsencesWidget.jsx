@@ -3,6 +3,7 @@ import { CalendarX, Plus, X, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { DateInput } from '../../../components/pickers';
 
 // „Moje nieobecności” — JEDNA funkcja nieobecności, wspólna z aplikacją mobilną:
 // volunteer_blockouts przez fn my-blockouts (member_id ustala serwer). Lider widzi
@@ -134,8 +135,7 @@ export default function MyAbsencesWidget({ absences, onRefresh }) {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tr('Od')}</label>
-              <input
-                type="date"
+              <DateInput
                 value={form.start_date}
                 min={todayYmd()}
                 onChange={(e) =>
@@ -146,7 +146,7 @@ export default function MyAbsencesWidget({ absences, onRefresh }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tr('Do')}</label>
-              <input type="date" value={form.end_date} min={form.start_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} className={inputCls} />
+              <DateInput value={form.end_date} min={form.start_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} className={inputCls} />
             </div>
           </div>
           <div>

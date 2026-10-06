@@ -7,6 +7,7 @@ import { evaluateVisibility } from '../../Forms/utils/fieldTypes';
 import { STATUS_COLORS } from '../../Settings/components/ModuleBuilder/builderElements';
 import { toast } from '../../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill } from '../../../components/ui/DataTable';
+import { DateInput } from '../../../components/pickers';
 
 // Typy pól renderowane cyframi (tabular-nums w tabeli).
 const NUMERIC_FIELD_TYPES = ['number', 'currency', 'date'];
@@ -101,7 +102,7 @@ function FieldInput({ field, value, onChange, people = [] }) {
     case 'currency':
       return <input type="number" step="0.01" className={inputCls} value={value ?? ''} onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))} />;
     case 'date':
-      return <input type="date" className={inputCls} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
+      return <DateInput className={inputCls} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
     case 'email':
       return <input type="email" className={inputCls} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
     case 'phone':

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Star, Link as LinkIcon, Paperclip, Plus, X, ExternalLink } from 'lucide-react';
 import Popover from '../Popover';
 import { evalFormula } from '../../lib/formula';
+import { DateInput } from '../../../../components/pickers';
 
 // ── Tekst (inline) ───────────────────────────────────────────────────
 export function TextCell({ value, onChange, readOnly, align = 'left' }) {
@@ -45,7 +46,7 @@ export function DateCell({ value, onChange, readOnly }) {
   if (readOnly) return <div className="px-2 text-sm text-gray-600 dark:text-gray-300 w-full text-center tabular-nums">{fmt}</div>;
   if (editing) {
     return (
-      <input type="date" autoFocus value={value || ''} onChange={(e) => onChange(e.target.value || null)}
+      <DateInput compact autoFocus value={value || ''} onChange={(e) => onChange(e.target.value || null)}
         onBlur={() => setEditing(false)}
         className="w-full h-full bg-transparent px-2 text-sm text-gray-600 dark:text-gray-300 outline-none text-center focus:ring-2 focus:ring-accent-primary/40 rounded [color-scheme:light] dark:[color-scheme:dark]" />
     );
@@ -75,11 +76,11 @@ export function TimelineCell({ value, onChange, readOnly }) {
       {() => (
         <div className="p-3 space-y-2">
           <label className="block text-xs text-gray-500">Początek
-            <input type="date" value={v.start || ''} onChange={(e) => onChange({ ...v, start: e.target.value || null })}
+            <DateInput compact value={v.start || ''} onChange={(e) => onChange({ ...v, start: e.target.value || null })}
               className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1.5 outline-none [color-scheme:light] dark:[color-scheme:dark]" />
           </label>
           <label className="block text-xs text-gray-500">Koniec
-            <input type="date" value={v.end || ''} onChange={(e) => onChange({ ...v, end: e.target.value || null })}
+            <DateInput compact value={v.end || ''} onChange={(e) => onChange({ ...v, end: e.target.value || null })}
               className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1.5 outline-none [color-scheme:light] dark:[color-scheme:dark]" />
           </label>
           {(v.start || v.end) && <button onClick={() => onChange(null)} className="text-xs text-gray-400 hover:text-red-500">Wyczyść</button>}

@@ -4,6 +4,7 @@ import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { DateInput } from '../../components/pickers';
 
 // Gotowy element „Ogłoszenia" — komunikaty z datą i przypięciem. Dane w
 // module_records (collection_key='announcements'), izolowane per moduł.
@@ -39,7 +40,7 @@ function AnnModal({ initial, onClose, onSave }) {
           <div className="flex items-center gap-4">
             <label className="flex-1">
               <span className="text-xs text-gray-500">{tr('Data (opcjonalnie)')}</span>
-              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
+              <DateInput value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
                 className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 outline-none [color-scheme:light] dark:[color-scheme:dark]" />
             </label>
             <label className="flex items-center gap-2 mt-5 cursor-pointer">

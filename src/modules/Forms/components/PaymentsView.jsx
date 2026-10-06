@@ -30,6 +30,7 @@ import { formatPrice } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
+import { DateInput } from '../../../components/pickers';
 
 export default function PaymentsView({ forms }) {
   const [payments, setPayments] = useState([]);
@@ -739,8 +740,7 @@ export default function PaymentsView({ forms }) {
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                 Data od
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={dateRange.from}
                 onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
@@ -751,8 +751,7 @@ export default function PaymentsView({ forms }) {
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                 Data do
               </label>
-              <input
-                type="date"
+              <DateInput
                 value={dateRange.to}
                 onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
@@ -1146,7 +1145,7 @@ export default function PaymentsView({ forms }) {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                         {tr('Data płatności')}
                       </label>
-                      <input type="date" value={addPaymentDate}
+                      <DateInput value={addPaymentDate}
                         onChange={(e) => setAddPaymentDate(e.target.value)}
                         className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
                     </div>

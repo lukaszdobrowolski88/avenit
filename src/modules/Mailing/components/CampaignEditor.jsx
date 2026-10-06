@@ -15,6 +15,7 @@ import CampaignPreview from './CampaignPreview';
 import { tr } from '../../../i18n';
 import { useCan } from '../../../components/Can';
 import { toast } from '../../../lib/toast';
+import { DateTimeInput } from '../../../components/pickers';
 
 const STEPS = [
   { id: 'basics', label: 'Podstawy', icon: FileText },
@@ -795,8 +796,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {tr('Data i godzina wysyłki')}
               </label>
-              <input
-                type="datetime-local"
+              <DateTimeInput
                 value={formData.scheduled_at ? formData.scheduled_at.slice(0, 16) : ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, scheduled_at: e.target.value ? new Date(e.target.value).toISOString() : null }))}
                 min={new Date().toISOString().slice(0, 16)}

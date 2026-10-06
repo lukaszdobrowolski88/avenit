@@ -7,6 +7,7 @@ import { formatMoney, formatDate, methodLabel, statusLabel, donorLabel, memberNa
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
+import { DateInput } from '../../../components/pickers';
 
 const currentYear = new Date().getFullYear();
 
@@ -281,7 +282,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
-                  <input type="date" value={form.donation_date} onChange={e => setForm(f => ({ ...f, donation_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <DateInput value={form.donation_date} onChange={e => setForm(f => ({ ...f, donation_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
 

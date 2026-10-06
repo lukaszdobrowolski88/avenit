@@ -29,6 +29,7 @@ import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
+import { DateInput } from '../../../components/pickers';
 
 export default function ResponsesView({ form }) {
   const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -684,7 +685,7 @@ export default function ResponsesView({ form }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('Data płatności')}</label>
-                <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)}
+                <DateInput value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
               </div>
             </div>

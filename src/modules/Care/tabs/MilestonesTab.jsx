@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import { MILESTONE_TYPES, milestoneTypeLabel, formatDate } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { DateInput } from '../../../components/pickers';
 
 const MILESTONE_ICONS = {
   'nawrócenie': Flag,
@@ -89,7 +90,7 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
           <CustomSelect label="Typ" value={form.milestone_type} onChange={v => setForm(f => ({ ...f, milestone_type: v }))} options={MILESTONE_TYPES} />
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
-            <input type="date" value={form.milestone_date} onChange={e => setForm(f => ({ ...f, milestone_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <DateInput value={form.milestone_date} onChange={e => setForm(f => ({ ...f, milestone_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
         </div>
         <textarea
