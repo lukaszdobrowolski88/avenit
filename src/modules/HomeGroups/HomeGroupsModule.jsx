@@ -219,17 +219,16 @@ export default function HomeGroupsModule() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [groupsRes, leadersRes, membersRes, tasksRes] = await Promise.all([
+      // Zadania żyją na Tablicy (ModuleBoard) — home_group_tasks nie jest już pobierane.
+      const [groupsRes, leadersRes, membersRes] = await Promise.all([
         withCampusFilter(supabase.from('home_groups').select('*, home_group_leaders(full_name)')).order('name'),
         supabase.from('home_group_leaders').select('*').order('full_name'),
         supabase.from('home_group_members').select('*, home_groups(name)').order('full_name'),
-        supabase.from('home_group_tasks').select('*').order('due_date')
       ]);
 
       if (groupsRes.data) setGroups(groupsRes.data);
       if (leadersRes.data) setLeaders(leadersRes.data);
       if (membersRes.data) setMembers(membersRes.data);
-      if (tasksRes.data) setTasks(tasksRes.data);
 
       // Liczniki materiałów per grupa: pliki (materials_files) w folderze grupy.
       try {

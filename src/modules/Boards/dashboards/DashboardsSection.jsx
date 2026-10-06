@@ -14,8 +14,12 @@ export default function DashboardsSection({ userEmail }) {
   const [allBoards, setAllBoards] = useState([]);
 
   useEffect(() => {
-    supabase.from('boards').select('id, name').eq('is_archived', false).is('module_key', null).order('display_order')
-      .then(({ data }) => setAllBoards(data || []));
+    // Źródła widżetów: ogólne tablice + tablice modułów (zadania Mediów, Młodzieżówki, Grup
+    // domowych, modułów z kreatora) — najpierw ogólne, potem modułowe.
+    supabase.from('boards').select('id, name, module_key').eq('is_archived', false).order('display_order')
+      .then(({ data }) => setAllBoards(
+        [...(data || [])].sort((a, b) => Number(!!a.module_key) - Number(!!b.module_key))
+      ));
   }, []);
 
   const selected = dashboards.find(d => d.id === selectedId);
