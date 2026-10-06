@@ -1,0 +1,181 @@
+/* Motyw „Avenit" — web w języku wizualnym aplikacji mobilnej (grafiki_avenit):
+   papier #F6F4EE, białe karty bez ramek i cieni, słód #2A2312 zamiast czerni, kurkuma #FFBE0B
+   jako JEDYNY akcent (przyciski i aktywne pozycje — zawsze ze słodowym tekstem), musztarda
+   #8A6606 na „złoty” tekst/etykiety, ikony kategorii na neutralnym papierze #ECE8DE ze słodem.
+   Bez gradientów i bez „tęczy” kolorów modułów.
+   Działa wyłącznie przy palecie „avenit” (atrybut data-color-preset na <html>) — inne motywy
+   wyglądają jak dotąd. Selektory celują we wspólne wzorce klas Tailwinda używane w całej apce
+   (setki plików), dlatego to warstwa CSS, a nie zmiany komponent po komponencie. */
+
+/* ── Ciepłe szarości (Tailwind gray → paleta papieru/słodu). Te same wartości działają jako
+   tekst w jasnym motywie i jako tła w ciemnym. ── */
+html[data-color-preset="avenit"] {
+  --gray-50: 248 246 241;
+  --gray-100: 241 238 230;
+  --gray-200: 230 225 213;
+  --gray-300: 207 200 182;
+  --gray-400: 133 127 112;
+  --gray-500: 107 101 87;
+  --gray-600: 74 70 62;
+  --gray-700: 58 52 39;
+  --gray-800: 42 35 18;
+  --gray-900: 28 23 12;
+  --gray-950: 18 15 8;
+  color: #2A2312;
+}
+
+/* ── Akcje: kurkuma ze słodowym tekstem (jak „Do programu”, FAB, aktywna zakładka w apce) ── */
+html[data-color-preset="avenit"] :is(button, a, label, summary, [role="button"], [role="tab"], input[type="submit"]):is(
+  .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
+  .from-accent-secondary, .from-accent-secondary-light,
+  .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
+  .bg-accent-secondary, .bg-accent-secondary-light
+) {
+  background-image: none !important;
+  background-color: #FFBE0B !important;
+  color: #2A2312 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  font-weight: 700;
+}
+html[data-color-preset="avenit"] :is(button, a, label, summary, [role="button"], [role="tab"]):is(
+  .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
+  .from-accent-secondary, .from-accent-secondary-light,
+  .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
+  .bg-accent-secondary, .bg-accent-secondary-light
+):hover {
+  background-color: #F2B000 !important;
+}
+html[data-color-preset="avenit"] :is(button, a, label, summary, [role="button"], [role="tab"]):is(
+  .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
+  .from-accent-secondary, .from-accent-secondary-light,
+  .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
+  .bg-accent-secondary, .bg-accent-secondary-light
+) :is(.text-white, svg) {
+  color: #2A2312 !important;
+}
+
+/* ── Kafelki ikon, awatary, plakietki (nie-przyciski) z gradientem akcentu → papier + słód ── */
+html[data-color-preset="avenit"] :is(div, span, i, p):is(
+  .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
+  .from-accent-secondary, .from-accent-secondary-light,
+  .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
+  .bg-accent-secondary, .bg-accent-secondary-light
+) {
+  background-image: none !important;
+  background-color: #ECE8DE !important;
+  color: #2A2312 !important;
+  box-shadow: none !important;
+}
+html[data-color-preset="avenit"] :is(div, span, i, p):is(
+  .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
+  .from-accent-secondary, .from-accent-secondary-light,
+  .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
+  .bg-accent-secondary, .bg-accent-secondary-light
+) :is(.text-white, svg) {
+  color: #2A2312 !important;
+}
+
+/* Poświaty/cienie w kolorze akcentu (hover:shadow-accent-…) — w apce ich nie ma. */
+html[data-color-preset="avenit"] [class*="shadow-accent"] { --tw-shadow-color: transparent !important; }
+
+/* ── Karty: białe na papierze, bez ramek i miękkich cieni (jak ListCard/Card w apce).
+   Elementy pływające (menu, podpowiedzi — absolute/fixed) zostają z cieniem i ramką. Pola formularzy zbudowane z diva (CustomSelect, data, godzina — klasa .ui-field — albo
+   opakowanie z polem w środku) zachowują ramkę, inaczej znikają na białym modalu. ── */
+html[data-color-preset="avenit"] :is(div, section, article, aside, nav):is(.bg-white, .bg-white\/90, .bg-white\/80, .bg-white\/70, .bg-white\/60, .bg-white\/50):is(.rounded-xl, .rounded-2xl, .rounded-3xl):not(.ui-field):not(.absolute):not(.fixed):not(:has(> input, > select, > textarea)) {
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+html[data-color-preset="avenit"] :is(div, section, article, aside, nav):is(.bg-white\/90, .bg-white\/80, .bg-white\/70, .bg-white\/60, .bg-white\/50):is(.rounded-xl, .rounded-2xl, .rounded-3xl):not(.ui-field) {
+  background-color: #FFFFFF !important;
+}
+html.dark[data-color-preset="avenit"] :is(div, section, article, aside, nav):is(.bg-white\/90, .bg-white\/80, .bg-white\/70, .bg-white\/60, .bg-white\/50):is(.rounded-xl, .rounded-2xl, .rounded-3xl):not(.ui-field) {
+  background-color: rgb(var(--gray-800)) !important;
+}
+html[data-color-preset="avenit"] .shadow-sm:not(input):not(select):not(textarea) { box-shadow: none !important; }
+
+/* Zaznaczenie tekstu i fokus — kurkuma. */
+html[data-color-preset="avenit"] ::selection { background: #FFE48A; color: #2A2312; }
+
+/* ── Tekst w kolorze akcentu: musztarda, nie kurkuma (kurkuma jako tekst na jasnym tle jest
+   nieczytelna). „-light” to w palecie kurkuma — dobra na obramowania/fokus, ale nie na tekst. ── */
+html[data-color-preset="avenit"]:not(.dark) :is(.text-accent-primary-light, .text-accent-secondary-light, .text-accent-primary, .text-accent-secondary) {
+  color: #8A6606 !important;
+}
+html[data-color-preset="avenit"]:not(.dark) :is(.hover\:text-accent-primary-light, .hover\:text-accent-primary, .hover\:text-accent-secondary-light):hover {
+  color: #6B4F05 !important;
+}
+
+/* ── Bez „tęczy”: dekoracyjne fiolety/indygo/róże → papier + słód. Kolory STATUSÓW
+   (zielony, czerwony, bursztynowy, niebieski) zostają — niosą znaczenie. ── */
+html[data-color-preset="avenit"]:not(.dark) :is(.bg-indigo-50, .bg-indigo-100, .bg-purple-50, .bg-purple-100, .bg-violet-50, .bg-violet-100, .bg-pink-50, .bg-pink-100, .bg-fuchsia-50, .bg-fuchsia-100) {
+  background-color: #ECE8DE !important;
+}
+html[data-color-preset="avenit"]:not(.dark) :is(.text-indigo-500, .text-indigo-600, .text-indigo-700, .text-purple-500, .text-purple-600, .text-purple-700, .text-violet-500, .text-violet-600, .text-violet-700, .text-pink-500, .text-pink-600, .text-pink-700, .text-fuchsia-600) {
+  color: #2A2312 !important;
+}
+html[data-color-preset="avenit"] :is(.from-indigo-500, .from-purple-500, .from-violet-500, .from-pink-500, .from-fuchsia-500, .from-rose-500):is(.bg-gradient-to-r, .bg-gradient-to-br, .bg-gradient-to-b, .bg-gradient-to-l) {
+  background-image: none !important;
+  background-color: #ECE8DE !important;
+  color: #2A2312 !important;
+}
+
+/* ── Przyciski drugorzędne (białe z ramką) → miękka pigułka na papierze, jak chipy w apce ── */
+html[data-color-preset="avenit"]:not(.dark) :is(button, a):is(.bg-white):is(.border):not(:has(input)) {
+  background-color: #ECE8DE !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+html[data-color-preset="avenit"]:not(.dark) :is(button, a):is(.bg-white):is(.border):not(:has(input)):hover {
+  background-color: #E3DDD0 !important;
+}
+
+/* ── Kolorowe kafelki ikon z gradientem (statystyki, nagłówki kart) → papier + słód.
+   Tylko elementy nie-interaktywne (div/span) — przyciski obsługuje reguła akcji. ── */
+html[data-color-preset="avenit"] :is(div, span):is(.from-blue-400, .from-blue-500, .from-blue-600, .from-sky-400, .from-sky-500, .from-sky-600, .from-cyan-400, .from-cyan-500, .from-cyan-600, .from-teal-400, .from-teal-500, .from-teal-600, .from-emerald-400, .from-emerald-500, .from-emerald-600, .from-green-400, .from-green-500, .from-green-600, .from-lime-400, .from-lime-500, .from-lime-600, .from-amber-400, .from-amber-500, .from-amber-600, .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500, .from-yellow-600, .from-red-400, .from-red-500, .from-red-600, .from-rose-400, .from-rose-500, .from-rose-600, .from-pink-400, .from-pink-500, .from-pink-600, .from-fuchsia-400, .from-fuchsia-500, .from-fuchsia-600, .from-purple-400, .from-purple-500, .from-purple-600, .from-violet-400, .from-violet-500, .from-violet-600, .from-indigo-400, .from-indigo-500, .from-indigo-600):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-b, .bg-gradient-to-l, .bg-gradient-to-bl) {
+  background-image: none !important;
+  background-color: #ECE8DE !important;
+  color: #2A2312 !important;
+  box-shadow: none !important;
+}
+html[data-color-preset="avenit"] :is(div, span):is(.from-blue-400, .from-blue-500, .from-blue-600, .from-sky-400, .from-sky-500, .from-sky-600, .from-cyan-400, .from-cyan-500, .from-cyan-600, .from-teal-400, .from-teal-500, .from-teal-600, .from-emerald-400, .from-emerald-500, .from-emerald-600, .from-green-400, .from-green-500, .from-green-600, .from-lime-400, .from-lime-500, .from-lime-600, .from-amber-400, .from-amber-500, .from-amber-600, .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500, .from-yellow-600, .from-red-400, .from-red-500, .from-red-600, .from-rose-400, .from-rose-500, .from-rose-600, .from-pink-400, .from-pink-500, .from-pink-600, .from-fuchsia-400, .from-fuchsia-500, .from-fuchsia-600, .from-purple-400, .from-purple-500, .from-purple-600, .from-violet-400, .from-violet-500, .from-violet-600, .from-indigo-400, .from-indigo-500, .from-indigo-600):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-b, .bg-gradient-to-l, .bg-gradient-to-bl) :is(.text-white, svg) {
+  color: #2A2312 !important;
+}
+
+/* ── Dekoracyjne tła-gradienty z odcieniem akcentu na sekcjach → płaski papier/biel ── */
+html[data-color-preset="avenit"] :is(div, section, main):is(.bg-gradient-to-br, .bg-gradient-to-b, .bg-gradient-to-r, .bg-gradient-to-tr):is([class*="to-accent-primary-lightest"], [class*="to-accent-secondary-lightest"], [class*="via-accent-primary-lightest"], [class*="from-accent-primary-lightest"]) {
+  background-image: none !important;
+}
+
+/* Pola-divy: pełna biel (bez półprzezroczystości i rozmycia), ramka jak w zwykłych polach. */
+html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl { background-color: #FFFFFF !important; backdrop-filter: none !important; }
+html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl:not(.border-accent-primary-light) { border-color: rgb(var(--gray-200)) !important; }
+
+/* Tabele: globalny nagłówek z gradientem akcentu (index.css) → spokojny papier, hover wiersza neutralny. */
+html[data-color-preset="avenit"] thead { background-image: none !important; background-color: rgb(var(--gray-50)); }
+html.dark[data-color-preset="avenit"] thead { background-color: rgb(var(--gray-800)); }
+html[data-color-preset="avenit"]:not(.dark) tbody tr:hover { background-color: rgb(var(--gray-50)); }
+html[data-color-preset="avenit"] table { box-shadow: none; backdrop-filter: none; }
+
+/* ── Tryb ciemny: kafelki ikon/plakietki (papier #ECE8DE w jasnym) → ciemny papier ze
+   złamaną bielą, inaczej świecą jak białe kwadraty na ciemnych kartach. ── */
+html.dark[data-color-preset="avenit"] :is(div, span, i, p):is(
+  .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
+  .from-accent-secondary, .from-accent-secondary-light,
+  .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
+  .bg-accent-secondary, .bg-accent-secondary-light
+),
+html.dark[data-color-preset="avenit"] :is(div, span):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-b, .bg-gradient-to-l, .bg-gradient-to-bl):is(.from-blue-400, .from-blue-500, .from-blue-600, .from-sky-400, .from-sky-500, .from-sky-600, .from-cyan-400, .from-cyan-500, .from-cyan-600, .from-teal-400, .from-teal-500, .from-teal-600, .from-emerald-400, .from-emerald-500, .from-emerald-600, .from-green-400, .from-green-500, .from-green-600, .from-lime-400, .from-lime-500, .from-lime-600, .from-amber-400, .from-amber-500, .from-amber-600, .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500, .from-yellow-600, .from-red-400, .from-red-500, .from-red-600, .from-rose-400, .from-rose-500, .from-rose-600, .from-pink-400, .from-pink-500, .from-pink-600, .from-fuchsia-400, .from-fuchsia-500, .from-fuchsia-600, .from-purple-400, .from-purple-500, .from-purple-600, .from-violet-400, .from-violet-500, .from-violet-600, .from-indigo-400, .from-indigo-500, .from-indigo-600) {
+  background-color: rgb(var(--gray-700)) !important;
+  color: #F6F4EE !important;
+}
+html.dark[data-color-preset="avenit"] :is(div, span, i, p):is(
+  .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
+  .from-accent-secondary, .from-accent-secondary-light,
+  .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
+  .bg-accent-secondary, .bg-accent-secondary-light
+) :is(.text-white, svg),
+html.dark[data-color-preset="avenit"] :is(div, span):is(.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-b, .bg-gradient-to-l, .bg-gradient-to-bl):is(.from-blue-400, .from-blue-500, .from-blue-600, .from-sky-400, .from-sky-500, .from-sky-600, .from-cyan-400, .from-cyan-500, .from-cyan-600, .from-teal-400, .from-teal-500, .from-teal-600, .from-emerald-400, .from-emerald-500, .from-emerald-600, .from-green-400, .from-green-500, .from-green-600, .from-lime-400, .from-lime-500, .from-lime-600, .from-amber-400, .from-amber-500, .from-amber-600, .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500, .from-yellow-600, .from-red-400, .from-red-500, .from-red-600, .from-rose-400, .from-rose-500, .from-rose-600, .from-pink-400, .from-pink-500, .from-pink-600, .from-fuchsia-400, .from-fuchsia-500, .from-fuchsia-600, .from-purple-400, .from-purple-500, .from-purple-600, .from-violet-400, .from-violet-500, .from-violet-600, .from-indigo-400, .from-indigo-500, .from-indigo-600) :is(.text-white, svg) {
+  color: #F6F4EE !important;
+}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useModuleLabel, useModuleColor, useModuleCover } from '../hooks/useModuleLabel';
 import CoverPicker from './CoverPicker';
+import { useBrandTheme } from '../hooks/useBrandTheme';
 
 // Kanoniczny nagłówek modułu w stylu Monday: DOMYŚLNIE czysto — kafel ikony + tytuł + podtytuł
 // na jasnym tle, dużo powietrza (bez wielkiego banera). Okładka jest OPCJONALNA: baner pojawia
@@ -38,10 +39,13 @@ const BANNER_SIZES = {
 
 export default function PageHeader({ icon: Icon, title, subtitle, actions, iconColor, className = '', moduleKey, cover = true }) {
   const dynamicTitle = useModuleLabel(moduleKey, title);
+  // Motyw „Avenit”: nagłówek jak w aplikacji mobilnej — bez banera/okładki, ikona na papierze,
+  // duży tytuł w słodzie (kolor modułu nie barwi kafelka — bez „tęczy”).
+  const brand = useBrandTheme();
   const moduleColor = useModuleColor(moduleKey);
   const coverCfg = useModuleCover(moduleKey);
   const chipColor = iconColor || moduleColor;
-  const chipStyle = chipColor ? { background: chipColor } : undefined;
+  const chipStyle = chipColor && !brand ? { background: chipColor } : undefined;
 
   // Baner ZAWSZE obecny (tytuł na banerze — nigdy nie „wisi" sam na jasnym tle).
   // Tło banera wg priorytetu: 1) zdjęcie, 2) gradient/kolor okładki, 3) fallback =
@@ -61,23 +65,24 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
   const subColor = onLight ? 'text-gray-600' : 'text-white/85';
   // Wysokość banera (konfigurowalna) + „off" = bez banera (kompaktowy nagłówek).
   const heightKey = ['sm', 'md', 'lg', 'off'].includes(coverCfg?.height) ? coverCfg.height : 'md';
-  const bannerOff = !cover || heightKey === 'off';
+  const bannerOff = !cover || heightKey === 'off' || brand;
   const S = BANNER_SIZES[heightKey] || BANNER_SIZES.md;
 
   if (bannerOff) {
     return (
       <div className={`flex items-center gap-3 ${className}`}>
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary" style={chipStyle}>
+        <div className={`${brand ? 'w-14 h-14 rounded-full' : 'w-12 h-12 rounded-2xl shadow-md'} flex items-center justify-center shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary`} style={chipStyle}>
           {Icon && <Icon className="text-white w-6 h-6" />}
         </div>
         <div className="min-w-0">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate tracking-tight">{dynamicTitle}</h1>
-          {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{subtitle}</p>}
+          <h1 className={`${brand ? 'text-[28px] leading-tight font-extrabold tracking-[-0.03em]' : 'text-xl font-bold tracking-tight'} text-gray-900 dark:text-white truncate`}>{dynamicTitle}</h1>
+          {subtitle && <p className={`${brand ? 'text-[15px] mt-0.5' : 'text-sm'} text-gray-500 dark:text-gray-400 truncate`}>{subtitle}</p>}
         </div>
         <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
           {actions}
-          {/* Bez baneru wciąż da się wejść w ustawienia okładki (inaczej „off" = brak wejścia). */}
-          {cover && moduleKey && <CoverPicker moduleKey={moduleKey} />}
+          {/* Bez baneru wciąż da się wejść w ustawienia okładki (inaczej „off" = brak wejścia).
+              W motywie „Avenit” okładek nie ma — przycisk ukryty. */}
+          {cover && moduleKey && !brand && <CoverPicker moduleKey={moduleKey} />}
         </div>
       </div>
     );

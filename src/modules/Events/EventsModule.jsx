@@ -36,7 +36,7 @@ export default function EventsModule() {
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      <div className="px-4 pt-4 md:px-6 md:pt-6">
         <PageHeader
           moduleKey="calendar"
           icon={CalendarIcon}
