@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarDays, ClipboardList, Users, Heart, MessageCircle, Home, Wallet, Search } from 'lucide-react';
 import { openCommandPalette } from '../../../components/CommandPalette';
 import { tr } from '../../../i18n';
+import { TONE } from '../../../lib/brandTone';
 
 // Skróty do najczęściej używanych miejsc aplikacji.
 const ACTIONS = [
@@ -20,7 +21,7 @@ export default function QuickAccessWidget() {
   const navigate = useNavigate();
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-      {ACTIONS.map((a) => {
+      {ACTIONS.map((a, i) => {
         const Icon = a.icon;
         return (
           <button
@@ -28,7 +29,8 @@ export default function QuickAccessWidget() {
             onClick={() => (a.action ? a.action() : navigate(a.to))}
             className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-gray-100 dark:border-gray-700/60 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm transition-all"
           >
-            <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${a.color}`}>
+            {/* W motywie Avenit kolory skrótów → tony marki: na papierowym kafelku na przemian jasna kurkuma i słód. */}
+            <span data-tone={i % 2 ? TONE.slod : TONE.soft} className={`w-10 h-10 rounded-xl flex items-center justify-center ${a.color}`}>
               <Icon size={18} />
             </span>
             <span className="text-xs font-medium text-gray-600 dark:text-gray-300 text-center leading-tight">{a.label}</span>

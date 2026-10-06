@@ -4,6 +4,7 @@ import { MessageCircle, Users, Music, Zap, Sparkles, Baby, Home, Heart, UserChec
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { getInitials, stringToColor } from '../../../utils/text';
+import { brandTone } from '../../../lib/brandTone';
 
 // Ikony dla kanałów służb
 const ministryIcons = {
@@ -238,6 +239,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
 
     return (
       <div
+        data-tone={brandTone(sender?.email || conv.name)}
         className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
         style={{ backgroundColor: stringToColor(sender?.email || conv.name) }}
       >

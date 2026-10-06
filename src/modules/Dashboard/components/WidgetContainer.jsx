@@ -4,6 +4,24 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Maximize2, Minimize2, EyeOff } from 'lucide-react';
 import { WIDGET_SIZES } from '../utils/layoutDefaults';
 import { tr } from '../../../i18n';
+import { TONE, brandTone } from '../../../lib/brandTone';
+
+// Ton kółka ikony w motywie Avenit — rozłożone ręcznie, żeby sąsiednie widżety się różniły
+// (papier / jasna kurkuma / słód), zamiast rzędu identycznych beżowych kółek.
+const WIDGET_TONE = {
+  ministry: TONE.slod,
+  tasks: TONE.soft,
+  absences: TONE.paper,
+  prayers: TONE.soft,
+  onlineUsers: TONE.paper,
+  unreadMessages: TONE.slod,
+  upcomingEvents: TONE.soft,
+  quickAccess: TONE.slod,
+  birthdays: TONE.soft,
+  rsvpSummary: TONE.paper,
+  givingMonth: TONE.slod,
+  attendance: TONE.paper,
+};
 
 export default function WidgetContainer({
   widgetId,
@@ -46,7 +64,7 @@ export default function WidgetContainer({
     >
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750">
+        <div className="widget-head flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750">
           <div className="flex items-center gap-2">
             {isCustomizing && (
               <button
@@ -58,11 +76,11 @@ export default function WidgetContainer({
               </button>
             )}
             {Icon && (
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center">
+              <div data-tone={WIDGET_TONE[widgetId] ?? brandTone(widgetId)} className="widget-icon w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center">
                 <Icon size={16} className="text-white" />
               </div>
             )}
-            <h3 className="font-semibold text-gray-800 dark:text-white">{title}</h3>
+            <h3 className="widget-title font-semibold text-gray-800 dark:text-white">{title}</h3>
           </div>
 
           {isCustomizing && (

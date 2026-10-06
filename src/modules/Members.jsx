@@ -21,6 +21,7 @@ import PageHeader from '../components/PageHeader';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
+import { brandTone } from '../lib/brandTone';
 import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
@@ -594,7 +595,7 @@ export default function Members() {
             { key: 'Sympatyk', label: tr('Sympatycy'), count: members.filter((m) => m.status === 'Sympatyk').length, Icon: HeartHandshake, color: 'text-blue-500' },
             { key: 'Gość', label: tr('Goście'), count: members.filter((m) => m.status === 'Gość').length, Icon: Users, color: 'text-gray-400' },
           ].map((s) => (
-            <button key={s.key} onClick={() => setStatusFilter(s.key)}
+            <button key={s.key} onClick={() => setStatusFilter(s.key)} data-pick data-selected={statusFilter === s.key}
               className={`text-left rounded-2xl border p-4 transition bg-white dark:bg-gray-800 ${statusFilter === s.key ? 'border-accent-primary ring-2 ring-accent-primary/20' : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark'}`}>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{s.label}</span>
@@ -674,7 +675,7 @@ export default function Members() {
                 <TR key={member.id}>
                   <TD>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest dark:to-accent-secondary-darkest flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold shadow-sm border border-white dark:border-gray-700">
+                      <div data-tone={brandTone(`${member.first_name || ''} ${member.last_name || ''}`)} className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest dark:to-accent-secondary-darkest flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold shadow-sm border border-white dark:border-gray-700">
                         {member.first_name?.[0]}{member.last_name?.[0]}
                       </div>
                       <div>

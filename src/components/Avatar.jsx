@@ -1,5 +1,6 @@
 import React from 'react';
 import { getInitials, stringToColor } from '../utils/text';
+import { brandTone } from '../lib/brandTone';
 
 // Kanoniczny avatar (design system): zdjęcie (url) albo inicjały na deterministycznym kolorze
 // z nazwy/e-maila. Zastępuje ~12 ad-hoc kółek-z-inicjałem rozsianych po modułach.
@@ -16,7 +17,7 @@ export default function Avatar({ name, email, url, size = 36, className = '', ti
     );
   }
   return (
-    <div title={title || label}
+    <div title={title || label} data-tone={brandTone(email || name)}
       className={`rounded-full flex items-center justify-center text-white font-semibold shrink-0 select-none ${className}`}
       style={{ width: px, height: px, backgroundColor: stringToColor(email || name || '?'), fontSize: Math.max(10, Math.round(px * 0.4)) }}>
       {getInitials(name || email)}
