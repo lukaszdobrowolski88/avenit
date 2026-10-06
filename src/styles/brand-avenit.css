@@ -399,13 +399,13 @@ html[data-color-preset="avenit"] :is(button, a, [role="button"], input[type="sub
   .from-accent-secondary, .from-accent-secondary-light,
   .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
   .bg-accent-secondary, .bg-accent-secondary-light
-):not(.brand-flat):hover:not(:disabled) { transform: translateY(-1px); }
+):not(.brand-flat):not(.h-5):not(.h-6):hover:not(:disabled) { transform: translateY(-1px); }
 html[data-color-preset="avenit"] :is(button, a, [role="button"], input[type="submit"]):is(
   .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
   .from-accent-secondary, .from-accent-secondary-light,
   .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
   .bg-accent-secondary, .bg-accent-secondary-light
-):not(.brand-flat):active:not(:disabled) { transform: translateY(0) scale(0.98); }
+):not(.brand-flat):not(.h-5):not(.h-6):active:not(:disabled) { transform: translateY(0) scale(0.98); }
 
 /* Kółko nagłówka strony (słód) z głębią. */
 html[data-color-preset="avenit"] [data-tone][data-tone][data-tone="2"].w-14.h-14 { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 12px 24px -12px rgba(42, 35, 18, 0.60) !important; }
@@ -492,3 +492,124 @@ html[data-color-preset="avenit"] :nth-child(n+6) > .widget-card { animation-dela
   html[data-color-preset="avenit"] :is(.brand-hero, .brand-today, .widget-card) { animation: none; }
   html[data-color-preset="avenit"] * { transition-duration: 0.01ms !important; }
 }
+
+/* ═══ Stany po najechaniu (feedback: „po najechaniu kolory są niewidoczne”) ═══════════════════ */
+
+/* Wybrany kafelek-filtr zostaje słodowy także pod kursorem (reguła hover przycisków
+   drugorzędnych zamieniała mu tło na papier, a jasny tekst znikał). */
+html[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-pick][data-selected="true"],
+html[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-pick][data-selected="true"]:hover { background-color: #2A2312 !important; }
+html[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-pick][data-selected="true"]:hover { background-color: #3A3120 !important; }
+html.dark[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-pick][data-selected="true"],
+html.dark[data-color-preset="avenit"] [data-pick][data-pick][data-pick][data-pick][data-selected="true"]:hover { background-color: rgb(var(--gray-700)) !important; }
+
+/* Kurkuma jako kolor ikony/tekstu po najechaniu jest na jasnym tle nieczytelna (~1,6:1) → musztarda. */
+html[data-color-preset="avenit"]:not(.dark) :is(.group:hover .group-hover\:text-accent-primary-light, .group:hover .group-hover\:text-accent-primary, .group:hover .group-hover\:text-accent-secondary-light) { color: #8A6606 !important; }
+html[data-color-preset="avenit"]:not(.dark) :is(.hover\:text-accent-secondary:hover, .hover\:text-accent-primary-dark:hover) { color: #6B4F05 !important; }
+
+/* Tła po najechaniu: wyraźne, ciepłe, widoczne zarówno na bieli, jak i na papierze. */
+html[data-color-preset="avenit"]:not(.dark) :is(.hover\:bg-gray-50, .hover\:bg-gray-50\/50, .hover\:bg-gray-50\/70, .hover\:bg-white\/50, .hover\:bg-white\/60):hover { background-color: #F1EDE3 !important; }
+html[data-color-preset="avenit"]:not(.dark) :is(.hover\:bg-gray-100, .hover\:bg-gray-100\/50, .hover\:bg-gray-100\/70):hover { background-color: #EAE5D9 !important; }
+html[data-color-preset="avenit"]:not(.dark) :is(.hover\:bg-accent-primary-lightest, .hover\:bg-accent-secondary-lightest, .hover\:bg-accent-primary-lightest\/50, .hover\:bg-accent-primary-lightest\/40):hover { background-color: #FFF3CC !important; }
+html[data-color-preset="avenit"]:not(.dark) :is(.hover\:bg-accent-primary-lighter, .hover\:bg-accent-secondary-lighter):hover { background-color: #FFE9A6 !important; }
+/* Pełny akcent po najechaniu = kurkuma ze słodem (jak przycisk akcji), nigdy biały tekst na kurkumie. */
+html[data-color-preset="avenit"] :is(.hover\:bg-accent-primary, .hover\:bg-accent-primary-light, .hover\:bg-accent-secondary, .hover\:bg-accent-primary-dark):hover { background-color: #FFBE0B !important; color: #2A2312 !important; }
+html[data-color-preset="avenit"] :is(.hover\:bg-accent-primary, .hover\:bg-accent-primary-light, .hover\:bg-accent-secondary, .hover\:bg-accent-primary-dark):hover :is(svg, span, .text-white) { color: #2A2312 !important; }
+html[data-color-preset="avenit"]:not(.dark) :is(.hover\:border-accent-primary-light, .hover\:border-accent-primary, .hover\:border-accent-primary-light\/60, .hover\:border-accent-primary\/50):hover { border-color: #E8A800 !important; }
+/* Ciemny: hover „gray-800” na kartach gray-800 był niewidoczny. */
+html.dark[data-color-preset="avenit"] :is(.dark\:hover\:bg-gray-800, .dark\:hover\:bg-gray-800\/50, .dark\:hover\:bg-gray-700\/30, .dark\:hover\:bg-gray-700\/50, .dark\:hover\:bg-gray-900, .dark\:hover\:bg-accent-primary-darkest\/20, .dark\:hover\:bg-accent-primary-darkest\/30):hover { background-color: rgb(var(--gray-700)) !important; }
+
+/* ═══ Wspólne kontrolki (feedback: „dropdowny, selecty są różne w różnych miejscach”) ═════════
+   Jeden wygląd pola dla: input (tekst/e-mail/liczba/data/godzina…), textarea, natywnego <select>
+   i pól-divów (.ui-field: CustomSelect, CustomDatePicker, TimeInput). */
+html[data-color-preset="avenit"] {
+  --field-bg: #FFFFFF;
+  --field-border: 230 225 213;
+  --field-radius: 14px;
+  --field-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B6557' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+html.dark[data-color-preset="avenit"] {
+  --field-bg: rgb(var(--gray-800));
+  --field-border: 58 57 54;
+  --field-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23BEBAB3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+html[data-color-preset="avenit"] :is(
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="tel"],
+  input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"], input[type="search"], input[type="url"],
+  input:not([type]), textarea, select
+):not(.ui-field *):not([class*="bg-transparent"]),
+html[data-color-preset="avenit"] .ui-field.rounded-xl {
+  background-color: var(--field-bg) !important;
+  border: 1px solid rgb(var(--field-border)) !important;
+  border-radius: var(--field-radius) !important;
+  backdrop-filter: none !important;
+  color: rgb(var(--gray-900));
+}
+html.dark[data-color-preset="avenit"] :is(input, textarea, select):not(.ui-field *) { color: #F3F1EC; }
+html[data-color-preset="avenit"] :is(input, textarea)::placeholder { color: rgb(var(--gray-400)); opacity: 1; }
+html[data-color-preset="avenit"] .ui-field.rounded-xl:hover,
+html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.ui-field *):not(:focus):hover { border-color: rgb(var(--gray-300)) !important; }
+html[data-color-preset="avenit"] .ui-field.rounded-xl.border-accent-primary-light { border-color: #FFBE0B !important; box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.22) !important; }
+/* Natywny <select> wygląda jak CustomSelect: bez systemowej strzałki, ta sama ikona chevron. */
+html[data-color-preset="avenit"] select:not([multiple]):not([size]) {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: var(--field-chevron) !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.85rem center !important;
+  background-size: 16px 16px !important;
+  padding-right: 2.5rem !important;
+  cursor: pointer;
+}
+/* Pola w obrębie tego samego rozmiaru: domyślna wysokość jak przycisk md. */
+html[data-color-preset="avenit"] :is(input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="tel"], input[type="date"], input[type="search"], input[type="url"], select):not(.ui-field *):is(.py-3, .py-2\.5) { min-height: 2.75rem; }
+
+/* Rozwijana lista (CustomSelect, kalendarz) i menu kontekstowe — jeden styl panelu. */
+html[data-color-preset="avenit"] :is(.portal-dropdown-select, .portal-datepicker),
+html[data-color-preset="avenit"] div.absolute:is(.shadow-xl, .shadow-2xl, .shadow-lg):is(.bg-white):is(.rounded-lg, .rounded-xl, .rounded-2xl) {
+  border-color: transparent !important;
+  border-radius: 16px !important;
+  box-shadow: 0 0 0 1px rgba(42, 35, 18, 0.06), 0 18px 40px -16px rgba(42, 35, 18, 0.32) !important;
+}
+html.dark[data-color-preset="avenit"] :is(.portal-dropdown-select, .portal-datepicker),
+html.dark[data-color-preset="avenit"] div.absolute:is(.shadow-xl, .shadow-2xl, .shadow-lg):is(.bg-white):is(.rounded-lg, .rounded-xl, .rounded-2xl) {
+  background-color: rgb(var(--gray-800)) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 18px 40px -16px rgba(0, 0, 0, 0.7) !important;
+}
+html[data-color-preset="avenit"] .portal-dropdown-select { padding: 6px; }
+html[data-color-preset="avenit"] .portal-dropdown-select > div { border-radius: 10px; }
+html[data-color-preset="avenit"]:not(.dark) .portal-dropdown-select > div:hover { background-color: #F3EFE6 !important; }
+html[data-color-preset="avenit"] .portal-dropdown-select > div.bg-accent-primary-lightest { background-color: #FFF1C2 !important; color: #2A2312 !important; font-weight: 600; }
+html[data-color-preset="avenit"] .portal-dropdown-select > div.bg-accent-primary-lightest svg { color: #8A6606 !important; }
+html.dark[data-color-preset="avenit"] .portal-dropdown-select > div:hover { background-color: rgb(var(--gray-700)) !important; }
+html.dark[data-color-preset="avenit"] .portal-dropdown-select > div.bg-accent-primary-lightest { background-color: rgb(var(--gray-700)) !important; color: #FFBE0B !important; }
+
+/* Przełączniki segmentowe (Wszyscy/Członkowie…, Nadchodzące/Historia…): papierowa pigułka,
+   aktywny segment = biała pigułka z miękkim cieniem i słodowym tekstem. */
+html[data-color-preset="avenit"] div:is(.flex, .inline-flex).p-1:is(.rounded-lg, .rounded-xl, .rounded-2xl):is(.bg-gray-100, .bg-gray-50, .bg-white, .bg-white\/50, .bg-white\/60, .bg-white\/80, .bg-white\/20):has(> button + button) {
+  background-color: #ECE8DE !important;
+  border-color: transparent !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+html.dark[data-color-preset="avenit"] div:is(.flex, .inline-flex).p-1:is(.rounded-lg, .rounded-xl, .rounded-2xl):is(.bg-gray-100, .bg-gray-50, .bg-white, .bg-white\/50, .bg-white\/60, .bg-white\/80, .bg-white\/20):has(> button + button) { background-color: rgb(var(--gray-900)) !important; }
+html[data-color-preset="avenit"] div:is(.flex, .inline-flex).p-1:has(> button + button) > button { border-radius: 9999px !important; }
+html[data-color-preset="avenit"] div:is(.flex, .inline-flex).p-1:has(> button + button) > button:is(.bg-white, [class*=" shadow"]) {
+  background-color: #FFFFFF !important;
+  color: #2A2312 !important;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(42, 35, 18, 0.06), 0 4px 10px -4px rgba(42, 35, 18, 0.18) !important;
+}
+html.dark[data-color-preset="avenit"] div:is(.flex, .inline-flex).p-1:has(> button + button) > button:is(.bg-white, [class*=" shadow"]) { background-color: rgb(var(--gray-700)) !important; color: #F3F1EC !important; }
+html[data-color-preset="avenit"]:not(.dark) div:is(.flex, .inline-flex).p-1:has(> button + button) > button:not(.bg-white):not([class*=" shadow"]):not([class*="bg-accent"]):not([class*="from-accent"]):hover { background-color: rgba(255, 255, 255, 0.6) !important; }
+
+/* Przełączniki on/off: włączony zawsze kurkuma, wyłączony ciepła szarość; bez uniesień i poświaty. */
+html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6):is(.rounded-full) { box-shadow: none !important; transform: none !important; }
+html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6).rounded-full:is(.bg-accent-primary, .bg-accent-primary-light, .bg-emerald-500, .bg-green-500, .bg-blue-500, .bg-violet-500) { background-color: #FFBE0B !important; }
+html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6).rounded-full:is(.bg-gray-200, .bg-gray-300) { background-color: #D9D3C4 !important; }
+html[data-color-preset="avenit"] .peer:checked ~ [class*="peer-checked:bg-"] { background-color: #FFBE0B !important; }
+html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6).rounded-full > span.bg-white { box-shadow: 0 1px 3px rgba(42, 35, 18, 0.25) !important; }
+
+/* Checkboxy i radia w kolorze marki. */
+html[data-color-preset="avenit"] :is(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: #FFBE0B; }
