@@ -1,3 +1,5 @@
+
+import { escapeHtml } from '../../../../lib/html';
 import { appLocale } from '../../../../i18n';
 /**
  * Generuje HTML dla etykiety dziecka
@@ -109,19 +111,19 @@ export function generateChildLabel(checkin) {
     <body>
       <div class="label">
         <div class="header">
-          <span class="name">${name || 'Nieznane'}</span>
+          <span class="name">${escapeHtml(name || 'Nieznane')}</span>
           ${isGuest ? '<span class="guest-badge">GOŚĆ</span>' : ''}
         </div>
         ${displayCodes.length > 1 ? '<div class="codes-label">Kody odbioru (ostatnie 4 cyfry tel.)</div>' : ''}
         <div class="codes-container">
-          ${displayCodes.map(code => `<span class="security-code">${code}</span>`).join('')}
+          ${displayCodes.map(code => `<span class="security-code">${escapeHtml(code)}</span>`).join('')}
         </div>
         <div class="location">
-          ${location?.name || 'Sala'}
-          ${location?.room_number ? `<span class="room-number">(${location.room_number})</span>` : ''}
+          ${escapeHtml(location?.name || 'Sala')}
+          ${location?.room_number ? `<span class="room-number">(${escapeHtml(location.room_number)})</span>` : ''}
         </div>
-        ${allergies ? `<div class="allergies">⚠️ ALERGIE: ${allergies}</div>` : ''}
-        ${isGuest && parentPhone ? `<div class="parent-info">Rodzic: ${parentName} • ${parentPhone}</div>` : ''}
+        ${allergies ? `<div class="allergies">⚠️ ALERGIE: ${escapeHtml(allergies)}</div>` : ''}
+        ${isGuest && parentPhone ? `<div class="parent-info">Rodzic: ${escapeHtml(parentName)} • ${escapeHtml(parentPhone)}</div>` : ''}
       </div>
     </body>
     </html>
@@ -230,12 +232,12 @@ export function generateParentTicket(checkins, securityCode) {
         <div class="codes-container">
           ${displayCodes.map(c => `
             <div class="code-item">
-              <span class="security-code">${c.code}</span>
-              ${c.name ? `<span class="code-name">${c.name}</span>` : ''}
+              <span class="security-code">${escapeHtml(c.code)}</span>
+              ${c.name ? `<span class="code-name">${escapeHtml(c.name)}</span>` : ''}
             </div>
           `).join('')}
         </div>
-        <div class="children">${children.join(', ')}</div>
+        <div class="children">${escapeHtml(children.join(', '))}</div>
         <div class="date">${date}</div>
         <div class="instructions">${displayCodes.length > 1 ? 'Każdy z kodów może być użyty do odbioru' : 'Zachowaj ten bilet do odbioru dziecka'}</div>
       </div>

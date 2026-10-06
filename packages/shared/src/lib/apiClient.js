@@ -517,6 +517,13 @@ export function createApiClient({
           const clean = String(path).replace(/^\//, '');
           return { data: { publicUrl: `${storageOrigin()}/storage/${bucket}/${clean}` } };
         },
+        // Podpisany, krótko ważny link (buckety wrażliwe, np. deklaracje członkowskie).
+        async createSignedUrl(path, expiresIn = 300) {
+          const clean = String(path).replace(/^\//, '');
+          const { res, payload } = await requestJson(`/api/storage/${bucket}/sign`, { path: clean, expiresIn });
+          if (!res.ok) return { data: null, error: { message: payload?.error || `HTTP ${res.status}` } };
+          return { data: { signedUrl: `${storageOrigin()}${payload.signedPath}` }, error: null };
+        },
         async remove(paths) {
           const { res, payload } = await (async () => {
             const r = await request(`/api/storage/${bucket}`, {

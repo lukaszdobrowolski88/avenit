@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { formatMoney, formatDate, memberName } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
+import { escapeHtml } from '../../../lib/html';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { tr, appLocale } from '../../../i18n';
@@ -86,11 +87,11 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
     const rows = donor.items.map(d => `
       <tr>
         <td style="padding:6px 10px;border-bottom:1px solid #eee">${formatDate(d.donation_date)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${fundsById[d.fund_id]?.name || 'Darowizna'}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${(d.method || '').toUpperCase()}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${escapeHtml(fundsById[d.fund_id]?.name || 'Darowizna')}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${escapeHtml((d.method || '').toUpperCase())}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">${formatMoney(d.amount, d.currency)}</td>
       </tr>`).join('');
-    const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>Zestawienie darowizn ${year} — ${donor.name}</title>
+    const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>Zestawienie darowizn ${year} — ${escapeHtml(donor.name)}</title>
       <style>
         body{font-family:'Segoe UI',Arial,sans-serif;color:#1f2937;max-width:720px;margin:32px auto;padding:0 24px;line-height:1.5}
         h1{font-size:20px;margin:0 0 4px} .muted{color:#6b7280;font-size:13px}
@@ -103,13 +104,13 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
         @media print{body{margin:0}}
       </style></head><body>
       <div class="head">
-        <div><h1>${orgName || 'Zestawienie darowizn'}</h1><div class="muted">Roczne zestawienie darowizn za rok ${year}</div></div>
+        <div><h1>${escapeHtml(orgName || 'Zestawienie darowizn')}</h1><div class="muted">Roczne zestawienie darowizn za rok ${year}</div></div>
         <div class="muted" style="text-align:right">Data wystawienia:<br>${new Date().toLocaleDateString(appLocale())}</div>
       </div>
       <div class="box">
-        <strong>Darczyńca:</strong> ${donor.name}<br>
-        ${donor.address ? `<span class="muted">Adres: ${donor.address}</span><br>` : ''}
-        ${donor.email ? `<span class="muted">E-mail: ${donor.email}</span>` : ''}
+        <strong>Darczyńca:</strong> ${escapeHtml(donor.name)}<br>
+        ${donor.address ? `<span class="muted">Adres: ${escapeHtml(donor.address)}</span><br>` : ''}
+        ${donor.email ? `<span class="muted">E-mail: ${escapeHtml(donor.email)}</span>` : ''}
       </div>
       <table>
         <thead><tr><th>Data</th><th>Cel</th><th>Forma</th><th style="text-align:right">Kwota</th></tr></thead>
@@ -117,7 +118,7 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
       </table>
       <div class="total">Razem: ${formatMoney(donor.total)}</div>
       <div class="foot">
-        Niniejsze zestawienie potwierdza darowizny przekazane na rzecz ${orgName || 'organizacji'} w roku ${year}.
+        Niniejsze zestawienie potwierdza darowizny przekazane na rzecz ${escapeHtml(orgName || 'organizacji')} w roku ${year}.
         Darowizny na cele kultu religijnego / działalności pożytku publicznego mogą podlegać odliczeniu od podstawy opodatkowania
         zgodnie z obowiązującymi przepisami (ustawa o PIT). Dokument wygenerowany automatycznie.
       </div>

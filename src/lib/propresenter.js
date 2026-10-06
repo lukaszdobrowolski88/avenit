@@ -1,4 +1,5 @@
 import { toast } from './toast';
+import { escapeHtml } from './html';
 import { appLocale } from '../i18n';
 // ProPresenter Export - Generates Pro6 compatible playlist XML
 // Pro6 format can be imported into ProPresenter 7
@@ -281,7 +282,7 @@ export const exportServiceOrderText = (program, songsMap) => {
   }).catch(() => {
     // Fallback - show in new window
     const win = window.open('', '', 'width=600,height=400');
-    win.document.write(`<pre style="font-family:monospace;padding:20px;">${text}</pre>`);
+    win.document.write(`<pre style="font-family:monospace;padding:20px;">${escapeHtml(text)}</pre>`);
   });
 
   return text;

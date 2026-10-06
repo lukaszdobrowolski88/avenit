@@ -78,8 +78,14 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
         }
       }
     }
+    // Esc zamyka kalendarz, nie całe okno z formularzem (Modal sprawdza defaultPrevented).
+    const handleKey = (event) => { if (event.key === 'Escape') { event.preventDefault(); setIsOpen(false); } };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [isOpen]);
 
   // Nawigacja strzałkami zależna od widoku: dni → miesiąc, miesiące → rok, lata → 12 lat.

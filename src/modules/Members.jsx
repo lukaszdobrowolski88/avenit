@@ -29,6 +29,7 @@ import { useModuleLabel } from '../hooks/useModuleLabel';
 import { useModules } from '../hooks/useModules';
 import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
+import { openProtectedFile } from '../lib/protectedFiles';
 import { confirmDialog } from '../lib/dialog';
 
 // --- STAŁE DANE ---
@@ -759,6 +760,7 @@ export default function Members() {
                       {member.status === 'Członek' && member.membership_declaration_url && (
                         <a
                           href={member.membership_declaration_url}
+                          onClick={(e) => { e.preventDefault(); openProtectedFile(member.membership_declaration_url); }}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs text-accent-primary dark:text-accent-primary-light hover:underline"
@@ -902,6 +904,7 @@ export default function Members() {
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{tr('Deklaracja załączona')}</p>
                       <a
                         href={formData.membership_declaration_url}
+                        onClick={(e) => { e.preventDefault(); openProtectedFile(formData.membership_declaration_url); }}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1"

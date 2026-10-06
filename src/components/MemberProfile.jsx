@@ -4,6 +4,7 @@ import {
   CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote, CalendarCheck, HeartHandshake,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { openProtectedFile } from '../lib/protectedFiles';
 import { tr, appLocale } from '../i18n';
 import ResponsiveTabs from './ResponsiveTabs';
 import Modal from './Modal';
@@ -179,7 +180,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
             <Row icon={Calendar} label={tr('Członek od')}>{member.status === 'Członek' ? fmtDate(member.membership_date) : null}</Row>
             <Row icon={FileText} label={tr('Deklaracja członkowska')}>
               {member.membership_declaration_url && (
-                <a href={member.membership_declaration_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('Otwórz dokument')}</a>
+                <a href={member.membership_declaration_url} onClick={(e) => { e.preventDefault(); openProtectedFile(member.membership_declaration_url); }} target="_blank" rel="noopener noreferrer" className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('Otwórz dokument')}</a>
               )}
             </Row>
           </div>

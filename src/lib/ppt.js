@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { toast } from './toast';
+import { escapeHtml } from './html';
 import { tr, appLocale } from '../i18n';
 
 // Domyślne URL-e dla grafik PPT (można zmienić na URL-e z Supabase Storage)
@@ -173,14 +174,14 @@ export const generatePPT = async (program, songsMap) => {
         // Slajd z tłem - bez overlay, 100% oryginalna grafika
         slidesHtml += `
           <div class="slide content with-bg" style="background-image: url('${seriesGraphics.songBackground}'); background-size: cover; background-position: center;">
-            ${displayText ? `<div class="text">${displayText.replace(/\n/g, '<br/>')}</div>` : ''}
+            ${displayText ? `<div class="text">${escapeHtml(displayText).replace(/\n/g, '<br/>')}</div>` : ''}
           </div>
         `;
       } else {
         // Slajd bez tła
         slidesHtml += `
           <div class="slide content">
-            ${displayText ? `<div class="text">${displayText.replace(/\n/g, '<br/>')}</div>` : ''}
+            ${displayText ? `<div class="text">${escapeHtml(displayText).replace(/\n/g, '<br/>')}</div>` : ''}
           </div>
         `;
       }

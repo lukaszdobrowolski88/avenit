@@ -1244,7 +1244,10 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                         { id: 'transfer', label: tr('Przelew bankowy'), icon: CreditCard },
                         { id: 'cash', label: tr('Gotówka'), icon: DollarSign },
                         { id: 'paypal', label: 'PayPal', icon: CreditCard },
-                        { id: 'przelewy24', label: 'Przelewy24', icon: CreditCard }
+                        // Przelewy24 ukryte do czasu domknięcia płatności po stronie serwera (zgłoszenie +
+                        // konto kościoła) — dziś wpłata nie kończyła zgłoszenia. Zostaje tylko do odznaczenia.
+                        ...((localSettings.pricing?.paymentMethods || []).includes('przelewy24')
+                          ? [{ id: 'przelewy24', label: 'Przelewy24', icon: CreditCard }] : [])
                       ].map((method) => {
                         const isSelected = (localSettings.pricing?.paymentMethods || []).includes(method.id);
                         return (
