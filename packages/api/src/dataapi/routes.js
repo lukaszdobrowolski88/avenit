@@ -11,6 +11,7 @@ import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } 
 import { PII_TABLES, enforcePiiWrite, isPiiTable, redactPii } from './pii.js';
 import { enforceSharedWrite, enforceExpenseApproval } from './sharedWrites.js';
 import { isConversationTable, conversationScope, enforceConversationWrite, conversationAudience, assertConversationFilters } from './komunikator.js';
+import { isBoardTable, boardScope, enforceBoardWrite, boardAudience } from './boardsScope.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -275,6 +276,12 @@ export default async function dataApiRoutes(app) {
         await enforceConversationWrite(q, req);
       }
 
+      // Projekty: prywatne tablice tylko dla właściciela i edytorów (boardsScope.js).
+      if (isBoardTable(q.table)) {
+        q.__ownerScope = boardScope(q.table, req.user);
+        await enforceBoardWrite(q, req);
+      }
+
       // Wyczyść cache uprawnień przy zmianach ról/grantów.
       if (['app_permissions', 'permission_grants', 'app_roles', 'ministry_memberships'].includes(q.table) && q.op !== 'select') {
         invalidatePermissions(req.tenant.db_name);
@@ -338,7 +345,8 @@ export default async function dataApiRoutes(app) {
       if (q.op !== 'select') {
         const changed = Array.isArray(data) ? data : [data].filter(Boolean);
         // Komunikator: zmiana trafia tylko do uczestników rozmowy.
-        const audience = await conversationAudience(req.db, q.table, changed).catch(() => new Set());
+        const audience = (await conversationAudience(req.db, q.table, changed).catch(() => new Set()))
+          ?? (await boardAudience(req.db, q.table, changed).catch(() => new Set()));
         emitChange(req.tenant.slug, q.table, q.op, changed, { audience });
       }
 
