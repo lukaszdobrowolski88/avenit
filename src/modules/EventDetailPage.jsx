@@ -646,6 +646,9 @@ export default function EventDetailPage() {
               <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 font-semibold">Oczekuje: {invCounts.pending}</span>
               <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Wysłano: {invites.length}</span>
             </div>
+            {/* Lista zaproszonych (imiona, e-maile) tylko dla organizatora — reszta widzi liczniki;
+                serwer i tak wymazuje cudze dane osobowe. */}
+            {canManage && (
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {invites.map((i) => {
                 const m = STATUS_META[i.status] || STATUS_META.pending;
@@ -660,6 +663,7 @@ export default function EventDetailPage() {
                 );
               })}
             </div>
+            )}
           </>
         )}
       </Card>

@@ -8,6 +8,7 @@ import { emitChange } from '../realtime/hub.js';
 import { notifyOnWrite } from '../realtime/push-hooks.js';
 import { platformDisabledModules } from '../lib/platform-modules.js';
 import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
+import { PII_TABLES, enforcePiiWrite, isPiiTable, redactPii } from './pii.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -140,6 +141,12 @@ export default async function dataApiRoutes(app) {
       // Finanse (np. preset lidera) nie wystarcza — lider widzi propozycje swoich zespołów.
       const fullFinance = !resolver || resolver.can('action:finance:approve');
 
+      // Dane osobowe w zaproszeniach RSVP / zapisach (pii.js): obsługa widzi wszystko,
+      // reszta — cudze wiersze z wymazanymi danymi, zapis tylko własny.
+      const piiStaff = (table) => !resolver || resolver.can(PII_TABLES[table].staffCap);
+      const piiMe = { email: String(req.user.email || '').toLowerCase(), memberId: userRows[0]?.member_id ?? null };
+      const piiRestricted = isPiiTable(q.table) && !piiStaff(q.table);
+
       // Propozycje budżetu (T(null)): składa je każdy (liderzy z zakładki Finanse zespołu),
       // ale decyzję (zmiana statusu / usunięcie) podejmuje tylko action:finance:approve.
       // upsert to też zmiana istniejącego wiersza, a insert z gotowym statusem — decyzja.
@@ -178,10 +185,13 @@ export default async function dataApiRoutes(app) {
       // obecność w REGISTRY, więc np. dostęp do checkins dawał przez złączenie dane z modułu
       // Członkowie. Celowo bez CRUD per zasób — złączenia w obrębie modułu (programs →
       // program_types) działają jak dotąd. Admin i tryb legacy (grants null) bez zmian.
-      // Tabel osobistych nie wolno dociągać złączeniem — ominęłoby to zawężenie do właściciela.
+      // Tabel osobistych nie wolno dociągać złączeniem — ominęłoby to zawężenie do właściciela
+      // (a tabel z danymi osobowymi — wymazywanie cudzych danych, jeśli nie jesteś obsługą).
       if (q.select) {
         for (const [, child] of embeddedTablePairs(q.table, q.select)) {
-          if (isOwnedTable(child)) throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
+          if (isOwnedTable(child) || (isPiiTable(child) && !piiStaff(child))) {
+            throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
+          }
         }
       }
 
@@ -241,6 +251,8 @@ export default async function dataApiRoutes(app) {
         }
       }
 
+      if (piiRestricted) enforcePiiWrite(q, piiMe);
+
       // Tabele osobiste: wiersze tylko właściciela (patrz ownership.js) — dla każdego, także admina.
       if (isOwnedTable(q.table)) {
         q.__ownerScope = ownerScope(q.table, req.user);
@@ -267,6 +279,8 @@ export default async function dataApiRoutes(app) {
       const built = buildQuery(q);
       const result = await req.db.query(built.sql, built.params);
       let data = result.rows.map(unwrapRow);
+
+      if (piiRestricted && q.op === 'select') data = redactPii(q.table, data, piiMe);
 
       // Egzekwowanie pól przy odczycie: usuń kolumny bez prawa odczytu.
       if (access.resolver && q.op === 'select') {

@@ -12,6 +12,7 @@ import storageRoutes from './storage/routes.js';
 import publicPageRoutes from './public/routes.js';
 import { registerClient } from './realtime/hub.js';
 import { canAccess, loadGrants } from './dataapi/registry.js';
+import { isPiiTable } from './dataapi/pii.js';
 import { getTenantPool, resolveTenant } from './db.js';
 import { verifyAccessToken, AUD_TENANT } from './auth/tokens.js';
 import { config, isProd } from './config.js';
@@ -146,7 +147,10 @@ export async function buildServer() {
         userId: String(user.id),
         email: user.email,
         isAdmin: !!user.is_super_admin || adminRoles.has(user.role),
-        authorize: async (table) => (await canAccess({ pool, dbName: tenant.db_name, table, op: 'select', user })).ok,
+        // Tabele z danymi osobowymi (pii.js) wysyłałyby całe wiersze — realtime tylko dla admina.
+        authorize: async (table) =>
+          (!isPiiTable(table) || !!user.is_super_admin || adminRoles.has(user.role)) &&
+          (await canAccess({ pool, dbName: tenant.db_name, table, op: 'select', user })).ok,
       });
     } catch {
       socket.close(4401, 'unauthorized');

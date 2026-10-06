@@ -676,7 +676,11 @@ const Attendance = ({
     if (base) openUrl(`${base}/wydarzenie/${ev.eventId}`);
   };
 
-  const names = list.map((r) => r.full_name || r.user_email?.split('@')[0] || 'Uczestnik');
+  // Cudze dane widzi tylko organizator (serwer wymazuje je pozostałym) — lista pokazuje
+  // osoby z imieniem, a resztę jako liczbę.
+  const named = list.filter((r) => r.full_name || r.user_email);
+  const hiddenCount = list.length - named.length;
+  const names = named.map((r) => r.full_name || r.user_email?.split('@')[0] || 'Uczestnik');
   const summary =
     going === 0
       ? over
@@ -685,7 +689,7 @@ const Attendance = ({
       : over
         ? `${going} ${plural(going, 'osoba była', 'osoby były', 'osób było')}`
         : `${going} ${plural(going, 'osoba będzie', 'osoby będą', 'osób będzie')}`;
-  const shown = showAll ? list : list.slice(0, 5);
+  const shown = showAll ? named : named.slice(0, 5);
 
   return (
     <Card padded={false}>
@@ -792,13 +796,20 @@ const Attendance = ({
           </View>
         );
       })}
-      {list.length > 5 ? (
+      {hiddenCount > 0 ? (
+        <Text style={{ paddingHorizontal: 16, paddingVertical: 11, borderTopWidth: 1, borderTopColor: B.line, fontSize: 13, color: B.ink3, fontFamily: F.medium }}>
+          {named.length ? `+ ${hiddenCount} ` : `${hiddenCount} `}
+          {plural(hiddenCount, 'osoba', 'osoby', 'osób')}
+          {named.length ? ' więcej' : ''} — imiona widzi organizator
+        </Text>
+      ) : null}
+      {named.length > 5 ? (
         <Pressable
           onPress={() => setShowAll((v) => !v)}
           className="active:opacity-70"
           style={{ paddingVertical: 13, alignItems: 'center', borderTopWidth: 1, borderTopColor: B.line }}
         >
-          <Text style={{ fontSize: 13, color: B.gold, fontFamily: F.bold }}>{showAll ? 'Zwiń listę' : `Pokaż wszystkich (${list.length})`}</Text>
+          <Text style={{ fontSize: 13, color: B.gold, fontFamily: F.bold }}>{showAll ? 'Zwiń listę' : `Pokaż wszystkich (${named.length})`}</Text>
         </Pressable>
       ) : null}
     </Card>
