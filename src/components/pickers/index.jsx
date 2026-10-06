@@ -13,8 +13,10 @@ const fakeEvent = (value, name) => ({ target: { value, name }, currentTarget: { 
 const layoutClasses = (className = '') =>
   (className.match(/(^|\s)((?:[a-z]+:)?(?:w-\S+|min-w-\S+|max-w-\S+|flex-1|flex-none|shrink-0|grow|col-span-\S+|mt-\S+|mb-\S+))/g) || [])
     .map((c) => c.trim()).join(' ');
-// Atrybuty danych/dostępności (np. data-tour — kotwica samouczka) przechodzą na opakowanie.
-const passthrough = (rest) => Object.fromEntries(Object.entries(rest).filter(([k]) => /^(data-|aria-)|^id$/.test(k)));
+// Atrybuty danych (np. data-tour — kotwica samouczka) przechodzą na opakowanie, a `id` i aria-*
+// na samo pole — wtedy <label htmlFor={id}> / aria-labelledby nazywają pole dla czytnika ekranu.
+const passthrough = (rest) => Object.fromEntries(Object.entries(rest).filter(([k]) => /^data-/.test(k)));
+const fieldA11y = (rest) => Object.fromEntries(Object.entries(rest).filter(([k]) => /^aria-|^id$/.test(k)));
 const isCompact = (className = '') => /(^|\s)(py-0\.5|py-1|py-1\.5|text-xs|h-7|h-8)(\s|$)/.test(className);
 
 export function DateInput({ value, onChange, name, min, max, disabled, required, autoFocus, onBlur, placeholder, className = '', compact, ...rest }) {
@@ -31,6 +33,7 @@ export function DateInput({ value, onChange, name, min, max, disabled, required,
         clearable={!required}
         compact={compact ?? isCompact(className)}
         placeholder={placeholder}
+        {...fieldA11y(rest)}
       />
     </div>
   );
@@ -55,6 +58,7 @@ export function TimeField({ value, onChange, name, disabled, className = '', com
         disabled={disabled}
         compact={small}
         className={`w-full ${small ? 'px-2 py-1 rounded-xl border text-xs' : 'px-4 py-3 rounded-xl border'}`}
+        {...fieldA11y(rest)}
       />
     </div>
   );
@@ -76,6 +80,7 @@ export function DateTimeInput({ value, onChange, name, min, max, disabled, requi
           max={max ? String(max).slice(0, 10) : undefined}
           disabled={disabled}
           clearable={!required}
+          {...fieldA11y(rest)}
         />
       </div>
       <TimeInput

@@ -9,7 +9,7 @@ export default function EmptyState({ icon: Icon, title, subtitle, action, compac
       {/* Ikona w kółku; w motywie Avenit kółko w jasnej kurkumie (data-tone 1). */}
       {Icon && (
         <div data-tone={1} className={`${compact ? 'w-12 h-12 mb-3' : 'w-16 h-16 mb-4'} mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
-          <Icon size={compact ? 22 : 28} className="text-gray-400 dark:text-gray-500" />
+          <Icon size={compact ? 22 : 28} className="text-gray-400 dark:text-gray-500" aria-hidden="true" />
         </div>
       )}
       {title && <p className={`text-gray-600 dark:text-gray-300 font-medium ${compact ? 'text-sm' : ''}`}>{title}</p>}

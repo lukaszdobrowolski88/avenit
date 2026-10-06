@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useModuleLabel, useModuleColor, useModuleCover } from '../hooks/useModuleLabel';
 import CoverPicker from './CoverPicker';
 import { tr } from '../i18n';
@@ -38,11 +38,41 @@ const BANNER_SIZES = {
   lg: { band: 'h-40 sm:h-52', chip: 'w-14 h-14 sm:w-16 sm:h-16', icon: 'w-7 h-7 sm:w-8 sm:h-8', title: 'text-3xl sm:text-4xl', gChip: 'w-12 h-12', gIcon: 'w-7 h-7', gTitle: 'text-2xl sm:text-3xl' },
 };
 
+// Tytuł karty przeglądarki „<tytuł> · Avenit” (WCAG 2.4.2) — rozróżnialne karty, historia i
+// statystyki odsłon. Gdy na stronie jest kilka nagłówków (np. osadzony moduł), wygrywa ten
+// zamontowany najwcześniej (nagłówek strony); po odmontowaniu wszystkich wraca „Avenit”.
+const BRAND_TITLE = 'Avenit';
+const titleStack = [];
+function applyDocumentTitle() {
+  if (typeof document === 'undefined') return;
+  const top = titleStack.find((e) => e.title);
+  document.title = top ? `${top.title} · ${BRAND_TITLE}` : BRAND_TITLE;
+}
+function useDocumentTitle(title) {
+  const entry = useRef(null);
+  useEffect(() => {
+    const e = { title: '' };
+    entry.current = e;
+    titleStack.push(e);
+    return () => {
+      const i = titleStack.indexOf(e);
+      if (i !== -1) titleStack.splice(i, 1);
+      applyDocumentTitle();
+    };
+  }, []);
+  useEffect(() => {
+    if (!entry.current) return;
+    entry.current.title = typeof title === 'string' ? title.trim() : '';
+    applyDocumentTitle();
+  }, [title]);
+}
+
 export default function PageHeader({ icon: Icon, title, subtitle, actions, iconColor, className = '', moduleKey, cover = true }) {
   // Nazwa modułu z bazy (np. domyślne „Hojność”) tłumaczona przy wyświetlaniu; własna nazwa
   // nadana przez kościół nie ma wpisu w słowniku, więc zostaje bez zmian.
   const rawTitle = useModuleLabel(moduleKey, title);
   const dynamicTitle = typeof rawTitle === 'string' ? tr(rawTitle) : rawTitle;
+  useDocumentTitle(dynamicTitle);
   subtitle = typeof subtitle === 'string' ? tr(subtitle) : subtitle;
   // Motyw „Avenit”: nagłówek jak w aplikacji mobilnej — bez banera/okładki, ikona na papierze,
   // duży tytuł w słodzie (kolor modułu nie barwi kafelka — bez „tęczy”).

@@ -107,6 +107,31 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
   animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
 }
+/* To samo, gdy ograniczenie ruchu jest włączone w systemie (WCAG 2.3.3 / 2.2.2) — także
+   pulsujące liczniki, podskakujące kropki „pisze…”, płynne przewijanie. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* Wyjątek: kręcący się wskaźnik ładowania to informacja („trwa zapis”), nie ozdoba — zostaje. */
+html.reduce-motion .animate-spin { animation-duration: 1s !important; animation-iteration-count: infinite !important; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin { animation-duration: 1s !important; animation-iteration-count: infinite !important; }
+}
+
+/* Ekrany dotykowe: pola tekstowe min. 16 px — iOS nie powiększa wtedy strony przy fokusie
+   (powód dawnej blokady powiększania w index.html; szczypanie musi działać — WCAG 1.4.4). */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="color"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}
 
 /* Pasek przewijania w kolorze akcentu (opcjonalny akcent wizualny). */
 html.scrollbar-accent ::-webkit-scrollbar-thumb { background: rgb(var(--accent-primary-light)); }

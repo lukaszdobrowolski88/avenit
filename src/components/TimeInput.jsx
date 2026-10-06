@@ -10,7 +10,9 @@ const HOURS = Array.from({ length: 24 }, (_, i) => pad(i));
 // Pole godziny HH:MM: wpisywanie z klawiatury (auto-przeskok do minut) ALBO wybór z listy —
 // kliknięcie pola otwiera panel z kolumnami godzin i minut (jak kółka w aplikacji mobilnej).
 // Wartość i onChange operują na stringu "HH:MM" (jak natywne <input type=time>).
-export default function TimeInput({ value = '', onChange, className = '', placeholder = '--', disabled = false, minuteStep = 5, compact = false }) {
+// Dostępność: `id` trafia na pole godzin (działa <label htmlFor>), `aria-label`/`aria-labelledby`
+// nazywają całą grupę „godzina : minuty”.
+export default function TimeInput({ value = '', onChange, className = '', placeholder = '--', disabled = false, minuteStep = 5, compact = false, id, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledBy, 'aria-describedby': ariaDescribedBy }) {
   const [hhRaw = '', mmRaw = ''] = String(value || '').split(':');
   const wrapRef = useRef(null);
   const mmRef = useRef(null);
@@ -78,6 +80,10 @@ export default function TimeInput({ value = '', onChange, className = '', placeh
   return (
     <div
       ref={wrapRef}
+      role="group"
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
       onMouseDown={(e) => {
         if (disabled) return;
         // Klik w cyfry: pisanie z klawiatury + lista obok; klik w resztę pola przełącza listę.
@@ -86,10 +92,10 @@ export default function TimeInput({ value = '', onChange, className = '', placeh
       }}
       className={`ui-field inline-flex items-center gap-1 cursor-pointer ${disabled ? 'opacity-50 pointer-events-none' : ''} ${open ? 'border-accent-primary-light' : ''} ${className}`}
     >
-      <Clock size={compact ? 14 : 16} className="text-gray-400 mr-1 shrink-0" />
-      <input ref={hhRef} inputMode="numeric" value={hhRaw} onChange={onHour} onBlur={normalize} disabled={disabled}
+      <Clock size={compact ? 14 : 16} className="text-gray-400 mr-1 shrink-0" aria-hidden="true" />
+      <input ref={hhRef} id={id} inputMode="numeric" value={hhRaw} onChange={onHour} onBlur={normalize} disabled={disabled}
         placeholder={placeholder} aria-label={tr('Godzina')} className={seg} />
-      <span className="text-gray-400">:</span>
+      <span className="text-gray-400" aria-hidden="true">:</span>
       <input ref={mmRef} inputMode="numeric" value={mmRaw} onChange={onMinute} onKeyDown={onMinuteKey} onBlur={normalize} disabled={disabled}
         placeholder={placeholder} aria-label={tr('Minuty')} className={seg} />
 

@@ -2,7 +2,9 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- Bez maximum-scale/user-scalable: powiększanie szczypnięciem musi działać (WCAG 1.4.4).
+         Auto-zoom iOS przy fokusie pola usuwa reguła 16px dla pól na ekranach dotykowych (index.css). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#d97706" />
