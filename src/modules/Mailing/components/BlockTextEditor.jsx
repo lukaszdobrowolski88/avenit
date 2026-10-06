@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { EMAIL_VARIABLES } from '../utils/emailVariables';
 import { tr } from '../../../i18n';
+import { promptDialog } from '../../../lib/dialog';
 
 export default function BlockTextEditor({
   content,
@@ -76,11 +77,11 @@ export default function BlockTextEditor({
     }
   }, [content, editor]);
 
-  const setLink = useCallback(() => {
+  const setLink = useCallback(async () => {
     if (!editor) return;
 
     const previousUrl = editor.getAttributes('link').href;
-    const url = window.prompt('URL linku:', previousUrl || 'https://');
+    const url = await promptDialog('URL linku:', previousUrl || 'https://');
 
     if (url === null) return;
     if (url === '') {

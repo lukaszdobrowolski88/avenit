@@ -4,6 +4,7 @@ import { supabase } from '../../../../lib/supabase';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import { toast } from '../../../../lib/toast';
+import { confirmDialog } from '../../../../lib/dialog';
 
 export default function LocationManager({ onLocationsChange }) {
   const [locations, setLocations] = useState([]);
@@ -128,7 +129,7 @@ export default function LocationManager({ onLocationsChange }) {
   };
 
   const handleDelete = async (locationId) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć tę salę?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę salę?'))) return;
 
     try {
       const { error } = await supabase

@@ -11,6 +11,7 @@ import { toast } from '../../lib/toast';
 import { getCachedUser } from '../../lib/supabase';
 import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
 import Spinner from '../../components/Spinner';
+import { confirmDialog } from '../../lib/dialog';
 
 const TEAM_MEMBER_TABLE = {
   worship: 'worship_team', media: 'media_team', atmosfera: 'atmosfera_members',
@@ -200,7 +201,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
     setNewSection('');
   };
   const delSection = async (sectionKey) => {
-    if (!confirm('Usunąć tę sekcję wraz z przypisaniami?')) return;
+    if (!await confirmDialog('Usunąć tę sekcję wraz z przypisaniami?')) return;
     // wyczyść przypisania sekcji z silnika
     for (const role of rolesForSection({ key: sectionKey, isCustom: true })) {
       for (const n of csvNames(assign?.[sectionKey]?.[role.key])) { try { await removeEventAssignment(event.id, sectionKey, role.key, n); } catch { /* ignore */ } }

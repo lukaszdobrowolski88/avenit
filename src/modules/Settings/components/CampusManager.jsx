@@ -4,6 +4,7 @@ import { Plus, Edit3, Trash2, X, MapPin, GripVertical, ToggleLeft, ToggleRight }
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function CampusManager({ onMessage }) {
   const t = useT();
@@ -65,7 +66,7 @@ export default function CampusManager({ onMessage }) {
   };
 
   const deleteCampus = async (campus) => {
-    if (!window.confirm(`Usunąć kampus "${campus.name}"? Powiązane rekordy stracą przypisanie do kampusu.`)) return;
+    if (!await confirmDialog(`Usunąć kampus "${campus.name}"? Powiązane rekordy stracą przypisanie do kampusu.`)) return;
     const { error } = await supabase.from('campuses').delete().eq('id', campus.id);
     if (error) {
       onMessage?.({ type: 'error', text: tr('Błąd usuwania: ') + error.message });

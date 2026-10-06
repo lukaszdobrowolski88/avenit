@@ -16,6 +16,7 @@ import { tr } from '../../../i18n';
 import { useCan } from '../../../components/Can';
 import { toast } from '../../../lib/toast';
 import { DateTimeInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 const STEPS = [
   { id: 'basics', label: 'Podstawy', icon: FileText },
@@ -186,7 +187,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
   };
 
   const handleSend = async () => {
-    if (!confirm(tr('Czy na pewno chcesz wysłać tego maila? Ta operacja jest nieodwracalna.'))) {
+    if (!await confirmDialog(tr('Czy na pewno chcesz wysłać tego maila? Ta operacja jest nieodwracalna.'))) {
       return;
     }
 

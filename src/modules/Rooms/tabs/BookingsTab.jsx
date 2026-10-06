@@ -11,6 +11,7 @@ import {
   addWeeks, newUuid, startOfDay,
 } from '../lib/roomsApi';
 import { DateTimeInput } from '../../../components/pickers';
+import { choiceDialog, confirmDialog } from '../../../lib/dialog';
 
 function defaultTimes() {
   const start = new Date();
@@ -214,8 +215,14 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
   const remove = async (b) => {
     try {
       if (b.recurrence_group) {
-        const whole = confirm('Ta rezerwacja jest częścią serii cyklicznej.\n\nOK = usuń CAŁĄ serię\nAnuluj = usuń tylko tę jedną');
-        if (whole) {
+        const scope = await choiceDialog({
+          title: 'Usunąć rezerwację z serii?',
+          message: 'Ta rezerwacja jest częścią serii cyklicznej.',
+          danger: true,
+          choices: [{ value: 'one', label: 'Tylko tę' }, { value: 'all', label: 'Całą serię', danger: true }],
+        });
+        if (!scope) return;
+        if (scope === 'all') {
           const { error } = await supabase.from('resource_bookings').delete().eq('recurrence_group', b.recurrence_group);
           if (error) throw error;
         } else {
@@ -223,7 +230,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
           if (error) throw error;
         }
       } else {
-        if (!confirm('Usunąć tę rezerwację?')) return;
+        if (!await confirmDialog('Usunąć tę rezerwację?')) return;
         const { error } = await supabase.from('resource_bookings').delete().eq('id', b.id);
         if (error) throw error;
       }

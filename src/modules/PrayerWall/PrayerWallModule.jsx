@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { CATEGORIES } from './categories';
 import { tr } from '../../i18n';
+import { confirmDialog } from '../../lib/dialog';
 
 // ============================================
 // SKELETON LOADER
@@ -890,7 +891,7 @@ export default function PrayerWallModule() {
 
   // Usuń prośbę
   const handleDelete = async (requestId) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć tę intencję?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę intencję?'))) return;
 
     try {
       const { error } = await supabase

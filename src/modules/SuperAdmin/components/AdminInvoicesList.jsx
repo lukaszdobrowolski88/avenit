@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { tr } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function AdminInvoicesList() {
   const { getInvoices, markAsPaid, cancelInvoice, loading } = useInvoices();
@@ -33,7 +34,7 @@ export default function AdminInvoicesList() {
   }, [statusFilter]);
 
   const handleMarkAsPaid = async (invoiceId) => {
-    if (confirm(tr('Oznaczyć fakturę jako opłaconą?'))) {
+    if (await confirmDialog(tr('Oznaczyć fakturę jako opłaconą?'))) {
       await markAsPaid(invoiceId);
       loadInvoices();
     }
@@ -41,7 +42,7 @@ export default function AdminInvoicesList() {
   };
 
   const handleCancel = async (invoiceId) => {
-    if (confirm(tr('Czy na pewno anulować tę fakturę?'))) {
+    if (await confirmDialog(tr('Czy na pewno anulować tę fakturę?'))) {
       await cancelInvoice(invoiceId);
       loadInvoices();
     }

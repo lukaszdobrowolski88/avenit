@@ -15,6 +15,7 @@ import { useCan } from '../../components/Can';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -578,7 +579,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   };
 
   const handleDelete = async (id) => {
-    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setShowModal(null);
       fetchEvents();

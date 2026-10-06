@@ -15,6 +15,8 @@ import {
 import { COLOR_PRESETS } from '../../../lib/colorPresets';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+import { confirmDialog, promptDialog } from '../../../lib/dialog';
+import { toast } from '../../../lib/toast';
 
 // Karta wyboru z ramką akcentu + znacznikiem po zaznaczeniu (wspólny wygląd dla pickerów).
 function PickCard({ selected, onClick, children, className = '' }) {
@@ -119,10 +121,10 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
       const rows = Object.entries(settings)
         .filter(([k]) => THEME_KEYS.includes(k) || k.startsWith('custom_color_preset_'))
         .map(([key, value]) => ({ key, value: String(value) }));
-      if (!rows.length) { alert(tr('Plik nie zawiera ustawień motywu')); return; }
+      if (!rows.length) { toast.error(tr('Plik nie zawiera ustawień motywu')); return; }
       await supabase.from('app_settings').upsert(rows, { onConflict: 'key' });
       window.location.reload();
-    } catch { alert(tr('Nieprawidłowy plik motywu')); }
+    } catch { toast.error(tr('Nieprawidłowy plik motywu')); }
   };
 
   // --- NAZWANE MOTYWY (wbudowane + zapisane przez użytkownika) ---
@@ -148,8 +150,8 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
   };
 
   // Zapisz bieżący wygląd jako nowy nazwany motyw.
-  const saveCurrentTheme = () => {
-    const name = prompt(tr('Nazwa motywu:'));
+  const saveCurrentTheme = async () => {
+    const name = await promptDialog(tr('Nazwa motywu:'));
     if (!name || !name.trim()) return;
     const settings = {};
     THEME_LOOK_KEYS.forEach((k) => { const v = get(k); if (v != null) settings[k] = v; });
@@ -164,7 +166,7 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
 
   // Przywróć domyślny wygląd — usuń klucze motywu i lokalny stan, przeładuj.
   const resetTheme = async () => {
-    if (!confirm(tr('Przywrócić domyślny wygląd? Bieżące ustawienia wyglądu zostaną usunięte.'))) return;
+    if (!await confirmDialog(tr('Przywrócić domyślny wygląd? Bieżące ustawienia wyglądu zostaną usunięte.'))) return;
     await supabase.from('app_settings').delete().in('key', THEME_KEYS);
     await supabase.from('app_settings').delete().like('key', 'custom_color_preset_%');
     clearThemeLocal();

@@ -8,6 +8,7 @@ import { NotificationProvider, useNotificationContext } from './contexts/Notific
 import { UnsavedChangesProvider } from './contexts/UnsavedChangesContext';
 import ToastContainer from './components/ToastNotification';
 import Toaster from './components/Toaster';
+import DialogHost from './components/DialogHost';
 
 import Sidebar, { SidebarProvider } from './components/Sidebar';
 import Navbar from './components/Navbar';
@@ -629,6 +630,7 @@ export default function App() {
     <I18nProvider>
       <AppInner />
       <Toaster />
+      <DialogHost />
     </I18nProvider>
   );
 }

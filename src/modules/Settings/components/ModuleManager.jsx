@@ -29,6 +29,7 @@ import { invalidateModuleLabels } from '../../../hooks/useModuleLabel';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 // Sortable Module Item
 function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, onDuplicate, onSaveTemplate, onEventConfig, tabCount }) {
@@ -500,7 +501,7 @@ export default function ModuleManager() {
                       </div>
                     </button>
                     {tpl.custom && (
-                      <button onClick={() => { if (confirm(tr('Usunąć ten szablon?'))) persistUserTemplates(userTemplates.filter((x) => x.key !== tpl.key)); }}
+                      <button onClick={async () => { if (await confirmDialog(tr('Usunąć ten szablon?'))) persistUserTemplates(userTemplates.filter((x) => x.key !== tpl.key)); }}
                         title={tr('Usuń szablon')} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Icons.Trash2 size={14} /></button>
                     )}
                   </div>

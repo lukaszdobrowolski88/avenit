@@ -5,6 +5,7 @@ import { SENDER_MAX, BODY_MAX } from '../constants';
 import { smsAnalysis } from '../utils/smsEncoding';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function TemplateGallery({ onUseTemplate }) {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = useSmsTemplates();
@@ -15,7 +16,7 @@ export default function TemplateGallery({ onUseTemplate }) {
   const handleEdit = (t) => { setEditing(t); setShowEditor(true); };
   const handleDelete = async (t) => {
     if (t.is_system) { toast.error(tr('Nie można usunąć szablonu systemowego.')); return; }
-    if (!confirm(`Usunąć szablon "${t.name}"?`)) return;
+    if (!await confirmDialog(`Usunąć szablon "${t.name}"?`)) return;
     try { await deleteTemplate(t.id); } catch (e) { toast.error(e.message); }
   };
 

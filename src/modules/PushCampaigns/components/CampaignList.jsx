@@ -9,6 +9,7 @@ import { STATUS_CONFIG } from '../constants';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 const STATUS_ICON = {
   draft: FileText, scheduled: Clock, sending: Send, sent: CheckCircle,
@@ -24,7 +25,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
   const filtered = campaigns.filter(c => filter === 'all' || c.status === filter);
 
   const handleDelete = async (c) => {
-    if (!confirm(`Usunąć kampanię "${c.name}"?`)) return;
+    if (!await confirmDialog(`Usunąć kampanię "${c.name}"?`)) return;
     try { await deleteCampaign(c.id); onRefresh?.(); } catch (e) { toast.error(e.message); }
     setMenuOpen(null);
   };
@@ -35,7 +36,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
   };
 
   const handleCancel = async (c) => {
-    if (!confirm(`Anulować zaplanowaną kampanię "${c.name}"?`)) return;
+    if (!await confirmDialog(`Anulować zaplanowaną kampanię "${c.name}"?`)) return;
     try { await cancelCampaign(c.id); onRefresh?.(); } catch (e) { toast.error(e.message); }
     setMenuOpen(null);
   };

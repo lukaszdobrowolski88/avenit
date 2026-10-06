@@ -28,6 +28,7 @@ import { tr } from '../i18n';
 import { toast } from '../lib/toast';
 import Spinner from '../components/Spinner';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
+import { confirmDialog } from '../lib/dialog';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -635,7 +636,7 @@ export default function MediaTeamModule() {
   };
 
   const deleteMember = async (id) => {
-    if (confirm(tr('Usunąć członka zespołu?'))) {
+    if (await confirmDialog(tr('Usunąć członka zespołu?'))) {
       try {
         const { error } = await supabase.from('media_team').delete().eq('id', id);
         if (error) throw error;
@@ -682,7 +683,7 @@ export default function MediaTeamModule() {
   };
 
   const deleteTask = async (id) => {
-    if (confirm(tr('Usunąć zadanie?'))) {
+    if (await confirmDialog(tr('Usunąć zadanie?'))) {
       try {
         const { error } = await supabase.from('media_tasks').delete().eq('id', id);
         if (error) throw error;

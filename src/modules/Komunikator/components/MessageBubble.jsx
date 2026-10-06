@@ -9,6 +9,7 @@ import PollCard from './PollCard';
 import PrayerCard from './PrayerCard';
 import EventCard from './EventCard';
 import { tr } from '../../../i18n';
+import { confirmDialog } from '../../../lib/dialog';
 
 // Podświetl @wzmianki w tekście
 function renderTextWithMentions(text) {
@@ -94,8 +95,8 @@ export default function MessageBubble({
     setShowMenu(false);
   };
   const handleCancelEdit = () => { setEditContent(message.content); setIsEditing(false); };
-  const handleDelete = () => {
-    if (window.confirm(tr('Czy na pewno chcesz usunąć tę wiadomość?'))) onDelete?.(message.id);
+  const handleDelete = async () => {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć tę wiadomość?'))) onDelete?.(message.id);
     setShowMenu(false);
   };
   const handleReply = () => { onReply?.(message); setShowMenu(false); };

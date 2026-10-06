@@ -8,6 +8,7 @@ import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 const currentYear = new Date().getFullYear();
 
@@ -127,7 +128,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
   };
 
   const remove = async (d) => {
-    if (!confirm('Usunąć tę darowiznę?')) return;
+    if (!await confirmDialog('Usunąć tę darowiznę?')) return;
     try {
       const { error } = await supabase.from('donations').delete().eq('id', d.id);
       if (error) throw error;

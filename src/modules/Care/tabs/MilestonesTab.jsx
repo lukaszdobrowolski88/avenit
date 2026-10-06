@@ -6,6 +6,7 @@ import { MILESTONE_TYPES, milestoneTypeLabel, formatDate } from '../lib/careApi'
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 const MILESTONE_ICONS = {
   'nawrócenie': Flag,
@@ -72,7 +73,7 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
   };
 
   const remove = async (item) => {
-    if (!confirm('Usunąć ten kamień milowy?')) return;
+    if (!await confirmDialog('Usunąć ten kamień milowy?')) return;
     try {
       const { error } = await supabase.from('member_milestones').delete().eq('id', item.id);
       if (error) throw error;

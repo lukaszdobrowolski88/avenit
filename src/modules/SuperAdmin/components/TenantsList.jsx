@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { tr } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
+import { confirmDialog, promptDialog } from '../../../lib/dialog';
 
 export default function TenantsList({ onSelectTenant }) {
   const { getTenants, suspendTenant, resumeTenant, extendTrial, loading } = useTenants();
@@ -37,7 +38,7 @@ export default function TenantsList({ onSelectTenant }) {
   }, [searchQuery, statusFilter]);
 
   const handleSuspend = async (tenantId) => {
-    if (confirm(tr('Czy na pewno chcesz zawiesić tego klienta?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz zawiesić tego klienta?'))) {
       await suspendTenant(tenantId);
       loadTenants();
     }
@@ -51,7 +52,7 @@ export default function TenantsList({ onSelectTenant }) {
   };
 
   const handleExtendTrial = async (tenantId) => {
-    const days = prompt(tr('O ile dni przedłużyć trial?'), '7');
+    const days = await promptDialog(tr('O ile dni przedłużyć trial?'), '7');
     if (days) {
       await extendTrial(tenantId, parseInt(days));
       loadTenants();

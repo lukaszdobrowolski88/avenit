@@ -22,6 +22,7 @@ import BuilderCanvas from './BuilderCanvas';
 import Inspector from './Inspector';
 import LayoutRenderer from '../../../CustomModule/components/LayoutRenderer';
 import { toast } from '../../../../lib/toast';
+import { promptDialog } from '../../../../lib/dialog';
 
 const collisionDetection = (args) => {
   const hits = pointerWithin(args);
@@ -82,8 +83,8 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave, o
     };
     reader.readAsText(file); e.target.value = ''; setMenuOpen(false);
   };
-  const saveAsTemplate = () => {
-    const name = window.prompt(tr('Nazwa szablonu:')); if (!name) return;
+  const saveAsTemplate = async () => {
+    const name = await promptDialog(tr('Nazwa szablonu:')); if (!name) return;
     const next = [...loadCustomTemplates(), { key: 'c_' + Date.now(), label: name, root: JSON.parse(JSON.stringify(root)) }];
     localStorage.setItem(CUSTOM_TPL_KEY, JSON.stringify(next)); setCustomTpls(next); setMenuOpen(false);
   };

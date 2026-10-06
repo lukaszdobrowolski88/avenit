@@ -19,6 +19,7 @@ import { summarizeColumn } from '../lib/summaries';
 import { applyView } from '../lib/viewData';
 import { resolveDragEnd } from '../lib/dnd';
 import { GROUP_COLORS } from '../lib/constants';
+import { confirmDialog } from '../../../lib/dialog';
 
 const HANDLE_W = 28;
 const NAME_MIN = 260;
@@ -182,7 +183,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
                   <button key={c} onClick={() => api.updateGroup(group.id, { color: c })} className="w-5 h-5 rounded" style={{ backgroundColor: c }} />
                 ))}
               </div>
-              <button onClick={() => { if (confirm(`Usunąć grupę „${group.name}" wraz z wszystkimi jej elementami?`)) api.deleteGroup(group.id); close(); }}
+              <button onClick={async () => { if (await confirmDialog(`Usunąć grupę „${group.name}" wraz z wszystkimi jej elementami?`)) api.deleteGroup(group.id); close(); }}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600">
                 <Trash2 size={14} /> Usuń grupę
               </button>
@@ -326,7 +327,7 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
   const statusCol = columns.find(c => c.type === 'status' || c.type === 'priority');
   const bulkStatus = (labelId) => { selected.forEach(id => data.updateCell(id, statusCol.id, labelId)); clearSelection(); };
   const bulkMove = (groupId) => { selected.forEach(id => data.moveItem(id, groupId)); clearSelection(); };
-  const bulkDelete = () => { if (confirm(`Usunąć zaznaczone elementy (${selected.size})?`)) { selected.forEach(id => data.deleteItem(id)); clearSelection(); } };
+  const bulkDelete = async () => { if (await confirmDialog(`Usunąć zaznaczone elementy (${selected.size})?`)) { selected.forEach(id => data.deleteItem(id)); clearSelection(); } };
 
   // ── DnD na poziomie CAŁEJ tablicy (jeden kontekst) → przeciąganie MIĘDZY grupami ──
   const sensors = useSensors(

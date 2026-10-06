@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { Loader2, MapPin, Search, Navigation, LocateFixed } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Geokodowanie adresów przez Nominatim (OSM) — cache w pamięci + localStorage, rate-limit.
 const mem = {};
@@ -135,11 +136,11 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
     } finally { setSearching(false); }
   };
   const useMyLocation = () => {
-    if (!navigator.geolocation) { window.alert(tr('Twoja przeglądarka nie wspiera lokalizacji.')); return; }
+    if (!navigator.geolocation) { toast.error(tr('Twoja przeglądarka nie wspiera lokalizacji.')); return; }
     setSearching(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => { setUserAt({ lat: pos.coords.latitude, lon: pos.coords.longitude }, tr('Twoja lokalizacja')); setSearching(false); },
-      () => { setSearching(false); window.alert(tr('Nie udało się pobrać lokalizacji.')); },
+      () => { setSearching(false); toast.error(tr('Nie udało się pobrać lokalizacji.')); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };

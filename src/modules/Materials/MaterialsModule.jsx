@@ -11,6 +11,8 @@ import FilePreviewModal from './components/FilePreviewModal';
 import ShareModal from './components/ShareModal';
 import MoveModal from './components/MoveModal';
 import { tr } from '../../i18n';
+import { confirmDialog, promptDialog } from '../../lib/dialog';
+import { toast } from '../../lib/toast';
 
 export default function MaterialsModule({ ministryKey = null, canEdit = false }) {
   // State
@@ -116,7 +118,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   }, [editingFolder, parentFolderForNew, createFolder, renameFolder]);
 
   const handleDeleteFolder = useCallback(async (folderId) => {
-    if (window.confirm(tr('Czy na pewno chcesz usunąć ten folder i wszystkie pliki w nim zawarte?'))) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć ten folder i wszystkie pliki w nim zawarte?'))) {
       await deleteFolder(folderId);
     }
   }, [deleteFolder]);
@@ -126,10 +128,10 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
 
   const handleRenameFile = useCallback(async (file) => {
     const base = (file.name || '').includes('.') ? file.name.slice(0, file.name.lastIndexOf('.')) : file.name;
-    const next = window.prompt(tr('Nowa nazwa pliku:'), base);
+    const next = await promptDialog(tr('Nowa nazwa pliku:'), base);
     if (next === null) return;
     try { await updateFileName(file.id, next, file.name); }
-    catch (e) { window.alert(tr('Nie udało się zmienić nazwy: ') + e.message); }
+    catch (e) { toast.error(tr('Nie udało się zmienić nazwy: ') + e.message); }
   }, [updateFileName]);
 
   const handlePreviewFile = useCallback((file) => {
@@ -151,17 +153,17 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   const dropFileToFolder = useCallback(async (folderId) => {
     if (!draggedFileId) return;
     const fid = draggedFileId; setDraggedFileId(null);
-    try { await moveFile(fid, folderId); } catch (e) { window.alert(tr('Nie udało się przenieść: ') + e.message); }
+    try { await moveFile(fid, folderId); } catch (e) { toast.error(tr('Nie udało się przenieść: ') + e.message); }
   }, [draggedFileId, moveFile]);
   // Edycja w „Udostępnione mi" (tylko pliki z prawem edycji) — operacja + odświeżenie widoku.
   const sharedRename = useCallback(async (file) => {
     const base = (file.name || '').includes('.') ? file.name.slice(0, file.name.lastIndexOf('.')) : file.name;
-    const next = window.prompt(tr('Nowa nazwa pliku:'), base);
+    const next = await promptDialog(tr('Nowa nazwa pliku:'), base);
     if (next === null) return;
-    try { await updateFileName(file.id, next, file.name); shares.fetchSharedWithMe(); } catch (e) { window.alert(e.message); }
+    try { await updateFileName(file.id, next, file.name); shares.fetchSharedWithMe(); } catch (e) { toast.error(e.message); }
   }, [updateFileName, shares]);
   const sharedDelete = useCallback(async (fileId, storagePath) => {
-    try { await deleteFile(fileId, storagePath); shares.fetchSharedWithMe(); } catch (e) { window.alert(e.message); }
+    try { await deleteFile(fileId, storagePath); shares.fetchSharedWithMe(); } catch (e) { toast.error(e.message); }
   }, [deleteFile, shares]);
   const handleMoveFile = useCallback((file) => setMovingItem({ id: file.id, name: file.name, isFolder: false }), []);
   const handleMove = useCallback(async (targetFolderId) => {

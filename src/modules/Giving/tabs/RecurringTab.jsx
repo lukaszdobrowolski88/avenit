@@ -8,6 +8,7 @@ import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 const emptyForm = {
   member_id: '', donor_name: '', fund_id: '', amount: '', frequency: 'monthly',
@@ -101,7 +102,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
   };
 
   const remove = async (p) => {
-    if (!confirm('Usunąć ten plan cykliczny?')) return;
+    if (!await confirmDialog('Usunąć ten plan cykliczny?')) return;
     try {
       const { error } = await supabase.from('giving_recurring').delete().eq('id', p.id);
       if (error) throw error;

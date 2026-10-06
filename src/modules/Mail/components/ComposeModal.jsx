@@ -8,6 +8,7 @@ import {
   Palette, ChevronDown, Eye, Edit3, Maximize2, Minimize2
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { confirmDialog, promptDialog } from '../../../lib/dialog';
 
 // Kolory do wyboru
 const TEXT_COLORS = [
@@ -141,8 +142,8 @@ export default function ComposeModal({
   }, [onUpdateDraft]);
 
   // Wstaw link
-  const insertLink = () => {
-    const url = prompt('Podaj adres URL:', 'https://');
+  const insertLink = async () => {
+    const url = await promptDialog('Podaj adres URL:', 'https://');
     if (url) {
       execCommand('createLink', url);
     }
@@ -760,8 +761,8 @@ export default function ComposeModal({
           </button>
 
           <button
-            onClick={() => {
-              if (confirm(tr('Czy na pewno usunąć tę wiadomość?'))) {
+            onClick={async () => {
+              if (await confirmDialog(tr('Czy na pewno usunąć tę wiadomość?'))) {
                 onClose();
               }
             }}

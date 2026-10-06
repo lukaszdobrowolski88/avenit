@@ -27,6 +27,7 @@ import { Settings as SettingsIcon } from 'lucide-react';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { injectCustomFont, applyFont, setBgUrl, applyBgPattern } from '../../lib/appearance';
+import { confirmDialog } from '../../lib/dialog';
 
 // Grupy nawigacji ustawień (menu po lewej).
 const SETTINGS_NAV = [
@@ -672,7 +673,7 @@ export default function GlobalSettings() {
   // Usuwanie/blokada/reset 2FA przez FUNKCJE SERWEROWE: rewokacja sesji, sprzątanie, guardy
   // (nie usuń/zablokuj siebie ani ostatniego admina) i audyt — patrz fn/delete-user, set-user-status.
   const deleteUser = async (id) => {
-    if (!confirm(tr('Usunąć użytkownika? Operacja jest nieodwracalna (usuwa konto i wylogowuje sesje).'))) return;
+    if (!await confirmDialog(tr('Usunąć użytkownika? Operacja jest nieodwracalna (usuwa konto i wylogowuje sesje).'))) return;
     const { error } = await supabase.functions.invoke('delete-user', { body: { userId: id } });
     if (error) { toast.error(error.message || tr('Błąd usuwania')); return; }
     fetchData(); loadAccountEvents();
@@ -680,19 +681,19 @@ export default function GlobalSettings() {
   };
   const toggleUserStatus = async (user) => {
     const active = !user.is_active;
-    if (!active && !confirm(tr('Zablokować użytkownika? Zostanie natychmiast wylogowany.'))) return;
+    if (!active && !await confirmDialog(tr('Zablokować użytkownika? Zostanie natychmiast wylogowany.'))) return;
     const { error } = await supabase.functions.invoke('set-user-status', { body: { userId: user.id, active } });
     if (error) { toast.error(error.message || tr('Nie udało się zmienić statusu')); return; }
     fetchData(); loadAccountEvents();
   };
   const resetUser2FA = async (user) => {
-    if (!confirm(tr('Zresetować 2FA temu użytkownikowi? Skonfiguruje je od nowa przy kolejnym logowaniu.'))) return;
+    if (!await confirmDialog(tr('Zresetować 2FA temu użytkownikowi? Skonfiguruje je od nowa przy kolejnym logowaniu.'))) return;
     const { error } = await supabase.functions.invoke('admin-reset-2fa', { body: { userId: user.id } });
     setMessage(error ? { type: 'error', text: error.message || tr('Błąd resetu 2FA') } : { type: 'success', text: tr('Zresetowano 2FA') });
     fetchData(); loadAccountEvents();
   };
   const forceLogoutUser = async (id) => {
-    if (!confirm(tr('Wylogować użytkownika ze wszystkich urządzeń?'))) return;
+    if (!await confirmDialog(tr('Wylogować użytkownika ze wszystkich urządzeń?'))) return;
     const { error } = await supabase.functions.invoke('force-logout-user', { body: { userId: id } });
     setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Wylogowano ze wszystkich urządzeń') });
     loadAccountEvents();
@@ -728,8 +729,8 @@ export default function GlobalSettings() {
     setMessage({ type: fail ? 'error' : 'success', text: `${label}: ${ok} ok${fail ? `, ${fail} ${tr('błędów')}` : ''}` });
   };
   const bulkActivate = () => bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: true } })).error, tr('Aktywowano'));
-  const bulkBlock = () => { if (confirm(tr('Zablokować zaznaczonych?'))) bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: false } })).error, tr('Zablokowano')); };
-  const bulkDelete = () => { if (confirm(tr('Usunąć zaznaczonych? Operacja nieodwracalna.'))) bulkRun(async id => (await supabase.functions.invoke('delete-user', { body: { userId: id } })).error, tr('Usunięto')); };
+  const bulkBlock = async () => { if (await confirmDialog(tr('Zablokować zaznaczonych?'))) bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: false } })).error, tr('Zablokowano')); };
+  const bulkDelete = async () => { if (await confirmDialog(tr('Usunąć zaznaczonych? Operacja nieodwracalna.'))) bulkRun(async id => (await supabase.functions.invoke('delete-user', { body: { userId: id } })).error, tr('Usunięto')); };
   const bulkChangeRole = () => { if (bulkRole) bulkRun(async id => (await supabase.functions.invoke('admin-update-user', { body: { userId: id, role: bulkRole } })).error, tr('Zmieniono rolę')); };
 
   const exportUsersCsv = () => {
@@ -781,7 +782,7 @@ export default function GlobalSettings() {
 
   // Funkcja do scalania zduplikowanych członków we wszystkich tabelach służb
   const mergeDuplicateMembers = async () => {
-    if (!confirm(tr('Czy na pewno chcesz scalić zduplikowanych członków? Ta operacja połączy członków o tym samym imieniu i nazwisku.'))) {
+    if (!await confirmDialog(tr('Czy na pewno chcesz scalić zduplikowanych członków? Ta operacja połączy członków o tym samym imieniu i nazwisku.'))) {
       return;
     }
 
@@ -861,7 +862,7 @@ export default function GlobalSettings() {
   };
 
   const addDict = async (category, label) => { const { data } = await supabase.from('app_dictionaries').insert([{ category, label, value: label }]).select(); if (data) setDictionaries([...dictionaries, data[0]]); };
-  const delDict = async (id) => { if(confirm(tr('Usunąć?'))) { await supabase.from('app_dictionaries').delete().eq('id', id); fetchData(); } };
+  const delDict = async (id) => { if(await confirmDialog(tr('Usunąć?'))) { await supabase.from('app_dictionaries').delete().eq('id', id); fetchData(); } };
 
   const togglePermission = async (role, resource, field, value) => {
     const existing = permissions.find(p => p.role === role && p.resource === resource);
@@ -1113,7 +1114,7 @@ export default function GlobalSettings() {
     setMessage({ type: 'success', text: 'Konto zatwierdzone — wysłano powitanie' });
   };
   const rejectUser = async (id) => {
-    if (!confirm(tr('Odrzucić i usunąć to zgłoszenie rejestracji?'))) return;
+    if (!await confirmDialog(tr('Odrzucić i usunąć to zgłoszenie rejestracji?'))) return;
     const { error } = await supabase.functions.invoke('reject-user', { body: { userId: id } });
     if (error) { setMessage({ type: 'error', text: error.message || 'Nie udało się odrzucić' }); return; }
     fetchData(); loadAccountEvents();

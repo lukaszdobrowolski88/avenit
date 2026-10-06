@@ -23,6 +23,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from '@dnd-kit/utilities';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { confirmDialog, promptDialog } from '../../lib/dialog';
 
 const PROGRAM_ELEMENTS = [
   'Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie',
@@ -2216,7 +2217,7 @@ export default function ProgramDetail() {
   };
 
   const handleSaveAsTemplate = async () => {
-    const name = window.prompt(tr('Podaj nazwę szablonu:'), program.title || 'Nowy szablon');
+    const name = await promptDialog(tr('Podaj nazwę szablonu:'), program.title || 'Nowy szablon');
     if (!name) return;
 
     try {
@@ -2252,7 +2253,7 @@ export default function ProgramDetail() {
   };
 
   const handleDeleteTemplate = async (templateId) => {
-    if (!window.confirm(tr('Czy na pewno chcesz usunąć ten szablon?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć ten szablon?'))) return;
     try {
       await supabase.from('program_templates').delete().eq('id', templateId);
       fetchTemplates();
@@ -2718,7 +2719,7 @@ export default function ProgramDetail() {
       return;
     }
 
-    const confirmed = window.confirm(`Wysłać program do ${recipients.length} osób?\n\nOdbiorcy:\n${recipients.join('\n')}`);
+    const confirmed = await confirmDialog(`Wysłać program do ${recipients.length} osób?\n\nOdbiorcy:\n${recipients.join('\n')}`);
     if (!confirmed) return;
 
     setIsSending(true);

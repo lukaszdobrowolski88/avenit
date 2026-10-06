@@ -8,6 +8,7 @@ import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 const emptyForm = {
   title: '',
@@ -130,7 +131,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
   };
 
   const remove = async (s) => {
-    if (!confirm('Usunąć tę sesję wraz z listą obecności?')) return;
+    if (!await confirmDialog('Usunąć tę sesję wraz z listą obecności?')) return;
     try {
       const { error } = await supabase.from('attendance_sessions').delete().eq('id', s.id);
       if (error) throw error;

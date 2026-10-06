@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase';
 import { useTwoFactor } from '../hooks/useTwoFactor';
 import { Shield, ArrowLeft } from 'lucide-react';
 import { tr, useT } from '../i18n';
-import { LOGIN_BG_OPTIONS } from '../lib/appearance';
+import { LOGIN_BG_OPTIONS, applyFont, applyHeadingFont, applyBackground, applyRadius, injectCustomFont } from '../lib/appearance';
+import { applyColorPreset, applyCustomColors } from '../lib/colorPresets';
 
 export default function Login() {
   const t = useT();
@@ -38,32 +39,31 @@ export default function Login() {
 
   const { verifyLoginCode, checkTwoFactorStatus, loading: verifyLoading } = useTwoFactor();
 
-  // Pobierz branding logowania przy starcie (logo, tło, teksty powitalne). Publiczny odczyt.
+  // Branding logowania przy starcie (logo, tło, teksty powitalne + motyw kościoła) — z publicznej
+  // konfiguracji rejestracji; dane API wymagają sesji, a wylogowanie czyści zapamiętany preset.
   useEffect(() => {
-    const fetchBranding = async () => {
-      try {
-        const { data } = await supabase
-          .from('app_settings')
-          .select('key, value')
-          .in('key', ['org_logo_url', 'login_bg', 'login_bg_url', 'login_title', 'login_subtitle']);
-        const m = {};
-        (data || []).forEach((s) => { m[s.key] = s.value; });
-        if (m.org_logo_url) { setLogoUrl(m.org_logo_url); localStorage.setItem('app_logo_cache', m.org_logo_url); }
-        if (m.login_bg) setLoginBg(m.login_bg);
-        if (m.login_bg_url) setLoginBgUrl(m.login_bg_url);
-        if (m.login_title) setLoginTitle(m.login_title);
-        if (m.login_subtitle) setLoginSubtitle(m.login_subtitle);
-      } catch (err) {
-        console.error('Błąd pobierania brandingu:', err);
-      }
+    const applyBranding = (m) => {
+      if (m.org_logo_url) { setLogoUrl(m.org_logo_url); localStorage.setItem('app_logo_cache', m.org_logo_url); }
+      if (m.login_bg) setLoginBg(m.login_bg);
+      if (m.login_bg_url) setLoginBgUrl(m.login_bg_url);
+      if (m.login_title) setLoginTitle(m.login_title);
+      if (m.login_subtitle) setLoginSubtitle(m.login_subtitle);
+      if (m.custom_colors) {
+        try { const c = JSON.parse(m.custom_colors); applyCustomColors(c.primary, c.secondary); } catch { /* ignore */ }
+      } else if (m.color_preset) applyColorPreset(m.color_preset);
+      if (m.custom_font_url) injectCustomFont(m.custom_font_url);
+      if (m.ui_font) applyFont(m.ui_font);
+      if (m.ui_font_heading) applyHeadingFont(m.ui_font_heading);
+      if (m.ui_bg) applyBackground(m.ui_bg);
+      if (m.ui_radius) applyRadius(m.ui_radius);
     };
-    fetchBranding();
     // Tryb rejestracji (czy pokazać „Zarejestruj się") + komunikat po potwierdzeniu e-mail.
     supabase.auth.getRegistrationConfig?.().then((c) => {
       setRegMode(c?.mode || 'closed');
       setRegCaptcha(c?.captcha !== false);
       setConsentCfg(c?.consent || { required: false, url: '', text: '' });
       setPwPolicy(c?.passwordPolicy || { min: 8, complexity: false });
+      if (c?.branding) applyBranding(c.branding);
     }).catch(() => {});
     supabase.auth.getSSOConfig?.().then((s) => setSsoProviders(s || { google: false, microsoft: false })).catch(() => {});
     const params = new URLSearchParams(window.location.search);
@@ -211,8 +211,8 @@ export default function Login() {
       <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
         {/* Tło ozdobne */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-emerald-400/20 dark:bg-emerald-600/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-teal-400/20 dark:bg-teal-600/10 rounded-full blur-3xl"></div>
+          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-accent-primary-light/20 dark:bg-accent-primary/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-accent-secondary-light/20 dark:bg-accent-secondary/10 rounded-full blur-3xl"></div>
         </div>
 
         <form
@@ -220,7 +220,7 @@ export default function Login() {
           onSubmit={handleVerify2FA}
         >
           <div className="flex justify-center mb-6">
-            <div className="h-16 w-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center text-white shadow-lg">
+            <div className="h-16 w-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center text-white shadow-lg">
               <Shield size={32} />
             </div>
           </div>
@@ -238,7 +238,7 @@ export default function Login() {
             </label>
             <input
               type="text"
-              className="w-full px-4 py-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition text-center text-2xl font-mono tracking-[0.3em]"
+              className="w-full px-4 py-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition text-center text-2xl font-mono tracking-[0.3em]"
               value={totpCode}
               onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
               required
@@ -259,7 +259,7 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-emerald-500/25 transition transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-accent-primary-light/25 transition transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
             disabled={loading || verifyLoading}
           >
             {loading || verifyLoading ? (
@@ -273,7 +273,7 @@ export default function Login() {
           <button
             type="button"
             onClick={handleBack2FA}
-            className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition flex items-center justify-center gap-2"
+            className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"
           >
             <ArrowLeft size={16} />
             {tr('Powrót do logowania')}

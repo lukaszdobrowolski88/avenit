@@ -10,6 +10,7 @@ import { useT } from '../../i18n';
 
 import * as LucideIcons from 'lucide-react';
 import { tr } from '../../i18n';
+import { confirmDialog } from '../../lib/dialog';
 
 const {
   Plus, Search, History, ArrowUpDown, Copy, Trash2,
@@ -75,7 +76,7 @@ export default function ProgramsList() {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation();
-    if (window.confirm(t('Czy na pewno chcesz usunąć ten program?'))) {
+    if (await confirmDialog(t('Czy na pewno chcesz usunąć ten program?'))) {
       await supabase.from('programs').delete().eq('id', id);
       fetchPrograms();
     }
@@ -130,7 +131,7 @@ export default function ProgramsList() {
 
   const deleteType = async (typeId, e) => {
     e?.stopPropagation();
-    if (!window.confirm(t('Usunąć ten typ? Programy tego typu zachowają dane ale stracą przypisanie do typu.'))) return;
+    if (!await confirmDialog(t('Usunąć ten typ? Programy tego typu zachowają dane ale stracą przypisanie do typu.'))) return;
     await supabase.from('program_types').delete().eq('id', typeId);
     fetchProgramTypes();
   };

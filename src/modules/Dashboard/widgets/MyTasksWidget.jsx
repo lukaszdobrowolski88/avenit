@@ -4,6 +4,7 @@ import { CheckSquare, List, LayoutGrid, Clock, CheckCircle, Circle, Plus, X, Sav
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 const STATUS_CONFIG = {
   todo: {
@@ -279,7 +280,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
 
   const handleDelete = async () => {
     if (!task.id) return;
-    if (!confirm(tr('Czy na pewno chcesz usunąć to zadanie?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć to zadanie?'))) return;
 
     try {
       const source = task.source || 'personal';

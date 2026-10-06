@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { formatMoney, formatDate, donorLabel, methodLabel } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { promptDialog } from '../../../lib/dialog';
 
 export default function OverviewTab({ funds, membersById, withCampusFilter, onNavigate }) {
   const [donations, setDonations] = useState([]);
@@ -66,9 +67,9 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
   if (loading) return <Spinner center />;
 
   const giveUrl = `${window.location.origin}/give`;
-  const copyGiveLink = () => {
+  const copyGiveLink = async () => {
     try { navigator.clipboard.writeText(giveUrl); toast.success('Skopiowano link do dawania online.'); }
-    catch { window.prompt('Link do dawania online:', giveUrl); }
+    catch { await promptDialog('Link do dawania online:', giveUrl); }
   };
 
   return (

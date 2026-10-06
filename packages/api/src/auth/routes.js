@@ -34,6 +34,28 @@ const registerSchema = z.object({
 // Konfiguracja rejestracji tenanta (app_settings). Domyślnie zamknięta (tylko admin tworzy konta).
 const csvLower = (v) => String(v || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 
+// Wygląd ekranu logowania (publiczny — tylko klucze wizualne). Bez tego niezalogowany widzi
+// domyślny motyw: dane API wymagają sesji, a wylogowanie czyści zapamiętany preset.
+const LOGIN_BRANDING_KEYS = [
+  'org_logo_url', 'login_bg', 'login_bg_url', 'login_title', 'login_subtitle',
+  'color_preset', 'ui_font', 'ui_font_heading', 'custom_font_url', 'ui_bg', 'ui_radius',
+];
+async function getLoginBranding(db) {
+  const { rows } = await db.query(
+    `SELECT key, value FROM app_settings WHERE key = ANY($1) OR key LIKE 'custom_color_preset_%'`,
+    [LOGIN_BRANDING_KEYS]
+  );
+  const m = {};
+  rows.forEach((r) => { m[r.key] = r.value; });
+  const out = {};
+  for (const k of LOGIN_BRANDING_KEYS) if (m[k]) out[k] = m[k];
+  // Własna paleta: color_preset wskazuje klucz custom_color_preset_* z JSON-em kolorów.
+  if (out.color_preset?.startsWith('custom_color_preset_')) {
+    out.custom_colors = m[out.color_preset] || null;
+  }
+  return out;
+}
+
 async function getRegConfig(db) {
   const { rows } = await db.query(
     `SELECT key, value FROM app_settings WHERE key IN
@@ -423,7 +445,8 @@ export default async function authRoutes(app) {
   app.get('/api/auth/registration-config', { preHandler: app.requireTenant }, async (req, reply) => {
     const cfg = await getRegConfig(req.db);
     const passwordPolicy = await getPasswordPolicy(req.db);
-    return reply.send({ mode: cfg.mode, captcha: cfg.captcha, consent: cfg.consent, passwordPolicy });
+    const branding = await getLoginBranding(req.db);
+    return reply.send({ mode: cfg.mode, captcha: cfg.captcha, consent: cfg.consent, passwordPolicy, branding });
   });
 
   // Captcha (bezstanowa, samodzielna): proste działanie do przepisania + honeypot na froncie.

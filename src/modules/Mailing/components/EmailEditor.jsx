@@ -18,6 +18,7 @@ import { supabase } from '../../../lib/supabase';
 import { EMAIL_VARIABLES } from '../utils/emailVariables';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { promptDialog } from '../../../lib/dialog';
 
 export default function EmailEditor({ content, onChange, placeholder = tr('Napisz treść wiadomości...') }) {
   const editor = useEditor({
@@ -93,9 +94,9 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
     input.click();
   }, [editor]);
 
-  const setLink = useCallback(() => {
+  const setLink = useCallback(async () => {
     const previousUrl = editor?.getAttributes('link').href;
-    const url = window.prompt('URL linku:', previousUrl);
+    const url = await promptDialog('URL linku:', previousUrl);
 
     if (url === null) return;
 

@@ -18,6 +18,7 @@ import { IncomeExpenseBarChart, CashFlowAreaChart, CategoryDonut, YoYBars } from
 import { usePermissions } from '../contexts/PermissionsContext';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import { DateInput } from '../components/pickers';
+import { confirmDialog, promptDialog } from '../lib/dialog';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -377,7 +378,7 @@ const FinanceModule = () => {
     try { await supabase.from('expense_categories').update({ is_active: !(c.is_active !== false) }).eq('id', c.id); fetchCategories(); } catch (e) { toast.error(e.message); }
   };
   const deleteCategory = async (id) => {
-    if (!confirm(tr('Usunąć tę kategorię? Istniejące transakcje zachowają swoją nazwę kategorii.'))) return;
+    if (!await confirmDialog(tr('Usunąć tę kategorię? Istniejące transakcje zachowają swoją nazwę kategorii.'))) return;
     try { await supabase.from('expense_categories').delete().eq('id', id); fetchCategories(); } catch (e) { toast.error(tr('Błąd usuwania: ') + e.message); }
   };
 
@@ -409,7 +410,7 @@ const FinanceModule = () => {
     } catch (e) { toast.error(tr('Błąd zapisywania: ') + e.message); }
   };
   const toggleRecurring = async (r) => { try { await supabase.from('finance_recurring').update({ is_active: !r.is_active }).eq('id', r.id); fetchRecurring(); } catch (e) { toast.error(e.message); } };
-  const deleteRecurring = async (id) => { if (!confirm(tr('Usunąć ten plan cykliczny?'))) return; try { await supabase.from('finance_recurring').delete().eq('id', id); fetchRecurring(); } catch (e) { toast.error(e.message); } };
+  const deleteRecurring = async (id) => { if (!await confirmDialog(tr('Usunąć ten plan cykliczny?'))) return; try { await supabase.from('finance_recurring').delete().eq('id', id); fetchRecurring(); } catch (e) { toast.error(e.message); } };
 
   // ── Kontrahenci (finance_vendors) — autouzupełnianie + auto-dopis ──────────
   const [vendors, setVendors] = useState([]);
@@ -592,7 +593,7 @@ const FinanceModule = () => {
     } catch (e) { toast.error(tr('Błąd: ') + (e.message || e)); }
   };
   const toggleSchedule = async (s) => { try { await supabase.from('finance_report_schedules').update({ is_active: !s.is_active }).eq('id', s.id); fetchSchedules(); } catch (e) { toast.error(e.message); } };
-  const deleteSchedule = async (id) => { if (!confirm(tr('Usunąć ten harmonogram?'))) return; try { await supabase.from('finance_report_schedules').delete().eq('id', id); fetchSchedules(); } catch (e) { toast.error(e.message); } };
+  const deleteSchedule = async (id) => { if (!await confirmDialog(tr('Usunąć ten harmonogram?'))) return; try { await supabase.from('finance_report_schedules').delete().eq('id', id); fetchSchedules(); } catch (e) { toast.error(e.message); } };
   const openEditSchedule = (s) => {
     setEditingScheduleId(s.id);
     setScheduleForm({ cadence: s.cadence || 'monthly', recipients: (s.recipients || []).join(', '), include_csv: s.include_csv !== false, is_active: s.is_active !== false });
@@ -860,7 +861,7 @@ const FinanceModule = () => {
     try { const { data } = await supabase.from('budget_versions').select('id, label, created_by, created_at, snapshot').eq('year', selectedYear).order('created_at', { ascending: false }); setBudgetVersions(data || []); } catch { setBudgetVersions([]); }
   };
   const saveBudgetVersion = async () => {
-    const label = prompt(tr('Nazwa wersji (np. „Projekt zarządu", „Zatwierdzony")'));
+    const label = await promptDialog(tr('Nazwa wersji (np. „Projekt zarządu", „Zatwierdzony")'));
     if (label === null) return;
     try {
       await supabase.from('budget_versions').insert([{ year: selectedYear, label: label.trim() || `Wersja ${new Date().toLocaleDateString('pl-PL')}`, snapshot: budgetItems, created_by: currentUserEmail || null }]);
@@ -925,7 +926,7 @@ const FinanceModule = () => {
   };
 
   const deleteBudgetItem = async (id) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć tę pozycję budżetową?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę pozycję budżetową?'))) return;
 
     try {
       const before = budgetItems.find((b) => b.id === id) || null;
@@ -946,7 +947,7 @@ const FinanceModule = () => {
   // Kopiuje pozycje budżetowe z poprzedniego roku do bieżącego (plan, bez realizacji).
   const copyBudgetFromLastYear = async () => {
     const prev = selectedYear - 1;
-    if (!confirm(tr(`Skopiować pozycje budżetu z roku ${prev} do ${selectedYear}?`))) return;
+    if (!await confirmDialog(tr(`Skopiować pozycje budżetu z roku ${prev} do ${selectedYear}?`))) return;
     try {
       const { data: prevItems } = await supabase.from('budget_items').select('*').eq('year', prev);
       if (!prevItems || prevItems.length === 0) { toast.error(tr(`Brak pozycji budżetu w roku ${prev}`)); return; }
@@ -1010,7 +1011,7 @@ const FinanceModule = () => {
   };
 
   const deleteIncome = async (id) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć ten wpływ?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć ten wpływ?'))) return;
 
     try {
       const { error } = await supabase
@@ -1138,7 +1139,7 @@ const FinanceModule = () => {
   };
 
   const deleteExpense = async (id) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć ten wydatek?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć ten wydatek?'))) return;
 
     try {
       const { error } = await supabase

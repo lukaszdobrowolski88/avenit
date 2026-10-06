@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, Image, File, Music, Video, Archive, Download, Trash2, Eye, Pencil, Share2, FolderInput } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { confirmDialog } from '../../../lib/dialog';
 
 // Formatowanie rozmiaru pliku
 function formatFileSize(bytes) {
@@ -81,9 +82,9 @@ export default function FileCard({
     onDownload?.(file);
   };
 
-  const handleDelete = (e) => {
+  const handleDelete = async (e) => {
     e.stopPropagation();
-    if (window.confirm(`Czy na pewno chcesz usunąć plik "${file.name}"?`)) {
+    if (await confirmDialog(`Czy na pewno chcesz usunąć plik "${file.name}"?`)) {
       onDelete?.(file.id, file.storage_path);
     }
   };

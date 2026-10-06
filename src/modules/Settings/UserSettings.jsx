@@ -10,6 +10,7 @@ import TwoFactorSetup from '../../components/TwoFactorSetup';
 import PageHeader from '../../components/PageHeader';
 import Spinner from '../../components/Spinner';
 import { tr, useT } from '../../i18n';
+import { confirmDialog } from '../../lib/dialog';
 
 export default function UserSettings() {
   const t = useT();
@@ -104,7 +105,7 @@ export default function UserSettings() {
   };
   useEffect(() => { loadSessions(); }, []);
   const handleLogoutOthers = async () => {
-    if (!confirm(tr('Wylogować ze wszystkich innych urządzeń?'))) return;
+    if (!await confirmDialog(tr('Wylogować ze wszystkich innych urządzeń?'))) return;
     await supabase.auth.logoutOthers?.();
     loadSessions();
     setMessage({ type: 'success', text: tr('Wylogowano z pozostałych urządzeń') });

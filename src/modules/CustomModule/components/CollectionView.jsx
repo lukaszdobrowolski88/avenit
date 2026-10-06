@@ -8,6 +8,7 @@ import { STATUS_COLORS } from '../../Settings/components/ModuleBuilder/builderEl
 import { toast } from '../../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 // Typy pól renderowane cyframi (tabular-nums w tabeli).
 const NUMERIC_FIELD_TYPES = ['number', 'currency', 'date'];
@@ -317,7 +318,7 @@ export default function CollectionView({ element, ctx }) {
     if (res.success) { setFormOpen(false); setEditing(null); }
     return res;
   };
-  const onDelete = async (rec) => { if (window.confirm(tr('Usunąć ten wpis?'))) await remove(rec.id); };
+  const onDelete = async (rec) => { if (await confirmDialog(tr('Usunąć ten wpis?'))) await remove(rec.id); };
   const toggleSort = (key) => {
     if (sortField === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortField(key); setSortDir('asc'); }

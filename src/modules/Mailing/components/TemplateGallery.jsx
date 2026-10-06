@@ -7,6 +7,7 @@ import {
 import { useTemplates, TEMPLATE_CATEGORIES } from '../hooks/useTemplates';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 const CATEGORY_ICONS = {
   general: FileText,
@@ -80,7 +81,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
       toast.error(tr('Nie można usunąć szablonu systemowego'));
       return;
     }
-    if (!confirm(`Czy na pewno chcesz usunąć szablon "${template.name}"?`)) return;
+    if (!await confirmDialog(`Czy na pewno chcesz usunąć szablon "${template.name}"?`)) return;
 
     try {
       await deleteTemplate(template.id);

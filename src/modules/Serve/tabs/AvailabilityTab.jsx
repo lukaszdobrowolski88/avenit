@@ -8,6 +8,7 @@ import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
+import { confirmDialog } from '../../../lib/dialog';
 
 const emptyForm = { member_id: '', start_date: todayIso(), end_date: todayIso(), reason: '' };
 
@@ -83,7 +84,7 @@ export default function AvailabilityTab({ members, membersById, campusIdForInser
   };
 
   const remove = async (b) => {
-    if (!confirm('Usunąć tę niedostępność?')) return;
+    if (!await confirmDialog('Usunąć tę niedostępność?')) return;
     try {
       const { error } = await supabase.from('volunteer_blockouts').delete().eq('id', b.id);
       if (error) throw error;

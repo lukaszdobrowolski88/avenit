@@ -10,6 +10,7 @@ import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import TabHeader from '../../components/TabHeader';
 import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 
 const CONDITIONS = [
   { value: 'nowy', label: tr('Nowy'), color: 'green' },
@@ -159,7 +160,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
   };
 
   const handleDelete = async (id) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć ten przedmiot?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć ten przedmiot?'))) return;
 
     try {
       const { error } = await supabase

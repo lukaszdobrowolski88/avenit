@@ -17,6 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 
 const KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
@@ -481,7 +482,7 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm(tr('Usunąć pieśń z propozycji?'))) return;
+    if (!await confirmDialog(tr('Usunąć pieśń z propozycji?'))) return;
     setItems(prev => prev.filter(i => i.id !== id));
     await supabase.from('program_song_suggestions').delete().eq('id', id);
   };

@@ -24,6 +24,7 @@ import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
+import { confirmDialog } from '../lib/dialog';
 
 // --- UI COMPONENTS (PORTALS) ---
 
@@ -457,7 +458,7 @@ export default function AtmosferaTeamModule() {
   };
 
   const deleteMember = async (id) => {
-    if (!confirm(tr('Usunąć?'))) return;
+    if (!await confirmDialog(tr('Usunąć?'))) return;
     try {
       const { error } = await supabase.from('atmosfera_members').delete().eq('id', id);
       if (error) throw error;

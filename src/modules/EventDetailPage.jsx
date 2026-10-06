@@ -20,6 +20,7 @@ import Modal from '../components/Modal';
 import { useModuleCalendar, useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
 import { useCan } from '../components/Can';
 import { DateInput, TimeField } from '../components/pickers';
+import { confirmDialog } from '../lib/dialog';
 
 const genToken = () => (typeof crypto !== 'undefined' && crypto.randomUUID)
   ? crypto.randomUUID().replace(/-/g, '')
@@ -168,7 +169,7 @@ export default function EventDetailPage() {
   const saveCustom = (key, val) => save({ custom: { ...(ev?.custom || {}), [key]: val } });
 
   const del = async () => {
-    if (!confirm('Usunąć to wydarzenie? Tej operacji nie można cofnąć.')) return;
+    if (!await confirmDialog('Usunąć to wydarzenie? Tej operacji nie można cofnąć.')) return;
     const { error } = await supabase.from('events').delete().eq('id', id);
     if (error) return toast.error(error.message);
     toast.success('Wydarzenie usunięte');

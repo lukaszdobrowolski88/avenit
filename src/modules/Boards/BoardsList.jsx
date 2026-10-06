@@ -11,6 +11,7 @@ import { BOARD_TEMPLATES } from './lib/templates';
 import { generateBoardSpec } from './lib/aiBoards';
 import { Sparkles } from 'lucide-react';
 import Popover from './components/Popover';
+import { confirmDialog } from '../../lib/dialog';
 
 const CARD_COLORS = ['#6366f1', '#00c875', '#e2445c', '#fdab3d', '#a25ddc', '#0086c0', '#ff5ac4'];
 const TPL_ICON = { LayoutGrid, CalendarRange, CheckSquare, Users };
@@ -244,7 +245,7 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
                                 )}
                                 {canCreate && <button onClick={() => { duplicateBoard(b.id); close(); }}
                                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> {tr('Duplikuj')}</button>}
-                                {canDelete && <button onClick={() => { if (confirm(`Usunąć tablicę „${b.name}"?`)) deleteBoard(b.id); close(); }}
+                                {canDelete && <button onClick={async () => { if (await confirmDialog(`Usunąć tablicę „${b.name}"?`)) deleteBoard(b.id); close(); }}
                                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń')}</button>}
                               </div>
                             )}

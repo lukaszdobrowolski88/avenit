@@ -5,6 +5,7 @@ import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 
 // Ikony dla kanałów służb
 const ministryIcons = {
@@ -133,9 +134,9 @@ export default function GroupSettingsModal({
   // Usuń uczestnika
   const handleRemoveParticipant = async (email) => {
     if (email === currentUserEmail) {
-      if (!window.confirm(tr('Czy na pewno chcesz opuścić tę grupę?'))) return;
+      if (!await confirmDialog(tr('Czy na pewno chcesz opuścić tę grupę?'))) return;
     } else {
-      if (!window.confirm(`Czy na pewno chcesz usunąć tego uczestnika?`)) return;
+      if (!await confirmDialog(`Czy na pewno chcesz usunąć tego uczestnika?`)) return;
     }
 
     setSaving(true);

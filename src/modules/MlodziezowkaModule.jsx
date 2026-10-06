@@ -25,6 +25,7 @@ import { tr } from '../i18n';
 import { toast } from '../lib/toast';
 import Spinner from '../components/Spinner';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
+import { confirmDialog } from '../lib/dialog';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -469,7 +470,7 @@ export default function MlodziezowkaModule() {
   };
 
   const deleteMember = async (id) => {
-    if (confirm(tr('Usunąć członka?'))) {
+    if (await confirmDialog(tr('Usunąć członka?'))) {
       try {
         const { error } = await supabase.from('mlodziezowka_members').delete().eq('id', id);
         if (error) throw error;
@@ -517,7 +518,7 @@ export default function MlodziezowkaModule() {
   };
 
   const deleteLeader = async (id) => {
-    if (confirm(tr('Usunąć lidera?'))) {
+    if (await confirmDialog(tr('Usunąć lidera?'))) {
       try {
         const { error } = await supabase.from('mlodziezowka_leaders').delete().eq('id', id);
         if (error) throw error;
@@ -562,7 +563,7 @@ export default function MlodziezowkaModule() {
   };
 
   const deleteTask = async (id) => {
-    if (confirm(tr('Usunąć zadanie?'))) {
+    if (await confirmDialog(tr('Usunąć zadanie?'))) {
       try {
         const { error } = await supabase.from('mlodziezowka_tasks').delete().eq('id', id);
         if (error) throw error;

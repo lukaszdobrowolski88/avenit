@@ -5,6 +5,7 @@ import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import { toast } from '../../../../lib/toast';
 import { DateInput, TimeField } from '../../../../components/pickers';
+import { confirmDialog } from '../../../../lib/dialog';
 
 export default function SessionManager({ onSessionChange }) {
   const [sessions, setSessions] = useState([]);
@@ -94,7 +95,7 @@ export default function SessionManager({ onSessionChange }) {
   };
 
   const handleDelete = async (sessionId) => {
-    if (!confirm(tr('Czy na pewno chcesz usunąć tę sesję?'))) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę sesję?'))) return;
 
     try {
       const { error } = await supabase

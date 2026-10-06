@@ -4,6 +4,7 @@ import { supabase, getCachedUser } from '../../../lib/supabase';
 import { formatDateTime } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { confirmDialog } from '../../../lib/dialog';
 
 export default function NotesTab({ member, campusIdForInsert, withCampusFilter }) {
   const [notes, setNotes] = useState([]);
@@ -52,7 +53,7 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
   };
 
   const remove = async (n) => {
-    if (!confirm('Usunąć tę notatkę?')) return;
+    if (!await confirmDialog('Usunąć tę notatkę?')) return;
     try {
       const { error } = await supabase.from('member_notes').delete().eq('id', n.id);
       if (error) throw error;

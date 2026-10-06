@@ -5,6 +5,7 @@ import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 
 // Gotowy element „Galeria zdjęć" — upload obrazów + siatka miniatur z podglądem
 // (lightbox). Pliki trafiają do storage (bucket 'materials', ścieżka gallery/<moduleKey>/),
@@ -71,7 +72,7 @@ export default function GalleryTab({ moduleKey, moduleId, tabId, canEdit = true 
                 className="w-full h-full object-cover cursor-pointer transition group-hover:scale-105" />
               {it.caption && <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-2 text-white text-xs truncate">{it.caption}</div>}
               {canEdit && (
-                <button onClick={() => { if (confirm(tr('Usunąć to zdjęcie?'))) remove(it.id); }}
+                <button onClick={async () => { if (await confirmDialog(tr('Usunąć to zdjęcie?'))) remove(it.id); }}
                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 bg-black/50 text-white rounded-lg hover:bg-red-500"><Trash2 size={14} /></button>
               )}
             </div>

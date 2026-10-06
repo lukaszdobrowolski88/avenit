@@ -6,6 +6,7 @@ import {
   Send, Image, Paperclip, Link as LinkIcon, X, Heart,
   Trash2, Download, ExternalLink, Pin, FileText, Reply, CornerDownRight
 } from 'lucide-react';
+import { confirmDialog } from '../../lib/dialog';
 
 // wall_posts.likes ma być tablicą e-maili, ale część rekordów bywa nie-tablicą
 // (np. {} z domyślnej wartości JSONB). Normalizujemy przy KAŻDYM odczycie, żeby
@@ -190,7 +191,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
   };
 
   const deletePost = async (postId) => {
-    if (!confirm('Usunąć tę wiadomość?')) return;
+    if (!await confirmDialog('Usunąć tę wiadomość?')) return;
 
     try {
       const { error } = await supabase

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Share2, Trash2, User, Users, Home } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 const TYPE_META = {
   user: { label: tr('Osoby'), icon: User, listKey: 'people' },
@@ -35,13 +36,13 @@ export default function ShareModal({ isOpen, onClose, item, shares: sharesApi })
       await sharesApi.createShares(item, [{ type: activeType, id: t.id, label: t.label }], perm);
       setTargetId('');
       setCurrent(await sharesApi.fetchSharesFor(item));
-    } catch (e) { window.alert(tr('Nie udało się udostępnić: ') + e.message); }
+    } catch (e) { toast.error(tr('Nie udało się udostępnić: ') + e.message); }
     finally { setBusy(false); }
   };
   const remove = async (id) => {
     setBusy(true);
     try { await sharesApi.removeShare(id); setCurrent(await sharesApi.fetchSharesFor(item)); }
-    catch (e) { window.alert(e.message); }
+    catch (e) { toast.error(e.message); }
     finally { setBusy(false); }
   };
 
