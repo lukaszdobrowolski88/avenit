@@ -3,6 +3,8 @@ import { Search, Forward, Users, Music, MessageSquare } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
+import { sameEmail } from '../utils/chatLogic';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
@@ -49,7 +51,8 @@ export default function ForwardMessageModal({
       await onForward(message, selectedConversations);
       handleClose();
     } catch (err) {
-      console.error('Error forwarding message:', err);
+      // Komunikat pokazał już wątek (err.handled); okno zostaje otwarte, żeby spróbować ponownie.
+      if (!err?.handled) toast.error(err, { fallback: tr('Nie udało się przekazać wiadomości.') });
     } finally {
       setSending(false);
     }
@@ -63,7 +66,7 @@ export default function ForwardMessageModal({
 
   const getConversationIcon = (conv) => {
     if (conv.type === 'direct') {
-      const otherParticipant = conv.participants?.find(p => p.user_email !== currentUserEmail);
+      const otherParticipant = conv.participants?.find(p => !sameEmail(p.user_email, currentUserEmail));
       return (
         <UserAvatar
           user={otherParticipant || { full_name: conv.displayName }}
@@ -135,6 +138,7 @@ export default function ForwardMessageModal({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={tr('Szukaj konwersacji...')}
+            aria-label={tr('Szukaj rozmowy')}
             className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 transition-all duration-200"
           />
         </div>
@@ -154,6 +158,8 @@ export default function ForwardMessageModal({
             return (
               <button
                 key={conv.id}
+                type="button"
+                aria-pressed={isSelected}
                 onClick={() => toggleConversation(conv.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-left mb-1 ${
                   isSelected

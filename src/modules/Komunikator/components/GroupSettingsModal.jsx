@@ -3,6 +3,7 @@ import { X, Search, UserPlus, UserMinus, Crown, Users, Trash2, LogOut, Edit2, Ch
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
+import { leaveBlocker, sameEmail } from '../utils/chatLogic';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
@@ -27,7 +28,9 @@ export default function GroupSettingsModal({
   onClose,
   conversation,
   currentUserEmail,
-  onUpdate
+  onUpdate,
+  onLeave,
+  perms = {}
 }) {
   const [activeTab, setActiveTab] = useState('members'); // 'members' | 'add'
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,10 +42,18 @@ export default function GroupSettingsModal({
 
   const isAdmin = conversation?.myRole === 'admin';
   const isMinistryChannel = conversation?.type === 'ministry';
+  const isAnnouncement = conversation?.type === 'announcement';
   const participants = conversation?.participants || [];
+  const allowed = (k) => perms[k] !== false;
 
-  // Dla kanałów służb każdy uczestnik może edytować nazwę
-  const canEditName = isAdmin || isMinistryChannel;
+  // Ustawienia rozmowy zmienia jej administrator (serwer: komunikator.js). Skład kanału służby
+  // wynika z zespołu (synchronizacja), więc tam nie dodajemy/usuwamy osób ręcznie.
+  const canEditName = isAdmin && allowed('editConversation') && !isMinistryChannel;
+  const canAdd = isAdmin && allowed('addParticipants') && !isMinistryChannel;
+  const canRemove = isAdmin && allowed('removeParticipants') && !isMinistryChannel;
+  const canChangeRoles = isAdmin && allowed('manageOwn');
+  const canLeave = !!onLeave && !isMinistryChannel;
+  const nameOf = (email) => participants.find(p => sameEmail(p.user_email, email))?.full_name || email;
 
   // Pobierz wszystkich użytkowników do dodania
   useEffect(() => {
@@ -59,14 +70,14 @@ export default function GroupSettingsModal({
         if (error) throw error;
 
         // Odfiltruj już dodanych uczestników
-        const participantEmails = participants.map(p => p.user_email);
         const availableUsers = (data || []).filter(
-          u => !participantEmails.includes(u.email)
+          u => !participants.some(p => sameEmail(p.user_email, u.email))
         );
 
         setAllUsers(availableUsers);
       } catch (err) {
         console.error('Error fetching users:', err);
+        toast.error(err, { fallback: tr('Nie udało się wczytać listy osób.') });
       } finally {
         setLoading(false);
       }
@@ -111,54 +122,90 @@ export default function GroupSettingsModal({
   });
 
   // Dodaj uczestnika
-  const handleAddParticipant = async (email) => {
+  const handleAddParticipant = async (user) => {
+    const email = user.email;
     setSaving(true);
     try {
+      // .select() — serwer roześle zmianę (nowa osoba od razu zobaczy rozmowę na liście)
       const { error } = await supabase
         .from('conversation_participants')
         .insert({
           conversation_id: conversation.id,
           user_email: email,
           role: 'member'
-        });
+        })
+        .select('conversation_id, user_email');
 
       if (error) throw error;
 
-      onUpdate?.();
       setAllUsers(prev => prev.filter(u => u.email !== email));
+      toast.success(tr('Dodano: {name}', { name: user.full_name || email }));
+      onUpdate?.();
     } catch (err) {
       console.error('Error adding participant:', err);
-      toast.error(tr('Nie udało się dodać uczestnika'));
+      toast.error(err, { fallback: tr('Nie udało się dodać uczestnika.') });
     } finally {
       setSaving(false);
     }
   };
 
-  // Usuń uczestnika
+  const groupName = conversation?.name || (isMinistryChannel ? getMinistryName(conversation?.ministry_key) : '') || conversation?.displayName || tr('bez nazwy');
+
+  // Usuń uczestnika (administrator rozmowy)
   const handleRemoveParticipant = async (email) => {
-    if (email === currentUserEmail) {
-      if (!await confirmDialog(tr('Czy na pewno chcesz opuścić tę grupę?'))) return;
-    } else {
-      if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tego uczestnika?'))) return;
-    }
+    const name = nameOf(email);
+    const ok = await confirmDialog({
+      title: tr('Usunąć osobę z rozmowy?'),
+      message: tr('{name} przestanie widzieć rozmowę „{group}” i nie dostanie nowych wiadomości.', { name, group: groupName }),
+      confirmLabel: tr('Usuń z rozmowy'),
+      danger: true,
+    });
+    if (!ok) return;
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('conversation_participants')
         .delete()
         .eq('conversation_id', conversation.id)
-        .eq('user_email', email);
+        .eq('user_email', email)
+        .select('conversation_id, user_email');
 
       if (error) throw error;
-
-      if (email === currentUserEmail) {
-        onClose();
-      }
+      if (!data || data.length === 0) throw new Error(tr('Osoby usuwa administrator rozmowy.'));
+      toast.success(tr('Usunięto z rozmowy: {name}', { name }));
       onUpdate?.();
     } catch (err) {
       console.error('Error removing participant:', err);
-      toast.error(tr('Nie udało się usunąć uczestnika'));
+      toast.error(err, { fallback: tr('Nie udało się usunąć uczestnika.') });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Opuść rozmowę (własny wiersz). Jedyny administrator musi najpierw przekazać uprawnienia.
+  const handleLeave = async () => {
+    const blocker = leaveBlocker(conversation, currentUserEmail);
+    if (blocker === 'lastAdmin') {
+      toast.info(tr('Jesteś jedynym administratorem. Najpierw nadaj komuś uprawnienia administratora (korona przy osobie), potem opuść rozmowę.'));
+      return;
+    }
+    if (blocker) return;
+    const ok = await confirmDialog({
+      title: tr('Opuścić rozmowę?'),
+      message: tr('Przestaniesz widzieć rozmowę „{group}” i nie dostaniesz nowych wiadomości. Wrócić możesz tylko, jeśli administrator doda Cię ponownie.', { group: groupName }),
+      confirmLabel: tr('Opuść rozmowę'),
+      danger: true,
+    });
+    if (!ok) return;
+
+    setSaving(true);
+    try {
+      await onLeave(conversation.id);
+      onClose();
+    } catch (err) {
+      console.error('Error leaving conversation:', err);
+      toast.error(err, { fallback: tr('Nie udało się opuścić rozmowy.') });
     } finally {
       setSaving(false);
     }
@@ -169,17 +216,22 @@ export default function GroupSettingsModal({
     setSaving(true);
     try {
       const newRole = currentRole === 'admin' ? 'member' : 'admin';
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('conversation_participants')
         .update({ role: newRole })
         .eq('conversation_id', conversation.id)
-        .eq('user_email', email);
+        .eq('user_email', email)
+        .select('conversation_id, user_email, role');
 
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(tr('Role zmienia administrator rozmowy.'));
+      toast.success(newRole === 'admin'
+        ? tr('{name} jest teraz administratorem', { name: nameOf(email) })
+        : tr('{name} nie jest już administratorem', { name: nameOf(email) }));
       onUpdate?.();
     } catch (err) {
       console.error('Error changing role:', err);
-      toast.error(tr('Nie udało się zmienić roli'));
+      toast.error(err, { fallback: tr('Nie udało się zmienić roli.') });
     } finally {
       setSaving(false);
     }
@@ -194,18 +246,21 @@ export default function GroupSettingsModal({
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('conversations')
         .update({ name: newName.trim() })
-        .eq('id', conversation.id);
+        .eq('id', conversation.id)
+        .select('id');
 
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(tr('Nazwę zmienia administrator rozmowy.'));
 
       setEditingName(false);
+      toast.success(tr('Nazwa zmieniona'));
       onUpdate?.();
     } catch (err) {
       console.error('Error updating name:', err);
-      toast.error(tr('Nie udało się zmienić nazwy'));
+      toast.error(err, { fallback: tr('Nie udało się zmienić nazwy.') });
     } finally {
       setSaving(false);
     }
@@ -218,7 +273,7 @@ export default function GroupSettingsModal({
       isOpen={isOpen}
       onClose={onClose}
       closeOnBackdrop={false}
-      title={isMinistryChannel ? tr('Ustawienia kanału') : tr('Ustawienia grupy')}
+      title={isMinistryChannel || isAnnouncement ? tr('Ustawienia kanału') : tr('Ustawienia grupy')}
       size="sm"
     >
       {/* Group info */}
@@ -242,15 +297,20 @@ export default function GroupSettingsModal({
                 <input
                   type="text"
                   value={newName}
+                  aria-label={tr('Nazwa grupy')}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); }}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder={isMinistryChannel ? getMinistryName(conversation?.ministry_key) : tr('Nazwa grupy')}
                   className="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light"
                   autoFocus
                 />
                 <button
+                  type="button"
                   onClick={handleSaveName}
                   disabled={saving}
-                  className="p-1.5 bg-accent-primary hover:bg-accent-primary text-white rounded-full"
+                  aria-label={tr('Zapisz nazwę')}
+                  title={tr('Zapisz nazwę')}
+                  className="p-1.5 bg-accent-primary hover:bg-accent-primary text-white rounded-full disabled:opacity-60"
                 >
                   <Check size={16} />
                 </button>
@@ -262,6 +322,8 @@ export default function GroupSettingsModal({
                       : (conversation?.name || '');
                     setNewName(displayName);
                   }}
+                  aria-label={tr('Anuluj zmianę nazwy')}
+                  title={tr('Anuluj')}
                   className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
                 >
                   <X size={16} />
@@ -279,6 +341,7 @@ export default function GroupSettingsModal({
                     onClick={() => setEditingName(true)}
                     className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
                     title={tr('Zmień nazwę')}
+                    aria-label={tr('Zmień nazwę')}
                   >
                     <Edit2 size={14} className="text-gray-500" />
                   </button>
@@ -306,7 +369,7 @@ export default function GroupSettingsModal({
           <Users size={18} />
           {tr('Członkowie')}
         </button>
-        {isAdmin && (
+        {canAdd && (
           <button
             onClick={() => setActiveTab('add')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
@@ -355,7 +418,7 @@ export default function GroupSettingsModal({
                     {participant.role === 'admin' && (
                       <Crown size={14} className="text-amber-500 flex-shrink-0" />
                     )}
-                    {participant.user_email === currentUserEmail && (
+                    {sameEmail(participant.user_email, currentUserEmail) && (
                       <span className="text-xs text-gray-500">({tr('Ty')})</span>
                     )}
                   </div>
@@ -366,35 +429,47 @@ export default function GroupSettingsModal({
 
                 {/* Akcje */}
                 <div className="flex items-center gap-1">
-                  {isAdmin && participant.user_email !== currentUserEmail && (
+                  {!sameEmail(participant.user_email, currentUserEmail) && (
                     <>
+                      {canChangeRoles && (
                       <button
+                        type="button"
                         onClick={() => handleToggleAdmin(participant.user_email, participant.role)}
                         disabled={saving}
                         className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"
-                        title={participant.role === 'admin' ? tr('Usuń uprawnienia admina') : 'Nadaj uprawnienia admina'}
+                        title={participant.role === 'admin' ? tr('Odbierz uprawnienia administratora') : tr('Nadaj uprawnienia administratora')}
+                        aria-label={participant.role === 'admin'
+                          ? tr('Odbierz uprawnienia administratora: {name}', { name: participant.full_name || participant.user_email })
+                          : tr('Nadaj uprawnienia administratora: {name}', { name: participant.full_name || participant.user_email })}
                       >
                         <Crown
                           size={16}
                           className={participant.role === 'admin' ? 'text-amber-500' : 'text-gray-400'}
                         />
                       </button>
+                      )}
+                      {canRemove && (
                       <button
+                        type="button"
                         onClick={() => handleRemoveParticipant(participant.user_email)}
                         disabled={saving}
                         className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
-                        title={tr('Usuń z grupy')}
+                        title={tr('Usuń z rozmowy')}
+                        aria-label={tr('Usuń z rozmowy: {name}', { name: participant.full_name || participant.user_email })}
                       >
                         <UserMinus size={16} />
                       </button>
+                      )}
                     </>
                   )}
-                  {participant.user_email === currentUserEmail && (
+                  {sameEmail(participant.user_email, currentUserEmail) && canLeave && (
                     <button
-                      onClick={() => handleRemoveParticipant(currentUserEmail)}
+                      type="button"
+                      onClick={handleLeave}
                       disabled={saving}
                       className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
-                      title={tr('Opuść grupę')}
+                      title={tr('Opuść rozmowę')}
+                      aria-label={tr('Opuść rozmowę')}
                     >
                       <LogOut size={16} />
                     </button>
@@ -418,7 +493,7 @@ export default function GroupSettingsModal({
               {filteredUsers.map(user => (
                 <button
                   key={user.email}
-                  onClick={() => handleAddParticipant(user.email)}
+                  onClick={() => handleAddParticipant(user)}
                   disabled={saving}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition text-left disabled:opacity-50"
                 >

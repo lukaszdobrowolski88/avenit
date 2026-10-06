@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ConversationList from './components/ConversationList';
@@ -8,16 +8,32 @@ import GroupSettingsModal from './components/GroupSettingsModal';
 import useConversations from './hooks/useConversations';
 import useMinistryChannels from './hooks/useMinistryChannels';
 import { useNotificationContext } from '../../contexts/NotificationContext';
+import { usePermissions } from '../../contexts/PermissionsContext';
+import { toast } from '../../lib/toast';
+import { tr } from '../../i18n';
 
 // Cache userEmail - współdzielony
 const USER_EMAIL_CACHE_KEY = 'user_email_cache';
 
 export default function KomunikatorModule() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { can } = usePermissions();
+
+  // Co rola pozwala zapisać (serwer i tak egzekwuje; tu tylko nie pokazujemy martwych przycisków).
+  const perms = useMemo(() => ({
+    manageOwn: can('res:conversation_participants:update'),        // przeczytane, gwiazdka, przypięcie, archiwum, wyciszenie, role
+    addParticipants: can('res:conversation_participants:create'),
+    removeParticipants: can('res:conversation_participants:delete'), // usuwanie osób, opuszczanie rozmowy
+    editConversation: can('res:conversations:update'),             // nazwa rozmowy
+    deleteConversation: can('res:conversations:delete'),
+    editMessages: can('res:messages:update'),                      // edycja i usuwanie własnych wiadomości
+    typing: can('res:typing_status:create'),
+    pin: can('res:pinned_messages:create'),
+  }), [can]);
 
   // Inicjalizuj z cache od razu
   const [userEmail, setUserEmail] = useState(() => {
-    return localStorage.getItem(USER_EMAIL_CACHE_KEY) || null;
+    try { return localStorage.getItem(USER_EMAIL_CACHE_KEY) || null; } catch { return null; }
   });
 
   useEffect(() => {
@@ -25,7 +41,7 @@ export default function KomunikatorModule() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
         setUserEmail(user.email);
-        localStorage.setItem(USER_EMAIL_CACHE_KEY, user.email);
+        try { localStorage.setItem(USER_EMAIL_CACHE_KEY, user.email); } catch { /* ignoruj */ }
       }
     };
     // Pobierz w tle nawet jeśli mamy cache (dla weryfikacji)
@@ -41,29 +57,23 @@ export default function KomunikatorModule() {
     createAnnouncementChannel,
     markAsRead,
     deleteConversation,
+    leaveConversation,
     toggleStar,
     toggleArchive,
-    togglePin
-  } = useConversations(userEmail);
+    togglePin,
+    toggleMute
+  } = useConversations(userEmail, { canManageOwn: perms.manageOwn });
 
   // Hook powiadomień - używamy wspólnego kontekstu
   const { notifications, markAsRead: markNotificationAsRead } = useNotificationContext();
 
-  // Inicjalizacja kanałów służb - uruchomi się automatycznie po załadowaniu userEmail
-  useMinistryChannels(userEmail);
-
-  // Odśwież listę konwersacji po inicjalizacji kanałów służb
-  useEffect(() => {
-    if (userEmail) {
-      // Odśwież po krótkim opóźnieniu, żeby kanały służb zdążyły się utworzyć
-      const timeout = setTimeout(() => {
-        refetch();
-      }, 1500);
-      return () => clearTimeout(timeout);
-    }
-  }, [userEmail]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Kanały służb (w tle). Po synchronizacji, jeśli coś się zmieniło, odśwież listę.
+  useMinistryChannels(userEmail, {
+    onSynced: (changed) => { if (changed) refetch(); }
+  });
 
   const [selectedConversation, setSelectedConversation] = useState(null);
+  const [pendingOpenId, setPendingOpenId] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
@@ -79,40 +89,35 @@ export default function KomunikatorModule() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Aktualizuj selected conversation gdy lista się zmieni
+  // Aktualizuj selected conversation gdy lista się zmieni (np. nowe osoby, zmiana nazwy).
+  // Rozmowa, której już nie ma na liście (usunięta, opuszczona, usunięto mnie) — zamknij.
   useEffect(() => {
-    if (selectedConversation) {
-      const updated = conversations.find(c => c.id === selectedConversation.id);
-      if (updated) {
-        setSelectedConversation(updated);
-      }
+    if (!selectedConversation) return;
+    const updated = conversations.find(c => c.id === selectedConversation.id);
+    if (updated) {
+      if (updated !== selectedConversation) setSelectedConversation(updated);
+    } else if (!loading && pendingOpenId !== selectedConversation.id) {
+      setSelectedConversation(null);
+      setShowSettingsModal(false);
+      if (isMobileView) setShowList(true);
     }
-  }, [conversations, selectedConversation?.id]);
+  }, [conversations]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Oznacz powiadomienia jako przeczytane dla danej konwersacji
   const markConversationNotificationsAsRead = useCallback((conversationId) => {
     if (!conversationId || !notifications || notifications.length === 0) return;
-
-    // Znajdź nieprzeczytane powiadomienia dla tej konwersacji
-    // Porównuj jako stringi - conversation_id może być UUID lub string
     const convIdStr = String(conversationId);
-
-    const unreadNotifications = notifications.filter(n => {
-      const notifConvId = n.data?.conversation_id;
-      const matches = !n.read &&
-        n.type === 'message' &&
-        notifConvId &&
-        String(notifConvId) === convIdStr;
-      return matches;
-    });
-
-    // Oznacz każde jako przeczytane
-    if (unreadNotifications.length > 0) {
-      unreadNotifications.forEach(n => {
-        markNotificationAsRead(n.id);
-      });
-    }
+    notifications
+      .filter(n => !n.read && n.type === 'message' && n.data?.conversation_id && String(n.data.conversation_id) === convIdStr)
+      .forEach(n => markNotificationAsRead(n.id));
   }, [notifications, markNotificationAsRead]);
+
+  // Wybierz konwersację
+  const handleSelectConversation = useCallback((conv) => {
+    setSelectedConversation(conv);
+    if (isMobileView) setShowList(false);
+    if (conv?.id) markConversationNotificationsAsRead(conv.id);
+  }, [isMobileView, markConversationNotificationsAsRead]);
 
   // Obsłuż parametr conversation z URL (np. z powiadomienia)
   useEffect(() => {
@@ -120,15 +125,12 @@ export default function KomunikatorModule() {
     if (conversationId && conversations.length > 0) {
       const conv = conversations.find(c => c.id === conversationId);
       if (conv) {
-        setSelectedConversation(conv);
-        if (isMobileView) {
-          setShowList(false);
-        }
+        handleSelectConversation(conv);
         // Wyczyść parametr z URL po otwarciu konwersacji
         setSearchParams({}, { replace: true });
       }
     }
-  }, [searchParams, conversations, isMobileView, setSearchParams]);
+  }, [searchParams, conversations, handleSelectConversation, setSearchParams]);
 
   // Oznacz powiadomienia jako przeczytane gdy użytkownik wejdzie w konwersację
   useEffect(() => {
@@ -137,17 +139,26 @@ export default function KomunikatorModule() {
     }
   }, [selectedConversation?.id, markConversationNotificationsAsRead]);
 
-  // Wybierz konwersację
-  const handleSelectConversation = (conv) => {
-    setSelectedConversation(conv);
-    if (isMobileView) {
-      setShowList(false);
+  // Otwórz rozmowę po id — od razu, a jeśli jeszcze jej nie ma na liście, gdy się pojawi.
+  const openConversationById = useCallback((id) => {
+    if (!id) return;
+    const conv = conversations.find(c => c.id === id);
+    if (conv) {
+      setPendingOpenId(null);
+      handleSelectConversation(conv);
+    } else {
+      setPendingOpenId(id);
     }
-    // Oznacz powiadomienia dla tej konwersacji jako przeczytane
-    if (conv?.id) {
-      markConversationNotificationsAsRead(conv.id);
+  }, [conversations, handleSelectConversation]);
+
+  useEffect(() => {
+    if (!pendingOpenId) return;
+    const conv = conversations.find(c => c.id === pendingOpenId);
+    if (conv) {
+      setPendingOpenId(null);
+      handleSelectConversation(conv);
     }
-  };
+  }, [pendingOpenId, conversations, handleSelectConversation]);
 
   // Wróć do listy (mobile)
   const handleBack = () => {
@@ -155,36 +166,25 @@ export default function KomunikatorModule() {
     setSelectedConversation(null);
   };
 
-  // Utwórz rozmowę direct
+  // Utwórz rozmowę prywatną (albo otwórz istniejącą). Błąd obsługuje modal (zostaje otwarty).
   const handleCreateDirect = async (email) => {
-    const convId = await createDirectConversation(email);
-    const conv = conversations.find(c => c.id === convId);
-    if (conv) {
-      handleSelectConversation(conv);
-    } else {
-      // Odśwież i znajdź nową konwersację
-      await refetch();
-    }
+    const { id, created } = await createDirectConversation(email);
+    openConversationById(id);
+    if (created) toast.success(tr('Rozmowa utworzona'));
   };
 
   // Utwórz grupę
   const handleCreateGroup = async (name, emails) => {
-    const convId = await createGroupConversation(name, emails);
-    await refetch();
-    const conv = conversations.find(c => c.id === convId);
-    if (conv) {
-      handleSelectConversation(conv);
-    }
+    const { id } = await createGroupConversation(name, emails);
+    openConversationById(id);
+    toast.success(tr('Grupa „{name}” utworzona', { name }));
   };
 
   // Utwórz kanał ogłoszeń
   const handleCreateAnnouncement = async (name, emails) => {
-    const convId = await createAnnouncementChannel(name, emails);
-    await refetch();
-    const conv = conversations.find(c => c.id === convId);
-    if (conv) {
-      handleSelectConversation(conv);
-    }
+    const { id } = await createAnnouncementChannel(name, emails);
+    openConversationById(id);
+    toast.success(tr('Kanał „{name}” utworzony', { name }));
   };
 
   // Po aktualizacji ustawień grupy
@@ -192,17 +192,25 @@ export default function KomunikatorModule() {
     await refetch();
   };
 
-  // Usuń rozmowę prywatną
+  const closeSelected = () => {
+    setSelectedConversation(null);
+    setShowSettingsModal(false);
+    if (isMobileView) setShowList(true);
+  };
+
+  // Usuń rozmowę prywatną (dla obu osób). Rzuca błąd — nagłówek go pokazuje.
   const handleDeleteConversation = async (conversationId) => {
-    try {
-      await deleteConversation(conversationId);
-      setSelectedConversation(null);
-      if (isMobileView) {
-        setShowList(true);
-      }
-    } catch (err) {
-      console.error('Error deleting conversation:', err);
-    }
+    await deleteConversation(conversationId);
+    closeSelected();
+    toast.success(tr('Rozmowa usunięta'));
+  };
+
+  // Opuść rozmowę (z ustawień grupy). Rzuca błąd — modal go pokazuje.
+  const handleLeaveConversation = async (conversationId) => {
+    const name = selectedConversation?.displayName || selectedConversation?.name || '';
+    await leaveConversation(conversationId);
+    closeSelected();
+    toast.success(name ? tr('Opuszczono rozmowę „{name}”', { name }) : tr('Opuszczono rozmowę'));
   };
 
   return (
@@ -222,27 +230,31 @@ export default function KomunikatorModule() {
           onToggleStar={toggleStar}
           onToggleArchive={toggleArchive}
           onTogglePin={togglePin}
+          canManage={perms.manageOwn}
           loading={loading}
           currentUserEmail={userEmail}
         />
       </div>
 
-      {/* Wątek wiadomości */}
+      {/* Wątek wiadomości — key: osobny stan (szkic, odpowiedź, załączniki, paginacja) dla każdej rozmowy */}
       <div
         className={`
-          flex-1 flex flex-col
+          flex-1 flex flex-col min-w-0
           ${isMobileView ? 'absolute inset-0 z-10' : ''}
           ${isMobileView && showList ? 'hidden' : ''}
         `}
       >
         <MessageThread
+          key={selectedConversation?.id || 'none'}
           conversation={selectedConversation}
           userEmail={userEmail}
           onBack={handleBack}
           onOpenSettings={() => setShowSettingsModal(true)}
           onMarkAsRead={markAsRead}
-          onDeleteConversation={handleDeleteConversation}
+          onToggleMute={perms.manageOwn ? toggleMute : undefined}
+          onDeleteConversation={perms.deleteConversation ? handleDeleteConversation : undefined}
           allConversations={conversations}
+          perms={perms}
         />
       </div>
 
@@ -263,6 +275,8 @@ export default function KomunikatorModule() {
         conversation={selectedConversation}
         currentUserEmail={userEmail}
         onUpdate={handleSettingsUpdate}
+        onLeave={perms.removeParticipants ? handleLeaveConversation : undefined}
+        perms={perms}
       />
     </div>
   );

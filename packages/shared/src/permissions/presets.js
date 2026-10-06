@@ -65,6 +65,10 @@ export const ROLE_PRESETS = {
     allow('res:conversations:read'), allow('res:conversations:create'), allow('res:conversations:update'),
     allow('res:conversation_participants:read'), allow('res:conversation_participants:create'),
     allow('res:messages:read'), allow('res:messages:create'),
+    // Własne dane w czacie (zakres wierszy pilnuje serwer — komunikator.js; migracja 084).
+    allow('res:conversation_participants:update'), allow('res:conversation_participants:delete'),
+    allow('res:messages:update'), allow('res:conversations:delete'),
+    allow('res:typing_status:read'), allow('res:typing_status:create'), allow('res:typing_status:update'), allow('res:typing_status:delete'),
     // Projekty/Tablice — członek współpracuje: widzi wszystko, tworzy/edytuje/usuwa
     // elementy (zadania) i pisze aktualizacje. Zmiany STRUKTURALNE (kolumny/grupy/widoki/
     // automatyzacje/dashboardy) zostają u liderów (wildcardy).

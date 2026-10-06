@@ -141,6 +141,12 @@ export async function enforceConversationWrite(q, req) {
       for (const r of rows) {
         if ('conversation_id' in r || 'user_email' in r) throw new ApiError(403, 'Nie można przenieść uczestnika');
       }
+      // Zmiana roli (np. nadanie administratora) — tylko administrator rozmowy; własny wiersz
+      // („przeczytane”, wyciszenie, archiwum) może zmieniać każdy uczestnik.
+      if (rows.some((r) => 'role' in r)) {
+        const adminOnly = (a, push) => adminOf(`${a}."conversation_id"`, push(me));
+        q.__ownerScope = { ...(q.__ownerScope || {}), update: adminOnly, upsertGuard: adminOnly };
+      }
       return; // zakres (mój wiersz / administrator) pilnuje SQL
     }
     const byConv = new Map();
@@ -154,8 +160,8 @@ export async function enforceConversationWrite(q, req) {
       if (!conv) throw new ApiError(404, 'Nie znaleziono rozmowy');
       const role = (await isMember(db, convId, me))?.role;
       if (role === 'admin') continue;
-      if (conv.n === 0) continue; // nowa rozmowa — pierwszy skład dodaje zakładający
-      if (lower(conv.created_by) === me) continue;
+      // Nowa rozmowa (0 uczestników) — pierwszy skład dodaje wyłącznie jej twórca.
+      if (conv.n === 0 && lower(conv.created_by) === me) continue;
       if (conv.type === 'ministry' && (await inMinistry(db, conv.ministry_key, [...emails, me]))) {
         // Synchronizacja kanału służby: dopisujemy wyłącznie członków tego zespołu, bez ról admina.
         for (const r of rows) if (String(r.conversation_id) === convId) r.role = 'member';
@@ -227,6 +233,19 @@ export async function conversationAudience(db, table, rows) {
     [[...convIds]]
   );
   return new Set(ps.map((p) => p.e));
+}
+
+// Odbiorcy usunięcia rozmowy liczeni PRZED zapisem — kaskada kasuje skład, zanim realtime
+// zdąży go odczytać (druga osoba nie dowiadywała się o usunięciu).
+export async function conversationDeleteAudience(db, q) {
+  if (q.table !== 'conversations' || q.op !== 'delete') return null;
+  const f = (q.filters || []).find((x) => x.column === 'id' && (x.type === 'eq' || x.type === 'in'));
+  if (!f) return null;
+  const ids = (Array.isArray(f.value) ? f.value : [f.value]).map(String);
+  const { rows } = await db.query(
+    `SELECT DISTINCT lower(user_email) AS e FROM conversation_participants WHERE conversation_id::text = ANY($1::text[])`, [ids]
+  );
+  return new Set(rows.map((r) => r.e));
 }
 
 // Masowe update/delete bez filtrów w Komunikatorze — odrzucamy (zakres i tak by zawęził, ale

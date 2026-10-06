@@ -1,7 +1,9 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { normEmail, emailPattern } from '../utils/chatLogic';
 
 // Definicja kanałów służb - mapowanie ministry_key na tabelę z członkami
+// (ta sama mapa jest na serwerze: packages/api/src/dataapi/komunikator.js → MINISTRY_TABLES).
 const MINISTRY_CHANNELS = [
   { key: 'worship_team', name: 'Zespół Uwielbienia', table: 'worship_team', emailField: 'email' },
   { key: 'media_team', name: 'Media Team', table: 'media_team', emailField: 'email' },
@@ -10,14 +12,115 @@ const MINISTRY_CHANNELS = [
   { key: 'home_groups', name: 'Liderzy Grup Domowych', table: 'home_group_leaders', emailField: 'email' },
 ];
 
-export default function useMinistryChannels(userEmail) {
+// Synchronizacja kanałów służb działa w tle przy wejściu do Komunikatora. Zasady serwera:
+//  - kanał (conversations.type='ministry') widać przed dołączeniem, więc można go znaleźć;
+//  - nowy kanał: najpierw rozmowa, potem cały skład (pusta rozmowa przyjmuje pierwszy skład);
+//  - istniejący kanał: członek zespołu może dopisać brakujących członków TEGO zespołu (rola 'member').
+// Wszystkie zapisy są „ciche” (.silent()) — to nie jest akcja użytkownika, więc błąd nie powinien
+// wyskakiwać jako komunikat; najwyżej kanał pojawi się przy następnym wejściu.
+export default function useMinistryChannels(userEmail, { onSynced } = {}) {
   const initializedRef = useRef(false);
+  const onSyncedRef = useRef(onSynced);
+  onSyncedRef.current = onSynced;
+
+  // Upewnij się, że kanał służby istnieje i WSZYSCY członkowie służby są uczestnikami.
+  // Zwraca true, gdy coś zmieniono (nowy kanał albo nowi uczestnicy).
+  const ensureMinistryChannel = async (ministry) => {
+    try {
+      // Najstarszy kanał tej służby (gdyby kiedyś powstał duplikat, nie twórz kolejnego).
+      const { data: existingRows, error: findError } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('type', 'ministry')
+        .eq('ministry_key', ministry.key)
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      if (findError) {
+        console.warn(`Nie udało się sprawdzić kanału ${ministry.key}:`, findError.message);
+        return false;
+      }
+
+      let conversationId = existingRows?.[0]?.id || null;
+      let changed = false;
+
+      if (!conversationId) {
+        const { data: newConv, error: createError } = await supabase
+          .from('conversations')
+          .insert({
+            type: 'ministry',
+            name: ministry.name,
+            ministry_key: ministry.key,
+            created_by: userEmail
+          })
+          .select('id')
+          .single()
+          .silent();
+
+        if (createError) {
+          console.warn(`Nie udało się utworzyć kanału ${ministry.key}:`, createError.message);
+          return false;
+        }
+        conversationId = newConv.id;
+        changed = true;
+      }
+
+      // Wszyscy członkowie służby z tabeli zespołu
+      const { data: allMembers, error: membersError } = await supabase
+        .from(ministry.table)
+        .select(ministry.emailField);
+
+      if (membersError) {
+        console.warn(`Nie udało się pobrać członków ${ministry.table}:`, membersError.message);
+        return changed;
+      }
+
+      // Unikalne e-maile (bez względu na wielkość liter)
+      const byKey = new Map();
+      for (const m of allMembers || []) {
+        const email = m?.[ministry.emailField];
+        if (email && !byKey.has(normEmail(email))) byKey.set(normEmail(email), email);
+      }
+      if (byKey.size === 0) return changed;
+
+      // Obecni uczestnicy kanału (widoczni dla uczestnika; dla nowego/obcego kanału — pusta lista)
+      const { data: currentParticipants } = await supabase
+        .from('conversation_participants')
+        .select('user_email')
+        .eq('conversation_id', conversationId);
+
+      const currentKeys = new Set((currentParticipants || []).map(p => normEmail(p.user_email)));
+      const newMembers = [...byKey.entries()].filter(([k]) => !currentKeys.has(k)).map(([, e]) => e);
+      if (newMembers.length === 0) return changed;
+
+      // Serwer pomija duplikaty (upsert), więc dopisanie osób, których nie widzimy, jest bezpieczne.
+      const { error: insertError } = await supabase
+        .from('conversation_participants')
+        .insert(newMembers.map(memberEmail => ({
+          conversation_id: conversationId,
+          user_email: memberEmail,
+          role: 'member'
+        })))
+        .select('conversation_id, user_email')
+        .silent();
+
+      if (insertError) {
+        console.warn(`Nie udało się dopisać członków do kanału ${ministry.key}:`, insertError.message);
+        return changed;
+      }
+      return true;
+    } catch (error) {
+      console.warn(`Błąd synchronizacji kanału ${ministry.key}:`, error);
+      return false;
+    }
+  };
 
   // Inicjalizacja kanałów służb dla użytkownika
   const initializeMinistryChannels = useCallback(async () => {
     if (!userEmail || initializedRef.current) return;
     initializedRef.current = true;
 
+    let changed = false;
     try {
       // Sprawdź do których służb należy użytkownik
       const membershipChecks = await Promise.all(
@@ -25,174 +128,36 @@ export default function useMinistryChannels(userEmail) {
           try {
             const { data, error } = await supabase
               .from(ministry.table)
-              .select('id')
-              .eq(ministry.emailField, userEmail)
+              .select(ministry.emailField)
+              // bez względu na wielkość liter (jak serwer); znaki % i _ dosłownie
+              .ilike(ministry.emailField, emailPattern(userEmail))
               .limit(1);
-
-            if (error) {
-              console.warn(`Error checking ${ministry.table}:`, error.message);
-              return { ministry, isMember: false };
-            }
-
-            return { ministry, isMember: data && data.length > 0 };
-          } catch (err) {
-            console.warn(`Error checking ministry ${ministry.key}:`, err);
+            if (error) return { ministry, isMember: false };
+            return { ministry, isMember: !!(data && data.length > 0) };
+          } catch {
             return { ministry, isMember: false };
           }
         })
       );
 
-      // Filtruj tylko służby, do których użytkownik należy
-      const userMinistries = membershipChecks
-        .filter(check => check.isMember)
-        .map(check => check.ministry);
+      const userMinistries = membershipChecks.filter(c => c.isMember).map(c => c.ministry);
 
-      if (userMinistries.length === 0) {
-        return;
-      }
-
-      // Dla każdej służby użytkownika - sprawdź/utwórz kanał i dodaj użytkownika
+      // Po kolei — żeby nie tworzyć wyścigu przy pierwszym zakładaniu kanałów
       for (const ministry of userMinistries) {
-        await ensureMinistryChannel(ministry, userEmail);
+        if (await ensureMinistryChannel(ministry)) changed = true;
       }
     } catch (error) {
-      console.error('Error initializing ministry channels:', error);
+      console.warn('Błąd inicjalizacji kanałów służb:', error);
+    } finally {
+      onSyncedRef.current?.(changed);
     }
-  }, [userEmail]);
+  }, [userEmail]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Upewnij się, że kanał służby istnieje i WSZYSCY członkowie służby są uczestnikami
-  const ensureMinistryChannel = async (ministry, email) => {
-    try {
-      // Sprawdź czy kanał już istnieje
-      let { data: existingConv } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('type', 'ministry')
-        .eq('ministry_key', ministry.key)
-        .maybeSingle();
-
-      let conversationId;
-
-      if (existingConv) {
-        conversationId = existingConv.id;
-      } else {
-        // Utwórz nowy kanał służby
-        const { data: newConv, error: createError } = await supabase
-          .from('conversations')
-          .insert({
-            type: 'ministry',
-            name: ministry.name,
-            ministry_key: ministry.key,
-            created_by: email
-          })
-          .select('id')
-          .single();
-
-        if (createError) {
-          console.error(`Error creating ministry channel ${ministry.key}:`, createError);
-          return;
-        }
-
-        conversationId = newConv.id;
-      }
-
-      // Pobierz WSZYSTKICH członków służby z tabeli
-      const { data: allMembers, error: membersError } = await supabase
-        .from(ministry.table)
-        .select(ministry.emailField);
-
-      if (membersError) {
-        console.warn(`Error fetching members from ${ministry.table}:`, membersError.message);
-        return;
-      }
-
-      const allMemberEmails = (allMembers || [])
-        .map(m => m[ministry.emailField])
-        .filter(Boolean);
-
-      if (allMemberEmails.length === 0) return;
-
-      // Pobierz obecnych uczestników kanału
-      const { data: currentParticipants } = await supabase
-        .from('conversation_participants')
-        .select('user_email')
-        .eq('conversation_id', conversationId);
-
-      const currentEmails = new Set((currentParticipants || []).map(p => p.user_email));
-
-      // Znajdź członków, którzy nie są jeszcze w kanale
-      const newMembers = allMemberEmails.filter(memberEmail => !currentEmails.has(memberEmail));
-
-      if (newMembers.length > 0) {
-        // Dodaj wszystkich brakujących członków
-        const { error: insertError } = await supabase
-          .from('conversation_participants')
-          .insert(
-            newMembers.map(memberEmail => ({
-              conversation_id: conversationId,
-              user_email: memberEmail,
-              role: 'member'
-            }))
-          );
-
-        if (insertError) {
-          console.error(`Error adding members to ${ministry.key}:`, insertError);
-        }
-      }
-    } catch (error) {
-      console.error(`Error ensuring ministry channel ${ministry.key}:`, error);
-    }
-  };
-
-  // Synchronizuj wszystkich członków służby z kanałem
+  // Synchronizuj wszystkich członków służby z kanałem (np. po zmianie składu zespołu)
   const syncMinistryMembers = async (ministryKey) => {
     const ministry = MINISTRY_CHANNELS.find(m => m.key === ministryKey);
-    if (!ministry) return;
-
-    try {
-      // Pobierz wszystkich członków służby
-      const { data: members } = await supabase
-        .from(ministry.table)
-        .select(ministry.emailField);
-
-      if (!members || members.length === 0) return;
-
-      // Pobierz konwersację
-      const { data: conv } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('type', 'ministry')
-        .eq('ministry_key', ministryKey)
-        .maybeSingle();
-
-      if (!conv) return;
-
-      // Pobierz obecnych uczestników
-      const { data: currentParticipants } = await supabase
-        .from('conversation_participants')
-        .select('user_email')
-        .eq('conversation_id', conv.id);
-
-      const currentEmails = new Set((currentParticipants || []).map(p => p.user_email));
-      const memberEmails = members.map(m => m[ministry.emailField]).filter(Boolean);
-
-      // Dodaj brakujących członków
-      const newMembers = memberEmails.filter(email => !currentEmails.has(email));
-
-      if (newMembers.length > 0) {
-        await supabase
-          .from('conversation_participants')
-          .insert(
-            newMembers.map(email => ({
-              conversation_id: conv.id,
-              user_email: email,
-              role: 'member'
-            }))
-          );
-      }
-    } catch (error) {
-      console.error(`Error syncing ministry members for ${ministryKey}:`, error);
-    }
+    if (!ministry) return false;
+    return ensureMinistryChannel(ministry);
   };
 
   useEffect(() => {

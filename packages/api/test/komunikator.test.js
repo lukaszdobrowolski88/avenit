@@ -49,7 +49,7 @@ test('kanał ogłoszeń: piszą tylko administratorzy', async () => {
 });
 
 test('uczestnicy: nowa rozmowa (0 osób) — pierwszy skład wolno; istniejąca — tylko administrator', async () => {
-  const fresh = fakeDb([['FROM conversations c', () => [{ id: 'c3', type: 'direct', n: 0 }]]]);
+  const fresh = fakeDb([['FROM conversations c', () => [{ id: 'c3', type: 'direct', n: 0, created_by: 'jan@kosciol.pl' }]]]);
   const q = { table: 'conversation_participants', op: 'insert', values: [{ conversation_id: 'c3', user_email: 'jan@kosciol.pl' }, { conversation_id: 'c3', user_email: 'ola@x.pl' }] };
   await enforceConversationWrite(q, req(fresh));
   assert.equal(q.op, 'upsert'); // duplikaty pomijane
@@ -78,4 +78,23 @@ test('realtime: odbiorcy = uczestnicy rozmowy', async () => {
   const aud = await conversationAudience(db, 'messages', [{ id: 'm1', conversation_id: 'c1' }]);
   assert.deepEqual([...aud].sort(), ['jan@kosciol.pl', 'ola@x.pl']);
   assert.equal(await conversationAudience(db, 'events', [{ id: 1 }]), null);
+});
+
+test('nowa rozmowa bez uczestników — skład dodaje tylko jej twórca', async () => {
+  const foreign = fakeDb([['FROM conversations c', () => [{ id: 'c6', type: 'group', n: 0, created_by: 'inny@x.pl' }]]]);
+  await denied(enforceConversationWrite({ table: 'conversation_participants', op: 'insert', values: { conversation_id: 'c6', user_email: 'jan@kosciol.pl' } }, req(foreign)));
+});
+
+test('zmiana roli uczestnika — zakres zawężony do administratora rozmowy', async () => {
+  const q = { table: 'conversation_participants', op: 'update', values: { role: 'admin' }, filters: [{ type: 'eq', column: 'id', value: 1 }],
+    __ownerScope: conversationScope('conversation_participants', { email: 'jan@kosciol.pl' }) };
+  await enforceConversationWrite(q, req(fakeDb([])));
+  const sql = q.__ownerScope.update('t', () => 1);
+  assert.match(sql, /role" = 'admin'/);
+  assert.doesNotMatch(sql, /lower\(t\."user_email"\)/);
+  // „przeczytane” na własnym wierszu — zwykły zakres (mój wiersz albo admin)
+  const own = { table: 'conversation_participants', op: 'update', values: { last_read_at: 'x' }, filters: [{ type: 'eq', column: 'id', value: 1 }],
+    __ownerScope: conversationScope('conversation_participants', { email: 'jan@kosciol.pl' }) };
+  await enforceConversationWrite(own, req(fakeDb([])));
+  assert.match(own.__ownerScope.update('t', () => 1), /lower\(t\."user_email"\)/);
 });

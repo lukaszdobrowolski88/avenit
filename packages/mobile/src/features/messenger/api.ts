@@ -1155,14 +1155,17 @@ export const useForwardMessage = (senderEmail: string | null) => {
     }) => {
       if (!senderEmail) throw new Error("Brak zalogowanego");
       if (conversationIds.length === 0) return;
-      const rows = conversationIds.map((cid) => ({
-        conversation_id: cid,
-        sender_email: senderEmail,
-        content,
-        attachments: attachments ?? [],
-      }));
-      const { error } = await (supabase.from("messages") as any).insert(rows);
-      if (error) throw error;
+      // Osobno do każdej rozmowy: serwer odrzuca wiadomość w kanale „tylko administratorzy”
+      // albo w rozmowie, w której nie jestem — zbiorczy insert przepadał wtedy w całości.
+      const failed: string[] = [];
+      for (const cid of conversationIds) {
+        const { error } = await (supabase.from("messages") as any)
+          .insert({ conversation_id: cid, sender_email: senderEmail, content, attachments: attachments ?? [] })
+          .select("id");
+        if (error) failed.push(cid);
+      }
+      if (failed.length === conversationIds.length) throw new Error("Nie udało się przekazać wiadomości");
+      if (failed.length) throw new Error(`Przekazano do ${conversationIds.length - failed.length} z ${conversationIds.length} rozmów — w pozostałych nie możesz pisać.`);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["conversations"] });

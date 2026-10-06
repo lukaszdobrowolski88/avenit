@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Plus, MessageSquare, Users, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Star, Archive, Filter, Pin, Megaphone } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Search, Plus, MessageSquare, Users, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Star, Archive, Pin, Megaphone, MoreHorizontal, BellOff } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageDate, truncateText, getMinistryName } from '../utils/messageHelpers';
 import { usePresence } from '../../../hooks/usePresence';
+import { sameEmail } from '../utils/chatLogic';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import Button from '../../../components/Button';
@@ -30,12 +31,34 @@ export default function ConversationList({
   onToggleStar,
   onToggleArchive,
   onTogglePin,
+  canManage = true, // uprawnienie do zmiany własnego wiersza uczestnika (przypięcie/ulubione/archiwum)
   loading,
   currentUserEmail
 }) {
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'starred' | 'archived'
+  const [menuFor, setMenuFor] = useState(null); // id rozmowy z otwartym menu „⋯”
+  const menuRef = useRef(null);
+
+  // Zamknij menu „⋯” po kliknięciu poza nim albo klawiszem Escape
+  useEffect(() => {
+    if (!menuFor) return;
+    const onDown = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuFor(null); };
+    const onKey = (e) => { if (e.key === 'Escape') setMenuFor(null); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuFor]);
+
+  // Filtry „Ulubione”/„Archiwum” mają sens, gdy można oznaczać rozmowy (albo już coś oznaczono).
+  const showStarredFilter = canManage || conversations.some(c => c.starred);
+  const showArchivedFilter = canManage || conversations.some(c => c.archived);
 
   // Zbierz emaile wszystkich uczestników konwersacji direct
   const participantEmails = useMemo(() => {
@@ -44,7 +67,7 @@ export default function ConversationList({
       .filter(c => c.type === 'direct')
       .forEach(c => {
         c.participants?.forEach(p => {
-          if (p.user_email !== currentUserEmail) {
+          if (!sameEmail(p.user_email, currentUserEmail)) {
             emails.add(p.user_email);
           }
         });
@@ -81,19 +104,11 @@ export default function ConversationList({
   const announcementConversations = filteredConversations.filter(c => c.type === 'announcement' && !c.pinned);
   const ministryConversations = filteredConversations.filter(c => c.type === 'ministry' && !c.pinned);
 
-  const handleStarClick = (e, convId) => {
+  // Akcja z menu „⋯”: zamknij menu i wykonaj
+  const runMenuAction = (e, fn, convId) => {
     e.stopPropagation();
-    onToggleStar?.(convId);
-  };
-
-  const handleArchiveClick = (e, convId) => {
-    e.stopPropagation();
-    onToggleArchive?.(convId);
-  };
-
-  const handlePinClick = (e, convId) => {
-    e.stopPropagation();
-    onTogglePin?.(convId);
+    setMenuFor(null);
+    fn?.(convId);
   };
 
   const renderConversationItem = (conv) => {
@@ -102,7 +117,7 @@ export default function ConversationList({
 
     const getIcon = () => {
       if (conv.type === 'direct') {
-        const otherParticipant = conv.participants?.find(p => p.user_email !== currentUserEmail);
+        const otherParticipant = conv.participants?.find(p => !sameEmail(p.user_email, currentUserEmail));
         const otherEmail = otherParticipant?.user_email;
         const status = otherEmail ? getStatus(otherEmail) : 'offline';
         return (
@@ -144,95 +159,102 @@ export default function ConversationList({
       ? getMinistryName(conv.ministry_key) || conv.name
       : conv.displayName || conv.name;
 
+    const menuOpen = menuFor === conv.id;
+    const menuItemClass = 'flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus-visible:bg-gray-50 dark:focus-visible:bg-gray-800 outline-none transition text-left';
+
     return (
-      <div
-        key={conv.id}
-        onClick={() => onSelect(conv)}
-        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-left cursor-pointer group relative
-          ${isSelected
-            ? 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/20 shadow-sm border border-accent-primary-lighter/50 dark:border-accent-primary-dark/30'
-            : 'hover:bg-white/80 dark:hover:bg-gray-800/60 hover:shadow-sm border border-transparent'
-          }
-        `}
-      >
-        {/* Wskaźnik zaznaczenia */}
-        {isSelected && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-accent-primary-light to-accent-secondary-light rounded-r-full" />
-        )}
-
-        <div className="relative flex-shrink-0">
-          {getIcon()}
-          {hasUnread && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md shadow-accent-primary-light/30 animate-pulse">
-              {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
-            </span>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className={`font-medium truncate transition-colors ${hasUnread ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                {displayName}
+      <div key={conv.id} className="relative group">
+        {/* Wiersz rozmowy = przycisk (klawiatura: Tab + Enter) */}
+        <button
+          type="button"
+          onClick={() => onSelect(conv)}
+          aria-current={isSelected ? 'true' : undefined}
+          className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/60
+            ${canManage ? 'pr-12 lg:pr-3' : ''}
+            ${isSelected
+              ? 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/20 shadow-sm border border-accent-primary-lighter/50 dark:border-accent-primary-dark/30'
+              : 'hover:bg-white/80 dark:hover:bg-gray-800/60 hover:shadow-sm border border-transparent'
+            }
+          `}
+        >
+          <div className="relative flex-shrink-0">
+            {getIcon()}
+            {hasUnread && (
+              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent-primary rounded-full ring-2 ring-white dark:ring-gray-900">
+                <span className="sr-only">{t('Nieprzeczytane wiadomości')}</span>
               </span>
-              {conv.pinned && (
-                <Pin size={12} className="text-accent-primary fill-accent-primary flex-shrink-0" />
-              )}
-              {conv.starred && (
-                <Star size={12} className="text-yellow-500 fill-yellow-500 flex-shrink-0 drop-shadow-sm" />
-              )}
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={`truncate transition-colors ${hasUnread ? 'font-semibold text-gray-900 dark:text-white' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+                  {displayName}
+                </span>
+                {conv.pinned && (
+                  <Pin size={12} className="text-accent-primary fill-accent-primary flex-shrink-0" aria-label={t('Przypięta')} />
+                )}
+                {conv.starred && (
+                  <Star size={12} className="text-yellow-500 fill-yellow-500 flex-shrink-0" aria-label={t('Ulubiona')} />
+                )}
+                {conv.muted && (
+                  <BellOff size={12} className="text-gray-400 flex-shrink-0" aria-label={t('Wyciszona')} />
+                )}
+              </div>
               {conv.lastMessage && (
-                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium flex-shrink-0">
                   {formatMessageDate(conv.lastMessage.created_at)}
                 </span>
               )}
             </div>
+
+            {conv.lastMessage ? (
+              <p className={`text-xs truncate mt-0.5 ${hasUnread ? 'text-gray-600 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                {sameEmail(conv.lastMessage.sender_email, currentUserEmail) ? t('Ty: ') : ''}
+                {truncateText(conv.lastMessage.content, 40)}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 italic">
+                {tr('Brak wiadomości')}
+              </p>
+            )}
           </div>
+        </button>
 
-          {conv.lastMessage ? (
-            <p className={`text-xs truncate mt-0.5 ${hasUnread ? 'text-gray-600 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-              {conv.lastMessage.sender_email === currentUserEmail ? t('Ty: ') : ''}
-              {truncateText(conv.lastMessage.content, 40)}
-            </p>
-          ) : (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 italic">
-              {tr('Brak wiadomości')}
-            </p>
-          )}
-        </div>
-
-        {/* Akcje - widoczne przy hover */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-200 flex-shrink-0">
-          <button
-            onClick={(e) => handlePinClick(e, conv.id)}
-            className={`p-1.5 rounded-lg hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 transition-all duration-200 ${
-              conv.pinned ? 'text-accent-primary' : 'text-gray-400 hover:text-accent-primary'
-            }`}
-            title={conv.pinned ? t('Odepnij') : t('Przypnij rozmowę')}
-          >
-            <Pin size={14} className={conv.pinned ? 'fill-current' : ''} />
-          </button>
-          <button
-            onClick={(e) => handleStarClick(e, conv.id)}
-            className={`p-1.5 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-all duration-200 ${
-              conv.starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'
-            }`}
-            title={conv.starred ? t('Usuń z ulubionych') : t('Dodaj do ulubionych')}
-          >
-            <Star size={14} className={conv.starred ? 'fill-current' : ''} />
-          </button>
-          <button
-            onClick={(e) => handleArchiveClick(e, conv.id)}
-            className={`p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-200 ${
-              conv.archived ? 'text-blue-500' : 'text-gray-400 hover:text-blue-500'
-            }`}
-            title={conv.archived ? t('Przywróć z archiwum') : t('Archiwizuj')}
-          >
-            <Archive size={14} />
-          </button>
-        </div>
+        {/* Menu „⋯”: na telefonie zawsze widoczne, na komputerze po najechaniu lub fokusie (bez rezerwowania miejsca) */}
+        {canManage && (
+          <div ref={menuOpen ? menuRef : undefined} className="absolute right-2 top-1/2 -translate-y-1/2">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setMenuFor(menuOpen ? null : conv.id); }}
+              aria-label={t('Więcej działań: {name}', { name: displayName })}
+              title={t('Więcej działań')}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg bg-white/95 dark:bg-gray-800/95 border border-gray-200/60 dark:border-gray-700/60 text-gray-500 hover:text-accent-primary shadow-sm transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/60
+                ${menuOpen ? 'opacity-100' : 'opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 focus-visible:opacity-100'}`}
+            >
+              <MoreHorizontal size={16} />
+            </button>
+            {menuOpen && (
+              <div role="menu" className="absolute right-0 top-full mt-1 z-30 w-56 bg-white dark:bg-gray-900 border border-gray-200/70 dark:border-gray-700/70 rounded-xl shadow-xl py-1">
+                <button type="button" role="menuitem" onClick={(e) => runMenuAction(e, onTogglePin, conv.id)} className={menuItemClass}>
+                  <Pin size={15} className={conv.pinned ? 'text-accent-primary fill-current' : 'text-gray-400'} />
+                  {conv.pinned ? t('Odepnij') : t('Przypnij na górze')}
+                </button>
+                <button type="button" role="menuitem" onClick={(e) => runMenuAction(e, onToggleStar, conv.id)} className={menuItemClass}>
+                  <Star size={15} className={conv.starred ? 'text-yellow-500 fill-current' : 'text-gray-400'} />
+                  {conv.starred ? t('Usuń z ulubionych') : t('Dodaj do ulubionych')}
+                </button>
+                <button type="button" role="menuitem" onClick={(e) => runMenuAction(e, onToggleArchive, conv.id)} className={menuItemClass}>
+                  <Archive size={15} className="text-gray-400" />
+                  {conv.archived ? t('Przywróć z archiwum') : t('Archiwizuj')}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -268,6 +290,7 @@ export default function ConversationList({
           <button
             data-tour="komunikator-new"
             onClick={onNewConversation}
+            aria-label={t('Nowa rozmowa')}
             className="p-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 hover:scale-105"
             title={t('Nowa rozmowa')}
           >
@@ -283,14 +306,18 @@ export default function ConversationList({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('Szukaj rozmów...')}
+            aria-label={t('Szukaj rozmów')}
             className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 backdrop-blur-sm transition-all duration-200"
           />
         </div>
 
         {/* Filtry */}
-        <div className="flex gap-1.5 mt-3">
+        {(showStarredFilter || showArchivedFilter) && (
+        <div className="flex gap-1.5 mt-3" role="group" aria-label={t('Filtr rozmów')}>
           <button
+            type="button"
             onClick={() => setActiveFilter('all')}
+            aria-pressed={activeFilter === 'all'}
             className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
               activeFilter === 'all'
                 ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md shadow-accent-primary-light/30'
@@ -299,8 +326,11 @@ export default function ConversationList({
           >
             {tr('Wszystkie')}
           </button>
+          {showStarredFilter && (
           <button
+            type="button"
             onClick={() => setActiveFilter('starred')}
+            aria-pressed={activeFilter === 'starred'}
             className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
               activeFilter === 'starred'
                 ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md shadow-accent-primary/30'
@@ -310,18 +340,24 @@ export default function ConversationList({
             <Star size={12} className={activeFilter === 'starred' ? 'fill-current' : ''} />
             {tr('Ulubione')}
           </button>
+          )}
+          {showArchivedFilter && (
           <button
+            type="button"
             onClick={() => setActiveFilter('archived')}
+            aria-pressed={activeFilter === 'archived'}
             className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
               activeFilter === 'archived'
-                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/30'
+                ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md shadow-accent-primary-light/30'
                 : 'bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50'
             }`}
           >
             <Archive size={12} />
             {tr('Archiwum')}
           </button>
+          )}
         </div>
+        )}
       </div>
 
       {/* Lista konwersacji */}

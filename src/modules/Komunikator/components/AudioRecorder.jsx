@@ -178,8 +178,11 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
       await onSend(audioBlob, recordingTime);
       handleCancel();
     } catch (err) {
-      console.error('Error sending voice message:', err);
-      toast.error(tr('Błąd podczas wysyłania wiadomości głosowej'));
+      // err.handled — błąd zapisu wiadomości pokazał już wątek; nagranie zostaje do ponownej próby.
+      if (!err?.handled) {
+        console.error('Error sending voice message:', err);
+        toast.error(err, { fallback: tr('Nie udało się wysłać wiadomości głosowej. Spróbuj ponownie.') });
+      }
     } finally {
       setIsSending(false);
     }
@@ -241,6 +244,9 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
       <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border border-accent-primary-lighter/50 dark:border-accent-primary/50">
         {/* Przycisk anuluj */}
         <button
+          type="button"
+          aria-label={tr('Anuluj nagrywanie')}
+          title={tr('Anuluj nagrywanie')}
           onClick={handleCancel}
           className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-500 hover:text-red-500 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200 flex-shrink-0"
         >
@@ -260,12 +266,15 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
 
         {/* Czas nagrywania */}
         <div className="flex items-center gap-1.5 sm:gap-2 text-accent-primary dark:text-accent-primary-light tabular-nums text-xs sm:text-sm min-w-[50px] sm:min-w-[60px] flex-shrink-0">
-          <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse'}`} />
+          <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-red-500 motion-safe:animate-pulse'}`} />
           {formatTime(recordingTime)}
         </div>
 
         {/* Przycisk pauza - ukryty na mobile */}
         <button
+          type="button"
+          aria-label={isPaused ? tr('Wznów nagrywanie') : tr('Wstrzymaj nagrywanie')}
+          title={isPaused ? tr('Wznów nagrywanie') : tr('Wstrzymaj nagrywanie')}
           onClick={togglePause}
           className="hidden sm:flex w-10 h-10 items-center justify-center text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all duration-200"
         >
@@ -274,6 +283,9 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
 
         {/* Przycisk stop */}
         <button
+          type="button"
+          aria-label={tr('Zakończ nagrywanie')}
+          title={tr('Zakończ nagrywanie')}
           onClick={stopRecording}
           className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 shadow-lg shadow-accent-primary-light/30 flex-shrink-0"
         >
@@ -292,6 +304,9 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
 
         {/* Przycisk anuluj */}
         <button
+          type="button"
+          aria-label={tr('Anuluj nagrywanie')}
+          title={tr('Anuluj nagrywanie')}
           onClick={handleCancel}
           disabled={isSending}
           className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-500 hover:text-red-500 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
@@ -301,6 +316,9 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
 
         {/* Przycisk play/pause */}
         <button
+          type="button"
+          aria-label={isPlaying ? tr('Zatrzymaj odsłuch') : tr('Odsłuchaj nagranie')}
+          title={isPlaying ? tr('Zatrzymaj odsłuch') : tr('Odsłuchaj nagranie')}
           onClick={togglePlayback}
           disabled={isSending}
           className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-accent-primary-light rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
@@ -324,6 +342,9 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
 
         {/* Przycisk wyślij */}
         <button
+          type="button"
+          aria-label={tr('Wyślij wiadomość głosową')}
+          title={tr('Wyślij wiadomość głosową')}
           onClick={handleSend}
           disabled={isSending || disabled}
           className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 shadow-lg shadow-accent-primary-light/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"

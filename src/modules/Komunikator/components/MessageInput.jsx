@@ -38,6 +38,8 @@ const MessageInput = forwardRef(function MessageInput({
   const textareaRef = useRef(null);
   const attachMenuRef = useRef(null);
   const mentionMapRef = useRef(new Map()); // fullName -> email
+  const sendingRef = useRef(false); // strażnik podwójnego Entera / kliknięcia
+  const [sending, setSending] = useState(false);
 
   // Wczytaj wersję roboczą (draft) przy zmianie konwersacji
   useEffect(() => {
@@ -112,7 +114,8 @@ const MessageInput = forwardRef(function MessageInput({
       await onSend('', [voiceAttachment], replyingTo?.id || null);
       setIsRecordingVoice(false);
     } catch (err) {
-      console.error('Error sending voice message:', err);
+      // Błąd zapisu wiadomości pokazał już wątek (err.handled); błąd przesyłania pliku pokaże AudioRecorder.
+      if (!err?.handled) console.error('Error sending voice message:', err);
       throw err;
     } finally {
       setUploading(false);
@@ -130,23 +133,27 @@ const MessageInput = forwardRef(function MessageInput({
     setUploadProgress(0);
     try {
       const uploadedFiles = [];
+      const failed = [];
       const totalFiles = fileArray.length;
       for (let i = 0; i < fileArray.length; i++) {
         const file = fileArray[i];
         if (file.size > 10 * 1024 * 1024) {
-          toast.error(`Plik "${file.name}" przekracza limit 10MB`);
+          toast.error(t('Plik „{name}” przekracza limit 10 MB', { name: file.name }));
           continue;
         }
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
         const filePath = `attachments/${fileName}`;
         const { error: uploadError } = await supabase.storage.from('messenger-attachments').upload(filePath, file);
-        if (uploadError) { console.error('Upload error:', uploadError); continue; }
+        if (uploadError) { console.error('Upload error:', uploadError); failed.push(file.name); continue; }
         const { data: urlData } = supabase.storage.from('messenger-attachments').getPublicUrl(filePath);
         uploadedFiles.push({ url: urlData.publicUrl, name: file.name, type: file.type, size: file.size });
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
       }
       setAttachments(prev => [...prev, ...uploadedFiles]);
+      if (failed.length) {
+        toast.error(t('Nie udało się przesłać: {names}. Spróbuj ponownie.', { names: failed.join(', ') }));
+      }
     } catch (err) {
       console.error('Error uploading files:', err);
       toast.error(t('Błąd podczas przesyłania plików'));
@@ -162,8 +169,10 @@ const MessageInput = forwardRef(function MessageInput({
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
-    if ((!content.trim() && attachments.length === 0) || disabled || uploading) return;
+    if ((!content.trim() && attachments.length === 0) || disabled || uploading || sendingRef.current) return;
 
+    sendingRef.current = true;
+    setSending(true);
     try {
       if (composerMode === 'prayer') {
         // Prośba o modlitwę – treść pola staje się tytułem
@@ -181,7 +190,11 @@ const MessageInput = forwardRef(function MessageInput({
       clearDraft();
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     } catch (err) {
-      console.error('Error sending message:', err);
+      // Komunikat pokazał wątek; treść i załączniki zostają, żeby można było spróbować ponownie.
+      if (!err?.handled) toast.error(err, { fallback: t('Nie udało się wysłać wiadomości. Spróbuj ponownie.') });
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
     }
   };
 
@@ -269,12 +282,12 @@ const MessageInput = forwardRef(function MessageInput({
     <form onSubmit={handleSubmit} className="relative border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
       {/* Banner trybu prośby o modlitwę */}
       {composerMode === 'prayer' && (
-        <div className="flex items-center gap-2 mb-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border-l-4 border-accent-primary-light">
+        <div className="flex items-center gap-2 mb-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border border-accent-primary-lighter/60 dark:border-accent-primary-dark/40">
           <span className="text-lg">🙏</span>
           <p className="flex-1 text-xs font-semibold text-accent-primary dark:text-accent-primary-light">
             {tr('Prośba o modlitwę – wpisz treść i wyślij')}
           </p>
-          <button type="button" onClick={() => setComposerMode('text')} className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition">
+          <button type="button" onClick={() => setComposerMode('text')} aria-label={t('Anuluj prośbę o modlitwę')} title={t('Anuluj prośbę o modlitwę')} className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition">
             <X size={16} className="text-gray-500" />
           </button>
         </div>
@@ -282,7 +295,7 @@ const MessageInput = forwardRef(function MessageInput({
 
       {/* Pasek odpowiedzi */}
       {replyingTo && composerMode === 'text' && (
-        <div className="flex items-center gap-3 mb-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border-l-4 border-accent-primary-light">
+        <div className="flex items-center gap-3 mb-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border border-accent-primary-lighter/60 dark:border-accent-primary-dark/40">
           <Reply size={18} className="text-accent-primary-light flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-accent-primary dark:text-accent-primary-light">
@@ -292,7 +305,7 @@ const MessageInput = forwardRef(function MessageInput({
               {replyingTo.content || (replyingTo.attachments?.length > 0 ? tr('📎 Załącznik') : '')}
             </p>
           </div>
-          <button type="button" onClick={onCancelReply} className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-all duration-200">
+          <button type="button" onClick={onCancelReply} aria-label={t('Anuluj odpowiedź')} title={t('Anuluj odpowiedź')} className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-all duration-200">
             <X size={16} className="text-gray-500" />
           </button>
         </div>
@@ -314,7 +327,7 @@ const MessageInput = forwardRef(function MessageInput({
                 <p className="text-xs font-medium truncate text-gray-700 dark:text-gray-300">{att.name}</p>
                 <p className="text-[10px] text-gray-500">{formatFileSize(att.size)}</p>
               </div>
-              <button type="button" onClick={() => removeAttachment(idx)} className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm">
+              <button type="button" onClick={() => removeAttachment(idx)} aria-label={t('Usuń załącznik {name}', { name: att.name })} title={t('Usuń załącznik')} className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-200 shadow-sm">
                 <X size={10} />
               </button>
             </div>
@@ -392,6 +405,8 @@ const MessageInput = forwardRef(function MessageInput({
             disabled={uploading || disabled}
             className={`w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0 ${showAttachMenu ? 'bg-accent-primary text-white rotate-45' : 'text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
             title={t('Załącz')}
+            aria-label={t('Załącz')}
+            aria-expanded={showAttachMenu}
           >
             <Plus size={20} />
           </button>
@@ -403,6 +418,7 @@ const MessageInput = forwardRef(function MessageInput({
             disabled={uploading || disabled}
             className="hidden sm:flex w-11 h-11 items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
             title={t('Emoji')}
+            aria-label={t('Wstaw emoji')}
           >
             <Smile size={20} />
           </button>
@@ -415,6 +431,7 @@ const MessageInput = forwardRef(function MessageInput({
               disabled={uploading || disabled}
               className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
               title={t('Nagraj wiadomość głosową')}
+              aria-label={t('Nagraj wiadomość głosową')}
             >
               <Mic size={18} className="sm:w-5 sm:h-5" />
             </button>
@@ -428,6 +445,7 @@ const MessageInput = forwardRef(function MessageInput({
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
               placeholder={composerMode === 'prayer' ? t('Treść prośby o modlitwę...') : t(placeholder)}
+              aria-label={composerMode === 'prayer' ? t('Treść prośby o modlitwę') : t('Treść wiadomości')}
               disabled={disabled || uploading}
               rows={1}
               className="w-full px-3 sm:px-4 py-2 h-9 sm:h-11 bg-gray-100 dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light/50 text-gray-900 dark:text-gray-100 placeholder-gray-500 disabled:opacity-50 transition-all duration-200 leading-5 sm:leading-6 text-sm sm:text-base"
@@ -438,7 +456,9 @@ const MessageInput = forwardRef(function MessageInput({
           <button
             data-tour="komunikator-send"
             type="submit"
-            disabled={(!content.trim() && attachments.length === 0) || disabled || uploading}
+            disabled={(!content.trim() && attachments.length === 0) || disabled || uploading || sending}
+            aria-label={t('Wyślij')}
+            title={t('Wyślij')}
             className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 flex-shrink-0"
           >
             <Send size={16} className="sm:w-[18px] sm:h-[18px]" />

@@ -1,5 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { toast } from '../../../lib/toast';
+import { tr } from '../../../i18n';
+import { sameEmail } from '../utils/chatLogic';
 
 // Dostępne emoji do reakcji
 export const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -7,7 +10,8 @@ export const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'
 export default function useReactions(conversationId, userEmail) {
   // Mapa reakcji: messageId -> [{ emoji, user_email, id }]
   const [reactions, setReactions] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
+  const pendingRef = useRef(new Set()); // strażnik podwójnego kliknięcia (wiadomość+emoji)
 
   // Pobierz reakcje dla wiadomości w konwersacji
   const fetchReactions = useCallback(async (messageIds) => {
@@ -45,27 +49,31 @@ export default function useReactions(conversationId, userEmail) {
   // Dodaj lub usuń reakcję
   const toggleReaction = useCallback(async (messageId, emoji) => {
     if (!messageId || !userEmail || !emoji) return;
+    const key = `${messageId}|${emoji}`;
+    if (pendingRef.current.has(key)) return;
+    pendingRef.current.add(key);
 
     try {
       // Sprawdź czy już istnieje
       const existingReactions = reactions[messageId] || [];
       const existingReaction = existingReactions.find(
-        r => r.emoji === emoji && r.user_email === userEmail
+        r => r.emoji === emoji && sameEmail(r.user_email, userEmail)
       );
 
       if (existingReaction) {
-        // Usuń reakcję
+        // Usuń reakcję (.select — serwer roześle zmianę pozostałym uczestnikom)
         const { error } = await supabase
           .from('message_reactions')
           .delete()
-          .eq('id', existingReaction.id);
+          .eq('id', existingReaction.id)
+          .select('id, message_id');
 
         if (error) throw error;
 
         // Aktualizuj stan lokalnie
         setReactions(prev => ({
           ...prev,
-          [messageId]: prev[messageId].filter(r => r.id !== existingReaction.id)
+          [messageId]: (prev[messageId] || []).filter(r => r.id !== existingReaction.id)
         }));
       } else {
         // Dodaj reakcję
@@ -84,11 +92,14 @@ export default function useReactions(conversationId, userEmail) {
         // Aktualizuj stan lokalnie
         setReactions(prev => ({
           ...prev,
-          [messageId]: [...(prev[messageId] || []), data]
+          [messageId]: [...(prev[messageId] || []).filter(r => r.id !== data.id), data]
         }));
       }
     } catch (err) {
       console.error('Error toggling reaction:', err);
+      toast.error(err, { fallback: tr('Nie udało się zapisać reakcji. Spróbuj ponownie.') });
+    } finally {
+      pendingRef.current.delete(key);
     }
   }, [reactions, userEmail]);
 
@@ -108,7 +119,7 @@ export default function useReactions(conversationId, userEmail) {
       }
       acc[reaction.emoji].count++;
       acc[reaction.emoji].users.push(reaction.user_email);
-      if (reaction.user_email === userEmail) {
+      if (sameEmail(reaction.user_email, userEmail)) {
         acc[reaction.emoji].hasUserReacted = true;
       }
       return acc;
@@ -130,7 +141,7 @@ export default function useReactions(conversationId, userEmail) {
         schema: 'public',
         table: 'message_reactions'
       }, (payload) => {
-        if (payload.eventType === 'INSERT') {
+        if (payload?.eventType === 'INSERT' && payload.new?.message_id) {
           const newReaction = payload.new;
           // Sprawdź duplikaty - reakcja mogła już być dodana lokalnie
           setReactions(prev => {
@@ -143,7 +154,7 @@ export default function useReactions(conversationId, userEmail) {
               [newReaction.message_id]: [...existing, newReaction]
             };
           });
-        } else if (payload.eventType === 'DELETE') {
+        } else if (payload?.eventType === 'DELETE' && payload.old?.message_id) {
           const deletedReaction = payload.old;
           setReactions(prev => ({
             ...prev,

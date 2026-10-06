@@ -75,8 +75,9 @@ export default function PinnedMessagesPanel({
               {canUnpin && (
                 <button
                   onClick={() => onUnpin?.(pin.message_id)}
-                  className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-all duration-200"
-                  title="Odepnij"
+                  className="p-1.5 rounded-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-all duration-200"
+                  title={tr('Odepnij')}
+                  aria-label={tr('Odepnij wiadomość')}
                 >
                   <X size={14} />
                 </button>

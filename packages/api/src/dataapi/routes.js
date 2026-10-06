@@ -10,7 +10,7 @@ import { platformDisabledModules } from '../lib/platform-modules.js';
 import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
 import { PII_TABLES, enforcePiiWrite, isPiiTable, redactPii } from './pii.js';
 import { enforceSharedWrite, enforceExpenseApproval, enforceCampaignStatus } from './sharedWrites.js';
-import { isConversationTable, conversationScope, enforceConversationWrite, conversationAudience, assertConversationFilters } from './komunikator.js';
+import { isConversationTable, conversationScope, enforceConversationWrite, conversationAudience, conversationDeleteAudience, assertConversationFilters } from './komunikator.js';
 import { isBoardTable, boardScope, enforceBoardWrite, boardAudience } from './boardsScope.js';
 import { isMailTable, mailScope, enforceMailWrite, mailAudience } from './mailScope.js';
 
@@ -276,6 +276,10 @@ export default async function dataApiRoutes(app) {
         assertConversationFilters(q);
         q.__ownerScope = conversationScope(q.table, req.user);
         await enforceConversationWrite(q, req);
+        // Realtime liczy odbiorców z wierszy zwróconych przez zapis — bez RETURNING (np. zapis
+        // z mobilki bez .select()) zmiana nie docierała do nikogo.
+        if (q.op !== 'select' && !q.returning) q.returning = '*';
+        q.__preAudience = await conversationDeleteAudience(req.db, q).catch(() => null);
       }
 
       // Projekty: prywatne tablice tylko dla właściciela i edytorów (boardsScope.js).
@@ -353,7 +357,8 @@ export default async function dataApiRoutes(app) {
       if (q.op !== 'select') {
         const changed = Array.isArray(data) ? data : [data].filter(Boolean);
         // Komunikator: zmiana trafia tylko do uczestników rozmowy.
-        const audience = (await conversationAudience(req.db, q.table, changed).catch(() => new Set()))
+        const audience = q.__preAudience
+          ?? (await conversationAudience(req.db, q.table, changed).catch(() => new Set()))
           ?? (await boardAudience(req.db, q.table, changed).catch(() => new Set()))
           ?? (await mailAudience(req.db, q.table, changed).catch(() => new Set()));
         emitChange(req.tenant.slug, q.table, q.op, changed, { audience });
