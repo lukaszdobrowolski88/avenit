@@ -3,6 +3,7 @@ import { useAttendance } from '../hooks/useAttendance';
 import { ClipboardList, LayoutGrid, RefreshCw, Search, Loader2 } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import NotifyParentButton from './NotifyParentButton';
+import EmptyState from '../../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, EmptyRow, StatusPill, STATUS_COLORS } from '../../../../components/ui/DataTable';
 
 export default function AttendanceDashboard({ session, locations }) {
@@ -65,9 +66,7 @@ export default function AttendanceDashboard({ session, locations }) {
 
   if (!session) {
     return (
-      <div className="p-10 text-center text-gray-500 dark:text-gray-400">
-        {tr('Brak aktywnej sesji. Przejdź do ustawień, aby utworzyć sesję.')}
-      </div>
+      <EmptyState icon={ClipboardList} title={tr('Brak aktywnej sesji. Przejdź do ustawień, aby utworzyć sesję.')} />
     );
   }
 
@@ -179,9 +178,7 @@ export default function AttendanceDashboard({ session, locations }) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-sm text-gray-400 dark:text-gray-500 py-2">
-                  Brak dzieci w tej sali
-                </div>
+                <EmptyState compact title="Brak dzieci w tej sali" />
               )}
             </div>
           ))}

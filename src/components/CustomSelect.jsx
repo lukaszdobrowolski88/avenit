@@ -73,7 +73,13 @@ export default function CustomSelect({
     }
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    // Esc zamyka listę (i nie zamyka okna, w którym leży — Modal sprawdza defaultPrevented).
+    const handleKey = (event) => { if (event.key === 'Escape') { event.preventDefault(); setIsOpen(false); } };
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [isOpen]);
 
   // Helper functions to get value and label from options

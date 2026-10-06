@@ -6,6 +6,8 @@ import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, memberName } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog, promptDialog } from '../../../lib/dialog';
 
@@ -143,10 +145,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
 
       {loading ? <Spinner center />
       : campaigns.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-          <Target size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Brak kampanii. Utwórz pierwszą zbiórkę.</p>
-        </div>
+        <EmptyState icon={Target} title="Brak kampanii." subtitle="Utwórz pierwszą zbiórkę." className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {campaigns.map(c => {
@@ -214,14 +213,16 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
       )}
 
       {/* Modal kampanii */}
-      <Modal isOpen={modalOpen}>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && setModalOpen(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editing ? 'Edytuj kampanię' : 'Nowa kampania'}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-            </div>
-            <div className="p-5 space-y-4">
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => !saving && setModalOpen(false)}
+        title={editing ? 'Edytuj kampanię' : 'Nowa kampania'}
+        footer={<>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
+          <Button data-tour="giving-campaign-save" onClick={save} loading={saving}>Zapisz</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwa</label>
                 <input data-tour="giving-campaign-name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
@@ -251,23 +252,20 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
                 <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="rounded accent-emerald-500" /> Kampania aktywna
               </label>
             </div>
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
-              <button onClick={() => setModalOpen(false)} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              <button data-tour="giving-campaign-save" onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
-            </div>
-          </div>
-        </div>
       </Modal>
 
       {/* Modal deklaracji */}
-      <Modal isOpen={!!pledgeModal}>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setPledgeModal(null)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Deklaracja wsparcia</h3>
-              <button onClick={() => setPledgeModal(null)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-            </div>
-            <div className="p-5 space-y-4">
+      <Modal
+        isOpen={!!pledgeModal}
+        onClose={() => setPledgeModal(null)}
+        title="Deklaracja wsparcia"
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setPledgeModal(null)}>Anuluj</Button>
+          <Button onClick={savePledge}>Zapisz</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">Kampania: <b className="text-gray-900 dark:text-white">{pledgeModal?.name}</b></p>
               <CustomSelect label="Osoba (członek)" value={pledgeForm.member_id} onChange={v => setPledgeForm(f => ({ ...f, member_id: v }))} options={memberOptions} />
               {!pledgeForm.member_id && (
@@ -278,12 +276,6 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
                 <input type="number" step="0.01" min="0" value={pledgeForm.pledge_amount} onChange={e => setPledgeForm(f => ({ ...f, pledge_amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700">
-              <button onClick={() => setPledgeModal(null)} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              <button onClick={savePledge} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md">Zapisz</button>
-            </div>
-          </div>
-        </div>
       </Modal>
     </div>
   );

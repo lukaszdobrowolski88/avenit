@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useCampusQuery } from '../../../hooks/useCampusQuery';
 import { tr } from '../../../i18n';
 import { DateInput } from '../../../components/pickers';
 import FinanceTab from '../../shared/FinanceTab';
 import { toast } from '../../../lib/toast';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 
 // Samowystarczalny widget finansów dla modułu własnego — PARYTET z modułami
 // systemowymi (np. MediaTeamModule): sam pobiera budget_items + expense_transactions
@@ -102,36 +104,27 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
         onRefresh={fetchFinanceData}
       />
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[160]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-xl text-gray-900 dark:text-white">
-                {tr('Dodaj wydatek')}
-              </h3>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">
-                <X size={20} className="text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              {field('payment_date', 'Data płatności', 'date')}
-              {field('amount', 'Kwota (PLN)', 'number')}
-              {field('contractor', 'Kontrahent')}
-              {field('description', 'Opis kosztu')}
-              {field('detailed_description', 'Szczegółowy opis')}
-              {field('responsible_person', 'Osoba odpowiedzialna')}
-            </div>
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 shrink-0">
-              <button onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition font-medium">
-                {tr('Anuluj')}
-              </button>
-              <button onClick={saveExpense} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium flex items-center gap-2">
-                <Save size={16} /> {tr('Zapisz')}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={tr('Dodaj wydatek')}
+        size="md"
+        zIndex={160}
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
+          <Button icon={Save} onClick={saveExpense}>{tr('Zapisz')}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          {field('payment_date', 'Data płatności', 'date')}
+          {field('amount', 'Kwota (PLN)', 'number')}
+          {field('contractor', 'Kontrahent')}
+          {field('description', 'Opis kosztu')}
+          {field('detailed_description', 'Szczegółowy opis')}
+          {field('responsible_person', 'Osoba odpowiedzialna')}
         </div>
-      )}
+      </Modal>
     </>
   );
 }

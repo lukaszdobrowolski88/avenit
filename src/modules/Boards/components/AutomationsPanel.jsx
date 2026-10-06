@@ -3,6 +3,7 @@ import { X, Zap, Plus, Trash2, Bell, Flag, CalendarPlus, UserPlus, MessageSquare
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { generateAutomationSpec } from '../lib/aiBoards';
 
 const TRIGGERS = [
@@ -128,7 +129,7 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
                 <button onClick={() => onDelete(a.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={15} /></button>
               </div>
             ))}
-            {automations.length === 0 && !creating && <div className="text-center text-sm text-gray-400 py-6">Brak automatyzacji.</div>}
+            {automations.length === 0 && !creating && <EmptyState compact icon={Zap} title="Brak automatyzacji." />}
           </div>
 
           {creating ? (

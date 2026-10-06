@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import Spinner from '../../../components/Spinner';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import {
   Search,
   Filter,
@@ -12,7 +15,6 @@ import {
   Calendar,
   DollarSign,
   FileText,
-  X,
   Check,
   Clock,
   Eye,
@@ -553,11 +555,7 @@ export default function ParticipantsView({ forms }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={48} />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   return (
@@ -730,14 +728,12 @@ export default function ParticipantsView({ forms }) {
       {/* Lista uczestników */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {filteredParticipants.length === 0 ? (
-          <div className="p-12 text-center">
-            <Users size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">
-              {searchQuery || selectedForm !== 'all' || paymentFilter !== 'all'
-                ? tr('Brak uczestników spełniających kryteria')
-                : tr('Brak zarejestrowanych uczestników')}
-            </p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title={searchQuery || selectedForm !== 'all' || paymentFilter !== 'all'
+              ? tr('Brak uczestników spełniających kryteria')
+              : tr('Brak zarejestrowanych uczestników')}
+          />
         ) : (
           <DataTable flush>
             <THead>
@@ -855,234 +851,206 @@ export default function ParticipantsView({ forms }) {
       </div>
 
       {/* Modal szczegółów uczestnika */}
-      {selectedParticipant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {tr('Szczegóły uczestnika')}
-              </h3>
-              <button
-                onClick={() => setSelectedParticipant(null)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                <X size={20} />
-              </button>
+      <Modal
+        isOpen={!!selectedParticipant}
+        onClose={() => setSelectedParticipant(null)}
+        closeOnBackdrop={false}
+        title={tr('Szczegóły uczestnika')}
+        size="lg"
+      >
+        {selectedParticipant && (
+          <div className="p-6">
+            {/* Info podstawowe */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                {selectedParticipant.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1">
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {selectedParticipant.name}
+                </h4>
+                <div className="mt-2 space-y-1">
+                  {selectedParticipant.email && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <Mail size={16} />
+                      <a href={`mailto:${selectedParticipant.email}`} className="hover:text-accent-primary-light">
+                        {selectedParticipant.email}
+                      </a>
+                    </div>
+                  )}
+                  {selectedParticipant.phone && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <Phone size={16} />
+                      <a href={`tel:${selectedParticipant.phone}`} className="hover:text-accent-primary-light">
+                        {selectedParticipant.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="p-6 overflow-auto max-h-[calc(90vh-80px)]">
-              {/* Info podstawowe */}
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
-                  {selectedParticipant.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {selectedParticipant.name}
-                  </h4>
-                  <div className="mt-2 space-y-1">
-                    {selectedParticipant.email && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <Mail size={16} />
-                        <a href={`mailto:${selectedParticipant.email}`} className="hover:text-accent-primary-light">
-                          {selectedParticipant.email}
-                        </a>
-                      </div>
-                    )}
-                    {selectedParticipant.phone && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <Phone size={16} />
-                        <a href={`tel:${selectedParticipant.phone}`} className="hover:text-accent-primary-light">
-                          {selectedParticipant.phone}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
+            {/* Informacje o formularzu */}
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <FileText size={16} />
+                Formularz
               </div>
+              <p className="font-medium text-gray-900 dark:text-white">
+                {selectedParticipant.formTitle}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Zarejestrowany: {formatDate(selectedParticipant.submittedAt)}
+              </p>
+            </div>
 
-              {/* Informacje o formularzu */}
+            {/* Status płatności */}
+            {selectedParticipant.totalAmount > 0 && (
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-6">
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-                  <FileText size={16} />
-                  Formularz
-                </div>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  {selectedParticipant.formTitle}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Zarejestrowany: {formatDate(selectedParticipant.submittedAt)}
-                </p>
-              </div>
-
-              {/* Status płatności */}
-              {selectedParticipant.totalAmount > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                      <CreditCard size={16} />
-                      {tr('Płatność')}
-                    </div>
-                    {getPaymentStatusBadge(selectedParticipant.paymentStatus, selectedParticipant.paidAmount, selectedParticipant.totalAmount)}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <CreditCard size={16} />
+                    {tr('Płatność')}
                   </div>
+                  {getPaymentStatusBadge(selectedParticipant.paymentStatus, selectedParticipant.paidAmount, selectedParticipant.totalAmount)}
+                </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {formatPrice(selectedParticipant.totalAmount, selectedParticipant.currency)}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {formatPrice(selectedParticipant.totalAmount, selectedParticipant.currency)}
+                    </p>
+                    {selectedParticipant.paymentMethod && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Metoda: {selectedParticipant.paymentMethod === 'transfer' ? 'Przelew' :
+                          selectedParticipant.paymentMethod === 'paypal' ? 'PayPal' :
+                          selectedParticipant.paymentMethod === 'przelewy24' ? 'Przelewy24' :
+                          selectedParticipant.paymentMethod === 'cash' ? tr('Gotówka') :
+                          selectedParticipant.paymentMethod}
                       </p>
-                      {selectedParticipant.paymentMethod && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          Metoda: {selectedParticipant.paymentMethod === 'transfer' ? 'Przelew' :
-                            selectedParticipant.paymentMethod === 'paypal' ? 'PayPal' :
-                            selectedParticipant.paymentMethod === 'przelewy24' ? 'Przelewy24' :
-                            selectedParticipant.paymentMethod === 'cash' ? tr('Gotówka') :
-                            selectedParticipant.paymentMethod}
-                        </p>
-                      )}
-                    </div>
+                    )}
+                  </div>
 
-                    <div className="flex gap-2">
-                      {selectedParticipant.paymentStatus !== 'paid' && (
-                        <button
-                          onClick={() => updatePaymentStatus(selectedParticipant.id, 'paid')}
-                          className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-                        >
-                          <Check size={16} />
-                          {tr('Oznacz jako opłacone')}
-                        </button>
-                      )}
-                      {selectedParticipant.paymentStatus === 'paid' && (
-                        <button
-                          onClick={() => updatePaymentStatus(selectedParticipant.id, 'pending')}
-                          className="flex items-center gap-2 px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
-                        >
-                          <Clock size={16} />
-                          {tr('Cofnij płatność')}
-                        </button>
-                      )}
-                    </div>
+                  <div className="flex gap-2">
+                    {selectedParticipant.paymentStatus !== 'paid' && (
+                      <button
+                        onClick={() => updatePaymentStatus(selectedParticipant.id, 'paid')}
+                        className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                      >
+                        <Check size={16} />
+                        {tr('Oznacz jako opłacone')}
+                      </button>
+                    )}
+                    {selectedParticipant.paymentStatus === 'paid' && (
+                      <button
+                        onClick={() => updatePaymentStatus(selectedParticipant.id, 'pending')}
+                        className="flex items-center gap-2 px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                      >
+                        <Clock size={16} />
+                        {tr('Cofnij płatność')}
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Odpowiedzi na formularz */}
-              <div>
-                <h5 className="font-semibold text-gray-900 dark:text-white mb-3">
-                  Odpowiedzi
-                </h5>
-                <div className="space-y-3">
-                  {selectedParticipant.fields
-                    .filter(f => !['location', 'date_start', 'date_end', 'time_start', 'time_end', 'price', 'seat_limit'].includes(f.type))
-                    .map((field) => {
-                      const value = selectedParticipant.answers[field.id];
-                      if (value === undefined || value === null || value === '') return null;
+            {/* Odpowiedzi na formularz */}
+            <div>
+              <h5 className="font-semibold text-gray-900 dark:text-white mb-3">
+                Odpowiedzi
+              </h5>
+              <div className="space-y-3">
+                {selectedParticipant.fields
+                  .filter(f => !['location', 'date_start', 'date_end', 'time_start', 'time_end', 'price', 'seat_limit'].includes(f.type))
+                  .map((field) => {
+                    const value = selectedParticipant.answers[field.id];
+                    if (value === undefined || value === null || value === '') return null;
 
-                      let displayValue = value;
-                      if (Array.isArray(value)) {
-                        if (field.options) {
-                          displayValue = value.map(v => {
-                            const option = field.options.find(o => o.value === v);
-                            return option ? option.label : v;
-                          }).join(', ');
-                        } else {
-                          displayValue = value.join(', ');
-                        }
-                      } else if (field.options && (field.type === 'radio' || field.type === 'select')) {
-                        const option = field.options.find(o => o.value === value);
-                        displayValue = option ? option.label : value;
-                      } else if (field.type === 'date') {
-                        displayValue = new Date(value).toLocaleDateString('pl-PL');
+                    let displayValue = value;
+                    if (Array.isArray(value)) {
+                      if (field.options) {
+                        displayValue = value.map(v => {
+                          const option = field.options.find(o => o.value === v);
+                          return option ? option.label : v;
+                        }).join(', ');
+                      } else {
+                        displayValue = value.join(', ');
                       }
+                    } else if (field.options && (field.type === 'radio' || field.type === 'select')) {
+                      const option = field.options.find(o => o.value === value);
+                      displayValue = option ? option.label : value;
+                    } else if (field.type === 'date') {
+                      displayValue = new Date(value).toLocaleDateString('pl-PL');
+                    }
 
-                      return (
-                        <div
-                          key={field.id}
-                          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3"
-                        >
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                            {field.label}
-                          </p>
-                          <p className="text-gray-900 dark:text-white">
-                            {displayValue}
-                          </p>
-                        </div>
-                      );
-                    })}
-                </div>
+                    return (
+                      <div
+                        key={field.id}
+                        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                      >
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          {field.label}
+                        </p>
+                        <p className="text-gray-900 dark:text-white">
+                          {displayValue}
+                        </p>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Modal dodawania płatności */}
-      {paymentModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <Banknote size={20} className="text-green-500" />
-                {tr('Dodaj płatność')}
-              </h2>
-              <button
-                onClick={() => setPaymentModal(null)}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <X size={20} />
-              </button>
+      <Modal
+        isOpen={!!paymentModal}
+        onClose={() => setPaymentModal(null)}
+        closeOnBackdrop={false}
+        title={tr('Dodaj płatność')}
+        icon={Banknote}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setPaymentModal(null)}>Anuluj</Button>
+          <Button icon={Check} onClick={addPayment}>{tr('Potwierdź płatność')}</Button>
+        </>}
+      >
+        {paymentModal && (
+          <div className="p-6 space-y-4">
+            <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Uczestnik</p>
+              <p className="font-medium text-gray-900 dark:text-white">{paymentModal.name}</p>
             </div>
 
-            <div className="p-4 space-y-4">
-              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Uczestnik</p>
-                <p className="font-medium text-gray-900 dark:text-white">{paymentModal.name}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Kwota ({paymentModal.currency})
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  {tr('Data płatności')}
-                </label>
-                <DateInput
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Kwota ({paymentModal.currency})
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+              />
             </div>
 
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-              <button
-                onClick={() => setPaymentModal(null)}
-                className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={addPayment}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
-              >
-                <Check size={16} />
-                {tr('Potwierdź płatność')}
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                {tr('Data płatności')}
+              </label>
+              <DateInput
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+              />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

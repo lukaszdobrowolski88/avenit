@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Music, Video, Users, BookOpen, Mic, History, Clock, X, Save, ChevronDown, GripVertical, Trash2, Search, Check, Inbox, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Calendar, Music, Video, Users, BookOpen, Mic, History, Clock, Save, ChevronDown, GripVertical, Trash2, Search, Check, Inbox, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useScheduleAssignments } from '../../../hooks/useScheduleAssignments';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { tr } from '../../../i18n';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 const ROLE_ICONS = {
   'Zespół': Music,
@@ -114,37 +117,20 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
     }
   }, [isOpen, programId]);
 
-  if (!isOpen) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {/* Header */}
-        <div className="p-5 bg-gradient-to-r from-accent-primary to-accent-secondary flex justify-between items-center shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-xl">
-              <Music size={24} className="text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">{tr('Program nabożeństwa')}</h2>
-              {program && (
-                <p className="text-white/80 text-sm">
-                  {new Date(program.date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                </p>
-              )}
-            </div>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition">
-            <X size={24} className="text-white" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      icon={Music}
+      title={tr('Program nabożeństwa')}
+      subtitle={program ? new Date(program.date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : undefined}
+      size="xl"
+      footer={<Button variant="secondary" onClick={onClose}>Zamknij</Button>}
+    >
+        <div className="p-6">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="w-8 h-8 border-4 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
-            </div>
+            <Spinner center />
           ) : program ? (
             <div className="space-y-6">
               {/* Schedule */}
@@ -282,22 +268,10 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
               </div>
             </div>
           ) : (
-            <div className="text-center py-20 text-gray-500">{tr('Nie znaleziono programu')}</div>
+            <EmptyState compact icon={Search} title={tr('Nie znaleziono programu')} />
           )}
         </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-          >
-            Zamknij
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 };
 
@@ -416,17 +390,12 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
   const renderMinistryList = (list, isPast = false) => {
     if (!list || list.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-            {isPast ? <History size={32} className="text-gray-400" /> : <Calendar size={32} className="text-gray-400" />}
-          </div>
-          <p className="text-gray-500 dark:text-gray-400 font-medium">
-            {isPast ? tr('Brak historii służb') : tr('Brak nadchodzących służb')}
-          </p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {isPast ? tr('Historia pojawi się po zakończeniu służb') : tr('Gdy lider wpisze Cię do grafiku, zobaczysz to tutaj')}
-          </p>
-        </div>
+        <EmptyState
+          compact
+          icon={isPast ? History : Calendar}
+          title={isPast ? tr('Brak historii służb') : tr('Brak nadchodzących służb')}
+          subtitle={isPast ? tr('Historia pojawi się po zakończeniu służb') : tr('Gdy lider wpisze Cię do grafiku, zobaczysz to tutaj')}
+        />
       );
     }
 
@@ -522,26 +491,17 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
   // Renderuj listę oczekujących przypisań
   const renderPendingAssignments = () => {
     if (loadingAssignments) {
-      return (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-accent-primary-light" />
-        </div>
-      );
+      return <Spinner center />;
     }
 
     if (!pendingAssignments || pendingAssignments.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-            <Inbox size={32} className="text-gray-400" />
-          </div>
-          <p className="text-gray-500 dark:text-gray-400 font-medium">
-            {tr('Brak oczekujących sugestii')}
-          </p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {tr('Gdy ktoś Cię przypisze do służby, zobaczysz to tutaj')}
-          </p>
-        </div>
+        <EmptyState
+          compact
+          icon={Inbox}
+          title={tr('Brak oczekujących sugestii')}
+          subtitle={tr('Gdy ktoś Cię przypisze do służby, zobaczysz to tutaj')}
+        />
       );
     }
 

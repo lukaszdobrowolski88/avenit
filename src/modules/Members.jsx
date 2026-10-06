@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Spinner from '../components/Spinner';
-import { createPortal } from 'react-dom';
+import Modal from '../components/Modal';
 import { supabase } from '../lib/supabase';
 import {
   Plus, Search, Trash2, Edit2, X, User,
@@ -559,12 +559,7 @@ export default function Members() {
   };
 
   if (loading) {
-    return (
-      <div className="p-10 text-center">
-        <Spinner size={48} className="mx-auto" />
-        <div className="mt-4 text-gray-600 dark:text-gray-400">{tr('Ładowanie bazy członków...')}</div>
-      </div>
-    );
+    return <Spinner center label={tr('Ładowanie bazy członków...')} />;
   }
 
   return (
@@ -819,288 +814,276 @@ export default function Members() {
       )}
 
       {/* MODAL */}
-      {showModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100] transition-opacity">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-2xl p-8 border border-gray-200 dark:border-gray-700 relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
-
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formData.id ? 'Edytuj dane' : 'Nowa osoba'}
-              </h3>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-full transition">
-                <X size={24} className="text-gray-500 dark:text-gray-400" />
-              </button>
-            </div>
-
-            <div className="space-y-5">
-              {/* Imię i Nazwisko */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię *')}</label>
-                  <input
-                    data-tour="member-first"
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                    value={formData.first_name}
-                    onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwisko *</label>
-                  <input
-                    data-tour="member-last"
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                    value={formData.last_name}
-                    onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Kontakt */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
-                <input
-                  className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                  type="email"
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
-                  <input
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                    value={formData.phone}
-                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
-                {/* DROPDOWN STATUSU */}
-                <div>
-                  <CustomSelect
-                    label="Status"
-                    value={formData.status}
-                    options={STATUS_OPTIONS.map((s) => ({ value: s, label: tr(s) }))}
-                    onChange={(val) => setFormData({ ...formData, status: val })}
-                  />
-                </div>
-              </div>
-
-              {/* Pola dla statusu "Członek" */}
-              {formData.status === 'Członek' && (
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800/50 space-y-4">
-                  <h4 className="font-bold text-green-800 dark:text-green-300 flex items-center gap-2">
-                    <CheckCircle size={18} /> Dane członkostwa
-                  </h4>
-
-                  <CustomDatePicker
-                    label={tr('Data członkostwa')}
-                    value={formData.membership_date}
-                    onChange={(date) => setFormData({ ...formData, membership_date: date })}
-                    placeholder={tr('Wybierz datę członkostwa')}
-                  />
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Deklaracja członkostwa (PDF)')}</label>
-                    {formData.membership_declaration_url ? (
-                      <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                        <FileText size={24} className="text-accent-primary-light" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{tr('Deklaracja załączona')}</p>
-                          <a
-                            href={formData.membership_declaration_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1"
-                          >
-                            <Eye size={12} /> Podgląd
-                          </a>
-                        </div>
-                        <button
-                          onClick={removeDeclaration}
-                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary-light transition bg-white/50 dark:bg-gray-800/50">
-                        <div className="flex flex-col items-center justify-center">
-                          {uploading ? (
-                            <Spinner size={24} />
-                          ) : (
-                            <>
-                              <Upload size={24} className="text-gray-400 mb-2" />
-                              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Kliknij, aby dodać plik PDF')}</p>
-                            </>
-                          )}
-                        </div>
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                          disabled={uploading}
-                        />
-                      </label>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Nowe pole Adres */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Adres Zamieszkania</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                  <input
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                    placeholder="Ulica, numer domu, miasto"
-                    value={formData.address}
-                    onChange={e => setFormData({ ...formData, address: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Data urodzenia */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data urodzenia</label>
-                <CustomDatePicker
-                  value={formData.birth_date || ''}
-                  onChange={(val) => setFormData({ ...formData, birth_date: val })}
-                />
-              </div>
-
-              {/* Tagi */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tagi')}</label>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {(formData.tags || []).map((t) => (
-                    <span key={t} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">
-                      {t}
-                      <button type="button" onClick={() => setFormData({ ...formData, tags: formData.tags.filter((x) => x !== t) })} className="hover:text-red-500">
-                        <X size={12} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <input
-                  className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                  placeholder={tr('Wpisz tag i naciśnij Enter (np. nowy, do odwiedzenia)')}
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const t = tagInput.trim();
-                      if (t && !(formData.tags || []).includes(t)) {
-                        setFormData({ ...formData, tags: [...(formData.tags || []), t] });
-                      }
-                      setTagInput('');
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Notatki */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki (widoczne dla zespołu)')}</label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100 h-24 resize-none"
-                  placeholder="Notatki duszpasterskie, historia kontaktu…"
-                  value={formData.notes || ''}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                />
-              </div>
-
-              {/* Rodzina (Household) */}
-              <CustomSelect
-                label="Rodzina (do Check-in)"
-                placeholder={tr('Wybierz rodzinę...')}
-                value={formData.household_id}
-                onChange={(val) => setFormData({ ...formData, household_id: val })}
-                options={[{ id: '', name: 'Brak', phone_last_four: '' }, ...households]}
-                mapOptionToValue={(opt) => opt.id}
-                mapOptionToLabel={(opt) => opt.name + (opt.phone_last_four ? ` (tel. ...${opt.phone_last_four})` : '')}
-                icon={Users}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={formData.id ? 'Edytuj dane' : 'Nowa osoba'}
+        size="lg"
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
+          <Button data-tour="member-save" onClick={handleSave} loading={saving}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-5">
+          {/* Imię i Nazwisko */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię *')}</label>
+              <input
+                data-tour="member-first"
+                className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
+                value={formData.first_name}
+                onChange={e => setFormData({ ...formData, first_name: e.target.value })}
               />
-
-              {/* Grupy Domowe (wiele) */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupy domowe')}</label>
-                {homeGroups.length === 0 ? (
-                  <p className="text-sm text-gray-400">{tr('Brak grup domowych')}</p>
-                ) : (
-                  <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
-                    <div className="flex flex-wrap gap-2">
-                      {homeGroups.map((g) => {
-                        const sel = (formData.home_group_ids || []).some((x) => String(x) === String(g.id));
-                        return (
-                          <button key={g.id} type="button"
-                            onClick={() => setFormData((f) => ({ ...f, home_group_ids: sel ? f.home_group_ids.filter((x) => String(x) !== String(g.id)) : [...(f.home_group_ids || []), g.id] }))}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${sel ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                            <Home size={13} /> {g.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Kampus */}
-              {campuses.length > 0 && (
-                <CustomSelect
-                  label={tr('Kampus')}
-                  placeholder={tr('Wybierz kampus...')}
-                  value={formData.campus_id ? String(formData.campus_id) : ''}
-                  onChange={(val) => setFormData({ ...formData, campus_id: val ? parseInt(val, 10) : null })}
-                  options={[{ value: '', label: tr('Brak') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
-                  icon={MapPin}
-                />
-              )}
-
-              {/* Służby */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Służby')}</label>
-                <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
-                  <div className="flex flex-wrap gap-2">
-                    {MINISTRY_OPTIONS.map(ministry => {
-                      const isSelected = formData.ministries.includes(ministry.key);
-                      return (
-                        <button
-                          key={ministry.key}
-                          type="button"
-                          onClick={() => toggleMinistry(ministry.key)}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
-                            isSelected
-                              ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          {isSelected && <Check size={14} />}
-                          {ministry.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  {tr('Wybór służby automatycznie doda osobę do odpowiedniego modułu.')}
-                </p>
-              </div>
-
-              <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
-                <Button variant="outline" size="lg" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
-                <Button size="lg" data-tour="member-save" onClick={handleSave} loading={saving}>
-                  {saving ? 'Zapisywanie...' : 'Zapisz'}
-                </Button>
-              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwisko *</label>
+              <input
+                data-tour="member-last"
+                className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
+                value={formData.last_name}
+                onChange={e => setFormData({ ...formData, last_name: e.target.value })}
+              />
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+
+          {/* Kontakt */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
+            <input
+              className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
+              type="email"
+              value={formData.email}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
+              <input
+                className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
+                value={formData.phone}
+                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+            {/* DROPDOWN STATUSU */}
+            <div>
+              <CustomSelect
+                label="Status"
+                value={formData.status}
+                options={STATUS_OPTIONS.map((s) => ({ value: s, label: tr(s) }))}
+                onChange={(val) => setFormData({ ...formData, status: val })}
+              />
+            </div>
+          </div>
+
+          {/* Pola dla statusu "Członek" */}
+          {formData.status === 'Członek' && (
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800/50 space-y-4">
+              <h4 className="font-bold text-green-800 dark:text-green-300 flex items-center gap-2">
+                <CheckCircle size={18} /> Dane członkostwa
+              </h4>
+
+              <CustomDatePicker
+                label={tr('Data członkostwa')}
+                value={formData.membership_date}
+                onChange={(date) => setFormData({ ...formData, membership_date: date })}
+                placeholder={tr('Wybierz datę członkostwa')}
+              />
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Deklaracja członkostwa (PDF)')}</label>
+                {formData.membership_declaration_url ? (
+                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <FileText size={24} className="text-accent-primary-light" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{tr('Deklaracja załączona')}</p>
+                      <a
+                        href={formData.membership_declaration_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1"
+                      >
+                        <Eye size={12} /> Podgląd
+                      </a>
+                    </div>
+                    <button
+                      onClick={removeDeclaration}
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary-light transition bg-white/50 dark:bg-gray-800/50">
+                    <div className="flex flex-col items-center justify-center">
+                      {uploading ? (
+                        <Spinner size={24} />
+                      ) : (
+                        <>
+                          <Upload size={24} className="text-gray-400 mb-2" />
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Kliknij, aby dodać plik PDF')}</p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Nowe pole Adres */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Adres Zamieszkania</label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                className="w-full pl-10 pr-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
+                placeholder="Ulica, numer domu, miasto"
+                value={formData.address}
+                onChange={e => setFormData({ ...formData, address: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Data urodzenia */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data urodzenia</label>
+            <CustomDatePicker
+              value={formData.birth_date || ''}
+              onChange={(val) => setFormData({ ...formData, birth_date: val })}
+            />
+          </div>
+
+          {/* Tagi */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tagi')}</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {(formData.tags || []).map((t) => (
+                <span key={t} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">
+                  {t}
+                  <button type="button" onClick={() => setFormData({ ...formData, tags: formData.tags.filter((x) => x !== t) })} className="hover:text-red-500">
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
+              placeholder={tr('Wpisz tag i naciśnij Enter (np. nowy, do odwiedzenia)')}
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const t = tagInput.trim();
+                  if (t && !(formData.tags || []).includes(t)) {
+                    setFormData({ ...formData, tags: [...(formData.tags || []), t] });
+                  }
+                  setTagInput('');
+                }
+              }}
+            />
+          </div>
+
+          {/* Notatki */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki (widoczne dla zespołu)')}</label>
+            <textarea
+              className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100 h-24 resize-none"
+              placeholder="Notatki duszpasterskie, historia kontaktu…"
+              value={formData.notes || ''}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            />
+          </div>
+
+          {/* Rodzina (Household) */}
+          <CustomSelect
+            label="Rodzina (do Check-in)"
+            placeholder={tr('Wybierz rodzinę...')}
+            value={formData.household_id}
+            onChange={(val) => setFormData({ ...formData, household_id: val })}
+            options={[{ id: '', name: 'Brak', phone_last_four: '' }, ...households]}
+            mapOptionToValue={(opt) => opt.id}
+            mapOptionToLabel={(opt) => opt.name + (opt.phone_last_four ? ` (tel. ...${opt.phone_last_four})` : '')}
+            icon={Users}
+          />
+
+          {/* Grupy Domowe (wiele) */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupy domowe')}</label>
+            {homeGroups.length === 0 ? (
+              <p className="text-sm text-gray-400">{tr('Brak grup domowych')}</p>
+            ) : (
+              <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
+                <div className="flex flex-wrap gap-2">
+                  {homeGroups.map((g) => {
+                    const sel = (formData.home_group_ids || []).some((x) => String(x) === String(g.id));
+                    return (
+                      <button key={g.id} type="button"
+                        onClick={() => setFormData((f) => ({ ...f, home_group_ids: sel ? f.home_group_ids.filter((x) => String(x) !== String(g.id)) : [...(f.home_group_ids || []), g.id] }))}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${sel ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        <Home size={13} /> {g.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Kampus */}
+          {campuses.length > 0 && (
+            <CustomSelect
+              label={tr('Kampus')}
+              placeholder={tr('Wybierz kampus...')}
+              value={formData.campus_id ? String(formData.campus_id) : ''}
+              onChange={(val) => setFormData({ ...formData, campus_id: val ? parseInt(val, 10) : null })}
+              options={[{ value: '', label: tr('Brak') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
+              icon={MapPin}
+            />
+          )}
+
+          {/* Służby */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Służby')}</label>
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
+              <div className="flex flex-wrap gap-2">
+                {MINISTRY_OPTIONS.map(ministry => {
+                  const isSelected = formData.ministries.includes(ministry.key);
+                  return (
+                    <button
+                      key={ministry.key}
+                      type="button"
+                      onClick={() => toggleMinistry(ministry.key)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {isSelected && <Check size={14} />}
+                      {ministry.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              {tr('Wybór służby automatycznie doda osobę do odpowiedniego modułu.')}
+            </p>
+          </div>
+        </div>
+      </Modal>
 
       {profileMember && (
         <MemberProfile
@@ -1115,96 +1098,94 @@ export default function Members() {
       )}
 
       {/* Konfiguracja przypomnień urodzinowych */}
-      {showBdayCfg && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 flex flex-col max-h-[85vh]">
-            <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-gray-800 dark:text-white flex items-center gap-2"><Cake size={18} className="text-accent-primary" /> {tr('Przypomnienia urodzinowe')}</h3>
-              <button onClick={() => setShowBdayCfg(false)} className="text-gray-400 hover:text-gray-600"><X size={22} /></button>
+      <Modal
+        isOpen={showBdayCfg}
+        onClose={() => setShowBdayCfg(false)}
+        title={tr('Przypomnienia urodzinowe')}
+        icon={Cake}
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowBdayCfg(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveBdayCfg} loading={bdaySaving}>{tr('Zapisz')}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer">
+            <input type="checkbox" checked={!!bdayCfg.enabled} onChange={(e) => setBdayCfg({ ...bdayCfg, enabled: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
+            {tr('Włącz automatyczne przypomnienia')}
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kiedy wysyłać')}</label>
+              <CustomSelect value={bdayCfg.schedule} onChange={(v) => setBdayCfg({ ...bdayCfg, schedule: v })}
+                options={[{ value: 'daily', label: tr('Codziennie') }, { value: 'weekly', label: tr('Raz w tygodniu') }]} />
             </div>
-            <div className="p-5 space-y-4 overflow-y-auto">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer">
-                <input type="checkbox" checked={!!bdayCfg.enabled} onChange={(e) => setBdayCfg({ ...bdayCfg, enabled: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
-                {tr('Włącz automatyczne przypomnienia')}
-              </label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kiedy wysyłać')}</label>
-                  <CustomSelect value={bdayCfg.schedule} onChange={(v) => setBdayCfg({ ...bdayCfg, schedule: v })}
-                    options={[{ value: 'daily', label: tr('Codziennie') }, { value: 'weekly', label: tr('Raz w tygodniu') }]} />
-                </div>
-                {bdayCfg.schedule === 'weekly' && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Dzień tygodnia')}</label>
-                    <CustomSelect value={String(bdayCfg.weekday)} onChange={(v) => setBdayCfg({ ...bdayCfg, weekday: parseInt(v, 10) })}
-                      options={[{ value: '1', label: 'Poniedziałek' }, { value: '2', label: 'Wtorek' }, { value: '3', label: 'Środa' }, { value: '4', label: 'Czwartek' }, { value: '5', label: 'Piątek' }, { value: '6', label: 'Sobota' }, { value: '0', label: 'Niedziela' }]} />
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Ile dni wcześniej')}</label>
-                  <input type="number" min="0" max="31" value={bdayCfg.days_ahead} onChange={(e) => setBdayCfg({ ...bdayCfg, days_ahead: parseInt(e.target.value || '0', 10) })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
-                  <p className="text-[11px] text-gray-400 mt-1 ml-1">0 = tylko w dniu urodzin. Dla „raz w tygodniu" np. 7 = cały tydzień.</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kanał')}</label>
-                  <CustomSelect value={bdayCfg.channel} onChange={(v) => setBdayCfg({ ...bdayCfg, channel: v })}
-                    options={[{ value: 'email', label: 'E-mail' }, { value: 'push', label: 'Push' }, { value: 'both', label: tr('E-mail + Push') }]} />
-                </div>
-              </div>
-
+            {bdayCfg.schedule === 'weekly' && (
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Odbiorcy — role')}</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {roleList.length === 0 ? <span className="text-xs text-gray-400">{tr('Brak ról')}</span> : roleList.map((r) => {
-                    const on = (bdayCfg.recipients?.roles || []).includes(r.key);
-                    return (
-                      <button key={r.key} type="button"
-                        onClick={() => setBdayCfg((c) => ({ ...c, recipients: { ...c.recipients, roles: on ? c.recipients.roles.filter((x) => x !== r.key) : [...(c.recipients.roles || []), r.key] } }))}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${on ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                        {r.label || r.key}
-                      </button>
-                    );
-                  })}
-                </div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Dzień tygodnia')}</label>
+                <CustomSelect value={String(bdayCfg.weekday)} onChange={(v) => setBdayCfg({ ...bdayCfg, weekday: parseInt(v, 10) })}
+                  options={[{ value: '1', label: 'Poniedziałek' }, { value: '2', label: 'Wtorek' }, { value: '3', label: 'Środa' }, { value: '4', label: 'Czwartek' }, { value: '5', label: 'Piątek' }, { value: '6', label: 'Sobota' }, { value: '0', label: 'Niedziela' }]} />
               </div>
+            )}
+          </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Dodatkowe e-maile')}</label>
-                <div className="flex items-center gap-2">
-                  <input value={bdayEmail} onChange={(e) => setBdayEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && bdayEmail.trim()) { setBdayCfg((c) => ({ ...c, recipients: { ...c.recipients, emails: [...new Set([...(c.recipients.emails || []), bdayEmail.trim()])] } })); setBdayEmail(''); } }}
-                    placeholder="jan@example.com + Enter" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
-                </div>
-                {(bdayCfg.recipients?.emails || []).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {bdayCfg.recipients.emails.map((em) => (
-                      <span key={em} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
-                        {em}
-                        <button onClick={() => setBdayCfg((c) => ({ ...c, recipients: { ...c.recipients, emails: c.recipients.emails.filter((x) => x !== em) } }))} className="text-gray-400 hover:text-red-500"><X size={12} /></button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Treść powiadomienia')}</label>
-                <textarea rows={2} value={bdayCfg.message} onChange={(e) => setBdayCfg({ ...bdayCfg, message: e.target.value })}
-                  placeholder={tr('Pamiętajmy o życzeniach dla najbliższych solenizantów.')}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm resize-none" />
-              </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Ile dni wcześniej')}</label>
+              <input type="number" min="0" max="31" value={bdayCfg.days_ahead} onChange={(e) => setBdayCfg({ ...bdayCfg, days_ahead: parseInt(e.target.value || '0', 10) })}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+              <p className="text-[11px] text-gray-400 mt-1 ml-1">0 = tylko w dniu urodzin. Dla „raz w tygodniu" np. 7 = cały tydzień.</p>
             </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
-              <button onClick={() => setShowBdayCfg(false)} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
-              <button onClick={saveBdayCfg} disabled={bdaySaving} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60">{bdaySaving ? tr('Zapisywanie…') : tr('Zapisz')}</button>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kanał')}</label>
+              <CustomSelect value={bdayCfg.channel} onChange={(v) => setBdayCfg({ ...bdayCfg, channel: v })}
+                options={[{ value: 'email', label: 'E-mail' }, { value: 'push', label: 'Push' }, { value: 'both', label: tr('E-mail + Push') }]} />
             </div>
           </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Odbiorcy — role')}</label>
+            <div className="flex flex-wrap gap-1.5">
+              {roleList.length === 0 ? <span className="text-xs text-gray-400">{tr('Brak ról')}</span> : roleList.map((r) => {
+                const on = (bdayCfg.recipients?.roles || []).includes(r.key);
+                return (
+                  <button key={r.key} type="button"
+                    onClick={() => setBdayCfg((c) => ({ ...c, recipients: { ...c.recipients, roles: on ? c.recipients.roles.filter((x) => x !== r.key) : [...(c.recipients.roles || []), r.key] } }))}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${on ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
+                    {r.label || r.key}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Dodatkowe e-maile')}</label>
+            <div className="flex items-center gap-2">
+              <input value={bdayEmail} onChange={(e) => setBdayEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && bdayEmail.trim()) { setBdayCfg((c) => ({ ...c, recipients: { ...c.recipients, emails: [...new Set([...(c.recipients.emails || []), bdayEmail.trim()])] } })); setBdayEmail(''); } }}
+                placeholder="jan@example.com + Enter" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+            </div>
+            {(bdayCfg.recipients?.emails || []).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {bdayCfg.recipients.emails.map((em) => (
+                  <span key={em} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                    {em}
+                    <button onClick={() => setBdayCfg((c) => ({ ...c, recipients: { ...c.recipients, emails: c.recipients.emails.filter((x) => x !== em) } }))} className="text-gray-400 hover:text-red-500"><X size={12} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Treść powiadomienia')}</label>
+            <textarea rows={2} value={bdayCfg.message} onChange={(e) => setBdayCfg({ ...bdayCfg, message: e.target.value })}
+              placeholder={tr('Pamiętajmy o życzeniach dla najbliższych solenizantów.')}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm resize-none" />
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

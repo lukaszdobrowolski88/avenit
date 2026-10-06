@@ -8,6 +8,7 @@ import Popover from './Popover';
 import AddColumnMenu from './AddColumnMenu';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { useCan } from '../../../components/Can';
 import { Avatar } from './cells/PeopleCell';
 import { getColumnType } from '../lib/columnTypes';
@@ -302,7 +303,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
             <div>
               <Composer people={data.people} onSend={(t, m) => addUpdate(t, m)} />
               <div className="mt-2">
-                {roots.length === 0 && <div className="text-center text-sm text-gray-400 py-8">Brak aktualizacji. Napisz pierwszą!</div>}
+                {roots.length === 0 && <EmptyState compact icon={MessageSquare} title="Brak aktualizacji." subtitle="Napisz pierwszą!" />}
                 {roots.map(u => (
                   <UpdateItem key={u.id} u={u} replies={repliesOf(u.id)} people={data.people} userEmail={userEmail}
                     onLike={toggleLike} onDelete={deleteUpdate} onReply={(t, m, pid) => addUpdate(t, m, pid)} />
@@ -312,7 +313,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
           )}
           {tab === 'activity' && (
             <div className="space-y-3">
-              {activity.length === 0 && <div className="text-center text-sm text-gray-400 py-8">Brak historii aktywności</div>}
+              {activity.length === 0 && <EmptyState compact icon={Activity} title="Brak historii aktywności" />}
               {activity.map(a => (
                 <div key={a.id} className="flex items-start gap-2 text-sm">
                   <Avatar person={{ email: a.actor_email, name: a.actor_name || a.actor_email || '?' }} size={24} />

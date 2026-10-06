@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Users, Circle } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 import { getInitials, stringToColor } from '../../../utils/text';
 import { brandTone } from '../../../lib/brandTone';
 
@@ -180,11 +182,7 @@ export default function OnlineUsersWidget({ userEmail }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   const onlineCount = activeUsers.filter(u => u.calculatedStatus === 'online').length;
@@ -212,14 +210,7 @@ export default function OnlineUsersWidget({ userEmail }) {
 
       {/* Lista użytkowników */}
       {activeUsers.length === 0 ? (
-        <div className="text-center py-6">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-            <Users size={24} className="text-gray-400" />
-          </div>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            {tr('Brak aktywnych użytkowników')}
-          </p>
-        </div>
+        <EmptyState compact icon={Users} title={tr('Brak aktywnych użytkowników')} />
       ) : (
         <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
           {activeUsers.map(user => {

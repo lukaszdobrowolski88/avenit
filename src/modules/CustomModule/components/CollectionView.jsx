@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Database, Plus, Pencil, Trash2, X, Save, Star, Search, ArrowUpDown, Download, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Database, Plus, Pencil, Trash2, X, Save, Star, Search, ArrowUpDown, Download, Upload, ChevronLeft, ChevronRight, Kanban, Image as ImageIcon, CalendarDays } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { useModuleRecords } from '../../../hooks/useModuleRecords';
@@ -9,6 +9,10 @@ import { toast } from '../../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
+import Spinner from '../../../components/Spinner';
 
 // Typy pól renderowane cyframi (tabular-nums w tabeli).
 const NUMERIC_FIELD_TYPES = ['number', 'currency', 'date'];
@@ -178,37 +182,34 @@ function RecordForm({ fields, initial, onCancel, onSubmit, people = [] }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[160]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
-          <h3 className="font-bold text-xl text-gray-900 dark:text-white">
-            {initial ? tr('Edytuj wpis') : tr('Nowy wpis')}
-          </h3>
-          <button onClick={onCancel} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"><X size={20} className="text-gray-500" /></button>
-        </div>
-        <div className="p-6 space-y-4 overflow-y-auto flex-1">
-          {err && <div className="text-sm text-red-500">{err}</div>}
-          {fields.length === 0 && <p className="text-sm text-gray-400">{tr('Ta kolekcja nie ma jeszcze zdefiniowanych pól.')}</p>}
-          {fields.map((f) => {
-            if (!evaluateVisibility(f, values)) return null; // logika warunkowa
-            return (
-              <div key={f.key}>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">
-                  {f.label}{f.required ? ' *' : ''}
-                </label>
-                <FieldInput field={f} value={values[f.key]} onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))} people={people} />
-              </div>
-            );
-          })}
-        </div>
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 shrink-0">
-          <button onClick={onCancel} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition font-medium">{tr('Anuluj')}</button>
-          <button onClick={submit} disabled={saving} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium flex items-center gap-2 disabled:opacity-50">
-            <Save size={16} /> {saving ? tr('Zapisywanie...') : tr('Zapisz')}
-          </button>
-        </div>
+    <Modal
+      isOpen
+      onClose={onCancel}
+      title={initial ? tr('Edytuj wpis') : tr('Nowy wpis')}
+      size="md"
+      zIndex={160}
+      closeOnBackdrop={false}
+      footer={<>
+        <Button variant="secondary" onClick={onCancel}>{tr('Anuluj')}</Button>
+        <Button icon={Save} onClick={submit} loading={saving}>{tr('Zapisz')}</Button>
+      </>}
+    >
+      <div className="p-6 space-y-4">
+        {err && <div className="text-sm text-red-500">{err}</div>}
+        {fields.length === 0 && <EmptyState compact icon={Database} title={tr('Ta kolekcja nie ma jeszcze zdefiniowanych pól.')} />}
+        {fields.map((f) => {
+          if (!evaluateVisibility(f, values)) return null; // logika warunkowa
+          return (
+            <div key={f.key}>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">
+                {f.label}{f.required ? ' *' : ''}
+              </label>
+              <FieldInput field={f} value={values[f.key]} onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))} people={people} />
+            </div>
+          );
+        })}
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -342,7 +343,7 @@ export default function CollectionView({ element, ctx }) {
   const titleField = fields.find((f) => ['text', 'textarea'].includes(f.type)) || fields.find((f) => !['image', 'file'].includes(f.type)) || fields[0];
 
   const renderKanban = () => {
-    if (!groupField) return <div className="py-10 text-center text-gray-400 text-sm">{tr('Dodaj pole Status lub Lista wyboru, aby użyć widoku Kanban.')}</div>;
+    if (!groupField) return <EmptyState compact icon={Kanban} title={tr('Dodaj pole Status lub Lista wyboru, aby użyć widoku Kanban.')} />;
     const cols = [...(groupField.options || []).map((o) => ({ key: o.value, label: o.label, color: o.color })), { key: '__none', label: tr('Bez wartości'), color: '#cbd5e1' }];
     return (
       <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2">
@@ -373,7 +374,7 @@ export default function CollectionView({ element, ctx }) {
   };
 
   const renderGallery = () => {
-    if (!imageField) return <div className="py-10 text-center text-gray-400 text-sm">{tr('Dodaj pole Obraz, aby użyć widoku Galeria.')}</div>;
+    if (!imageField) return <EmptyState compact icon={ImageIcon} title={tr('Dodaj pole Obraz, aby użyć widoku Galeria.')} />;
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {displayed.map((rec) => {
@@ -392,7 +393,7 @@ export default function CollectionView({ element, ctx }) {
   };
 
   const renderCalendar = () => {
-    if (!dateField) return <div className="py-10 text-center text-gray-400 text-sm">{tr('Dodaj pole Data, aby użyć widoku Kalendarz.')}</div>;
+    if (!dateField) return <EmptyState compact icon={CalendarDays} title={tr('Dodaj pole Data, aby użyć widoku Kalendarz.')} />;
     const y = calCursor.getFullYear(), m = calCursor.getMonth();
     const startDay = (new Date(y, m, 1).getDay() + 6) % 7;
     const days = new Date(y, m + 1, 0).getDate();
@@ -469,11 +470,13 @@ export default function CollectionView({ element, ctx }) {
       </div>
 
       {loading ? (
-        <div className="py-10 text-center text-gray-400 text-sm">{tr('Ładowanie...')}</div>
+        <Spinner center />
       ) : records.length === 0 ? (
-        <div className="py-10 text-center text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">{tr('Brak wpisów.')}</div>
+        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+          <EmptyState compact icon={Database} title={tr('Brak wpisów.')} />
+        </div>
       ) : displayed.length === 0 ? (
-        <div className="py-10 text-center text-gray-400 text-sm">{tr('Brak wyników dla wyszukiwania.')}</div>
+        <EmptyState compact icon={Search} title={tr('Brak wyników dla wyszukiwania.')} />
       ) : view === 'table' ? (
         <DataTable>
           <THead>

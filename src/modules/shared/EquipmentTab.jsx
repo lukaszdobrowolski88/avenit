@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Spinner from '../../components/Spinner';
-import { createPortal } from 'react-dom';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import { supabase } from '../../lib/supabase';
 import {
-  Plus, Search, Trash2, X, Edit2, Package, Camera, User,
+  Plus, Search, Trash2, Edit2, Package, Camera, User,
   DollarSign, Hash, Upload, AlertTriangle
 } from 'lucide-react';
 import { useT } from '../../i18n';
@@ -195,11 +197,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center py-20">
-        <Spinner size={40} />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   return (
@@ -233,11 +231,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
       {/* Equipment Grid */}
       {filteredEquipment.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          <Package size={48} className="mx-auto mb-4 opacity-30" />
-          <p className="text-lg font-medium">{t('Brak wyposażenia')}</p>
-          <p className="text-sm mt-1">Dodaj pierwszy przedmiot do listy</p>
-        </div>
+        <EmptyState icon={Package} title={t('Brak wyposażenia')} subtitle="Dodaj pierwszy przedmiot do listy" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredEquipment.map(item => (
@@ -310,21 +304,17 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       )}
 
       {/* Modal */}
-      {showModal && document.body && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white dark:bg-gray-900 px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between z-10">
-              <h3 className="text-lg lg:text-xl font-bold text-gray-800 dark:text-gray-100">
-                {editingItem ? tr('Edytuj wyposażenie') : tr('Dodaj wyposażenie')}
-              </h3>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-                <X size={20} className="text-gray-500" />
-              </button>
-            </div>
-
-            <div className="p-4 lg:p-6 space-y-4">
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingItem ? tr('Edytuj wyposażenie') : tr('Dodaj wyposażenie')}
+        zIndex={9999}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
+          <Button onClick={handleSave}>{editingItem ? 'Zapisz zmiany' : 'Dodaj'}</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               {/* Photo upload */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Zdjęcie')}</label>
@@ -458,26 +448,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                 />
               </div>
             </div>
-
-            {/* Actions */}
-            <div className="sticky bottom-0 bg-white dark:bg-gray-900 px-4 lg:px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300"
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg transition"
-              >
-                {editingItem ? 'Zapisz zmiany' : 'Dodaj'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
     </section>
   );
 }

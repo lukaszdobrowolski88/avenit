@@ -9,6 +9,8 @@ import CustomSelect from '../../components/CustomSelect';
 import Modal from '../../components/Modal';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { DateInput } from '../../components/pickers';
 import { confirmDialog, promptDialog } from '../../lib/dialog';
@@ -145,9 +147,8 @@ export default function RsvpModule() {
 
       {loading ? <Spinner center />
       : campaigns.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-          <CalendarCheck size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Brak kampanii. Utwórz pierwsze zaproszenie na wydarzenie, grupę domową lub szkółkę.</p>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+          <EmptyState icon={CalendarCheck} title="Brak kampanii." subtitle="Utwórz pierwsze zaproszenie na wydarzenie, grupę domową lub szkółkę." />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -328,172 +329,168 @@ function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, o
   const toggleManual = (id) => setManualIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
 
   return (
-    <Modal isOpen>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && onClose()}>
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Nowa kampania RSVP</h3>
-            <button onClick={onClose} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
+    <Modal
+      isOpen
+      onClose={() => !saving && onClose()}
+      title="Nowa kampania RSVP"
+      footer={<>
+        <Button variant="secondary" onClick={onClose} disabled={saving}>Anuluj</Button>
+        <Button data-tour="rsvp-create" onClick={create} loading={saving}>Utwórz</Button>
+      </>}
+    >
+      <div className="p-6 space-y-4">
+        {/* Powiązanie z istniejącym wydarzeniem (kalendarz) lub wpis ręczny */}
+        <div>
+          <CustomSelect
+            label="Wydarzenie"
+            value={eventId}
+            onChange={onPickEvent}
+            placeholder="— wpisz ręcznie —"
+            options={[{ value: '', label: '— wpisz ręcznie —' }, ...events.map(e => ({ value: String(e.id), label: eventOptionLabel(e) }))]}
+          />
+          {eventId
+            ? <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 ml-1">Powiązano z wydarzeniem — pola poniżej możesz doprecyzować.</p>
+            : <p className="text-xs text-gray-400 mt-1 ml-1">Wybierz utworzone wydarzenie lub wpisz szczegóły ręcznie.</p>}
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
+          <input data-tour="rsvp-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Grupa domowa — wtorek" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+        </div>
+        {!eventId && (
+          <CustomSelect label="Typ" value={form.event_type} onChange={v => setForm(f => ({ ...f, event_type: v }))} options={EVENT_TYPES} />
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+            <DateInput value={form.event_date} onChange={e => setForm(f => ({ ...f, event_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
-          <div className="p-5 space-y-4">
-            {/* Powiązanie z istniejącym wydarzeniem (kalendarz) lub wpis ręczny */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Godzina</label>
+            <input value={form.event_time} onChange={e => setForm(f => ({ ...f, event_time: e.target.value }))} placeholder="np. 18:00" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+          </div>
+        </div>
+        <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Miejsce (opcjonalnie)" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+        <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={2} placeholder="Treść zaproszenia..." className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
+
+        {/* Kanały */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Kanały</label>
+          <div className="flex gap-2">
+            {[['push', 'Push'], ['email', 'E-mail'], ['sms', 'SMS']].map(([k, lbl]) => (
+              <button key={k} onClick={() => setChannels(c => ({ ...c, [k]: !c[k] }))}
+                className={`px-4 py-2 rounded-xl text-sm font-medium border transition ${channels[k] ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Przypomnienie */}
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-3">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+            <input type="checkbox" checked={reminderEnabled} onChange={e => setReminderEnabled(e.target.checked)} className="rounded accent-emerald-500" />
+            Automatyczne przypomnienie niepotwierdzonym
+          </label>
+          {reminderEnabled && (
+            <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+              <input type="number" min="0" max="14" value={reminderDays} onChange={e => setReminderDays(e.target.value)} className="w-14 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-center text-gray-900 dark:text-gray-100" />
+              <span>dni przed</span>
+            </div>
+          )}
+        </div>
+
+        {/* Cykliczność (seria) */}
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-3">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+            <input type="checkbox" checked={isSeries} onChange={e => setIsSeries(e.target.checked)} className="rounded accent-emerald-500" />
+            Powtarzaj cyklicznie (seria)
+          </label>
+          {isSeries && (
+            <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+              co <input type="number" min="1" max="60" value={seriesInterval} onChange={e => setSeriesInterval(e.target.value)} className="w-14 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-center text-gray-900 dark:text-gray-100" /> dni
+            </div>
+          )}
+        </div>
+        {isSeries && <p className="text-xs text-gray-400 -mt-2">Seria automatycznie wygeneruje kolejne zaproszenia dla wybranej publiczności (pierwsze wystąpienie w dniu wydarzenia).</p>}
+
+        {/* Odbiorcy — rozbudowana konfiguracja */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Odbiorcy</label>
+          <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/40 rounded-xl">
+            {AUDIENCE_MODES.map(m => (
+              <button key={m.value} type="button" onClick={() => setAudience(m.value)}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${audience === m.value ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {audience === 'criteria' && (
+          <div className="space-y-3 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <div>
-              <CustomSelect
-                label="Wydarzenie"
-                value={eventId}
-                onChange={onPickEvent}
-                placeholder="— wpisz ręcznie —"
-                options={[{ value: '', label: '— wpisz ręcznie —' }, ...events.map(e => ({ value: String(e.id), label: eventOptionLabel(e) }))]}
-              />
-              {eventId
-                ? <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 ml-1">Powiązano z wydarzeniem — pola poniżej możesz doprecyzować.</p>
-                : <p className="text-xs text-gray-400 mt-1 ml-1">Wybierz utworzone wydarzenie lub wpisz szczegóły ręcznie.</p>}
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Status</p>
+              <ChipToggle options={statusOptions} selected={criteria.statuses} onToggle={v => toggleCrit('statuses', v)} empty="Brak statusów" />
             </div>
-
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
-              <input data-tour="rsvp-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Grupa domowa — wtorek" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Grupy domowe</p>
+              <ChipToggle options={groupOptions} selected={criteria.groups} onToggle={v => toggleCrit('groups', v)} empty="Brak grup domowych" />
             </div>
-            {!eventId && (
-              <CustomSelect label="Typ" value={form.event_type} onChange={v => setForm(f => ({ ...f, event_type: v }))} options={EVENT_TYPES} />
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
-                <DateInput value={form.event_date} onChange={e => setForm(f => ({ ...f, event_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Godzina</label>
-                <input value={form.event_time} onChange={e => setForm(f => ({ ...f, event_time: e.target.value }))} placeholder="np. 18:00" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-              </div>
-            </div>
-            <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Miejsce (opcjonalnie)" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-            <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={2} placeholder="Treść zaproszenia..." className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
-
-            {/* Kanały */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Kanały</label>
-              <div className="flex gap-2">
-                {[['push', 'Push'], ['email', 'E-mail'], ['sms', 'SMS']].map(([k, lbl]) => (
-                  <button key={k} onClick={() => setChannels(c => ({ ...c, [k]: !c[k] }))}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium border transition ${channels[k] ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                    {lbl}
-                  </button>
-                ))}
-              </div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Służby</p>
+              <ChipToggle options={ministryOptions} selected={criteria.ministries} onToggle={v => toggleCrit('ministries', v)} empty="Brak przypisanych służb" />
             </div>
-
-            {/* Przypomnienie */}
-            <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-3">
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
-                <input type="checkbox" checked={reminderEnabled} onChange={e => setReminderEnabled(e.target.checked)} className="rounded accent-emerald-500" />
-                Automatyczne przypomnienie niepotwierdzonym
-              </label>
-              {reminderEnabled && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-                  <input type="number" min="0" max="14" value={reminderDays} onChange={e => setReminderDays(e.target.value)} className="w-14 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-center text-gray-900 dark:text-gray-100" />
-                  <span>dni przed</span>
-                </div>
-              )}
-            </div>
-
-            {/* Cykliczność (seria) */}
-            <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-3">
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
-                <input type="checkbox" checked={isSeries} onChange={e => setIsSeries(e.target.checked)} className="rounded accent-emerald-500" />
-                Powtarzaj cyklicznie (seria)
-              </label>
-              {isSeries && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-                  co <input type="number" min="1" max="60" value={seriesInterval} onChange={e => setSeriesInterval(e.target.value)} className="w-14 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-center text-gray-900 dark:text-gray-100" /> dni
-                </div>
-              )}
-            </div>
-            {isSeries && <p className="text-xs text-gray-400 -mt-2">Seria automatycznie wygeneruje kolejne zaproszenia dla wybranej publiczności (pierwsze wystąpienie w dniu wydarzenia).</p>}
-
-            {/* Odbiorcy — rozbudowana konfiguracja */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Odbiorcy</label>
-              <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/40 rounded-xl">
-                {AUDIENCE_MODES.map(m => (
-                  <button key={m.value} type="button" onClick={() => setAudience(m.value)}
-                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${audience === m.value ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>
-                    {m.label}
-                  </button>
-                ))}
-              </div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Tagi</p>
+              <ChipToggle options={tagOptions} selected={criteria.tags} onToggle={v => toggleCrit('tags', v)} empty="Brak tagów" />
             </div>
+            <p className="text-[11px] text-gray-400">W obrębie kategorii warunki łączą się przez LUB, między kategoriami przez ORAZ.</p>
+          </div>
+        )}
 
-            {audience === 'criteria' && (
-              <div className="space-y-3 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Status</p>
-                  <ChipToggle options={statusOptions} selected={criteria.statuses} onToggle={v => toggleCrit('statuses', v)} empty="Brak statusów" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Grupy domowe</p>
-                  <ChipToggle options={groupOptions} selected={criteria.groups} onToggle={v => toggleCrit('groups', v)} empty="Brak grup domowych" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Służby</p>
-                  <ChipToggle options={ministryOptions} selected={criteria.ministries} onToggle={v => toggleCrit('ministries', v)} empty="Brak przypisanych służb" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Tagi</p>
-                  <ChipToggle options={tagOptions} selected={criteria.tags} onToggle={v => toggleCrit('tags', v)} empty="Brak tagów" />
-                </div>
-                <p className="text-[11px] text-gray-400">W obrębie kategorii warunki łączą się przez LUB, między kategoriami przez ORAZ.</p>
-              </div>
-            )}
-
-            {audience === 'manual' && (
-              <div>
-                <div className="relative mb-2">
-                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Szukaj osoby..." className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                </div>
-                <div className="max-h-40 overflow-y-auto custom-scrollbar rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700/50">
-                  {manualFiltered.slice(0, 100).map(m => (
-                    <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                      <input type="checkbox" checked={manualIds.includes(m.id)} onChange={() => toggleManual(m.id)} className="rounded accent-emerald-500" />
-                      <span className="text-gray-700 dark:text-gray-200">{memberName(m)}</span>
-                    </label>
-                  ))}
-                  {manualFiltered.length > 100 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 100 z {manualFiltered.length} — zawęź wyszukiwaniem.</p>}
-                </div>
-              </div>
-            )}
-
-            {/* Podsumowanie + dostrajanie listy (wyklucz pojedyncze osoby) */}
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-2.5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">
-                  Odbiorców: <b className="text-gray-900 dark:text-white">{recipients.length}</b>
-                  {excludedInBase > 0 && <span className="text-gray-400"> (wykluczono {excludedInBase})</span>}
-                </span>
-                {audience !== 'manual' && base.length > 0 && (
-                  <button type="button" onClick={() => setShowList(s => !s)} className="text-xs font-medium text-accent-primary hover:underline">
-                    {showList ? 'Ukryj listę' : 'Dostosuj listę'}
-                  </button>
-                )}
-              </div>
-              {showList && audience !== 'manual' && (
-                <div className="mt-2 max-h-44 overflow-y-auto custom-scrollbar rounded-lg border border-gray-200 dark:border-gray-600 divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-800">
-                  {base.slice(0, 300).map(m => (
-                    <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                      <input type="checkbox" checked={!excludedIds.includes(m.id)} onChange={() => toggleExclude(m.id)} className="rounded accent-emerald-500" />
-                      <span className={excludedIds.includes(m.id) ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-200'}>{memberName(m)}</span>
-                    </label>
-                  ))}
-                  {base.length > 300 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 300 z {base.length}.</p>}
-                </div>
-              )}
+        {audience === 'manual' && (
+          <div>
+            <div className="relative mb-2">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Szukaj osoby..." className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            </div>
+            <div className="max-h-40 overflow-y-auto custom-scrollbar rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700/50">
+              {manualFiltered.slice(0, 100).map(m => (
+                <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                  <input type="checkbox" checked={manualIds.includes(m.id)} onChange={() => toggleManual(m.id)} className="rounded accent-emerald-500" />
+                  <span className="text-gray-700 dark:text-gray-200">{memberName(m)}</span>
+                </label>
+              ))}
+              {manualFiltered.length > 100 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 100 z {manualFiltered.length} — zawęź wyszukiwaniem.</p>}
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
-            <button onClick={onClose} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-            <button data-tour="rsvp-create" onClick={create} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Tworzenie...' : 'Utwórz'}</button>
+        )}
+
+        {/* Podsumowanie + dostrajanie listy (wyklucz pojedyncze osoby) */}
+        <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-2.5">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500 dark:text-gray-400">
+              Odbiorców: <b className="text-gray-900 dark:text-white">{recipients.length}</b>
+              {excludedInBase > 0 && <span className="text-gray-400"> (wykluczono {excludedInBase})</span>}
+            </span>
+            {audience !== 'manual' && base.length > 0 && (
+              <button type="button" onClick={() => setShowList(s => !s)} className="text-xs font-medium text-accent-primary hover:underline">
+                {showList ? 'Ukryj listę' : 'Dostosuj listę'}
+              </button>
+            )}
           </div>
+          {showList && audience !== 'manual' && (
+            <div className="mt-2 max-h-44 overflow-y-auto custom-scrollbar rounded-lg border border-gray-200 dark:border-gray-600 divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-800">
+              {base.slice(0, 300).map(m => (
+                <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                  <input type="checkbox" checked={!excludedIds.includes(m.id)} onChange={() => toggleExclude(m.id)} className="rounded accent-emerald-500" />
+                  <span className={excludedIds.includes(m.id) ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-200'}>{memberName(m)}</span>
+                </label>
+              ))}
+              {base.length > 300 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 300 z {base.length}.</p>}
+            </div>
+          )}
         </div>
       </div>
     </Modal>

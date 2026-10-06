@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Folder, FolderPlus } from 'lucide-react';
+import { Folder, FolderPlus } from 'lucide-react';
 import { tr } from '../../../i18n';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 
 export default function FolderModal({
   isOpen,
@@ -57,96 +59,42 @@ export default function FolderModal({
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div
-        className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl w-full max-w-md mx-4 shadow-2xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50"
-        onKeyDown={handleKeyDown}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-accent-primary-lightest/50 to-accent-secondary-lightest/50 dark:from-gray-800/50 dark:to-gray-800/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-secondary-light/20">
-              {mode === 'create' ? (
-                <FolderPlus size={18} className="text-white" />
-              ) : (
-                <Folder size={18} className="text-white" />
-              )}
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                {mode === 'create' ? 'Nowy folder' : tr('Zmień nazwę folderu')}
-              </h2>
-              {parentFolderName && mode === 'create' && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  w folderze: {parentFolderName}
-                </p>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200"
-          >
-            <X size={20} className="text-gray-500" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nazwa folderu
-            </label>
-            <input
-              ref={inputRef}
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={tr('Wpisz nazwę folderu...')}
-              className="w-full px-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 transition-all duration-200"
-              disabled={loading}
-            />
-            {error && (
-              <p className="text-sm text-red-500 mt-2">{error}</p>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200"
-            >
-              Anuluj
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !name.trim()}
-              className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-accent-primary-light/30"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  {mode === 'create' ? 'Tworzenie...' : 'Zapisywanie...'}
-                </>
-              ) : (
-                mode === 'create' ? tr('Utwórz folder') : 'Zapisz'
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={mode === 'create' ? 'Nowy folder' : tr('Zmień nazwę folderu')}
+      subtitle={parentFolderName && mode === 'create' ? `w folderze: ${parentFolderName}` : undefined}
+      icon={mode === 'create' ? FolderPlus : Folder}
+      size="sm"
+      closeOnBackdrop={false}
+      footer={<>
+        <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>Anuluj</Button>
+        <Button type="submit" form="materials-folder-form" loading={loading} disabled={!name.trim()}>
+          {mode === 'create' ? tr('Utwórz folder') : 'Zapisz'}
+        </Button>
+      </>}
+    >
+      {/* Form */}
+      <form id="materials-folder-form" onSubmit={handleSubmit} className="p-6">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Nazwa folderu
+        </label>
+        <input
+          ref={inputRef}
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={tr('Wpisz nazwę folderu...')}
+          className="w-full px-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 transition-all duration-200"
+          disabled={loading}
+        />
+        {error && (
+          <p className="text-sm text-red-500 mt-2">{error}</p>
+        )}
+      </form>
+    </Modal>
   );
 }

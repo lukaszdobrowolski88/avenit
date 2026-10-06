@@ -4,6 +4,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import SermonPlayer from '../components/SermonPlayer';
 import { formatDate } from '../lib/sermonsApi';
 import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 export default function PlayerTab({ sermons, loading }) {
   const [selectedId, setSelectedId] = useState('');
@@ -28,9 +29,8 @@ export default function PlayerTab({ sermons, loading }) {
 
   if ((sermons || []).length === 0) {
     return (
-      <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-        <PlayCircle size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-        <p className="text-gray-500 dark:text-gray-400">Brak kazań do odtworzenia. Dodaj kazanie w zakładce „Kazania".</p>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+        <EmptyState icon={PlayCircle} title="Brak kazań do odtworzenia." subtitle={'Dodaj kazanie w zakładce „Kazania".'} />
       </div>
     );
   }

@@ -1,7 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { MessageSquare, X, Send, Loader2, CheckCircle, Phone, Bell } from 'lucide-react';
+import { MessageSquare, Send, CheckCircle, Phone, Bell } from 'lucide-react';
 import { supabase, getCachedUser } from '../../../../lib/supabase';
 import Modal from '../../../../components/Modal';
+import Button from '../../../../components/Button';
+import Spinner from '../../../../components/Spinner';
 import { tr } from '../../../../i18n';
 import { invokeSendSms } from '../../../SmsCampaigns/hooks/useSmsCampaigns';
 import { invokeSendPush } from '../../../PushCampaigns/hooks/usePushCampaigns';
@@ -159,31 +161,26 @@ export default function NotifyParentButton({ checkin, sessionId }) {
         {tr('Powiadom rodzica')}
       </button>
 
-      <Modal isOpen={open}>
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={handleClose}
-        >
-          <div
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+      <Modal
+        isOpen={open}
+        onClose={handleClose}
+        size="sm"
+        icon={MessageSquare}
+        title={tr('Powiadom rodzica')}
+        footer={!sentInfo && (<>
+          <Button variant="secondary" onClick={handleClose} disabled={sending}>
+            {tr('Anuluj')}
+          </Button>
+          <Button
+            icon={Send}
+            onClick={handleSend}
+            loading={sending}
+            disabled={loadingContacts || contacts.length === 0}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <MessageSquare size={18} className="text-accent-primary dark:text-accent-primary-light" />
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                  {tr('Powiadom rodzica')}
-                </h3>
-              </div>
-              <button
-                onClick={handleClose}
-                className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
+            {tr('Wyślij')}
+          </Button>
+        </>)}
+      >
             {/* Body */}
             {sentInfo ? (
               <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
@@ -198,7 +195,7 @@ export default function NotifyParentButton({ checkin, sessionId }) {
                 </p>
               </div>
             ) : (
-              <div className="px-5 py-4 space-y-4">
+              <div className="p-6 space-y-4">
                 {/* Dziecko */}
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   {tr('Dziecko')}:{' '}
@@ -240,8 +237,8 @@ export default function NotifyParentButton({ checkin, sessionId }) {
                     {tr('Opiekun')}
                   </label>
                   {loadingContacts ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 py-2">
-                      <Loader2 size={16} className="animate-spin" /> {tr('Ładowanie...')}
+                    <div className="py-2">
+                      <Spinner size={16} label={tr('Ładowanie...')} />
                     </div>
                   ) : contacts.length === 0 ? (
                     <p className="text-sm text-amber-600 dark:text-amber-400 py-2">
@@ -301,29 +298,6 @@ export default function NotifyParentButton({ checkin, sessionId }) {
                 )}
               </div>
             )}
-
-            {/* Footer */}
-            {!sentInfo && (
-              <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={handleClose}
-                  disabled={sending}
-                  className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
-                >
-                  {tr('Anuluj')}
-                </button>
-                <button
-                  onClick={handleSend}
-                  disabled={sending || loadingContacts || contacts.length === 0}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-accent-primary to-accent-secondary hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  {tr('Wyślij')}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
       </Modal>
     </>
   );

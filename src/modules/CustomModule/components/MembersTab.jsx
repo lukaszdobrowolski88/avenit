@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Spinner from '../../../components/Spinner';
-import { createPortal } from 'react-dom';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { supabase } from '../../../lib/supabase';
-import { Plus, Search, Trash2, X, User, Mail, Phone, Check, Edit2 } from 'lucide-react';
+import { Plus, Search, Trash2, User, Mail, Phone, Check, Edit2 } from 'lucide-react';
 import { tr } from '../../../i18n';
 import { useCampusQuery } from '../../../hooks/useCampusQuery';
 import { toast } from '../../../lib/toast';
@@ -216,11 +218,7 @@ export default function MembersTab({ moduleKey, moduleName }) {
   };
 
   if (loading) {
-    return (
-      <div className="p-10 text-center">
-        <Spinner size={32} className="mx-auto" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   // Jeśli tabela nie istnieje, pokaż instrukcję
@@ -383,133 +381,107 @@ GRANT ALL ON ${tableName} TO anon;`;
           })}
         </div>
       ) : (
-        <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-          <User size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">{tr('Brak członków')}</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {tr('Kliknij "Dodaj członka" aby dodać pierwszego członka')}
-          </p>
+        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+          <EmptyState icon={User} title={tr('Brak członków')} subtitle={tr('Kliknij "Dodaj członka" aby dodać pierwszego członka')} />
         </div>
       )}
 
       {/* Modal */}
-      {showModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                {editingMember ? tr('Edytuj członka') : tr('Nowy członek')}
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {/* Imię i nazwisko */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  {tr('Imię i nazwisko')}
-                </label>
-                <input
-                  type="text"
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder={tr('Jan Kowalski')}
-                />
-              </div>
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingMember ? tr('Edytuj członka') : tr('Nowy członek')}
+        size="md"
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
+          <Button onClick={handleSave}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          {/* Imię i nazwisko */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
+              {tr('Imię i nazwisko')}
+            </label>
+            <input
+              type="text"
+              value={form.full_name}
+              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+              placeholder={tr('Jan Kowalski')}
+            />
+          </div>
 
-              {/* Służby / Instrumenty jako tagi */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  {tr('Służby / Instrumenty')}
-                </label>
-                <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
-                  <div className="flex flex-wrap gap-2">
-                    {moduleRoles.map(role => {
-                      const isSelected = selectedMemberRoles.includes(role.id);
-                      return (
-                        <button
-                          key={role.id}
-                          type="button"
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedMemberRoles(prev => prev.filter(id => id !== role.id));
-                            } else {
-                              setSelectedMemberRoles(prev => [...prev, role.id]);
-                            }
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
-                            isSelected
-                              ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          {isSelected && <Check size={14} />}
-                          {role.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {moduleRoles.length === 0 && (
-                    <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-2">
-                      {tr('Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".')}
-                    </p>
-                  )}
-                </div>
+          {/* Służby / Instrumenty jako tagi */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
+              {tr('Służby / Instrumenty')}
+            </label>
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
+              <div className="flex flex-wrap gap-2">
+                {moduleRoles.map(role => {
+                  const isSelected = selectedMemberRoles.includes(role.id);
+                  return (
+                    <button
+                      key={role.id}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedMemberRoles(prev => prev.filter(id => id !== role.id));
+                        } else {
+                          setSelectedMemberRoles(prev => [...prev, role.id]);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {isSelected && <Check size={14} />}
+                      {role.name}
+                    </button>
+                  );
+                })}
               </div>
-
-              {/* Telefon i Email w jednym wierszu */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                    Telefon
-                  </label>
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                    placeholder="+48 123 456 789"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                    placeholder="jan@example.com"
-                  />
-                </div>
-              </div>
-
-              {/* Przyciski */}
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium"
-                >
-                  Zapisz
-                </button>
-              </div>
+              {moduleRoles.length === 0 && (
+                <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-2">
+                  {tr('Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".')}
+                </p>
+              )}
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+
+          {/* Telefon i Email w jednym wierszu */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
+                Telefon
+              </label>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="+48 123 456 789"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="jan@example.com"
+              />
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Paperclip, FileText, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { applyView } from '../lib/viewData';
+import EmptyState from '../../../components/EmptyState';
 
 const isImage = (name = '', url = '') => /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name) || /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/i.test(url);
 
@@ -22,10 +23,10 @@ export default function FilesGalleryView({ data, config, onOpenItem }) {
   }, [items, fileCols]);
 
   if (fileCols.length === 0) {
-    return <div className="text-center py-16 text-gray-400 text-sm">Dodaj kolumnę typu „Pliki", aby zbierać załączniki w galerii.</div>;
+    return <EmptyState icon={Paperclip} title={'Dodaj kolumnę typu „Pliki", aby zbierać załączniki w galerii.'} />;
   }
   if (files.length === 0) {
-    return <div className="text-center py-16 text-gray-400 text-sm">Brak plików. Dodaj załączniki w kolumnie „Pliki".</div>;
+    return <EmptyState icon={ImageIcon} title="Brak plików." subtitle={'Dodaj załączniki w kolumnie „Pliki".'} />;
   }
 
   return (

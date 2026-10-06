@@ -3,10 +3,12 @@
 // udostępnianie per plik (osoby/grupy/grupy domowe), widok lista/kafelki, podgląd w lightboxie,
 // zmiana nazwy. Dla grup domowych upload trafia do folderu grupy (udostępniony członkom).
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Upload, Trash2, Plus, FileText, X, Search, LayoutGrid, List as ListIcon, Pencil, Share2, Eye, Check } from 'lucide-react';
+import { Upload, Trash2, Plus, FileText, Search, LayoutGrid, List as ListIcon, Pencil, Share2, Eye, Check } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
+import Modal from '../../components/Modal';
+import EmptyState from '../../components/EmptyState';
 import { ensureGroupFolder } from '../HomeGroups/homeGroupFolder';
 import useShares from '../Materials/hooks/useShares';
 import ShareModal from '../Materials/components/ShareModal';
@@ -149,10 +151,7 @@ export default function EventMaterialsTab({ event, canManage }) {
       {isHomeGroup && group && canManage && <p className="text-[11px] text-gray-400 -mt-2">Nowe pliki trafią do materiałów grupy „{group.name}" i będą widoczne dla jej członków.</p>}
 
       {linked.length === 0 ? (
-        <div className="p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Brak materiałów.</p>
-          {canManage && <p className="text-xs text-gray-400 mt-1">Dodaj plik lub podepnij istniejące.</p>}
-        </div>
+        <EmptyState icon={FileText} title="Brak materiałów." subtitle={canManage ? 'Dodaj plik lub podepnij istniejące.' : undefined} compact />
       ) : view === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {linked.map((m) => (
@@ -217,36 +216,33 @@ export default function EventMaterialsTab({ event, canManage }) {
       {/* Udostępnianie pliku */}
       <ShareModal isOpen={!!shareItem} onClose={() => setShareItem(null)} item={shareItem} shares={shares} />
 
-      {showPicker && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh]">
-            <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-gray-800 dark:text-white">Podepnij materiały</h3>
-              <button onClick={() => setShowPicker(false)} className="text-gray-400 hover:text-gray-600"><X size={22} /></button>
-            </div>
-            <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700">
-                <Search size={16} className="text-gray-400" />
-                <input value={pickSearch} onChange={(e) => setPickSearch(e.target.value)} placeholder="Szukaj plików…"
-                  className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200" />
-              </div>
-            </div>
-            <div className="p-3 overflow-y-auto custom-scrollbar">
-              {pickList === null ? <Spinner center size={22} /> : filteredPick.length === 0 ? (
-                <p className="text-center text-sm text-gray-400 py-6">Brak materiałów do podpięcia.</p>
-              ) : filteredPick.map((f) => (
-                <div key={f.id} className="flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FileText size={16} className="text-gray-400 shrink-0" />
-                    <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{f.name}</span>
-                  </div>
-                  <button onClick={() => attach(f)} className="text-xs px-2.5 py-1.5 rounded-lg bg-accent-primary text-white whitespace-nowrap inline-flex items-center gap-1"><Check size={13} /> Podepnij</button>
+      <Modal
+        isOpen={showPicker}
+        onClose={() => setShowPicker(false)}
+        title="Podepnij materiały"
+        closeOnBackdrop={false}
+      >
+        <div className="p-6 space-y-3">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700">
+            <Search size={16} className="text-gray-400" />
+            <input value={pickSearch} onChange={(e) => setPickSearch(e.target.value)} placeholder="Szukaj plików…"
+              className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200" />
+          </div>
+          <div>
+            {pickList === null ? <Spinner center size={22} /> : filteredPick.length === 0 ? (
+              <EmptyState icon={FileText} title="Brak materiałów do podpięcia." compact />
+            ) : filteredPick.map((f) => (
+              <div key={f.id} className="flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText size={16} className="text-gray-400 shrink-0" />
+                  <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{f.name}</span>
                 </div>
-              ))}
-            </div>
+                <button onClick={() => attach(f)} className="text-xs px-2.5 py-1.5 rounded-lg bg-accent-primary text-white whitespace-nowrap inline-flex items-center gap-1"><Check size={13} /> Podepnij</button>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

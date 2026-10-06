@@ -4,6 +4,7 @@ import { supabase, getCachedUser } from '../../../lib/supabase';
 import { formatDateTime } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 import { confirmDialog } from '../../../lib/dialog';
 
 export default function NotesTab({ member, campusIdForInsert, withCampusFilter }) {
@@ -85,10 +86,7 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
       {loading ? (
         <Spinner center />
       ) : notes.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-          <StickyNote size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Brak notatek dla tej osoby.</p>
-        </div>
+        <EmptyState icon={StickyNote} title="Brak notatek dla tej osoby." className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
       ) : (
         <div className="space-y-3">
           {notes.map(n => (

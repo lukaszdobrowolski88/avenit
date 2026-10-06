@@ -11,10 +11,11 @@ import {
   Package,
   Settings,
   Tag,
-  Shield,
-  Loader2
+  Shield
 } from 'lucide-react';
 import { tr } from '../../i18n';
+import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 
 const TABS = {
   DASHBOARD: 'dashboard',
@@ -54,25 +55,17 @@ export default function SuperAdminModule() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full p-10">
-        <Loader2 size={32} className="animate-spin text-accent-primary-light" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   if (!isAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-10 text-center">
-        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
-          <Shield size={32} className="text-red-500" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {tr('Brak dostępu')}
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          {tr('Ta sekcja jest dostępna tylko dla administratorów systemu.')}
-        </p>
+      <div className="flex items-center justify-center h-full p-10">
+        <EmptyState
+          icon={Shield}
+          title={tr('Brak dostępu')}
+          subtitle={tr('Ta sekcja jest dostępna tylko dla administratorów systemu.')}
+        />
       </div>
     );
   }

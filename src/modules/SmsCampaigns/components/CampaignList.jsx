@@ -11,6 +11,8 @@ import { formatPLN } from '../utils/smsEncoding';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 
 const STATUS_ICON = {
   draft: FileText, scheduled: Clock, sending: Send, sent: CheckCircle,
@@ -190,24 +192,12 @@ function MenuItem({ icon: Icon, children, onClick, danger }) {
 
 function Empty({ onNew }) {
   return (
-    <div className="text-center py-16 px-4">
-      <div className="relative inline-block mb-6">
-        <div className="absolute inset-0 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-3xl blur-xl opacity-30 animate-pulse" />
-        <div className="relative w-20 h-20 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-3xl flex items-center justify-center shadow-xl">
-          <MessageSquare className="w-10 h-10 text-white" />
-        </div>
-      </div>
-      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Brak kampanii SMS</h3>
-      <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-        {tr('Dotrzyj do swojej społeczności wiadomościami SMS — kreator + segmenty + statystyki.')}
-      </p>
-      <button
-        onClick={onNew}
-        className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg shadow"
-      >
-        <Plus size={16} /> Stwórz pierwszą kampanię
-      </button>
-    </div>
+    <EmptyState
+      icon={MessageSquare}
+      title="Brak kampanii SMS"
+      subtitle={tr('Dotrzyj do swojej społeczności wiadomościami SMS — kreator + segmenty + statystyki.')}
+      action={<Button icon={Plus} onClick={onNew}>Stwórz pierwszą kampanię</Button>}
+    />
   );
 }
 

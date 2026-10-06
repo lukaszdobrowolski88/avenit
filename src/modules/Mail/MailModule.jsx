@@ -11,6 +11,7 @@ import useMessages from './hooks/useMessages';
 import useCompose from './hooks/useCompose';
 import useRealtimeMail from './hooks/useRealtimeMail';
 import { tr } from '../../i18n';
+import Spinner from '../../components/Spinner';
 
 // Cache userEmail
 const USER_EMAIL_CACHE_KEY = 'user_email_cache';
@@ -341,10 +342,7 @@ export default function MailModule() {
   if (accountsLoading && !defaultAccount) {
     return (
       <div className="h-[calc(100vh-3.5rem)] lg:h-[calc(100vh-7rem)] -m-4 lg:-m-6 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-accent-primary-light border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">{tr('Ładowanie poczty...')}</p>
-        </div>
+        <Spinner label={tr('Ładowanie poczty...')} />
       </div>
     );
   }

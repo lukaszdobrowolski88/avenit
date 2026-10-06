@@ -24,6 +24,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { confirmDialog, promptDialog } from '../../lib/dialog';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
+import Spinner from '../../components/Spinner';
 
 const PROGRAM_ELEMENTS = [
   'Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie',
@@ -1769,70 +1773,55 @@ const DynamicScenaSection = ({
 
 const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
   const t = useT();
-  if (!isOpen || !document.body) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-accent-secondary-lighter dark:bg-accent-secondary/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{t('Niezapisane zmiany')}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {t('Masz niezapisane zmiany w programie. Co chcesz zrobić?')}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onDiscard}
-            className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-          >
-            {t('Opuść')}
-          </button>
-          <button
-            onClick={onSave}
-            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center justify-center gap-2"
-          >
-            <Save size={16} /> {t('Zapisz')}
-          </button>
-        </div>
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      zIndex={110}
+      size="sm"
+      icon={AlertTriangle}
+      title={t('Niezapisane zmiany')}
+      footer={<>
+        <Button variant="secondary" onClick={onDiscard}>
+          {t('Opuść')}
+        </Button>
+        <Button icon={Save} onClick={onSave}>
+          {t('Zapisz')}
+        </Button>
+      </>}
+    >
+      <div className="p-6">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          {t('Masz niezapisane zmiany w programie. Co chcesz zrobić?')}
+        </p>
       </div>
-    </div>,
-    document.body
+    </Modal>
   );
 };
 
 // --- MODAL SZABLONÓW ---
 
 const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
-  if (!isOpen || !document.body) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-gray-200 dark:border-gray-700 max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-            <FileText size={20} className="text-accent-primary-light" />
-            {tr('Szablony programów')}
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto space-y-2">
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      zIndex={110}
+      size="md"
+      icon={FileText}
+      title={tr('Szablony programów')}
+      footer={
+        <Button variant="secondary" onClick={onClose}>
+          Zamknij
+        </Button>
+      }
+    >
+        <div className="p-6 space-y-2">
           {templates.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <FileText size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm">{tr('Brak zapisanych szablonów')}</p>
-              <p className="text-xs mt-1">Zapisz aktualny plan jako szablon</p>
-            </div>
+            <EmptyState compact icon={FileText} title={tr('Brak zapisanych szablonów')} subtitle="Zapisz aktualny plan jako szablon" />
           ) : (
             templates.map(template => (
               <div
@@ -1869,18 +1858,7 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
             ))
           )}
         </div>
-
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-          >
-            Zamknij
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 };
 
@@ -1934,21 +1912,28 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-2rem)] flex flex-col">
-        {/* HEADER */}
-        <div className="flex justify-between items-start px-6 pt-6 pb-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-700">
-          <div>
-            <h3 className="font-bold text-xl text-gray-800 dark:text-white">Opcje wydruku PDF</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tr('Dopasuj zawartość i wygląd generowanego pliku.')}</p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-white transition" aria-label="Zamknij">
-            <X size={22} />
-          </button>
-        </div>
-
+    <Modal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={false}
+      zIndex={110}
+      size="xl"
+      title="Opcje wydruku PDF"
+      subtitle={tr('Dopasuj zawartość i wygląd generowanego pliku.')}
+      footer={<>
+        <Button variant="ghost" className="mr-auto" onClick={() => setPrintOptions(DEFAULT_PDF_OPTIONS)}>
+          {tr('Przywróć domyślne')}
+        </Button>
+        <Button variant="secondary" onClick={onClose}>
+          Anuluj
+        </Button>
+        <Button icon={FileText} onClick={onGenerate} loading={isLoading}>
+          Generuj PDF
+        </Button>
+      </>}
+    >
         {/* BODY */}
-        <div className="px-6 py-5 overflow-y-auto flex-1 min-h-0 space-y-5 bg-gray-50/50 dark:bg-gray-900/20">
+        <div className="p-6 space-y-5 bg-gray-50/50 dark:bg-gray-900/20">
           {/* QUICK PRESETS */}
           <div>
             <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Szybkie presety</div>
@@ -2050,33 +2035,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
             </div>
           </PrintOptionsCard>
         </div>
-
-        {/* FOOTER */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 flex-shrink-0 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <button
-            onClick={() => setPrintOptions(DEFAULT_PDF_OPTIONS)}
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
-          >
-            {tr('Przywróć domyślne')}
-          </button>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-            >
-              Anuluj
-            </button>
-            <button
-              onClick={onGenerate}
-              disabled={isLoading}
-              className="px-5 py-2.5 text-sm font-bold bg-accent-primary text-white rounded-lg hover:bg-accent-primary-dark shadow-sm hover:shadow transition disabled:opacity-50 flex items-center gap-2"
-            >
-              {isLoading ? <><Loader2 size={16} className="animate-spin" /> Generowanie...</> : <><FileText size={16} /> Generuj PDF</>}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -2828,14 +2787,7 @@ export default function ProgramDetail() {
     : [];
 
   if (isLoadingProgram) {
-    return (
-      <div className="min-h-full bg-gradient-to-br from-accent-primary-lightest via-accent-secondary-lightest to-accent-primary-lightest dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 size={48} className="animate-spin text-accent-primary mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300">{t('Ładowanie programu...')}</p>
-        </div>
-      </div>
-    );
+    return <Spinner center label={t('Ładowanie programu...')} />;
   }
 
   return (
@@ -3013,17 +2965,19 @@ export default function ProgramDetail() {
                         <SortableContext items={program.schedule.map(s => s.id)} strategy={verticalListSortingStrategy}>
                           <div>
                             {program.schedule.length === 0 ? (
-                              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                                <Type size={48} className="mb-4 opacity-30" />
-                                <p className="text-sm">{t('Brak elementów w planie')}</p>
-                                <p className="text-xs mt-1">{t('Użyj przycisku "Dodaj" lub skrótów klawiszowych:')}</p>
-                                <div className="flex gap-2 mt-3 text-xs">
-                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">i - Element</span>
-                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{t('h - Nagłówek')}</span>
-                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{t('s - Pieśń')}</span>
-                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">m - Media</span>
-                                </div>
-                              </div>
+                              <EmptyState
+                                icon={Type}
+                                title={t('Brak elementów w planie')}
+                                subtitle={t('Użyj przycisku "Dodaj" lub skrótów klawiszowych:')}
+                                action={
+                                  <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">i - Element</span>
+                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{t('h - Nagłówek')}</span>
+                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{t('s - Pieśń')}</span>
+                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">m - Media</span>
+                                  </div>
+                                }
+                              />
                             ) : (
                               program.schedule.map((item, idx) => (
                                 <ScheduleItem
@@ -3241,15 +3195,14 @@ export default function ProgramDetail() {
         onDelete={handleDeleteTemplate}
       />
 
-      {showPrintOptions && document.body && createPortal(
+      {showPrintOptions && (
         <PrintOptionsModalBody
           printOptions={printOptions}
           setPrintOptions={setPrintOptions}
           onClose={() => setShowPrintOptions(false)}
           onGenerate={() => handleSaveAndUploadPDF(printOptions)}
           isLoading={isLoading}
-        />,
-        document.body
+        />
       )}
     </div>
   );

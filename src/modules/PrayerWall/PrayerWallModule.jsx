@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Spinner from '../../components/Spinner';
-import { createPortal } from 'react-dom';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import { supabase } from '../../lib/supabase';
 import PageHeader from '../../components/PageHeader';
 import { useUserRole } from '../../hooks/useUserRole';
@@ -331,271 +333,243 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
 
   if (!isOpen) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700">
-        {/* Nagłówek */}
-        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary p-5 rounded-t-2xl flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Heart className="w-6 h-6" />
-              {editingRequest ? t('Edytuj intencję') : t('Nowa intencja modlitewna')}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={editingRequest ? t('Edytuj intencję') : t('Nowa intencja modlitewna')}
+      icon={Heart}
+      size="md"
+      closeOnBackdrop={false}
+      footer={<>
+        <Button type="button" variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button
+          data-tour="prayer-save"
+          type="submit"
+          form="prayer-request-form"
+          icon={Heart}
+          loading={isLoading}
+          disabled={!content.trim()}
+        >
+          {editingRequest ? t('Zapisz zmiany') : t('Dodaj intencję')}
+        </Button>
+      </>}
+    >
+      {/* Formularz */}
+      <form id="prayer-request-form" onSubmit={handleSubmit} className="p-6 space-y-5">
+        {/* Kto zgłasza (opcjonalne) */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
+            Modlitwa za (opcjonalne)
+          </label>
+          <div className="relative">
+            <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              value={requesterName}
+              onChange={(e) => setRequesterName(e.target.value)}
+              placeholder={t('Imię osoby, za którą się modlimy...')}
+              className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white"
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">{t('Zostaw puste, jeśli modlisz się za siebie')}</p>
+        </div>
+
+        {/* Treść */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
+            {tr('Treść intencji modlitewnej')}
+          </label>
+          <textarea
+            data-tour="prayer-content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={t('Podziel się swoją prośbą modlitewną...')}
+            rows={4}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white resize-none"
+            required
+          />
+        </div>
+
+        {/* Kategoria */}
+        <div data-tour="prayer-category">
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
+            Kategoria
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {Object.entries(CATEGORIES).map(([key, { label, Icon }]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setCategory(key)}
+                className={`
+                  px-3 py-2 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-1.5
+                  ${category === key
+                    ? 'bg-accent-primary text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }
+                `}
+              >
+                <Icon className="w-4 h-4" /> {label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Formularz */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-5 overflow-y-auto flex-1">
-          {/* Kto zgłasza (opcjonalne) */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Modlitwa za (opcjonalne)
-            </label>
-            <div className="relative">
-              <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={requesterName}
-                onChange={(e) => setRequesterName(e.target.value)}
-                placeholder={t('Imię osoby, za którą się modlimy...')}
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white"
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-1">{t('Zostaw puste, jeśli modlisz się za siebie')}</p>
-          </div>
-
-          {/* Treść */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              {tr('Treść intencji modlitewnej')}
-            </label>
-            <textarea
-              data-tour="prayer-content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={t('Podziel się swoją prośbą modlitewną...')}
-              rows={4}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white resize-none"
-              required
-            />
-          </div>
-
-          {/* Kategoria */}
-          <div data-tour="prayer-category">
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Kategoria
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {Object.entries(CATEGORIES).map(([key, { label, Icon }]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setCategory(key)}
-                  className={`
-                    px-3 py-2 rounded-xl text-sm font-medium transition-all inline-flex items-center justify-center gap-1.5
-                    ${category === key
-                      ? 'bg-accent-primary text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }
-                  `}
-                >
-                  <Icon className="w-4 h-4" /> {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Widoczność */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              {tr('Widoczność')}
-            </label>
-            <div className="flex gap-3">
-              <label className={`
-                flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
-                ${visibility === 'public'
-                  ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30'
-                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
-                }
-              `}>
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="public"
-                  checked={visibility === 'public'}
-                  onChange={(e) => setVisibility(e.target.value)}
-                  className="sr-only"
-                />
-                <User className={`w-5 h-5 ${visibility === 'public' ? 'text-accent-primary-light' : 'text-gray-400'}`} />
-                <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">{t('Publiczna')}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Widoczna dla wszystkich')}</p>
-                </div>
-              </label>
-
-              <label className={`
-                flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
-                ${visibility === 'leaders_only'
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
-                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
-                }
-              `}>
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="leaders_only"
-                  checked={visibility === 'leaders_only'}
-                  onChange={(e) => setVisibility(e.target.value)}
-                  className="sr-only"
-                />
-                <UserX className={`w-5 h-5 ${visibility === 'leaders_only' ? 'text-indigo-500' : 'text-gray-400'}`} />
-                <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">{t('Tylko liderzy')}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Poufna prośba')}</p>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* Anonimowość */}
-          <label className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-            <input
-              type="checkbox"
-              checked={isAnonymous}
-              onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="w-5 h-5 rounded border-gray-300 text-accent-primary-light focus:ring-accent-primary-light"
-            />
-            <Ghost className="w-5 h-5 text-gray-500" />
-            <div>
-              <p className="font-medium text-gray-800 dark:text-gray-200">{t('Dodaj anonimowo')}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {tr('Twoje imię nie będzie widoczne dla innych')}
-              </p>
-            </div>
+        {/* Widoczność */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
+            {tr('Widoczność')}
           </label>
-
-          {/* Status aktualności i wysłuchania (tylko przy edycji) */}
-          {editingRequest && (
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
-              {/* Status aktualności */}
+          <div className="flex gap-3">
+            <label className={`
+              flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
+              ${visibility === 'public'
+                ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30'
+                : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
+              }
+            `}>
+              <input
+                type="radio"
+                name="visibility"
+                value="public"
+                checked={visibility === 'public'}
+                onChange={(e) => setVisibility(e.target.value)}
+                className="sr-only"
+              />
+              <User className={`w-5 h-5 ${visibility === 'public' ? 'text-accent-primary-light' : 'text-gray-400'}`} />
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                  Status intencji
-                </label>
-                <div className="flex gap-3">
-                  <label className={`
-                    flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
-                    ${isActive
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/30'
-                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
-                    }
-                  `}>
-                    <input
-                      type="radio"
-                      name="isActive"
-                      checked={isActive}
-                      onChange={() => setIsActive(true)}
-                      className="sr-only"
-                    />
-                    <CheckCircle className={`w-5 h-5 ${isActive ? 'text-green-500' : 'text-gray-400'}`} />
-                    <div>
-                      <p className="font-medium text-gray-800 dark:text-gray-200">{t('Aktualna')}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('Nadal potrzebuję modlitwy')}</p>
-                    </div>
-                  </label>
-
-                  <label className={`
-                    flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
-                    ${!isActive
-                      ? 'border-gray-500 bg-gray-50 dark:bg-gray-700'
-                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
-                    }
-                  `}>
-                    <input
-                      type="radio"
-                      name="isActive"
-                      checked={!isActive}
-                      onChange={() => setIsActive(false)}
-                      className="sr-only"
-                    />
-                    <XCircle className={`w-5 h-5 ${!isActive ? 'text-gray-500' : 'text-gray-400'}`} />
-                    <div>
-                      <p className="font-medium text-gray-800 dark:text-gray-200">{t('Nieaktualna')}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('Nie potrzebuję już modlitwy')}</p>
-                    </div>
-                  </label>
-                </div>
+                <p className="font-medium text-gray-800 dark:text-gray-200">{t('Publiczna')}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Widoczna dla wszystkich')}</p>
               </div>
+            </label>
 
-              {/* Modlitwa wysłuchana */}
-              <label className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition">
-                <input
-                  type="checkbox"
-                  checked={markAsAnswered}
-                  onChange={(e) => setMarkAsAnswered(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-amber-500 focus:ring-accent-primary"
-                />
-                <Star className="w-5 h-5 text-amber-500" />
-                <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">{t('Modlitwa wysłuchana!')}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {tr('Podziel się świadectwem z innymi')}
-                  </p>
-                </div>
-              </label>
-
-              {markAsAnswered && (
-                <div className="mt-3">
-                  <textarea
-                    value={testimony}
-                    onChange={(e) => setTestimony(e.target.value)}
-                    placeholder={t('Opisz, jak Bóg odpowiedział na Twoją modlitwę...')}
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary/50 dark:text-white resize-none"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Przyciski */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-            >
-              Anuluj
-            </button>
-            <button
-              data-tour="prayer-save"
-              type="submit"
-              disabled={isLoading || !content.trim()}
-              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium hover:from-accent-primary hover:to-accent-secondary transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Zapisywanie...
-                </>
-              ) : (
-                <>
-                  <Heart className="w-5 h-5" />
-                  {editingRequest ? t('Zapisz zmiany') : t('Dodaj intencję')}
-                </>
-              )}
-            </button>
+            <label className={`
+              flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
+              ${visibility === 'leaders_only'
+                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
+              }
+            `}>
+              <input
+                type="radio"
+                name="visibility"
+                value="leaders_only"
+                checked={visibility === 'leaders_only'}
+                onChange={(e) => setVisibility(e.target.value)}
+                className="sr-only"
+              />
+              <UserX className={`w-5 h-5 ${visibility === 'leaders_only' ? 'text-indigo-500' : 'text-gray-400'}`} />
+              <div>
+                <p className="font-medium text-gray-800 dark:text-gray-200">{t('Tylko liderzy')}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Poufna prośba')}</p>
+              </div>
+            </label>
           </div>
-        </form>
-      </div>
-    </div>,
-    document.body
+        </div>
+
+        {/* Anonimowość */}
+        <label className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          <input
+            type="checkbox"
+            checked={isAnonymous}
+            onChange={(e) => setIsAnonymous(e.target.checked)}
+            className="w-5 h-5 rounded border-gray-300 text-accent-primary-light focus:ring-accent-primary-light"
+          />
+          <Ghost className="w-5 h-5 text-gray-500" />
+          <div>
+            <p className="font-medium text-gray-800 dark:text-gray-200">{t('Dodaj anonimowo')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {tr('Twoje imię nie będzie widoczne dla innych')}
+            </p>
+          </div>
+        </label>
+
+        {/* Status aktualności i wysłuchania (tylko przy edycji) */}
+        {editingRequest && (
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
+            {/* Status aktualności */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
+                Status intencji
+              </label>
+              <div className="flex gap-3">
+                <label className={`
+                  flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
+                  ${isActive
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/30'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
+                  }
+                `}>
+                  <input
+                    type="radio"
+                    name="isActive"
+                    checked={isActive}
+                    onChange={() => setIsActive(true)}
+                    className="sr-only"
+                  />
+                  <CheckCircle className={`w-5 h-5 ${isActive ? 'text-green-500' : 'text-gray-400'}`} />
+                  <div>
+                    <p className="font-medium text-gray-800 dark:text-gray-200">{t('Aktualna')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('Nadal potrzebuję modlitwy')}</p>
+                  </div>
+                </label>
+
+                <label className={`
+                  flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
+                  ${!isActive
+                    ? 'border-gray-500 bg-gray-50 dark:bg-gray-700'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
+                  }
+                `}>
+                  <input
+                    type="radio"
+                    name="isActive"
+                    checked={!isActive}
+                    onChange={() => setIsActive(false)}
+                    className="sr-only"
+                  />
+                  <XCircle className={`w-5 h-5 ${!isActive ? 'text-gray-500' : 'text-gray-400'}`} />
+                  <div>
+                    <p className="font-medium text-gray-800 dark:text-gray-200">{t('Nieaktualna')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('Nie potrzebuję już modlitwy')}</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Modlitwa wysłuchana */}
+            <label className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition">
+              <input
+                type="checkbox"
+                checked={markAsAnswered}
+                onChange={(e) => setMarkAsAnswered(e.target.checked)}
+                className="w-5 h-5 rounded border-gray-300 text-amber-500 focus:ring-accent-primary"
+              />
+              <Star className="w-5 h-5 text-amber-500" />
+              <div>
+                <p className="font-medium text-gray-800 dark:text-gray-200">{t('Modlitwa wysłuchana!')}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {tr('Podziel się świadectwem z innymi')}
+                </p>
+              </div>
+            </label>
+
+            {markAsAnswered && (
+              <div className="mt-3">
+                <textarea
+                  value={testimony}
+                  onChange={(e) => setTestimony(e.target.value)}
+                  placeholder={t('Opisz, jak Bóg odpowiedział na Twoją modlitwę...')}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary/50 dark:text-white resize-none"
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </form>
+    </Modal>
   );
 }
 
@@ -620,59 +594,30 @@ function AnsweredModal({ isOpen, onClose, onSubmit, request, isLoading }) {
 
   if (!isOpen) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700">
-        <div className="p-5">
-          <div className="text-center mb-5">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center mb-3">
-              <Sparkles className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              {tr('Chwała Bogu!')}
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
-              {tr('Podziel się świadectwem wysłuchania modlitwy')}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <textarea
-              value={testimony}
-              onChange={(e) => setTestimony(e.target.value)}
-              placeholder={t('Jak Bóg odpowiedział na Twoją modlitwę? (opcjonalnie)')}
-              rows={4}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary/50 dark:text-white resize-none"
-            />
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-              >
-                Anuluj
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-white font-medium hover:from-amber-500 hover:to-yellow-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <Star className="w-5 h-5" />
-                    {tr('Potwierdź')}
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>,
-    document.body
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={tr('Chwała Bogu!')}
+      subtitle={tr('Podziel się świadectwem wysłuchania modlitwy')}
+      icon={Sparkles}
+      size="sm"
+      closeOnBackdrop={false}
+      footer={<>
+        <Button type="button" variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button type="submit" form="prayer-answered-form" icon={Star} loading={isLoading}>{tr('Potwierdź')}</Button>
+      </>}
+    >
+      <form id="prayer-answered-form" onSubmit={handleSubmit} className="p-6 space-y-4">
+        <textarea
+          value={testimony}
+          onChange={(e) => setTestimony(e.target.value)}
+          placeholder={t('Jak Bóg odpowiedział na Twoją modlitwę? (opcjonalnie)')}
+          rows={4}
+          className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary/50 dark:text-white resize-none"
+        />
+      </form>
+    </Modal>
   );
 }
 
@@ -944,11 +889,7 @@ export default function PrayerWallModule() {
   };
 
   if (roleLoading || loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={48} />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   return (
@@ -1186,35 +1127,30 @@ export default function PrayerWallModule() {
 
             {/* Lista prośb */}
             {filteredRequests.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 mx-auto bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                  <Heart className="w-10 h-10 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
-                  {filter === 'mine'
-                    ? t('Nie masz jeszcze żadnych intencji')
-                    : filter === 'answered'
-                    ? t('Brak świadectw')
-                    : t('Brak intencji modlitewnych')
-                  }
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-6">
-                  {filter === 'mine'
-                    ? t('Dodaj swoją pierwszą intencję modlitewną')
-                    : t('Bądź pierwszą osobą, która doda intencję')
-                  }
-                </p>
-                <button
-                  onClick={() => {
-                    setEditingRequest(null);
-                    setIsModalOpen(true);
-                  }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium rounded-xl hover:from-accent-primary hover:to-accent-secondary transition-all"
-                >
-                  <Plus className="w-5 h-5" />
-                  {tr('Dodaj intencję')}
-                </button>
-              </div>
+              <EmptyState
+                icon={Heart}
+                title={filter === 'mine'
+                  ? t('Nie masz jeszcze żadnych intencji')
+                  : filter === 'answered'
+                  ? t('Brak świadectw')
+                  : t('Brak intencji modlitewnych')
+                }
+                subtitle={filter === 'mine'
+                  ? t('Dodaj swoją pierwszą intencję modlitewną')
+                  : t('Bądź pierwszą osobą, która doda intencję')
+                }
+                action={
+                  <Button
+                    icon={Plus}
+                    onClick={() => {
+                      setEditingRequest(null);
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    {tr('Dodaj intencję')}
+                  </Button>
+                }
+              />
             ) : (
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                 {filteredRequests.map(request => (

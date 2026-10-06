@@ -8,7 +8,7 @@ import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
 import { Home } from 'lucide-react';
 import {
-  Plus, Search, Trash2, X, Users, MapPin, Calendar,
+  Plus, Search, Trash2, Users, MapPin, Calendar,
   UserPlus, BookOpen, Upload, Link as LinkIcon,
   LayoutGrid, List, CheckSquare, MessageSquare, Send,
   User, FileText, DollarSign, FolderOpen, Package
@@ -26,6 +26,8 @@ import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
+import Modal from '../../components/Modal';
+import EmptyState from '../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, EmptyRow, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { DateInput, TimeField } from '../../components/pickers';
 import { confirmDialog } from '../../lib/dialog';
@@ -773,11 +775,7 @@ export default function HomeGroupsModule() {
   ];
 
   if (loading) {
-    return (
-      <div className="p-10 text-center">
-        <Spinner size={48} className="mx-auto" />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   return (
@@ -1096,19 +1094,20 @@ export default function HomeGroupsModule() {
       )}
 
       {/* MODAL: Group/Leader/Member */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="font-bold text-2xl text-gray-900 dark:text-white">
-                {editingItem ? 'Edytuj' : 'Dodaj'} {modalType === 'group' ? tr('Grupę') : modalType === 'leader' ? 'Lidera' : tr('Członka')}
-              </h3>
-              <button onClick={closeModal} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto flex-1">
+      <Modal
+        isOpen={showModal}
+        onClose={closeModal}
+        closeOnBackdrop={false}
+        size="lg"
+        title={`${editingItem ? 'Edytuj' : 'Dodaj'} ${modalType === 'group' ? tr('Grupę') : modalType === 'leader' ? 'Lidera' : tr('Członka')}`}
+        footer={<>
+          <Button variant="secondary" onClick={closeModal}>Anuluj</Button>
+          <Button data-tour="hg-group-save" onClick={() => modalType === 'group' ? handleSaveGroup() : handleSavePerson(modalType)}>
+            Zapisz
+          </Button>
+        </>}
+      >
+            <div className="p-6">
               {modalType === 'group' ? (
                 <div className="space-y-4">
                   <div>
@@ -1269,35 +1268,17 @@ export default function HomeGroupsModule() {
                 </div>
               )}
             </div>
-
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
-              <button
-                onClick={closeModal}
-                className="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium rounded-xl transition"
-              >
-                Anuluj
-              </button>
-              <Button size="lg" data-tour="hg-group-save" onClick={() => modalType === 'group' ? handleSaveGroup() : handleSavePerson(modalType)}>
-                Zapisz
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* MODAL: Group Members */}
       {showGroupMembersModal && currentGroup && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-3xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh]">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                Członkowie: {currentGroup.name}
-              </h3>
-              <button onClick={() => setShowGroupMembersModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-
+      <Modal
+        isOpen
+        onClose={() => setShowGroupMembersModal(false)}
+        closeOnBackdrop={false}
+        size="xl"
+        title={`Członkowie: ${currentGroup.name}`}
+      >
             <div className="p-6">
               <div className="bg-accent-primary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
                 <div className="flex-1">
@@ -1353,21 +1334,18 @@ export default function HomeGroupsModule() {
                 </DataTable>
               </div>
             </div>
-          </div>
-        </div>
+      </Modal>
       )}
 
       {/* MODAL: Materials */}
       {showMaterialsModal && currentGroup && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh]">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">Materiały: {currentGroup.name}</h3>
-              <button onClick={() => setShowMaterialsModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-
+      <Modal
+        isOpen
+        onClose={() => setShowMaterialsModal(false)}
+        closeOnBackdrop={false}
+        size="lg"
+        title={`Materiały: ${currentGroup.name}`}
+      >
             <div className="p-6">
               <div className="bg-accent-secondary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 space-y-2">
                 <input
@@ -1441,27 +1419,34 @@ export default function HomeGroupsModule() {
                   );
                 })}
                 {groupMaterials.length === 0 && (
-                  <div className="text-center text-gray-400 dark:text-gray-500 py-8">
-                    {tr('Brak materiałów')}
-                  </div>
+                  <EmptyState compact icon={BookOpen} title={tr('Brak materiałów')} />
                 )}
               </div>
             </div>
-          </div>
-        </div>
+      </Modal>
       )}
 
       {/* MODAL: Task */}
-      {showTaskModal && (
-        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto transition-opacity">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-4xl p-0 border border-gray-200 dark:border-gray-700 my-8 flex overflow-hidden h-[80vh] animate-in fade-in zoom-in duration-200">
-
-            <div className="w-3/5 p-8 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
-              <div className="flex justify-between mb-6">
-                <h3 className="font-bold text-2xl text-gray-900 dark:text-white">
-                  {taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}
-                </h3>
-              </div>
+      <Modal
+        isOpen={showTaskModal}
+        onClose={() => setShowTaskModal(false)}
+        closeOnBackdrop={false}
+        size="xl"
+        title={taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}
+        footer={<>
+          {taskForm.id && (
+            <Button variant="danger" className="mr-auto" onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }}>
+              {tr('Usuń zadanie')}
+            </Button>
+          )}
+          <Button variant="secondary" onClick={() => setShowTaskModal(false)}>Anuluj</Button>
+          <Button onClick={saveTask}>
+            Zapisz zmiany
+          </Button>
+        </>}
+      >
+          <div className="flex h-[65vh]">
+            <div className="w-3/5 p-6 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
               <div className="space-y-5">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tytuł zadania')}</label>
@@ -1520,22 +1505,6 @@ export default function HomeGroupsModule() {
                     placeholder={t('Wybierz grupę...')}
                   />
                 </div>
-                <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
-                  {taskForm.id && (
-                    <button
-                      onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }}
-                      className="px-4 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                    >
-                      {tr('Usuń zadanie')}
-                    </button>
-                  )}
-                  <Button
-                    onClick={saveTask}
-                    
-                   size="lg">
-                    Zapisz zmiany
-                  </Button>
-                </div>
               </div>
             </div>
 
@@ -1544,21 +1513,14 @@ export default function HomeGroupsModule() {
                 <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
                   <MessageSquare size={18}/> Komentarze
                 </h4>
-                <button onClick={() => setShowTaskModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition">
-                  <X size={20} className="text-gray-500 dark:text-gray-400"/>
-                </button>
               </div>
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
                 {!taskForm.id ? (
-                  <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
-                    {tr('Zapisz zadanie, aby dodawać komentarze.')}
-                  </div>
+                  <EmptyState compact icon={MessageSquare} title={tr('Zapisz zadanie, aby dodawać komentarze.')} />
                 ) : loadingComments ? (
                   <Spinner center />
                 ) : comments.length === 0 ? (
-                  <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
-                    {tr('Brak komentarzy. Bądź pierwszy!')}
-                  </div>
+                  <EmptyState compact icon={MessageSquare} title={tr('Brak komentarzy. Bądź pierwszy!')} />
                 ) : comments.map(comment => (
                   <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex justify-between items-start mb-1">
@@ -1594,22 +1556,23 @@ export default function HomeGroupsModule() {
               )}
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
 
       {/* MODAL: Add Expense */}
-      {showExpenseModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                Dodaj wydatek - {expenseForm.ministry}
-              </h3>
-              <button onClick={() => setShowExpenseModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="space-y-4">
+      <Modal
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        closeOnBackdrop={false}
+        size="lg"
+        title={`Dodaj wydatek - ${expenseForm.ministry}`}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
+          <Button onClick={saveExpense}>
+            Zapisz wydatek
+          </Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Data')}</label>
                 <DateInput
@@ -1670,23 +1633,7 @@ export default function HomeGroupsModule() {
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowExpenseModal(false)}
-                className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-              >
-                Anuluj
-              </button>
-              <Button
-                onClick={saveExpense}
-                
-               size="lg">
-                Zapisz wydatek
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

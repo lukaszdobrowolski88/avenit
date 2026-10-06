@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import PageHeader from '../../components/PageHeader';
 import { ClipboardList } from 'lucide-react';
@@ -11,10 +10,13 @@ import { useT } from '../../i18n';
 import * as LucideIcons from 'lucide-react';
 import { tr } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 
 const {
   Plus, Search, History, ArrowUpDown, Copy, Trash2,
-  ChevronUp, ChevronDown, Calendar, X, Edit3, GripVertical,
+  ChevronUp, ChevronDown, Calendar, Edit3, GripVertical,
   Settings, ToggleLeft, ToggleRight, Palette, MapPin
 } = LucideIcons;
 
@@ -269,16 +271,16 @@ export default function ProgramsList() {
         {/* Program cards */}
         <div className="p-3">
           {upcoming.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-400 dark:text-gray-500 text-sm">{t('Brak nadchodzących programów')}</p>
-              <button
-                onClick={() => handleNewProgram(type.id)}
-                className="mt-2 text-sm font-medium hover:underline"
-                style={{ color: type.color || '#6366f1' }}
-              >
-                {t('Utwórz pierwszy')}
-              </button>
-            </div>
+            <EmptyState
+              compact
+              icon={Calendar}
+              title={t('Brak nadchodzących programów')}
+              action={
+                <Button variant="outline" size="sm" icon={Plus} onClick={() => handleNewProgram(type.id)}>
+                  {t('Utwórz pierwszy')}
+                </Button>
+              }
+            />
           ) : (
             <div className="grid gap-2">
               {upcoming.map(p => <ProgramCard key={p.id} p={p} typeColor={type.color} />)}
@@ -383,17 +385,27 @@ export default function ProgramsList() {
       </div>
 
       {/* Type Management Modal */}
-      {showTypeModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                {typeForm.id ? t('Edytuj typ wydarzenia') : t('Nowy typ wydarzenia')}
-              </h3>
-              <button onClick={() => setShowTypeModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-white"><X size={20} /></button>
-            </div>
-
-            <div className="space-y-5">
+      <Modal
+        isOpen={showTypeModal}
+        onClose={() => setShowTypeModal(false)}
+        closeOnBackdrop={false}
+        size="sm"
+        title={typeForm.id ? t('Edytuj typ wydarzenia') : t('Nowy typ wydarzenia')}
+        footer={<>
+          {typeForm.id && !typeForm.is_default && (
+            <Button variant="danger" className="mr-auto" onClick={(e) => { deleteType(typeForm.id, e); setShowTypeModal(false); }}>
+              {t('Usuń')}
+            </Button>
+          )}
+          <Button variant="secondary" onClick={() => setShowTypeModal(false)}>
+            {t('Anuluj')}
+          </Button>
+          <Button onClick={saveType}>
+            {typeForm.id ? t('Zapisz zmiany') : t('Utwórz typ')}
+          </Button>
+        </>}
+      >
+            <div className="p-6 space-y-5">
               {/* Name */}
               <div>
                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Nazwa *')}</label>
@@ -415,10 +427,9 @@ export default function ProgramsList() {
                       onClick={() => setTypeForm({ ...typeForm, icon })}
                       className={`w-10 h-10 rounded-xl flex items-center justify-center transition ${
                         typeForm.icon === icon
-                          ? 'text-white shadow-md'
+                          ? 'bg-accent-primary text-white shadow-md'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
-                      style={typeForm.icon === icon ? { background: typeForm.color } : {}}
                     >
                       <DynamicIcon name={icon} size={18} />
                     </button>
@@ -434,7 +445,7 @@ export default function ProgramsList() {
                     <button
                       key={color}
                       onClick={() => setTypeForm({ ...typeForm, color })}
-                      className={`w-8 h-8 rounded-full transition ${typeForm.color === color ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-800' : 'hover:scale-110'}`}
+                      className={`w-8 h-8 rounded-full transition ${typeForm.color === color ? 'ring-2 ring-offset-2 ring-accent-primary dark:ring-offset-gray-900' : 'hover:scale-110'}`}
                       style={{ background: color }}
                     />
                   ))}
@@ -464,30 +475,8 @@ export default function ProgramsList() {
                   })}
                 </div>
               </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
-                {typeForm.id && !typeForm.is_default && (
-                  <button
-                    onClick={(e) => { deleteType(typeForm.id, e); setShowTypeModal(false); }}
-                    className="px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl font-medium hover:bg-red-100 transition text-sm"
-                  >
-                    {t('Usuń')}
-                  </button>
-                )}
-                <button
-                  onClick={saveType}
-                  className="flex-1 py-3 text-white rounded-xl font-bold transition hover:shadow-lg text-sm"
-                  style={{ background: typeForm.color || '#6366f1' }}
-                >
-                  {typeForm.id ? t('Zapisz zmiany') : t('Utwórz typ')}
-                </button>
-              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
     </div>
   );
 }

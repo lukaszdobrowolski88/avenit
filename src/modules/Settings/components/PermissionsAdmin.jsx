@@ -9,6 +9,8 @@ import { ChevronDown, ChevronRight, Shield, Plus, Trash2, Users, Sliders, HeartH
 import MinistryMemberships from './MinistryMemberships';
 import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 
 const KIND_STYLE = {
   module: 'font-semibold text-gray-800 dark:text-gray-100',
@@ -356,9 +358,18 @@ function NewRole({ onClose, onCreated, roles }) {
     } catch (e) { setErr(e.message); }
   };
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4" onMouseDown={onClose}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6" onMouseDown={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold mb-4">{tr('Nowa rola')}</h3>
+    <Modal
+      isOpen
+      onClose={onClose}
+      zIndex={120}
+      size="sm"
+      title={tr('Nowa rola')}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button onClick={create} disabled={!f.label}>{tr('Utwórz')}</Button>
+      </>}
+    >
+      <div className="p-6">
         <label className="block text-sm text-gray-500 mb-1">{tr('Nazwa')}</label>
         <input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value, key: f.key || slug(e.target.value) })} placeholder="Skarbnik" className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
         <label className="block text-sm text-gray-500 mb-1">{tr('Klucz (identyfikator)')}</label>
@@ -367,12 +378,8 @@ function NewRole({ onClose, onCreated, roles }) {
         <select value={f.preset} onChange={(e) => setF({ ...f, preset: e.target.value })} className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm">
           {BUILTIN_ROLES.filter((r) => !r.is_admin).map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
         </select>
-        {err && <div className="err mb-2">{err}</div>}
-        <div className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
-          <button className="ghost" onClick={onClose}>{tr('Anuluj')}</button>
-          <button onClick={create} disabled={!f.label}>{tr('Utwórz')}</button>
-        </div>
+        {err && <div className="err text-sm text-red-500">{err}</div>}
       </div>
-    </div>
+    </Modal>
   );
 }

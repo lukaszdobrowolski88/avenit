@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import Spinner from '../../../components/Spinner';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import {
   Download,
   Trash2,
@@ -7,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  X,
   FileText,
   Calendar,
   User,
@@ -312,22 +314,16 @@ export default function ResponsesView({ form }) {
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
   if (loading && responses.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={32} />
-      </div>
-    );
+    return <Spinner center />;
   }
 
   if (responses.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center p-6">
-        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-          <FileText size={32} className="text-gray-400" />
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Brak odpowiedzi</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Ten formularz nie otrzymał jeszcze żadnych odpowiedzi')}</p>
-      </div>
+      <EmptyState
+        icon={FileText}
+        title="Brak odpowiedzi"
+        subtitle={tr('Ten formularz nie otrzymał jeszcze żadnych odpowiedzi')}
+      />
     );
   }
 
@@ -546,157 +542,160 @@ export default function ResponsesView({ form }) {
         });
 
         return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
-            {/* Nagłówek */}
-            <div className="relative bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 p-5 pb-4">
-              <button onClick={() => setSelectedParticipant(null)}
-                className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 bg-white/80 dark:bg-gray-800/80 rounded-lg transition-colors">
-                <X size={18} />
-              </button>
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center text-xl font-bold text-accent-primary dark:text-accent-primary-light">
-                  {(sp.name || '?')[0]?.toUpperCase()}
+        <Modal
+          isOpen
+          onClose={() => setSelectedParticipant(null)}
+          closeOnBackdrop={false}
+          title={sp.name}
+          size="sm"
+          footer={<>
+            <Button
+              variant="danger"
+              icon={Trash2}
+              className="mr-auto"
+              onClick={() => { handleDeleteResponse(sp.responseId); setSelectedParticipant(null); }}
+            >
+              Usuń rejestrację
+            </Button>
+            <Button variant="secondary" onClick={() => setSelectedParticipant(null)}>Zamknij</Button>
+          </>}
+        >
+          {/* Nagłówek */}
+          <div className="bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 px-6 py-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center text-xl font-bold text-accent-primary dark:text-accent-primary-light">
+                {(sp.name || '?')[0]?.toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <span className="flex items-center gap-1"><Calendar size={12} />{formatDate(sp.submittedAt)}</span>
+                  {sp.isGroupContact && <span className="text-blue-500 font-medium">Zgłaszający · {sp.groupSize} os.</span>}
+                  {sp.isGroupMember && <span className="text-gray-400">Rejestracja grupowa</span>}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{sp.name}</h2>
-                  <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    <span className="flex items-center gap-1"><Calendar size={12} />{formatDate(sp.submittedAt)}</span>
-                    {sp.isGroupContact && <span className="text-blue-500 font-medium">Zgłaszający · {sp.groupSize} os.</span>}
-                    {sp.isGroupMember && <span className="text-gray-400">Rejestracja grupowa</span>}
+              </div>
+            </div>
+            {/* Kontakt */}
+            {(sp.email || sp.phone) && (
+              <div className="flex items-center gap-4 mt-3 text-sm text-gray-600 dark:text-gray-400">
+                {sp.email && <span className="flex items-center gap-1.5"><Mail size={13} />{sp.email}</span>}
+                {sp.phone && <span className="flex items-center gap-1.5"><Phone size={13} />{sp.phone}</span>}
+              </div>
+            )}
+          </div>
+
+          {/* Treść */}
+          <div className="p-6">
+            {/* Dane formularza */}
+            {dataFields.length > 0 && (
+              <div className="space-y-2.5">
+                {dataFields.map((field) => (
+                  <div key={field.id} className="flex items-start gap-3">
+                    <span className="text-xs font-medium text-gray-400 dark:text-gray-500 w-28 flex-shrink-0 pt-0.5 text-right">
+                      {field.label}
+                    </span>
+                    <span className="text-sm text-gray-900 dark:text-white flex-1">
+                      {formatAnswerForExport(sp.answers[field.id], field.type)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Dodatki */}
+            {sp.addonLabels?.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div className="flex items-start gap-3">
+                  <span className="text-xs font-medium text-gray-400 w-28 flex-shrink-0 pt-0.5 text-right">Dodatki</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sp.addonLabels.map((label, i) => (
+                      <span key={i} className="px-2.5 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-medium">{label}</span>
+                    ))}
                   </div>
                 </div>
               </div>
-              {/* Kontakt */}
-              {(sp.email || sp.phone) && (
-                <div className="flex items-center gap-4 mt-3 text-sm text-gray-600 dark:text-gray-400">
-                  {sp.email && <span className="flex items-center gap-1.5"><Mail size={13} />{sp.email}</span>}
-                  {sp.phone && <span className="flex items-center gap-1.5"><Phone size={13} />{sp.phone}</span>}
-                </div>
-              )}
-            </div>
+            )}
 
-            {/* Treść */}
-            <div className="flex-1 overflow-y-auto p-5">
-              {/* Dane formularza */}
-              {dataFields.length > 0 && (
-                <div className="space-y-2.5">
-                  {dataFields.map((field) => (
-                    <div key={field.id} className="flex items-start gap-3">
-                      <span className="text-xs font-medium text-gray-400 dark:text-gray-500 w-28 flex-shrink-0 pt-0.5 text-right">
-                        {field.label}
-                      </span>
-                      <span className="text-sm text-gray-900 dark:text-white flex-1">
-                        {formatAnswerForExport(sp.answers[field.id], field.type)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Dodatki */}
-              {sp.addonLabels?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <div className="flex items-start gap-3">
-                    <span className="text-xs font-medium text-gray-400 w-28 flex-shrink-0 pt-0.5 text-right">Dodatki</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {sp.addonLabels.map((label, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-medium">{label}</span>
-                      ))}
-                    </div>
+            {/* Płatność */}
+            {sp.totalAmount > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tr('Płatność')}</span>
+                    {getPaymentStatusBadge(sp.status, sp.paidAmount, sp.totalAmount)}
                   </div>
-                </div>
-              )}
-
-              {/* Płatność */}
-              {sp.totalAmount > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tr('Płatność')}</span>
-                      {getPaymentStatusBadge(sp.status, sp.paidAmount, sp.totalAmount)}
-                    </div>
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {formatPrice(sp.totalAmount, sp.currency)}
-                        </p>
-                        {sp.paidAmount > 0 && sp.status !== 'paid' && (
-                          <>
-                            <p className="text-sm text-gray-500 mt-0.5">
-                              Wpłacono: <span className="font-medium text-green-600">{formatPrice(sp.paidAmount, sp.currency)}</span>
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Pozostało: <span className="font-medium text-orange-600">{formatPrice(sp.totalAmount - sp.paidAmount, sp.currency)}</span>
-                            </p>
-                          </>
-                        )}
-                        {sp.isGroupContact && sp.groupTotalAmount > 0 && (
-                          <p className="text-xs text-gray-400 mt-1">Łącznie za grupę: {formatPrice(sp.groupTotalAmount, sp.currency)}</p>
-                        )}
-                      </div>
-                      {(sp.status === 'pending' || sp.status === 'partial') && (
-                        <button
-                          onClick={() => {
-                            setPaymentModal({ participantId: sp.id, amount: sp.totalAmount, currency: sp.currency, name: sp.name });
-                            setPaymentAmount(String(sp.totalAmount - (sp.paidAmount || 0)));
-                            setSelectedParticipant(null);
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
-                        >
-                          <Banknote size={14} />
-                          {tr('Dodaj wpłatę')}
-                        </button>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {formatPrice(sp.totalAmount, sp.currency)}
+                      </p>
+                      {sp.paidAmount > 0 && sp.status !== 'paid' && (
+                        <>
+                          <p className="text-sm text-gray-500 mt-0.5">
+                            Wpłacono: <span className="font-medium text-green-600">{formatPrice(sp.paidAmount, sp.currency)}</span>
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Pozostało: <span className="font-medium text-orange-600">{formatPrice(sp.totalAmount - sp.paidAmount, sp.currency)}</span>
+                          </p>
+                        </>
+                      )}
+                      {sp.isGroupContact && sp.groupTotalAmount > 0 && (
+                        <p className="text-xs text-gray-400 mt-1">Łącznie za grupę: {formatPrice(sp.groupTotalAmount, sp.currency)}</p>
                       )}
                     </div>
+                    {(sp.status === 'pending' || sp.status === 'partial') && (
+                      <button
+                        onClick={() => {
+                          setPaymentModal({ participantId: sp.id, amount: sp.totalAmount, currency: sp.currency, name: sp.name });
+                          setPaymentAmount(String(sp.totalAmount - (sp.paidAmount || 0)));
+                          setSelectedParticipant(null);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
+                      >
+                        <Banknote size={14} />
+                        {tr('Dodaj wpłatę')}
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Stopka */}
-            <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <button onClick={() => { handleDeleteResponse(sp.responseId); setSelectedParticipant(null); }}
-                className="w-full flex items-center justify-center gap-2 py-2 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                <Trash2 size={14} />Usuń rejestrację
-              </button>
-            </div>
+              </div>
+            )}
           </div>
-        </div>
+        </Modal>
         );
       })()}
 
       {/* Modal płatności */}
-      {paymentModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2"><Banknote size={20} className="text-green-500" />{tr('Dodaj płatność')}</h2>
-              <button onClick={() => setPaymentModal(null)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"><X size={20} /></button>
+      <Modal
+        isOpen={!!paymentModal}
+        onClose={() => setPaymentModal(null)}
+        closeOnBackdrop={false}
+        title={tr('Dodaj płatność')}
+        icon={Banknote}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setPaymentModal(null)}>{tr('Anuluj')}</Button>
+          <Button icon={Check} onClick={addPayment}>{tr('Potwierdź')}</Button>
+        </>}
+      >
+        {paymentModal && (
+          <div className="p-6 space-y-4">
+            <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+              <p className="text-sm text-gray-500">Uczestnik</p>
+              <p className="font-medium text-gray-900 dark:text-white">{paymentModal.name}</p>
             </div>
-            <div className="p-4 space-y-4">
-              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <p className="text-sm text-gray-500">Uczestnik</p>
-                <p className="font-medium text-gray-900 dark:text-white">{paymentModal.name}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Kwota ({paymentModal.currency})</label>
-                <input type="number" min="0" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('Data płatności')}</label>
-                <DateInput value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Kwota ({paymentModal.currency})</label>
+              <input type="number" min="0" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
             </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-              <button onClick={() => setPaymentModal(null)} className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 transition-colors">{tr('Anuluj')}</button>
-              <button onClick={addPayment} className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"><Check size={16} />{tr('Potwierdź')}</button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('Data płatności')}</label>
+              <DateInput value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Spinner from '../../components/Spinner';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Plus, Search, Trash2, X, FileText, Music, Calendar, ChevronDown, Check, ChevronUp, User, UserX, Link as LinkIcon, Clock, History, ExternalLink, Minus, Hash, DollarSign, ChevronLeft, ChevronRight, Tag, Upload, FileDown, MessageSquare, Download, Play, Pause, Volume2, Users, FolderOpen, Package, Send } from 'lucide-react';
@@ -969,38 +972,32 @@ function SongDetailsModal({ song, onClose, onEdit }) {
   const displayChords = formatChordsWithFontSizes(transposedChords, 14);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-6xl rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh]">
-        
-        {/* HEADER */}
-        <div className="flex justify-between items-start p-6 border-b border-gray-100 dark:border-gray-700">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-                <h2 className="text-3xl font-bold text-gray-800 dark:text-white">{song.title}</h2>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                {song.author && <span>{song.author}</span>}
-                {song.category && (
-                    <>
-                        <span className="w-1 h-1 rounded-full bg-gray-400"></span>
-                        <span>{song.category}</span>
-                    </>
-                )}
-            </p>
-          </div>
-          <div className="flex gap-2">
-             <button onClick={handleDownloadPDF} className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2">
-                <FileDown size={16}/> PDF
-            </button>
-            <button onClick={onEdit} className="px-4 py-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-xl font-bold text-sm hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/50 transition">
-                Edytuj
-            </button>
-            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">
-                <X size={24} />
-            </button>
-          </div>
-        </div>
-
+    <Modal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={false}
+      size="full"
+      title={song.title}
+      subtitle={(song.author || song.category) ? (
+        <span className="flex items-center gap-2">
+            {song.author && <span>{song.author}</span>}
+            {song.category && (
+                <>
+                    <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                    <span>{song.category}</span>
+                </>
+            )}
+        </span>
+      ) : undefined}
+      footer={<>
+        <Button variant="secondary" icon={FileDown} onClick={handleDownloadPDF}>
+            PDF
+        </Button>
+        <Button onClick={onEdit}>
+            Edytuj
+        </Button>
+      </>}
+    >
         {/* TABS */}
         <div className="px-6 pt-6 pb-0">
              <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
@@ -1017,7 +1014,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
         </div>
 
         {/* CONTENT */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="p-6">
             
             {activeTab === 'overview' && (
                 <div className="space-y-6">
@@ -1114,11 +1111,9 @@ function SongDetailsModal({ song, onClose, onEdit }) {
             {activeTab === 'history' && (
                 <div className="space-y-4">
                     {loadingHistory ? (
-                        <div className="text-center py-10 text-gray-400">{tr('Ładowanie historii...')}</div>
+                        <Spinner center label={tr('Ładowanie historii...')} />
                     ) : history.length === 0 ? (
-                        <div className="text-center py-10 text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                            {tr('Brak historii użycia tej pieśni w programach.')}
-                        </div>
+                        <EmptyState compact icon={History} title={tr('Brak historii użycia tej pieśni w programach.')} />
                     ) : (
                         <div className="space-y-2">
                             {history.map(h => (
@@ -1157,11 +1152,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                         </h3>
 
                         {(!song.attachments || song.attachments.length === 0) && (
-                             <div className="text-center py-8 text-gray-400 text-sm italic border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-                                 <FileText size={32} className="mx-auto mb-2 opacity-50" />
-                                 {tr('Brak materiałów')}
-                                 <p className="text-xs mt-1">{tr('Kliknij "Edytuj" aby dodać załączniki')}</p>
-                             </div>
+                             <EmptyState compact icon={FileText} title={tr('Brak materiałów')} subtitle={tr('Kliknij "Edytuj" aby dodać załączniki')} />
                         )}
 
                         {(song.attachments || []).map((att, idx) => {
@@ -1200,7 +1191,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                                                     title="Pobierz plik"
                                                 >
                                                     {downloadingFile === att.url ? (
-                                                        <div className="w-[18px] h-[18px] border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                                                        <Spinner size={18} />
                                                     ) : (
                                                         <Download size={18}/>
                                                     )}
@@ -1243,8 +1234,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
             )}
 
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1703,7 +1693,7 @@ export default function WorshipModule() {
       : true)
   );
 
-  if (loading) return <div className="p-10 text-center"><Spinner size={48} className="mx-auto" /></div>;
+  if (loading) return <Spinner center />;
 
   // Definicja zakładek
   const tabs = [
@@ -1939,14 +1929,18 @@ export default function WorshipModule() {
       )}
 
       {/* Modale */}
-      {showMemberModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{memberForm.id ? tr('Edytuj członka') : tr('Nowy członek')}</h3>
-              <button onClick={() => setShowMemberModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400"><X size={20}/></button>
-            </div>
-            <div className="space-y-4">
+      <Modal
+        isOpen={showMemberModal}
+        onClose={() => setShowMemberModal(false)}
+        closeOnBackdrop={false}
+        size="md"
+        title={memberForm.id ? tr('Edytuj członka') : tr('Nowy członek')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowMemberModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveMember}>{tr('Zapisz')}</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
                 <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
@@ -1997,18 +1991,10 @@ export default function WorshipModule() {
                   <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="jan@example.com" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} />
                 </div>
               </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
-                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
-              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
 
-      {showSongModal && document.body && createPortal(
+      {showSongModal && (
         <SongForm
           key={songModalKey}
           initialData={songForm}
@@ -2052,11 +2038,10 @@ export default function WorshipModule() {
             }
           }}
           onCancel={() => setShowSongModal(false)}
-        />,
-        document.body
+        />
       )}
 
-      {showSongDetails && document.body && createPortal(
+      {showSongDetails && (
         <SongDetailsModal
           song={showSongDetails}
           onClose={() => setShowSongDetails(null)}
@@ -2069,24 +2054,24 @@ export default function WorshipModule() {
             setSongModalKey(k => k + 1);
             setShowSongModal(true);
           }}
-        />,
-        document.body
+        />
       )}
 
       {/* MODAL: Zarządzanie Tagami */}
-      {showTagsModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white flex items-center gap-2">
-                <Tag size={20} className="text-accent-primary-light" />
-                {tr('Zarządzanie Tagami')}
-              </h3>
-              <button onClick={() => { setShowTagsModal(false); setEditingTag(null); setEditingTagValue(''); setNewTagInput(''); }} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition">
-                <X size={24} />
-              </button>
-            </div>
-
+      <Modal
+        isOpen={showTagsModal}
+        onClose={() => { setShowTagsModal(false); setEditingTag(null); setEditingTagValue(''); setNewTagInput(''); }}
+        closeOnBackdrop={false}
+        size="md"
+        icon={Tag}
+        title={tr('Zarządzanie Tagami')}
+        footer={
+          <Button variant="secondary" onClick={() => { setShowTagsModal(false); setEditingTag(null); setEditingTagValue(''); setNewTagInput(''); }}>
+            Zamknij
+          </Button>
+        }
+      >
+          <div className="p-6">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               {tr('Dodaj nowe tagi lub edytuj/usuń istniejące. Zmiany zostaną zastosowane globalnie.')}
             </p>
@@ -2113,9 +2098,7 @@ export default function WorshipModule() {
 
             <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-2">
               {allUniqueTags.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 dark:text-gray-500">
-                  {tr('Brak tagów w bazie pieśni')}
-                </div>
+                <EmptyState compact icon={Tag} title={tr('Brak tagów w bazie pieśni')} />
               ) : (
                 allUniqueTags.map(tag => {
                   const songCount = songs.filter(s => Array.isArray(s.tags) && s.tags.includes(tag)).length;
@@ -2133,7 +2116,7 @@ export default function WorshipModule() {
                             autoFocus
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') renameTagGlobally(tag, editingTagValue);
-                              if (e.key === 'Escape') { setEditingTag(null); setEditingTagValue(''); }
+                              if (e.key === 'Escape') { e.preventDefault(); setEditingTag(null); setEditingTagValue(''); }
                             }}
                           />
                           <button
@@ -2161,7 +2144,7 @@ export default function WorshipModule() {
                           </div>
                           <button
                             onClick={() => { setEditingTag(tag); setEditingTagValue(tag); }}
-                            className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
+                            className="p-2 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"
                             title={t('Edytuj nazwę')}
                           >
                             <Hash size={16} />
@@ -2180,31 +2163,22 @@ export default function WorshipModule() {
                 })
               )}
             </div>
-
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => { setShowTagsModal(false); setEditingTag(null); setEditingTagValue(''); setNewTagInput(''); }}
-                className="w-full py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/30 transition"
-              >
-                Zamknij
-              </button>
-            </div>
           </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
 
       {/* MODAL: Add Expense */}
-      {showExpenseModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-4xl p-6 border border-gray-200 dark:border-gray-700 my-8">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">Nowy wydatek - {expenseForm.ministry}</h3>
-              <button onClick={() => setShowExpenseModal(false)} className="text-gray-500 dark:text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="space-y-4">
+      <Modal
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        closeOnBackdrop={false}
+        size="xl"
+        title={`Nowy wydatek - ${expenseForm.ministry}`}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
+          <Button onClick={saveExpense}>Zapisz</Button>
+        </>}
+      >
+            <div className="p-6 space-y-4">
               {/* Wiersz 1: Data i Kwota */}
               <div className="grid grid-cols-2 gap-4">
                 <CustomDatePicker
@@ -2343,25 +2317,8 @@ export default function WorshipModule() {
                   ))}
                 </div>
               </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowExpenseModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={saveExpense}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
-                >
-                  Zapisz
-                </button>
-              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
 
       {addToProgramSong && (
         <AddSongToProgramModal

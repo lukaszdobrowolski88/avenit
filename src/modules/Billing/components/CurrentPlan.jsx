@@ -15,6 +15,8 @@ import {
   Zap
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import EmptyState from '../../../components/EmptyState';
+import Button from '../../../components/Button';
 
 export default function CurrentPlan({ onUpgrade }) {
   const [tenant, setTenant] = useState(null);
@@ -114,20 +116,13 @@ export default function CurrentPlan({ onUpgrade }) {
 
   if (!subscription) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 text-center">
-        <Package size={48} className="mx-auto mb-4 text-gray-400" />
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          Brak aktywnej subskrypcji
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          {tr('Wybierz plan, aby korzystać z pełnych możliwości aplikacji.')}
-        </p>
-        <button
-          onClick={onUpgrade}
-          className="px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg transition"
-        >
-          Wybierz plan
-        </button>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <EmptyState
+          icon={Package}
+          title="Brak aktywnej subskrypcji"
+          subtitle={tr('Wybierz plan, aby korzystać z pełnych możliwości aplikacji.')}
+          action={<Button onClick={onUpgrade}>Wybierz plan</Button>}
+        />
       </div>
     );
   }

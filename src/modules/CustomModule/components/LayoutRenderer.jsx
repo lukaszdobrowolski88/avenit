@@ -6,6 +6,7 @@ import { styleToCSS, hoverClass } from '../../Settings/components/ModuleBuilder/
 import ModuleWidget from './ModuleWidget';
 import CollectionView from './CollectionView';
 import { useModuleRecords } from '../../../hooks/useModuleRecords';
+import EmptyState from '../../../components/EmptyState';
 
 const CHART_COLORS = ['#c7ab71', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#6366f1', '#84cc16', '#f97316', '#06b6d4'];
 
@@ -74,8 +75,8 @@ function ChartWidget({ el, ctx }) {
     }
     return [...m.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 12);
   }, [records, p.field]);
-  if (!p.collectionKey || !p.field) return <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-400">{tr('Wybierz kolekcję i pole do wykresu')}</div>;
-  if (!counts.length) return <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-400">{tr('Brak danych')}</div>;
+  if (!p.collectionKey || !p.field) return <EmptyState compact icon={LucideIcons.BarChart3} title={tr('Wybierz kolekcję i pole do wykresu')} />;
+  if (!counts.length) return <EmptyState compact icon={LucideIcons.BarChart3} title={tr('Brak danych')} />;
   const total = counts.reduce((s, c) => s + c.value, 0);
   return (
     <div>
@@ -184,9 +185,8 @@ export default function LayoutRenderer({ layout, moduleId, moduleKey, moduleName
 
   if (!root.length) {
     return (
-      <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-        <LucideIcons.LayoutDashboard size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-        <p className="text-gray-500 dark:text-gray-400">{tr('Ta zakładka jest pusta. Otwórz kreator, aby dodać elementy.')}</p>
+      <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+        <EmptyState icon={LucideIcons.LayoutDashboard} title={tr('Ta zakładka jest pusta. Otwórz kreator, aby dodać elementy.')} />
       </div>
     );
   }

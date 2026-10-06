@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Spinner from './Spinner';
+import Modal from './Modal';
+import Button from './Button';
+import EmptyState from './EmptyState';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import { Plus, Trash2, X, Check, Edit2, Users, ChevronDown } from 'lucide-react';
@@ -280,9 +283,7 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
 
   if (loading) {
     return (
-      <div className="p-10 text-center">
-        <Spinner size={48} className="mx-auto" />
-      </div>
+      <Spinner center />
     );
   }
 
@@ -305,11 +306,11 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
       />
 
       {roles.length === 0 ? (
-        <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-          <Users size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium">{t('Brak zdefiniowanych służb')}</p>
-          <p className="text-sm mt-1">{t('Dodaj pierwszą służbę, aby móc przypisywać do niej członków zespołu')}</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={t('Brak zdefiniowanych służb')}
+          subtitle={t('Dodaj pierwszą służbę, aby móc przypisywać do niej członków zespołu')}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {roles.map(role => {
@@ -380,77 +381,57 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
       )}
 
       {/* Modal dodawania/edycji służby */}
-      {showRoleModal && document.body && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                {roleForm.id ? tr('Edytuj służbę') : tr('Nowa służba')}
-              </h3>
-              <button
-                onClick={() => setShowRoleModal(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  {tr('Nazwa służby')}
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder={t('np. Piano, Nagłośnienie')}
-                  value={roleForm.name}
-                  onChange={e => setRoleForm({ ...roleForm, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Klucz pola (opcjonalnie)
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-mono text-sm"
-                  placeholder="np. piano, naglosnienie"
-                  value={roleForm.field_key}
-                  onChange={e => setRoleForm({ ...roleForm, field_key: e.target.value })}
-                />
-                <p className="text-xs text-gray-400 mt-1 ml-1">
-                  {tr('Klucz używany w grafiku. Zostanie wygenerowany automatycznie jeśli nie podano.')}
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Opis (opcjonalnie)
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none"
-                  rows={2}
-                  placeholder={t('Krótki opis służby...')}
-                  value={roleForm.description}
-                  onChange={e => setRoleForm({ ...roleForm, description: e.target.value })}
-                />
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => setShowRoleModal(false)}
-                  className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={saveRole}
-                  className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium"
-                >
-                  Zapisz
-                </button>
-              </div>
-            </div>
+      <Modal
+        isOpen={showRoleModal}
+        onClose={() => setShowRoleModal(false)}
+        closeOnBackdrop={false}
+        size="sm"
+        title={roleForm.id ? tr('Edytuj służbę') : tr('Nowa służba')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowRoleModal(false)}>Anuluj</Button>
+          <Button onClick={saveRole}>Zapisz</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
+              {tr('Nazwa służby')}
+            </label>
+            <input
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+              placeholder={t('np. Piano, Nagłośnienie')}
+              value={roleForm.name}
+              onChange={e => setRoleForm({ ...roleForm, name: e.target.value })}
+            />
           </div>
-        </div>,
-        document.body
-      )}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
+              Klucz pola (opcjonalnie)
+            </label>
+            <input
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-mono text-sm"
+              placeholder="np. piano, naglosnienie"
+              value={roleForm.field_key}
+              onChange={e => setRoleForm({ ...roleForm, field_key: e.target.value })}
+            />
+            <p className="text-xs text-gray-400 mt-1 ml-1">
+              {tr('Klucz używany w grafiku. Zostanie wygenerowany automatycznie jeśli nie podano.')}
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
+              Opis (opcjonalnie)
+            </label>
+            <textarea
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none"
+              rows={2}
+              placeholder={t('Krótki opis służby...')}
+              value={roleForm.description}
+              onChange={e => setRoleForm({ ...roleForm, description: e.target.value })}
+            />
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }

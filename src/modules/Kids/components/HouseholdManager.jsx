@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import {
   Plus, Search, Trash2, X, Edit2, Phone, Mail, Users,
-  User, ChevronDown, ChevronUp, Check, Loader2, Home
+  User, ChevronDown, ChevronUp, Check, Home
 } from 'lucide-react';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
+import Spinner from '../../../components/Spinner';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
@@ -362,21 +365,21 @@ export default function HouseholdManager() {
       </div>
 
       {/* Form modal */}
-      {showForm && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-900">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                {editingHousehold ? tr('Edytuj rodzinę') : tr('Dodaj rodzinę')}
-              </h3>
-              <button
-                onClick={resetForm}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
+      <Modal
+        isOpen={showForm}
+        onClose={resetForm}
+        closeOnBackdrop={false}
+        size="lg"
+        title={editingHousehold ? tr('Edytuj rodzinę') : tr('Dodaj rodzinę')}
+        footer={<>
+          <Button variant="secondary" onClick={resetForm}>
+            Anuluj
+          </Button>
+          <Button onClick={handleSave}>
+            {editingHousehold ? 'Zapisz zmiany' : tr('Dodaj rodzinę')}
+          </Button>
+        </>}
+      >
             <div className="p-6 space-y-6">
               {/* Basic info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -590,46 +593,19 @@ export default function HouseholdManager() {
                 />
               </div>
             </div>
-
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3 justify-end sticky bottom-0 bg-white dark:bg-gray-900">
-              <button
-                onClick={resetForm}
-                className="px-5 py-2.5 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-5 py-2.5 text-base font-medium bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition"
-              >
-                {editingHousehold ? 'Zapisz zmiany' : tr('Dodaj rodzinę')}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
 
       {/* Assign student modal */}
-      {assignStudentModal && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                Przypisz ucznia do rodziny
-              </h3>
-              <button
-                onClick={() => setAssignStudentModal(null)}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4">
+      <Modal
+        isOpen={!!assignStudentModal}
+        onClose={() => setAssignStudentModal(null)}
+        closeOnBackdrop={false}
+        size="sm"
+        title="Przypisz ucznia do rodziny"
+      >
+            <div className="p-6">
               {unassignedStudents.length === 0 ? (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  {tr('Wszyscy uczniowie są już przypisani do rodzin')}
-                </p>
+                <EmptyState compact icon={Users} title={tr('Wszyscy uczniowie są już przypisani do rodzin')} />
               ) : (
                 <div className="space-y-2">
                   {unassignedStudents.map(student => (
@@ -654,21 +630,16 @@ export default function HouseholdManager() {
                 </div>
               )}
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
 
       {/* Households list */}
       {loading ? (
-        <div className="flex items-center justify-center gap-3 py-20 text-gray-500 dark:text-gray-400">
-          <Loader2 size={24} className="animate-spin" />
-          {tr('Ładowanie...')}
-        </div>
+        <Spinner center label={tr('Ładowanie...')} />
       ) : filteredHouseholds.length === 0 ? (
-        <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-          {searchTerm ? tr('Brak wyników wyszukiwania') : tr('Brak rodzin. Dodaj pierwszą rodzinę.')}
-        </div>
+        <EmptyState
+          icon={searchTerm ? Search : Home}
+          title={searchTerm ? tr('Brak wyników wyszukiwania') : tr('Brak rodzin. Dodaj pierwszą rodzinę.')}
+        />
       ) : (
         <div className="space-y-4">
           {filteredHouseholds.map(household => {
@@ -845,9 +816,7 @@ export default function HouseholdManager() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                          Brak przypisanych dzieci
-                        </p>
+                        <EmptyState compact icon={Users} title="Brak przypisanych dzieci" />
                       )}
                     </div>
 

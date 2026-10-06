@@ -8,6 +8,8 @@ import { findLabel } from '../lib/columnTypes';
 import CustomSelect from '../../../components/CustomSelect';
 import { useCan } from '../../../components/Can';
 import { tr } from '../../../i18n';
+import { CalendarRange } from 'lucide-react';
+import EmptyState from '../../../components/EmptyState';
 
 const DAY_W = 30;
 const NAME_W = 220;
@@ -87,8 +89,8 @@ export default function TimelineView({ data, config, onUpdateConfig, onOpenItem 
     return { start, end, days: eachDayOfInterval({ start, end }) };
   }, [spans]);
 
-  if (!col) return <div className="text-center py-16 text-gray-400 text-sm">Dodaj kolumnę typu Oś czasu, aby użyć widoku Oś czasu.</div>;
-  if (!range) return <div className="text-center py-16 text-gray-400 text-sm">Brak elementów z ustawioną datą/osią czasu.</div>;
+  if (!col) return <EmptyState icon={CalendarRange} title="Dodaj kolumnę typu Oś czasu, aby użyć widoku Oś czasu." />;
+  if (!range) return <EmptyState icon={CalendarRange} title="Brak elementów z ustawioną datą/osią czasu." />;
 
   const totalW = range.days.length * DAY_W;
   const ROW_H = 40;

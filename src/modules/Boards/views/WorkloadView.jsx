@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import { Users, Inbox } from 'lucide-react';
+import EmptyState from '../../../components/EmptyState';
 import { Avatar } from '../components/cells/PeopleCell';
 import { applyView } from '../lib/viewData';
 import { findLabel } from '../lib/columnTypes';
@@ -29,7 +31,7 @@ export default function WorkloadView({ data, config, onOpenItem }) {
   }, [items, peopleCols, statusCol]);
 
   if (peopleCols.length === 0) {
-    return <div className="text-center py-16 text-gray-400 text-sm">Dodaj kolumnę typu „Osoby", aby zobaczyć obciążenie zespołu.</div>;
+    return <EmptyState icon={Users} title={'Dodaj kolumnę typu „Osoby", aby zobaczyć obciążenie zespołu.'} />;
   }
 
   const statusBreakdown = (list) => {
@@ -72,7 +74,7 @@ export default function WorkloadView({ data, config, onOpenItem }) {
           <span className="text-xs text-gray-400">{unassigned}</span>
         </div>
       )}
-      {rows.length === 0 && unassigned === 0 && <div className="text-center py-12 text-gray-400 text-sm">Brak elementów.</div>}
+      {rows.length === 0 && unassigned === 0 && <EmptyState icon={Inbox} title="Brak elementów." />}
     </div>
   );
 }

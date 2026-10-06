@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckSquare, List, LayoutGrid, Clock, CheckCircle, Circle, Plus, X, Save, Calendar, ChevronLeft, ChevronRight, Trash2, Lock, Users, Video, User } from 'lucide-react';
+import { CheckSquare, List, LayoutGrid, Clock, CheckCircle, Circle, Plus, Save, Calendar, ChevronLeft, ChevronRight, Trash2, Lock, Users, Video, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 
 const STATUS_CONFIG = {
   todo: {
@@ -302,34 +305,34 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
     }
   };
 
-  if (!isOpen) return null;
-
   // Konfiguracja źródła dla wyświetlania
   const sourceConfig = SOURCE_CONFIG[task.source] || SOURCE_CONFIG.personal;
   const SourceIcon = sourceConfig.icon;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full border border-gray-200 dark:border-gray-700 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-          <X size={20} className="text-gray-500 dark:text-gray-400" />
-        </button>
-
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      icon={isNewTask ? Plus : CheckCircle}
+      title={isNewTask ? tr('Nowe zadanie') : tr('Edytuj zadanie')}
+      subtitle={!isNewTask ? (
+        <span className={`inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 text-xs font-medium rounded-full ${sourceConfig.bgColor} ${sourceConfig.color}`}>
+          <SourceIcon size={12} />
+          {task.source_label}
+        </span>
+      ) : undefined}
+      size="md"
+      footer={<>
+        {task.id && (
+          <Button type="button" variant="danger" icon={Trash2} onClick={handleDelete} className="mr-auto">Usuń</Button>
+        )}
+        <Button type="button" variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button type="submit" form="dashboard-task-form" icon={Save} loading={saving} disabled={!task.title.trim()}>Zapisz</Button>
+      </>}
+    >
         <div className="p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              {isNewTask ? <Plus size={24} className="text-accent-primary" /> : <CheckCircle size={24} className="text-accent-primary" />}
-              {isNewTask ? tr('Nowe zadanie') : tr('Edytuj zadanie')}
-            </h2>
-            {!isNewTask && (
-              <span className={`inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 text-xs font-medium rounded-full ${sourceConfig.bgColor} ${sourceConfig.color}`}>
-                <SourceIcon size={12} />
-                {task.source_label}
-              </span>
-            )}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="dashboard-task-form" onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł')}</label>
               <input
@@ -403,40 +406,9 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
                 </label>
               </div>
             )}
-
-            <div className="flex justify-between items-center pt-4">
-              {task.id ? (
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1"
-                >
-                  <Trash2 size={16} /> Usuń
-                </button>
-              ) : <div />}
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
-                >
-                  Anuluj
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving || !task.title.trim()}
-                  className="px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg shadow-accent-primary-light/30 flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Save size={16} /> {saving ? tr('Zapisywanie...') : 'Zapisz'}
-                </button>
-              </div>
-            </div>
           </form>
         </div>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 };
 
@@ -493,17 +465,12 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
           <span className="font-medium">{tr('Dodaj zadanie')}</span>
         </button>
 
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-            <CheckSquare size={32} className="text-gray-400" />
-          </div>
-          <p className="text-gray-500 dark:text-gray-400 font-medium">
-            {tr('Brak zadań')}
-          </p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {tr('Nie masz przypisanych zadań')}
-          </p>
-        </div>
+        <EmptyState
+          compact
+          icon={CheckSquare}
+          title={tr('Brak zadań')}
+          subtitle={tr('Nie masz przypisanych zadań')}
+        />
 
         <TaskModal
           isOpen={modalState.isOpen}

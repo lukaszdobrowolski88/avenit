@@ -4,6 +4,8 @@ import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 
 const ministryIcons = {
   worship_team: Music,
@@ -219,38 +221,32 @@ export default function ConversationHeader({
       </div>
 
       {/* Modal potwierdzenia usunięcia */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm mx-4 shadow-2xl border border-gray-200/50 dark:border-gray-700/50">
-            <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
-              <Trash2 size={24} className="text-red-500" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {tr('Usuń rozmowę')}
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
-              {tr('Czy na pewno chcesz usunąć tę rozmowę? Wszystkie wiadomości zostaną trwale usunięte.')}
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 font-medium"
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={() => {
-                  onDelete(conversation.id);
-                  setShowDeleteConfirm(false);
-                }}
-                className="px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg shadow-red-500/30"
-              >
-                {tr('Usuń')}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        closeOnBackdrop={false}
+        title={tr('Usuń rozmowę')}
+        icon={Trash2}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>Anuluj</Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              onDelete(conversation.id);
+              setShowDeleteConfirm(false);
+            }}
+          >
+            {tr('Usuń')}
+          </Button>
+        </>}
+      >
+        <div className="p-6">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
+            {tr('Czy na pewno chcesz usunąć tę rozmowę? Wszystkie wiadomości zostaną trwale usunięte.')}
+          </p>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

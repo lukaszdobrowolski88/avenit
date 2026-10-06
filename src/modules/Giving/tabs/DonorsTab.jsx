@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { formatMoney, formatDate, memberName, methodLabel, statusLabel } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 
 const currentYear = new Date().getFullYear();
@@ -203,7 +204,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
               {loading ? (
                 <Spinner center />
               ) : filtered.length === 0 ? (
-                <div className="p-8 text-center text-gray-400 text-sm">Brak darczyńców.</div>
+                <EmptyState compact icon={Users} title="Brak darczyńców." />
               ) : (
                 filtered.map(d => {
                   const isActive = d.key === selectedKey;
@@ -233,11 +234,8 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
         {/* Prawy panel — wybrany darczyńca */}
         <div className={`${selected ? 'block' : 'hidden lg:block'}`}>
           {!selected ? (
-            <div className="h-full min-h-[300px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-              <div>
-                <Users size={44} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                <p className="text-gray-500 dark:text-gray-400">Wybierz darczyńcę z listy, aby zobaczyć jego kartę i historię darowizn.</p>
-              </div>
+            <div className="h-full min-h-[300px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+              <EmptyState icon={Users} title="Wybierz darczyńcę z listy, aby zobaczyć jego kartę i historię darowizn." />
             </div>
           ) : (
             <div className="space-y-4">
@@ -290,10 +288,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
               {/* Historia darowizn */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {selected.items.length === 0 ? (
-                  <div className="p-12 text-center">
-                    <Receipt size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400">Brak darowizn.</p>
-                  </div>
+                  <EmptyState icon={Receipt} title="Brak darowizn." />
                 ) : (
                   <DataTable flush>
                     <THead>

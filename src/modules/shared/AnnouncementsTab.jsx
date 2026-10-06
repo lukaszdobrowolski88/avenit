@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Pin, PinOff, Pencil, Trash2, Megaphone, Loader2, X } from 'lucide-react';
+import { Plus, Pin, PinOff, Pencil, Trash2, Megaphone } from 'lucide-react';
 import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
@@ -20,14 +23,16 @@ function AnnModal({ initial, onClose, onSave }) {
     setSaving(true); await onSave({ ...form, title: form.title.trim() }); setSaving(false);
   };
   return (
-    <Modal isOpen className="flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{initial ? tr('Edytuj ogłoszenie') : tr('Nowe ogłoszenie')}</h2>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-        </div>
-        <div className="space-y-3">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={initial ? tr('Edytuj ogłoszenie') : tr('Nowe ogłoszenie')}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button onClick={submit} loading={saving}>{tr('Zapisz')}</Button>
+      </>}
+    >
+        <div className="p-6 space-y-3">
           <label className="block">
             <span className="text-xs text-gray-500">{tr('Tytuł')}</span>
             <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -50,13 +55,6 @@ function AnnModal({ initial, onClose, onSave }) {
             </label>
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-5">
-          <button onClick={onClose} className="text-sm text-gray-500 px-4 py-2">{tr('Anuluj')}</button>
-          <button onClick={submit} disabled={saving} className="text-sm bg-accent-primary text-white px-4 py-2 rounded-lg disabled:opacity-50 flex items-center gap-2">
-            {saving && <Loader2 size={15} className="animate-spin" />} {tr('Zapisz')}
-          </button>
-        </div>
-      </div>
     </Modal>
   );
 }
@@ -86,12 +84,9 @@ export default function AnnouncementsTab({ moduleKey, moduleId, tabId, canEdit =
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-40 text-gray-400"><Loader2 className="animate-spin" size={26} /></div>
+        <Spinner center />
       ) : sorted.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-          <Megaphone size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">{canEdit ? tr('Brak ogłoszeń. Dodaj pierwsze.') : tr('Brak ogłoszeń.')}</p>
-        </div>
+        <EmptyState icon={Megaphone} title={canEdit ? tr('Brak ogłoszeń. Dodaj pierwsze.') : tr('Brak ogłoszeń.')} />
       ) : (
         <div className="space-y-3">
           {sorted.map((r) => {

@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import { MILESTONE_TYPES, milestoneTypeLabel, formatDate } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
 
@@ -112,10 +113,7 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
       {loading ? (
         <Spinner center />
       ) : items.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-          <Award size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Brak kamieni milowych.</p>
-        </div>
+        <EmptyState icon={Award} title="Brak kamieni milowych." className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
       ) : (
         <div className="space-y-3">
           {items.map(item => {

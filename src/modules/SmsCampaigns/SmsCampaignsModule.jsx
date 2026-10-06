@@ -8,6 +8,8 @@ import CampaignStats from './components/CampaignStats';
 import TemplateGallery from './components/TemplateGallery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
+import EmptyState from '../../components/EmptyState';
+import Spinner from '../../components/Spinner';
 import { useT } from '../../i18n';
 import { formatPLN } from './utils/smsEncoding';
 import { tr } from '../../i18n';
@@ -83,7 +85,7 @@ export default function SmsCampaignsModule() {
 
       {tab === 'campaigns' && (
         loading ? (
-          <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>
+          <Spinner center label={tr('Ładowanie...')} />
         ) : (
           <CampaignList
             campaigns={campaigns}
@@ -121,9 +123,11 @@ export default function SmsCampaignsModule() {
             </button>
           ))}
           {campaigns.filter(c => c.status === 'sent').length === 0 && (
-            <div className="col-span-full text-center text-gray-500 py-12">
-              {tr('Brak wysłanych kampanii. Wyślij pierwszą, aby zobaczyć statystyki.')}
-            </div>
+            <EmptyState
+              className="col-span-full"
+              icon={BarChart3}
+              title={tr('Brak wysłanych kampanii. Wyślij pierwszą, aby zobaczyć statystyki.')}
+            />
           )}
         </div>
       )}

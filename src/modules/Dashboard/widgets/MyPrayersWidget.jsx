@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { Heart, Clock, Lock, Star, Sparkles, HeartHandshake, XCircle, UserPlus, X, Ghost, User, UserX, Loader2, CheckCircle, Pencil, Trash2 } from 'lucide-react';
+import { Heart, Clock, Lock, Star, Sparkles, HeartHandshake, XCircle, UserPlus, Ghost, User, UserX, CheckCircle, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { CATEGORIES } from '../../PrayerWall/categories';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 
 // ============================================
 // PRAYER MODAL
@@ -58,29 +60,23 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
     });
   };
 
-  if (!isOpen) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary p-5 rounded-t-2xl flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Heart className="w-6 h-6" />
-              {editingRequest ? tr('Edytuj intencję') : 'Nowa intencja modlitewna'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      icon={Heart}
+      title={editingRequest ? tr('Edytuj intencję') : 'Nowa intencja modlitewna'}
+      size="md"
+      footer={<>
+        <Button type="button" variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button type="submit" form="dashboard-prayer-form" icon={Heart} loading={isLoading} disabled={!content.trim()}>
+          {editingRequest ? 'Zapisz zmiany' : tr('Dodaj intencję')}
+        </Button>
+      </>}
+    >
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-5 overflow-y-auto flex-1">
+        <form id="dashboard-prayer-form" onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Requester name */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
@@ -288,36 +284,8 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               )}
             </div>
           )}
-
-          {/* Buttons */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-            >
-              Anuluj
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading || !content.trim()}
-              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium hover:from-accent-primary hover:to-accent-secondary transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />{tr('Zapisywanie...')}</>
-              ) : (
-                <>
-                  <Heart className="w-5 h-5" />
-                  {editingRequest ? 'Zapisz zmiany' : tr('Dodaj intencję')}
-                </>
-              )}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }
 
@@ -549,21 +517,20 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
 
   if (!prayers || prayers.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-          <Heart size={32} className="text-gray-400" />
-        </div>
-        <p className="text-gray-500 dark:text-gray-400 font-medium">
-          Brak intencji modlitewnych
-        </p>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{tr('Dodaj intencje w Centrum Modlitwy')}</p>
-        <a
-          href="/prayer"
-          className="mt-4 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl text-sm font-medium hover:shadow-lg transition-all"
-        >
-          {tr('Przejdź do Centrum Modlitwy')}
-        </a>
-      </div>
+      <EmptyState
+        compact
+        icon={Heart}
+        title="Brak intencji modlitewnych"
+        subtitle={tr('Dodaj intencje w Centrum Modlitwy')}
+        action={
+          <a
+            href="/prayer"
+            className="inline-flex items-center justify-center font-medium transition bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md hover:shadow-lg hover:opacity-95 text-sm px-4 py-2.5 gap-2 rounded-xl"
+          >
+            {tr('Przejdź do Centrum Modlitwy')}
+          </a>
+        }
+      />
     );
   }
 

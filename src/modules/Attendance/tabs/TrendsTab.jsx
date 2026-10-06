@@ -3,6 +3,7 @@ import { TrendingUp, Calendar, Users, Repeat, BarChart3 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SESSION_TYPES, sessionTypeLabel, sessionTypeColor, sessionAttendance, weekStart, shortDate } from '../lib/attendanceApi';
 import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 const WEEKS = 12;
 
@@ -119,9 +120,8 @@ export default function TrendsTab({ withCampusFilter }) {
 
   if (sessions.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-        <BarChart3 size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-        <p className="text-gray-500 dark:text-gray-400">Brak sesji w ostatnich 12 tygodniach. Dodaj sesje w zakładce „Sesje”, aby zobaczyć trendy.</p>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+        <EmptyState icon={BarChart3} title="Brak sesji w ostatnich 12 tygodniach." subtitle="Dodaj sesje w zakładce „Sesje”, aby zobaczyć trendy." />
       </div>
     );
   }
@@ -160,7 +160,7 @@ export default function TrendsTab({ withCampusFilter }) {
         {/* Podział wg typu */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Frekwencja wg typu</h3>
-          {byType.length === 0 ? <p className="text-sm text-gray-400">Brak danych.</p> : (
+          {byType.length === 0 ? <EmptyState icon={BarChart3} title="Brak danych." compact /> : (
             <div className="space-y-3">
               {byType.map(t => (
                 <div key={t.value}>

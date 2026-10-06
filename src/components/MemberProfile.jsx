@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import {
-  X, Edit2, Mail, Phone, MapPin, Home, Users, Calendar, FileText,
+  Edit2, Mail, Phone, MapPin, Home, Users, Calendar, FileText,
   CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote, CalendarCheck, HeartHandshake,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { tr } from '../i18n';
 import ResponsiveTabs from './ResponsiveTabs';
+import Modal from './Modal';
+import Button from './Button';
 import { useCan } from './Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import NotesTab from '../modules/Care/tabs/NotesTab';
@@ -116,29 +117,31 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
     : [];
   const ministryLabels = getMinistryLabels ? getMinistryLabels(member.ministries) : (member.ministries || []);
 
-  return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onMouseDown={onClose}>
-      <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[88vh] overflow-y-auto custom-scrollbar border border-gray-200 dark:border-gray-700"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
+  return (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={`${member.first_name || ''} ${member.last_name || ''}`.trim()}
+      size="lg"
+      zIndex={110}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Zamknij')}</Button>
+        {onEdit && <Button icon={Edit2} onClick={() => onEdit(member)}>Edytuj</Button>}
+      </>}
+    >
         {/* Nagłówek */}
-        <div className="relative p-6 pb-5 bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/20">
-          <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-full transition">
-            <X size={20} className="text-gray-500" />
-          </button>
+        <div className="px-6 pt-5 pb-1">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-accent-primary dark:text-accent-primary-light text-xl font-bold shadow border border-white dark:border-gray-700 shrink-0">
+            <div className="w-16 h-16 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-accent-primary dark:text-accent-primary-light text-xl font-bold shrink-0">
               {(member.first_name?.[0] || '') + (member.last_name?.[0] || '') || <UserCircle2 size={28} />}
             </div>
             <div className="min-w-0">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white truncate">{member.first_name} {member.last_name}</h2>
-              <div className="mt-1 flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                   <CheckCircle size={12} /> {tr(member.status || 'Gość')}
                 </span>
                 {ministryLabels.map((label, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-300">
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
                     {label}
                   </span>
                 ))}
@@ -261,17 +264,6 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
           )}
         </div>
 
-        {/* Stopka */}
-        <div className="flex justify-end gap-2 p-4 border-t border-gray-100 dark:border-gray-800">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">{tr('Zamknij')}</button>
-          {onEdit && (
-            <button onClick={() => onEdit(member)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition">
-              <Edit2 size={15} /> Edytuj
-            </button>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Mic } from 'lucide-react';
+import { Play, Pause, Mic, Loader2 } from 'lucide-react';
 
 export default function AudioPlayer({ url, duration, isOwn = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -110,7 +110,7 @@ export default function AudioPlayer({ url, duration, isOwn = false }) {
         } disabled:opacity-50`}
       >
         {isLoading ? (
-          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          <Loader2 size={16} className="animate-spin" />
         ) : isPlaying ? (
           <Pause size={18} fill="currentColor" />
         ) : (

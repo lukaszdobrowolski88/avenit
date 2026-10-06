@@ -5,7 +5,7 @@ import {
   Save, FileText, Presentation, X, Calendar,
   ChevronDown, GripVertical, Search, Check, ChevronUp,
   User, UserX, ChevronLeft, ChevronRight,
-  Mail, Loader2, Music, Trash2, AlertTriangle, Type, Paperclip
+  Mail, Music, Trash2, AlertTriangle, Type, Paperclip
 } from 'lucide-react';
 import { downloadPDF, savePDFToSupabase } from '../../lib/utils';
 import { generatePPT } from '../../lib/ppt';
@@ -14,51 +14,42 @@ import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } 
 import { CSS } from '@dnd-kit/utilities';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import Modal from '../../components/Modal';
+import Button from '../../components/Button';
 
 // --- MODAL OSTRZEŻENIA O NIEZAPISANYCH ZMIANACH ---
 
 const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
-  if (!isOpen || !document.body) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{tr('Niezapisane zmiany')}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {tr('Masz niezapisane zmiany w programie. Co chcesz zrobić?')}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onDiscard}
-            className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-          >
-            {tr('Opuść')}
-          </button>
-          <button
-            onClick={onSave}
-            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center justify-center gap-2"
-          >
-            <Save size={16} /> Zapisz
-          </button>
-        </div>
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      zIndex={110}
+      size="sm"
+      icon={AlertTriangle}
+      title={tr('Niezapisane zmiany')}
+      footer={<>
+        <Button variant="secondary" onClick={onDiscard}>
+          {tr('Opuść')}
+        </Button>
+        <Button icon={Save} onClick={onSave}>
+          Zapisz
+        </Button>
+      </>}
+    >
+      <div className="p-6">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          {tr('Masz niezapisane zmiany w programie. Co chcesz zrobić?')}
+        </p>
       </div>
-    </div>,
-    document.body
+    </Modal>
   );
 };
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA NABOŻEŃSTWA ---
 
 const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, date }) => {
-  if (!isOpen || !document.body) return null;
-
   const formattedDate = date ? new Date(date).toLocaleDateString('pl-PL', {
     weekday: 'long',
     day: 'numeric',
@@ -66,37 +57,30 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, date }) => {
     year: 'numeric'
   }) : '';
 
-  return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={24} className="text-red-600 dark:text-red-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{tr('Usuń nabożeństwo')}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Czy na pewno chcesz usunąć nabożeństwo z dnia <span className="font-medium text-gray-700 dark:text-gray-300">{formattedDate}</span>? Tej operacji nie można cofnąć.
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-          >
-            Anuluj
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2"
-          >
-            <Trash2 size={16} /> Usuń
-          </button>
-        </div>
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      zIndex={110}
+      size="sm"
+      icon={AlertTriangle}
+      title={tr('Usuń nabożeństwo')}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>
+          Anuluj
+        </Button>
+        <Button variant="danger" icon={Trash2} onClick={onConfirm}>
+          Usuń
+        </Button>
+      </>}
+    >
+      <div className="p-6">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Czy na pewno chcesz usunąć nabożeństwo z dnia <span className="font-medium text-gray-700 dark:text-gray-300">{formattedDate}</span>? Tej operacji nie można cofnąć.
+        </p>
       </div>
-    </div>,
-    document.body
+    </Modal>
   );
 };
 
@@ -1442,35 +1426,36 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
   if (!program) return null;
   if (!document.body) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
-
-        {/* HEADER */}
-        <div className="p-4 lg:p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0 z-10">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl text-white shadow-lg shadow-accent-primary-light/30">
-              <Music size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">{tr('Edycja Nabożeństwa')}</h2>
-              <div className="mt-1 w-48">
-                <CustomDatePicker value={program.date} onChange={v => setProgram({...program, date: v})} />
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 lg:gap-3 w-full lg:w-auto">
-            <div className="relative flex-1 lg:flex-none" ref={pdfMenuRef}>
-              <button
+  return (
+    <>
+    <Modal
+      isOpen
+      onClose={handleCloseAttempt}
+      closeOnBackdrop={false}
+      size="full"
+      icon={Music}
+      title={tr('Edycja Nabożeństwa')}
+      footer={<>
+            <Button
+              variant="danger"
+              className="mr-auto"
+              icon={Trash2}
+              onClick={() => setShowDeleteModal(true)}
+              title={tr('Usuń nabożeństwo')}
+            >
+              <span className="hidden sm:inline">{tr('Usuń')}</span>
+            </Button>
+            <div className="relative" ref={pdfMenuRef}>
+              <Button
+                variant="outline"
+                icon={FileText}
+                loading={isLoading}
                 onClick={() => setShowPdfMenu(!showPdfMenu)}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-primary bg-accent-primary-lightest hover:bg-accent-primary-lighter rounded-lg transition-colors border border-accent-primary-lighter font-medium text-sm disabled:opacity-50"
                 title="Generuj PDF"
               >
-                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
                 <span className="hidden sm:inline">PDF</span>
                 <ChevronDown size={14} />
-              </button>
+              </Button>
               {showPdfMenu && (
                 <div className="absolute right-0 bottom-full mb-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
                   <button
@@ -1505,38 +1490,24 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
                 </div>
               )}
             </div>
-            <button
-              onClick={handleGeneratePPT}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-secondary bg-accent-secondary-lightest hover:bg-accent-secondary-lighter rounded-lg transition-colors border border-accent-secondary-lighter font-medium text-sm"
-            >
-              <Presentation size={18} />
+            <Button variant="outline" icon={Presentation} onClick={handleGeneratePPT}>
               <span className="hidden sm:inline">PPT</span>
-            </button>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200 font-medium text-sm"
-              title={tr('Usuń nabożeństwo')}
-            >
-              <Trash2 size={18} />
-              <span className="hidden sm:inline">{tr('Usuń')}</span>
-            </button>
-            <button
-              onClick={handleCloseAttempt}
-              className="flex-1 lg:flex-none px-4 py-2.5 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-xl transition font-medium"
-            >
+            </Button>
+            <Button variant="secondary" onClick={handleCloseAttempt}>
               Anuluj
-            </button>
-            <button
-              onClick={handleSave}
-              className="flex-1 lg:flex-none px-4 lg:px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5"
-            >
-              <Save size={18} /> Zapisz
-            </button>
-          </div>
-        </div>
-
+            </Button>
+            <Button icon={Save} onClick={handleSave}>
+              Zapisz
+            </Button>
+      </>}
+    >
         {/* CONTENT */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6 lg:space-y-8 custom-scrollbar bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 dark:from-gray-900 dark:to-gray-800">
+        <div className="p-6 space-y-6 lg:space-y-8 min-h-full bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 dark:from-gray-900 dark:to-gray-800">
+
+          {/* Data nabożeństwa */}
+          <div className="w-48">
+            <CustomDatePicker value={program.date} onChange={v => setProgram({...program, date: v})} />
+          </div>
 
           {/* Plan szczegółowy */}
           <div className="bg-white/70 dark:bg-gray-800/40 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 dark:border-gray-700/50 p-4 lg:p-6 min-h-[300px] lg:min-h-[500px]">
@@ -1676,6 +1647,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
             />
           </div>
         </div>
+    </Modal>
 
         <UnsavedChangesModal
           isOpen={showUnsavedModal}
@@ -1690,8 +1662,6 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
           onConfirm={handleDeleteProgram}
           date={program?.date}
         />
-      </div>
-    </div>,
-    document.body
+    </>
   );
 }

@@ -15,6 +15,8 @@ import { tr } from '../../../i18n';
 import { useCan } from '../../../components/Can';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 
 const SECTIONS = [
   { id: 'compose', label: tr('Treść') },
@@ -241,31 +243,30 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       </div>
 
       {/* Test send modal */}
-      {showTestSend && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{tr('Wyślij test')}</h3>
-            <p className="text-sm text-gray-500 mb-4">{tr('Push trafi tylko do podanego adresu. Sprawdź jak wygląda na urządzeniu.')}</p>
-            <input
-              type="email"
-              value={testEmail}
-              onChange={e => setTestEmail(e.target.value)}
-              placeholder="ty@example.com"
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm mb-4"
-            />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowTestSend(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Anuluj')}</button>
-              <button
-                onClick={handleTestSend}
-                disabled={sending || !testEmail}
-                className="px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50"
-              >
-                {sending ? tr('Wysyłanie...') : tr('Wyślij')}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={showTestSend}
+        onClose={() => setShowTestSend(false)}
+        closeOnBackdrop={false}
+        title={tr('Wyślij test')}
+        size="sm"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowTestSend(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={handleTestSend} disabled={!testEmail} loading={sending}>
+            {tr('Wyślij')}
+          </Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-500">{tr('Push trafi tylko do podanego adresu. Sprawdź jak wygląda na urządzeniu.')}</p>
+          <input
+            type="email"
+            value={testEmail}
+            onChange={e => setTestEmail(e.target.value)}
+            placeholder="ty@example.com"
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
+          />
         </div>
-      )}
+      </Modal>
 
       {/* Layout: lewo = formularz, prawo = preview */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">

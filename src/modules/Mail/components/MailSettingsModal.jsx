@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import {
-  X, Settings, User, Server, Filter, FileText, Plus,
+  Settings, User, Server, Filter, FileText, Plus,
   Trash2, Edit2, Check, AlertCircle, Loader2, Eye, EyeOff, Star, RefreshCw
 } from 'lucide-react';
 import { tr } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 
 const TABS = [
   { id: 'accounts', label: tr('Konta zewnętrzne'), icon: Server },
@@ -163,36 +165,16 @@ export default function MailSettingsModal({
 
   const externalAccounts = accounts.filter(a => a.account_type === 'external');
 
-  const content = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 rounded-xl">
-              <Settings size={20} className="text-accent-primary-light" />
-            </div>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-white">
-              Ustawienia poczty
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Ustawienia poczty"
+      icon={Settings}
+      size="xl"
+    >
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700 px-6">
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 flex border-b border-gray-200 dark:border-gray-700 px-6">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
@@ -215,7 +197,7 @@ export default function MailSettingsModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
+        <div className="p-6">
           {/* External Accounts Tab */}
           {activeTab === 'accounts' && (
             <div className="space-y-6">
@@ -451,26 +433,17 @@ export default function MailSettingsModal({
                   </div>
 
                   <div className="flex justify-end gap-2">
-                    <button
-                      onClick={resetForm}
-                      className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    >
+                    <Button variant="secondary" onClick={resetForm}>
                       Anuluj
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={handleSaveAccount}
-                      disabled={saving || !accountForm.external_email || !accountForm.imap_host || (!editingAccountId && !accountForm.password)}
-                      className="flex items-center gap-2 px-4 py-2 bg-accent-primary-light hover:bg-accent-primary text-white font-medium rounded-lg disabled:opacity-50 transition-colors"
+                      loading={saving}
+                      disabled={!accountForm.external_email || !accountForm.imap_host || (!editingAccountId && !accountForm.password)}
+                      icon={editingAccountId ? Check : Plus}
                     >
-                      {saving ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : editingAccountId ? (
-                        <Check size={16} />
-                      ) : (
-                        <Plus size={16} />
-                      )}
                       {editingAccountId ? 'Zapisz zmiany' : 'Dodaj konto'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -496,16 +469,12 @@ export default function MailSettingsModal({
               </div>
 
               {filters.length === 0 ? (
-                <div className="text-center py-8">
-                  <Filter size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                  <p className="text-gray-500 dark:text-gray-400 mb-4">
-                    {tr('Brak skonfigurowanych filtrów')}
-                  </p>
-                  <button className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent-primary-light hover:bg-accent-primary text-white font-medium rounded-lg transition-colors">
-                    <Plus size={16} />
-                    {tr('Utwórz filtr')}
-                  </button>
-                </div>
+                <EmptyState
+                  compact
+                  icon={Filter}
+                  title={tr('Brak skonfigurowanych filtrów')}
+                  action={<Button icon={Plus}>{tr('Utwórz filtr')}</Button>}
+                />
               ) : (
                 <div className="space-y-2">
                   {/* Filter list would go here */}
@@ -518,9 +487,6 @@ export default function MailSettingsModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
-
-  return createPortal(content, document.body);
 }

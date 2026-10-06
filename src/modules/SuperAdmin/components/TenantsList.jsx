@@ -17,6 +17,8 @@ import {
 import { tr } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { confirmDialog, promptDialog } from '../../../lib/dialog';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 export default function TenantsList({ onSelectTenant }) {
   const { getTenants, suspendTenant, resumeTenant, extendTrial, loading } = useTenants();
@@ -143,13 +145,9 @@ export default function TenantsList({ onSelectTenant }) {
       {/* Tenants List */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">
-            {tr('Ładowanie...')}
-          </div>
+          <Spinner center />
         ) : tenants.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            {tr('Brak klientów spełniających kryteria')}
-          </div>
+          <EmptyState icon={Building2} title={tr('Brak klientów spełniających kryteria')} />
         ) : (
           <DataTable flush>
             <THead>

@@ -10,6 +10,9 @@ import { DateInput } from '../../components/pickers';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useModuleCalendar, saveModuleCalendar } from '../../hooks/useModuleLabel';
 import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 import HomeGroupVisibilityPicker, { buildHgSegments, segmentsToVisKeys } from '../Events/HomeGroupVisibilityPicker';
 import { useCan } from '../../components/Can';
 import { useT } from '../../i18n';
@@ -311,8 +314,20 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
   };
 
   return (
-    <Modal isOpen onClose={onClose} size="md" title={`${config.icon} ${form.id ? tr('Edytuj wydarzenie') : tr('Nowe wydarzenie')}`}>
-      <div className="p-5 space-y-4">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="md"
+      title={form.id ? tr('Edytuj wydarzenie') : tr('Nowe wydarzenie')}
+      footer={<>
+        {form.id && onDelete && (
+          <Button variant="danger" icon={Trash2} onClick={() => onDelete(form.id)} className="mr-auto">Usuń</Button>
+        )}
+        <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
+        <Button icon={Save} onClick={handleSubmit}>Zapisz</Button>
+      </>}
+    >
+      <div className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Tytuł wydarzenia')}</label>
             <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Nazwa wydarzenia')} value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
@@ -391,20 +406,6 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
               ))}
             </div>
           )}
-
-          <div className="flex justify-between items-center gap-3 mt-6">
-            {form.id && onDelete ? (
-              <button onClick={() => onDelete(form.id)} className="px-4 py-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition font-medium flex items-center gap-2">
-                <Trash2 size={16} /> Usuń
-              </button>
-            ) : <div></div>}
-            <div className="flex gap-3">
-              <button onClick={onClose} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{t('Anuluj')}</button>
-              <button onClick={handleSubmit} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium flex items-center gap-2">
-                <Save size={16} /> Zapisz
-              </button>
-            </div>
-          </div>
         </div>
     </Modal>
   );
@@ -767,15 +768,13 @@ GRANT ALL ON ${config.tableName} TO anon;`;
 
       {/* Kafelki wydarzeń */}
       {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="w-10 h-10 border-4 border-accent-primary-light border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        <Spinner center />
       ) : scopedEvents.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
-          <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg">{eventScope === 'archive' ? t('Brak archiwalnych wydarzeń') : t('Brak wydarzeń')}</p>
-          {eventScope !== 'archive' && <p className="text-sm">{t('Kliknij "Dodaj wydarzenie" aby utworzyć pierwsze')}</p>}
-        </div>
+        <EmptyState
+          icon={Calendar}
+          title={eventScope === 'archive' ? t('Brak archiwalnych wydarzeń') : t('Brak wydarzeń')}
+          subtitle={eventScope !== 'archive' ? t('Kliknij "Dodaj wydarzenie" aby utworzyć pierwsze') : undefined}
+        />
       ) : (
         <div className="space-y-8">
           {monthKeys.map((monthKey) => {
@@ -871,8 +870,17 @@ export function EventTypesEditor({ initial, onClose, onSave }) {
   const upd = (i, patch) => setRows((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const del = (i) => setRows((r) => r.filter((_, j) => j !== i));
   return (
-    <Modal isOpen onClose={onClose} title={tr('Typy wydarzeń')} size="md">
-      <div className="p-5 space-y-2">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={tr('Typy wydarzeń')}
+      size="md"
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button onClick={() => onSave(rows.filter((r) => r.label.trim()))}>{tr('Zapisz')}</Button>
+      </>}
+    >
+      <div className="p-6 space-y-2">
         {rows.map((row, i) => (
           <div key={row.value} className="flex items-center gap-2">
             <input value={row.label} onChange={(e) => upd(i, { label: e.target.value })} placeholder={tr('Nazwa typu')}
@@ -887,10 +895,6 @@ export function EventTypesEditor({ initial, onClose, onSave }) {
           </div>
         ))}
         <button onClick={add} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary mt-1"><Plus size={15} /> {tr('Dodaj typ')}</button>
-      </div>
-      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
-        <button onClick={() => onSave(rows.filter((r) => r.label.trim()))} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">{tr('Zapisz')}</button>
       </div>
     </Modal>
   );
@@ -937,8 +941,17 @@ export function EventFieldsEditor({ moduleKey, initial, onClose, onSaved }) {
     finally { setBusy(false); }
   };
   return (
-    <Modal isOpen onClose={onClose} title={tr('Pola własne wydarzeń')} size="md">
-      <div className="p-5 space-y-3">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={tr('Pola własne wydarzeń')}
+      size="md"
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button onClick={save} loading={busy}>{tr('Zapisz')}</Button>
+      </>}
+    >
+      <div className="p-6 space-y-3">
         {rows.map((row, i) => (
           <div key={i} className="space-y-2 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
             <div className="flex items-center gap-2">
@@ -957,10 +970,6 @@ export function EventFieldsEditor({ moduleKey, initial, onClose, onSaved }) {
           </div>
         ))}
         <button onClick={add} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> {tr('Dodaj pole')}</button>
-      </div>
-      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
-        <button onClick={save} disabled={busy} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60">{tr('Zapisz')}</button>
       </div>
     </Modal>
   );

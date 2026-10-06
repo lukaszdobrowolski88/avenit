@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Plus, Table2, MoreHorizontal, Trash2, Copy, Loader2, LayoutGrid, CalendarRange, CheckSquare, Users, X,
+  Plus, Table2, MoreHorizontal, Trash2, Copy, Loader2, LayoutGrid, CalendarRange, CheckSquare, Users,
   Folder as FolderIcon, ChevronRight, ChevronDown, Lock, Globe, UserPlus,
 } from 'lucide-react';
 import { tr } from '../../i18n';
 import { useCan } from '../../components/Can';
 import Modal from '../../components/Modal';
+import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
+import Spinner from '../../components/Spinner';
 import { useBoards } from './hooks/useBoards';
 import { BOARD_TEMPLATES } from './lib/templates';
 import { generateBoardSpec } from './lib/aiBoards';
@@ -58,20 +61,15 @@ function AiBoardGenerator({ onGenerate, busy }) {
 
 function TemplateChooser({ onPick, onClose, busy }) {
   return (
-    <Modal isOpen className="flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 max-h-[85vh] overflow-y-auto custom-scrollbar">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{tr('Wybierz szablon')}</h2>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-        </div>
+    <Modal isOpen onClose={onClose} title={tr('Wybierz szablon')} size="lg">
+      <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {BOARD_TEMPLATES.map(t => {
             const Icon = TPL_ICON[t.icon] || LayoutGrid;
             return (
               <button key={t.key} disabled={busy} onClick={() => onPick(t)}
                 className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:shadow-md text-left disabled:opacity-50">
-                <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0" style={{ backgroundColor: t.color }}><Icon size={20} /></span>
+                <span data-tone={1} className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 shrink-0"><Icon size={20} /></span>
                 <div>
                   <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{t.name}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{t.description}</div>
@@ -90,22 +88,22 @@ function InputModal({ title, label, initial = '', placeholder, onSubmit, onClose
   const [val, setVal] = useState(initial);
   const submit = () => onSubmit(val);
   return (
-    <Modal isOpen className="flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">{title}</h2>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-        </div>
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={title}
+      size="sm"
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button onClick={submit}>{tr('Zapisz')}</Button>
+      </>}
+    >
+      <div className="p-6">
         {label && <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</label>}
         <input autoFocus value={val} onChange={(e) => setVal(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onClose(); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
           placeholder={placeholder}
           className="w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-xl px-3 py-2 outline-none text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary/40" />
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="text-sm text-gray-500 px-3 py-1.5">{tr('Anuluj')}</button>
-          <button onClick={submit} className="text-sm bg-accent-primary text-white px-4 py-1.5 rounded-lg hover:opacity-90">{tr('Zapisz')}</button>
-        </div>
       </div>
     </Modal>
   );
@@ -177,19 +175,17 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
       {aiError && <div className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{aiError}</div>}
 
       {loading ? (
-        <div className="flex items-center justify-center h-48 text-gray-400"><Loader2 className="animate-spin" size={26} /></div>
+        <Spinner center />
       ) : boards.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-          <LayoutGrid size={44} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400 mb-4">{tr('Nie masz jeszcze żadnej tablicy.')}</p>
-          {canCreate ? (
-            <button onClick={handleCreate} disabled={creating}
-              className="inline-flex items-center gap-2 bg-accent-primary text-white px-4 py-2 rounded-xl font-medium hover:opacity-90 disabled:opacity-50">
-              <Plus size={18} /> {tr('Utwórz pierwszą tablicę')}
-            </button>
-          ) : (
-            <p className="text-sm text-gray-400">{tr('Poproś lidera zespołu o utworzenie tablicy.')}</p>
-          )}
+        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+          <EmptyState
+            icon={LayoutGrid}
+            title={tr('Nie masz jeszcze żadnej tablicy.')}
+            subtitle={canCreate ? undefined : tr('Poproś lidera zespołu o utworzenie tablicy.')}
+            action={canCreate ? (
+              <Button icon={Plus} onClick={handleCreate} disabled={creating}>{tr('Utwórz pierwszą tablicę')}</Button>
+            ) : undefined}
+          />
         </div>
       ) : (
         <div className="space-y-6">

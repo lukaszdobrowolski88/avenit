@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Search, Edit2, Trash2, X, CalendarClock, Repeat, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, CalendarClock, Repeat, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 import {
   toLocalInputValue, localInputToIso, formatDateTime, formatTime, formatDuration,
@@ -276,10 +278,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
         {loading ? (
           <Spinner center />
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <CalendarClock size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">Brak rezerwacji dla wybranych filtrów.</p>
-          </div>
+          <EmptyState icon={CalendarClock} title="Brak rezerwacji dla wybranych filtrów." />
         ) : (
           <DataTable flush>
             <THead>
@@ -335,108 +334,102 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
       </div>
 
       {/* Modal */}
-      <Modal isOpen={modalOpen}>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && closeModal()}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editing ? 'Edytuj rezerwację' : 'Nowa rezerwacja'}</h3>
-              <button onClick={closeModal} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => !saving && closeModal()}
+        title={editing ? 'Edytuj rezerwację' : 'Nowa rezerwacja'}
+        size="md"
+        footer={<>
+          <Button variant="secondary" onClick={closeModal} disabled={saving}>Anuluj</Button>
+          {conflictReport ? (
+            <>
+              {conflictReport.free.length > 0 && (
+                <Button variant="outline" onClick={() => doSave('skip')} disabled={saving}>
+                  Pomiń kolidujące ({conflictReport.free.length})
+                </Button>
+              )}
+              <Button variant="danger" onClick={() => doSave('force')} loading={saving}>
+                Zapisz mimo kolizji
+              </Button>
+            </>
+          ) : (
+            <Button data-tour="rooms-booking-save" onClick={() => doSave('auto')} loading={saving}>Zapisz</Button>
+          )}
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <CustomSelect
+            label="Zasób" value={form.resource_id}
+            onChange={v => { setForm(f => ({ ...f, resource_id: v })); setConflictReport(null); }}
+            options={resourceFormOptions} placeholder="Wybierz salę lub sprzęt..."
+          />
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
+            <input data-tour="rooms-booking-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Próba zespołu, Spotkanie grupy" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Początek</label>
+              <DateTimeInput value={form.start_at} onChange={e => { setForm(f => ({ ...f, start_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
-            <div className="p-5 space-y-4">
-              <CustomSelect
-                label="Zasób" value={form.resource_id}
-                onChange={v => { setForm(f => ({ ...f, resource_id: v })); setConflictReport(null); }}
-                options={resourceFormOptions} placeholder="Wybierz salę lub sprzęt..."
-              />
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
-                <input data-tour="rooms-booking-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Próba zespołu, Spotkanie grupy" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Początek</label>
-                  <DateTimeInput value={form.start_at} onChange={e => { setForm(f => ({ ...f, start_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Koniec</label>
-                  <DateTimeInput value={form.end_at} onChange={e => { setForm(f => ({ ...f, end_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Zarezerwował (opcjonalnie)</label>
-                  <input value={form.booked_by} onChange={e => setForm(f => ({ ...f, booked_by: e.target.value }))} placeholder="Domyślnie: Twój e-mail" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatka</label>
-                  <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
-                </div>
-              </div>
-
-              {/* Rezerwacja cykliczna — tylko przy tworzeniu */}
-              {!editing && (
-                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 space-y-3">
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
-                    <input type="checkbox" checked={form.recurring} onChange={e => { setForm(f => ({ ...f, recurring: e.target.checked })); setConflictReport(null); }} className="rounded accent-emerald-500" />
-                    <Repeat size={15} /> Powtarzaj co tydzień
-                  </label>
-                  {form.recurring && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 pl-6">
-                      przez
-                      <input type="number" min="1" max="52" value={form.weeks} onChange={e => { setForm(f => ({ ...f, weeks: e.target.value })); setConflictReport(null); }} className="w-20 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                      tygodni (łącznie {Math.max(1, Math.min(52, Number(form.weeks) || 1))} terminów)
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Raport kolizji */}
-              {conflictReport && (
-                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-300">
-                    <AlertTriangle size={16} /> Wykryto kolizje ({conflictReport.conflicting.length} z {conflictReport.occ.length} terminów)
-                  </div>
-                  <ul className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
-                    {conflictReport.conflicting.map((o, idx) => (
-                      <li key={idx} className="text-xs text-red-700 dark:text-red-300">
-                        <span className="font-medium">{formatDateTime(o.start_at)} – {formatTime(o.end_at)}</span>
-                        <span className="text-red-500 dark:text-red-400"> koliduje z: </span>
-                        {o.conflicts.map(c => `${c.title || 'rezerwacja'} (${formatTime(c.start_at)}–${formatTime(c.end_at)})`).join(', ')}
-                      </li>
-                    ))}
-                  </ul>
-                  {conflictReport.free.length > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 size={14} /> {conflictReport.free.length} termin(ów) bez kolizji.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
-              <button onClick={closeModal} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              {conflictReport ? (
-                <>
-                  {conflictReport.free.length > 0 && (
-                    <button onClick={() => doSave('skip')} disabled={saving} className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium disabled:opacity-60">
-                      Pomiń kolidujące ({conflictReport.free.length})
-                    </button>
-                  )}
-                  <button onClick={() => doSave('force')} disabled={saving} className="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium text-sm shadow-md disabled:opacity-60">
-                    {saving ? 'Zapisywanie...' : 'Zapisz mimo kolizji'}
-                  </button>
-                </>
-              ) : (
-                <button data-tour="rooms-booking-save" onClick={() => doSave('auto')} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60 inline-flex items-center gap-2">
-                  {saving ? <><Clock size={15} className="animate-spin" /> Sprawdzam...</> : 'Zapisz'}
-                </button>
-              )}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Koniec</label>
+              <DateTimeInput value={form.end_at} onChange={e => { setForm(f => ({ ...f, end_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
           </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Zarezerwował (opcjonalnie)</label>
+              <input value={form.booked_by} onChange={e => setForm(f => ({ ...f, booked_by: e.target.value }))} placeholder="Domyślnie: Twój e-mail" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatka</label>
+              <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
+            </div>
+          </div>
+
+          {/* Rezerwacja cykliczna — tylko przy tworzeniu */}
+          {!editing && (
+            <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 space-y-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" checked={form.recurring} onChange={e => { setForm(f => ({ ...f, recurring: e.target.checked })); setConflictReport(null); }} className="rounded accent-emerald-500" />
+                <Repeat size={15} /> Powtarzaj co tydzień
+              </label>
+              {form.recurring && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 pl-6">
+                  przez
+                  <input type="number" min="1" max="52" value={form.weeks} onChange={e => { setForm(f => ({ ...f, weeks: e.target.value })); setConflictReport(null); }} className="w-20 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  tygodni (łącznie {Math.max(1, Math.min(52, Number(form.weeks) || 1))} terminów)
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Raport kolizji */}
+          {conflictReport && (
+            <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-300">
+                <AlertTriangle size={16} /> Wykryto kolizje ({conflictReport.conflicting.length} z {conflictReport.occ.length} terminów)
+              </div>
+              <ul className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
+                {conflictReport.conflicting.map((o, idx) => (
+                  <li key={idx} className="text-xs text-red-700 dark:text-red-300">
+                    <span className="font-medium">{formatDateTime(o.start_at)} – {formatTime(o.end_at)}</span>
+                    <span className="text-red-500 dark:text-red-400"> koliduje z: </span>
+                    {o.conflicts.map(c => `${c.title || 'rezerwacja'} (${formatTime(c.start_at)}–${formatTime(c.end_at)})`).join(', ')}
+                  </li>
+                ))}
+              </ul>
+              {conflictReport.free.length > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 size={14} /> {conflictReport.free.length} termin(ów) bez kolizji.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Modal>
     </div>

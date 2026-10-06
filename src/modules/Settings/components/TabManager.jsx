@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, GripVertical, Pencil, Trash2, Lock } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, Lock } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import {
   DndContext,
@@ -19,6 +19,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TabEditor from './TabEditor';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import ModuleLayoutBuilder from './ModuleBuilder/ModuleLayoutBuilder';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -204,34 +207,21 @@ export default function TabManager({
 
   if (!document.body) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[140]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-gray-200 dark:border-gray-700 max-h-[85vh] flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white">
-              <ModuleIcon size={20} />
-            </div>
-            <div>
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                {tr('Zakładki modułu')}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {module.label}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
-          >
-            <X size={20} className="text-gray-500" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 flex-1 overflow-y-auto">
+  return (
+    <>
+      <Modal
+        isOpen
+        // Esc/X nie zamykają okna, gdy na wierzchu jest pełnoekranowy kreator (utrata zmian).
+        onClose={() => { if (!builderTab) onClose(); }}
+        closeOnBackdrop={false}
+        zIndex={140}
+        size="lg"
+        icon={ModuleIcon}
+        title={tr('Zakładki modułu')}
+        subtitle={module.label}
+        footer={<Button onClick={onClose}>Gotowe</Button>}
+      >
+        <div className="p-6">
           {/* Add Button */}
           <button
             onClick={handleAddTab}
@@ -267,23 +257,15 @@ export default function TabManager({
               </SortableContext>
             </DndContext>
           ) : (
-            <div className="text-center py-12 text-gray-400">
-              <p>{t('Brak zakładek w tym module')}</p>
-              <p className="text-sm mt-1">{t('Kliknij "Dodaj zakładkę" aby dodać pierwszą')}</p>
-            </div>
+            <EmptyState
+              compact
+              icon={Icons.Layers}
+              title={t('Brak zakładek w tym module')}
+              subtitle={t('Kliknij "Dodaj zakładkę" aby dodać pierwszą')}
+            />
           )}
         </div>
-
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium"
-          >
-            Gotowe
-          </button>
-        </div>
-      </div>
+      </Modal>
 
       {/* Tab Editor Modal */}
       {editorOpen && (
@@ -297,7 +279,7 @@ export default function TabManager({
       )}
 
       {/* Kreator graficzny (pełnoekranowa nakładka) */}
-      {builderTab && (
+      {builderTab && createPortal(
         <ModuleLayoutBuilder
           tab={builderTab}
           moduleId={module.id}
@@ -306,37 +288,29 @@ export default function TabManager({
           onClose={() => setBuilderTab(null)}
           onSave={handleSaveLayout}
           onSaveMeta={(meta) => onUpdateTab(builderTab.id, module.id, meta)}
-        />
+        />,
+        document.body
       )}
 
       {/* Delete Confirmation */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[170]">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">
-              {tr('Usunąć zakładkę?')}
-            </h4>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Czy na pewno chcesz usunąć zakładkę "{deleteConfirm.label}"? Tej operacji nie można cofnąć.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition"
-              >
-                {tr('Usuń')}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        closeOnBackdrop={false}
+        zIndex={170}
+        size="sm"
+        title={tr('Usunąć zakładkę?')}
+        footer={<>
+          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Anuluj</Button>
+          <Button variant="danger" onClick={confirmDelete}>{tr('Usuń')}</Button>
+        </>}
+      >
+        <div className="p-6">
+          <p className="text-gray-600 dark:text-gray-400">
+            Czy na pewno chcesz usunąć zakładkę "{deleteConfirm?.label}"? Tej operacji nie można cofnąć.
+          </p>
         </div>
-      )}
-    </div>,
-    document.body
+      </Modal>
+    </>
   );
 }

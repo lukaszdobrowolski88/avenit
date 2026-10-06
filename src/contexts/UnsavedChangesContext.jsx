@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { Save, AlertTriangle } from 'lucide-react';
 import { tr } from '../i18n';
+import Modal from '../components/Modal';
+import Button from '../components/Button';
 
 // Kontekst do śledzenia niezapisanych zmian w całej aplikacji
 const UnsavedChangesContext = createContext({
@@ -21,42 +22,27 @@ export function useUnsavedChanges() {
 }
 
 // Modal ostrzeżenia o niezapisanych zmianach
-const UnsavedChangesWarningModal = ({ isOpen, onClose, onSave, onDiscard }) => {
-  if (!isOpen || typeof document === 'undefined') return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{tr('Niezapisane zmiany')}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {tr('Masz niezapisane zmiany. Co chcesz zrobić?')}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onDiscard}
-            className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-          >
-            {tr('Opuść bez zapisu')}
-          </button>
-          <button
-            onClick={onSave}
-            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center justify-center gap-2"
-          >
-            <Save size={16} /> Zapisz
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
+const UnsavedChangesWarningModal = ({ isOpen, onClose, onSave, onDiscard }) => (
+  <Modal
+    isOpen={isOpen}
+    onClose={onClose}
+    closeOnBackdrop={false}
+    zIndex={9999}
+    size="sm"
+    icon={AlertTriangle}
+    title={tr('Niezapisane zmiany')}
+    footer={<>
+      <Button variant="secondary" onClick={onDiscard}>{tr('Opuść bez zapisu')}</Button>
+      <Button icon={Save} onClick={onSave}>Zapisz</Button>
+    </>}
+  >
+    <div className="p-6">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
+        {tr('Masz niezapisane zmiany. Co chcesz zrobić?')}
+      </p>
+    </div>
+  </Modal>
+);
 
 export function UnsavedChangesProvider({ children }) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);

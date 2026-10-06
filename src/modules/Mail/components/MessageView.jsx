@@ -5,6 +5,8 @@ import {
   Download, ExternalLink, ChevronDown, ChevronUp, Mail
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import Spinner from '../../../components/Spinner';
+import EmptyState from '../../../components/EmptyState';
 
 // Komponent do renderowania HTML emaila w iframe - zapewnia izolację i poprawne renderowanie
 function EmailHtmlContent({ html, messageId }) {
@@ -197,18 +199,16 @@ export default function MessageView({
 
   if (loading) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-        <div className="w-8 h-8 border-3 border-accent-primary-light border-t-transparent rounded-full animate-spin mb-4" />
-        <p>{tr('Ładowanie wiadomości...')}</p>
+      <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <Spinner label={tr('Ładowanie wiadomości...')} />
       </div>
     );
   }
 
   if (!message) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-        <Mail size={48} className="mb-4 opacity-30" />
-        <p>{tr('Wybierz wiadomość do podglądu')}</p>
+      <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <EmptyState icon={Mail} title={tr('Wybierz wiadomość do podglądu')} />
       </div>
     );
   }

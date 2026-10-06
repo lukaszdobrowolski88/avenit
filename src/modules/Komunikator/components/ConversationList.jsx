@@ -5,6 +5,9 @@ import { formatMessageDate, truncateText, getMinistryName } from '../utils/messa
 import { usePresence } from '../../../hooks/usePresence';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
+import Spinner from '../../../components/Spinner';
 
 const ministryIcons = {
   worship_team: Music,
@@ -324,45 +327,26 @@ export default function ConversationList({
       {/* Lista konwersacji */}
       <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-10 h-10 border-3 border-accent-primary-lighter dark:border-accent-primary-darkest border-t-accent-primary-light rounded-full animate-spin" />
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-3">{t('Ładowanie rozmów...')}</p>
-          </div>
+          <Spinner center label={t('Ładowanie rozmów...')} />
         ) : filteredConversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-4">
-              {activeFilter === 'starred' ? (
-                <Star size={28} className="text-yellow-500" />
-              ) : activeFilter === 'archived' ? (
-                <Archive size={28} className="text-blue-500" />
-              ) : searchQuery ? (
-                <Search size={28} className="text-gray-400" />
-              ) : (
-                <MessageSquare size={28} className="text-accent-primary-light" />
-              )}
-            </div>
-            <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
-              {searchQuery ? t('Brak wyników') : activeFilter === 'starred' ? t('Brak ulubionych') : activeFilter === 'archived' ? t('Brak archiwum') : t('Brak rozmów')}
-            </p>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
-              {searchQuery
-                ? t('Nie znaleziono rozmów dla "{q}"', { q: searchQuery })
-                : activeFilter === 'starred'
-                  ? t('Oznacz rozmowę gwiazdką, by ją tu zobaczyć')
-                  : activeFilter === 'archived'
-                    ? t('Zarchiwizowane rozmowy pojawią się tutaj')
-                    : t('Rozpocznij pierwszą rozmowę')
-              }
-            </p>
-            {!searchQuery && activeFilter === 'all' && (
-              <button
-                onClick={onNewConversation}
-                className="px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm font-medium rounded-xl shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 hover:scale-105 transition-all duration-200"
-              >
+          <EmptyState
+            compact
+            icon={activeFilter === 'starred' ? Star : activeFilter === 'archived' ? Archive : searchQuery ? Search : MessageSquare}
+            title={searchQuery ? t('Brak wyników') : activeFilter === 'starred' ? t('Brak ulubionych') : activeFilter === 'archived' ? t('Brak archiwum') : t('Brak rozmów')}
+            subtitle={searchQuery
+              ? t('Nie znaleziono rozmów dla "{q}"', { q: searchQuery })
+              : activeFilter === 'starred'
+                ? t('Oznacz rozmowę gwiazdką, by ją tu zobaczyć')
+                : activeFilter === 'archived'
+                  ? t('Zarchiwizowane rozmowy pojawią się tutaj')
+                  : t('Rozpocznij pierwszą rozmowę')
+            }
+            action={!searchQuery && activeFilter === 'all' && (
+              <Button size="sm" icon={Plus} onClick={onNewConversation}>
                 {t('Rozpocznij nową rozmowę')}
-              </button>
+              </Button>
             )}
-          </div>
+          />
         ) : (
           <>
             {renderSection(t('Przypięte'), pinnedConversations)}
