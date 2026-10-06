@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Manrope — krój marki Avenit (motyw „Avenit” / czcionka „Manrope” w Ustawienia → Wygląd).
+   Self-hosted w public/fonts/manrope (bez CDN). Ładowany dopiero, gdy krój jest użyty. */
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 300; font-display: swap; src: url('/fonts/manrope/Manrope_300Light.ttf') format('truetype'); }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/manrope/Manrope_400Regular.ttf') format('truetype'); }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/manrope/Manrope_500Medium.ttf') format('truetype'); }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/manrope/Manrope_600SemiBold.ttf') format('truetype'); }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/manrope/Manrope_700Bold.ttf') format('truetype'); }
+@font-face { font-family: 'Manrope'; font-style: normal; font-weight: 800; font-display: swap; src: url('/fonts/manrope/Manrope_800ExtraBold.ttf') format('truetype'); }
+
+/* Marka Avenit w trybie CIEMNYM: słód (kolor przycisków w jasnym) zlałby się z ciemnym tłem,
+   więc akcenty przechodzą na musztardę/kurkumę. !important — palety są ustawiane inline na :root
+   (colorPresets.js), a ważna deklaracja z arkusza wygrywa z nieważną inline. */
+html.dark[data-color-preset="avenit"] {
+  --accent-primary: 168 129 10 !important;
+  --accent-primary-light: 201 162 39 !important;
+  --accent-primary-lighter: 58 46 12 !important;
+  --accent-primary-lightest: 38 31 12 !important;
+  --accent-primary-dark: 138 102 6 !important;
+  --accent-primary-darkest: 42 35 18 !important;
+  --accent-secondary: 138 102 6 !important;
+  --accent-secondary-light: 168 129 10 !important;
+  --accent-secondary-lighter: 58 46 12 !important;
+  --accent-secondary-lightest: 38 31 12 !important;
+  --accent-secondary-dark: 107 79 5 !important;
+  --accent-secondary-darkest: 42 35 18 !important;
+}
+
 :root {
   /* Avenit Gold (default) */
   --accent-primary: 217 119 6;         /* amber-600 */

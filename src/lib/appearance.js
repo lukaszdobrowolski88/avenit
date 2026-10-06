@@ -9,6 +9,7 @@
 // 'custom' = czcionka wgrana przez organizację (patrz applyCustomFont / injectCustomFont).
 export const FONT_OPTIONS = {
   inter:   { label: 'Inter (domyślna)', stack: "'Inter', system-ui, sans-serif" },
+  manrope: { label: 'Manrope (Avenit)', stack: "'Manrope', 'Inter', system-ui, sans-serif" }, // pliki w public/fonts/manrope
   system:  { label: 'Systemowa',        stack: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
   rounded: { label: 'Zaokrąglona',      stack: "ui-rounded, 'SF Pro Rounded', 'Nunito', 'Segoe UI', system-ui, sans-serif" },
   grotesk: { label: 'Grotesk',          stack: "'Space Grotesk', 'Inter', system-ui, sans-serif" },
@@ -20,6 +21,7 @@ export const FONT_OPTIONS = {
 // Tło aplikacji — para (jasny / ciemny motyw). Domyślne odwzorowuje obecny wygląd.
 export const BACKGROUND_OPTIONS = {
   slate:    { label: 'Grafitowe (domyślne)', light: '#f9fafb', dark: '#111827' },
+  paper:    { label: 'Papier (Avenit)',      light: '#F6F4EE', dark: '#17140D' },
   white:    { label: 'Czyste białe',         light: '#ffffff', dark: '#0b0d12' },
   warm:     { label: 'Ciepłe kremowe',       light: '#f7f4ef', dark: '#15120d' },
   cool:     { label: 'Chłodny błękit',       light: '#eef2f8', dark: '#0c1119' },
@@ -117,6 +119,8 @@ export const THEME_LOOK_KEYS = [
 // Gotowe, wbudowane motywy (zawsze dostępne, jednym kliknięciem). Ustawiają komplet kluczy
 // wyglądu — brakujące (np. ui_oled) i tak są zerowane do domyślnych przy zastosowaniu.
 export const BUILTIN_THEMES = [
+  // Identyfikacja wizualna Avenit — jak aplikacja mobilna: papier, słód, kurkuma, Manrope.
+  { id: 'avenit',   name: 'Avenit',   preview: ['#FFBE0B', '#2A2312'], settings: { color_preset: 'avenit',       ui_font: 'manrope', ui_font_heading: 'body', ui_bg: 'paper', ui_bg_pattern: 'none', ui_sidebar: 'theme', ui_radius: 'round' } },
   { id: 'ocean',    name: 'Ocean',    preview: ['#2563eb', '#4f46e5'], settings: { color_preset: 'blue-indigo',  ui_font: 'grotesk', ui_bg: 'cool',     ui_bg_pattern: 'aurora',   ui_sidebar: 'accent', ui_radius: 'round'  } },
   { id: 'forest',   name: 'Natura',   preview: ['#059669', '#0d9488'], settings: { color_preset: 'emerald-teal', ui_font: 'rounded', ui_bg: 'mint',     ui_bg_pattern: 'glow',     ui_sidebar: 'accent', ui_radius: 'round'  } },
   { id: 'sunset',   name: 'Ciepły',   preview: ['#d97706', '#ca8a04'], settings: { color_preset: 'amber-yellow', ui_font: 'serif',   ui_font_heading: 'serif', ui_bg: 'warm', ui_bg_pattern: 'diagonal', ui_sidebar: 'theme', ui_radius: 'round' } },
