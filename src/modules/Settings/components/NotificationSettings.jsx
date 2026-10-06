@@ -35,7 +35,7 @@ export default function NotificationSettings({ get, save }) {
         ))}
       </SettingsCard>
 
-      <SettingsCard title="Zdarzenia" description={tr('Przy jakich zdarzeniach wysyłać powiadomienia.')} icon={Bell}>
+      <SettingsCard title={tr('Zdarzenia')} description={tr('Przy jakich zdarzeniach wysyłać powiadomienia.')} icon={Bell}>
         {events.map((e, i) => (
           <SettingRow key={e.key} label={e.label} hint={e.hint} last={i === events.length - 1}>
             <Toggle checked={bool(e.key)} onChange={setBool(e.key)} />
@@ -43,7 +43,7 @@ export default function NotificationSettings({ get, save }) {
         ))}
       </SettingsCard>
 
-      <SettingsCard title="Podsumowania" description="Zbiorcze powiadomienia zamiast pojedynczych.">
+      <SettingsCard title={tr('Podsumowania')} description={tr('Zbiorcze powiadomienia zamiast pojedynczych.')}>
         <SettingRow label={tr('Częstotliwość podsumowań e-mail')} hint={tr('Jak często wysyłać zbiorczy przegląd')} last>
           <SelectSetting
             value={get('notif_digest') || 'off'}

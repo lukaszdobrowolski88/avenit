@@ -11,6 +11,7 @@ import CampaignsTab from './tabs/CampaignsTab';
 import FundsTab from './tabs/FundsTab';
 import StatementsTab from './tabs/StatementsTab';
 import DonorsTab from './tabs/DonorsTab';
+import { tr } from '../../i18n';
 
 const TABS = [
   { id: 'overview', label: 'Pulpit', icon: LayoutDashboard },
@@ -62,7 +63,7 @@ export default function GivingModule() {
 
   return (
     <div className="space-y-6">
-      <PageHeader moduleKey="giving" icon={Gift} title="Dawanie" subtitle="Darowizny, dawanie cykliczne, kampanie i zestawienia roczne" />
+      <PageHeader moduleKey="giving" icon={Gift} title={tr('Dawanie')} subtitle={tr('Darowizny, dawanie cykliczne, kampanie i zestawienia roczne')} />
 
       {/* Zakładki */}
       <ResponsiveTabs moduleKey="giving" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useModuleLabel, useModuleColor, useModuleCover } from '../hooks/useModuleLabel';
 import CoverPicker from './CoverPicker';
+import { tr } from '../i18n';
 import { useBrandTheme } from '../hooks/useBrandTheme';
 
 // Kanoniczny nagłówek modułu w stylu Monday: DOMYŚLNIE czysto — kafel ikony + tytuł + podtytuł
@@ -38,7 +39,11 @@ const BANNER_SIZES = {
 };
 
 export default function PageHeader({ icon: Icon, title, subtitle, actions, iconColor, className = '', moduleKey, cover = true }) {
-  const dynamicTitle = useModuleLabel(moduleKey, title);
+  // Nazwa modułu z bazy (np. domyślne „Hojność”) tłumaczona przy wyświetlaniu; własna nazwa
+  // nadana przez kościół nie ma wpisu w słowniku, więc zostaje bez zmian.
+  const rawTitle = useModuleLabel(moduleKey, title);
+  const dynamicTitle = typeof rawTitle === 'string' ? tr(rawTitle) : rawTitle;
+  subtitle = typeof subtitle === 'string' ? tr(subtitle) : subtitle;
   // Motyw „Avenit”: nagłówek jak w aplikacji mobilnej — bez banera/okładki, ikona na papierze,
   // duży tytuł w słodzie (kolor modułu nie barwi kafelka — bez „tęczy”).
   const brand = useBrandTheme();

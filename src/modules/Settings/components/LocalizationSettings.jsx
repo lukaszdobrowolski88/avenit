@@ -20,7 +20,7 @@ export default function LocalizationSettings({ get, save }) {
         </SettingRow>
       </SettingsCard>
 
-      <SettingsCard title="Region i czas" description={tr('Strefa czasowa i sposób wyświetlania dat.')} icon={Globe}>
+      <SettingsCard title={tr('Region i czas')} description={tr('Strefa czasowa i sposób wyświetlania dat.')} icon={Globe}>
         <SettingRow label="Strefa czasowa">
           <SelectSetting
             value={get('loc_timezone') || 'Europe/Warsaw'}
@@ -35,7 +35,7 @@ export default function LocalizationSettings({ get, save }) {
             className="min-w-[200px]"
           />
         </SettingRow>
-        <SettingRow label="Format daty" hint={tr('Sposób wyświetlania dat w aplikacji')}>
+        <SettingRow label={tr('Format daty')} hint={tr('Sposób wyświetlania dat w aplikacji')}>
           <SelectSetting
             value={get('loc_date_format') || 'dd.mm.yyyy'}
             onChange={(v) => save('loc_date_format', v)}
@@ -46,7 +46,7 @@ export default function LocalizationSettings({ get, save }) {
             ]}
           />
         </SettingRow>
-        <SettingRow label="Format godziny">
+        <SettingRow label={tr('Format godziny')}>
           <SelectSetting
             value={get('loc_time_format') || '24h'}
             onChange={(v) => save('loc_time_format', v)}

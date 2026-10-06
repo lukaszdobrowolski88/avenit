@@ -198,7 +198,7 @@ export default function GuestCheckinForm({
             type="text"
             value={formData.parentName}
             onChange={(e) => handleChange('parentName', e.target.value)}
-            placeholder="np. Anna Kowalska"
+            placeholder={tr('np. Anna Kowalska')}
             className={inputClasses(errors.parentName)}
           />
           {errors.parentName && (
@@ -232,7 +232,7 @@ export default function GuestCheckinForm({
             type="text"
             value={formData.allergies}
             onChange={(e) => handleChange('allergies', e.target.value)}
-            placeholder="np. orzechy, mleko"
+            placeholder={tr('np. orzechy, mleko')}
             className={inputClasses(false)}
           />
         </div>

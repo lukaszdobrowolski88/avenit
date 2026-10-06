@@ -371,7 +371,7 @@ function NewRole({ onClose, onCreated, roles }) {
     >
       <div className="p-6">
         <label className="block text-sm text-gray-500 mb-1">{tr('Nazwa')}</label>
-        <input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value, key: f.key || slug(e.target.value) })} placeholder="Skarbnik" className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+        <input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value, key: f.key || slug(e.target.value) })} placeholder={tr('Skarbnik')} className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
         <label className="block text-sm text-gray-500 mb-1">{tr('Klucz (identyfikator)')}</label>
         <input value={f.key} onChange={(e) => setF({ ...f, key: slug(e.target.value) })} placeholder="skarbnik" className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm font-mono" />
         <label className="block text-sm text-gray-500 mb-1">{tr('Preset startowy (kopiuje uprawnienia)')}</label>

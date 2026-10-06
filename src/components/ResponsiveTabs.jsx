@@ -74,7 +74,7 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
         className={tabClass(isActive)}
       >
         {TabIcon && <TabIcon size={16} />}
-        <span className="lg:inline">{tab.label}</span>
+        <span className="lg:inline">{typeof tab.label === 'string' ? tr(tab.label) : tab.label}</span>
       </button>
     );
   };

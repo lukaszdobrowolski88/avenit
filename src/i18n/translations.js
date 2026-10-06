@@ -5557,6 +5557,24 @@ const en = {
   'Błąd kopiowania: ': 'Copy error: ',
   'Błąd importu: ': 'Import error: ',
   'Błąd wgrywania: ': 'Upload error: ',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Hojność': 'Giving',
+  'Poczta': 'Mail',
+  'Ściana modlitwy': 'Prayer wall',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Skarbnik': 'Treasurer',
+  'Region i czas': 'Region and time',
+  'Format daty': 'Date format',
+  'Format godziny': 'Time format',
+  'Zdarzenia': 'Events',
+  'Podsumowania': 'Digests',
+  'Zbiorcze powiadomienia zamiast pojedynczych.': 'Combined notifications instead of individual ones.',
+  'Darowizny, dawanie cykliczne, kampanie i zestawienia roczne': 'Donations, recurring giving, campaigns and annual statements',
+  'Aktywnych': 'Active',
+  'Zawieszonych': 'Suspended',
+  'np. Anna Kowalska': 'e.g. Anna Smith',
+  'np. orzechy, mleko': 'e.g. nuts, milk',
+  'Adres...': 'Address...',
 };
 
 const uk = {
@@ -11108,6 +11126,24 @@ const uk = {
   'Błąd kopiowania: ': 'Помилка копіювання: ',
   'Błąd importu: ': 'Помилка імпорту: ',
   'Błąd wgrywania: ': 'Помилка завантаження: ',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Hojność': 'Щедрість',
+  'Poczta': 'Пошта',
+  'Ściana modlitwy': 'Стіна молитов',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Skarbnik': 'Скарбник',
+  'Region i czas': 'Регіон і час',
+  'Format daty': 'Формат дати',
+  'Format godziny': 'Формат часу',
+  'Zdarzenia': 'Події',
+  'Podsumowania': 'Зведення',
+  'Zbiorcze powiadomienia zamiast pojedynczych.': 'Зведені сповіщення замість окремих.',
+  'Darowizny, dawanie cykliczne, kampanie i zestawienia roczne': 'Пожертви, регулярні внески, кампанії та річні звіти',
+  'Aktywnych': 'Активних',
+  'Zawieszonych': 'Призупинених',
+  'np. Anna Kowalska': 'напр. Анна Коваль',
+  'np. orzechy, mleko': 'напр. горіхи, молоко',
+  'Adres...': 'Адреса...',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
