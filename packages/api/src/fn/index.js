@@ -68,6 +68,7 @@ const MODULES = [
   'sso-save-config',
   'finance-report-email',
   'budget-proposal-notify',
+  'event-assignments-patch',
 ];
 
 export async function registerFunctions(app) {
