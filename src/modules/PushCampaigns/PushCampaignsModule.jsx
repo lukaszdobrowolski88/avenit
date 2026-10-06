@@ -55,7 +55,7 @@ export default function PushCampaignsModule() {
 
   if (view.type === 'edit') {
     return (
-      <div className="p-4 sm:p-6">
+      <div>
         <CampaignEditor
           campaign={editingCampaign}
           template={templateForNew}
@@ -67,14 +67,14 @@ export default function PushCampaignsModule() {
 
   if (view.type === 'stats') {
     return (
-      <div className="p-4 sm:p-6">
+      <div>
         <CampaignStats campaign={statsCampaign} onClose={closeView} />
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader moduleKey="push_campaigns" icon={Bell} title={tr('Push Kampanie')}
         subtitle={tr('Twórz, planuj i analizuj powiadomienia push wysyłane do web i mobile.')} />
 

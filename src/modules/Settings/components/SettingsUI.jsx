@@ -1,4 +1,5 @@
 import React from 'react';
+import CustomSelect from '../../../components/CustomSelect';
 
 // Reużywalne prymitywy UI dla ustawień — spójny wygląd wszystkich sekcji.
 
@@ -48,17 +49,16 @@ export const Toggle = ({ checked, onChange, disabled }) => (
   </button>
 );
 
-// Select ustawienia.
+// Select ustawienia — wspólny CustomSelect (ta sama lista co w modułach). Wartości jako tekst,
+// jak w natywnym <select>, który był tu wcześniej (wywołujący zapisują stringi).
 export const SelectSetting = ({ value, onChange, options, className = '' }) => (
-  <select
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    className={`bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-white outline-none focus:border-accent-primary min-w-[160px] ${className}`}
-  >
-    {options.map((o) => (
-      <option key={o.value} value={o.value}>{o.label}</option>
-    ))}
-  </select>
+  <div className={`min-w-[200px] ${className}`}>
+    <CustomSelect
+      value={String(value ?? '')}
+      onChange={(v) => onChange(String(v))}
+      options={options.map((o) => ({ value: String(o.value), label: o.label }))}
+    />
+  </div>
 );
 
 // Pole tekstowe/liczbowe zapisywane na blur.

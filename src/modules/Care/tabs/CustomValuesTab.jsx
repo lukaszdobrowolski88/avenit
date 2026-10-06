@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Save, SlidersHorizontal, Settings2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
+import { DateInput } from '../../../components/pickers';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 
@@ -66,7 +67,8 @@ export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
       ];
       return <CustomSelect value={val} onChange={v => setValue(f.field_key, v)} options={opts} />;
     }
-    const type = f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text';
+    if (f.field_type === 'date') return <DateInput value={val} onChange={e => setValue(f.field_key, e.target.value)} />;
+    const type = f.field_type === 'number' ? 'number' : 'text';
     return (
       <input
         type={type}

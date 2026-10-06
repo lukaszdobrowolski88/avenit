@@ -7,6 +7,8 @@ import {
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
 import TwoFactorSetup from '../../components/TwoFactorSetup';
+import PageHeader from '../../components/PageHeader';
+import Spinner from '../../components/Spinner';
 import { tr, useT } from '../../i18n';
 
 export default function UserSettings() {
@@ -493,13 +495,11 @@ export default function UserSettings() {
     setSaving(false);
   };
 
-  if (loading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-accent-primary dark:text-accent-primary-light"/></div>;
+  if (loading) return <Spinner center />;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('Mój Profil')}</h1>
-      </div>
+    <div className="space-y-6 pb-10">
+      <PageHeader icon={User} title={t('Mój profil')} subtitle={t('Dane konta, powiadomienia, bezpieczeństwo i kalendarz')} />
 
       {message && (
         <div className={`p-4 rounded-xl flex items-center gap-2 cursor-pointer animate-fade-in ${message.type === 'success' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}`} onClick={() => setMessage(null)}>
@@ -577,7 +577,7 @@ export default function UserSettings() {
           {/* POWIADOMIENIA PUSH */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400"><Smartphone size={24} /></div>
+              <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><Smartphone size={24} /></div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Powiadomienia Push</h3>
             </div>
 
@@ -615,7 +615,7 @@ export default function UserSettings() {
                     className={`px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 ${
                       pushSubscribed
                         ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-accent-primary text-white hover:bg-accent-primary-dark'
                     } ${(pushLoading || pushPermission === 'denied') ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {pushLoading ? (
@@ -644,7 +644,7 @@ export default function UserSettings() {
                 {pushSubscribed && (
                   <button
                     onClick={sendTestNotification}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    className="text-sm text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1"
                   >
                     <Bell size={14} />
                     {tr('Wyślij testowe powiadomienie')}

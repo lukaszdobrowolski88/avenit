@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { FIELD_TYPES, VISIBILITY_OPERATORS } from '../../utils/fieldTypes';
 import { tr } from '../../../../i18n';
-import { DateInput } from '../../../../components/pickers';
+import { DateInput, TimeField } from '../../../../components/pickers';
 
 export default function FieldEditor({ field, allFields = [], onUpdate }) {
   const [newOption, setNewOption] = useState('');
@@ -689,14 +689,20 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
               {field.type === 'location' ? 'Adres / miejsce' :
                field.type.includes('date') ? 'Data' : 'Godzina'}
             </label>
+            {field.type.includes('date') ? (
+              <DateInput value={field.defaultValue || ''} onChange={(e) => handleChange('defaultValue', e.target.value)} />
+            ) : field.type.includes('time') ? (
+              <TimeField value={field.defaultValue || ''} onChange={(e) => handleChange('defaultValue', e.target.value)} />
+            ) : (
             <input
-              type={field.type.includes('date') ? 'date' : field.type.includes('time') ? 'time' : 'text'}
+              type="text"
               value={field.defaultValue || ''}
               onChange={(e) => handleChange('defaultValue', e.target.value)}
               placeholder={field.type === 'location' ? tr('np. Sala główna, ul. Przykładowa 1') :
                            field.type.includes('date') ? '' : 'np. 10:00'}
               className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary dark:text-white"
             />
+            )}
             <p className="text-xs text-gray-400 mt-1">
               {tr('Ta wartość będzie wyświetlana w nagłówku formularza')}
             </p>

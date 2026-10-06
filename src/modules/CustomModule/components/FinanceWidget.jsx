@@ -3,6 +3,7 @@ import { X, Save } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useCampusQuery } from '../../../hooks/useCampusQuery';
 import { tr } from '../../../i18n';
+import { DateInput } from '../../../components/pickers';
 import FinanceTab from '../../shared/FinanceTab';
 import { toast } from '../../../lib/toast';
 
@@ -78,12 +79,16 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
   const field = (key, label, type = 'text') => (
     <div>
       <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">{tr(label)}</label>
-      <input
-        type={type}
-        value={form[key]}
-        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-        className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
-      />
+      {type === 'date' ? (
+        <DateInput value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+      ) : (
+        <input
+          type={type}
+          value={form[key]}
+          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+          className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
+        />
+      )}
     </div>
   );
 
