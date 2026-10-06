@@ -444,17 +444,11 @@ export default function MediaTeamModule() {
     setError(null);
 
     try {
-      // Grafik żyje na wydarzeniach (ScheduleTab) — stare programy nie są tu już potrzebne.
-      const [teamResult, tasksResult] = await Promise.all([
-        supabase.from('media_team').select('id, full_name, role, email, phone').order('full_name'),
-        supabase.from('media_tasks').select('*').order('due_date'),
-      ]);
-
+      // Grafik żyje na wydarzeniach (ScheduleTab), zadania na Tablicy (ModuleBoard) —
+      // stare programy i media_tasks nie są tu już pobierane.
+      const teamResult = await supabase.from('media_team').select('id, full_name, role, email, phone').order('full_name');
       if (teamResult.error) throw new Error(`Błąd zespołu: ${teamResult.error.message}`);
-      if (tasksResult.error) throw new Error(`Błąd zadań: ${tasksResult.error.message}`);
-
       setTeam(teamResult.data || []);
-      setTasks(tasksResult.data || []);
     } catch (err) {
       console.error('❌ Błąd pobierania danych:', err);
       setError(err.message);

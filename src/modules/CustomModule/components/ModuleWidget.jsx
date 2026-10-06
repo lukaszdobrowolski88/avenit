@@ -13,7 +13,7 @@ import FaqTab from '../../shared/FaqTab';
 import AnnouncementsTab from '../../shared/AnnouncementsTab';
 import PollTab from '../../shared/PollTab';
 import MembersTab from './MembersTab';
-import TasksTab from './TasksTab';
+import ModuleBoard from '../../Boards/ModuleBoard';
 import FinanceWidget from './FinanceWidget';
 
 // Typy gotowych widgetów danych (zakładki systemowe → też elementy kreatora).
@@ -44,7 +44,10 @@ export default function ModuleWidget({ widgetType, moduleKey, moduleName, module
 
   switch (widgetType) {
     case 'events':    return <EventsTab ministry={moduleKey} currentUserEmail={email} />;
-    case 'tasks':     return <TasksTab moduleKey={moduleKey} moduleName={moduleName} currentUserEmail={email} />;
+    // Zadania modułu = Tablica (silnik Projektów), jak Media/Młodzieżówka/Grupy domowe. Przy
+    // pierwszym otwarciu stare zadania z custom_<key>_tasks są jednorazowo kopiowane na tablicę
+    // (źródło zostaje nietknięte — patrz Boards/lib/legacyImport.js).
+    case 'tasks':     return <ModuleBoard sourceKind={`custom_${moduleKey}_tasks`} moduleKey={moduleKey} title={moduleName ? `Zadania — ${moduleName}` : 'Zadania'} />;
     case 'finance':   return <FinanceWidget moduleKey={moduleKey} moduleName={moduleName} />;
     case 'members':   return <MembersTab moduleKey={moduleKey} moduleName={moduleName} />;
     case 'wall':      return <WallTab ministry={moduleKey} currentUserEmail={email} currentUserName={name} />;

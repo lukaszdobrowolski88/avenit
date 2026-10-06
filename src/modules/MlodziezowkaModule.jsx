@@ -308,19 +308,17 @@ export default function MlodziezowkaModule() {
     setError(null);
 
     try {
-      const [membersResult, leadersResult, tasksResult] = await Promise.all([
+      // Zadania żyją na Tablicy (ModuleBoard) — mlodziezowka_tasks nie jest już pobierane.
+      const [membersResult, leadersResult] = await Promise.all([
         supabase.from('mlodziezowka_members').select('*').order('full_name'),
         supabase.from('mlodziezowka_leaders').select('*').order('full_name'),
-        supabase.from('mlodziezowka_tasks').select('*').order('due_date'),
       ]);
 
       if (membersResult.error) throw new Error(`Błąd członków: ${membersResult.error.message}`);
       if (leadersResult.error) throw new Error(`Błąd liderów: ${leadersResult.error.message}`);
-      if (tasksResult.error) throw new Error(`Błąd zadań: ${tasksResult.error.message}`);
 
       setMembers(membersResult.data || []);
       setLeaders(leadersResult.data || []);
-      setTasks(tasksResult.data || []);
     } catch (err) {
       console.error('Błąd pobierania danych:', err);
       setError(err.message);

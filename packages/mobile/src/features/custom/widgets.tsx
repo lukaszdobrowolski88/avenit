@@ -21,6 +21,7 @@ import { formatDate } from '../../lib/domain';
 import { openOnWeb } from '../modules/useModules';
 import { AddButton, Card, Empty, Loading, SegmentChips } from '../teams/tabs/ui';
 import { TasksTab } from '../teams/tabs/TasksTab';
+import { useTeamBoard } from '../teams/data';
 import {
   CUSTOM_TASK_STATUSES,
   useAddCustomTask,
@@ -317,9 +318,20 @@ export const PollWidget = ({ ctx }: { ctx: WidgetCtx }) => {
   );
 };
 
-// ─── Zadania modułu (custom_<key>_tasks) ───
+// ─── Zadania modułu ───
+// Web przenosi zadania modułu na Tablicę (boards.source_kind = custom_<key>_tasks) przy
+// pierwszym otwarciu. Gdy tablica już jest — pokazujemy ją (te same dane co web); dopóki
+// jej nie ma — dawną listę z custom_<key>_tasks.
 
 export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
+  const sourceKind = `custom_${ctx.moduleKey}_tasks`;
+  const board = useTeamBoard(sourceKind);
+  if (board.isLoading) return <Loading />;
+  if (board.data?.boardId) return <TasksTab sourceKind={sourceKind} myEmail={ctx.userEmail} />;
+  return <LegacyCustomTasks ctx={ctx} />;
+};
+
+const LegacyCustomTasks = ({ ctx }: { ctx: WidgetCtx }) => {
   const tasks = useCustomTasks(ctx.moduleKey);
   const add = useAddCustomTask(ctx.moduleKey, ctx.campusId);
   const setStatus = useSetCustomTaskStatus(ctx.moduleKey);
