@@ -9,13 +9,14 @@
 //   value: string/liczba/obiekt — ustawia assignments[team][key]; null — usuwa pole.
 //   key pominięty + value obiekt/null — ustawia/usuwa całą sekcję assignments[team].
 // Dostęp: jak zwykła edycja wydarzenia (canAccess update na events).
-import { canAccess } from '../dataapi/registry.js';
+import { canAccess, loadGrants } from '../dataapi/registry.js';
 import { emitChange } from '../realtime/hub.js';
 
 export const name = 'event-assignments-patch';
 export const method = 'POST';
 
-const KEY_RE = /^[A-Za-z0-9_\-:.]{1,80}$/;
+// Klucze ról bywają wpisane ręcznie (polskie litery, spacje) — dopuszczamy litery/cyfry Unicode.
+const KEY_RE = /^[\p{L}\p{N}_\-:. ]{1,80}$/u;
 const MAX_OPS = 50;
 
 export function applyOps(assignments, ops) {
@@ -56,17 +57,22 @@ export default async function handler(req, reply) {
   const invalid = validateOps(ops);
   if (invalid) return reply.code(400).send({ error: invalid });
 
-  const { rows: me } = await req.db.query('SELECT id, role, is_super_admin FROM app_users WHERE id = $1', [req.user.id]);
+  const { rows: me } = await req.db.query('SELECT id, role, is_super_admin, campus_id FROM app_users WHERE id = $1', [req.user.id]);
   if (!me[0]) return reply.code(403).send({ error: 'Brak konta' });
   const access = await canAccess({ pool: req.db, dbName: req.tenant.db_name, table: 'events', op: 'update', user: { ...req.user, ...me[0] } });
   if (!access.ok) return reply.code(403).send({ error: 'Brak uprawnień do edycji grafiku tego wydarzenia' });
+
+  // Izolacja kampusów jak w /api/db: osoba z kampusem (bez roli admina) — tylko wydarzenia
+  // swojego kampusu albo bez kampusu.
+  const { adminRoles } = await loadGrants(req.db, req.tenant.db_name);
+  const campusId = !me[0].is_super_admin && !adminRoles.has(me[0].role) ? me[0].campus_id : null;
 
   const client = await req.db.connect();
   let row;
   try {
     await client.query('BEGIN');
-    const { rows } = await client.query('SELECT id, assignments FROM events WHERE id::text = $1 FOR UPDATE', [String(eventId)]);
-    if (!rows[0]) {
+    const { rows } = await client.query('SELECT id, campus_id, assignments FROM events WHERE id::text = $1 FOR UPDATE', [String(eventId)]);
+    if (!rows[0] || (campusId != null && rows[0].campus_id != null && String(rows[0].campus_id) !== String(campusId))) {
       await client.query('ROLLBACK');
       return reply.code(404).send({ error: 'Nie znaleziono wydarzenia' });
     }

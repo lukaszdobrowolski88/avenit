@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Link as LinkIcon, ExternalLink, Trash2, Calendar, Clock, MapPin,
   Ticket, FileText, Users, Send, Copy, Check, X,
   Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon, ClipboardList, Eye, Search,
-  Music, Type, MoreHorizontal, User, FolderOpen,
+  Music, Type, MoreHorizontal, User, FolderOpen, AlertTriangle, Loader2, RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
@@ -19,6 +19,7 @@ import EventMaterialsTab from './Events/EventMaterialsTab';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import { useModuleCalendar, useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
+import { useModules } from '../hooks/useModules';
 import { useCan } from '../components/Can';
 import { DateInput, TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
@@ -35,6 +36,14 @@ const DEFAULT_TYPES = [
   { value: 'inne', label: 'Inne' },
 ];
 const fmtDate = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('.') : '');
+// Godzina końca musi być po początku (porównanie HH:MM; '18:00:00' z bazy = '18:00').
+const endNotAfterStart = (start, end) => {
+  const s = String(start || '').slice(0, 5);
+  const e = String(end || '').slice(0, 5);
+  return !!(s && e && e <= s);
+};
+// Opóźnienie autozapisu opisu (ms) — zapis po chwili bez pisania, nie przy każdym znaku.
+const AUTOSAVE_MS = 800;
 const fmtDur = (sec) => {
   const s = Math.max(0, Math.round(Number(sec) || 0));
   const m = Math.floor(s / 60);
@@ -95,6 +104,14 @@ export default function EventDetailPage() {
   const navigate = useNavigate();
   const [ev, setEv] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  // Stan autozapisu (wskaźnik w nagłówku): idle | saving | saved | error.
+  const [saveState, setSaveState] = useState('idle');
+  const [timeError, setTimeError] = useState('');
+  const inflight = useRef(0);
+  const failedPatch = useRef(null); // ostatnie niezapisane zmiany (do „Ponów")
+  const pending = useRef({}); // { [klucz]: { timer, patch } } — odłożone (debounce) zapisy opisów
+  const savedTitle = useRef('');
   const [forms, setForms] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [programDetail, setProgramDetail] = useState(null);
@@ -113,7 +130,11 @@ export default function EventDetailPage() {
   const [uploading, setUploading] = useState(false);
   const fileRef = React.useRef(null);
 
-  const canManage = useCan('module:calendar');
+  // Edycja = to samo, co egzekwuje serwer (moduł + res:events:update). Dawniej wystarczał
+  // module:calendar, który ma też członek — widział edytor, a zapisy kończyły się cichym 403.
+  const canOpenCalendar = useCan('module:calendar');
+  const canUpdateEvents = useCan('res:events:update');
+  const canManage = canOpenCalendar && canUpdateEvents;
   const moduleTitle = useModuleLabel(ev?.module_key, ev?.module_key || tr('Wydarzenie'));
   const moduleColor = useModuleColor(ev?.module_key);
   const calCfg = useModuleCalendar(ev?.module_key || 'general'); // brak modułu → typy kalendarza „Ogólne"
@@ -121,8 +142,12 @@ export default function EventDetailPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('events').select('*').eq('id', id).maybeSingle();
+    setLoadError(false);
+    const { data, error } = await supabase.from('events').select('*').eq('id', id).maybeSingle();
+    // Błąd sieci/uprawnień to nie to samo co „nie ma takiego wydarzenia".
+    if (error) { setLoadError(true); setEv(null); setLoading(false); return; }
     setEv(data || null);
+    savedTitle.current = data?.title || '';
     setLoading(false);
     if (data?.module_key) {
       supabase.from('event_custom_fields').select('*').eq('module_key', data.module_key)
@@ -164,18 +189,118 @@ export default function EventDetailPage() {
       .then(({ data }) => setProgramDetail(data || null)).catch(() => setProgramDetail(null));
   }, [ev?.program_id]);
 
-  const save = (patch) => {
-    setEv((e) => ({ ...e, ...patch }));
-    supabase.from('events').update(patch).eq('id', id).then(({ error }) => { if (error) toast.error(error.message); });
+  // Autozapis pól wydarzenia. Zwraca true/false; błąd → czytelny komunikat z „Ponów",
+  // a w nagłówku stan „Nie zapisano". Sprawdzamy też, czy wiersz faktycznie się zmienił
+  // (0 zmienionych wierszy = brak uprawnień, a nie sukces).
+  const save = useCallback(async (patch) => {
+    setEv((e) => (e ? { ...e, ...patch } : e));
+    inflight.current += 1;
+    setSaveState('saving');
+    const { data, error, status } = await supabase.from('events').update(patch).eq('id', id).select('id');
+    inflight.current -= 1;
+    const failed = !!error || (Array.isArray(data) && data.length === 0);
+    if (failed) {
+      failedPatch.current = { ...(failedPatch.current || {}), ...patch };
+      setSaveState('error');
+      const forbidden = status === 403 || error?.code === '403' || (!error && Array.isArray(data));
+      toast.error({
+        message: forbidden
+          ? tr('Nie masz uprawnień do edycji tego wydarzenia — zmiana nie została zapisana.')
+          : tr('Nie udało się zapisać zmian wydarzenia. Sprawdź połączenie.'),
+        action: forbidden ? undefined : { label: tr('Ponów'), onClick: () => retryRef.current?.() },
+      });
+      return false;
+    }
+    if (failedPatch.current) {
+      // Zapisany patch mógł zawierać pola z nieudanego zapisu — zdejmij je z kolejki ponowień.
+      const rest = { ...failedPatch.current };
+      Object.keys(patch).forEach((k) => { delete rest[k]; });
+      failedPatch.current = Object.keys(rest).length ? rest : null;
+    }
+    if (inflight.current === 0) setSaveState(failedPatch.current ? 'error' : 'saved');
+    return true;
+  }, [id]);
+  const retryRef = useRef(null);
+  retryRef.current = () => { if (failedPatch.current) save(failedPatch.current); };
+
+  // Odłożony zapis (opis rich text): zapis po AUTOSAVE_MS bez pisania; flushPending() zapisuje od razu.
+  const saveLater = (key, patch) => {
+    const cur = pending.current[key];
+    if (cur?.timer) clearTimeout(cur.timer);
+    setSaveState('saving');
+    const timer = setTimeout(() => { delete pending.current[key]; save(patch); }, AUTOSAVE_MS);
+    pending.current[key] = { timer, patch };
   };
+  const flushPending = useCallback(async () => {
+    const entries = Object.values(pending.current);
+    pending.current = {};
+    for (const { timer, patch } of entries) { clearTimeout(timer); await save(patch); }
+  }, [save]);
+  const flushRef = useRef(flushPending);
+  flushRef.current = flushPending;
+
+  // Nie gub opisu: zapis przy opuszczeniu strony w aplikacji i ostrzeżenie przy zamknięciu karty.
+  useEffect(() => () => { flushRef.current?.(); }, []);
+  useEffect(() => {
+    const onBeforeUnload = (e) => {
+      if (Object.keys(pending.current).length || inflight.current > 0 || failedPatch.current) {
+        flushRef.current?.();
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, []);
+
   const saveCustom = (key, val) => save({ custom: { ...(ev?.custom || {}), [key]: val } });
 
+  // Wstecz: po wejściu z linku (mail, powiadomienie) historia jest pusta — wtedy lista wydarzeń.
+  const goBack = async () => {
+    await flushPending();
+    if (window.history.length > 1) navigate(-1); else navigate('/wydarzenia');
+  };
+
+  // Tytuł: pusty nie jest zapisywany — wraca poprzednia nazwa.
+  const commitTitle = (value) => {
+    const title = String(value || '').trim();
+    if (!title) {
+      setEv((e) => ({ ...e, title: savedTitle.current }));
+      toast.error(tr('Nazwa wydarzenia nie może być pusta — przywrócono poprzednią.'));
+      return;
+    }
+    if (title === savedTitle.current) return;
+    savedTitle.current = title;
+    save({ title });
+  };
+
+  // Data jest wymagana (wydarzenie bez daty znika z kalendarza i grafiku).
+  const commitDate = (value) => {
+    if (!value) { toast.error(tr('Wydarzenie musi mieć datę.')); return; }
+    save({ date: value });
+  };
+
+  // Godziny: koniec musi być po początku. Błędna para zostaje tylko w formularzu (z komunikatem),
+  // a zapisujemy dopiero poprawną.
+  const commitTime = (field, value) => {
+    const next = { time: ev?.time || '', end_time: ev?.end_time || '', [field]: value };
+    setEv((e) => ({ ...e, [field]: value }));
+    if (endNotAfterStart(next.time, next.end_time)) {
+      setTimeError(tr('Godzina końca musi być późniejsza niż początek.'));
+      return;
+    }
+    setTimeError('');
+    save({ time: next.time || null, end_time: next.end_time || null });
+  };
+
   const del = async () => {
-    if (!await confirmDialog(tr('Usunąć to wydarzenie? Tej operacji nie można cofnąć.'))) return;
+    if (!await confirmDialog(tr('Usunąć wydarzenie „{name}”? Tej operacji nie można cofnąć.', { name: ev?.title || tr('Wydarzenie') }))) return;
+    Object.values(pending.current).forEach(({ timer }) => clearTimeout(timer));
+    pending.current = {};
     const { error } = await supabase.from('events').delete().eq('id', id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(tr('Nie udało się usunąć wydarzenia. Sprawdź, czy masz uprawnienia.'));
     toast.success(tr('Wydarzenie usunięte'));
-    navigate(-1);
+    if (window.history.length > 1) navigate(-1); else navigate('/wydarzenia');
   };
 
   // Zapewnij kampanię RSVP powiązaną z wydarzeniem (utwórz szkic, jeśli brak) — wspólną dla
@@ -228,8 +353,9 @@ export default function EventDetailPage() {
         const { data } = supabase.storage.from('public-assets').getPublicUrl(path);
         added.push({ name: file.name, url: data?.publicUrl, path, type: file.type || '', size: file.size || 0 });
       }
-      save({ attachments: [...(ev.attachments || []), ...added] });
-      toast.success(added.length > 1 ? tr('Wgrano {n} plików.', { n: added.length }) : tr('Wgrano plik.'));
+      if (await save({ attachments: [...(ev.attachments || []), ...added] })) {
+        toast.success(added.length > 1 ? tr('Wgrano {n} plików.', { n: added.length }) : tr('Wgrano plik.'));
+      }
     } catch (e) { toast.error(tr('Nie udało się wgrać: {msg}', { msg: e.message || e })); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
@@ -255,14 +381,29 @@ export default function EventDetailPage() {
       }]).select().single();
       if (error) throw error;
       setPrograms((prev) => [{ id: data.id, title: data.title, type: data.type, date: data.date }, ...prev]);
-      save({ program_id: data.id });
+      if (!await save({ program_id: data.id })) return;
       toast.success(tr('Utworzono program — otwieram edytor.'));
       navigate(`/programs/${data.id}?event=${id}`);
     } catch (e) { toast.error(tr('Nie udało się utworzyć programu: {msg}', { msg: e.message || e })); }
   };
 
   if (loading) return <Spinner center size={28} />;
-  if (!ev) return <div className="max-w-3xl mx-auto py-10"><EmptyState icon={Calendar} title={tr('Nie znaleziono wydarzenia')} subtitle={tr('Mogło zostać usunięte.')} /></div>;
+  if (loadError) {
+    return (
+      <div className="max-w-3xl mx-auto py-10">
+        <EmptyState icon={AlertTriangle} title={tr('Nie udało się wczytać wydarzenia')} subtitle={tr('Sprawdź połączenie z internetem albo uprawnienia i spróbuj ponownie.')}
+          action={<div className="flex gap-2"><Button variant="outline" icon={ArrowLeft} onClick={() => navigate('/wydarzenia')}>{tr('Wróć do wydarzeń')}</Button><Button icon={RefreshCw} onClick={load}>{tr('Spróbuj ponownie')}</Button></div>} />
+      </div>
+    );
+  }
+  if (!ev) {
+    return (
+      <div className="max-w-3xl mx-auto py-10">
+        <EmptyState icon={Calendar} title={tr('Nie znaleziono wydarzenia')} subtitle={tr('Mogło zostać usunięte.')}
+          action={<Button variant="outline" icon={ArrowLeft} onClick={() => navigate('/wydarzenia')}>{tr('Wróć do wydarzeń')}</Button>} />
+      </div>
+    );
+  }
 
   const formLink = ev.form_id ? `${window.location.origin}/form/${ev.form_id}` : null;
   const invCounts = {
@@ -322,25 +463,39 @@ export default function EventDetailPage() {
     <div className="w-full space-y-5 pb-16">
       {/* Nagłówek */}
       <div className="flex items-start gap-3">
-        <button onClick={() => navigate(-1)} className="mt-1 p-1.5 -ml-1.5 shrink-0 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><ArrowLeft size={20} /></button>
+        <button onClick={goBack} aria-label={tr('Wróć')} title={tr('Wróć')} className="mt-1 p-1.5 -ml-1.5 shrink-0 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><ArrowLeft size={20} /></button>
         <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary" style={moduleColor ? { background: moduleColor } : undefined}>
           <Calendar className="text-white w-6 h-6" />
         </div>
         <div className="min-w-0 flex-1">
           <input value={ev.title || ''} readOnly={roField}
-            onChange={(e) => setEv({ ...ev, title: e.target.value })}
-            onBlur={(e) => save({ title: e.target.value })}
+            aria-label={tr('Nazwa wydarzenia')}
+            onChange={(e) => { const v = e.target.value; setEv((cur) => ({ ...cur, title: v })); }}
+            onBlur={(e) => { if (!roField) commitTitle(e.target.value); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             placeholder={tr('Nazwa wydarzenia')}
-            className="w-full text-2xl font-bold bg-transparent text-gray-900 dark:text-white outline-none rounded-lg px-1 -mx-1 focus:ring-2 focus:ring-accent-primary/30" />
+            className={`w-full text-2xl font-bold bg-transparent text-gray-900 dark:text-white outline-none rounded-lg px-1 -mx-1 focus:ring-2 focus:ring-accent-primary/30 ${roField ? '' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-text'}`} />
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-            <span className="inline-flex items-center gap-1"><Calendar size={14} /> {fmtDate(ev.date) || '—'}</span>
-            <span className="inline-flex items-center gap-1"><Clock size={14} /> {ev.time || '—'}{ev.end_time ? `–${ev.end_time}` : ''}</span>
-            {ev.location && <span className="inline-flex items-center gap-1"><MapPin size={14} /> {ev.location}</span>}
+            <span className="inline-flex items-center gap-1"><Calendar size={14} aria-hidden="true" /> {fmtDate(ev.date) || '—'}</span>
+            <span className="inline-flex items-center gap-1"><Clock size={14} aria-hidden="true" /> {ev.time || '—'}{ev.end_time ? `–${ev.end_time}` : ''}</span>
+            {ev.location && <span className="inline-flex items-center gap-1"><MapPin size={14} aria-hidden="true" /> {ev.location}</span>}
             <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs">{moduleTitle}</span>
+            {canManage && saveState !== 'idle' && (
+              <span role="status" aria-live="polite" className={`inline-flex items-center gap-1 text-xs ${saveState === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                {saveState === 'saving' && <><Loader2 size={12} className="animate-spin" aria-hidden="true" /> {tr('Zapisywanie…')}</>}
+                {saveState === 'saved' && <><Check size={12} className="text-green-600 dark:text-green-400" aria-hidden="true" /> {tr('Zapisano')}</>}
+                {saveState === 'error' && (
+                  <>
+                    <AlertTriangle size={12} aria-hidden="true" /> {tr('Nie zapisano')}
+                    <button type="button" onClick={() => retryRef.current?.()} className="ml-1 font-semibold underline hover:no-underline">{tr('Ponów')}</button>
+                  </>
+                )}
+              </span>
+            )}
           </div>
         </div>
         {canManage && (
-          <button onClick={del} className="mt-1 p-2 shrink-0 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={tr('Usuń wydarzenie')}><Trash2 size={18} /></button>
+          <button onClick={del} className="mt-1 p-2 shrink-0 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={tr('Usuń wydarzenie')} aria-label={tr('Usuń wydarzenie')}><Trash2 size={18} /></button>
         )}
       </div>
 
@@ -364,21 +519,26 @@ export default function EventDetailPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Data')}</label>
-            <CustomDatePicker value={String(ev.date || '').slice(0, 10)} onChange={(v) => save({ date: v })} />
+            <CustomDatePicker value={String(ev.date || '').slice(0, 10)} onChange={commitDate} />
           </div>
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Początek')}</label>
-            <TimeField value={ev.time || ''} onChange={(e) => save({ time: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+            <TimeField value={ev.time || ''} onChange={(e) => commitTime('time', e.target.value)} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
           </div>
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Koniec')}</label>
-            <TimeField value={ev.end_time || ''} onChange={(e) => save({ end_time: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+            <TimeField value={ev.end_time || ''} onChange={(e) => commitTime('end_time', e.target.value)} aria-invalid={timeError ? true : undefined} className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-sm ${timeError ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'}`} />
           </div>
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Typ')}</label>
             <CustomSelect value={ev.event_type || ''} onChange={(v) => save({ event_type: v })} options={types} />
           </div>
         </div>
+        {timeError && (
+          <p role="alert" className="mt-2 inline-flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+            <AlertTriangle size={13} aria-hidden="true" /> {timeError} {tr('Godziny nie zostały zapisane.')}
+          </p>
+        )}
         <div className="mt-3">
           <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Lokalizacja')}</label>
           <input value={ev.location || ''} onChange={(e) => setEv({ ...ev, location: e.target.value })} onBlur={(e) => save({ location: e.target.value })} placeholder={tr('Sala główna, Kościół…')} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
@@ -387,10 +547,15 @@ export default function EventDetailPage() {
 
       {/* Szczegóły (rich text) */}
       <Card icon={FileText} title={tr('Szczegóły wydarzenia')}>
-        <SimpleRichEditor content={ev.details_html || ev.description || ''} onChange={(html) => setEv({ ...ev, details_html: html })} placeholder={tr('Opis, agenda, informacje dla uczestników…')} />
-        <div className="mt-2 flex justify-end">
-          <button onClick={() => save({ details_html: ev.details_html || '' })} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">{tr('Zapisz szczegóły')}</button>
-        </div>
+        {/* Opis zapisuje się sam (jak pozostałe pola) — chwilę po ostatnim znaku, przy wyjściu
+            ze strony i przed zamknięciem karty. Dawniej wymagał „Zapisz szczegóły" i przepadał. */}
+        <SimpleRichEditor content={ev.details_html || ev.description || ''}
+          onChange={(html) => {
+            setEv((cur) => ({ ...cur, details_html: html }));
+            if (canManage) saveLater('details_html', { details_html: html });
+          }}
+          placeholder={tr('Opis, agenda, informacje dla uczestników…')} />
+        {canManage && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{tr('Opis zapisuje się automatycznie.')}</p>}
       </Card>
 
       {/* Link */}
@@ -687,7 +852,9 @@ export default function EventDetailPage() {
           teamTypes={teamTypes}
           defaultTeamTypes={defaultTeamTypes}
           canManage={canManage}
-          onSaveAssignments={(a) => save({ assignments: a })}
+          // Przypisania zapisuje sama zakładka atomowo (fn event-assignments-patch); tu tylko
+          // odbieramy świeży stan z serwera — NIGDY nie wysyłamy całego events.assignments.
+          onAssignmentsChange={(a) => setEv((cur) => (cur ? { ...cur, assignments: a } : cur))}
           onSaveTeams={(csv) => save({ team_types: csv })}
           onSaveLayout={(l) => save({ team_layout: l })}
         />
@@ -705,10 +872,17 @@ export default function EventDetailPage() {
         return (
           <div className="space-y-5">
             <Card icon={FileText} title={label}>
-              <SimpleRichEditor content={ev.custom?.[key] || ''} onChange={(html) => setEv({ ...ev, custom: { ...(ev.custom || {}), [key]: html } })} placeholder={tr('Notatki / informacje — {label}…', { label })} />
-              <div className="mt-2 flex justify-end">
-                <button onClick={() => save({ custom: { ...(ev.custom || {}), [key]: ev.custom?.[key] || '' } })} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">{tr('Zapisz')}</button>
-              </div>
+              <SimpleRichEditor content={ev.custom?.[key] || ''}
+                onChange={(html) => {
+                  // Funkcyjny setEv: edytor może trzymać starą wersję callbacku — nie nadpisuj innych pól.
+                  setEv((cur) => {
+                    const custom = { ...(cur.custom || {}), [key]: html };
+                    if (canManage) saveLater(`custom:${key}`, { custom });
+                    return { ...cur, custom };
+                  });
+                }}
+                placeholder={tr('Notatki / informacje — {label}…', { label })} />
+              {canManage && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{tr('Zmiany zapisują się automatycznie.')}</p>}
             </Card>
           </div>
         );
@@ -979,8 +1153,17 @@ const VIS_ROLES = [
   { value: 'lider', label: 'Liderzy' },
   { value: 'czlonek', label: 'Członkowie' },
 ];
-const VIS_MINISTRY_LABELS = { worship_team: 'Zespół Uwielbienia', media_team: 'Media Team', atmosfera_team: 'Atmosfera Team', kids_ministry: 'Małe Avenit' };
-const prettyMin = (k) => (VIS_MINISTRY_LABELS[k] ? tr(VIS_MINISTRY_LABELS[k]) : null) || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+// Klucz służby (members.ministries) → nazwa modułu nadana przez kościół (app_modules),
+// a dopiero potem domyślna. Dawniej: „Małe Avenit”, „Home Groups”, „Administration”.
+const VIS_MINISTRY_MODULE = { worship_team: 'worship', media_team: 'media', atmosfera_team: 'atmosfera', kids_ministry: 'kids', mc_team: 'mc' };
+const VIS_MINISTRY_LABELS = { worship_team: 'Zespół Uwielbienia', media_team: 'Media Team', atmosfera_team: 'Atmosfera Team', kids_ministry: 'Dzieci', mc_team: 'Scena / MC', administration: 'Administracja', home_groups: 'Grupy domowe' };
+const prettyMin = (k, moduleLabels = {}) => {
+  const modKey = VIS_MINISTRY_MODULE[k] || (String(k || '').startsWith('custom_') ? String(k).slice(7) : null);
+  if (modKey && moduleLabels[modKey]) return moduleLabels[modKey];
+  if (VIS_MINISTRY_LABELS[k]) return tr(VIS_MINISTRY_LABELS[k]);
+  const plain = String(k || '').replace(/_/g, ' ');
+  return plain.charAt(0).toUpperCase() + plain.slice(1);
+};
 const memName = (m) => `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || tr('Osoba');
 
 function VisChips({ options, selected, onToggle, empty }) {
@@ -1046,11 +1229,14 @@ function VisibilityBuilderModal({ initial, onClose, onSave }) {
       .then(({ data }) => setCampuses(data || [])).catch(() => setCampuses([]));
   }, []);
 
+  const { modules: appModules } = useModules();
   const ministryOptions = React.useMemo(() => {
+    const labels = {};
+    (appModules || []).forEach((m) => { if (m?.key && m.label) labels[m.key] = m.label; });
     const set = new Set();
     members.forEach((m) => (m.ministries || []).forEach((x) => x && set.add(x)));
-    return [...set].map((v) => ({ value: String(v), label: prettyMin(v) }));
-  }, [members]);
+    return [...set].map((v) => ({ value: String(v), label: prettyMin(v, labels) }));
+  }, [members, appModules]);
   const tagOptions = React.useMemo(() => {
     const set = new Set();
     members.forEach((m) => (m.tags || []).forEach((x) => x && set.add(x)));

@@ -1,22 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
+import Button from '../../components/Button';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX, Users, Calendar } from 'lucide-react';
+import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX, Users, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from '../../lib/toast';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { useT } from '../../i18n';
 import { tr, appLocale } from '../../i18n';
-import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
+import { useScheduleAssignments, patchEventAssignments, scheduleSaveErrorMessage } from '../../hooks/useScheduleAssignments';
+import { eventInviteSummary } from '../../lib/scheduleBridge';
 import { getCachedUser } from '../../lib/supabase';
 import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
 
 // Grafik nad WYDARZENIAMI (twardy switch z programów). Wiersze = wydarzenia danej służby:
 // wydarzenie należy do służby, jeśli reguła event_type_teams (module_key, event_type) zawiera
 // tę służbę, a w braku reguły — gdy to wydarzenie własnego modułu (module_key === teamType).
-// Kolumny = role z team_roles(team_type). Zapis w events.assignments[teamType][field_key] (CSV);
-// wysyłka/statusy przez silnik schedule_assignments po event_id (ten sam co zakładka „Służby").
+// Kolumny = role z team_roles(team_type). Zapis w events.assignments[teamType][field_key] (CSV)
+// WYŁĄCZNIE przez fn event-assignments-patch (atomowo, tylko zmienione pola — nie nadpisuje
+// przypisań innych służb wpisanych w międzyczasie). Wysyłka/statusy przez silnik
+// schedule_assignments po event_id (ten sam co zakładka „Służby").
 
 // Mapowanie tabeli osób służby (zgodne z EventTeamsTab).
 const TEAM_MEMBER_TABLE = {
@@ -25,6 +29,24 @@ const TEAM_MEMBER_TABLE = {
 };
 const memberTableFor = (teamType) => TEAM_MEMBER_TABLE[teamType] || `custom_${teamType}_members`;
 const csvNames = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
+const pad2 = (n) => String(n).padStart(2, '0');
+// Dzień/miesiąc LOKALNY (toISOString dawał UTC — między 00:00 a 02:00 „wczoraj”).
+const localDay = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+// Wąski ekran (telefon) → widok kart zamiast szerokiej tabeli.
+function useIsNarrow(query = '(max-width: 767px)') {
+  const get = () => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(query).matches : false);
+  const [narrow, setNarrow] = useState(get);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mq = window.matchMedia(query);
+    const on = () => setNarrow(mq.matches);
+    on();
+    if (mq.addEventListener) mq.addEventListener('change', on); else mq.addListener(on);
+    return () => { if (mq.removeEventListener) mq.removeEventListener('change', on); else mq.removeListener(on); };
+  }, [query]);
+  return narrow;
+}
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -34,17 +56,20 @@ function useDropdownPosition(triggerRef, isOpen) {
     if (isOpen && triggerRef.current) {
       const updatePosition = () => {
         const rect = triggerRef.current.getBoundingClientRect();
-        const dropdownMaxHeight = 240;
+        const dropdownMaxHeight = 280;
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
         const openUpward = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
+        // Lista nie może wyjść poza prawą krawędź ekranu (telefon).
+        const listWidth = Math.max(rect.width, 224);
+        const left = Math.max(8, Math.min(rect.left + window.scrollX, window.scrollX + window.innerWidth - listWidth - 8));
 
         setCoords({
           top: openUpward
             ? rect.top + window.scrollY - 4
             : rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
-          width: rect.width,
+          left,
+          width: listWidth,
           openUpward
         });
       };
@@ -61,87 +86,136 @@ function useDropdownPosition(triggerRef, isOpen) {
   return coords;
 }
 
-// Multi-select dla tabeli grafiku
+// Multi-select dla tabeli grafiku (obsługa myszą, dotykiem i klawiaturą:
+// Enter/Spacja/↓ otwiera, ↑/↓ przechodzi po osobach, Enter/Spacja zaznacza, Esc zamyka).
 // unavailableMembers — zgłoszone nieobecności (volunteer_blockouts): ostrzeżenie, ale wybór możliwy
-// (lider może wiedzieć więcej); absentMembers — ręczna „Absencja” w grafiku: wybór zablokowany.
-const TableMultiSelect = ({ options, value, onChange, absentMembers = [], unavailableMembers = [] }) => {
+// (lider może wiedzieć więcej); absentMembers — ręczna nieobecność w grafiku: wybór zablokowany.
+const TableMultiSelect = ({ options, value, onChange, absentMembers = [], unavailableMembers = [], label }) => {
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
+  const listRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
-  const selectedItems = value ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const selectedItems = csvNames(value);
+
+  const close = useCallback((focusTrigger) => {
+    setIsOpen(false);
+    if (focusTrigger) triggerRef.current?.focus();
+  }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return undefined;
     const handleClickOutside = (e) => {
       if (triggerRef.current && !triggerRef.current.contains(e.target) && !e.target.closest('.portal-multiselect')) {
         setIsOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
+  // Po otwarciu fokus na zaznaczonej (albo pierwszej) osobie — żeby dało się działać klawiaturą.
+  useEffect(() => {
+    if (!isOpen || !coords.width || !listRef.current) return;
+    const sel = listRef.current.querySelector('[role="option"][aria-selected="true"]')
+      || listRef.current.querySelector('[role="option"]');
+    sel?.focus({ preventScroll: true });
+  }, [isOpen, coords.width]);
 
   const toggleSelection = (name, isAbsent) => {
     if (isAbsent) return;
-    let newSelection;
-    if (selectedItems.includes(name)) newSelection = selectedItems.filter(i => i !== name);
-    else newSelection = [...selectedItems, name];
+    const newSelection = selectedItems.includes(name)
+      ? selectedItems.filter((i) => i !== name)
+      : [...selectedItems, name];
     onChange(newSelection.join(', '));
   };
 
+  const onListKeyDown = (e) => {
+    const items = Array.from(listRef.current?.querySelectorAll('[role="option"]') || []);
+    const idx = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[Math.min(items.length - 1, idx + 1)]?.focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); items[Math.max(0, idx - 1)]?.focus(); }
+    else if (e.key === 'Home') { e.preventDefault(); items[0]?.focus(); }
+    else if (e.key === 'End') { e.preventDefault(); items[items.length - 1]?.focus(); }
+    else if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); close(true); }
+  };
+
+  const summary = selectedItems.length ? selectedItems.join(', ') : t('Wybierz...');
+
   return (
     <div className="relative w-full">
-      <div
+      <button
+        type="button"
         ref={triggerRef}
-        className="w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:border-accent-primary-light dark:hover:border-accent-primary-light transition"
-        onClick={() => setIsOpen(!isOpen)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={label ? `${label}: ${summary}` : summary}
+        className="w-full min-h-[36px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-left cursor-pointer flex flex-wrap gap-1 items-center hover:border-accent-primary-light dark:hover:border-accent-primary-light focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 transition"
+        onClick={() => setIsOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown' && !isOpen) { e.preventDefault(); setIsOpen(true); }
+          else if (e.key === 'Escape' && isOpen) { e.preventDefault(); close(true); }
+        }}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{t('Wybierz...')}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs">{t('Wybierz...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
-            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-[10px] border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">
+            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-xs border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">
               {item}
             </span>
           ))
         )}
-      </div>
+      </button>
 
       {isOpen && coords.width > 0 && document.body && createPortal(
         <div
-          className="portal-multiselect fixed z-[9999] w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100"
+          ref={listRef}
+          role="listbox"
+          aria-multiselectable="true"
+          aria-label={label || undefined}
+          onKeyDown={onListKeyDown}
+          className="portal-multiselect fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-72 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100"
           style={{
             ...(coords.openUpward
               ? { bottom: `calc(100vh - ${coords.top}px)` }
               : { top: coords.top }),
-            left: coords.left
+            left: coords.left,
+            width: coords.width,
           }}
         >
           {options.length === 0 && (
-            <div className="px-3 py-2 text-xs text-gray-400 italic">{t('Brak osób w tej służbie')}</div>
+            <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">{t('Brak osób w tej służbie')}</div>
           )}
           {options.map((person) => {
             const isSelected = selectedItems.includes(person.full_name);
             const isAbsent = absentMembers.includes(person.full_name);
             const isUnavailable = !isAbsent && unavailableMembers.includes(person.full_name);
             return (
-              <div
+              <button
+                type="button"
+                role="option"
+                tabIndex={-1}
+                aria-selected={isSelected}
+                aria-disabled={isAbsent || undefined}
                 key={person.id}
-                className={`px-3 py-1.5 text-xs cursor-pointer flex items-center justify-between transition
-                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300'}
+                className={`w-full text-left px-3 py-2 min-h-[40px] text-[13px] flex items-center justify-between gap-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-primary/40
+                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed' : 'cursor-pointer hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300'}
                   ${isSelected ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
                 `}
                 onClick={() => toggleSelection(person.full_name, isAbsent)}
               >
                 <span className={isAbsent ? 'line-through decoration-gray-400 dark:decoration-gray-600' : isUnavailable ? 'text-red-600 dark:text-red-400' : ''}>
                   {person.full_name}
-                  {isUnavailable && <span className="ml-1 text-[10px] opacity-80">({t('zgłoszona nieobecność')})</span>}
+                  {isUnavailable && <span className="ml-1 text-xs opacity-80">({t('zgłoszona nieobecność')})</span>}
+                  {!person.email && !isAbsent && (
+                    <span className="ml-1 text-xs text-amber-700 dark:text-amber-400" title={tr('Brak e-maila — ta osoba nie dostanie powiadomienia')}>⚠</span>
+                  )}
                 </span>
-                {isSelected && !isAbsent && <Check size={12} />}
-                {isAbsent && <UserX size={12} className="text-red-300 dark:text-red-400" />}
-                {isUnavailable && !isSelected && <CalendarX size={12} className="text-red-400" />}
-              </div>
+                {isSelected && !isAbsent && <Check size={14} aria-hidden="true" />}
+                {isAbsent && <UserX size={14} className="text-red-300 dark:text-red-400" aria-hidden="true" />}
+                {isUnavailable && !isSelected && <CalendarX size={14} className="text-red-400" aria-hidden="true" />}
+              </button>
             );
           })}
         </div>,
@@ -151,32 +225,54 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [], unavai
   );
 };
 
-// Przycisk „Wyślij" + status akceptacji per wydarzenie (grafik nad wydarzeniami).
-// Przypisania są już zsynchronizowane do schedule_assignments przy każdym wyborze osoby
+// Przycisk „Powiadom" + status akceptacji per wydarzenie (grafik nad wydarzeniami).
+// Przypisania są zsynchronizowane do schedule_assignments przy każdym wyborze osoby
 // (createAssignment/removeEventAssignment z event_id), więc tu tylko wysyłamy i pokazujemy status.
+// Wybór osoby NIE wysyła maila sam — dlatego przycisk jest wyraźny i pokazuje liczbę niewysłanych.
 function EventSendCell({ eventId, teamType, assignments, onSent }) {
   const [loading, setLoading] = useState(false);
-  const rows = (assignments || []).filter((a) => a.event_id === eventId && a.team_type === teamType);
-  const accepted = rows.filter((a) => a.status === 'accepted').length;
-  const rejected = rows.filter((a) => a.status === 'rejected').length;
-  const pending = rows.filter((a) => a.status === 'pending').length;
-  // „Do wysłania" = oczekujące, którym jeszcze nie wysłano maila.
-  const toSend = rows.filter((a) => a.status === 'pending' && !a.email_sent_at && a.assigned_email).length;
+  const s = eventInviteSummary(assignments, eventId, teamType);
+  const total = s.accepted + s.rejected + s.pending;
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <button
-        onClick={async () => { setLoading(true); try { await onSent(); } finally { setLoading(false); } }}
-        disabled={loading}
-        title={toSend ? tr('Wyślij zaproszenia (mail + push) do przypisanych osób') : tr('Brak nowych osób do powiadomienia')}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition ${loading ? 'opacity-60' : ''} ${toSend ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'}`}>
-        <Send size={12} /> {loading ? '...' : toSend ? `${tr('Wyślij')} (${toSend})` : tr('Wyślij')}
-      </button>
-      {rows.length > 0 && (
-        <span className="inline-flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
-          {accepted > 0 && <span className="inline-flex items-center gap-0.5 text-green-600 dark:text-green-400"><Check size={11} />{accepted}</span>}
-          {pending > 0 && <span className="inline-flex items-center gap-0.5 text-amber-500"><Clock size={11} />{pending}</span>}
-          {rejected > 0 && <span className="inline-flex items-center gap-0.5 text-red-500"><XIcon size={11} />{rejected}</span>}
+      {s.toSend > 0 && (
+        <Button
+          size="sm"
+          icon={Send}
+          loading={loading}
+          onClick={async () => { setLoading(true); try { await onSent(); } finally { setLoading(false); } }}
+          title={tr('Wyślij zaproszenia (e-mail i powiadomienie w aplikacji) osobom, które jeszcze ich nie dostały')}
+          className="whitespace-nowrap"
+        >
+          {tr('Powiadom ({n})', { n: s.toSend })}
+        </Button>
+      )}
+      {total > 0 && (
+        <span className="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+          {s.accepted > 0 && (
+            <span className="inline-flex items-center gap-0.5 text-green-700 dark:text-green-400" title={tr('Potwierdzone: {n}', { n: s.accepted })} aria-label={tr('Potwierdzone: {n}', { n: s.accepted })}>
+              <Check size={12} aria-hidden="true" />{s.accepted}
+            </span>
+          )}
+          {s.pending > 0 && (
+            <span className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-400" title={tr('Czeka na odpowiedź: {n}', { n: s.pending })} aria-label={tr('Czeka na odpowiedź: {n}', { n: s.pending })}>
+              <Clock size={12} aria-hidden="true" />{s.pending}
+            </span>
+          )}
+          {s.rejected > 0 && (
+            <span className="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400" title={tr('Odmówiło: {n}', { n: s.rejected })} aria-label={tr('Odmówiło: {n}', { n: s.rejected })}>
+              <XIcon size={12} aria-hidden="true" />{s.rejected}
+            </span>
+          )}
+        </span>
+      )}
+      {s.noEmail.length > 0 && (
+        <span
+          className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400"
+          title={tr('Bez e-maila — nie dostaną powiadomienia: {names}', { names: s.noEmail.join(', ') })}
+        >
+          <AlertTriangle size={12} aria-hidden="true" /> {tr('Bez e-maila: {names}', { names: s.noEmail.join(', ') })}
         </span>
       )}
     </div>
@@ -189,6 +285,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const { getCampus } = useCampusBadge();
   const teamType = moduleKey;
   const memberTableName = memberTableFor(teamType);
+  const narrow = useIsNarrow();
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -198,17 +295,23 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   // Zgłoszone nieobecności osób służby (fn team-availability): [{ name, start_date, end_date }].
   const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [bulkSending, setBulkSending] = useState(null); // monthKey
+  const hintShown = useRef(false);
+  const saveSeq = useRef({}); // { [eventId]: numer ostatniego zapisu } — starsze odpowiedzi nie nadpisują nowszych
 
   const { assignments: schedAssignments, fetchAssignmentsForEvents, createAssignment, removeEventAssignment, sendInvitesForEvent } = useScheduleAssignments();
 
+  // Statusy zaproszeń pobieramy po zmianie ZBIORU wydarzeń (nie po każdej edycji komórki).
+  const eventIdsKey = events.map((e) => e.id).filter(Boolean).join(',');
   useEffect(() => {
-    const ids = events.map((e) => e.id).filter(Boolean);
-    if (ids.length) fetchAssignmentsForEvents(ids);
-  }, [events, fetchAssignmentsForEvents]);
+    const ids = eventIdsKey ? eventIdsKey.split(',') : [];
+    if (ids.length) fetchAssignmentsForEvents(events.map((e) => e.id).filter(Boolean));
+  }, [eventIdsKey, fetchAssignmentsForEvents]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchData();
-  }, [moduleKey]);
+  }, [moduleKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Czy wydarzenie należy do tej służby (spójne z zakładką „Służby" na wydarzeniu).
   // 0) event ma już przypisania tej służby → zawsze pokaż (nie gub danych po zmianie typu/reguły).
@@ -224,6 +327,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       // Reguły służb wg typu (żeby grafik pokazał też wydarzenia z INNYCH modułów, gdzie ta służba służy).
       let rules = [];
@@ -234,10 +338,11 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       setTypeTeams(Array.isArray(rules) ? rules : []);
 
       // Wszystkie wydarzenia (grupujemy po miesiącach, jak dawniej programy).
-      const { data: evData } = await supabase
+      const { data: evData, error: evError } = await supabase
         .from('events')
         .select('*')
         .order('date', { ascending: false });
+      if (evError) throw evError;
       setEvents(evData || []);
 
       // Osoby służby (obsługa braku tabeli).
@@ -265,6 +370,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       setMemberRoles(memberRolesData || []);
     } catch (err) {
       console.error('Błąd pobierania danych grafiku:', err);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -272,10 +378,11 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
 
   // Tylko wydarzenia tej służby.
   const teamEvents = events.filter(includesThisTeam);
+  const teamEventIds = () => teamEvents.map((e) => e.id).filter(Boolean);
 
   // Nieobecności dla zakresu dat wydarzeń grafiku (od dziś — przeszłości nie układamy).
   const availRange = (() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDay();
     const dates = teamEvents.map((e) => String(e.date || '').slice(0, 10)).filter((d) => d >= today).sort();
     return dates.length ? `${dates[0]}|${dates[dates.length - 1]}` : '';
   })();
@@ -295,7 +402,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const groupedEvents = teamEvents.reduce((acc, ev) => {
     if (!ev.date) return acc;
     const date = new Date(ev.date);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const key = `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
     if (!acc[key]) acc[key] = [];
     acc[key].push(ev);
     return acc;
@@ -304,7 +411,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const sortedMonths = Object.keys(groupedEvents).sort().reverse();
 
   useEffect(() => {
-    const currentMonthKey = new Date().toISOString().slice(0, 7);
+    const currentMonthKey = localDay().slice(0, 7);
     setExpandedMonths(prev => ({ ...prev, [currentMonthKey]: true }));
   }, []);
 
@@ -322,15 +429,42 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     return new Date(dateString).toLocaleDateString(appLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  // Zapis pola grafiku w events.assignments[teamType]; jednocześnie synchronizacja do schedule_assignments.
-  const writeAssignments = async (eventId, updater) => {
+  // Ustaw pola sekcji tej służby w lokalnym stanie wydarzenia.
+  const setTeamFields = (eventId, fields) => {
+    setEvents((prev) => prev.map((e) => {
+      if (e.id !== eventId) return e;
+      const team = { ...(e.assignments?.[teamType] || {}) };
+      for (const [k, v] of Object.entries(fields)) {
+        if (v === undefined) delete team[k]; else team[k] = v;
+      }
+      return { ...e, assignments: { ...(e.assignments || {}), [teamType]: team } };
+    }));
+  };
+
+  // Atomowy zapis wybranych pól grafiku tej służby (fn event-assignments-patch).
+  // Optymistycznie w UI; po odpowiedzi stan z serwera (z cudzymi zmianami), przy błędzie —
+  // przywrócenie poprzednich wartości i komunikat. Zwraca true/false.
+  const patchTeam = async (eventId, changes) => {
     const ev = events.find((e) => e.id === eventId);
-    if (!ev) return;
-    const teamData = { ...(ev.assignments?.[teamType] || {}) };
-    updater(teamData);
-    const updatedAssignments = { ...(ev.assignments || {}), [teamType]: teamData };
-    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, assignments: updatedAssignments } : e));
-    await supabase.from('events').update({ assignments: updatedAssignments }).eq('id', eventId);
+    if (!ev) return false;
+    const prevTeam = ev.assignments?.[teamType] || {};
+    const previous = Object.fromEntries(Object.keys(changes).map((k) => [k, k in prevTeam ? prevTeam[k] : undefined]));
+    const seq = (saveSeq.current[eventId] || 0) + 1;
+    saveSeq.current[eventId] = seq;
+    setTeamFields(eventId, changes);
+
+    const ops = Object.entries(changes).map(([key, value]) => ({ team: teamType, key, value: value ?? null }));
+    const { assignments, error } = await patchEventAssignments(eventId, ops);
+    const latest = saveSeq.current[eventId] === seq;
+    if (error) {
+      if (latest) setTeamFields(eventId, previous);
+      toast.error(scheduleSaveErrorMessage(error));
+      return false;
+    }
+    if (latest && assignments) {
+      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, assignments } : e)));
+    }
+    return true;
   };
 
   const updateRole = async (eventId, roleKey, roleLabel, value) => {
@@ -340,40 +474,65 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     const after = csvNames(value);
     const added = after.filter((n) => !before.includes(n));
     const removed = before.filter((n) => !after.includes(n));
+    if (!added.length && !removed.length) return;
 
-    await writeAssignments(eventId, (teamData) => { teamData[roleKey] = after.join(', '); });
+    if (!await patchTeam(eventId, { [roleKey]: after.join(', ') })) return;
 
-    try {
-      const me = await getCachedUser();
-      for (const name of added) {
-        const m = members.find((x) => x.full_name === name);
-        await createAssignment({
-          eventId, teamType, roleKey, roleLabel,
-          assignedName: name, assignedEmail: m?.email || null,
-          assignedByEmail: me?.email || null, assignedByName: me?.email?.split('@')[0] || 'Administrator',
-          isSelfAssignment: !!(me?.email && m?.email && me.email.toLowerCase() === m.email.toLowerCase()),
-        });
-      }
-      for (const name of removed) {
-        await removeEventAssignment(eventId, teamType, roleKey, name);
-      }
-      if (added.length || removed.length) await fetchAssignmentsForEvents(teamEvents.map((e) => e.id).filter(Boolean));
-    } catch (e) {
-      toast.error(e.message || tr('Błąd zapisu przypisania'));
+    // Synchronizacja z silnikiem zaproszeń. Gdy się nie uda, cofamy zmianę w siatce —
+    // inaczej „Powiadom" zaprosiłby osobę, którą właśnie zdjęto (albo pominął dodaną).
+    const failedAdd = [];
+    const failedRemove = [];
+    let me = null;
+    try { me = await getCachedUser(); } catch { me = null; }
+    for (const name of added) {
+      const m = members.find((x) => x.full_name === name);
+      const res = await createAssignment({
+        eventId, teamType, roleKey, roleLabel,
+        assignedName: name, assignedEmail: m?.email || null,
+        assignedByEmail: me?.email || null, assignedByName: me?.email?.split('@')[0] || 'Administrator',
+        isSelfAssignment: !!(me?.email && m?.email && me.email.toLowerCase() === m.email.toLowerCase()),
+      });
+      if (!res?.success) failedAdd.push(name);
     }
+    for (const name of removed) {
+      const res = await removeEventAssignment(eventId, teamType, roleKey, name);
+      if (!res?.success) failedRemove.push(name);
+    }
+
+    if (failedAdd.length || failedRemove.length) {
+      const corrected = [...after.filter((n) => !failedAdd.includes(n)), ...failedRemove];
+      await patchTeam(eventId, { [roleKey]: corrected.join(', ') });
+      toast.error(tr('Nie udało się zmienić przydziału: {names}. Sprawdź, czy masz uprawnienia do edycji grafiku, i spróbuj ponownie.', {
+        names: [...failedAdd, ...failedRemove].join(', '),
+      }));
+    } else if (added.length && !hintShown.current) {
+      const withEmail = added.some((n) => members.find((x) => x.full_name === n)?.email);
+      if (withEmail) {
+        hintShown.current = true;
+        toast.info(tr('Zapisano w grafiku. Aby powiadomić osoby, kliknij „Powiadom” przy dacie.'));
+      }
+    }
+    await fetchAssignmentsForEvents(teamEventIds());
   };
 
+  // Notatki: zapis tylko przy realnej zmianie (dawniej każde wyjście z pola nadpisywało grafik).
   const updateNotes = async (eventId, value) => {
-    await writeAssignments(eventId, (teamData) => { teamData.notatki = value; });
+    const ev = events.find((e) => e.id === eventId);
+    const current = ev?.assignments?.[teamType]?.notatki || '';
+    if (!ev || value === current) return;
+    await patchTeam(eventId, { notatki: value });
   };
 
   const updateAbsence = async (eventId, value) => {
-    await writeAssignments(eventId, (teamData) => { teamData.absencja = value; });
+    const ev = events.find((e) => e.id === eventId);
+    const current = ev?.assignments?.[teamType]?.absencja || '';
+    if (!ev || csvNames(value).join(', ') === csvNames(current).join(', ')) return;
+    await patchTeam(eventId, { absencja: value });
   };
 
   // Eksport widocznego grafiku (wszystkie wydarzenia tej służby) do CSV.
   const exportCsv = () => {
-    const header = ['Data', 'Wydarzenie', ...columns.map((c) => c.label), 'Absencja', 'Notatki'];
+    const header = [tr('Data'), tr('Wydarzenie'), ...columns.map((c) => c.label), tr('Nieobecni'), tr('Notatki')];
     const rows = teamEvents.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map((ev) => {
       const td = ev.assignments?.[teamType] || {};
       return [formatDateShort(ev.date), ev.title || '', ...columns.map((c) => td[c.key] || ''), td.absencja || '', td.notatki || ''];
@@ -387,16 +546,25 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     URL.revokeObjectURL(url);
   };
 
-  const sendForEvent = async (eventId) => {
-    const res = await sendInvitesForEvent(eventId, teamType);
-    if (res?.success) {
-      if (res.sent > 0) toast.success(res.failed ? tr('Wysłano powiadomienia: {sent}, niepowodzeń: {failed}', { sent: res.sent, failed: res.failed }) : tr('Wysłano powiadomienia: {sent}', { sent: res.sent }));
-      else if (res.emailReady === false) toast.error(res.error || tr('Brak konfiguracji e-mail na serwerze.'));
-      else toast.info(tr('Brak nowych osób do powiadomienia (sprawdź, czy mają e-mail w profilu).'));
-    } else {
-      toast.error(res?.error || tr('Nie udało się wysłać powiadomień.'));
+  // Wysyłka zaproszeń dla jednego albo kilku wydarzeń (cały miesiąc) — jeden zbiorczy komunikat.
+  const sendForEvents = async (eventIds) => {
+    let sent = 0, failed = 0, errorMsg = null, notConfigured = false;
+    for (const id of eventIds) {
+      const res = await sendInvitesForEvent(id, teamType);
+      if (res?.success) { sent += res.sent || 0; failed += res.failed || 0; continue; }
+      if (res?.emailReady === false) { notConfigured = true; break; }
+      errorMsg = res?.error || 'error';
     }
-    await fetchAssignmentsForEvents(teamEvents.map((e) => e.id).filter(Boolean));
+    if (notConfigured) toast.error(tr('Wysyłka e-maili nie jest skonfigurowana. Skontaktuj się z administratorem.'));
+    else if (sent > 0) toast.success(failed ? tr('Wysłano powiadomienia: {sent}, niepowodzeń: {failed}', { sent, failed }) : tr('Wysłano powiadomienia: {sent}', { sent }));
+    else if (failed > 0 || errorMsg) toast.error(tr('Nie udało się wysłać powiadomień.'));
+    else toast.info(tr('Brak nowych osób do powiadomienia (sprawdź, czy mają e-mail w profilu).'));
+    await fetchAssignmentsForEvents(teamEventIds());
+  };
+
+  const sendForMonth = async (monthKey, ids) => {
+    setBulkSending(monthKey);
+    try { await sendForEvents(ids); } finally { setBulkSending(null); }
   };
 
   // Kolumny na podstawie ról
@@ -418,16 +586,92 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     return <Spinner center />;
   }
 
+  if (loadError) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title={tr('Nie udało się wczytać grafiku')}
+        subtitle={tr('Sprawdź połączenie z internetem i spróbuj ponownie.')}
+        action={<Button variant="outline" icon={RefreshCw} onClick={fetchData}>{tr('Spróbuj ponownie')}</Button>}
+      />
+    );
+  }
+
+  // ── Wspólne elementy wiersza (tabela na komputerze / karta na telefonie) ──
+  const dateInfo = (ev, unavailableList) => (
+    <div className="flex flex-col gap-1.5 items-start text-xs">
+      <span className="tabular-nums font-semibold text-gray-800 dark:text-gray-100 text-[13px]">{formatDateShort(ev.date)}</span>
+      {ev.title && <span className="text-xs text-gray-600 dark:text-gray-400 font-normal">{ev.title}</span>}
+      <CampusBadge campus={getCampus(ev.campus_id)} />
+      {unavailableList.length > 0 && (
+        <span className="inline-flex items-start gap-1 text-xs text-red-600 dark:text-red-400 max-w-[200px]" title={t('Zgłoszone nieobecności')}>
+          <CalendarX size={12} className="shrink-0 mt-px" aria-hidden="true" />
+          <span>{unavailableList.join(', ')}</span>
+        </span>
+      )}
+      <EventSendCell
+        eventId={ev.id}
+        teamType={teamType}
+        assignments={schedAssignments}
+        onSent={() => sendForEvents([ev.id])}
+      />
+    </div>
+  );
+
+  const roleSelect = (ev, col, absentList, unavailableList) => (
+    <TableMultiSelect
+      label={col.label}
+      options={getMembersForRole(col.roleId)}
+      value={ev.assignments?.[teamType]?.[col.key] || ''}
+      onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
+      absentMembers={absentList}
+      unavailableMembers={unavailableList}
+    />
+  );
+
+  const absenceSelect = (ev) => (
+    <TableMultiSelect
+      label={tr('Nieobecni')}
+      options={members}
+      value={ev.assignments?.[teamType]?.absencja || ''}
+      onChange={(val) => updateAbsence(ev.id, val)}
+    />
+  );
+
+  const notesInput = (ev) => {
+    const notes = ev.assignments?.[teamType]?.notatki || '';
+    return (
+      <input
+        key={`${ev.id}:${notes}`}
+        aria-label={tr('Notatki')}
+        className="w-full bg-transparent border-b border-gray-200 dark:border-gray-700 md:border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-[13px] p-1.5 outline-none transition placeholder-gray-400 dark:placeholder-gray-500 text-gray-700 dark:text-gray-300"
+        placeholder={tr('Wpisz...')}
+        defaultValue={notes}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+        onBlur={(e) => updateNotes(ev.id, e.target.value)}
+      />
+    );
+  };
+
+  const legend = (
+    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mb-4">
+      <span className="inline-flex items-center gap-1"><Check size={12} className="text-green-700 dark:text-green-400" aria-hidden="true" /> {tr('potwierdzone')}</span>
+      <span className="inline-flex items-center gap-1"><Clock size={12} className="text-amber-700 dark:text-amber-400" aria-hidden="true" /> {tr('czeka na odpowiedź')}</span>
+      <span className="inline-flex items-center gap-1"><XIcon size={12} className="text-red-600 dark:text-red-400" aria-hidden="true" /> {tr('odmowa')}</span>
+      <span className="inline-flex items-center gap-1"><AlertTriangle size={12} className="text-amber-700 dark:text-amber-400" aria-hidden="true" /> {tr('brak e-maila — bez powiadomienia')}</span>
+    </p>
+  );
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center gap-3 mb-4 flex-wrap">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           {tr('Grafik')}
         </h2>
         {teamEvents.length > 0 && (
           <button onClick={exportCsv}
             className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-            <Download size={15} /> {tr('Eksport CSV')}
+            <Download size={15} aria-hidden="true" /> {tr('Eksport CSV')}
           </button>
         )}
       </div>
@@ -438,85 +682,105 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
         <EmptyState icon={Calendar} title={t('Brak wydarzeń')} subtitle={tr('Dodaj wydarzenia w tym module albo przypisz tę służbę do typu wydarzenia w Ustawieniach.')} />
       ) : (
         <div className="space-y-4">
+          {legend}
           {sortedMonths.map(monthKey => {
             const isExpanded = expandedMonths[monthKey];
+            const monthEvents = groupedEvents[monthKey].slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+            const toSendIds = monthEvents.filter((ev) => eventInviteSummary(schedAssignments, ev.id, teamType).toSend > 0).map((ev) => ev.id);
+            const toSendCount = monthEvents.reduce((acc, ev) => acc + eventInviteSummary(schedAssignments, ev.id, teamType).toSend, 0);
             return (
               <div key={monthKey} className={`bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm relative z-0 transition-all duration-300 ${isExpanded ? 'mb-8' : 'mb-0'}`}>
                 <button
                   onClick={() => toggleMonth(monthKey)}
-                  className={`w-full px-6 py-4 bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80 flex justify-between items-center transition border-b border-gray-100 dark:border-gray-700 ${isExpanded ? 'rounded-t-2xl' : 'rounded-2xl'}`}
+                  aria-expanded={!!isExpanded}
+                  className={`w-full px-4 sm:px-6 py-4 bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80 flex justify-between items-center gap-2 transition border-b border-gray-100 dark:border-gray-700 ${isExpanded ? 'rounded-t-2xl' : 'rounded-2xl'}`}
                 >
                   <span className="font-bold text-gray-800 dark:text-gray-200 text-sm uppercase tracking-wider">{formatMonthName(monthKey)}</span>
-                  {isExpanded ? <ChevronUp size={18} className="text-gray-500 dark:text-gray-400"/> : <ChevronDown size={18} className="text-gray-500 dark:text-gray-400"/>}
+                  <span className="inline-flex items-center gap-2">
+                    {!isExpanded && toSendCount > 0 && (
+                      <span className="text-xs font-medium text-accent-primary">{tr('Do powiadomienia: {n}', { n: toSendCount })}</span>
+                    )}
+                    {isExpanded ? <ChevronUp size={18} className="text-gray-500 dark:text-gray-400" aria-hidden="true" /> : <ChevronDown size={18} className="text-gray-500 dark:text-gray-400" aria-hidden="true" />}
+                  </span>
                 </button>
 
-                {isExpanded && (
+                {isExpanded && toSendCount > 0 && (
+                  <div className="flex items-center justify-between gap-3 flex-wrap px-4 sm:px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/20">
+                    <span className="text-sm text-gray-700 dark:text-gray-200">
+                      {tr('Nowe przypisania bez powiadomienia: {n}', { n: toSendCount })}
+                    </span>
+                    <Button size="sm" icon={Send} loading={bulkSending === monthKey} onClick={() => sendForMonth(monthKey, toSendIds)}>
+                      {tr('Powiadom wszystkich ({n})', { n: toSendCount })}
+                    </Button>
+                  </div>
+                )}
+
+                {isExpanded && narrow && (
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {monthEvents.map((ev) => {
+                      const absentList = csvNames(ev.assignments?.[teamType]?.absencja);
+                      const unavailableList = unavailableOn(ev.date);
+                      return (
+                        <div key={ev.id} className="p-4 space-y-3">
+                          {dateInfo(ev, unavailableList)}
+                          <div className="grid grid-cols-1 gap-3">
+                            {columns.map((col) => (
+                              <div key={col.key}>
+                                <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{col.label}</div>
+                                {roleSelect(ev, col, absentList, unavailableList)}
+                              </div>
+                            ))}
+                            <div>
+                              <div className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1">{tr('Nieobecni')}</div>
+                              {absenceSelect(ev)}
+                            </div>
+                            <div>
+                              <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{tr('Notatki')}</div>
+                              {notesInput(ev)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {isExpanded && !narrow && (
                   <DataTable flush className="pb-4 rounded-b-2xl" tableClassName="min-w-max">
                     <THead>
                       <tr>
-                        <TH className="w-24 min-w-[90px]">{t('Data')}</TH>
+                        {/* Kolumna daty przyklejona — po przewinięciu w prawo nadal wiadomo, która to niedziela. */}
+                        <TH className="sticky left-0 z-[2] bg-gray-50 dark:bg-gray-800 min-w-[150px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.12)]">{t('Data')}</TH>
                         {columns.map(col => (
-                          <TH key={col.key} className="min-w-[130px]">{col.label}</TH>
+                          <TH key={col.key} className="min-w-[150px]">{col.label}</TH>
                         ))}
-                        <TH className="min-w-[130px] !text-red-500 dark:!text-red-400">{tr('Absencja')}</TH>
-                        <TH className="min-w-[150px]">{tr('Notatki')}</TH>
+                        <TH className="min-w-[150px] !text-red-500 dark:!text-red-400">{tr('Nieobecni')}</TH>
+                        <TH className="min-w-[170px]">{tr('Notatki')}</TH>
                       </tr>
                     </THead>
                     <tbody className="relative">
-                      {groupedEvents[monthKey]
-                        .sort((a, b) => new Date(a.date) - new Date(b.date))
-                        .map((ev) => {
+                      {monthEvents.map((ev) => {
                         const absentList = csvNames(ev.assignments?.[teamType]?.absencja);
                         const unavailableList = unavailableOn(ev.date);
                         return (
                           <TR key={ev.id} className="relative">
-                            <TD className="font-medium">
-                              <div className="flex flex-col gap-1.5 items-start text-xs">
-                                <span className="tabular-nums">{formatDateShort(ev.date)}</span>
-                                {ev.title && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">{ev.title}</span>}
-                                <CampusBadge campus={getCampus(ev.campus_id)} />
-                                {unavailableList.length > 0 && (
-                                  <span className="inline-flex items-start gap-1 text-[10px] text-red-600 dark:text-red-400 max-w-[160px]" title={t('Zgłoszone nieobecności')}>
-                                    <CalendarX size={11} className="shrink-0 mt-px" />
-                                    <span>{unavailableList.join(', ')}</span>
-                                  </span>
-                                )}
-                                <EventSendCell
-                                  eventId={ev.id}
-                                  teamType={teamType}
-                                  assignments={schedAssignments}
-                                  onSent={() => sendForEvent(ev.id)}
-                                />
-                              </div>
+                            <TD className="font-medium sticky left-0 z-[1] bg-white dark:bg-gray-800 align-top min-w-[150px] max-w-[220px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.12)]">
+                              {dateInfo(ev, unavailableList)}
                             </TD>
                             {columns.map(col => (
-                              <TD key={col.key} className="relative">
-                                <TableMultiSelect
-                                  options={getMembersForRole(col.roleId)}
-                                  value={ev.assignments?.[teamType]?.[col.key] || ''}
-                                  onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
-                                  absentMembers={absentList}
-                                  unavailableMembers={unavailableList}
-                                />
+                              <TD key={col.key} className="relative align-top">
+                                {roleSelect(ev, col, absentList, unavailableList)}
                               </TD>
                             ))}
-                            <TD className="relative">
-                              <TableMultiSelect
-                                options={members}
-                                value={ev.assignments?.[teamType]?.absencja || ''}
-                                onChange={(val) => updateAbsence(ev.id, val)}
-                              />
+                            <TD className="relative align-top">
+                              {absenceSelect(ev)}
                             </TD>
-                            <TD>
-                              <input
-                                className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
-                                placeholder={tr('Wpisz...')}
-                                defaultValue={ev.assignments?.[teamType]?.notatki || ''}
-                                onBlur={(e) => updateNotes(ev.id, e.target.value)}
-                              />
+                            <TD className="align-top">
+                              {notesInput(ev)}
                             </TD>
                           </TR>
-                        );})}
+                        );
+                      })}
                     </tbody>
                   </DataTable>
                 )}

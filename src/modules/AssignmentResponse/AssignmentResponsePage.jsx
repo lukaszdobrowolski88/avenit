@@ -7,10 +7,14 @@ import { tr, appLocale } from '../../i18n';
 // autoryzuje sam token z linku w mailu. Dane idą przez publiczne endpointy
 // /api/public/assignment/:token (odczyt) i .../respond (accept/reject), NIE przez /api/db
 // (który wymaga logowania).
+// Link z maila (…&action=accept|reject) NIE zapisuje odpowiedzi od razu: pokazujemy ekran
+// potwierdzenia z wyróżnioną akcją. Inaczej skaner linków w skrzynce (albo przypadkowe
+// kliknięcie) mógł odrzucić służbę i zdjąć osobę z grafiku bez jej wiedzy.
 export default function AssignmentResponsePage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const action = searchParams.get('action');
+  const urlAction = searchParams.get('action');
+  const intent = urlAction === 'accept' || urlAction === 'reject' ? urlAction : null;
 
   const [loading, setLoading] = useState(true);
   const [assignments, setAssignments] = useState([]); // wspólny token = wiele służb
@@ -19,6 +23,7 @@ export default function AssignmentResponsePage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [alreadyResponded, setAlreadyResponded] = useState(false);
+  const [submitting, setSubmitting] = useState(null); // 'accept' | 'reject' w trakcie zapisu
 
   const assignedByName = assignments[0]?.assigned_by_name;
 
@@ -58,26 +63,21 @@ export default function AssignmentResponsePage() {
 
         if (data.status && data.status !== 'pending') {
           setAlreadyResponded(true);
-          setLoading(false);
-          return;
         }
-
-        // Akcja w URL (przyciski z maila) — wykonaj od razu.
-        if (action === 'accept' || action === 'reject') {
-          await handleAction(action);
-        }
+        // Akcja z URL tylko WYRÓŻNIA przycisk — zapis dopiero po kliknięciu (ekran potwierdzenia).
         setLoading(false);
       } catch (err) {
         console.error('Error:', err);
-        setError(tr('Wystąpił błąd podczas przetwarzania'));
+        setError(tr('Nie udało się wczytać zaproszenia. Sprawdź połączenie i odśwież stronę.'));
         setLoading(false);
       }
     };
     fetchAssignment();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, action]);
+  }, [token]);
 
   const handleAction = async (actionType) => {
+    if (submitting) return;
+    setSubmitting(actionType);
     try {
       const res = await fetch(`/api/public/assignment/${encodeURIComponent(token)}/respond`, {
         method: 'POST',
@@ -99,11 +99,13 @@ export default function AssignmentResponsePage() {
     } catch (err) {
       console.error('Error handling action:', err);
       setError(tr('Wystąpił błąd podczas zapisywania odpowiedzi'));
+    } finally {
+      setSubmitting(null);
     }
   };
 
   // Nazwy wszystkich służb osoby (dla wyświetlenia w łączonym zaproszeniu).
-  const rolesText = assignments.map((a) => roleNames[a.role_key] || a.role_key).join(', ');
+  const rolesText = assignments.map((a) => a.role_label || roleNames[a.role_key] || a.role_key).join(', ');
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -183,8 +185,8 @@ export default function AssignmentResponsePage() {
           </h1>
           <p className="text-gray-600">
             {isAccepted
-              ? tr('Dziękujemy za potwierdzenie. Jesteś zapisany/a do służby!')
-              : tr('Dziękujemy za informację. Zostałeś/aś usunięty/a z grafiku.')}
+              ? tr('Dziękujemy! Twój dyżur jest potwierdzony.')
+              : tr('Dziękujemy za informację. Usunęliśmy Cię z grafiku.')}
           </p>
 
           <div className="mt-6 p-4 bg-gray-50 rounded-xl text-left">
@@ -208,7 +210,34 @@ export default function AssignmentResponsePage() {
     );
   }
 
-  // Widok z przyciskami do wyboru (jeśli nie ma akcji w URL)
+  // Ekran potwierdzenia: zawsze wymaga kliknięcia. Akcja z linku w mailu jest wyróżniona.
+  const acceptBtn = (
+    <button
+      type="button"
+      onClick={() => handleAction('accept')}
+      disabled={!!submitting}
+      className={`w-full py-3 px-4 font-bold rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait ${intent === 'reject'
+        ? 'border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50'
+        : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-emerald-500/30'}`}
+    >
+      {submitting === 'accept' ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle size={20} />}
+      {intent === 'reject' ? tr('Jednak mogę — akceptuję') : tr('Akceptuję')}
+    </button>
+  );
+  const rejectBtn = (
+    <button
+      type="button"
+      onClick={() => handleAction('reject')}
+      disabled={!!submitting}
+      className={`w-full py-3 px-4 font-bold rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait ${intent === 'reject'
+        ? 'bg-gradient-to-r from-accent-secondary-light to-red-500 hover:from-accent-secondary hover:to-red-600 text-white shadow-lg hover:shadow-red-500/30'
+        : 'border-2 border-red-300 text-red-700 hover:bg-red-50'}`}
+    >
+      {submitting === 'reject' ? <Loader2 size={20} className="animate-spin" /> : <XCircle size={20} />}
+      {intent === 'reject' ? tr('Tak, odrzucam') : tr('Odrzucam')}
+    </button>
+  );
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
@@ -221,7 +250,17 @@ export default function AssignmentResponsePage() {
           </h1>
           {assignedByName && (
             <p className="text-gray-600">
-              {tr('{name} przypisał/a Cię do służby', { name: assignedByName })}
+              {tr('Nowy dyżur od: {name}', { name: assignedByName })}
+            </p>
+          )}
+          {intent === 'reject' && (
+            <p className="mt-3 text-sm text-gray-700 bg-red-50 rounded-lg px-3 py-2">
+              {tr('Czy na pewno chcesz odrzucić? Twoje imię zniknie z grafiku na ten dzień.')}
+            </p>
+          )}
+          {intent === 'accept' && (
+            <p className="mt-3 text-sm text-gray-700 bg-emerald-50 rounded-lg px-3 py-2">
+              {tr('Potwierdź, że możesz służyć w tym terminie.')}
             </p>
           )}
         </div>
@@ -245,28 +284,16 @@ export default function AssignmentResponsePage() {
             <div className="flex items-center gap-3">
               <User className="text-accent-primary" size={20} />
               <div>
-                <p className="text-sm text-gray-500">{tr('Program')}</p>
+                <p className="text-sm text-gray-500">{tr('Wydarzenie')}</p>
                 <p className="font-medium text-gray-800">{program.title}</p>
               </div>
             </div>
           )}
         </div>
 
+        {/* Akcja z maila na górze; druga opcja pod nią. */}
         <div className="space-y-3">
-          <button
-            onClick={() => handleAction('accept')}
-            className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-emerald-500/30 transition flex items-center justify-center gap-2"
-          >
-            <CheckCircle size={20} />
-            {tr('Akceptuję')}
-          </button>
-          <button
-            onClick={() => handleAction('reject')}
-            className="w-full py-3 px-4 bg-gradient-to-r from-accent-secondary-light to-red-500 hover:from-accent-secondary hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-red-500/30 transition flex items-center justify-center gap-2"
-          >
-            <XCircle size={20} />
-            {tr('Odrzucam')}
-          </button>
+          {intent === 'reject' ? <>{rejectBtn}{acceptBtn}</> : <>{acceptBtn}{rejectBtn}</>}
         </div>
       </div>
     </div>

@@ -22,3 +22,8 @@ test('walidacja ops', () => {
   assert.ok(validateOps([{ team: 'worship', value: 'tekst' }]));
   assert.equal(validateOps([{ team: 'worship', key: 'role_1', value: 'Ania, Ola' }]), null);
 });
+
+test('klucze ról z polskimi literami i spacją są dozwolone', () => {
+  assert.equal(validateOps([{ team: 'worship', key: 'Gitara basowa – ł', value: 'Ola' }]), 'Nieprawidłowe pole grafiku'); // półpauza spoza zbioru
+  assert.equal(validateOps([{ team: 'worship', key: 'Gitara basowa ł', value: 'Ola' }]), null);
+});
