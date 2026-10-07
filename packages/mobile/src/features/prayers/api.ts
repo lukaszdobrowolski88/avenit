@@ -47,6 +47,27 @@ export const usePrayerRequests = () =>
     },
   });
 
+// Zgłoszenie prośby i/lub blokada autora (fn content-report). Autora ustala serwer — klient nie zna
+// e-maila, a wpis bywa anonimowy (wtedy tylko zgłoszenie). Zgłoszona prośba i prośby zablokowanej
+// osoby znikają z mojej ściany (filtr w fn prayer-wall); zgłoszenie dostają moderatorzy kościoła.
+export const useReportPrayer = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; reason?: string | null; block?: boolean; report?: boolean }) => {
+      const { data, error } = await supabase.functions.invoke('content-report', {
+        body: { type: 'prayer', id: v.id, reason: v.reason ?? null, block: !!v.block, report: v.report !== false },
+      });
+      if (error) throw error;
+      return (data ?? {}) as { reported?: boolean; blocked?: boolean };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['prayers'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['userBlocks'] });
+    },
+  });
+};
+
 export const useTogglePrayer = (userEmail: string | null) => {
   const qc = useQueryClient();
   return useMutation({

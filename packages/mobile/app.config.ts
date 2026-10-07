@@ -30,15 +30,57 @@ const config: ExpoConfig = {
     // tło = papier, jak ekran logowania — przejście bez błysku.
     backgroundColor: '#F6F4EE',
   },
+  // Prośby o uprawnienia per język telefonu (en = recenzent Apple). Lokalizacje decydują też,
+  // jakie języki App Store pokazuje przy apce — bez nich byłby sam angielski. Ukraiński dopisz,
+  // gdy interfejs mobilki będzie przetłumaczony (dziś t() obejmuje tylko część ekranów).
+  locales: {
+    pl: './locales/pl.json',
+    en: './locales/en.json',
+  },
   ios: {
     bundleIdentifier: baseId + suffix,
-    supportsTablet: true,
+    // Tylko iPhone: układ jest projektowany pod telefon w pionie. Na iPadzie apka i tak działa
+    // (tryb zgodności iPhone). Wsparcia iPada nie da się zdjąć po pierwszej publikacji,
+    // a dodać można zawsze — wtedy App Store wymaga też zrzutów 13".
+    supportsTablet: false,
+    config: {
+      // Tylko HTTPS/TLS systemu — zwolnione z deklaracji eksportowej (ITSAppUsesNonExemptEncryption=NO),
+      // App Store Connect nie pyta o szyfrowanie przy każdym buildzie.
+      usesNonExemptEncryption: false,
+    },
     infoPlist: {
-      NSFaceIDUsageDescription: 'Użyj Face ID aby odblokować aplikację Avenit bez wpisywania hasła.',
-      NSCalendarsUsageDescription: 'Aplikacja eksportuje wydarzenia do Twojego kalendarza.',
-      NSPhotoLibraryUsageDescription: 'Wybierz zdjęcie do wysłania w wiadomości.',
-      NSCameraUsageDescription: 'Zrób zdjęcie do wysłania w wiadomości.',
-      NSMicrophoneUsageDescription: 'Nagraj wiadomość głosową w czacie.',
+      CFBundleDevelopmentRegion: 'pl',
+      NSFaceIDUsageDescription: 'Użyj Face ID, aby odblokować aplikację Avenit bez wpisywania hasła.',
+      NSCalendarsUsageDescription: 'Avenit dodaje wybrane przez Ciebie wydarzenia kościoła do kalendarza w telefonie.',
+      NSPhotoLibraryUsageDescription:
+        'Avenit potrzebuje dostępu do zdjęć, aby ustawić Twoje zdjęcie profilowe albo dołączyć zdjęcie do wiadomości lub zadania.',
+      NSCameraUsageDescription: 'Avenit używa aparatu, aby zrobić zdjęcie i dołączyć je do wiadomości lub zadania.',
+      NSMicrophoneUsageDescription: 'Avenit używa mikrofonu do nagrywania wiadomości głosowych w czacie.',
+    },
+    // Manifest prywatności (wymóg Apple od 05.2024): powody użycia „required reason API” przez
+    // React Native i moduły Expo. Apple nie czyta poprawnie manifestów statycznych podów,
+    // więc deklarujemy je w manifeście aplikacji. Danych do śledzenia nie zbieramy.
+    privacyManifests: {
+      NSPrivacyTracking: false,
+      NSPrivacyTrackingDomains: [],
+      NSPrivacyAccessedAPITypes: [
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+          NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
+          NSPrivacyAccessedAPITypeReasons: ['0A2A.1', '3B52.1', 'C617.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace',
+          NSPrivacyAccessedAPITypeReasons: ['E174.1', '85F4.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime',
+          NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
+        },
+      ],
     },
   },
   android: {
@@ -79,11 +121,19 @@ const config: ExpoConfig = {
         sounds: ['./assets/sounds/receive.wav'],
       },
     ],
-    'expo-calendar',
+    [
+      'expo-calendar',
+      {
+        // Bez tego plugin wstawia ogólnikowe „Allow $(PRODUCT_NAME) to access your calendars”
+        // (także dla przypomnień, których apka nie używa) — częsty powód odrzucenia (5.1.1).
+        calendarPermission: 'Avenit dodaje wybrane przez Ciebie wydarzenia kościoła do kalendarza w telefonie.',
+        remindersPermission: 'Avenit nie korzysta z aplikacji Przypomnienia.',
+      },
+    ],
     [
       'expo-av',
       {
-        microphonePermission: 'Nagraj wiadomość głosową w czacie.',
+        microphonePermission: 'Avenit używa mikrofonu do nagrywania wiadomości głosowych w czacie.',
       },
     ],
     [

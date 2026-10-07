@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Flag, CheckCircle2, ExternalLink, ShieldAlert } from 'lucide-react';
+import { Flag, CheckCircle2, ExternalLink, ShieldAlert, Trash2, UserX } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 import Modal from '../../../components/Modal';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
@@ -13,7 +14,15 @@ import { normEmail, previewText } from '../utils/chatLogic';
 // message_reports czyta i rozstrzyga tylko uprawniony (serwer: admin aplikacji albo
 // action:komunikator:moderate). Treść i autora serwer kopiuje do zgłoszenia (message_content,
 // message_sender_email); bieżącą wiadomość pokazujemy, gdy moderator jest w tej rozmowie.
+// Od migracji 089 zgłoszenia obejmują też ściany modlitwy i tablice zespołów (content_type);
+// usunięcie treści i blokada autora idą przez fn moderate-content (wytyczna App Store 1.2).
 const REPORT_COLS = '*';
+
+const TYPE_LABELS = {
+  message: 'Wiadomość',
+  prayer: 'Ściana modlitwy',
+  wall_post: 'Tablica zespołu',
+};
 
 const fmt = (iso) => {
   const d = new Date(iso);
@@ -106,6 +115,30 @@ export default function ReportsPanel({ isOpen, onClose, currentUserEmail, onOpen
     }
   };
 
+  const moderate = async (report, action) => {
+    if (action === 'block_author') {
+      const ok = await confirmDialog({
+        title: tr('Zablokować autora?'),
+        message: tr('Konto autora zostanie zablokowane, a zgłoszona treść usunięta. Odblokować konto można w Ustawieniach → Użytkownicy.'),
+        danger: true,
+        confirmLabel: tr('Zablokuj konto'),
+      });
+      if (!ok) return;
+    }
+    setBusyId(report.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('moderate-content', { body: { reportId: report.id, action } });
+      if (error) throw error;
+      setReports(prev => prev.filter(r => r.id !== report.id));
+      toast.success(tr(data?.outcome || 'Zgłoszenie rozpatrzone'));
+      onChanged?.();
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się rozpatrzyć zgłoszenia.') });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   if (!isOpen) return null;
 
   const tabCls = (active) => `px-3 py-1.5 rounded-full text-xs font-medium transition ${active
@@ -135,15 +168,17 @@ export default function ReportsPanel({ isOpen, onClose, currentUserEmail, onOpen
               const text = snapshot || live || (msg?.deleted_at ? tr('(wiadomość usunięta)') : null);
               const author = r.message_sender_email || msg?.sender_email || null;
               const convId = msg?.conversation_id || r.conversation_id;
+              const type = r.content_type || 'message';
               return (
                 <li key={r.id} className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">{tr(TYPE_LABELS[type] || TYPE_LABELS.message)}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {tr('Zgłasza: {name}', { name: nameOf(r.reporter_email) })} · {fmt(r.created_at)}
                       </p>
                       {author && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Autor wiadomości: {name}', { name: nameOf(author) })}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Autor: {name}', { name: nameOf(author) })}</p>
                       )}
                     </div>
                     {status === 'open' && (
@@ -160,6 +195,21 @@ export default function ReportsPanel({ isOpen, onClose, currentUserEmail, onOpen
                   )}
                   {status === 'resolved' && r.resolved_at && (
                     <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{tr('Rozpatrzył(a): {name}, {date}', { name: nameOf(r.resolved_by), date: fmt(r.resolved_at) })}</p>
+                  )}
+                  {status === 'open' && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button size="sm" variant="secondary" icon={Trash2} loading={busyId === r.id} onClick={() => moderate(r, 'remove')}>
+                        {tr('Usuń treść')}
+                      </Button>
+                      {author && (
+                        <Button size="sm" variant="secondary" icon={UserX} disabled={busyId === r.id} onClick={() => moderate(r, 'block_author')}>
+                          {tr('Zablokuj autora')}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {status === 'resolved' && r.resolution_note && (
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{r.resolution_note}</p>
                   )}
                   {msg && convId && onOpenConversation && (
                     <button type="button" onClick={() => { onOpenConversation(convId); onClose?.(); }}

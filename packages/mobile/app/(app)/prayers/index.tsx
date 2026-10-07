@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Heart,
   Lock,
+  MoreHorizontal,
   Pencil,
   Plus,
   RotateCcw,
@@ -33,6 +34,7 @@ import {
   useTogglePrayer,
   useMarkAnswered,
   useDeletePrayer,
+  useReportPrayer,
   CATEGORY_META,
   type PrayerRequest,
   type PrayerCategory,
@@ -41,6 +43,7 @@ import { useAuthSession } from '../../../src/lib/auth';
 import { useT } from '../../../src/i18n';
 import { friendlyError, showError } from '../../../src/lib/errors';
 import { toast } from '../../../src/lib/toast';
+import { ReportModal } from '../../../src/features/messenger/components/ReportModal';
 
 // Krótki cytat intencji do potwierdzeń.
 const excerpt = (text: string | null | undefined, max = 60) => {
@@ -118,6 +121,7 @@ const PrayerCard = ({
   onDelete,
   onMarkAnswered,
   onReopen,
+  onMore,
 }: {
   prayer: PrayerRequest;
   userEmail: string | null;
@@ -125,6 +129,7 @@ const PrayerCard = ({
   onDelete: (p: PrayerRequest) => void;
   onMarkAnswered: (p: PrayerRequest) => void;
   onReopen: (p: PrayerRequest) => void;
+  onMore: (p: PrayerRequest) => void;
 }) => {
   const t = useT();
   const meta = CATEGORY_META[prayer.category];
@@ -185,6 +190,18 @@ const PrayerCard = ({
                 {t('Wysłuchana')}
               </Text>
             </View>
+          )}
+          {!prayer.is_author && (
+            <Pressable
+              onPress={() => onMore(prayer)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t('Zgłoś lub zablokuj')}
+              className="active:opacity-60"
+              style={{ marginLeft: 'auto', paddingHorizontal: 4 }}
+            >
+              <MoreHorizontal size={18} color="#857F70" />
+            </Pressable>
           )}
         </View>
 
@@ -316,6 +333,55 @@ export default function PrayersScreen() {
   const { data, isLoading, isError, error, refetch, isRefetching } = usePrayerRequests();
   const markAnswered = useMarkAnswered();
   const del = useDeletePrayer();
+  const report = useReportPrayer();
+  const [reportFor, setReportFor] = useState<PrayerRequest | null>(null);
+
+  // Treści użytkowników (wytyczna App Store 1.2): zgłoszenie do moderatorów kościoła i blokada
+  // autora. Wpis anonimowy można tylko zgłosić — blokada ujawniłaby, kto go napisał.
+  const openMore = (p: PrayerRequest) => {
+    Alert.alert(t('Ta prośba'), undefined, [
+      { text: t('Zgłoś prośbę'), onPress: () => setReportFor(p) },
+      ...(!p.is_anonymous
+        ? [{ text: t('Zablokuj autora'), style: 'destructive' as const, onPress: () => confirmBlock(p) }]
+        : []),
+      { text: t('Anuluj'), style: 'cancel' as const },
+    ]);
+  };
+
+  const confirmBlock = (p: PrayerRequest) => {
+    const who = p.requester_name || p.user_name || t('tej osoby');
+    Alert.alert(
+      t('Zablokować autora?'),
+      t('Nie zobaczysz próśb ani wiadomości od: {name}. Blokadę cofniesz w Koncie → Zablokowane osoby.', { name: who }),
+      [
+        { text: t('Anuluj'), style: 'cancel' },
+        {
+          text: t('Zablokuj'),
+          style: 'destructive',
+          onPress: () =>
+            report.mutate(
+              { id: p.id, block: true, report: false },
+              {
+                onSuccess: () => toast.success(t('Zablokowano: {name}', { name: who })),
+                onError: (e) => showError('Nie udało się zablokować', e),
+              },
+            ),
+        },
+      ],
+    );
+  };
+
+  const submitReport = async (reason: string): Promise<boolean> => {
+    if (!reportFor) return false;
+    try {
+      await report.mutateAsync({ id: reportFor.id, reason });
+      toast.success(t('Dziękujemy. Zgłoszenie trafiło do moderatorów, a prośba zniknęła z Twojej ściany.'));
+      return true;
+    } catch (e) {
+      showError('Nie udało się wysłać zgłoszenia', e);
+      return false;
+    }
+  };
 
   const list = useMemo(() => {
     const all: PrayerRequest[] = data ?? [];
@@ -555,6 +621,7 @@ export default function PrayersScreen() {
                 onDelete={confirmDelete}
                 onMarkAnswered={openAnswered}
                 onReopen={reopen}
+                onMore={openMore}
               />
             ))}
           </ScrollView>
@@ -621,6 +688,18 @@ export default function PrayersScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <ReportModal
+        visible={!!reportFor}
+        message={null}
+        title={t('Zgłoś prośbę')}
+        senderName={reportFor?.is_anonymous ? t('Anonimowo') : reportFor?.requester_name || reportFor?.user_name || t('Ktoś ze wspólnoty')}
+        preview={reportFor ? excerpt(reportFor.content, 120) : null}
+        note={t('Zgłoszenie zobaczą moderatorzy Twojego kościoła. Autor nie dowie się, kto zgłosił, a prośba zniknie z Twojej ściany.')}
+        busy={report.isPending}
+        onClose={() => setReportFor(null)}
+        onSubmit={submitReport}
+      />
     </>
   );
 }

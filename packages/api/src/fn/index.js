@@ -77,6 +77,10 @@ const MODULES = [
   'translate-message',
   'chat-policy',
   'chat-channels-sync',
+  'content-report',
+  'moderate-content',
+  'community-terms',
+  'delete-my-account',
 ];
 
 export async function registerFunctions(app) {

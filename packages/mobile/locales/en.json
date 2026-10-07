@@ -1,0 +1,10 @@
+{
+  "NSFaceIDUsageDescription": "Use Face ID to unlock Avenit without typing your password.",
+  "NSCalendarsUsageDescription": "Avenit adds the church events you choose to the calendar on your phone.",
+  "NSCalendarsFullAccessUsageDescription": "Avenit adds the church events you choose to the calendar on your phone.",
+  "NSRemindersUsageDescription": "Avenit does not use the Reminders app.",
+  "NSRemindersFullAccessUsageDescription": "Avenit does not use the Reminders app.",
+  "NSPhotoLibraryUsageDescription": "Avenit needs access to your photos to set your profile picture or attach a photo to a message or task.",
+  "NSCameraUsageDescription": "Avenit uses the camera to take a photo and attach it to a message or task.",
+  "NSMicrophoneUsageDescription": "Avenit uses the microphone to record voice messages in chat."
+}

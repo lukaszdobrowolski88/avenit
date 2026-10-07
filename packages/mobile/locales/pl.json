@@ -1,0 +1,10 @@
+{
+  "NSFaceIDUsageDescription": "Użyj Face ID, aby odblokować aplikację Avenit bez wpisywania hasła.",
+  "NSCalendarsUsageDescription": "Avenit dodaje wybrane przez Ciebie wydarzenia kościoła do kalendarza w telefonie.",
+  "NSCalendarsFullAccessUsageDescription": "Avenit dodaje wybrane przez Ciebie wydarzenia kościoła do kalendarza w telefonie.",
+  "NSRemindersUsageDescription": "Avenit nie korzysta z aplikacji Przypomnienia.",
+  "NSRemindersFullAccessUsageDescription": "Avenit nie korzysta z aplikacji Przypomnienia.",
+  "NSPhotoLibraryUsageDescription": "Avenit potrzebuje dostępu do zdjęć, aby ustawić Twoje zdjęcie profilowe albo dołączyć zdjęcie do wiadomości lub zadania.",
+  "NSCameraUsageDescription": "Avenit używa aparatu, aby zrobić zdjęcie i dołączyć je do wiadomości lub zadania.",
+  "NSMicrophoneUsageDescription": "Avenit używa mikrofonu do nagrywania wiadomości głosowych w czacie."
+}

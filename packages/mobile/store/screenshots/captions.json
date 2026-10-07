@@ -1,0 +1,58 @@
+[
+  {
+    "file": "01-dashboard.png",
+    "screen": "Pulpit z zaproszeniem do służby — avenit://dashboard",
+    "headline": {
+      "pl": ["Cały kościół.", "Jedna aplikacja."],
+      "en-US": ["The whole church.", "One app."]
+    }
+  },
+  {
+    "file": "02-program.png",
+    "screen": "Program najbliższego nabożeństwa — avenit://programs/<id>",
+    "headline": {
+      "pl": ["Program nabożeństwa.", "Krok po kroku."],
+      "en-US": ["Service plans.", "Step by step."]
+    }
+  },
+  {
+    "file": "03-song.png",
+    "screen": "Pieśń z akordami — avenit://songs/<id>",
+    "headline": {
+      "pl": ["Akordy i tonacja.", "Na każdą próbę."],
+      "en-US": ["Chords and keys.", "Ready for rehearsal."]
+    }
+  },
+  {
+    "file": "04-messenger.png",
+    "screen": "Rozmowa zespołu — avenit://messenger/<id>",
+    "headline": {
+      "pl": ["Rozmowy zespołów.", "Wszyscy w kontakcie."],
+      "en-US": ["Team chat.", "Everyone in the loop."]
+    }
+  },
+  {
+    "file": "05-calendar.png",
+    "screen": "Kalendarz z Twoją służbą — avenit://calendar",
+    "headline": {
+      "pl": ["Wydarzenia.", "I Twoja służba."],
+      "en-US": ["Events.", "And where you serve."]
+    }
+  },
+  {
+    "file": "06-prayers.png",
+    "screen": "Ściana modlitwy — avenit://prayers",
+    "headline": {
+      "pl": ["Ściana modlitwy.", "Módlmy się razem."],
+      "en-US": ["Prayer wall.", "Pray together."]
+    }
+  },
+  {
+    "file": "07-modules.png",
+    "screen": "Moduły — avenit://modules",
+    "headline": {
+      "pl": ["Kazania, grupy, modlitwa.", "Zawsze pod ręką."],
+      "en-US": ["Sermons, groups, prayer.", "Always at hand."]
+    }
+  }
+]
