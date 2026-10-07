@@ -27,6 +27,13 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
   const senderEmail = msg.sender_email || actingUserEmail;
   if (!conversationId || !senderEmail) return;
 
+  // Nowa wiadomość wyciąga rozmowę z archiwum (jak w WhatsAppie) — inaczej zarchiwizowana rozmowa
+  // dostawała wiadomości i powiadomienia, a na liście rozmów jej nie było.
+  await pool.query(
+    `UPDATE conversation_participants SET archived = false WHERE conversation_id = $1 AND archived = true`,
+    [conversationId],
+  ).catch(() => undefined);
+
   // Wzmianki (@) z messages.mentions — wspomniani dostają osobny push 'mention' ZAWSZE
   // (nawet przy wyciszeniu); reszta — zwykły push wiadomości, o ile nie wyciszyli rozmowy.
   const mentioned = new Set(parseMentions(msg.mentions).map((e) => String(e).toLowerCase()));
