@@ -2,13 +2,22 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../../lib/supabase";
 import { getActiveConversation } from "../../../lib/sounds";
-import { applyMessageToConversations, type MessageRow } from "../api";
+import {
+  applyMessageToConversations,
+  conversationsKey,
+  patchConversationLocally,
+  removeConversationLocally,
+  scheduleConversationsRefetch,
+  type ConversationListItem,
+  type MessageRow,
+} from "../api";
+import { sameEmail } from "../logic";
 
 /**
  * Realtime dla pojedynczej konwersacji:
  * - INSERT → dopisuje wiadomość do listy
  * - UPDATE → podmienia (edycja, soft-delete)
- * Invaliduje też listę konwersacji, żeby ostatnia wiadomość się odświeżyła.
+ * Listę rozmów aktualizuje osobny hook (useRealtimeConversations) — tu bez jej pobierania.
  */
 export const useRealtimeMessages = (conversationId: string) => {
   const qc = useQueryClient();
@@ -44,7 +53,6 @@ export const useRealtimeMessages = (conversationId: string) => {
             if (prev.some((m: MessageRow) => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
-          qc.invalidateQueries({ queryKey: ["conversations"] });
         },
       )
       .on(
@@ -69,7 +77,8 @@ export const useRealtimeMessages = (conversationId: string) => {
             }
             return prev.map((m: MessageRow) => (m.id === updated.id ? { ...m, ...updated } : m));
           });
-          qc.invalidateQueries({ queryKey: ["conversations"] });
+          // Cytaty/przypięte spoza wczytanej paczki.
+          qc.invalidateQueries({ queryKey: ["messagesById", conversationId] });
         },
       )
       // Reakcje — bez filtra (RLS i tak ogranicza), invaliduj cache po zmianach.
@@ -142,10 +151,16 @@ export const useRealtimeMessages = (conversationId: string) => {
   }, [conversationId, qc]);
 };
 
+// Pola mojego wiersza uczestnika, które lista pokazuje (zmiana z innego urządzenia też).
+const MY_ROW_FIELDS = ["last_read_at", "muted", "muted_until", "archived", "pinned", "starred"] as const;
+// Pola rozmowy na liście.
+const CONV_FIELDS = ["name", "description", "posting_policy", "avatar_url", "ministry_key", "type", "last_message_at", "updated_at"] as const;
+
 /**
- * Realtime dla listy rozmów (jak web): nowa wiadomość od razu podnosi rozmowę na górę, zmienia
- * podgląd, zwiększa licznik (gdy rozmowa nie jest otwarta) i wyjmuje ją z archiwum; potem pełne
- * odświeżenie. Serwer wysyła zdarzenia tylko uczestnikom rozmowy (filtr kanału nie jest stosowany).
+ * Realtime dla listy rozmów (K11 — lżejsza lista): zdarzenia nanosimy lokalnie (nowa wiadomość
+ * podnosi rozmowę, zmienia podgląd i licznik; moje ustawienia, nazwa rozmowy), a pełne pobranie
+ * listy — tylko gdy lokalnie się nie da (nowa rozmowa, usunięta ostatnia wiadomość, zmiana
+ * składu z moim udziałem) i zbiorczo, z opóźnieniem. Serwer wysyła zdarzenia tylko uczestnikom.
  */
 export const useRealtimeConversations = (userEmail: string | null) => {
   const qc = useQueryClient();
@@ -157,6 +172,9 @@ export const useRealtimeConversations = (userEmail: string | null) => {
         supabase.removeChannel(c);
       }
     }
+    const list = () => qc.getQueryData<ConversationListItem[]>(conversationsKey(userEmail));
+    const has = (cid: unknown) => !!list()?.some((c: ConversationListItem) => c.id === String(cid));
+
     const channel = supabase
       .channel(channelName)
       .on(
@@ -168,33 +186,86 @@ export const useRealtimeConversations = (userEmail: string | null) => {
         },
         (payload) => {
           const msg = payload.new as MessageRow | null;
-          if (msg?.conversation_id) applyMessageToConversations(qc, userEmail, msg, getActiveConversation());
-          qc.invalidateQueries({ queryKey: ["conversations", userEmail] });
+          if (!msg?.conversation_id) return;
+          if (has(msg.conversation_id)) applyMessageToConversations(qc, userEmail, msg, getActiveConversation());
+          // Rozmowa, której nie ma na liście (np. ktoś właśnie do mnie napisał pierwszy raz).
+          else scheduleConversationsRefetch(qc, userEmail);
         },
       )
-      // Edycja / usunięcie wiadomości — podgląd ostatniej wiadomości mógł się zmienić.
+      // Edycja / usunięcie wiadomości — ważne tylko, gdy to ostatnia wiadomość rozmowy na liście.
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "messages" },
-        () => {
-          qc.invalidateQueries({ queryKey: ["conversations", userEmail] });
+        (payload) => {
+          const row = payload.new as MessageRow | null;
+          if (!row?.id || !row.conversation_id) return;
+          const conv = list()?.find((c: ConversationListItem) => c.id === String(row.conversation_id));
+          if (!conv || conv.last_message?.id !== row.id) return;
+          if (row.deleted_at) scheduleConversationsRefetch(qc, userEmail);
+          else
+            patchConversationLocally(qc, userEmail, conv.id, (c) => ({
+              last_message: c.last_message ? { ...c.last_message, content: row.content } : c.last_message,
+            }));
         },
       )
-      // Dodanie do rozmowy (ktoś założył ze mną rozmowę/grupę), usunięcie ze składu,
-      // zmiana nazwy lub usunięcie rozmowy — serwer wysyła te zmiany tylko uczestnikom.
+      // Dodanie do rozmowy / usunięcie ze składu / moje ustawienia z innego urządzenia.
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conversation_participants" },
-        () => {
-          qc.invalidateQueries({ queryKey: ["conversations", userEmail] });
+        (payload) => {
+          const row = (payload.new ?? payload.old) as Record<string, any> | null;
+          const cid = row?.conversation_id != null ? String(row.conversation_id) : null;
+          if (!row || !cid || !row.user_email) {
+            scheduleConversationsRefetch(qc, userEmail);
+            return;
+          }
+          if (!sameEmail(row.user_email, userEmail)) {
+            // Cudzy wiersz — zmienia się tylko liczba uczestników; bez pobierania listy.
+            if (payload.eventType === "INSERT" || payload.eventType === "DELETE") {
+              patchConversationLocally(qc, userEmail, cid, (c) => ({
+                participants_count: Math.max(0, (c.participants_count ?? 0) + (payload.eventType === "INSERT" ? 1 : -1)),
+              }));
+            }
+            return;
+          }
+          if (payload.eventType === "DELETE") {
+            removeConversationLocally(qc, userEmail, cid);
+            return;
+          }
+          if (payload.eventType === "UPDATE" && has(cid) && payload.new) {
+            const n = payload.new as Record<string, any>;
+            const patch: Record<string, any> = {};
+            for (const f of MY_ROW_FIELDS) if (f in n) patch[f] = f === "muted_until" || f === "last_read_at" ? n[f] ?? null : !!n[f];
+            if ("role" in n) patch.my_role = n.role ?? null;
+            patchConversationLocally(qc, userEmail, cid, (c) => {
+              // Przeczytane na innym urządzeniu — licznik zeruje się, gdy znacznik objął ostatnią wiadomość.
+              const read = patch.last_read_at && c.last_message?.created_at && new Date(patch.last_read_at) >= new Date(c.last_message.created_at);
+              return read ? { ...patch, unread_count: 0 } : patch;
+            });
+            return;
+          }
+          scheduleConversationsRefetch(qc, userEmail);
         },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conversations" },
-        () => {
-          qc.invalidateQueries({ queryKey: ["conversations", userEmail] });
+        (payload) => {
           qc.invalidateQueries({ queryKey: ["conversation"] });
+          const row = (payload.new ?? payload.old) as Record<string, any> | null;
+          const cid = row?.id != null ? String(row.id) : null;
+          if (!cid) return;
+          if (payload.eventType === "DELETE") {
+            removeConversationLocally(qc, userEmail, cid);
+            return;
+          }
+          if (payload.eventType === "UPDATE" && payload.new && has(cid)) {
+            const n = payload.new as Record<string, any>;
+            const patch: Record<string, any> = {};
+            for (const f of CONV_FIELDS) if (f in n) patch[f] = n[f];
+            patchConversationLocally(qc, userEmail, cid, patch);
+          }
+          // INSERT — skład dochodzi osobnym zdarzeniem (conversation_participants).
         },
       )
       .subscribe();

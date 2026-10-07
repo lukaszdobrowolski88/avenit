@@ -5,6 +5,7 @@ import { tr } from '../../../i18n';
 import {
   sortConversations, buildParticipantRows, findDirectConversation, sameEmail, normEmail,
   emailPattern, summarizeMessages, conversationsMissingLast, readSince, readMarkTimestamp, applyIncomingMessage,
+  mutePatch,
 } from '../utils/chatLogic';
 import { openOrCreateDirect } from '../utils/directConversation';
 
@@ -15,6 +16,40 @@ const CACHE_KEY = 'komunikator_conversations_cache_v2';
 // rozmowom bez wiadomości w paczce dociągamy ostatnią osobno (zwykle zero zapytań).
 const RECENT_LIMIT = 800;
 const LAST_MSG_COLS = 'id, conversation_id, content, sender_email, created_at, message_type, attachments';
+
+// Mój wiersz uczestnika. muted_until (K4, migracja 088) — gdy serwer jeszcze go nie ma, pobieramy
+// bez tej kolumny (lista nie może się wywrócić przez brak nowej kolumny).
+const MY_PART_COLS = 'conversation_id, last_read_at, joined_at, muted, muted_until, role, starred, archived, pinned';
+const MY_PART_COLS_LEGACY = 'conversation_id, last_read_at, joined_at, muted, role, starred, archived, pinned';
+let mutedUntilSupported = true;
+const isMissingMutedUntil = (err) => /muted_until/i.test(String(err?.message || '')) || String(err?.code) === '42703';
+
+async function fetchMyParticipations(userEmail) {
+  if (mutedUntilSupported) {
+    const res = await supabase
+      .from('conversation_participants')
+      .select(MY_PART_COLS)
+      .ilike('user_email', emailPattern(userEmail));
+    if (!res.error || !isMissingMutedUntil(res.error)) return res;
+    mutedUntilSupported = false;
+  }
+  return supabase
+    .from('conversation_participants')
+    .select(MY_PART_COLS_LEGACY)
+    .ilike('user_email', emailPattern(userEmail));
+}
+
+// Ostatnia (nieusunięta) wiadomość jednej rozmowy — po usunięciu ostatniej wiadomości.
+async function fetchLastMessage(conversationId) {
+  const { data } = await supabase
+    .from('messages')
+    .select(LAST_MSG_COLS)
+    .eq('conversation_id', conversationId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  return data?.[0] || null;
+}
 
 async function fetchRecentMessages(ids) {
   const { data, error } = await supabase
@@ -72,8 +107,12 @@ export default function useConversations(userEmail, opts = {}) {
   }, [userEmail]);
 
   // Pobiera listę rozmów i ZWRACA świeżą listę (wywołujący może od razu w niej szukać).
-  const fetchConversations = useCallback(async () => {
+  // light: true — „lekki” refetch po zdarzeniu (skład, nazwy, nowe rozmowy) BEZ paczki setek
+  // wiadomości: ostatnia wiadomość i licznik znanych rozmów zostają z bieżącej listy, a wiadomości
+  // dociągamy tylko dla rozmów, których jeszcze nie było na liście.
+  const fetchConversations = useCallback(async (fetchOpts = {}) => {
     if (!userEmail) return [];
+    const light = fetchOpts?.light === true && conversationsRef.current.length > 0;
     const seq = ++fetchSeqRef.current;
 
     try {
@@ -81,10 +120,7 @@ export default function useConversations(userEmail, opts = {}) {
       if (conversationsRef.current.length === 0) setLoading(true);
 
       // Pobierz konwersacje użytkownika z uczestnikami i ostatnią wiadomością
-      const { data: participantData, error: participantError } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id, last_read_at, joined_at, muted, role, starred, archived, pinned')
-        .ilike('user_email', emailPattern(userEmail));
+      const { data: participantData, error: participantError } = await fetchMyParticipations(userEmail);
 
       if (participantError) throw participantError;
       if (seq !== fetchSeqRef.current) return conversationsRef.current;
@@ -145,13 +181,23 @@ export default function useConversations(userEmail, opts = {}) {
 
       // Ostatnie wiadomości i liczniki nieprzeczytanych: jedna paczka najnowszych wiadomości.
       // Licznik = cudze wiadomości nowsze niż moje „przeczytane” (last_read_at) — tak samo w aplikacji.
-      const allLastMessages = await fetchRecentMessages(conversationIds);
+      const prevById = new Map(conversationsRef.current.map(c => [String(c.id), c]));
+      const toFetch = light ? conversationIds.filter(id => !prevById.has(String(id))) : conversationIds;
+      const allLastMessages = toFetch.length ? await fetchRecentMessages(toFetch) : [];
 
       if (seq !== fetchSeqRef.current) return conversationsRef.current;
 
       const sinceByConv = {};
       participantData.forEach(p => { sinceByConv[String(p.conversation_id)] = readSince(p); });
       const { last: lastMessageByConv, unread: unreadByConv } = summarizeMessages(allLastMessages, userEmail, sinceByConv);
+      if (light) {
+        for (const id of conversationIds) {
+          const prev = prevById.get(String(id));
+          if (!prev) continue;
+          lastMessageByConv[String(id)] = prev.lastMessage || null;
+          unreadByConv[String(id)] = prev.unreadCount || 0;
+        }
+      }
 
       // Mapuj konwersacje z danymi
       const conversationsWithMessages = (convData || []).map(conv => {
@@ -184,10 +230,12 @@ export default function useConversations(userEmail, opts = {}) {
           lastMessage: lastMsg,
           unreadCount: unreadByConv[String(conv.id)] || 0,
           muted: myParticipation?.muted || false,
+          mutedUntil: myParticipation?.muted_until || null,
           starred: myParticipation?.starred || false,
           archived: myParticipation?.archived || false,
           pinned: myParticipation?.pinned || false,
           lastReadAt: myParticipation?.last_read_at || null,
+          joinedAt: myParticipation?.joined_at || null,
           myRole: myParticipation?.role || 'member'
         };
       });
@@ -325,12 +373,29 @@ export default function useConversations(userEmail, opts = {}) {
     if (ok) toast.success(archived ? tr('Rozmowa przeniesiona do archiwum') : tr('Rozmowa przywrócona z archiwum'));
   };
 
-  // Wycisz / włącz powiadomienia z rozmowy (mój wiersz uczestnika)
+  // Wyciszenie (K4): '1h' | '8h' | 'tomorrow' | 'always' | 'off' — zapis muted/muted_until w moim
+  // wierszu uczestnika. Starszy serwer bez muted_until: „zawsze”/„włącz” działają, na czas — komunikat.
+  const setMute = async (conversationId, option) => {
+    const patch = mutePatch(option);
+    const local = { muted: patch.muted, mutedUntil: patch.muted_until };
+    const dbPatch = mutedUntilSupported ? patch : { muted: patch.muted };
+    if (!mutedUntilSupported && patch.muted_until) {
+      toast.error(tr('Wyciszanie na czas będzie dostępne po aktualizacji serwera. Możesz wyciszyć rozmowę na stałe.'));
+      return false;
+    }
+    const ok = await updateMyParticipation(conversationId, dbPatch, local, tr('Nie udało się zmienić powiadomień. Spróbuj ponownie.'));
+    if (!ok) return false;
+    if (option === 'off') toast.success(tr('Powiadomienia z tej rozmowy włączone'));
+    else if (option === 'always') toast.success(tr('Powiadomienia z tej rozmowy wyciszone'));
+    else toast.success(tr('Rozmowa wyciszona'));
+    return true;
+  };
+
+  // Zgodność wstecz: przełącznik „zawsze” ↔ „włącz”.
   const toggleMute = async (conversationId) => {
     const current = conversationsRef.current.find(c => c.id === conversationId);
-    const muted = !current?.muted;
-    const ok = await updateMyParticipation(conversationId, { muted }, { muted }, tr('Nie udało się zmienić powiadomień. Spróbuj ponownie.'));
-    if (ok) toast.success(muted ? tr('Powiadomienia z tej rozmowy wyciszone') : tr('Powiadomienia z tej rozmowy włączone'));
+    const mutedNow = !!current?.muted || (current?.mutedUntil && new Date(current.mutedUntil).getTime() > Date.now());
+    return setMute(conversationId, mutedNow ? 'off' : 'always');
   };
 
   // Usuń konwersację (dla wszystkich jej uczestników). Wiadomości i skład usuwa baza (ON DELETE CASCADE).
@@ -372,21 +437,37 @@ export default function useConversations(userEmail, opts = {}) {
     return true;
   };
 
-  // Debounced refresh - nie odświeżaj za często
+  // Lekki refetch z debounce (zdarzenia realtime) — bez paczki setek wiadomości.
   const refreshTimeoutRef = useRef(null);
   const debouncedRefresh = useCallback(() => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
-      fetchConversations();
+      fetchConversations({ light: true });
     }, 1000); // Odśwież max raz na sekundę
   }, [fetchConversations]);
 
+  const patchConversation = useCallback((id, fn) => {
+    setConversations(prev => {
+      let hit = false;
+      const next = prev.map(c => {
+        if (String(c.id) !== String(id)) return c;
+        hit = true;
+        return fn(c);
+      });
+      if (!hit) return prev;
+      const sorted = next.sort(sortConversations);
+      saveCache(sorted);
+      return sorted;
+    });
+  }, [saveCache]);
+
   // Realtime: serwer wysyła zmiany tylko uczestnikom rozmowy (filtr kanału nie jest stosowany,
-  // więc zdarzenia filtrujemy sami).
+  // więc zdarzenia filtrujemy sami). Zmiany nanosimy lokalnie; pełne pobranie tylko, gdy trzeba.
   useEffect(() => {
     if (!userEmail) return;
+    const known = (id) => conversationsRef.current.some(c => String(c.id) === String(id));
 
     const subscription = supabase
       .channel('conversations-updates')
@@ -409,43 +490,117 @@ export default function useConversations(userEmail, opts = {}) {
             .then(() => {}, () => {});
         }
         // Od razu: rozmowa na górę, nowy podgląd, licznik, wyjście z archiwum (jak serwer).
-        // Potem pełne odświeżenie (z debounce) — m.in. dla rozmów, których jeszcze nie ma na liście.
-        if (msg?.conversation_id) {
-          setConversations(prev => {
-            const next = applyIncomingMessage(prev, msg, userEmail, { openId: openIdRef.current });
-            if (next !== prev) saveCache(next);
-            return next;
-          });
-        }
-        debouncedRefresh();
+        // Rozmowy, której jeszcze nie ma na liście (nowa) — lekki refetch.
+        if (!msg?.conversation_id) return;
+        if (!known(msg.conversation_id)) { debouncedRefresh(); return; }
+        setConversations(prev => {
+          const next = applyIncomingMessage(prev, msg, userEmail, { openId: openIdRef.current });
+          if (next !== prev) saveCache(next);
+          return next;
+        });
       })
-      // Edycja / usunięcie wiadomości — podgląd ostatniej wiadomości na liście może się zmienić.
+      // Edycja / usunięcie wiadomości — zmienia się tylko podgląd, gdy to ostatnia wiadomość rozmowy.
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'messages'
-      }, () => debouncedRefresh())
-      // Dodanie do rozmowy / usunięcie ze składu / zmiana roli → odśwież listę.
+      }, (payload) => {
+        const row = payload?.new;
+        if (!row?.id) return;
+        const conv = conversationsRef.current.find(c => c.lastMessage?.id === row.id);
+        if (!conv) return;
+        if (row.deleted_at) {
+          fetchLastMessage(conv.id).then((last) => {
+            patchConversation(conv.id, c => ({ ...c, lastMessage: last }));
+          }, () => {});
+        } else {
+          patchConversation(conv.id, c => ({ ...c, lastMessage: { ...c.lastMessage, ...row } }));
+        }
+      })
+      // Skład rozmów: mój wiersz (dodanie/usunięcie mnie, zmiany z innego urządzenia) albo cudzy.
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'conversation_participants'
-      }, () => debouncedRefresh())
-      // Zmiana nazwy / ustawień rozmowy.
+      }, (payload) => {
+        const row = payload?.new || payload?.old;
+        if (!row?.conversation_id) { debouncedRefresh(); return; }
+        const mine = sameEmail(row.user_email, userEmail);
+        if (mine && payload.eventType === 'DELETE') {
+          setConversations(prev => {
+            const next = prev.filter(c => String(c.id) !== String(row.conversation_id));
+            if (next.length !== prev.length) saveCache(next);
+            return next;
+          });
+          return;
+        }
+        if (mine && payload.eventType === 'UPDATE' && known(row.conversation_id)) {
+          const n = payload.new || {};
+          patchConversation(row.conversation_id, c => {
+            const next = { ...c };
+            if ('muted' in n) next.muted = !!n.muted;
+            if ('muted_until' in n) next.mutedUntil = n.muted_until || null;
+            if ('starred' in n) next.starred = !!n.starred;
+            if ('archived' in n) next.archived = !!n.archived;
+            if ('pinned' in n) next.pinned = !!n.pinned;
+            if ('role' in n && n.role) next.myRole = n.role;
+            if (n.last_read_at) {
+              next.lastReadAt = n.last_read_at;
+              // Przeczytane na innym urządzeniu — licznik do zera, gdy obejmuje ostatnią wiadomość.
+              const lastAt = c.lastMessage?.created_at ? new Date(c.lastMessage.created_at).getTime() : 0;
+              if (new Date(n.last_read_at).getTime() >= lastAt) next.unreadCount = 0;
+            }
+            return next;
+          });
+          return;
+        }
+        debouncedRefresh();
+      })
+      // Zmiana nazwy / ustawień rozmowy — nanosimy lokalnie; usunięcie — zdejmujemy z listy.
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'conversations'
-      }, () => debouncedRefresh())
+      }, (payload) => {
+        const row = payload?.new || payload?.old;
+        if (!row?.id) { debouncedRefresh(); return; }
+        if (payload.eventType === 'DELETE') {
+          setConversations(prev => {
+            const next = prev.filter(c => String(c.id) !== String(row.id));
+            if (next.length !== prev.length) saveCache(next);
+            return next;
+          });
+          return;
+        }
+        if (!known(row.id)) { debouncedRefresh(); return; }
+        const n = payload.new || {};
+        const FIELDS = ['name', 'description', 'posting_policy', 'avatar_url', 'ministry_key', 'type'];
+        patchConversation(row.id, c => {
+          const next = { ...c };
+          for (const f of FIELDS) if (f in n) next[f] = n[f];
+          if (c.type !== 'direct' && 'name' in n) next.displayName = n.name;
+          return next;
+        });
+      })
       .subscribe();
+
+    // Po dłuższej nieobecności (karta w tle) — pełne odświeżenie liczników.
+    let hiddenAt = 0;
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt > 2 * 60 * 1000) fetchConversations();
+      hiddenAt = 0;
+    };
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', onVisibility);
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [userEmail, debouncedRefresh, saveCache]);
+  }, [userEmail, debouncedRefresh, saveCache, patchConversation, fetchConversations]);
 
   useEffect(() => {
     fetchConversations();
@@ -465,6 +620,7 @@ export default function useConversations(userEmail, opts = {}) {
     toggleStar,
     toggleArchive,
     togglePin,
-    toggleMute
+    toggleMute,
+    setMute
   };
 }

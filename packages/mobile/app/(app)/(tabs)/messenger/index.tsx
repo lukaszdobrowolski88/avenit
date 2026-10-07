@@ -15,15 +15,16 @@ import { Link, useRouter } from "expo-router";
 import {
   Archive,
   ArchiveRestore,
+  BellOff,
   Pin,
   Hash,
+  House,
   Megaphone,
   MessageCircle,
   Search,
   SquarePen,
   Star,
   Users as UsersIcon,
-  VolumeX,
   X,
   CloudOff,
   SearchX,
@@ -38,6 +39,7 @@ import {
   useToggleStarred,
   useToggleArchived,
   useTogglePinConversation,
+  useSetMute,
   useMembersByEmails,
   memberDisplayName,
   memberInitials,
@@ -52,11 +54,18 @@ import {
   FILTER_LABELS,
   formatListTime,
   groupIntoSections,
+  isHomeGroupChannel,
+  isMutedNow,
   lastMessagePreview,
   matchesFilter,
+  mutedUntilLabel,
+  normEmail,
   type ConversationFilter,
 } from "../../../../src/features/messenger/logic";
 import { useRealtimeConversations } from "../../../../src/features/messenger/hooks/useRealtimeMessages";
+import { useDrafts } from "../../../../src/features/messenger/drafts";
+import { useMyBlocks } from "../../../../src/features/messenger/plus";
+import { MuteSheet } from "../../../../src/features/messenger/components/MuteSheet";
 import { useAuthSession } from "../../../../src/lib/auth";
 import { usePresence, type PresenceStatus } from "../../../../src/lib/presence";
 import { PresenceDot } from "../../../../src/features/messenger/components/PresenceDot";
@@ -87,6 +96,13 @@ const ConversationAvatar = ({
   peerStatus?: PresenceStatus;
 }) => {
   if (conv.type === "ministry") {
+    if (isHomeGroupChannel(conv)) {
+      return (
+        <Tile>
+          <House size={20} color="#2A2312" strokeWidth={2.2} />
+        </Tile>
+      );
+    }
     const meta = conv.ministry_key ? MINISTRY_CHANNEL_META[conv.ministry_key] : null;
     return (
       <Tile>
@@ -145,7 +161,13 @@ export default function MessengerScreen() {
   const toggleStar = useToggleStarred(myEmail);
   const toggleArchive = useToggleArchived(myEmail);
   const togglePin = useTogglePinConversation(myEmail);
+  const setMute = useSetMute(myEmail);
+  const [muteTarget, setMuteTarget] = useState<ConversationListItem | null>(null);
   useRealtimeConversations(myEmail);
+  // Szkice (K11) i zablokowane osoby (K10) — tylko do podglądu na liście.
+  const drafts = useDrafts(myEmail);
+  const blocked = useMyBlocks(myEmail).data;
+  const blockedSet = useMemo(() => new Set(blocked ?? []), [blocked]);
   // Jak serwer: gwiazdka/przypięcie/archiwum to zapis własnego wiersza uczestnika,
   // nowa rozmowa — utworzenie rozmowy i uczestników. Bez uprawnień nie kusimy przyciskiem.
   const perms = usePermissions();
@@ -200,7 +222,7 @@ export default function MessengerScreen() {
     0,
   );
 
-  // Sekcje jak w webie: Przypięte, Ogłoszenia, Prywatne, Grupy, Kanały służb.
+  // Sekcje jak w webie: Przypięte, Ogłoszenia, Prywatne, Grupy, Kanały (służby i grupy domowe).
   const sections = useMemo(
     () => groupIntoSections<ConversationListItem>(filtered).map((s) => ({ key: s.key, title: s.title, data: s.items })),
     [filtered],
@@ -389,6 +411,10 @@ export default function MessengerScreen() {
               const unreadCount = item.unread_count ?? 0;
               const unread = unreadCount > 0;
               const title = conversationTitle(item, members);
+              const muted = isMutedNow(item);
+              const mutedUntil = muted ? mutedUntilLabel(item.muted_until) : "";
+              const draft = drafts[item.id];
+              const peerBlocked = item.type === "direct" && !!item.peer_email && blockedSet.has(normEmail(item.peer_email));
               return (
                 <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12 }}>
                   <Link
@@ -397,8 +423,18 @@ export default function MessengerScreen() {
                     asChild
                   >
                     <Pressable
+                      onLongPress={canManage ? () => setMuteTarget(item) : undefined}
+                      delayLongPress={400}
                       accessibilityRole="button"
-                      accessibilityLabel={unread ? `${title}, nieprzeczytane: ${unreadCount}` : title}
+                      accessibilityLabel={[
+                        title,
+                        unread ? `nieprzeczytane: ${unreadCount}` : null,
+                        muted ? `wyciszona${mutedUntil ? ` ${mutedUntil}` : ""}` : null,
+                        draft ? "masz niewysłany szkic" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                      accessibilityHint={canManage ? "Przytrzymaj, aby wyciszyć powiadomienia" : undefined}
                       className="active:opacity-70"
                       style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}
                     >
@@ -421,7 +457,16 @@ export default function MessengerScreen() {
                           >
                             {title}
                           </Text>
-                          {item.muted ? <VolumeX size={12} color="#6E685A" /> : null}
+                          {muted ? (
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                              <BellOff size={12} color="#6E685A" />
+                              {mutedUntil ? (
+                                <Text style={{ fontSize: 10, color: "#6E685A", fontFamily: "Manrope_600SemiBold" }}>
+                                  {mutedUntil}
+                                </Text>
+                              ) : null}
+                            </View>
+                          ) : null}
                           {last ? (
                             <Text
                               style={{
@@ -435,18 +480,25 @@ export default function MessengerScreen() {
                           ) : null}
                         </View>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              flex: 1,
-                              fontSize: 13,
-                              color: last ? (unread ? "#2A2312" : "#6B6557") : "#6E685A",
-                              fontStyle: last ? "normal" : "italic",
-                              fontFamily: unread ? "Manrope_500Medium" : "Manrope_400Regular",
-                            }}
-                          >
-                            {last ? previewOf(item) : "Brak wiadomości"}
-                          </Text>
+                          {draft && !unread ? (
+                            <Text numberOfLines={1} style={{ flex: 1, fontSize: 13, color: "#6B6557", fontFamily: "Manrope_400Regular" }}>
+                              <Text style={{ color: "#8A6606", fontFamily: "Manrope_700Bold" }}>Szkic: </Text>
+                              {draft.replace(/\s+/g, " ")}
+                            </Text>
+                          ) : (
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                flex: 1,
+                                fontSize: 13,
+                                color: last ? (unread ? "#2A2312" : "#6B6557") : "#6E685A",
+                                fontStyle: last && !peerBlocked ? "normal" : "italic",
+                                fontFamily: unread ? "Manrope_500Medium" : "Manrope_400Regular",
+                              }}
+                            >
+                              {peerBlocked ? "Osoba zablokowana" : last ? previewOf(item) : "Brak wiadomości"}
+                            </Text>
+                          )}
                           {unread ? (
                             <View
                               style={{
@@ -507,6 +559,19 @@ export default function MessengerScreen() {
           />
         )}
       </View>
+
+      <MuteSheet
+        visible={!!muteTarget}
+        onClose={() => setMuteTarget(null)}
+        muted={muteTarget ? isMutedNow(muteTarget) : false}
+        mutedUntil={muteTarget?.muted_until ?? null}
+        title={muteTarget ? conversationTitle(muteTarget, members) : undefined}
+        onPick={(choice) => {
+          const target = muteTarget;
+          if (!target || setMute.isPending) return;
+          setMute.mutate({ conversationId: target.id, choice });
+        }}
+      />
     </>
   );
 }

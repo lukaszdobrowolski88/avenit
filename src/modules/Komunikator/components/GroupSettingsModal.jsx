@@ -1,27 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, UserPlus, UserMinus, Crown, Users, Trash2, LogOut, Edit2, Check, Music, Zap, Baby, Heart, UserCheck, Home, Shield } from 'lucide-react';
+import { Search, UserPlus, UserMinus, Crown, Users, LogOut, Edit2, Check, X, UserCheck } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
+import { ChannelIcon } from './ConversationHeader';
 import { getMinistryName } from '../utils/messageHelpers';
-import { leaveBlocker, sameEmail } from '../utils/chatLogic';
+import { leaveBlocker, sameEmail, channelName, isHomeGroupChannel } from '../utils/chatLogic';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
 import Modal from '../../../components/Modal';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
-
-// Ikony dla kanałów służb
-const ministryIcons = {
-  worship_team: Music,
-  media_team: Zap,
-  kids_ministry: Baby,
-  youth_ministry: Users,
-  prayer_team: Heart,
-  welcome_team: UserCheck,
-  small_groups: Home,
-  admin_team: Shield,
-};
 
 export default function GroupSettingsModal({
   isOpen,
@@ -96,10 +85,7 @@ export default function GroupSettingsModal({
       setNewName('');
     } else {
       // Dla kanałów służb użyj nazwy z ministry_key jeśli brak nazwy własnej
-      const displayName = isMinistryChannel
-        ? (conversation?.name || getMinistryName(conversation?.ministry_key))
-        : (conversation?.name || '');
-      setNewName(displayName);
+      setNewName(isMinistryChannel ? channelName(conversation, getMinistryName) : (conversation?.name || ''));
     }
   }, [isOpen, conversation?.name, conversation?.ministry_key, isMinistryChannel]);
 
@@ -150,7 +136,7 @@ export default function GroupSettingsModal({
     }
   };
 
-  const groupName = conversation?.name || (isMinistryChannel ? getMinistryName(conversation?.ministry_key) : '') || conversation?.displayName || tr('bez nazwy');
+  const groupName = (isMinistryChannel ? channelName(conversation, getMinistryName) : conversation?.name) || conversation?.displayName || tr('bez nazwy');
 
   // Usuń uczestnika (administrator rozmowy)
   const handleRemoveParticipant = async (email) => {
@@ -280,18 +266,7 @@ export default function GroupSettingsModal({
       {/* Group info */}
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          {isMinistryChannel ? (
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-accent-primary-light flex items-center justify-center text-white">
-              {(() => {
-                const IconComponent = ministryIcons[conversation?.ministry_key] || Users;
-                return <IconComponent size={28} />;
-              })()}
-            </div>
-          ) : (
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white">
-              <Users size={28} />
-            </div>
-          )}
+          <ChannelIcon conversation={conversation} size="lg" />
           <div className="flex-1">
             {editingName ? (
               <div className="flex items-center gap-2">
@@ -318,10 +293,7 @@ export default function GroupSettingsModal({
                 <button
                   onClick={() => {
                     setEditingName(false);
-                    const displayName = isMinistryChannel
-                      ? (conversation?.name || getMinistryName(conversation?.ministry_key))
-                      : (conversation?.name || '');
-                    setNewName(displayName);
+                    setNewName(isMinistryChannel ? channelName(conversation, getMinistryName) : (conversation?.name || ''));
                   }}
                   aria-label={tr('Anuluj zmianę nazwy')}
                   title={tr('Anuluj')}
@@ -333,9 +305,7 @@ export default function GroupSettingsModal({
             ) : (
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  {isMinistryChannel
-                    ? (conversation.name || getMinistryName(conversation?.ministry_key))
-                    : conversation.name}
+                  {isMinistryChannel ? channelName(conversation, getMinistryName) : conversation.name}
                 </h3>
                 {canEditName && (
                   <button
@@ -350,8 +320,19 @@ export default function GroupSettingsModal({
               </div>
             )}
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {isMinistryChannel ? tr('Kanał służby • ') : ''}{tr('{n} uczestników', { n: participants.length })}
+              {isHomeGroupChannel(conversation)
+                ? tr('Kanał grupy domowej • {n} członków', { n: participants.length })
+                : isMinistryChannel
+                  ? tr('Kanał służby • {n} członków', { n: participants.length })
+                  : tr('{n} uczestników', { n: participants.length })}
             </p>
+            {isMinistryChannel && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                {isHomeGroupChannel(conversation)
+                  ? tr('Skład wynika z grupy domowej i aktualizuje się sam.')
+                  : tr('Skład wynika ze służby i aktualizuje się sam.')}
+              </p>
+            )}
           </div>
         </div>
       </div>

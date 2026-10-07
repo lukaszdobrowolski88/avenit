@@ -271,7 +271,10 @@ export const MODULES = [
       { key: 'groups', label: 'Grupy' },
       { key: 'ministry', label: 'Kanały służb' },
     ],
-    actions: [],
+    actions: [
+      // Komunikator+ (K10): panel „Zgłoszenia” — odczyt i rozstrzyganie zgłoszonych wiadomości.
+      { key: 'moderate', label: 'Rozpatruj zgłoszenia wiadomości' },
+    ],
     fields: [],
   },
   {
@@ -523,4 +526,7 @@ export const FN_CAPABILITY = {
   'send-push': 'action:push_campaigns:send',
   'push-campaign-dispatch': 'action:push_campaigns:send',
   'ical': 'action:calendar:export_ical',
+  // Komunikator+ — funkcje czatu dla osób z dostępem do Komunikatora.
+  'link-preview': 'module:komunikator',
+  'translate-message': 'module:komunikator',
 };

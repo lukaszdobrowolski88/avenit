@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { Check, Megaphone, Search, UserPlus, Users, X } from "lucide-react-native";
+import { Check, Info, Megaphone, Search, UserPlus, Users, X } from "lucide-react-native";
 import { PageHeader } from "../../../src/components/ui/PageHeader";
 import { useAuthSession } from "../../../src/lib/auth";
 import { usePermissions } from "../../../src/lib/permissions";
@@ -23,6 +23,7 @@ import {
   usePeopleDirectory,
   type Person,
 } from "../../../src/features/messenger/start";
+import { chatErrorTitle, useChatPolicy, useDirectAllowed } from "../../../src/features/messenger/plus";
 
 type Mode = "direct" | "group" | "announcement";
 
@@ -75,6 +76,37 @@ export default function NewConversationScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
+  // K9: polityka rozmów prywatnych kościoła (wszyscy / tylko z liderami / wyłączone).
+  const policy = useChatPolicy(!!myEmail).data;
+  const dmOff = policy?.dm === "off" || policy?.canStartDirect === false;
+  const scope = policy?.scope ?? "all";
+  // Przy ograniczeniu (tylko liderzy / ochrona niepełnoletnich) — z kim konkretnie wolno.
+  const allowedQuery = useDirectAllowed(
+    (people.data ?? []).map((p: Person) => p.email),
+    mode === "direct" && !dmOff && (scope === "leaders" || scope === "minors"),
+  );
+  const allowed = allowedQuery.data ?? {};
+  const directBlockedFor = (email: string) => allowed[email.toLowerCase()] === false;
+  useEffect(() => {
+    if (dmOff && mode === "direct") setMode("group");
+  }, [dmOff, mode]);
+  const modes = (
+    [
+      { key: "direct", label: "Prywatna", Icon: UserPlus },
+      { key: "group", label: "Grupa", Icon: Users },
+      { key: "announcement", label: "Ogłoszenia", Icon: Megaphone },
+    ] as const
+  ).filter((m) => !(dmOff && m.key === "direct"));
+  const policyNote = dmOff
+    ? "Rozmowy prywatne są w Twoim kościele wyłączone. Możesz pisać w grupach i kanałach."
+    : mode === "direct" && scope === "leaders"
+      ? "W Twoim kościele rozmowę prywatną można zacząć tylko z liderem lub administratorem. Z pozostałymi osobami porozmawiasz w grupie."
+      : mode === "direct" && scope === "minors"
+        ? "Ze względu na ochronę dzieci i młodzieży prywatnie piszesz tylko z rówieśnikami i rodziną. Z dorosłymi porozmawiasz w grupie."
+        : null;
+  // Ochronę niepełnoletnich (policy.protectMinors) objaśnia serwer przy odmowie (403 DM_NOT_ALLOWED)
+  // — stała notka przy każdej rozmowie byłaby szumem.
+
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
     const all: Person[] = people.data ?? [];
@@ -96,7 +128,7 @@ export default function NewConversationScreen() {
       openThread(await findOrCreateDirect(myEmail, person.email));
     } catch (e) {
       Alert.alert(
-        "Nie udało się otworzyć rozmowy",
+        chatErrorTitle(e, "Nie udało się otworzyć rozmowy"),
         friendlyError(e, "Nie udało się utworzyć rozmowy. Spróbuj ponownie."),
       );
     } finally {
@@ -152,18 +184,14 @@ export default function NewConversationScreen() {
 
         <View style={{ paddingHorizontal: 16, gap: 10 }}>
           <View style={{ flexDirection: "row", backgroundColor: "#ECE8DE", padding: 4, borderRadius: 14 }}>
-            {(
-              [
-                { key: "direct", label: "Prywatna", Icon: UserPlus },
-                { key: "group", label: "Grupa", Icon: Users },
-                { key: "announcement", label: "Ogłoszenia", Icon: Megaphone },
-              ] as const
-            ).map(({ key, label, Icon }) => {
+            {modes.map(({ key, label, Icon }) => {
               const active = mode === key;
               return (
                 <Pressable
                   key={key}
                   onPress={() => setMode(key)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
                   style={{
                     flex: 1,
                     flexDirection: "row",
@@ -194,6 +222,24 @@ export default function NewConversationScreen() {
             <Text style={{ fontSize: 12, color: "#6B6557", fontFamily: "Manrope_500Medium", lineHeight: 17 }}>
               W kanale ogłoszeń piszą tylko administratorzy. Pozostali czytają i reagują.
             </Text>
+          ) : null}
+
+          {policyNote ? (
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                alignItems: "flex-start",
+                padding: 10,
+                borderRadius: 12,
+                backgroundColor: "#FFF8E1",
+              }}
+            >
+              <Info size={15} color="#8A6606" style={{ marginTop: 1 }} />
+              <Text style={{ flex: 1, fontSize: 12, color: "#6B4F05", fontFamily: "Manrope_500Medium", lineHeight: 17 }}>
+                {policyNote}
+              </Text>
+            </View>
           ) : null}
 
           {mode !== "direct" ? (
@@ -296,10 +342,24 @@ export default function NewConversationScreen() {
             }
             renderItem={({ item }) => {
               const checked = selected.includes(item.email);
+              // K9: z tą osobą rozmowa prywatna jest niedostępna (polityka kościoła / ochrona małoletnich).
+              const unavailable = mode === "direct" && directBlockedFor(item.email);
               return (
                 <Pressable
-                  onPress={() => (mode === "direct" ? startDirect(item) : toggle(item.email))}
+                  onPress={() => {
+                    if (mode !== "direct") toggle(item.email);
+                    else if (unavailable)
+                      Alert.alert(
+                        "Rozmowa prywatna niedostępna",
+                        scope === "minors"
+                          ? "Ze względu na ochronę dzieci i młodzieży rozmowy prywatne między osobą niepełnoletnią a dorosłą są wyłączone. Skorzystaj z rozmowy grupowej."
+                          : "Rozmowę prywatną można prowadzić tylko z liderem albo administratorem. Napisz w grupie albo w kanale.",
+                      );
+                    else startDirect(item);
+                  }}
                   disabled={busy}
+                  accessibilityRole="button"
+                  accessibilityLabel={unavailable ? `${item.name}. Rozmowa prywatna niedostępna` : item.name}
                   className="active:opacity-70"
                   style={{
                     flexDirection: "row",
@@ -309,6 +369,7 @@ export default function NewConversationScreen() {
                     paddingHorizontal: 10,
                     borderRadius: 14,
                     backgroundColor: "transparent",
+                    opacity: unavailable ? 0.5 : 1,
                   }}
                 >
                   <Avatar person={item} />
@@ -323,7 +384,7 @@ export default function NewConversationScreen() {
                       numberOfLines={1}
                       style={{ fontSize: 12, color: "#6B6557", fontFamily: "Manrope_400Regular", marginTop: 1 }}
                     >
-                      {item.email}
+                      {unavailable ? "Rozmowa prywatna niedostępna" : item.email}
                     </Text>
                   </View>
                   {mode !== "direct" ? (

@@ -8,6 +8,11 @@
 // zawsze zalogowany, a kanał ogłoszeń przyjmuje wiadomości tylko od administratorów rozmowy.
 // Dotyczy każdego, także admina aplikacji — to prywatna korespondencja (jak tabele osobiste).
 import { ApiError, buildWhere } from './querybuilder.js';
+import {
+  assertDirectAllowed, canMentionAll, mentionsAll, MENTION_ALL_MESSAGE,
+  pollOf, pollClosed, POLL_CLOSED_MESSAGE, anonymousPollIds, redactVotes,
+} from './komunikatorPlus.js';
+import { emitChange } from '../realtime/hub.js';
 
 // Rodzaj powiązania wiersza z rozmową.
 const CONV_TABLES = {
@@ -110,6 +115,15 @@ async function conversationOf(db, convId) {
 // wiadomości rozjeżdżały się między duplikaty. Klienci najpierw szukają istniejącej rozmowy;
 // to zabezpieczenie na wyścigi i starsze wersje aplikacji. Świeżo założona pusta rozmowa
 // (bez uczestników, niewidoczna dla nikogo) jest sprzątana, a klient dostaje 409 DIRECT_EXISTS.
+// Sprzątanie świeżo założonej, pustej rozmowy 1:1 (bez uczestników i wiadomości).
+const dropEmptyDirect = (db, convId) => db.query(
+  `DELETE FROM conversations e
+    WHERE e.id::text = $1 AND e.type = 'direct'
+      AND NOT EXISTS (SELECT 1 FROM conversation_participants p WHERE p.conversation_id = e.id)
+      AND NOT EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = e.id)`,
+  [String(convId)]
+).catch(() => undefined);
+
 async function assertNoOtherDirect(db, convId, emails) {
   const pair = [...new Set(emails.map(lower).filter(Boolean))];
   if (pair.length !== 2) return;
@@ -122,14 +136,48 @@ async function assertNoOtherDirect(db, convId, emails) {
     [String(convId), pair]
   );
   if (!rows[0]) return;
-  await db.query(
-    `DELETE FROM conversations e
-      WHERE e.id::text = $1 AND e.type = 'direct'
-        AND NOT EXISTS (SELECT 1 FROM conversation_participants p WHERE p.conversation_id = e.id)
-        AND NOT EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = e.id)`,
-    [String(convId)]
-  ).catch(() => undefined);
+  await dropEmptyDirect(db, convId);
   throw new ApiError(409, 'Rozmowa z tą osobą już istnieje', 'DIRECT_EXISTS');
+}
+
+// K9/K10: nowa rozmowa 1:1 — polityka rozmów prywatnych, ochrona niepełnoletnich i blokady.
+// Odrzucona rozmowa (pusta) jest sprzątana, klient dostaje 403 DM_NOT_ALLOWED albo BLOCKED.
+async function assertNewDirectAllowed(db, convId, emails, me) {
+  const pair = [...new Set(emails.map(lower).filter(Boolean))];
+  const other = pair.find((e) => e !== me);
+  if (!other || pair.length !== 2) return;
+  await assertDirectAllowed(db, me, other, { onReject: () => dropEmptyDirect(db, convId) });
+}
+
+// K7: głos w ankiecie — po zamknięciu 403; jednokrotny wybór: serwer usuwa poprzedni głos tej
+// osoby w tej ankiecie (także gdy klient tego nie zrobił). Usunięcia trafiają do realtime.
+async function enforcePollVote(db, row, me, req) {
+  const { rows } = await db.query(`SELECT id, message_type, metadata FROM messages WHERE id::text = $1`, [String(row.message_id)]);
+  const poll = rows[0] ? pollOf(rows[0].metadata) : null;
+  if (!poll) return;
+  if (pollClosed(poll)) throw new ApiError(403, POLL_CLOSED_MESSAGE, 'POLL_CLOSED');
+  const ids = poll.options.map((o) => (o && typeof o === 'object' ? o.id : null)).filter((x) => x != null).map(String);
+  if (ids.length && row.option_id != null && !ids.includes(String(row.option_id))) {
+    throw new ApiError(400, 'Nie ma takiej odpowiedzi w tej ankiecie');
+  }
+  if (poll.multiple) return;
+  const { rows: removed } = await db.query(
+    `DELETE FROM poll_votes WHERE message_id::text = $1 AND lower(user_email) = $2 AND option_id::text <> $3 RETURNING *`,
+    [String(row.message_id), me, String(row.option_id ?? '')]
+  ).catch(() => ({ rows: [] }));
+  if (removed.length && req.tenant?.slug) {
+    const audience = await conversationAudience(db, 'poll_votes', removed).catch(() => new Set());
+    emitChange(req.tenant.slug, 'poll_votes', 'delete', removed, {
+      audience,
+      redact: (r, client) => (poll.anonymous && lower(r.user_email) !== lower(client.email) ? { ...r, user_email: null } : r),
+    });
+  }
+}
+
+// Realtime/odczyt głosów: w ankietach anonimowych e-mail tylko dla głosującego.
+export async function pollVotesRedactor(db, rows) {
+  const anon = await anonymousPollIds(db, (rows || []).map((r) => r?.message_id));
+  return (row, client) => redactVotes([row], anon, client?.email)[0];
 }
 
 async function inMinistry(db, ministryKey, emails) {
@@ -161,7 +209,11 @@ export async function enforceConversationWrite(q, req) {
       }
       return;
     }
-    for (const r of rows) r.created_by = req.user.email; // twórca = ja
+    for (const r of rows) {
+      // Kanały służb i grup domowych zakłada i uzupełnia serwer (fn chat-channels-sync).
+      if (r.type === 'ministry') throw new ApiError(403, 'Kanały służb i grup domowych tworzą się automatycznie', 'MINISTRY_CHANNEL_SERVER');
+      r.created_by = req.user.email; // twórca = ja
+    }
     return;
   }
 
@@ -188,13 +240,20 @@ export async function enforceConversationWrite(q, req) {
       const conv = await conversationOf(db, convId);
       if (!conv) throw new ApiError(404, 'Nie znaleziono rozmowy');
       const role = (await isMember(db, convId, me))?.role;
-      if (role === 'admin') continue;
-      // Nowa rozmowa (0 uczestników) — pierwszy skład dodaje wyłącznie jej twórca.
-      // Rozmowa 1:1: tylko jeśli z tą osobą nie ma już innej rozmowy (bez duplikatów).
-      if (conv.n === 0 && lower(conv.created_by) === me) {
-        if (conv.type === 'direct') await assertNoOtherDirect(db, convId, [...emails, me]);
+      const isCreator = conv.n === 0 && lower(conv.created_by) === me;
+      // Rozmowa 1:1 (K9/K10): najwyżej dwie osoby; dopisanie drugiej osoby — także później, przez
+      // administratora rozmowy — przechodzi przez politykę rozmów prywatnych i blokady.
+      if (conv.type === 'direct' && (role === 'admin' || isCreator)) {
+        const existing = conv.n > 0 ? await directMembers(db, convId) : [me];
+        const all = [...new Set([...existing, ...emails].filter(Boolean))];
+        if (all.length > 2) throw new ApiError(403, 'W rozmowie prywatnej mogą być tylko dwie osoby');
+        if (isCreator) await assertNoOtherDirect(db, convId, all);
+        if (emails.some((e) => e !== me)) await assertNewDirectAllowed(db, convId, all, me);
         continue;
       }
+      if (role === 'admin') continue;
+      // Nowa rozmowa (0 uczestników) — pierwszy skład dodaje wyłącznie jej twórca.
+      if (isCreator) continue;
       if (conv.type === 'ministry' && (await inMinistry(db, conv.ministry_key, [...emails, me]))) {
         // Synchronizacja kanału służby: dopisujemy wyłącznie członków tego zespołu, bez ról admina.
         for (const r of rows) if (String(r.conversation_id) === convId) r.role = 'member';
@@ -213,6 +272,23 @@ export async function enforceConversationWrite(q, req) {
         if ('sender_email' in r && lower(r.sender_email) !== me) throw new ApiError(403, 'Nie można zmienić nadawcy');
         if ('conversation_id' in r) throw new ApiError(403, 'Nie można przenieść wiadomości');
       }
+      // Treść zmienia WYŁĄCZNIE autor. Administrator rozmowy (w 1:1 obie osoby) może cudzą
+      // wiadomość najwyżej usunąć (moderacja) — wcześniej mógł podmienić jej treść.
+      const MODERATION = new Set(['deleted_at', 'updated_at']);
+      if (rows.some((r) => Object.keys(r).some((k) => !MODERATION.has(k)))) {
+        const authorOnly = (a, push) => `lower(${a}."sender_email") = $${push(me)}`;
+        q.__ownerScope = { ...(q.__ownerScope || {}), update: authorOnly, upsertGuard: authorOnly };
+      }
+      // K5: dopisanie @wszyscy przy edycji — te same zasady co przy wysyłce.
+      if (rows.some((r) => mentionsAll(r.mentions))) {
+        const f = (q.filters || []).find((x) => x.type === 'eq' && x.column === 'id');
+        const { rows: m } = f
+          ? await db.query(`SELECT conversation_id FROM messages WHERE id::text = $1`, [String(f.value)])
+          : { rows: [] };
+        const conv = m[0] ? await conversationOf(db, m[0].conversation_id) : null;
+        const role = conv ? (await isMember(db, conv.id, me))?.role : null;
+        if (!conv || !(await canMentionAll(db, conv, role, me))) throw new ApiError(403, MENTION_ALL_MESSAGE, 'MENTION_ALL_FORBIDDEN');
+      }
       return;
     }
     for (const r of rows) {
@@ -223,6 +299,17 @@ export async function enforceConversationWrite(q, req) {
         throw new ApiError(403, 'W tym kanale piszą tylko administratorzy');
       }
       if (r.sender_email && lower(r.sender_email) !== me) throw new ApiError(403, 'Wiadomość wysyłasz pod własnym kontem');
+      // K5: @wszyscy — administrator rozmowy (w kanałach służb/grup: lider albo admin aplikacji).
+      if (mentionsAll(r.mentions) && !(await canMentionAll(db, conv, role, me))) {
+        throw new ApiError(403, MENTION_ALL_MESSAGE, 'MENTION_ALL_FORBIDDEN');
+      }
+      // K9/K10: rozmowa 1:1 — blokada (druga osoba zablokowała nadawcę) i polityka rozmów
+      // prywatnych także dla rozmów założonych przed zmianą ustawień.
+      if (conv.type === 'direct') {
+        for (const other of (await directMembers(db, r.conversation_id)).filter((e) => e !== me)) {
+          await assertDirectAllowed(db, me, other);
+        }
+      }
       r.sender_email = req.user.email;
     }
     return;
@@ -243,7 +330,17 @@ export async function enforceConversationWrite(q, req) {
     if (q.table === 'pinned_messages') { r.pinned_by = r.pinned_by ?? req.user.email; continue; }
     if (r.user_email && lower(r.user_email) !== me) throw new ApiError(403, 'Wpis dodajesz pod własnym kontem');
     r.user_email = req.user.email;
+    if (q.table === 'poll_votes') await enforcePollVote(db, r, me, req);
   }
+}
+
+// Uczestnicy rozmowy (e-maile małymi literami).
+async function directMembers(db, convId) {
+  const { rows } = await db.query(
+    `SELECT DISTINCT lower(user_email) AS e FROM conversation_participants WHERE conversation_id::text = $1`,
+    [String(convId)]
+  );
+  return rows.map((r) => r.e).filter(Boolean);
 }
 
 // Realtime: komu wysłać zmianę (e-maile uczestników rozmowy). null = brak ograniczenia.

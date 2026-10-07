@@ -107,7 +107,8 @@ export const SECTION_TITLES: Record<SectionKey, string> = {
   announcement: "Ogłoszenia",
   direct: "Prywatne",
   group: "Grupy",
-  ministry: "Kanały służb",
+  // „Kanały” = kanały służb i grup domowych (type='ministry', skład synchronizuje serwer) — jak web.
+  ministry: "Kanały",
 };
 export const sectionOf = (c: ConvLike | null | undefined): SectionKey => {
   if (c?.pinned) return "pinned";
@@ -270,6 +271,222 @@ export function unreadIdsToMark(
 
 export const mentionsUser = (m: PreviewMessage | null | undefined, email: string | null | undefined) =>
   !!email && Array.isArray(m?.mentions) && m!.mentions!.some((e) => sameEmail(e, email));
+
+// =====================================================================
+// Komunikator+ (K1–K11) — czysta logika aplikacji (bez RN i sieci).
+// =====================================================================
+
+// Doklejenie starszej paczki na początek: bez duplikatów, rosnąco po dacie (jak web).
+export function mergeOlderMessages<M extends { id?: string; created_at?: string }>(list: M[] = [], older: M[] = []): M[] {
+  const ids = new Set(list.map((m) => m.id));
+  const fresh = older.filter((m) => m && !ids.has(m.id));
+  if (!fresh.length) return list;
+  return [...fresh, ...list].sort((a, b) => ts(a.created_at) - ts(b.created_at));
+}
+
+// Odświeżenie najnowszej paczki wątku bez gubienia doczytanej wcześniej historii: zostają
+// wiadomości starsze niż najstarsza z paczki (paczka niepełna = cała rozmowa — starszych nie ma)
+// oraz ŚWIEŻE (ostatnie 2 min) nowsze niż najnowsza z paczki — doszły przez realtime w trakcie
+// pobierania. Starsza „nowsza” wiadomość spoza paczki to wiadomość usunięta — znika.
+export function mergeLatestPage<M extends { id?: string; created_at?: string }>(
+  prev: M[] | undefined,
+  page: M[],
+  full: boolean,
+  now: number = Date.now(),
+): M[] {
+  if (!prev?.length || !page.length) return page;
+  const oldest = ts(page[0].created_at);
+  const newest = ts(page[page.length - 1].created_at);
+  const ids = new Set(page.map((m) => m.id));
+  const older = full ? prev.filter((m) => m && !ids.has(m.id) && ts(m.created_at) < oldest) : [];
+  const newer = prev.filter(
+    (m) => m && !ids.has(m.id) && ts(m.created_at) > newest && ts(m.created_at) > now - 2 * 60 * 1000,
+  );
+  return older.length || newer.length ? [...older, ...page, ...newer] : page;
+}
+
+// Pierwsza cudza (nie systemowa) wiadomość nowsza niż moje „przeczytane” — tu stoi separator
+// „Nowe wiadomości” i tu otwiera się rozmowa. Bez znacznika (nigdy nie czytano) — brak.
+export function firstUnreadMessageId(
+  messages: PreviewMessage[] = [],
+  myEmail: string | null | undefined,
+  since: unknown,
+): string | null {
+  const from = ts(since);
+  if (!from) return null;
+  for (const m of messages) {
+    if (!m?.id || sameEmail(m.sender_email, myEmail) || m.message_type === "system") continue;
+    if (ts(m.created_at) > from) return m.id;
+  }
+  return null;
+}
+
+// K1: ścieżka pliku czatu w magazynie (`<conversationId>/plik`) z adresu załącznika, albo null
+// (adres spoza magazynu czatu — np. stary link zewnętrzny — zostaje bez podpisu).
+export function attachmentStoragePath(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m = String(url).match(/\/storage\/messenger[-_]attachments\/([^?#]+)/);
+  if (!m) return null;
+  const path = m[1]
+    .split("/")
+    .filter(Boolean)
+    .map((seg) => {
+      try {
+        return decodeURIComponent(seg);
+      } catch {
+        return seg;
+      }
+    })
+    .join("/");
+  return path || null;
+}
+
+// Pełny adres z podpisanej ścieżki serwera (`/storage/<bucket>/<plik>?exp=…&sig=…`): segmenty
+// ścieżki zakodowane (polskie litery, spacje), zapytanie bez zmian.
+export function buildSignedUrl(base: string, signedPath: string): string {
+  const raw = String(signedPath || "");
+  const q = raw.indexOf("?");
+  const pathPart = q >= 0 ? raw.slice(0, q) : raw;
+  const query = q >= 0 ? raw.slice(q) : "";
+  const encoded = pathPart
+    .split("/")
+    .map((seg) => {
+      if (!seg) return seg;
+      let s = seg;
+      try {
+        s = decodeURIComponent(seg);
+      } catch {
+        /* surowa nazwa z „%” */
+      }
+      return encodeURIComponent(s);
+    })
+    .join("/");
+  return `${String(base || "").replace(/\/+$/, "")}${encoded.startsWith("/") ? "" : "/"}${encoded}${query}`;
+}
+
+// K2: linki w treści (http/https/www.) — bez końcowej interpunkcji i niedomkniętego nawiasu.
+export type TextPart = { kind: "text"; text: string } | { kind: "link"; text: string; url: string };
+const LINK_RE = /((?:https?:\/\/|www\.)[^\s<>"'`]+)/gi;
+const trimLink = (raw: string): string => {
+  let s = raw;
+  for (;;) {
+    const last = s.slice(-1);
+    if (/[.,!?:;'"»”’]/.test(last)) s = s.slice(0, -1);
+    else if (last === ")" && (s.match(/\(/g)?.length ?? 0) < (s.match(/\)/g)?.length ?? 0)) s = s.slice(0, -1);
+    else if (last === "]" && !s.includes("[")) s = s.slice(0, -1);
+    else break;
+  }
+  return s;
+};
+export function normalizeLink(raw: string | null | undefined): string | null {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  const url = /^www\./i.test(s) ? `https://${s}` : s;
+  if (!/^https?:\/\/[^\s/?#]+\.[^\s/?#]+/i.test(url) && !/^https?:\/\/localhost/i.test(url)) return null;
+  return url;
+}
+export function splitLinks(text: string | null | undefined): TextPart[] {
+  const src = String(text ?? "");
+  const out: TextPart[] = [];
+  let last = 0;
+  LINK_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = LINK_RE.exec(src))) {
+    const raw = trimLink(m[1]);
+    const url = normalizeLink(raw);
+    if (!url) continue;
+    if (m.index > last) out.push({ kind: "text", text: src.slice(last, m.index) });
+    out.push({ kind: "link", text: raw, url });
+    last = m.index + raw.length;
+    LINK_RE.lastIndex = last;
+  }
+  if (last < src.length) out.push({ kind: "text", text: src.slice(last) });
+  return out;
+}
+export const firstLink = (text: string | null | undefined): string | null => {
+  const p = splitLinks(text).find((x) => x.kind === "link");
+  return p && p.kind === "link" ? p.url : null;
+};
+export const linkDomain = (url: string | null | undefined): string => {
+  const m = String(url ?? "").match(/^https?:\/\/([^/?#:]+)/i);
+  return m ? m[1].replace(/^www\./i, "").toLowerCase() : "";
+};
+
+// K4: wyciszenie na czas. „Zawsze” = muted:true bez terminu; reszta = termin w muted_until.
+export type MuteOption = "1h" | "8h" | "tomorrow" | "always";
+export function muteUntilFor(option: MuteOption, now: Date = new Date()): string | null {
+  if (option === "always") return null;
+  if (option === "1h") return new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+  if (option === "8h") return new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString();
+  const t = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8, 0, 0, 0);
+  return t.toISOString();
+}
+export const isMutedNow = (
+  p: { muted?: boolean | null; muted_until?: string | null } | null | undefined,
+  now: number = Date.now(),
+): boolean => !!p && (!!p.muted || (!!p.muted_until && ts(p.muted_until) > now));
+// „do 14:30” (dziś), „do jutra 8:00”, „do 12 paź 8:00”; wyciszenie bez terminu — pusty tekst.
+export function mutedUntilLabel(mutedUntil: string | null | undefined, now: Date = new Date()): string {
+  const t = ts(mutedUntil);
+  if (!t || t <= now.getTime()) return "";
+  const d = new Date(t);
+  const hm = `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(d) - day(now)) / 86_400_000);
+  if (diff <= 0) return `do ${hm}`;
+  if (diff === 1) return `do jutra ${hm}`;
+  return `do ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${hm}`;
+}
+
+// K5: @wszyscy — w mentions zapisywane jako "*".
+export const MENTION_ALL = "*";
+export const mentionsAll = (m: PreviewMessage | null | undefined) =>
+  Array.isArray(m?.mentions) && m!.mentions!.includes(MENTION_ALL);
+export const hasMentionAllToken = (text: string | null | undefined) =>
+  /(^|[\s(])@wszyscy(?![\p{L}\d_])/iu.test(String(text ?? ""));
+// Wpisywana wzmianka tuż przed kursorem („…@Ol”): początek „@” i wpisany fragment.
+export function activeMentionQuery(text: string, cursor: number = text.length): { start: number; query: string } | null {
+  const before = String(text ?? "").slice(0, Math.max(0, cursor));
+  const m = before.match(/(^|\s)@([\p{L}\d._-]{0,30})$/u);
+  if (!m) return null;
+  return { start: before.length - m[2].length - 1, query: m[2] };
+}
+// Wstaw wybraną wzmiankę w miejsce wpisywanego fragmentu (z odstępem po niej).
+export function applyMention(text: string, start: number, cursor: number, label: string): string {
+  const src = String(text ?? "");
+  const after = src.slice(cursor).replace(/^[\p{L}\d._-]*/u, "");
+  return `${src.slice(0, start)}@${label} ${after.replace(/^\s+/, "")}`;
+}
+
+// K6: potwierdzenia odczytu własnej wiadomości. ✓✓ „przeczytane” dopiero, gdy przeczytali
+// WSZYSCY pozostali uczestnicy (1:1 — druga osoba); lista czytelników od najwcześniejszego.
+export interface ReceiptLike {
+  user_email: string;
+  read_at?: string | null;
+  delivered_at?: string | null;
+}
+export function receiptSummary<R extends ReceiptLike>(
+  receipts: R[] | undefined,
+  senderEmail: string | null | undefined,
+  participantEmails: string[] = [],
+): { status: "sent" | "delivered" | "read"; readers: R[]; readCount: number; total: number } {
+  const others = (receipts ?? []).filter((r) => r && !sameEmail(r.user_email, senderEmail));
+  const readers = others
+    .filter((r) => !!r.read_at)
+    .sort((a, b) => ts(a.read_at) - ts(b.read_at));
+  const audience = Array.from(
+    new Set(participantEmails.map(normEmail).filter((e) => e && e !== normEmail(senderEmail))),
+  );
+  const readSet = new Set(readers.map((r) => normEmail(r.user_email)));
+  const total = audience.length;
+  const allRead = total > 0 ? audience.every((e) => readSet.has(e)) : readers.length > 0;
+  const status = allRead ? "read" : others.some((r) => r.delivered_at || r.read_at) ? "delivered" : "sent";
+  return { status, readers, readCount: readers.length, total };
+}
+
+// K8: kanał grupy domowej (ministry_key = 'home_group:<id>').
+export const isHomeGroupChannel = (c: { type?: string | null; ministry_key?: string | null } | null | undefined) =>
+  !!c && c.type === "ministry" && String(c.ministry_key ?? "").startsWith("home_group:");
 
 // Godzina/dzień na liście rozmów — jak web (formatMessageDate): dziś godzina, wczoraj „Wczoraj”,
 // w tym tygodniu dzień tygodnia, starsze — „7 paź”.

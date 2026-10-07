@@ -5,8 +5,10 @@ import ConversationList from './components/ConversationList';
 import MessageThread from './components/MessageThread';
 import NewConversationModal from './components/NewConversationModal';
 import GroupSettingsModal from './components/GroupSettingsModal';
+import ReportsPanel, { countOpenReports } from './components/ReportsPanel';
 import useConversations from './hooks/useConversations';
 import useMinistryChannels from './hooks/useMinistryChannels';
+import useChatPolicy from './hooks/useChatPolicy';
 import { useNotificationContext } from '../../contexts/NotificationContext';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { toast } from '../../lib/toast';
@@ -17,7 +19,11 @@ const USER_EMAIL_CACHE_KEY = 'user_email_cache';
 
 export default function KomunikatorModule() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { can } = usePermissions();
+  const { can, subject, ready } = usePermissions();
+  const isAppAdmin = !!subject?.isAdmin;
+  // Moderacja zgłoszeń (K10): administrator aplikacji albo akcja „Rozpatruj zgłoszenia wiadomości”
+  // (action:komunikator:moderate). Serwer i tak sprawdza.
+  const canModerate = !!ready && !!subject && (isAppAdmin || can('action:komunikator:moderate'));
 
   // Co rola pozwala zapisać (serwer i tak egzekwuje; tu tylko nie pokazujemy martwych przycisków).
   const perms = useMemo(() => ({
@@ -63,16 +69,36 @@ export default function KomunikatorModule() {
     toggleStar,
     toggleArchive,
     togglePin,
-    toggleMute
+    setMute
   } = useConversations(userEmail, { canManageOwn: perms.manageOwn, openConversationId: selectedConversation?.id ?? null });
+
+  // Polityka rozmów prywatnych (K9) — do objaśnienia w „Nowej rozmowie”; serwer egzekwuje.
+  const chatPolicy = useChatPolicy(!!userEmail);
 
   // Hook powiadomień - używamy wspólnego kontekstu
   const { notifications, markAsRead: markNotificationAsRead } = useNotificationContext();
 
-  // Kanały służb (w tle). Po synchronizacji, jeśli coś się zmieniło, odśwież listę.
-  useMinistryChannels(userEmail, {
-    onSynced: (changed) => { if (changed) refetch(); }
-  });
+  // Kanały służb i grup domowych: skład utrzymuje serwer (K8). Administrator może wymusić
+  // odświeżenie składów od razu.
+  const { syncNow: syncChannels, syncing: syncingChannels } = useMinistryChannels(userEmail);
+  const handleSyncChannels = useCallback(async () => {
+    try {
+      await syncChannels();
+      await refetch();
+      toast.success(tr('Składy kanałów odświeżone'));
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się odświeżyć kanałów. Spróbuj ponownie później.') });
+    }
+  }, [syncChannels, refetch]);
+
+  // Zgłoszenia (K10): licznik otwartych przy przycisku panelu.
+  const [showReports, setShowReports] = useState(false);
+  const [openReports, setOpenReports] = useState(0);
+  const refreshReportsCount = useCallback(() => {
+    if (!canModerate) return;
+    countOpenReports().then((n) => setOpenReports(n || 0), () => {});
+  }, [canModerate]);
+  useEffect(() => { refreshReportsCount(); }, [refreshReportsCount]);
 
   const [pendingOpenId, setPendingOpenId] = useState(null);
   const urlRefetchRef = useRef(null); // rozmowa z linku, dla której już odświeżyliśmy listę
@@ -192,9 +218,9 @@ export default function KomunikatorModule() {
     toast.success(tr('Kanał „{name}” utworzony', { name }));
   };
 
-  // Po aktualizacji ustawień grupy
+  // Po aktualizacji ustawień grupy — lekki refetch (skład, nazwa), bez paczki wiadomości.
   const handleSettingsUpdate = async () => {
-    await refetch();
+    await refetch({ light: true });
   };
 
   const closeSelected = () => {
@@ -238,6 +264,10 @@ export default function KomunikatorModule() {
           canManage={perms.manageOwn}
           loading={loading}
           currentUserEmail={userEmail}
+          onOpenReports={canModerate ? () => setShowReports(true) : undefined}
+          openReportsCount={openReports}
+          onSyncChannels={isAppAdmin ? handleSyncChannels : undefined}
+          syncingChannels={syncingChannels}
         />
       </div>
 
@@ -256,10 +286,11 @@ export default function KomunikatorModule() {
           onBack={handleBack}
           onOpenSettings={() => setShowSettingsModal(true)}
           onMarkAsRead={markAsRead}
-          onToggleMute={perms.manageOwn ? toggleMute : undefined}
+          onSetMute={perms.manageOwn ? setMute : undefined}
           onDeleteConversation={perms.deleteConversation ? handleDeleteConversation : undefined}
           allConversations={conversations}
           perms={perms}
+          isAppAdmin={isAppAdmin}
         />
       </div>
 
@@ -271,6 +302,7 @@ export default function KomunikatorModule() {
         onCreateGroup={handleCreateGroup}
         onCreateAnnouncement={handleCreateAnnouncement}
         currentUserEmail={userEmail}
+        dmPolicy={chatPolicy}
       />
 
       {/* Modal ustawień grupy */}
@@ -283,6 +315,17 @@ export default function KomunikatorModule() {
         onLeave={perms.removeParticipants ? handleLeaveConversation : undefined}
         perms={perms}
       />
+
+      {/* Panel zgłoszeń (moderacja) */}
+      {canModerate && (
+        <ReportsPanel
+          isOpen={showReports}
+          onClose={() => { setShowReports(false); refreshReportsCount(); }}
+          currentUserEmail={userEmail}
+          onOpenConversation={openConversationById}
+          onChanged={refreshReportsCount}
+        />
+      )}
     </div>
   );
 }

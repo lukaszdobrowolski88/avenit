@@ -64,6 +64,105 @@ const SENSITIVE = {
 // Odczyt bez podpisu zablokowany (tylko podpisany link albo pobranie z tokenem i uprawnieniem).
 const SIGNED_READ = new Set(['membership-declarations']);
 
+// Komunikator+ (K1): załączniki czatu. Podpis wydajemy TYLKO uczestnikowi rozmowy, której id
+// jest pierwszym segmentem ścieżki (<conversationId>/plik — tak zapisuje aplikacja); admin
+// aplikacji — jak dotąd. Starsze ścieżki webu (attachments/…, voice-messages/…) bez id rozmowy:
+// uczestnik rozmowy, w której wiadomości jest ten plik. Odczyt bez podpisu blokujemy dopiero
+// po włączeniu app_settings.chat_private_files = 'on' (starsze wersje aplikacji bez OTA widzą
+// zdjęcia zwykłym adresem). Obrazki mailingu (mailing-images/…) zawsze publiczne — ładują je
+// programy pocztowe odbiorców.
+const MESSENGER_BUCKET = 'messenger-attachments';
+const MESSENGER_PUBLIC_PREFIXES = ['mailing-images/'];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Ścieżka względna w buckecie: bez „/” na początku, znormalizowana; wyjście w górę (`..`) = null.
+export function cleanRelPath(raw) {
+  const p = path.posix.normalize(String(raw ?? '').replace(/\\/g, '/')).replace(/^\/+/, '');
+  if (!p || p === '.' || p === '..' || p.startsWith('../')) return null;
+  return p;
+}
+
+// Ścieżka z żądania podpisu: sama ścieżka w buckecie (przyjmujemy też pełny adres pliku),
+// bez zapytania i kotwicy, zdekodowana jak parametr trasy GET.
+export function normalizeSignPath(raw) {
+  let p = String(raw || '').trim().replace(/[?#].*$/, '');
+  const marker = `/storage/${MESSENGER_BUCKET}/`;
+  const i = p.indexOf(marker);
+  if (i >= 0) p = p.slice(i + marker.length);
+  p = p.replace(/^\/+/, '');
+  if (p.startsWith(`${MESSENGER_BUCKET}/`)) p = p.slice(MESSENGER_BUCKET.length + 1);
+  try { if (/%[0-9a-f]{2}/i.test(p)) p = decodeURIComponent(p); } catch { /* zostaje surowa */ }
+  return cleanRelPath(p);
+}
+
+// Id rozmowy z pierwszego segmentu ścieżki (albo null dla starszych ścieżek).
+export function conversationIdFromPath(filePath) {
+  const first = String(filePath || '').split('/')[0];
+  return UUID_RE.test(first) ? first : null;
+}
+
+export const isPublicMessengerPath = (filePath) => MESSENGER_PUBLIC_PREFIXES.some((p) => String(filePath || '').startsWith(p));
+
+async function isAppAdminReq(req) {
+  try {
+    const { rows } = await req.db.query(`SELECT is_super_admin, role FROM app_users WHERE id = $1`, [req.user.id]);
+    if (rows[0]?.is_super_admin) return true;
+    const { adminRoles } = await loadGrants(req.db, req.tenant.db_name);
+    return adminRoles.has(rows[0]?.role ?? req.user.role);
+  } catch {
+    return false;
+  }
+}
+
+async function canSignMessengerFile(req, filePath) {
+  if (isPublicMessengerPath(filePath)) return true;
+  if (await isAppAdminReq(req)) return true;
+  const email = String(req.user?.email || '').toLowerCase();
+  if (!email) return false;
+  const convId = conversationIdFromPath(filePath);
+  try {
+    if (convId) {
+      const { rows } = await req.db.query(
+        `SELECT 1 FROM conversation_participants WHERE conversation_id::text = $1 AND lower(user_email) = $2 LIMIT 1`,
+        [convId, email]);
+      return rows.length > 0;
+    }
+    // Starsza ścieżka — szukamy wiadomości z tym plikiem w moich rozmowach.
+    const like = `%/${MESSENGER_BUCKET}/${filePath.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const { rows } = await req.db.query(
+      `SELECT 1 FROM messages m
+         JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND lower(cp.user_email) = $2
+        WHERE m.attachments::text LIKE $1 LIMIT 1`,
+      [like, email]);
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+// app_settings.chat_private_files (cache 60 s per tenant).
+const privateFilesCache = new Map();
+async function chatPrivateFiles(req) {
+  const key = req.tenant?.db_name;
+  const hit = privateFilesCache.get(key);
+  if (hit && Date.now() - hit.at < 60_000) return hit.on;
+  let on = false;
+  try {
+    const { rows } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'chat_private_files' LIMIT 1`);
+    on = String(rows[0]?.value ?? '').trim().replace(/^"(.*)"$/, '$1').toLowerCase() === 'on';
+  } catch { /* brak — wyłączone */ }
+  privateFilesCache.set(key, { on, at: Date.now() });
+  return on;
+}
+
+function validSignature(req, bucket, filePath) {
+  const exp = Number(req.query?.exp);
+  const sig = String(req.query?.sig || '');
+  const expected = Number.isFinite(exp) ? signFor(req.tenant.slug, bucket, filePath, exp) : '';
+  return !!expected && sig.length === expected.length
+    && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) && exp >= Date.now() / 1000;
+}
+
 async function canUseBucket(req, bucket) {
   const caps = SENSITIVE[bucket];
   if (!caps) return true;
@@ -84,11 +183,14 @@ async function canUseBucket(req, bucket) {
 const signFor = (tenant, bucket, filePath, exp) =>
   crypto.createHmac('sha256', config.JWT_SECRET).update(`${tenant}|${bucket}|${filePath}|${exp}`).digest('hex');
 
-function safeJoin(...parts) {
-  const base = path.resolve(config.STORAGE_DIR);
-  const target = path.resolve(base, ...parts);
-  if (!target.startsWith(base + path.sep) && target !== base) {
-    throw Object.assign(new Error('Nieprawidłowa ścieżka'), { status: 400 });
+// Ścieżka MUSI zostać w katalogu bucketu tego tenanta. Parametr „*” trasy jest dekodowany
+// (`..%2f` → `../`), więc wcześniejsze sprawdzenie samego katalogu głównego STORAGE_DIR
+// przepuszczało odczyt z innego bucketu (np. deklaracji bez podpisu) albo innego kościoła.
+export function safeJoin(tenant, bucket, rel = '', baseDir = config.STORAGE_DIR) {
+  const root = path.resolve(baseDir, String(tenant), String(bucket));
+  const target = path.resolve(root, String(rel ?? ''));
+  if (target !== root && !target.startsWith(root + path.sep)) {
+    throw Object.assign(new Error('Nieprawidłowa ścieżka'), { status: 400, statusCode: 400 });
   }
   return target;
 }
@@ -188,34 +290,40 @@ export default async function storageRoutes(app) {
   app.post('/api/storage/:bucket/sign', { preHandler: app.requireUser }, async (req, reply) => {
     const { bucket } = req.params;
     assertBucket(bucket);
-    const filePath = String(req.body?.path || '').replace(/^\//, '');
+    const filePath = bucket === MESSENGER_BUCKET
+      ? normalizeSignPath(req.body?.path)
+      : cleanRelPath(req.body?.path);
     if (!filePath) return reply.code(400).send({ error: 'Brak ścieżki pliku' });
-    if (!(await canUseBucket(req, bucket))) return reply.code(403).send({ error: 'Brak uprawnień do tego pliku' });
+    const allowed = bucket === MESSENGER_BUCKET
+      ? await canSignMessengerFile(req, filePath)
+      : await canUseBucket(req, bucket);
+    if (!allowed) return reply.code(403).send({ error: 'Brak uprawnień do tego pliku' });
     const ttl = Math.min(Math.max(Number(req.body?.expiresIn) || 300, 30), 3600);
     const exp = Math.floor(Date.now() / 1000) + ttl;
     const sig = signFor(req.tenant.slug, bucket, filePath, exp);
-    return reply.send({ signedPath: `/storage/${bucket}/${filePath}?exp=${exp}&sig=${sig}` });
+    const urlPath = filePath.split('/').map((s) => encodeURIComponent(s)).join('/');
+    return reply.send({ signedPath: `/storage/${bucket}/${urlPath}?exp=${exp}&sig=${sig}` });
   });
 
   // Publiczny odczyt: GET /storage/<bucket>/<ścieżka> na subdomenie tenanta.
   // (Caddy może to serwować bezpośrednio z dysku — ta trasa to fallback/dev.)
   app.get('/storage/:bucket/*', async (req, reply) => {
     const { bucket } = req.params;
-    const filePath = req.params['*'];
+    const filePath = cleanRelPath(req.params['*']);
     try {
       assertBucket(bucket);
     } catch (err) {
       return reply.code(err.status || 404).send({ error: err.message });
     }
     if (!req.tenant) return reply.code(404).send({ error: 'Nieznany tenant' });
-    if (SIGNED_READ.has(bucket)) {
-      const exp = Number(req.query?.exp);
-      const sig = String(req.query?.sig || '');
-      const expected = Number.isFinite(exp) ? signFor(req.tenant.slug, bucket, filePath, exp) : '';
-      const valid = expected && sig.length === expected.length
-        && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) && exp >= Date.now() / 1000;
-      if (!valid) return reply.code(403).send({ error: 'Link do pliku wygasł albo jest nieprawidłowy' });
+    if (!filePath) return reply.code(400).send({ error: 'Nieprawidłowa ścieżka' });
+    const signedOnly = SIGNED_READ.has(bucket)
+      || (bucket === MESSENGER_BUCKET && !isPublicMessengerPath(filePath) && (await chatPrivateFiles(req)));
+    if (signedOnly && !validSignature(req, bucket, filePath)) {
+      return reply.code(403).send({ error: 'Link do pliku wygasł albo jest nieprawidłowy' });
     }
+    // Podpisany link do prywatnego pliku nie powinien trafiać do cache pośredników.
+    if (req.query?.sig) reply.header('Cache-Control', 'private, max-age=300');
     const target = safeJoin(req.tenant.slug, bucket, filePath);
     if (!fs.existsSync(target) || !fs.statSync(target).isFile()) {
       return reply.code(404).send({ error: 'Nie znaleziono pliku' });

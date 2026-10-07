@@ -2,10 +2,11 @@ import { Image, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
+  BellOff,
   ChevronLeft,
   Hash,
+  House,
   Users,
-  VolumeX,
   Volume2,
   Search,
   Image as ImageIcon,
@@ -24,13 +25,13 @@ import {
 import { PresenceDot } from "./PresenceDot";
 import { PRESENCE_LABELS, type PresenceStatus } from "../../../lib/presence";
 import { goBack } from '../../../lib/navigation';
-import { sameEmail } from "../logic";
+import { isHomeGroupChannel, isMutedNow, mutedUntilLabel, sameEmail } from "../logic";
 
 interface Props {
   details: ConversationDetails | null;
   members: MemberMap;
   myEmail: string | null;
-  /** Brak = bez przycisku (rola nie może zmieniać swoich ustawień rozmowy). */
+  /** Brak = bez przycisku (rola nie może zmieniać swoich ustawień rozmowy). Otwiera menu „Wycisz” (K4). */
   onToggleMute?: () => void;
   muteBusy: boolean;
   onSearch?: () => void;
@@ -153,20 +154,25 @@ export const ConversationHeader = ({
       </View>
     );
   } else if (isMinistry) {
+    const homeGroup = isHomeGroupChannel(details);
     title = conversationTitle(details, members);
-    subtitle = `Kanał służby · ${participantsLabel(details.participant_emails.length)}`;
+    subtitle = `${homeGroup ? "Grupa domowa" : "Kanał służby"} · ${participantsLabel(details.participant_emails.length)}`;
     avatarBlock = (
       <View
         style={{
           width: 38,
           height: 38,
           borderRadius: 12,
-          backgroundColor: ministryMeta?.bg ?? "#FFF1C2",
+          backgroundColor: ministryMeta?.bg ?? "#ECE8DE",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Hash size={20} color={ministryMeta?.tint ?? "#8A6606"} strokeWidth={2.4} />
+        {homeGroup ? (
+          <House size={19} color="#2A2312" strokeWidth={2.2} />
+        ) : (
+          <Hash size={20} color={ministryMeta?.tint ?? "#2A2312"} strokeWidth={2.4} />
+        )}
       </View>
     );
   } else if (details.type === "announcement") {
@@ -310,31 +316,38 @@ export const ConversationHeader = ({
           <ImageIcon size={16} color="#4A463E" strokeWidth={2.2} />
         </Pressable>
       ) : null}
-      {onToggleMute ? (
-      <Pressable
-        onPress={onToggleMute}
-        disabled={muteBusy}
-        accessibilityLabel={details.my_muted ? "Włącz powiadomienia z rozmowy" : "Wycisz powiadomienia z rozmowy"}
-        hitSlop={10}
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          backgroundColor: details.my_muted ? "#FFF1C2" : "#F1EEE6",
-          borderWidth: 1,
-          borderColor: details.my_muted ? "#F3E3B0" : "#E6E1D5",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: muteBusy ? 0.5 : 1,
-        }}
-      >
-        {details.my_muted ? (
-          <VolumeX size={16} color="#8A6606" strokeWidth={2.2} />
-        ) : (
-          <Volume2 size={16} color="#4A463E" strokeWidth={2.2} />
-        )}
-      </Pressable>
-      ) : null}
+      {onToggleMute ? (() => {
+        const muted = isMutedNow({ muted: details.my_muted, muted_until: details.my_muted_until });
+        const until = mutedUntilLabel(details.my_muted_until);
+        return (
+          <Pressable
+            onPress={onToggleMute}
+            disabled={muteBusy}
+            accessibilityRole="button"
+            accessibilityLabel={
+              muted ? `Powiadomienia wyciszone${until ? ` ${until}` : ""}. Zmień` : "Wycisz powiadomienia z rozmowy"
+            }
+            hitSlop={10}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: muted ? "#FFF1C2" : "#F1EEE6",
+              borderWidth: 1,
+              borderColor: muted ? "#F3E3B0" : "#E6E1D5",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: muteBusy ? 0.5 : 1,
+            }}
+          >
+            {muted ? (
+              <BellOff size={16} color="#8A6606" strokeWidth={2.2} />
+            ) : (
+              <Volume2 size={16} color="#4A463E" strokeWidth={2.2} />
+            )}
+          </Pressable>
+        );
+      })() : null}
     </View>
   );
 };

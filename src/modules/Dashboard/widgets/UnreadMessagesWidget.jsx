@@ -1,240 +1,176 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Users, Music, Zap, Sparkles, Baby, Home, Heart, UserCheck, Shield, ChevronRight, Inbox } from 'lucide-react';
+import { MessageCircle, ChevronRight, Inbox } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { getInitials, stringToColor } from '../../../utils/text';
 import { brandTone } from '../../../lib/brandTone';
+import { getMinistryName } from '../../Komunikator/utils/messageHelpers';
+import {
+  emailPattern, normEmail, sameEmail, readSince, unreadSummary, previewText, channelName,
+} from '../../Komunikator/utils/chatLogic';
 
-// Ikony dla kanałów służb
-const ministryIcons = {
-  worship_team: Music,
-  media_team: Zap,
-  atmosfera_team: Sparkles,
-  kids_ministry: Baby,
-  home_groups: Home,
-  youth_ministry: Users,
-  prayer_team: Heart,
-  welcome_team: UserCheck,
-  small_groups: Home,
-  admin_team: Shield,
-};
+// Widżet „Nieprzeczytane wiadomości” (K11): stała liczba zapytań niezależnie od liczby rozmów —
+// mój skład, rozmowy, JEDNA paczka nieprzeczytanych wiadomości (bez usuniętych), druga osoba
+// rozmów 1:1 i nazwiska. Dawniej: osobne zapytania dla każdej rozmowy przy każdej wiadomości.
+const UNREAD_LIMIT = 500;
 
-// Nazwy służb
-const ministryNames = {
-  worship_team: 'Grupa Uwielbienia',
-  media_team: 'Media Team',
-  atmosfera_team: 'Atmosfera',
-  kids_ministry: tr('Małe Avenit'),
-  home_groups: 'Grupy Domowe',
-  youth_ministry: tr('Młodzieżówka'),
-  prayer_team: 'Centrum Modlitwy',
-  welcome_team: 'Welcome Team',
-  admin_team: 'Administracja',
-};
-
-// Formatowanie daty
 function formatMessageTime(dateStr) {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now - date;
+  const diffMs = Date.now() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'teraz';
-  if (diffMins < 60) return `${diffMins} min`;
-  if (diffHours < 24) return `${diffHours} godz.`;
-  if (diffDays < 7) return `${diffDays} dni`;
+  if (diffMins < 1) return tr('teraz');
+  if (diffMins < 60) return tr('{n} min', { n: diffMins });
+  if (diffHours < 24) return tr('{n} godz.', { n: diffHours });
+  if (diffDays < 7) return tr('{n} dni', { n: diffDays });
   return date.toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' });
 }
 
-// Skróć tekst
-function truncateText(text, maxLength) {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
+export async function fetchUnreadConversations(userEmail) {
+  // 1) Moje rozmowy (bez zarchiwizowanych — jak licznik w Komunikatorze)
+  const { data: mine, error: partError } = await supabase
+    .from('conversation_participants')
+    .select('conversation_id, last_read_at, joined_at, archived')
+    .ilike('user_email', emailPattern(userEmail));
+  if (partError) throw partError;
+  const active = (mine || []).filter(p => !p.archived);
+  if (!active.length) return [];
+  const ids = active.map(p => p.conversation_id);
+  const sinceByConv = {};
+  active.forEach(p => { sinceByConv[String(p.conversation_id)] = readSince(p); });
+  const sinceValues = Object.values(sinceByConv);
+  const minSince = sinceValues.some(v => !v)
+    ? null
+    : sinceValues.reduce((min, v) => (!min || new Date(v) < new Date(min) ? v : min), null);
+
+  // 2) Jedna paczka najnowszych cudzych wiadomości nowszych niż najstarsze „przeczytane”.
+  let q = supabase
+    .from('messages')
+    .select('id, conversation_id, content, sender_email, created_at, message_type, attachments, deleted_at')
+    .in('conversation_id', ids)
+    .is('deleted_at', null);
+  if (minSince) q = q.gt('created_at', minSince);
+  const { data: rows, error: msgError } = await q.order('created_at', { ascending: false }).limit(UNREAD_LIMIT);
+  if (msgError) throw msgError;
+  const summary = unreadSummary(rows || [], userEmail, sinceByConv);
+  const unreadIds = Object.keys(summary);
+  if (!unreadIds.length) return [];
+
+  // 3) Rozmowy z nieprzeczytanymi + druga osoba rozmów 1:1 + nazwiska — razem 3 zapytania.
+  const { data: convs } = await supabase
+    .from('conversations')
+    .select('id, type, name, ministry_key, updated_at')
+    .in('id', unreadIds);
+  const directIds = (convs || []).filter(c => c.type === 'direct').map(c => c.id);
+  const { data: directParts } = directIds.length
+    ? await supabase.from('conversation_participants').select('conversation_id, user_email').in('conversation_id', directIds)
+    : { data: [] };
+  const otherByConv = {};
+  (directParts || []).forEach(p => { if (!sameEmail(p.user_email, userEmail)) otherByConv[String(p.conversation_id)] = p.user_email; });
+  const emails = [...new Set([
+    ...Object.values(summary).map(s => s.last?.sender_email),
+    ...Object.values(otherByConv),
+  ].filter(Boolean))];
+  const { data: users } = emails.length
+    ? await supabase.from('app_users').select('email, full_name, avatar_url').in('email', [...new Set(emails.flatMap(e => [e, normEmail(e)]))])
+    : { data: [] };
+  const userOf = {};
+  (users || []).forEach(u => { userOf[normEmail(u.email)] = u; });
+
+  return (convs || []).map(conv => {
+    const s = summary[String(conv.id)];
+    const last = s.last;
+    const senderUser = userOf[normEmail(last?.sender_email)];
+    let name = conv.name;
+    if (conv.type === 'direct') {
+      const other = otherByConv[String(conv.id)];
+      name = userOf[normEmail(other)]?.full_name || other?.split('@')[0] || name;
+    } else if (conv.type === 'ministry') {
+      name = channelName(conv, getMinistryName);
+    }
+    return {
+      id: conv.id,
+      type: conv.type,
+      name,
+      unreadCount: s.count,
+      lastMessage: last ? {
+        content: previewText(last, tr),
+        senderEmail: last.sender_email,
+        sender: { email: last.sender_email, full_name: senderUser?.full_name, avatar_url: senderUser?.avatar_url },
+        createdAt: last.created_at,
+      } : null,
+      updatedAt: conv.updated_at,
+    };
+  }).sort((a, b) => new Date(b.lastMessage?.createdAt || b.updatedAt) - new Date(a.lastMessage?.createdAt || a.updatedAt));
 }
 
 export default function UnreadMessagesWidget({ userEmail }) {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const timerRef = useRef(null);
 
-  // Pobierz konwersacje z nieprzeczytanymi wiadomościami
   useEffect(() => {
-    const fetchUnreadConversations = async () => {
-      if (!userEmail) return;
-
+    if (!userEmail) { setLoading(false); return undefined; }
+    let alive = true;
+    const load = async () => {
       try {
-        // Pobierz konwersacje użytkownika z uczestnikami
-        const { data: participations, error: partError } = await supabase
-          .from('conversation_participants')
-          .select(`
-            conversation_id,
-            last_read_at,
-            conversations (
-              id,
-              type,
-              name,
-              ministry_key,
-              updated_at
-            )
-          `)
-          .eq('user_email', userEmail);
-
-        if (partError) throw partError;
-
-        const unreadConvs = [];
-
-        for (const part of participations || []) {
-          const conv = part.conversations;
-          if (!conv) continue;
-
-          // Policz nieprzeczytane wiadomości
-          let query = supabase
-            .from('messages')
-            .select('id, content, sender_email, created_at', { count: 'exact' })
-            .eq('conversation_id', conv.id)
-            .neq('sender_email', userEmail)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-          if (part.last_read_at) {
-            query = query.gt('created_at', part.last_read_at);
-          }
-
-          const { data: messages, count, error: msgError } = await query;
-          if (msgError) continue;
-
-          if (count > 0) {
-            // Pobierz uczestników dla konwersacji direct
-            let displayName = conv.name;
-            let otherParticipant = null;
-
-            if (conv.type === 'direct') {
-              const { data: participants } = await supabase
-                .from('conversation_participants')
-                .select('user_email, user_name, avatar_url')
-                .eq('conversation_id', conv.id)
-                .neq('user_email', userEmail)
-                .limit(1);
-
-              if (participants?.[0]) {
-                otherParticipant = {
-                  email: participants[0].user_email,
-                  full_name: participants[0].user_name,
-                  avatar_url: participants[0].avatar_url
-                };
-                displayName = otherParticipant.full_name || otherParticipant.email?.split('@')[0];
-              }
-            } else if (conv.type === 'ministry') {
-              displayName = ministryNames[conv.ministry_key] || conv.name;
-            }
-
-            // Pobierz info o nadawcy ostatniej wiadomości (dla wszystkich typów)
-            let sender = null;
-            if (messages?.[0]) {
-              const { data: senderData } = await supabase
-                .from('app_users')
-                .select('full_name, avatar_url, email')
-                .eq('email', messages[0].sender_email)
-                .maybeSingle();
-              sender = {
-                email: messages[0].sender_email,
-                full_name: senderData?.full_name,
-                avatar_url: senderData?.avatar_url
-              };
-            }
-
-            unreadConvs.push({
-              id: conv.id,
-              type: conv.type,
-              name: displayName,
-              ministryKey: conv.ministry_key,
-              unreadCount: count,
-              lastMessage: messages?.[0] ? {
-                content: messages[0].content,
-                senderEmail: messages[0].sender_email,
-                sender,
-                createdAt: messages[0].created_at
-              } : null,
-              otherParticipant,
-              updatedAt: conv.updated_at
-            });
-          }
-        }
-
-        // Sortuj po czasie ostatniej wiadomości
-        unreadConvs.sort((a, b) => {
-          const timeA = a.lastMessage?.createdAt || a.updatedAt;
-          const timeB = b.lastMessage?.createdAt || b.updatedAt;
-          return new Date(timeB) - new Date(timeA);
-        });
-
-        setConversations(unreadConvs);
+        const list = await fetchUnreadConversations(userEmail);
+        if (alive) setConversations(list);
       } catch (err) {
         console.error('Error fetching unread conversations:', err);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     };
+    load();
 
-    fetchUnreadConversations();
-
-    // Subskrypcja na nowe wiadomości
+    // Nowe wiadomości / „przeczytane” z innego miejsca — odśwież z opóźnieniem (seria zdarzeń = 1 odczyt).
+    const schedule = () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(load, 1500);
+    };
     const subscription = supabase
       .channel('unread-messages-widget')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages'
-      }, () => {
-        fetchUnreadConversations();
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, schedule)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversation_participants' }, (payload) => {
+        if (sameEmail(payload?.new?.user_email, userEmail)) schedule();
       })
       .subscribe();
 
     return () => {
+      alive = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
       supabase.removeChannel(subscription);
     };
   }, [userEmail]);
 
-  // Łączna liczba nieprzeczytanych
-  const totalUnread = useMemo(() => {
-    return conversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
-  }, [conversations]);
+  const totalUnread = useMemo(() => conversations.reduce((sum, conv) => sum + conv.unreadCount, 0), [conversations]);
 
-  // Otwórz konwersację
-  const handleConversationClick = (conversationId) => {
-    navigate(`/komunikator?conversation=${conversationId}`);
-  };
-
-  // Otwórz komunikator
-  const handleOpenMessenger = () => {
-    navigate('/komunikator');
-  };
+  const handleConversationClick = (conversationId) => navigate(`/komunikator?conversation=${conversationId}`);
+  const handleOpenMessenger = () => navigate('/komunikator');
 
   if (loading) {
     return <Spinner center />;
   }
 
-  // Renderuj awatar nadawcy wiadomości
   const renderSenderAvatar = (conv) => {
     const sender = conv.lastMessage?.sender;
-
     if (sender?.avatar_url) {
       return (
         <img
           src={sender.avatar_url}
-          alt={sender.full_name || 'Nadawca'}
+          alt={sender.full_name || tr('Nadawca')}
           className="w-10 h-10 rounded-full object-cover"
         />
       );
     }
-
     return (
       <div
         data-tone={brandTone(sender?.email || conv.name)}
@@ -248,11 +184,10 @@ export default function UnreadMessagesWidget({ userEmail }) {
 
   return (
     <div className="space-y-3">
-      {/* Header z liczbą */}
       {totalUnread > 0 && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-xs font-bold">
+            <div className="flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900 text-xs font-bold">
               {totalUnread > 99 ? '99+' : totalUnread}
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -262,31 +197,28 @@ export default function UnreadMessagesWidget({ userEmail }) {
         </div>
       )}
 
-      {/* Lista konwersacji */}
       {conversations.length === 0 ? (
         <EmptyState compact icon={Inbox} title={tr('Wszystko przeczytane!')} subtitle={tr('Nie masz nowych wiadomości')} />
       ) : (
         <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
           {conversations.slice(0, 5).map(conv => {
             const sender = conv.lastMessage?.sender;
-            const senderName = sender?.full_name || sender?.email?.split('@')[0] || 'Nieznany';
+            const senderName = sender?.full_name || sender?.email?.split('@')[0] || tr('Nieznany nadawca');
 
             return (
               <button
+                type="button"
                 key={conv.id}
                 onClick={() => handleConversationClick(conv.id)}
                 className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group text-left"
               >
-                {/* Awatar nadawcy */}
                 <div className="relative flex-shrink-0">
                   {renderSenderAvatar(conv)}
-                  {/* Unread badge */}
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900 text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
                     {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
                   </span>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-medium text-gray-800 dark:text-white truncate text-sm">
@@ -298,40 +230,38 @@ export default function UnreadMessagesWidget({ userEmail }) {
                   </div>
                   {conv.lastMessage && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                      {truncateText(conv.lastMessage.content, 40)}
+                      {conv.lastMessage.content}
                     </p>
                   )}
-                  {/* Nazwa konwersacji dla grup/służb */}
                   {conv.type !== 'direct' && (
                     <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
-                      w: {conv.name}
+                      {tr('w: {name}', { name: conv.name || '' })}
                     </p>
                   )}
                 </div>
 
-                {/* Arrow */}
-                <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-accent-primary-light transition-colors flex-shrink-0" />
+                <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors flex-shrink-0" />
               </button>
             );
           })}
         </div>
       )}
 
-      {/* Pokaż więcej */}
       {conversations.length > 5 && (
         <button
+          type="button"
           onClick={handleOpenMessenger}
-          className="w-full text-center py-2 text-sm text-accent-primary dark:text-accent-primary-light font-medium hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition-colors"
+          className="w-full text-center py-2 text-sm text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
         >
-          Zobacz wszystkie ({conversations.length})
+          {tr('Zobacz wszystkie ({n})', { n: conversations.length })}
         </button>
       )}
 
-      {/* Przycisk do komunikatora */}
       {conversations.length > 0 && conversations.length <= 5 && (
         <button
+          type="button"
           onClick={handleOpenMessenger}
-          className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
         >
           <MessageCircle size={16} />
           {tr('Otwórz komunikator')}

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { emailPattern } from '../utils/chatLogic';
 
 export default function useMessageSearch(conversationId) {
   const [results, setResults] = useState([]);
@@ -23,7 +24,7 @@ export default function useMessageSearch(conversationId) {
         .select('id, content, sender_email, created_at')
         .eq('conversation_id', conversationId)
         .is('deleted_at', null)
-        .ilike('content', `%${searchQuery}%`)
+        .ilike('content', `%${emailPattern(searchQuery.trim())}%`) // % i _ dosłownie
         .order('created_at', { ascending: false })
         .limit(50);
 

@@ -11,6 +11,9 @@ export const LANGUAGES: { code: LangCode; label: string; flag: string }[] = [
 ];
 
 const en: Record<string, string> = {
+  // Komunikator — ciche godziny
+  'Ciche godziny czatu': 'Chat quiet hours',
+  'Wyłączone — powiadomienia z czatu o każdej porze': 'Off — chat notifications at any time',
   // Zakładki
   Start: 'Home',
   Programy: 'Programs',
@@ -197,6 +200,9 @@ const en: Record<string, string> = {
 };
 
 const uk: Record<string, string> = {
+  // Komunikator — ciche godziny
+  'Ciche godziny czatu': 'Тихі години чату',
+  'Wyłączone — powiadomienia z czatu o każdej porze': 'Вимкнено — сповіщення чату в будь-який час',
   // Zakładki
   Start: 'Головна',
   Programy: 'Програми',

@@ -1,27 +1,16 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Plus, MessageSquare, Users, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Star, Archive, Pin, Megaphone, MoreHorizontal, BellOff } from 'lucide-react';
+import { Search, Plus, MessageSquare, Star, Archive, Pin, MoreHorizontal, BellOff, Flag, RefreshCw } from 'lucide-react';
 import UserAvatar from './UserAvatar';
+import { ChannelIcon } from './ConversationHeader';
+import { muteUntilLabel } from './MuteMenu';
 import { formatMessageDate, getMinistryName } from '../utils/messageHelpers';
 import { usePresence } from '../../../hooks/usePresence';
-import { sameEmail, matchesFilter, groupIntoSections, lastMessagePreview } from '../utils/chatLogic';
+import { sameEmail, matchesFilter, groupIntoSections, lastMessagePreview, channelName, muteState } from '../utils/chatLogic';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
-
-const ministryIcons = {
-  worship_team: Music,
-  media_team: Zap,
-  atmosfera_team: Sparkles,
-  kids_ministry: Baby,
-  home_groups: Home,
-  youth_ministry: Users,
-  prayer_team: Heart,
-  welcome_team: UserCheck,
-  small_groups: Home,
-  admin_team: Shield,
-};
 
 export default function ConversationList({
   conversations,
@@ -33,7 +22,11 @@ export default function ConversationList({
   onTogglePin,
   canManage = true, // uprawnienie do zmiany własnego wiersza uczestnika (przypięcie/ulubione/archiwum)
   loading,
-  currentUserEmail
+  currentUserEmail,
+  onOpenReports,       // panel „Zgłoszenia” (moderator) — K10
+  openReportsCount = 0,
+  onSyncChannels,      // „odśwież składy kanałów” (administrator aplikacji) — K8
+  syncingChannels = false
 }) {
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
@@ -92,7 +85,7 @@ export default function ConversationList({
     return conversations.filter(conv => {
       if (!query) return matchesFilter(conv, activeFilter, currentUserEmail);
       if (activeFilter !== 'all' && !matchesFilter(conv, activeFilter, currentUserEmail)) return false;
-      const ministryName = conv.type === 'ministry' ? getMinistryName(conv.ministry_key) : '';
+      const ministryName = conv.type === 'ministry' ? channelName(conv, getMinistryName) : '';
       return [conv.displayName, conv.name, ministryName, conv.lastMessage?.content]
         .some(v => String(v || '').toLowerCase().includes(query));
     });
@@ -135,34 +128,14 @@ export default function ConversationList({
         );
       }
 
-      if (conv.type === 'ministry') {
-        const IconComponent = ministryIcons[conv.ministry_key] || Users;
-        return (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-accent-primary-light flex items-center justify-center text-white">
-            <IconComponent size={20} />
-          </div>
-        );
-      }
-
-      if (conv.type === 'announcement') {
-        return (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white">
-            <Megaphone size={20} />
-          </div>
-        );
-      }
-
-      // Group
-      return (
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white">
-          <Users size={20} />
-        </div>
-      );
+      // Kanały służb / grup domowych, ogłoszenia, grupy — ikona na neutralnym papierze (marka).
+      return <ChannelIcon conversation={conv} size="sm" />;
     };
 
     const displayName = conv.type === 'ministry'
-      ? getMinistryName(conv.ministry_key) || conv.name
+      ? channelName(conv, getMinistryName)
       : conv.displayName || conv.name;
+    const mute = muteState(conv);
 
     const menuOpen = menuFor === conv.id;
     const menuItemClass = 'flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus-visible:bg-gray-50 dark:focus-visible:bg-gray-800 outline-none transition text-left';
@@ -198,8 +171,11 @@ export default function ConversationList({
                 {conv.starred && (
                   <Star size={12} className="text-yellow-500 fill-yellow-500 flex-shrink-0" aria-label={t('Ulubiona')} />
                 )}
-                {conv.muted && (
-                  <BellOff size={12} className="text-gray-400 flex-shrink-0" aria-label={t('Wyciszona')} />
+                {mute.muted && (
+                  <span className="flex items-center gap-0.5 text-[10px] text-gray-400 flex-shrink-0" title={mute.until ? t('Wyciszona {until}', { until: muteUntilLabel(mute.until) }) : t('Wyciszona na stałe')}>
+                    <BellOff size={12} aria-label={t('Wyciszona')} />
+                    {mute.until && <span className="hidden sm:inline">{muteUntilLabel(mute.until)}</span>}
+                  </span>
                 )}
               </div>
               {last && (
@@ -268,14 +244,28 @@ export default function ConversationList({
     );
   };
 
-  const renderSection = (title, items) => {
+  const renderSection = (title, items, key) => {
     if (items.length === 0) return null;
 
     return (
       <div className="mb-4">
-        <h3 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-1">
-          {title}
-        </h3>
+        <div className="flex items-center justify-between px-3 mb-1">
+          <h3 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            {title}
+          </h3>
+          {key === 'ministry' && onSyncChannels && (
+            <button
+              type="button"
+              onClick={onSyncChannels}
+              disabled={syncingChannels}
+              title={t('Odśwież składy kanałów')}
+              aria-label={t('Odśwież składy kanałów')}
+              className="p-1 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+            >
+              <RefreshCw size={12} className={syncingChannels ? 'animate-spin' : ''} />
+            </button>
+          )}
+        </div>
         <div className="space-y-0.5">
           {items.map(renderConversationItem)}
         </div>
@@ -301,6 +291,23 @@ export default function ConversationList({
               )}
             </div>
           </div>
+          <div className="flex items-center gap-1.5">
+          {onOpenReports && (
+            <button
+              type="button"
+              onClick={onOpenReports}
+              aria-label={openReportsCount > 0 ? t('Zgłoszenia: {n} do rozpatrzenia', { n: openReportsCount }) : t('Zgłoszenia')}
+              title={t('Zgłoszenia')}
+              className="relative p-2.5 rounded-xl text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 hover:text-gray-900 dark:hover:text-white transition"
+            >
+              <Flag size={16} />
+              {openReportsCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900 text-[10px] font-bold leading-[18px] text-center">
+                  {openReportsCount > 99 ? '99+' : openReportsCount}
+                </span>
+              )}
+            </button>
+          )}
           <button
             data-tour="komunikator-new"
             onClick={onNewConversation}
@@ -310,6 +317,7 @@ export default function ConversationList({
           >
             <Plus size={18} />
           </button>
+          </div>
         </div>
 
         {/* Wyszukiwarka */}
@@ -383,7 +391,7 @@ export default function ConversationList({
             ) : null}
           />
         ) : (
-          sections.map(s => <React.Fragment key={s.key}>{renderSection(t(s.title), s.items)}</React.Fragment>)
+          sections.map(s => <React.Fragment key={s.key}>{renderSection(t(s.title), s.items, s.key)}</React.Fragment>)
         )}
       </div>
     </div>

@@ -8,6 +8,7 @@
 //  - push-campaign-receipts  co 5 min
 //  - sms-campaign-receipts   co 5 min
 //  - sync-mail               co 5 min
+//  - chat-channels-sync      co 10 min (skład kanałów służb i grup domowych)
 //  - process-dunning         codziennie 08:00 (baza platform)
 import cron from 'node-cron';
 import { platformPool, getTenantPool } from './db.js';
@@ -75,6 +76,8 @@ cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('sync-mail', 'sync-ma
 // rozpoczętej przez „Wyślij teraz” (paczkami, z pominięciem wypisanych).
 cron.schedule('* * * * *', exclusive(() => forEachTenant('mailing', 'send-mailing-campaign')));
 cron.schedule('*/15 * * * *', exclusive(() => forEachTenant('board-automations', 'board-automations-run')));
+// Komunikator+: kanały służb i grup domowych — skład z zespołów/grup (dopisz/usuń/role), co 10 min.
+cron.schedule('*/10 * * * *', exclusive(() => forEachTenant('chat-channels-sync', 'chat-channels-sync')));
 
 // Automatyzacje: co 5 min — auto-zapis nowych oraz wykonanie należnych kroków.
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('automation', 'automation-run')));

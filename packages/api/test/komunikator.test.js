@@ -154,3 +154,15 @@ test('powiadomienie o wiadomości: link działa w webie i w aplikacji, podgląd 
   assert.equal(messagePreview({ content: '', attachments: {} }), 'Nowa wiadomość');
   assert.equal(messagePreview({ message_type: 'prayer', content: 'Za chorych' }), '🙏 Za chorych');
 });
+
+test('wiadomość: treść zmienia tylko autor; administrator może tylko usunąć', async () => {
+  const scope = () => conversationScope('messages', { email: 'jan@kosciol.pl' });
+  const edit = { table: 'messages', op: 'update', values: { content: 'podmiana' }, filters: [{ type: 'eq', column: 'id', value: 'm1' }], __ownerScope: scope() };
+  await enforceConversationWrite(edit, req(fakeDb([])));
+  const sqlEdit = edit.__ownerScope.update('t', () => 1);
+  assert.match(sqlEdit, /lower\(t\."sender_email"\) = \$1/);
+  assert.doesNotMatch(sqlEdit, /role" = 'admin'/);
+  const del = { table: 'messages', op: 'update', values: { deleted_at: '2026-10-07T10:00:00Z' }, filters: [{ type: 'eq', column: 'id', value: 'm1' }], __ownerScope: scope() };
+  await enforceConversationWrite(del, req(fakeDb([])));
+  assert.match(del.__ownerScope.update('t', () => 1), /role" = 'admin'/); // usunięcie: autor albo admin
+});

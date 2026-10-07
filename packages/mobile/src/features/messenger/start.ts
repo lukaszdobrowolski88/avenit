@@ -38,14 +38,26 @@ async function insertConversation(
     .insert({ ...values, created_by: myEmail })
     .select("id")
     .single();
-  if (convErr) throw convErr;
+  if (convErr) throw dmError(convErr);
   if (!conv?.id) throw new Error("Nie udało się utworzyć rozmowy.");
   const { error: partErr } = await (supabase.from("conversation_participants") as any)
     .insert(buildParticipantRows(String(conv.id), myEmail, memberEmails, allAdmins))
     .select("conversation_id, user_email");
-  if (partErr) throw partErr;
+  // Serwer odmówił składu (K9: polityka rozmów prywatnych / ochrona niepełnoletnich — 403
+  // DM_NOT_ALLOWED; K10: blokada — 403 BLOCKED). Pustą rozmowę 1:1 sprząta wtedy sam serwer.
+  if (partErr) throw dmError(partErr);
   return String(conv.id);
 }
+
+// Odmowa rozmowy 1:1 (K9) — ludzki komunikat serwera, a gdy go brak — nasz.
+const dmError = (err: any) => {
+  if (err?.code !== "DM_NOT_ALLOWED") return err;
+  const msg = typeof err?.message === "string" && !/^HTTP \d+/.test(err.message) ? err.message : "";
+  return Object.assign(
+    new Error(msg || "Rozmowa prywatna z tą osobą nie jest możliwa w Twoim kościele. Napiszcie w grupie albo poproś lidera o pomoc."),
+    { code: "DM_NOT_ALLOWED" },
+  );
+};
 
 export interface Person {
   email: string;

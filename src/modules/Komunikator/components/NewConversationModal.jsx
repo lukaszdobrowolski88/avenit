@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, User, Users, Check, Megaphone } from 'lucide-react';
+import { X, Search, User, Users, Check, Megaphone, Info, Lock } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
 import { normEmail, sameEmail } from '../utils/chatLogic';
+import { fetchDirectAllowed } from '../hooks/useChatPolicy';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
@@ -27,10 +28,13 @@ export default function NewConversationModal({
   onCreateDirect,
   onCreateGroup,
   onCreateAnnouncement,
-  currentUserEmail
+  currentUserEmail,
+  dmPolicy = null // K9: { dm: 'all'|'leaders'|'off', protectMinors, canStartDirect, allowedEmails }
 }) {
   const t = useT();
-  const [mode, setMode] = useState('direct'); // 'direct' | 'group' | 'announcement'
+  // Rozmowy prywatne wyłączone dla mnie — zaczynamy od „Grupa”, a zakładka „Prywatna” objaśnia dlaczego.
+  const directBlocked = !!dmPolicy && dmPolicy.canStartDirect === false;
+  const [mode, setMode] = useState(directBlocked ? 'group' : 'direct'); // 'direct' | 'group' | 'announcement'
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -132,15 +136,37 @@ export default function NewConversationModal({
   // Reset przy zamknięciu
   useEffect(() => {
     if (!isOpen) {
-      setMode('direct');
+      setMode(directBlocked ? 'group' : 'direct');
       setSearchQuery('');
       setSelectedUsers([]);
       setGroupName('');
     }
-  }, [isOpen]);
+  }, [isOpen, directBlocked]);
+
+  // Polityka ograniczona („tylko z liderem”, ochrona niepełnoletnich): pytamy serwer, z kim wolno
+  // zacząć rozmowę 1:1, i chowamy pozostałe osoby (serwer i tak odrzuci — 403 DM_NOT_ALLOWED).
+  const [directAllowed, setDirectAllowed] = useState(null); // { email: bool } | null
+  const restricted = !!dmPolicy && dmPolicy.canStartDirect !== false && !!dmPolicy.scope && dmPolicy.scope !== 'all';
+  // Także dorosły przy ochronie niepełnoletnich nie zacznie rozmowy z osobą poniżej 18 lat — schowamy ją.
+  const checkTargets = restricted || (!!dmPolicy?.protectMinors && dmPolicy.canStartDirect !== false);
+  useEffect(() => {
+    if (!isOpen || mode !== 'direct' || !checkTargets || !users.length) { if (!isOpen) setDirectAllowed(null); return undefined; }
+    let alive = true;
+    if (Array.isArray(dmPolicy?.allowedEmails)) {
+      const ok = new Set(dmPolicy.allowedEmails.map(normEmail));
+      setDirectAllowed(Object.fromEntries(users.map(u => [normEmail(u.email), ok.has(normEmail(u.email))])));
+      return undefined;
+    }
+    fetchDirectAllowed(users.map(u => u.email)).then((map) => {
+      if (alive) setDirectAllowed(Object.keys(map).length ? map : null);
+    });
+    return () => { alive = false; };
+  }, [isOpen, mode, checkTargets, users, dmPolicy?.allowedEmails]);
 
   // Filtruj użytkowników
   const filteredUsers = users.filter(user => {
+    // Chowamy tylko osoby, o których serwer wprost powiedział „nie wolno” (brak odpowiedzi = pokazujemy).
+    if (mode === 'direct' && directAllowed && directAllowed[normEmail(user.email)] === false) return false;
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -174,7 +200,12 @@ export default function NewConversationModal({
       onClose();
     } catch (err) {
       console.error('Error creating conversation:', err);
-      toast.error(err, { fallback: t('Nie udało się utworzyć rozmowy. Spróbuj ponownie.') });
+      // 403 DM_NOT_ALLOWED: serwer podaje ludzki powód (polityka kościoła / ochrona niepełnoletnich).
+      toast.error(err, {
+        fallback: err?.code === 'DM_NOT_ALLOWED'
+          ? t('Rozmowa prywatna z tą osobą nie jest dozwolona w Twoim kościele. Możesz napisać do niej w grupie.')
+          : t('Nie udało się utworzyć rozmowy. Spróbuj ponownie.'),
+      });
     } finally {
       setCreating(false);
     }
@@ -333,6 +364,24 @@ export default function NewConversationModal({
         </div>
       )}
 
+      {/* Zasady rozmów prywatnych (K9) */}
+      {mode === 'direct' && dmPolicy && (directBlocked || restricted) && (
+        <div className="mx-6 mt-4 flex items-start gap-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5 text-xs text-gray-600 dark:text-gray-300">
+          {directBlocked ? <Lock size={14} className="mt-0.5 flex-shrink-0" /> : <Info size={14} className="mt-0.5 flex-shrink-0" />}
+          <span>
+            {directBlocked
+              ? t('Rozmowy prywatne są w Twoim kościele wyłączone. Możesz pisać w grupach i kanałach.')
+              : dmPolicy.scope === 'leaders'
+                ? t('Rozmowę prywatną możesz zacząć tylko z liderem albo administratorem.')
+                : dmPolicy.scope === 'minors'
+                  ? t('Rozmowy prywatne z dorosłymi spoza rodziny są wyłączone. Z liderami rozmawiaj w grupie.')
+                  : t('W Twoim kościele rozmowy prywatne mają ograniczenia. Na liście są osoby, do których możesz napisać.')}
+          </span>
+        </div>
+      )}
+
+      {mode === 'direct' && directBlocked ? null : (
+      <>
       {/* Search */}
       <div className="px-6 py-4">
         <div className="relative">
@@ -392,6 +441,8 @@ export default function NewConversationModal({
           </div>
         )}
       </div>
+      </>
+      )}
     </Modal>
   );
 }

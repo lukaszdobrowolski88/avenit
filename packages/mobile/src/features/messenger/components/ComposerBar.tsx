@@ -1,12 +1,14 @@
-import { useState } from "react";
-import { ActivityIndicator, Image, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import {
+  AtSign,
   BarChart3,
   Calendar,
   Camera,
   CornerUpLeft,
   HeartHandshake,
   Image as ImageIcon,
+  Megaphone,
   Mic,
   Paperclip,
   Pencil,
@@ -15,10 +17,20 @@ import {
   X,
 } from "lucide-react-native";
 import { GradientIcon } from "../../../components/ui/GradientIcon";
-import type { MemberLite, MemberMap, MessageAttachment, MessageRow } from "../api";
+import type { MemberMap, MessageAttachment, MessageRow } from "../api";
 import { memberDisplayName } from "../api";
-import { previewText } from "../logic";
+import { activeMentionQuery, applyMention, previewText } from "../logic";
 import { AudioRecorder } from "./AudioRecorder";
+import { AttachmentImage } from "./AttachmentImage";
+
+// K5 — osoba do podpowiedzi wzmianki (@) w polu pisania.
+export interface MentionCandidate {
+  email: string;
+  name: string;
+  photoUrl?: string | null;
+}
+
+const MAX_SUGGESTIONS = 6;
 
 interface Props {
   text: string;
@@ -47,6 +59,9 @@ interface Props {
   prayerMode?: boolean;
   onStartPrayer?: () => void;
   onCancelPrayer?: () => void;
+  /** K5: uczestnicy do podpowiedzi „@” (bez mnie) i czy wolno „@wszyscy”. */
+  mentionCandidates?: MentionCandidate[];
+  canMentionAll?: boolean;
 }
 
 export const ComposerBar = ({
@@ -72,10 +87,44 @@ export const ComposerBar = ({
   prayerMode = false,
   onStartPrayer,
   onCancelPrayer,
+  mentionCandidates,
+  canMentionAll = false,
 }: Props) => {
   // Hooki ZAWSZE przed warunkowym returnem (prawo pisania zmienia się po wczytaniu rozmowy).
   const [recording, setRecording] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [cursor, setCursor] = useState<number | null>(null);
+
+  // K5: wpisywana wzmianka („@Ol…”) → podpowiedzi: „@wszyscy” (gdy wolno) + pasujące osoby.
+  const mention = useMemo(() => {
+    if (editing || prayerMode) return null;
+    const at = Math.min(cursor ?? text.length, text.length);
+    const m = activeMentionQuery(text, at);
+    return m ? { ...m, cursor: at } : null;
+  }, [text, cursor, editing, prayerMode]);
+  const suggestions = useMemo(() => {
+    if (!mention) return [] as { key: string; label: string; insert: string; sub?: string; photoUrl?: string | null; all?: boolean }[];
+    const q = mention.query.toLowerCase();
+    const out: { key: string; label: string; insert: string; sub?: string; photoUrl?: string | null; all?: boolean }[] = [];
+    if (canMentionAll && "wszyscy".startsWith(q)) {
+      out.push({ key: "*", label: "@wszyscy", insert: "wszyscy", sub: "Powiadom wszystkich w rozmowie", all: true });
+    }
+    for (const c of mentionCandidates ?? []) {
+      if (out.length >= MAX_SUGGESTIONS) break;
+      const name = c.name.trim();
+      if (!name) continue;
+      const words = name.toLowerCase().split(/\s+/);
+      if (q && !name.toLowerCase().startsWith(q) && !words.some((w) => w.startsWith(q))) continue;
+      out.push({ key: c.email, label: name, insert: name, photoUrl: c.photoUrl ?? null });
+    }
+    return out;
+  }, [mention, mentionCandidates, canMentionAll]);
+  const pickMention = (insert: string) => {
+    if (!mention) return;
+    const next = applyMention(text, mention.start, mention.cursor, insert);
+    setCursor(null);
+    onChangeText(next);
+  };
 
   // Bez prawa pisania (kanał „tylko administratorzy”, brak członkostwa) — bez pola, z wyjaśnieniem.
   if (!canPost) {
@@ -258,10 +307,7 @@ export const ComposerBar = ({
           }}
         >
           {pendingAttachment.type?.startsWith("image/") ? (
-            <Image
-              source={{ uri: pendingAttachment.url }}
-              style={{ width: 48, height: 48, borderRadius: 10 }}
-            />
+            <AttachmentImage url={pendingAttachment.url} style={{ width: 48, height: 48, borderRadius: 10 }} />
           ) : (
             <View
               style={{
@@ -290,6 +336,64 @@ export const ComposerBar = ({
           <Pressable onPress={onClearAttachment} hitSlop={10} style={{ padding: 4 }}>
             <X size={16} color="#6E685A" />
           </Pressable>
+        </View>
+      ) : null}
+
+      {suggestions.length > 0 ? (
+        <View
+          style={{
+            marginHorizontal: 12,
+            marginTop: 8,
+            borderRadius: 16,
+            backgroundColor: "#FFFFFF",
+            borderWidth: 1,
+            borderColor: "#E6E1D5",
+            overflow: "hidden",
+            maxHeight: 232,
+          }}
+        >
+          <ScrollView keyboardShouldPersistTaps="always">
+            {suggestions.map((s, i) => (
+              <Pressable
+                key={s.key}
+                onPress={() => pickMention(s.insert)}
+                accessibilityRole="button"
+                accessibilityLabel={s.all ? "Wspomnij wszystkich" : `Wspomnij: ${s.label}`}
+                className="active:opacity-70"
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 9,
+                  borderTopWidth: i === 0 ? 0 : 1,
+                  borderTopColor: "#F1EEE6",
+                }}
+              >
+                {s.all ? (
+                  <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "#FFF1C2", alignItems: "center", justifyContent: "center" }}>
+                    <Megaphone size={15} color="#8A6606" />
+                  </View>
+                ) : s.photoUrl ? (
+                  <Image source={{ uri: s.photoUrl }} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "#ECE8DE" }} />
+                ) : (
+                  <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "#ECE8DE", alignItems: "center", justifyContent: "center" }}>
+                    <AtSign size={14} color="#4A463E" />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={1} style={{ fontSize: 14, color: "#2A2312", fontFamily: "Manrope_600SemiBold" }}>
+                    {s.label}
+                  </Text>
+                  {s.sub ? (
+                    <Text numberOfLines={1} style={{ fontSize: 11, color: "#6B6557", fontFamily: "Manrope_500Medium" }}>
+                      {s.sub}
+                    </Text>
+                  ) : null}
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
       ) : null}
 
@@ -349,8 +453,10 @@ export const ComposerBar = ({
           placeholderTextColor="#6E685A"
           value={text}
           onChangeText={onChangeText}
+          onSelectionChange={(e) => setCursor(e.nativeEvent.selection.end)}
           multiline
           editable={!sending && !uploading}
+          accessibilityLabel={editing ? "Edytuj wiadomość" : "Treść wiadomości"}
         />
         {!editing && !prayerMode && !canSend && onSendVoice ? (
           <Pressable
