@@ -12,7 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { Check, Search, UserPlus, Users, X } from "lucide-react-native";
+import { Check, Megaphone, Search, UserPlus, Users, X } from "lucide-react-native";
 import { PageHeader } from "../../../src/components/ui/PageHeader";
 import { useAuthSession } from "../../../src/lib/auth";
 import { usePermissions } from "../../../src/lib/permissions";
@@ -24,7 +24,7 @@ import {
   type Person,
 } from "../../../src/features/messenger/start";
 
-type Mode = "direct" | "group";
+type Mode = "direct" | "group" | "announcement";
 
 const initials = (name: string) =>
   name
@@ -104,24 +104,28 @@ export default function NewConversationScreen() {
     }
   };
 
+  const isChannel = mode === "announcement";
   const createGroup = async () => {
     if (!myEmail || busy) return;
     const name = groupName.trim();
     if (!name) {
-      Alert.alert("Podaj nazwę grupy", "Nazwa pomoże wszystkim znaleźć rozmowę.");
+      Alert.alert(
+        isChannel ? "Podaj nazwę kanału" : "Podaj nazwę grupy",
+        "Nazwa pomoże wszystkim znaleźć rozmowę.",
+      );
       return;
     }
     if (selected.length < 1) {
-      Alert.alert("Wybierz osoby", "Dodaj do grupy co najmniej jedną osobę.");
+      Alert.alert("Wybierz osoby", isChannel ? "Dodaj do kanału co najmniej jedną osobę." : "Dodaj do grupy co najmniej jedną osobę.");
       return;
     }
     setBusy(true);
     try {
-      openThread(await createGroupConversation(myEmail, name, selected));
+      openThread(await createGroupConversation(myEmail, name, selected, { announcement: isChannel }));
     } catch (e) {
       Alert.alert(
-        "Nie udało się utworzyć grupy",
-        friendlyError(e, "Nie udało się utworzyć grupy. Spróbuj ponownie."),
+        isChannel ? "Nie udało się utworzyć kanału" : "Nie udało się utworzyć grupy",
+        friendlyError(e, isChannel ? "Nie udało się utworzyć kanału. Spróbuj ponownie." : "Nie udało się utworzyć grupy. Spróbuj ponownie."),
       );
     } finally {
       setBusy(false);
@@ -142,7 +146,7 @@ export default function NewConversationScreen() {
       <View style={{ flex: 1, backgroundColor: "#F6F4EE" }}>
         <PageHeader
           title="Nowa rozmowa"
-          subtitle={mode === "direct" ? "Wybierz osobę" : "Załóż grupę"}
+          subtitle={mode === "direct" ? "Wybierz osobę" : mode === "group" ? "Załóż grupę" : "Załóż kanał ogłoszeń"}
           showBack
         />
 
@@ -150,8 +154,9 @@ export default function NewConversationScreen() {
           <View style={{ flexDirection: "row", backgroundColor: "#ECE8DE", padding: 4, borderRadius: 14 }}>
             {(
               [
-                { key: "direct", label: "Osoba", Icon: UserPlus },
+                { key: "direct", label: "Prywatna", Icon: UserPlus },
                 { key: "group", label: "Grupa", Icon: Users },
+                { key: "announcement", label: "Ogłoszenia", Icon: Megaphone },
               ] as const
             ).map(({ key, label, Icon }) => {
               const active = mode === key;
@@ -185,11 +190,18 @@ export default function NewConversationScreen() {
             })}
           </View>
 
-          {mode === "group" ? (
+          {isChannel ? (
+            <Text style={{ fontSize: 12, color: "#6B6557", fontFamily: "Manrope_500Medium", lineHeight: 17 }}>
+              W kanale ogłoszeń piszą tylko administratorzy. Pozostali czytają i reagują.
+            </Text>
+          ) : null}
+
+          {mode !== "direct" ? (
             <TextInput
               value={groupName}
               onChangeText={setGroupName}
-              placeholder="Nazwa grupy, np. Zespół na Wielkanoc"
+              accessibilityLabel={isChannel ? "Nazwa kanału ogłoszeń" : "Nazwa grupy"}
+              placeholder={isChannel ? "Nazwa kanału, np. Ogłoszenia parafialne" : "Nazwa grupy, np. Zespół na Wielkanoc"}
               placeholderTextColor="#6E685A"
               style={{
                 height: 46,
@@ -203,7 +215,7 @@ export default function NewConversationScreen() {
             />
           ) : null}
 
-          {mode === "group" && selected.length > 0 ? (
+          {mode !== "direct" && selected.length > 0 ? (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
               {selected.map((email) => (
                 <Pressable
@@ -314,7 +326,7 @@ export default function NewConversationScreen() {
                       {item.email}
                     </Text>
                   </View>
-                  {mode === "group" ? (
+                  {mode !== "direct" ? (
                     <View
                       style={{
                         width: 24,
@@ -336,7 +348,7 @@ export default function NewConversationScreen() {
           />
         )}
 
-        {mode === "group" && canCreate ? (
+        {mode !== "direct" && canCreate ? (
           <View style={{ position: "absolute", left: 16, right: 16, bottom: 108 }}>
             <Pressable
               onPress={createGroup}
@@ -355,7 +367,8 @@ export default function NewConversationScreen() {
                 <ActivityIndicator color="#ffffff" />
               ) : (
                 <Text style={{ color: "#ffffff", fontSize: 15, fontFamily: "Manrope_600SemiBold" }}>
-                  Utwórz grupę{selected.length ? ` (${selected.length + 1} os.)` : ""}
+                  {isChannel ? "Utwórz kanał" : "Utwórz grupę"}
+                  {selected.length ? ` (${selected.length + 1} os.)` : ""}
                 </Text>
               )}
             </Pressable>

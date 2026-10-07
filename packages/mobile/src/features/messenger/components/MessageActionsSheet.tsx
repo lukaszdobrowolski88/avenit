@@ -22,6 +22,8 @@ interface Props {
   canPin?: boolean;
   /** Odpowiedź — tylko gdy mogę pisać w tej rozmowie. */
   canReply?: boolean;
+  /** Przekazanie — jak web: tylko zwykłe wiadomości (bez ankiet, wydarzeń, próśb o modlitwę). */
+  canForward?: boolean;
   isPinned: boolean;
   onPickReaction: (emoji: string) => void;
   onReply: () => void;
@@ -122,6 +124,7 @@ export const MessageActionsSheet = ({
   canDelete,
   canPin = true,
   canReply = true,
+  canForward = true,
   isPinned,
   onPickReaction,
   onReply,
@@ -139,7 +142,7 @@ export const MessageActionsSheet = ({
 
   const actions: ActionRow[] = [
     ...(canReply ? [{ key: "reply", label: "Odpowiedz", Icon: CornerUpLeft, onPress: wrap(onReply) }] : []),
-    { key: "forward", label: "Przekaż", Icon: Forward, onPress: wrap(onForward) },
+    ...(canForward ? [{ key: "forward", label: "Przekaż", Icon: Forward, onPress: wrap(onForward) }] : []),
     { key: "copy", label: "Udostępnij tekst", Icon: Share2, onPress: wrap(onCopy) },
   ];
   if (canPin) {

@@ -1,9 +1,25 @@
 import * as ImagePicker from "expo-image-picker";
-import { supabase } from "../../lib/supabase";
+import * as DocumentPicker from "expo-document-picker";
+import { supabase, tenantWebBase } from "../../lib/supabase";
 import type { MessageAttachment } from "./api";
 
 // Ta sama nazwa co web i serwer (storage/routes.js BUCKETS) — z podkreśleniem serwer odrzucał zdjęcia.
 const BUCKET = "messenger-attachments";
+
+// Limit jak w webie (MessageInput: 10 MB na plik).
+const MAX_BYTES = 10 * 1024 * 1024;
+
+// Wysyłka pliku: w React Native FormData przenosi plik WYŁĄCZNIE jako {uri, name, type} —
+// ArrayBuffer po drodze przepadał (na serwer szedł pusty plik; zweryfikowane przy załącznikach
+// zadań). Adres pliku — na hoście kościoła (jak w webie): api.* bez nagłówka X-Tenant nie wie,
+// czyj to plik, więc zdjęcie z telefonu nie wyświetlało się nikomu.
+const uploadFile = async (path: string, uri: string, name: string, mime: string): Promise<string> => {
+  const file = { uri, name, type: mime };
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file as never, { contentType: mime, upsert: false });
+  if (error) throw error;
+  const base = tenantWebBase();
+  return base ? `${base}/storage/${BUCKET}/${path}` : supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+};
 
 const guessExt = (uri: string, fallback = "jpg"): string => {
   const m = uri.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
@@ -23,6 +39,20 @@ const guessMime = (ext: string): string => {
       return "image/heic";
     case "gif":
       return "image/gif";
+    case "pdf":
+      return "application/pdf";
+    case "doc":
+      return "application/msword";
+    case "docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    case "xls":
+      return "application/vnd.ms-excel";
+    case "xlsx":
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    case "txt":
+      return "text/plain";
+    case "m4a":
+      return "audio/mp4";
     default:
       return "application/octet-stream";
   }
@@ -58,31 +88,38 @@ export const uploadAttachment = async (
 ): Promise<MessageAttachment> => {
   const ext = guessExt(asset.uri, asset.mimeType?.split("/")[1] ?? "jpg");
   const mime = asset.mimeType ?? guessMime(ext);
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const path = `${conversationId}/${fileName}`;
+  if (asset.fileSize && asset.fileSize > MAX_BYTES) throw new Error("Zdjęcie przekracza limit 10 MB.");
+  const fileName = asset.fileName || `zdjecie-${Date.now()}.${ext}`;
+  const path = `${conversationId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const url = await uploadFile(path, asset.uri, fileName, mime);
+  return { url, name: fileName, type: mime, size: asset.fileSize };
+};
 
-  // React Native: upload przez fetch → blob → arrayBuffer (najbardziej niezawodne).
-  const response = await fetch(asset.uri);
-  const arrayBuffer = await response.arrayBuffer();
+// Plik (PDF, dokument, arkusz…) — jak „Zdjęcie lub plik” w webie.
+export const pickDocument = async (): Promise<DocumentPicker.DocumentPickerAsset | null> => {
+  const result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true, multiple: false });
+  if (result.canceled || !result.assets || result.assets.length === 0) return null;
+  return result.assets[0];
+};
 
-  const { error: uploadErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, arrayBuffer, { contentType: mime, upsert: false });
-  if (uploadErr) throw uploadErr;
-
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return {
-    url: data.publicUrl,
-    name: fileName,
-    type: mime,
-    size: asset.fileSize,
-  };
+export const uploadDocument = async (
+  conversationId: string,
+  asset: DocumentPicker.DocumentPickerAsset,
+): Promise<MessageAttachment> => {
+  const name = asset.name || `plik-${Date.now()}`;
+  const ext = guessExt(name, "bin");
+  const mime = asset.mimeType || guessMime(ext);
+  if (asset.size && asset.size > MAX_BYTES) throw new Error(`Plik „${name}” przekracza limit 10 MB.`);
+  const path = `${conversationId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const url = await uploadFile(path, asset.uri, name, mime);
+  return { url, name, type: mime, size: asset.size ?? undefined };
 };
 
 /**
- * Upload nagrania głosowego (z expo-av Recording.getURI()) do bucketu i zwróć attachment.
- * `durationMs` jest dopisywany do nazwy pliku — jest też sourcem dla MessageAttachment.size,
- * ale przede wszystkim trzymamy go w name aby player mógł rozpoznać voice w razie braku metadanych.
+ * Upload nagrania głosowego (z expo-av Recording.getURI()) do bucketu i zwróć załącznik
+ * w tym samym kształcie co web (MessageInput.handleSendVoiceMessage): nazwa „Wiadomość głosowa”,
+ * size = rozmiar pliku w bajtach, duration = długość w sekundach, isVoiceMessage = true.
+ * (Starsze nagrania z telefonu niosły długość w ms w polu size — czyta je voiceDurationMs.)
  */
 export const uploadVoiceMessage = async (
   conversationId: string,
@@ -104,27 +141,15 @@ export const uploadVoiceMessage = async (
     .toString(36)
     .slice(2, 8)}-${seconds}s.${ext}`;
   const path = `${conversationId}/${fileName}`;
-
-  const response = await fetch(uri);
-  const arrayBuffer = await response.arrayBuffer();
-
-  const { error: uploadErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, arrayBuffer, { contentType: mime, upsert: false });
-  if (uploadErr) throw uploadErr;
-
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  const url = await uploadFile(path, uri, fileName, mime);
   return {
-    url: data.publicUrl,
-    name: fileName,
+    url,
+    name: "Wiadomość głosowa",
     type: mime,
-    size: durationMs, // używamy size jako nośnika długości w ms (analog web — "isVoiceMessage")
+    duration: seconds,
+    isVoiceMessage: true,
   };
 };
 
-/** Heurystyka — wiadomość głosowa rozpoznawana po mime audio/* lub prefiksie nazwy. */
-export const isVoiceAttachment = (att: { type?: string; name?: string }): boolean => {
-  if (att.type?.startsWith("audio/")) return true;
-  if (att.name?.startsWith("voice-")) return true;
-  return false;
-};
+/** Głosówka — wspólna reguła z webem (logic.ts ↔ chatLogic.js). */
+export { isVoiceAttachment, voiceDurationMs } from "./logic";

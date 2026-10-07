@@ -17,6 +17,7 @@ import {
   ArchiveRestore,
   Pin,
   Hash,
+  Megaphone,
   MessageCircle,
   Search,
   SquarePen,
@@ -26,8 +27,8 @@ import {
   X,
   CloudOff,
   SearchX,
+  CheckCheck,
 } from "lucide-react-native";
-import { formatRelative } from "../../../../src/lib/domain";
 import { PageHeader } from "../../../../src/components/ui/PageHeader";
 import { EmptyState } from "../../../../src/components/ui/EmptyState";
 import { usePermissions } from "../../../../src/lib/permissions";
@@ -41,97 +42,92 @@ import {
   memberDisplayName,
   memberInitials,
   memberPhotoUrl,
+  conversationTitle,
   MINISTRY_CHANNEL_META,
-  type ConversationFilter,
   type ConversationListItem,
-  type MemberLite, type MemberMap,
+  type MemberMap,
 } from "../../../../src/features/messenger/api";
+import {
+  CONVERSATION_FILTERS,
+  FILTER_LABELS,
+  formatListTime,
+  groupIntoSections,
+  lastMessagePreview,
+  matchesFilter,
+  type ConversationFilter,
+} from "../../../../src/features/messenger/logic";
 import { useRealtimeConversations } from "../../../../src/features/messenger/hooks/useRealtimeMessages";
 import { useAuthSession } from "../../../../src/lib/auth";
 import { usePresence, type PresenceStatus } from "../../../../src/lib/presence";
 import { PresenceDot } from "../../../../src/features/messenger/components/PresenceDot";
 
-const FILTERS: { key: ConversationFilter; label: string }[] = [
-  { key: "all", label: "Wszystkie" },
-  { key: "ministry", label: "Służby" },
-  { key: "direct", label: "Prywatne" },
-  { key: "starred", label: "Ulubione" },
-  { key: "archived", label: "Archiwum" },
-];
+// Kafelek ikony rozmowy (grupa, kanał) — neutralny papier ze słodem, jak web w motywie Avenit.
+const Tile = ({ children, round }: { children: React.ReactNode; round?: boolean }) => (
+  <View
+    style={{
+      width: 44,
+      height: 44,
+      borderRadius: round ? 22 : 12,
+      backgroundColor: "#ECE8DE",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    {children}
+  </View>
+);
 
 const ConversationAvatar = ({
   conv,
   members,
-  myEmail,
   peerStatus,
 }: {
   conv: ConversationListItem;
   members: MemberMap;
-  myEmail: string | null;
   peerStatus?: PresenceStatus;
 }) => {
   if (conv.type === "ministry") {
     const meta = conv.ministry_key ? MINISTRY_CHANNEL_META[conv.ministry_key] : null;
     return (
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 12,
-          backgroundColor: meta?.bg ?? "#FFF1C2",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Hash size={20} color={meta?.tint ?? "#8A6606"} strokeWidth={2.4} />
-      </View>
+      <Tile>
+        <Hash size={20} color={meta?.tint ?? "#2A2312"} strokeWidth={2.4} />
+      </Tile>
+    );
+  }
+  if (conv.type === "announcement") {
+    return (
+      <Tile>
+        <Megaphone size={20} color="#2A2312" />
+      </Tile>
     );
   }
   if (conv.type === "group") {
     return (
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          backgroundColor: "#FFF8E1",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <UsersIcon size={20} color="#8A6606" />
-      </View>
+      <Tile round>
+        <UsersIcon size={20} color="#2A2312" />
+      </Tile>
     );
   }
-  // Direct: avatar drugiego uczestnika (preferuj peer_email — zawsze drugi uczestnik,
-  // nawet gdy ostatnio pisałem ja).
-  const otherEmail =
-    conv.peer_email ??
-    (conv.last_message?.sender_email && conv.last_message.sender_email !== myEmail
-      ? conv.last_message.sender_email
-      : null);
+  // Rozmowa 1:1: zdjęcie drugiej osoby (konto), inaczej inicjały — jak web.
+  const otherEmail = conv.peer_email ?? null;
   const photo = otherEmail ? memberPhotoUrl(members, otherEmail) : null;
-  const initials = otherEmail
-    ? memberInitials(members, otherEmail)
-    : (conv.name ?? "?").charAt(0).toUpperCase();
+  const initials = otherEmail ? memberInitials(members, otherEmail) : (conv.name ?? "?").charAt(0).toUpperCase();
   return (
     <View>
       {photo ? (
-        <Image source={{ uri: photo }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+        <Image source={{ uri: photo }} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "#ECE8DE" }} />
       ) : (
         <View
           style={{
             width: 44,
             height: 44,
             borderRadius: 22,
-            backgroundColor: "#FFF8E1",
+            backgroundColor: "#FFF1C2",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#8A6606", fontFamily: "Manrope_700Bold", fontSize: 14 }}>
-            {initials}
-          </Text>
+          <Text style={{ color: "#8A6606", fontFamily: "Manrope_700Bold", fontSize: 14 }}>{initials}</Text>
         </View>
       )}
       {peerStatus ? <PresenceDot status={peerStatus} size={12} /> : null}
@@ -142,15 +138,14 @@ const ConversationAvatar = ({
 export default function MessengerScreen() {
   const router = useRouter();
   const { user } = useAuthSession();
+  const myEmail = user?.email ?? null;
   const [filter, setFilter] = useState<ConversationFilter>("all");
   const [search, setSearch] = useState("");
-  const { data, isLoading, isError, error, refetch, isRefetching } = useConversations(
-    user?.email ?? null,
-  );
-  const toggleStar = useToggleStarred(user?.email ?? null);
-  const toggleArchive = useToggleArchived(user?.email ?? null);
-  const togglePin = useTogglePinConversation(user?.email ?? null);
-  useRealtimeConversations(user?.email ?? null);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useConversations(myEmail);
+  const toggleStar = useToggleStarred(myEmail);
+  const toggleArchive = useToggleArchived(myEmail);
+  const togglePin = useTogglePinConversation(myEmail);
+  useRealtimeConversations(myEmail);
   // Jak serwer: gwiazdka/przypięcie/archiwum to zapis własnego wiersza uczestnika,
   // nowa rozmowa — utworzenie rozmowy i uczestników. Bez uprawnień nie kusimy przyciskiem.
   const perms = usePermissions();
@@ -158,7 +153,7 @@ export default function MessengerScreen() {
   const canCreate =
     perms.can("res:conversations:create") && perms.can("res:conversation_participants:create");
 
-  // Lookup memberów po peer_email (drugi uczestnik direct) + sender_email z ostatnich wiadomości.
+  // Imiona i zdjęcia: druga osoba rozmowy 1:1 + nadawcy ostatnich wiadomości.
   const lookupEmails = useMemo(() => {
     const set = new Set<string>();
     for (const c of data ?? []) {
@@ -170,64 +165,46 @@ export default function MessengerScreen() {
   const membersQuery = useMembersByEmails(lookupEmails);
   const members = membersQuery.data ?? {};
 
-  // Presence dla rozmówców z direct.
+  // Obecność rozmówców z rozmów 1:1.
   const peerEmails = useMemo(() => {
     const set = new Set<string>();
-    for (const c of data ?? []) {
-      if (c.type === "direct" && c.peer_email) set.add(c.peer_email);
-    }
+    for (const c of data ?? []) if (c.type === "direct" && c.peer_email) set.add(c.peer_email);
     return Array.from(set);
   }, [data]);
   const { getStatus } = usePresence(peerEmails);
 
+  const previewOf = (c: ConversationListItem) =>
+    c.last_message
+      ? lastMessagePreview(c.last_message, {
+          myEmail,
+          convType: c.type,
+          senderName: memberDisplayName(members, c.last_message.sender_email),
+        }) || "Wiadomość"
+      : "";
+
+  // Jak web: filtr (zarchiwizowane tylko w „Archiwum”); szukanie obejmuje wszystkie rozmowy.
   const filtered = useMemo(() => {
-    const list = (data ?? []).filter((c: ConversationListItem) => {
-      if (filter === "archived") return !!c.archived;
-      if (c.archived) return false;
-      if (filter === "all") return true;
-      if (filter === "starred") return !!c.starred;
-      if (filter === "ministry") return c.type === "ministry";
-      if (filter === "direct") return c.type === "direct" || c.type === "group";
-      return true;
-    });
-    if (!search.trim()) return list;
     const q = search.trim().toLowerCase();
-    return list.filter((c: ConversationListItem) => {
-      const ministry =
-        c.ministry_key ? MINISTRY_CHANNEL_META[c.ministry_key]?.label ?? "" : "";
-      const senderName = c.last_message?.sender_email
-        ? memberDisplayName(members, c.last_message.sender_email).toLowerCase()
-        : "";
-      const haystack = [
-        c.name ?? "",
-        ministry,
-        c.last_message?.content ?? "",
-        senderName,
-      ]
+    return (data ?? []).filter((c: ConversationListItem) => {
+      if (!q) return matchesFilter(c, filter, myEmail);
+      if (filter !== "all" && !matchesFilter(c, filter, myEmail)) return false;
+      return [conversationTitle(c, members), c.name ?? "", c.last_message?.content ?? ""]
         .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
+        .toLowerCase()
+        .includes(q);
     });
-  }, [data, filter, search, members]);
+  }, [data, filter, search, members, myEmail]);
 
-  const totalUnread = (data ?? []).reduce((sum: number, c: ConversationListItem) => sum + (c.unread_count ?? 0), 0);
+  const totalUnread = (data ?? []).reduce(
+    (sum: number, c: ConversationListItem) => sum + (c.archived ? 0 : c.unread_count ?? 0),
+    0,
+  );
 
-  // Sekcje (PRYWATNE / GRUPY / KANAŁY) — używane gdy nie filtrujemy po typie.
-  const sections = useMemo(() => {
-    const direct: ConversationListItem[] = [];
-    const groups: ConversationListItem[] = [];
-    const ministry: ConversationListItem[] = [];
-    for (const c of filtered) {
-      if (c.type === "direct") direct.push(c);
-      else if (c.type === "group") groups.push(c);
-      else ministry.push(c);
-    }
-    const out: { title: string; data: ConversationListItem[] }[] = [];
-    if (direct.length) out.push({ title: "PRYWATNE", data: direct });
-    if (groups.length) out.push({ title: "GRUPY", data: groups });
-    if (ministry.length) out.push({ title: "KANAŁY", data: ministry });
-    return out;
-  }, [filtered]);
+  // Sekcje jak w webie: Przypięte, Ogłoszenia, Prywatne, Grupy, Kanały służb.
+  const sections = useMemo(
+    () => groupIntoSections<ConversationListItem>(filtered).map((s) => ({ key: s.key, title: s.title, data: s.items })),
+    [filtered],
+  );
 
   return (
     <>
@@ -239,23 +216,23 @@ export default function MessengerScreen() {
           Icon={MessageCircle}
           right={
             canCreate ? (
-            <Pressable
-              onPress={() => router.push("/(app)/messenger/new")}
-              accessibilityRole="button"
-              accessibilityLabel="Nowa rozmowa"
-              hitSlop={8}
-              className="active:opacity-70"
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#2A2312",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <SquarePen size={18} color="#ffffff" strokeWidth={2.2} />
-            </Pressable>
+              <Pressable
+                onPress={() => router.push("/(app)/messenger/new")}
+                accessibilityRole="button"
+                accessibilityLabel="Nowa rozmowa"
+                hitSlop={8}
+                className="active:opacity-70"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "#2A2312",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <SquarePen size={18} color="#ffffff" strokeWidth={2.2} />
+              </Pressable>
             ) : null
           }
         />
@@ -276,20 +253,16 @@ export default function MessengerScreen() {
           >
             <Search size={16} color="#6E685A" />
             <TextInput
-              style={{
-                flex: 1,
-                fontSize: 14,
-                color: "#2A2312",
-                fontFamily: "Manrope_500Medium",
-              }}
+              style={{ flex: 1, fontSize: 14, color: "#2A2312", fontFamily: "Manrope_500Medium" }}
               placeholder="Szukaj rozmów…"
               placeholderTextColor="#6E685A"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
+              accessibilityLabel="Szukaj rozmów"
             />
             {search ? (
-              <Pressable onPress={() => setSearch("")} hitSlop={8}>
+              <Pressable onPress={() => setSearch("")} hitSlop={8} accessibilityLabel="Wyczyść wyszukiwanie">
                 <X size={14} color="#6E685A" />
               </Pressable>
             ) : null}
@@ -300,19 +273,16 @@ export default function MessengerScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingBottom: 8,
-              gap: 6,
-              alignItems: "center",
-            }}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 6, alignItems: "center" }}
           >
-            {FILTERS.map((f) => {
-              const active = filter === f.key;
+            {CONVERSATION_FILTERS.map((key) => {
+              const active = filter === key;
               return (
                 <Pressable
-                  key={f.key}
-                  onPress={() => setFilter(f.key)}
+                  key={key}
+                  onPress={() => setFilter(key)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                   style={{
                     paddingHorizontal: 14,
                     paddingVertical: 7,
@@ -323,13 +293,9 @@ export default function MessengerScreen() {
                   }}
                 >
                   <Text
-                    style={{
-                      fontSize: 13,
-                      color: active ? "#ffffff" : "#2A2312",
-                      fontFamily: "Manrope_600SemiBold",
-                    }}
+                    style={{ fontSize: 13, color: active ? "#ffffff" : "#2A2312", fontFamily: "Manrope_600SemiBold" }}
                   >
-                    {f.label}
+                    {FILTER_LABELS[key]}
                   </Text>
                 </Pressable>
               );
@@ -341,7 +307,7 @@ export default function MessengerScreen() {
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
             <ActivityIndicator color="#2A2312" />
           </View>
-        ) : isError ? (
+        ) : isError && !data ? (
           <EmptyState
             Icon={CloudOff}
             title="Nie udało się wczytać rozmów"
@@ -352,26 +318,19 @@ export default function MessengerScreen() {
           />
         ) : (
           <SectionList
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingTop: 4,
-              paddingBottom: 120,
-            }}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 }}
             sections={sections}
             keyExtractor={(item) => item.id}
             stickySectionHeadersEnabled={false}
-            refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
-            }
-            ItemSeparatorComponent={() => (
-              <View style={{ height: 1, backgroundColor: "#ECE8DE" }} />
-            )}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
+            ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: "#ECE8DE" }} />}
             renderSectionHeader={({ section: { title } }) => (
               <Text
                 style={{
                   fontSize: 11,
                   color: "#6B6557",
                   letterSpacing: 1.4,
+                  textTransform: "uppercase",
                   fontFamily: "Manrope_700Bold",
                   marginTop: 14,
                   marginBottom: 6,
@@ -381,18 +340,31 @@ export default function MessengerScreen() {
               </Text>
             )}
             ListEmptyComponent={
-              search ? (
+              search.trim() ? (
                 <EmptyState
                   Icon={SearchX}
                   title={`Nic nie znaleziono dla „${search.trim()}”`}
                   hint="Sprawdź pisownię albo wpisz imię osoby lub nazwę grupy."
                   style={{ marginTop: 24 }}
                 />
+              ) : filter === "unread" ? (
+                <EmptyState
+                  Icon={CheckCheck}
+                  title="Wszystko przeczytane"
+                  hint="Nie masz nieprzeczytanych wiadomości."
+                  actionLabel="Pokaż wszystkie"
+                  onAction={() => setFilter("all")}
+                  style={{ marginTop: 24 }}
+                />
               ) : filter !== "all" ? (
                 <EmptyState
-                  Icon={MessageCircle}
-                  title="Brak rozmów w tym widoku"
-                  hint="Wybierz inny filtr, aby zobaczyć pozostałe rozmowy."
+                  Icon={filter === "archived" ? Archive : Star}
+                  title={filter === "archived" ? "Brak archiwum" : "Brak ulubionych"}
+                  hint={
+                    filter === "archived"
+                      ? "Zarchiwizowane rozmowy pojawią się tutaj."
+                      : "Oznacz rozmowę gwiazdką, by ją tu zobaczyć."
+                  }
                   actionLabel="Pokaż wszystkie"
                   onAction={() => setFilter("all")}
                   style={{ marginTop: 24 }}
@@ -413,68 +385,30 @@ export default function MessengerScreen() {
               )
             }
             renderItem={({ item }) => {
-              const isMinistry = item.type === "ministry";
-              const ministry =
-                isMinistry && item.ministry_key
-                  ? MINISTRY_CHANNEL_META[item.ministry_key]
-                  : null;
               const last = item.last_message;
-              const unread = (item.unread_count ?? 0) > 0;
-              const title =
-                item.name || (isMinistry ? ministry?.label ?? item.ministry_key : null);
-              const displayTitle =
-                title ||
-                (item.peer_email
-                  ? memberDisplayName(members, item.peer_email)
-                  : last?.sender_email && last.sender_email !== user?.email
-                  ? memberDisplayName(members, last.sender_email)
-                  : "Rozmowa");
-              const lastSenderName = last?.sender_email
-                ? last.sender_email === user?.email
-                  ? "Ty"
-                  : memberDisplayName(members, last.sender_email).split(" ")[0]
-                : null;
+              const unreadCount = item.unread_count ?? 0;
+              const unread = unreadCount > 0;
+              const title = conversationTitle(item, members);
               return (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 12,
-                  }}
-                >
-                  <Link push
-                    href={{
-                      pathname: "/(app)/messenger/[conversationId]",
-                      params: { conversationId: item.id },
-                    }}
+                <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12 }}>
+                  <Link
+                    push
+                    href={{ pathname: "/(app)/messenger/[conversationId]", params: { conversationId: item.id } }}
                     asChild
                   >
                     <Pressable
-                      style={{
-                        flex: 1,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 12,
-                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={unread ? `${title}, nieprzeczytane: ${unreadCount}` : title}
+                      className="active:opacity-70"
+                      style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}
                     >
                       <ConversationAvatar
                         conv={item}
                         members={members}
-                        myEmail={user?.email ?? null}
-                        peerStatus={
-                          item.type === "direct" && item.peer_email
-                            ? getStatus(item.peer_email)
-                            : undefined
-                        }
+                        peerStatus={item.type === "direct" && item.peer_email ? getStatus(item.peer_email) : undefined}
                       />
                       <View style={{ flex: 1 }}>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                           <Text
                             numberOfLines={1}
                             style={{
@@ -485,135 +419,85 @@ export default function MessengerScreen() {
                               fontFamily: unread ? "Manrope_700Bold" : "Manrope_500Medium",
                             }}
                           >
-                            {displayTitle}
+                            {title}
                           </Text>
                           {item.muted ? <VolumeX size={12} color="#6E685A" /> : null}
                           {last ? (
                             <Text
                               style={{
                                 fontSize: 11,
-                                color: unread ? "#8A6606" : "#6E685A",
-                                fontFamily: unread
-                                  ? "Manrope_700Bold"
-                                  : "Manrope_500Medium",
+                                color: unread ? "#2A2312" : "#6E685A",
+                                fontFamily: unread ? "Manrope_700Bold" : "Manrope_500Medium",
                               }}
                             >
-                              {formatRelative(last.created_at)}
+                              {formatListTime(last.created_at)}
                             </Text>
                           ) : null}
                         </View>
-                        {last ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
                           <Text
                             numberOfLines={1}
                             style={{
+                              flex: 1,
                               fontSize: 13,
-                              marginTop: 2,
-                              color: unread ? "#2A2312" : "#6B6557",
-                              fontFamily: unread
-                                ? "Manrope_500Medium"
-                                : "Manrope_400Regular",
+                              color: last ? (unread ? "#2A2312" : "#6B6557") : "#6E685A",
+                              fontStyle: last ? "normal" : "italic",
+                              fontFamily: unread ? "Manrope_500Medium" : "Manrope_400Regular",
                             }}
                           >
-                            {lastSenderName ? `${lastSenderName}: ` : ""}
-                            {last.content || "(załącznik)"}
+                            {last ? previewOf(item) : "Brak wiadomości"}
                           </Text>
-                        ) : (
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              fontSize: 13,
-                              marginTop: 2,
-                              color: "#6E685A",
-                              fontStyle: "italic",
-                              fontFamily: "Manrope_400Regular",
-                            }}
-                          >
-                            Brak wiadomości
-                          </Text>
-                        )}
-                      </View>
-                      {unread ? (
-                        <View
-                          style={{
-                            minWidth: 22,
-                            height: 22,
-                            borderRadius: 11,
-                            paddingHorizontal: 6,
-                            backgroundColor: "#2A2312",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 11,
-                              color: "#ffffff",
-                              fontFamily: "Manrope_700Bold",
-                            }}
-                          >
-                            {(item.unread_count ?? 0) > 99 ? "99+" : item.unread_count}
-                          </Text>
+                          {unread ? (
+                            <View
+                              style={{
+                                minWidth: 20,
+                                height: 20,
+                                borderRadius: 10,
+                                paddingHorizontal: 6,
+                                backgroundColor: "#2A2312",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Text style={{ fontSize: 11, color: "#ffffff", fontFamily: "Manrope_700Bold" }}>
+                                {unreadCount > 99 ? "99+" : unreadCount}
+                              </Text>
+                            </View>
+                          ) : null}
                         </View>
-                      ) : null}
+                      </View>
                     </Pressable>
                   </Link>
                   {canManage ? (
                     <>
                       <Pressable
                         hitSlop={10}
-                        onPress={() =>
-                          togglePin.mutate({
-                            conversationId: item.id,
-                            pinned: !item.pinned,
-                          })
-                        }
+                        onPress={() => togglePin.mutate({ conversationId: item.id, pinned: !item.pinned })}
                         accessibilityRole="button"
                         accessibilityState={{ selected: !!item.pinned }}
                         accessibilityLabel={item.pinned ? "Odepnij rozmowę" : "Przypnij rozmowę"}
                         style={{ marginLeft: 6, padding: 6 }}
                       >
-                        <Pin
-                          size={18}
-                          color={item.pinned ? "#8A6606" : "#6E685A"}
-                          fill={item.pinned ? "#8A6606" : "none"}
-                        />
+                        <Pin size={18} color={item.pinned ? "#8A6606" : "#6E685A"} fill={item.pinned ? "#8A6606" : "none"} />
                       </Pressable>
                       <Pressable
                         hitSlop={10}
-                        onPress={() =>
-                          toggleStar.mutate({
-                            conversationId: item.id,
-                            starred: !item.starred,
-                          })
-                        }
+                        onPress={() => toggleStar.mutate({ conversationId: item.id, starred: !item.starred })}
                         accessibilityRole="button"
                         accessibilityState={{ selected: !!item.starred }}
                         accessibilityLabel={item.starred ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
                         style={{ marginLeft: 2, padding: 6 }}
                       >
-                        <Star
-                          size={18}
-                          color={item.starred ? "#8A6606" : "#6E685A"}
-                          fill={item.starred ? "#FFBE0B" : "none"}
-                        />
+                        <Star size={18} color={item.starred ? "#8A6606" : "#6E685A"} fill={item.starred ? "#FFBE0B" : "none"} />
                       </Pressable>
                       <Pressable
                         hitSlop={10}
-                        onPress={() =>
-                          toggleArchive.mutate({
-                            conversationId: item.id,
-                            archived: !item.archived,
-                          })
-                        }
+                        onPress={() => toggleArchive.mutate({ conversationId: item.id, archived: !item.archived })}
                         accessibilityRole="button"
                         accessibilityLabel={item.archived ? "Przywróć z archiwum" : "Przenieś do archiwum"}
                         style={{ marginLeft: 2, padding: 6 }}
                       >
-                        {item.archived ? (
-                          <ArchiveRestore size={18} color="#6B6557" />
-                        ) : (
-                          <Archive size={18} color="#6E685A" />
-                        )}
+                        {item.archived ? <ArchiveRestore size={18} color="#6B6557" /> : <Archive size={18} color="#6E685A" />}
                       </Pressable>
                     </>
                   ) : null}

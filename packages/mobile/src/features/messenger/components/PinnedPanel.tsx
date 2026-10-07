@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { previewText } from "../logic";
 import { ChevronDown, ChevronUp, Pin, X } from "lucide-react-native";
 import {
   memberDisplayName,
@@ -65,7 +66,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
               marginTop: 1,
             }}
           >
-            {first.msg.content || "(załącznik)"}
+            {previewText(first.msg) || "Wiadomość"}
           </Text>
         </View>
         <ChevronDown size={16} color="#8A6606" />
@@ -147,7 +148,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
                     marginTop: 1,
                   }}
                 >
-                  {msg.content || "(załącznik)"}
+                  {previewText(msg) || "Wiadomość"}
                 </Text>
               </Pressable>
               {onUnpin ? (

@@ -7,6 +7,7 @@ import EmojiPicker from './EmojiPicker';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { previewText, sameEmail } from '../utils/chatLogic';
 
 const DRAFT_PREFIX = 'komunikator_draft_';
 
@@ -258,7 +259,7 @@ const MessageInput = forwardRef(function MessageInput({
   // Lista podpowiedzi wzmianek
   const mentionCandidates = mention.open
     ? participants
-        .filter(p => p.user_email !== currentUserEmail)
+        .filter(p => !sameEmail(p.user_email, currentUserEmail))
         .filter(p => {
           const name = (p.full_name || p.user_email || '').toLowerCase();
           return name.includes(mention.query);
@@ -272,7 +273,7 @@ const MessageInput = forwardRef(function MessageInput({
       <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="flex items-center justify-center gap-2 py-2 text-sm text-gray-500 dark:text-gray-400">
           <Lock size={16} />
-          {tr('Tylko administratorzy mogą pisać w tym kanale')}
+          {tr('W tym kanale piszą tylko administratorzy.')}
         </div>
       </div>
     );
@@ -302,7 +303,7 @@ const MessageInput = forwardRef(function MessageInput({
               {tr('Odpowiadasz na wiadomość od')} {replyingTo.sender?.full_name || replyingTo.sender_email}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-              {replyingTo.content || (replyingTo.attachments?.length > 0 ? tr('📎 Załącznik') : '')}
+              {previewText(replyingTo, tr)}
             </p>
           </div>
           <button type="button" onClick={onCancelReply} aria-label={t('Anuluj odpowiedź')} title={t('Anuluj odpowiedź')} className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-all duration-200">

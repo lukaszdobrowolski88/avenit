@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { previewText } from "../logic";
 import { friendlyError } from "../../../lib/errors";
 import { Search, X } from "lucide-react-native";
 import { format } from "date-fns";
@@ -225,7 +226,7 @@ export const SearchModal = ({
                       lineHeight: 19,
                     }}
                   >
-                    {item.content || "(załącznik)"}
+                    {previewText(item) || "Wiadomość"}
                   </Text>
                 </Pressable>
               );

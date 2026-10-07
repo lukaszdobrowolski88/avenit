@@ -1,4 +1,6 @@
 // Czysta logika Komunikatora (bez Reacta i bez sieci) — testowana w chatLogic.test.js.
+// Lustrzana kopia dla aplikacji mobilnej: packages/mobile/src/features/messenger/logic.ts
+// (te same zasady list, liczników i podglądów; test parytetu w chatLogic.test.js).
 
 // Porównanie e-maili bez względu na wielkość liter (serwer porównuje lower()).
 export const normEmail = (e) => String(e ?? '').trim().toLowerCase();
@@ -13,17 +15,165 @@ const ts = (v) => {
   return Number.isFinite(t) ? t : 0;
 };
 
-// Ostatnia aktywność rozmowy: ostatnia wiadomość, a bez niej data zmiany/utworzenia.
-export const lastActivity = (c) => Math.max(ts(c?.lastMessage?.created_at), ts(c?.last_message_at), ts(c?.updated_at), ts(c?.created_at));
+// Prosty tłumacz zastępczy (PL + zmienne {x}); web podaje tu tr().
+const fill = (s, vars) => (vars ? String(s).replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? '')) : String(s));
 
-// Sortowanie listy: przypięte > ulubione > nieprzeczytane > ostatnia aktywność.
+// Ostatnia wiadomość rozmowy (web: lastMessage, mobilka: last_message).
+const lastMsgOf = (c) => c?.lastMessage || c?.last_message || null;
+const unreadOf = (c) => Number(c?.unreadCount ?? c?.unread_count ?? 0) || 0;
+
+// Ostatnia aktywność rozmowy: ostatnia wiadomość; rozmowa bez wiadomości — data zmiany/utworzenia
+// (świeżo założona rozmowa ląduje na górze, ale zmiana nazwy starej rozmowy jej nie podbija).
+export const lastActivity = (c) => {
+  const m = lastMsgOf(c);
+  if (m?.created_at) return Math.max(ts(m.created_at), ts(c?.last_message_at));
+  return Math.max(ts(c?.last_message_at), ts(c?.updated_at), ts(c?.created_at));
+};
+
+// Kolejność listy (web i mobilka): przypięte na górze, potem od najświeższej wiadomości.
 export function sortConversations(a, b) {
   if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
-  if (!!a.starred !== !!b.starred) return a.starred ? -1 : 1;
-  const ua = (a.unreadCount || 0) > 0;
-  const ub = (b.unreadCount || 0) > 0;
-  if (ua !== ub) return ua ? -1 : 1;
-  return lastActivity(b) - lastActivity(a);
+  const d = lastActivity(b) - lastActivity(a);
+  if (d !== 0) return d;
+  return String(a.id ?? '').localeCompare(String(b.id ?? ''));
+}
+
+// Pusta rozmowa 1:1 założona przez KOGOŚ INNEGO (jeszcze nic nie napisał) — jak w WhatsAppie nie
+// pokazujemy jej, dopóki nie przyjdzie pierwsza wiadomość. Swoją pustą widzę (żeby do niej napisać).
+export const isSilentEmptyDirect = (c, myEmail) =>
+  !!c && c.type === 'direct' && !lastMsgOf(c) && !!myEmail && !!c.created_by && !sameEmail(c.created_by, myEmail);
+
+// Filtry listy — te same nazwy i znaczenie w webie i w aplikacji.
+// Zarchiwizowane widać wyłącznie w „Archiwum”.
+export const CONVERSATION_FILTERS = ['all', 'unread', 'starred', 'archived'];
+export function matchesFilter(c, filter = 'all', myEmail = null) {
+  if (!c) return false;
+  if (isSilentEmptyDirect(c, myEmail)) return false;
+  if (filter === 'archived') return !!c.archived;
+  if (c.archived) return false;
+  if (filter === 'unread') return unreadOf(c) > 0;
+  if (filter === 'starred') return !!c.starred;
+  return true;
+}
+
+// Sekcje listy (ta sama kolejność w webie i w aplikacji). Przypięte zbierają wszystkie typy.
+export const SECTION_ORDER = ['pinned', 'announcement', 'direct', 'group', 'ministry'];
+export const SECTION_TITLES = {
+  pinned: 'Przypięte',
+  announcement: 'Ogłoszenia',
+  direct: 'Prywatne',
+  group: 'Grupy',
+  ministry: 'Kanały służb',
+};
+export const sectionOf = (c) => {
+  if (c?.pinned) return 'pinned';
+  return SECTION_ORDER.includes(c?.type) ? c.type : 'group';
+};
+export function groupIntoSections(list = []) {
+  const buckets = Object.fromEntries(SECTION_ORDER.map((k) => [k, []]));
+  for (const c of list) buckets[sectionOf(c)].push(c);
+  return SECTION_ORDER
+    .filter((k) => buckets[k].length > 0)
+    .map((k) => ({ key: k, title: SECTION_TITLES[k], items: [...buckets[k]].sort(sortConversations) }));
+}
+
+// Od kiedy liczyć nieprzeczytane: moje „przeczytane”, a bez niego — dołączenie do rozmowy
+// (nowa osoba w kanale nie dostaje „99+” za całą wcześniejszą historię).
+export const readSince = (p) => p?.last_read_at || p?.joined_at || null;
+
+// Jedno źródło prawdy dla liczników: conversation_participants.last_read_at (zapisują je obie
+// aplikacje; kolumny unread_count nikt nie aktualizuje). Liczymy cudze wiadomości nowsze niż ono.
+export function countUnread(messages = [], myEmail, since) {
+  const from = ts(since);
+  let n = 0;
+  for (const m of messages) {
+    if (!m || sameEmail(m.sender_email, myEmail) || m.message_type === 'system') continue;
+    if (ts(m.created_at) > from) n += 1;
+  }
+  return n;
+}
+
+// Jedna paczka wiadomości wielu rozmów (dowolna kolejność) → ostatnia wiadomość i liczba
+// nieprzeczytanych dla każdej rozmowy. sinceByConv: obiekt albo Map { convId: znacznik }.
+export function summarizeMessages(rows = [], myEmail, sinceByConv = {}) {
+  const sinceOf = (cid) => (sinceByConv instanceof Map ? sinceByConv.get(cid) : sinceByConv?.[cid]);
+  const last = {};
+  const unread = {};
+  for (const m of rows) {
+    if (!m?.conversation_id) continue;
+    const cid = String(m.conversation_id);
+    if (!last[cid] || ts(m.created_at) > ts(last[cid].created_at)) last[cid] = m;
+    if (sameEmail(m.sender_email, myEmail) || m.message_type === 'system') continue;
+    if (ts(m.created_at) > ts(sinceOf(cid))) unread[cid] = (unread[cid] || 0) + 1;
+  }
+  return { last, unread };
+}
+
+// Rozmowy bez wiadomości w paczce „najnowszych” — gdy paczka była pełna (limit), ich ostatnią
+// wiadomość trzeba dociągnąć osobno; gdy niepełna, to rozmowy naprawdę puste.
+export function conversationsMissingLast(rows = [], ids = [], limit = Infinity) {
+  if (rows.length < limit) return [];
+  const seen = new Set(rows.map((r) => String(r?.conversation_id)));
+  return ids.filter((id) => !seen.has(String(id)));
+}
+
+// Znacznik „przeczytane”: teraz, ale nie wcześniej niż ostatnia wiadomość. Zegar komputera/telefonu
+// bywa spóźniony względem serwera — wtedy ostatnia wiadomość wyglądała na wiecznie nieprzeczytaną.
+export function readMarkTimestamp(latestCreatedAt, now = Date.now()) {
+  const n = typeof now === 'number' ? now : ts(now);
+  return new Date(Math.max(n, ts(latestCreatedAt))).toISOString();
+}
+
+// Załączniki: tablica (API bywa zwraca {} zamiast []).
+export const attachmentsOf = (m) => (Array.isArray(m?.attachments) ? m.attachments.filter(Boolean) : []);
+export const isImageAttachment = (a) => !!a && String(a.type || '').startsWith('image/');
+// Głosówka: web zapisuje isVoiceMessage + duration (s), starsze nagrania z telefonu — nazwę „voice-…”.
+export const isVoiceAttachment = (a) =>
+  !!a && (a.isVoiceMessage === true || String(a.type || '').startsWith('audio/') || String(a.name || '').startsWith('voice-'));
+// Długość głosówki w ms: duration (sekundy, web i nowe nagrania z telefonu); starsze nagrania
+// z telefonu niosły długość w polu size (ms) — u innych size to rozmiar pliku w bajtach.
+export function voiceDurationMs(a) {
+  if (!a) return undefined;
+  const d = Number(a.duration);
+  if (Number.isFinite(d) && d > 0) return Math.round(d * 1000);
+  if (String(a.name || '').startsWith('voice-') && !a.isVoiceMessage) {
+    const s = Number(a.size);
+    if (Number.isFinite(s) && s > 0) return s;
+  }
+  return undefined;
+}
+
+const oneLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
+
+// Treść podglądu wiadomości (lista rozmów, cytat odpowiedzi): tekst albo opis zamiast pustego.
+// t — tłumacz (web: tr), domyślnie tekst polski.
+export function previewText(m, t = fill) {
+  if (!m) return '';
+  const type = m.message_type || 'text';
+  const text = oneLine(m.content);
+  if (type === 'poll') return `📊 ${text || t('Ankieta')}`;
+  if (type === 'prayer') return `🙏 ${text || t('Prośba o modlitwę')}`;
+  if (type === 'event') return `📅 ${text || t('Wydarzenie')}`;
+  if (text) return text;
+  const atts = attachmentsOf(m);
+  if (!atts.length) return '';
+  if (atts.some(isVoiceAttachment)) return `🎤 ${t('Wiadomość głosowa')}`;
+  const images = atts.filter(isImageAttachment).length;
+  if (images === atts.length) return images > 1 ? `📷 ${t('Zdjęcia: {n}', { n: images })}` : `📷 ${t('Zdjęcie')}`;
+  if (atts.length > 1) return `📎 ${t('Załączniki: {n}', { n: atts.length })}`;
+  return `📎 ${oneLine(atts[0].name) || t('Załącznik')}`;
+}
+
+// Podgląd ostatniej wiadomości na liście: „Ty: …”, w grupach imię nadawcy, w rozmowie 1:1 bez
+// prefiksu. senderName — wyświetlana nazwa nadawcy (bierzemy pierwsze słowo).
+export function lastMessagePreview(m, { myEmail, convType, senderName, t = fill } = {}) {
+  if (!m) return '';
+  const text = previewText(m, t);
+  if (m.message_type === 'system') return text;
+  let prefix = '';
+  if (sameEmail(m.sender_email, myEmail)) prefix = t('Ty');
+  else if (convType && convType !== 'direct') prefix = oneLine(senderName).split(' ')[0] || '';
+  return prefix ? `${prefix}: ${text}` : text;
 }
 
 // Skład nowej rozmowy: twórca jako administrator, reszta jako członkowie (bez duplikatów i bez twórcy).
@@ -40,13 +190,39 @@ export function buildParticipantRows(conversationId, creatorEmail, emails = [], 
   return rows;
 }
 
-// Istniejąca rozmowa prywatna z daną osobą (żeby nie tworzyć drugiej).
+// Spośród kilku rozmów 1:1 z tą samą osobą (dawne duplikaty) — ta z najświeższą aktywnością,
+// przy remisie najstarsza (pierwotna).
+export function pickDirectConversation(candidates = []) {
+  const list = candidates.filter(Boolean);
+  if (!list.length) return null;
+  return [...list].sort((a, b) => (lastActivity(b) - lastActivity(a)) || (ts(a.created_at) - ts(b.created_at)))[0];
+}
+
+// Istniejąca rozmowa prywatna z daną osobą (także zarchiwizowana) — żeby nie tworzyć drugiej.
 export function findDirectConversation(conversations = [], myEmail, otherEmail) {
-  return conversations.find((c) =>
-    c.type === 'direct' &&
-    (c.participants || []).some((p) => sameEmail(p.user_email, otherEmail)) &&
-    !sameEmail(otherEmail, myEmail)
-  ) || null;
+  if (!otherEmail || sameEmail(otherEmail, myEmail)) return null;
+  return pickDirectConversation(conversations.filter((c) =>
+    c?.type === 'direct' &&
+    (c.participants || []).some((p) => sameEmail(p.user_email, otherEmail))
+  ));
+}
+
+// Nowa wiadomość z realtime na liście rozmów (web): rozmowa idzie na górę, podgląd się zmienia,
+// licznik rośnie (cudza wiadomość, rozmowa nieotwarta), a rozmowa wychodzi z archiwum (jak serwer).
+export function applyIncomingMessage(list = [], msg, myEmail, { openId = null } = {}) {
+  if (!msg?.conversation_id || msg.deleted_at) return list;
+  const cid = String(msg.conversation_id);
+  let hit = false;
+  const next = list.map((c) => {
+    if (String(c.id) !== cid) return c;
+    hit = true;
+    const prev = c.lastMessage;
+    if (prev?.id && prev.id === msg.id) return c;
+    if (prev && ts(prev.created_at) > ts(msg.created_at)) return { ...c, archived: false };
+    const counts = !sameEmail(msg.sender_email, myEmail) && msg.message_type !== 'system' && String(openId ?? '') !== cid;
+    return { ...c, lastMessage: msg, archived: false, unreadCount: (c.unreadCount || 0) + (counts ? 1 : 0) };
+  });
+  return hit ? next.sort(sortConversations) : list;
 }
 
 // Dopisanie jednej wiadomości (np. wysłanej albo z realtime) bez duplikatów.
@@ -88,8 +264,12 @@ export function unreadIdsToMark(messages = [], userEmail, alreadyMarked = new Se
   return out;
 }
 
+// Czy wiadomość wspomina mnie (@) — bez względu na wielkość liter e-maila.
+export const mentionsUser = (m, email) =>
+  !!email && Array.isArray(m?.mentions) && m.mentions.some((e) => sameEmail(e, email));
+
 // Czy mogę pisać w rozmowie (kanał ogłoszeń: tylko administratorzy rozmowy).
-export const canPostIn = (conv) => !!conv && ((conv.posting_policy || 'everyone') !== 'admins' || conv.myRole === 'admin');
+export const canPostIn = (conv) => !!conv && ((conv.posting_policy || 'everyone') !== 'admins' || (conv.myRole ?? conv.my_role) === 'admin');
 
 // Czy mogę opuścić rozmowę. Zwraca null (wolno) albo powód odmowy (klucz).
 //  - 'ministry'  — skład kanału służby wynika z zespołu (po wyjściu i tak wróciłbym przy synchronizacji);

@@ -64,14 +64,15 @@ export default function GroupSettingsModal({
       try {
         const { data, error } = await supabase
           .from('app_users')
-          .select('email, full_name, avatar_url')
+          .select('email, full_name, avatar_url, status, is_active')
           .order('full_name');
 
         if (error) throw error;
 
-        // Odfiltruj już dodanych uczestników
+        // Odfiltruj już dodanych uczestników i nieaktywne konta (jak w aplikacji)
         const availableUsers = (data || []).filter(
-          u => !participants.some(p => sameEmail(p.user_email, u.email))
+          u => u.email && u.is_active !== false && (u.status ?? 'active') === 'active' &&
+            !participants.some(p => sameEmail(p.user_email, u.email))
         );
 
         setAllUsers(availableUsers);

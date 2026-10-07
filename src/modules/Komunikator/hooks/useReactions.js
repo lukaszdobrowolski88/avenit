@@ -31,14 +31,11 @@ export default function useReactions(conversationId, userEmail) {
         throw error;
       }
 
-      // Grupuj po message_id
-      const grouped = (data || []).reduce((acc, reaction) => {
-        if (!acc[reaction.message_id]) {
-          acc[reaction.message_id] = [];
-        }
-        acc[reaction.message_id].push(reaction);
-        return acc;
-      }, {});
+      // Grupuj po message_id (każda pobrana wiadomość dostaje świeżą listę — także pustą)
+      const grouped = Object.fromEntries(messageIds.map(id => [id, []]));
+      (data || []).forEach(reaction => {
+        (grouped[reaction.message_id] = grouped[reaction.message_id] || []).push(reaction);
+      });
 
       setReactions(prev => ({ ...prev, ...grouped }));
     } catch (err) {
@@ -141,6 +138,10 @@ export default function useReactions(conversationId, userEmail) {
         schema: 'public',
         table: 'message_reactions'
       }, (payload) => {
+        // Niepełny wiersz (np. zapis bez pełnego RETURNING ze starszej wersji aplikacji) — dociągnij.
+        const row = payload?.new || payload?.old;
+        const partial = payload?.eventType === 'DELETE' ? !row?.id : !(row?.id && row?.emoji && row?.user_email);
+        if (row?.message_id && partial) { fetchReactions([row.message_id]); return; }
         if (payload?.eventType === 'INSERT' && payload.new?.message_id) {
           const newReaction = payload.new;
           // Sprawdź duplikaty - reakcja mogła już być dodana lokalnie
@@ -168,7 +169,7 @@ export default function useReactions(conversationId, userEmail) {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [conversationId]);
+  }, [conversationId, fetchReactions]);
 
   return {
     reactions,

@@ -53,7 +53,7 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
   );
   const senderName = sender[0]?.display || senderEmail;
   const body = messagePreview(msg);
-  const link = `/messenger/${conversationId}`;
+  const link = messageLink(conversationId);
 
   for (const p of parts) {
     const isMentioned = mentioned.has(String(p.user_email).toLowerCase());
@@ -79,21 +79,35 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
   }
 }
 
-function messagePreview(msg) {
-  const text = typeof msg.content === 'string' ? msg.content.trim() : '';
+// Link z powiadomienia: ścieżka webu (/komunikator?conversation=…) — otwiera rozmowę w przeglądarce
+// (push przeglądarkowy) i w aplikacji (deep-links.ts rozpoznaje ten format). Dawny link
+// /messenger/<id> działał tylko w aplikacji; w webie prowadził na nieistniejącą stronę.
+export function messageLink(conversationId) {
+  return `/komunikator?conversation=${encodeURIComponent(String(conversationId))}`;
+}
+
+// Treść powiadomienia — jak podgląd na liście rozmów (chatLogic.previewText): zdjęcie, głosówka,
+// plik opisane słowami zamiast pustego „Załącznik”.
+export function messagePreview(msg) {
+  const text = typeof msg.content === 'string' ? msg.content.replace(/\s+/g, ' ').trim() : '';
   const short = text.length > 100 ? `${text.slice(0, 99)}…` : text;
   // Podglądy bogatych typów (spec §7).
   if (msg.message_type === 'poll') return `📊 ${short || 'Ankieta'}`;
-  if (msg.message_type === 'prayer') return '🙏 Prośba o modlitwę';
+  if (msg.message_type === 'prayer') return `🙏 ${short || 'Prośba o modlitwę'}`;
   if (msg.message_type === 'event') return `📅 ${short || 'Wydarzenie'}`;
   if (text) return text.length > 140 ? `${text.slice(0, 139)}…` : text;
-  const attachments = msg.attachments;
-  const hasAttachment = Array.isArray(attachments)
-    ? attachments.length > 0
-    : typeof attachments === 'string'
-      ? attachments !== '[]' && attachments !== ''
-      : Boolean(attachments);
-  return hasAttachment ? '📎 Załącznik' : 'Nowa wiadomość';
+  let attachments = msg.attachments;
+  if (typeof attachments === 'string') {
+    try { attachments = JSON.parse(attachments); } catch { attachments = []; }
+  }
+  const list = Array.isArray(attachments) ? attachments.filter(Boolean) : [];
+  if (!list.length) return 'Nowa wiadomość';
+  const isVoice = (a) => a.isVoiceMessage === true || String(a.type || '').startsWith('audio/') || String(a.name || '').startsWith('voice-');
+  if (list.some(isVoice)) return '🎤 Wiadomość głosowa';
+  const images = list.filter((a) => String(a.type || '').startsWith('image/')).length;
+  if (images === list.length) return images > 1 ? `📷 Zdjęcia: ${images}` : '📷 Zdjęcie';
+  if (list.length > 1) return `📎 Załączniki: ${list.length}`;
+  return `📎 ${String(list[0].name || '').trim() || 'Załącznik'}`;
 }
 
 // messages.mentions bywa tablicą (JSONB) albo stringiem (serializacja) — oba na tablicę e-maili.
