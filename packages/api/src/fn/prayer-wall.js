@@ -40,9 +40,24 @@ export default async function handler(req, reply) {
       [email]
     );
 
+    // Zablokowani autorzy i prośby, które zgłosiłem, znikają z mojej ściany (wytyczna App Store 1.2).
+    const blocked = new Set();
+    const reported = new Set();
+    try {
+      const { rows } = await req.db.query(
+        'SELECT lower(blocked_email) AS e FROM user_blocks WHERE lower(blocker_email) = $1', [email]);
+      for (const r of rows) blocked.add(r.e);
+    } catch { /* brak tabeli przed 088 */ }
+    try {
+      const { rows } = await req.db.query(
+        `SELECT target_id FROM message_reports WHERE content_type = 'prayer' AND lower(reporter_email) = $1`, [email]);
+      for (const r of rows) reported.add(String(r.target_id));
+    } catch { /* brak kolumn przed 089 */ }
+
     // leaders_only — nie wysyłaj treści nie-liderom, którzy nie są autorami.
     const visible = reqs.filter(
-      (r) => r.visibility !== 'leaders_only' || isLeader || lc(r.user_email) === email
+      (r) => (r.visibility !== 'leaders_only' || isLeader || lc(r.user_email) === email)
+        && !blocked.has(lc(r.user_email)) && !reported.has(String(r.id))
     );
 
     // Liczniki + „czy ja się modlę" per prośba (bez array-castów — agregat po całości).

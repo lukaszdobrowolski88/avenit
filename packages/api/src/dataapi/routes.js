@@ -14,6 +14,7 @@ import { isConversationTable, conversationScope, enforceConversationWrite, conve
 import { MODERATE_CAPABILITY, reportScope, enforceReportWrite, reportAudience, normalizeBlockWrite, assertVoteFilters, anonymousPollIds, redactVotes } from './komunikatorPlus.js';
 import { isBoardTable, boardScope, enforceBoardWrite, boardAudience } from './boardsScope.js';
 import { isMailTable, mailScope, enforceMailWrite, mailAudience } from './mailScope.js';
+import { filterUserContent, notifyNewReport } from '../lib/moderation.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -264,6 +265,10 @@ export default async function dataApiRoutes(app) {
 
       if (piiRestricted) enforcePiiWrite(q, piiMe);
 
+      // Treści użytkowników (wiadomości, modlitwy, tablice): wulgaryzmy maskowane przy zapisie
+      // (wytyczna App Store 1.2 — filtrowanie treści obraźliwych; lib/moderation.js).
+      filterUserContent(q);
+
       // Komunikator+ (komunikatorPlus.js): zgłoszenia wiadomości — zgłaszający widzi własne,
       // moderator (admin aplikacji albo action:komunikator:moderate) wszystkie i je rozstrzyga.
       const moderator = isAdmin || !!resolver?.can(MODERATE_CAPABILITY);
@@ -402,6 +407,13 @@ export default async function dataApiRoutes(app) {
           actingUserEmail: req.user.email,
           log: req.log,
         }).catch((err) => req.log?.error?.({ err }, 'push-hooks failed'));
+      }
+
+      // Nowe zgłoszenie wiadomości: e-mail + push do moderatorów (reakcja w ciągu 24 h). Fire-and-forget.
+      if (q.op === 'insert' && q.table === 'message_reports') {
+        for (const r of (Array.isArray(data) ? data : [data]).filter(Boolean)) {
+          notifyNewReport({ db: req.db, tenant: req.tenant, report: r, log: req.log });
+        }
       }
 
       return reply.send({ data, count });

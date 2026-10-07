@@ -33,6 +33,8 @@ const schema = z.object({
   MAILING_FROM_NAME: z.string().default('Avenit'),
   // Adresat powiadomień o zgłoszeniach z formularza na avenit.pl
   LANDING_CONTACT_EMAIL: z.string().default('lukasz@avenit.pl'),
+  // Alert do operatora platformy o nowym zgłoszeniu treści (bez treści; pusty = wyłączony)
+  MODERATION_ALERT_EMAIL: z.string().default('lukasz@avenit.pl'),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().default('noreply@avenit.pl'),
   SMSAPI_TOKEN: z.string().optional(),
