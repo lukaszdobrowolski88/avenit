@@ -163,7 +163,16 @@ function RouteErrorBoundary({ children }) {
 
 // Trasa „*”: dopóki lista modułów (także tych z kreatora) się nie wczyta, pokazujemy spinner
 // zamiast przekierowania — odświeżenie /faceci nie wyrzuca już na Pulpit (UXE-02).
+// Wejście z /login, /register itp. (linki ze strony głównej, maile): po zalogowaniu adres zostawał
+// /login i trafiał w stronę 404 — przenosimy na ?next= (tylko ścieżka w obrębie aplikacji) albo Pulpit.
+const AUTH_ENTRY = /^\/(login|logowanie|zaloguj|signin|register|rejestracja|auth)(\/|$)/i;
 function CatchAllRoute({ modulesLoaded }) {
+  const { pathname, search } = useLocation();
+  if (AUTH_ENTRY.test(pathname)) {
+    const next = new URLSearchParams(search).get('next');
+    const safeNext = next && next.startsWith('/') && !next.startsWith('//') && !AUTH_ENTRY.test(next) ? next : '/';
+    return <Navigate to={safeNext} replace />;
+  }
   return modulesLoaded ? <NotFound /> : <PageLoader />;
 }
 
