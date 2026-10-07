@@ -143,6 +143,12 @@ const config: ExpoConfig = {
       {
         android: {
           kotlinVersion: '1.9.25',
+          // Google Play od 31.08.2026 przyjmuje nowe apki i aktualizacje tylko z targetSdk 36
+          // (Android 16). Domyślnie RN 0.76 celuje w 34. Android 16 wymusza rysowanie pod paskami
+          // systemowymi (edge-to-edge) — ekrany biorą odstępy z useSafeAreaInsets.
+          compileSdkVersion: 36,
+          targetSdkVersion: 36,
+          buildToolsVersion: '36.0.0',
         },
       },
     ],
