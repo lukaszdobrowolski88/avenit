@@ -1,5 +1,9 @@
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import {
+  Ban,
+  Eye,
+  Flag,
+  Languages,
   Share2,
   CornerUpLeft,
   Forward,
@@ -32,6 +36,16 @@ interface Props {
   onTogglePin: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  /** K3: „Przetłumacz” (etykieta zależna od stanu: przetłumacz / pokaż tłumaczenie / pokaż oryginał). */
+  translateLabel?: string | null;
+  translating?: boolean;
+  onTranslate?: () => void;
+  /** K6: „Kto przeczytał” (moje wiadomości w grupach i kanałach). */
+  onReadBy?: () => void;
+  /** K10: zgłoszenie wiadomości i blokada nadawcy (cudze wiadomości). */
+  onReport?: () => void;
+  blockLabel?: string | null;
+  onToggleBlock?: () => void;
 }
 
 interface ActionRow {
@@ -40,6 +54,7 @@ interface ActionRow {
   Icon: LucideIcon;
   onPress: () => void;
   destructive?: boolean;
+  busy?: boolean;
 }
 
 const styles = StyleSheet.create({
@@ -133,6 +148,13 @@ export const MessageActionsSheet = ({
   onTogglePin,
   onEdit,
   onDelete,
+  translateLabel,
+  translating,
+  onTranslate,
+  onReadBy,
+  onReport,
+  blockLabel,
+  onToggleBlock,
 }: Props) => {
   const close = onClose;
   const wrap = (fn: () => void) => () => {
@@ -144,6 +166,10 @@ export const MessageActionsSheet = ({
     ...(canReply ? [{ key: "reply", label: "Odpowiedz", Icon: CornerUpLeft, onPress: wrap(onReply) }] : []),
     ...(canForward ? [{ key: "forward", label: "Przekaż", Icon: Forward, onPress: wrap(onForward) }] : []),
     { key: "copy", label: "Udostępnij tekst", Icon: Share2, onPress: wrap(onCopy) },
+    ...(onTranslate && translateLabel
+      ? [{ key: "translate", label: translateLabel, Icon: Languages, onPress: wrap(onTranslate), busy: !!translating }]
+      : []),
+    ...(onReadBy ? [{ key: "readby", label: "Kto przeczytał", Icon: Eye, onPress: wrap(onReadBy) }] : []),
   ];
   if (canPin) {
     actions.push({
@@ -164,6 +190,12 @@ export const MessageActionsSheet = ({
       onPress: wrap(onDelete),
       destructive: true,
     });
+  }
+  if (!mine && onReport) {
+    actions.push({ key: "report", label: "Zgłoś wiadomość", Icon: Flag, onPress: wrap(onReport), destructive: true });
+  }
+  if (!mine && onToggleBlock && blockLabel) {
+    actions.push({ key: "block", label: blockLabel, Icon: Ban, onPress: wrap(onToggleBlock), destructive: true });
   }
 
   return (
@@ -222,6 +254,7 @@ export const MessageActionsSheet = ({
                     >
                       {a.label}
                     </Text>
+                    {a.busy ? <ActivityIndicator size="small" color="#6E685A" /> : null}
                   </Pressable>
                 );
               })}

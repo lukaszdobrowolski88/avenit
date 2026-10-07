@@ -27,6 +27,7 @@ export const OWNED_TABLES = {
   push_tokens: { owner: 'user_email', takeover: true },
   notifications: { owner: 'user_email', openInsert: true },
   ical_subscriptions: { owner: 'user_email' }, // web zapisuje user_email (migracja 077)
+  user_blocks: { owner: 'blocker_email' }, // Komunikator+ (088): moje blokady widzę tylko ja
   totp_auth_logs: { owner: 'user_id', byId: true },
 };
 

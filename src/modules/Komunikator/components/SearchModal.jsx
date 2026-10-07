@@ -54,15 +54,18 @@ export default function SearchModal({
     }
   }, [isOpen]);
 
-  const handleResultClick = (messageId) => {
-    onScrollToMessage(messageId);
+  // Skok do wiadomości — także starszej niż wczytana część rozmowy (wątek doczyta, K11).
+  const handleResultClick = (msg) => {
     onClose();
+    onScrollToMessage(msg.id, msg.created_at);
   };
 
-  // Highlight matching text
+  // Highlight matching text (zapytanie dosłownie — znaki specjalne nie psują wyszukiwania)
   const highlightText = (text, query) => {
+    if (!text) return '';
     if (!query || query.length < 2) return text;
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    const safe = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${safe})`, 'gi'));
     return parts.map((part, idx) =>
       part.toLowerCase() === query.toLowerCase() ? (
         <mark key={idx} className="bg-yellow-300 dark:bg-yellow-600 px-0.5 rounded">
@@ -128,7 +131,7 @@ export default function SearchModal({
             {results.map((msg) => (
               <button
                 key={msg.id}
-                onClick={() => handleResultClick(msg.id)}
+                onClick={() => handleResultClick(msg)}
                 className="w-full flex items-start gap-3 p-3 hover:bg-gradient-to-r hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/20 dark:hover:to-accent-secondary-darkest/20 rounded-xl transition-all duration-200 text-left mb-1"
               >
                 <UserAvatar user={msg.sender} size="sm" className="flex-shrink-0 mt-0.5" />

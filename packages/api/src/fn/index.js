@@ -72,6 +72,11 @@ const MODULES = [
   'mailing-unsubscribe',
   'song-tags',
   'push-test',
+  // Komunikator+ (K2/K3/K8/K9)
+  'link-preview',
+  'translate-message',
+  'chat-policy',
+  'chat-channels-sync',
 ];
 
 export async function registerFunctions(app) {

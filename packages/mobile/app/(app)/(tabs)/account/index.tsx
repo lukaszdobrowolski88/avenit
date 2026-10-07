@@ -16,6 +16,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
+  MoonStar,
   Shield,
   ShieldCheck,
   Smartphone,
@@ -41,6 +42,9 @@ import { showError } from '../../../../src/lib/errors';
 import { useMyProfile, use2FAStatus } from '../../../../src/features/account/api';
 import { openModule, openOnWeb, useModules } from '../../../../src/features/modules/useModules';
 import { useT, useLang } from '../../../../src/i18n';
+import { usePermissions } from '../../../../src/lib/permissions';
+import { useQuietHours } from '../../../../src/features/messenger/plus';
+import { ChatQuietHoursSheet, quietHoursSummary } from '../../../../src/features/messenger/components/ChatQuietHoursSheet';
 
 // Strony prawne i usuwanie konta (wymóg App Store / Play) — host tenanta, z fallbackiem na apex.
 const openLegal = (path: string) => {
@@ -66,6 +70,11 @@ export default function AccountScreen() {
   const [biometricSupported, setBiometricSupported] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
   const [pushOn, setPushOn] = useState(false);
+  // Ciche godziny czatu (Komunikator+ K4) — tylko dla osób z dostępem do Komunikatora.
+  const perms = usePermissions();
+  const chatVisible = perms.moduleVisible('komunikator');
+  const quiet = useQuietHours(chatVisible ? user?.email ?? null : null);
+  const [quietOpen, setQuietOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -287,6 +296,15 @@ export default function AccountScreen() {
           value={pushOn}
           onValueChange={handlePushToggle}
         />
+        {chatVisible ? (
+          <SettingsRow
+            variant="nav"
+            Icon={MoonStar}
+            title={t('Ciche godziny czatu')}
+            description={t(quietHoursSummary(quiet.data))}
+            onPress={() => setQuietOpen(true)}
+          />
+        ) : null}
         <SettingsRow
           variant="action"
           Icon={Send}
@@ -398,6 +416,10 @@ export default function AccountScreen() {
       <Text style={{ marginTop: 2, textAlign: 'center', fontSize: 12, color: B.ink4, fontFamily: 'Manrope_500Medium' }}>
         {version ? `Avenit · ${t('wersja')} ${version}` : 'Avenit'}
       </Text>
+
+      {chatVisible ? (
+        <ChatQuietHoursSheet visible={quietOpen} onClose={() => setQuietOpen(false)} email={user?.email ?? null} />
+      ) : null}
     </ScrollView>
   );
 }

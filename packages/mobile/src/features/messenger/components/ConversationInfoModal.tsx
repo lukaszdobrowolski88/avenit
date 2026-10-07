@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Image, Modal, Pressable, Text, View } from "react-native";
-import { LogOut, Trash2, X } from "lucide-react-native";
+import { Ban, LogOut, Trash2, X } from "lucide-react-native";
 import {
   conversationTitle,
   memberDisplayName,
@@ -11,7 +11,7 @@ import {
   type ConversationDetails,
   type MemberMap,
 } from "../api";
-import { sameEmail } from "../logic";
+import { isHomeGroupChannel, sameEmail } from "../logic";
 import { friendlyError } from "../../../lib/errors";
 import { toast } from "../../../lib/toast";
 
@@ -32,6 +32,9 @@ interface Props {
   canDelete: boolean;
   /** Po opuszczeniu/usunięciu — powrót do listy. */
   onGone: () => void;
+  /** K10 (rozmowa 1:1): czy druga osoba jest zablokowana i przełącznik blokady. */
+  peerBlocked?: boolean;
+  onToggleBlock?: () => void;
 }
 
 export const ConversationInfoModal = ({
@@ -43,6 +46,8 @@ export const ConversationInfoModal = ({
   canLeave,
   canDelete,
   onGone,
+  peerBlocked,
+  onToggleBlock,
 }: Props) => {
   const leave = useLeaveConversation(myEmail);
   const remove = useDeleteConversation(myEmail);
@@ -68,6 +73,7 @@ export const ConversationInfoModal = ({
   );
   const isDirect = details.type === "direct";
   const isMinistry = details.type === "ministry";
+  const homeGroup = isHomeGroupChannel(details);
   const amAdmin = details.my_role === "admin";
   const otherAdmins = people.filter((p) => p.role === "admin" && !sameEmail(p.email, myEmail)).length;
   const others = people.filter((p) => !sameEmail(p.email, myEmail)).length;
@@ -174,7 +180,9 @@ export const ConversationInfoModal = ({
               <Text style={{ fontSize: 13, color: "#6B6557", fontFamily: "Manrope_500Medium", marginTop: 2 }}>
                 {isDirect
                   ? "Prywatna rozmowa"
-                  : isMinistry
+                  : homeGroup
+                    ? "Kanał grupy domowej — skład wynika z grupy"
+                    : isMinistry
                     ? "Kanał służby — skład wynika z zespołu"
                     : details.type === "announcement"
                       ? "Kanał ogłoszeń — piszą tylko administratorzy"
@@ -234,8 +242,36 @@ export const ConversationInfoModal = ({
             );
           }}
           ListFooterComponent={
-            showLeave || showDelete ? (
+            showLeave || showDelete || (isDirect && onToggleBlock) ? (
               <View style={{ marginTop: 24, gap: 10 }}>
+                {isDirect && onToggleBlock ? (
+                  <Pressable
+                    onPress={() => {
+                      onClose();
+                      setTimeout(onToggleBlock, 250);
+                    }}
+                    disabled={busy}
+                    accessibilityRole="button"
+                    className="active:opacity-70"
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      height: 48,
+                      borderRadius: 14,
+                      backgroundColor: "#FFFFFF",
+                      borderWidth: 1,
+                      borderColor: "#E6E1D5",
+                      opacity: busy ? 0.5 : 1,
+                    }}
+                  >
+                    <Ban size={17} color={peerBlocked ? "#2A2312" : "#B42318"} />
+                    <Text style={{ fontSize: 15, color: peerBlocked ? "#2A2312" : "#B42318", fontFamily: "Manrope_600SemiBold" }}>
+                      {peerBlocked ? "Odblokuj osobę" : "Zablokuj osobę"}
+                    </Text>
+                  </Pressable>
+                ) : null}
                 {showLeave ? (
                   <Pressable
                     onPress={handleLeave}

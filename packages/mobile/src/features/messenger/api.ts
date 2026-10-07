@@ -1,8 +1,9 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import { playSendSound } from "../../lib/sounds";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import { friendlyError } from "../../lib/errors";
+import { errorKind, friendlyError } from "../../lib/errors";
 import { toast } from "../../lib/toast";
 import {
   normEmail,
@@ -14,6 +15,14 @@ import {
   readMarkTimestamp,
   sortConversations,
   applyIncomingMessage,
+  mergeLatestPage,
+  mergeOlderMessages,
+  muteUntilFor,
+  mutedUntilLabel,
+  isHomeGroupChannel,
+  hasMentionAllToken,
+  MENTION_ALL,
+  type MuteOption,
   type ConversationFilter,
 } from "./logic";
 
@@ -53,6 +62,8 @@ export interface ConversationListItem {
   starred?: boolean;
   archived?: boolean;
   muted?: boolean;
+  /** Wyciszenie na czas (K4) — do kiedy; null = bez terminu. */
+  muted_until?: string | null;
   pinned?: boolean;
   posting_policy?: "everyone" | "admins";
   /** Moja rola w rozmowie ('admin' | 'member'). */
@@ -179,8 +190,9 @@ export const useMembersByEmails = (emails: string[]) => {
   });
 };
 
-// Kanały służb — klucze jak w bazie (conversations.ministry_key) i nazwy jak w webie
-// (messageHelpers.ministryKeyToName). Ikona kanału neutralna (marka: bez tęczy kolorów).
+// Kanały służb — klucze jak w bazie (conversations.ministry_key). Nazwę kanału nadaje serwer
+// (synchronizacja kanałów: etykieta modułu / nazwa grupy domowej) — poniższe etykiety to tylko
+// zapas dla starych kanałów bez nazwy. Ikona kanału neutralna (marka: bez tęczy kolorów).
 const MINISTRY_TILE = { tint: "#2A2312", bg: "#ECE8DE" };
 export const MINISTRY_CHANNEL_META: Record<string, { label: string; tint: string; bg: string }> = {
   worship_team: { label: "Zespół Uwielbienia", ...MINISTRY_TILE },
@@ -202,7 +214,8 @@ export const conversationTitle = (
   members: MemberMap,
 ): string => {
   if (c.type === "ministry") {
-    return (c.ministry_key ? MINISTRY_CHANNEL_META[c.ministry_key]?.label : null) || c.name || c.ministry_key || "Kanał służby";
+    if (isHomeGroupChannel(c)) return c.name || "Grupa domowa";
+    return c.name || (c.ministry_key ? MINISTRY_CHANNEL_META[c.ministry_key]?.label : null) || c.ministry_key || "Kanał służby";
   }
   if (c.type === "direct") return c.peer_email ? memberDisplayName(members, c.peer_email) : c.name || "Rozmowa";
   return c.name || (c.type === "announcement" ? "Kanał ogłoszeń" : "Grupa");
@@ -222,12 +235,31 @@ export interface MessageAttachment {
 export type MessageType = "text" | "poll" | "prayer" | "event" | "system";
 
 export interface PollOption { id: string; text: string }
+// K7: metadata.poll = { question, options, multiple, anonymous, closes_at } (starsze ankiety
+// mają te pola wprost w metadata — pollOf czyta oba kształty).
 export interface PollMetadata {
   question: string;
   options: PollOption[];
   multiple?: boolean;
+  anonymous?: boolean;
   closes_at?: string | null;
 }
+export const pollOf = (metadata: Record<string, any> | null | undefined): PollMetadata | null => {
+  const m = (metadata && typeof metadata === "object" ? metadata : null) as any;
+  if (!m) return null;
+  const p = m.poll && typeof m.poll === "object" ? m.poll : m;
+  if (!Array.isArray(p.options)) return null;
+  return {
+    question: String(p.question ?? ""),
+    // Opcje bywały zapisane jako teksty (web) albo { id, text } — ujednolicamy.
+    options: p.options.map((o: any, i: number) =>
+      typeof o === "string" ? { id: String(i), text: o } : { id: String(o?.id ?? i), text: String(o?.text ?? "") },
+    ),
+    multiple: !!p.multiple,
+    anonymous: !!p.anonymous,
+    closes_at: p.closes_at ?? null,
+  };
+};
 export interface PrayerMetadata { title: string }
 export interface EventMetadata {
   event_id?: string;
@@ -306,9 +338,11 @@ export const useConversations = (userEmail: string | null) =>
       if (!userEmail) return [];
       // Rozmowy, w których jestem (z moimi ustawieniami: ulubione/archiwum/wyciszenie/przypięcie).
       // ilike — wiersz uczestnika bywa zapisany inną wielkością liter (np. z tabeli zespołu).
+      // „*” — kolumna muted_until (migracja 088) jest opcjonalna: starszy serwer jej nie ma,
+      // a wymienienie jej z nazwy położyłoby całą listę.
       const { data: parts, error: partsErr } = await supabase
         .from("conversation_participants")
-        .select("conversation_id, last_read_at, joined_at, starred, archived, muted, pinned, role")
+        .select("*")
         .ilike("user_email", emailPattern(userEmail));
       if (partsErr) throw partsErr;
       const mine = (parts ?? []) as any[];
@@ -361,6 +395,7 @@ export const useConversations = (userEmail: string | null) =>
           starred: !!me.starred,
           archived: !!me.archived,
           muted: !!me.muted,
+          muted_until: me.muted_until ?? null,
           pinned: !!me.pinned,
           posting_policy: (c.posting_policy as "everyone" | "admins") ?? "everyone",
           my_role: me.role ?? null,
@@ -390,29 +425,193 @@ export const applyMessageToConversations = (
   );
 };
 
-export const useMessages = (conversationId: string) =>
-  useQuery({
-    queryKey: ["messages", conversationId],
+// K11 — lżejsza lista: zmiany z realtime i własne zapisy nanosimy lokalnie, a pełne pobranie
+// listy (z paczką ostatnich wiadomości) robimy rzadko i zbiorczo (kilka zdarzeń = jedno pobranie).
+export const patchConversationLocally = (
+  qc: ReturnType<typeof useQueryClient>,
+  userEmail: string | null,
+  conversationId: string,
+  patch: Partial<ConversationListItem> | ((c: ConversationListItem) => Partial<ConversationListItem>),
+) => {
+  if (!userEmail) return;
+  qc.setQueryData<ConversationListItem[]>(conversationsKey(userEmail), (prev: ConversationListItem[] | undefined) => {
+    if (!prev) return prev;
+    let hit = false;
+    const next = prev.map((c: ConversationListItem) => {
+      if (c.id !== conversationId) return c;
+      hit = true;
+      return { ...c, ...(typeof patch === "function" ? patch(c) : patch) };
+    });
+    return hit ? next.sort(sortConversations) : prev;
+  });
+};
+
+export const removeConversationLocally = (
+  qc: ReturnType<typeof useQueryClient>,
+  userEmail: string | null,
+  conversationId: string,
+) => {
+  if (!userEmail) return;
+  qc.setQueryData<ConversationListItem[]>(conversationsKey(userEmail), (prev: ConversationListItem[] | undefined) =>
+    prev?.filter((c: ConversationListItem) => c.id !== conversationId),
+  );
+};
+
+const refetchTimers = new Map<string, ReturnType<typeof setTimeout>>();
+export const scheduleConversationsRefetch = (
+  qc: ReturnType<typeof useQueryClient>,
+  userEmail: string | null,
+  delayMs = 1500,
+) => {
+  if (!userEmail) return;
+  const k = normEmail(userEmail);
+  const t = refetchTimers.get(k);
+  if (t) clearTimeout(t);
+  refetchTimers.set(
+    k,
+    setTimeout(() => {
+      refetchTimers.delete(k);
+      qc.invalidateQueries({ queryKey: conversationsKey(userEmail) });
+    }, delayMs),
+  );
+};
+
+// K11 — wątek stronicowany: na wejściu najnowsza paczka, starsze doczytywane przy przewijaniu
+// w górę (useOlderMessages). Odświeżenie paczki nie gubi doczytanej historii (mergeLatestPage).
+export const LATEST_PAGE = 80;
+export const OLDER_PAGE = 60;
+// Ile wiadomości zostaje w pamięci podręcznej wątku (zapisywanej w telefonie) po wyjściu z rozmowy.
+const THREAD_CACHE_MAX = 200;
+
+export const messagesKey = (conversationId: string) => ["messages", conversationId] as const;
+
+export const useMessages = (conversationId: string) => {
+  const qc = useQueryClient();
+  return useQuery({
+    queryKey: messagesKey(conversationId),
     // Wątek zawsze świeży przy wejściu (np. z powiadomienia) — cache pokazujemy od razu,
     // ale dociągamy nowe wiadomości, zamiast ufać danym sprzed kilku minut.
     staleTime: 0,
     refetchOnMount: "always",
     queryFn: async (): Promise<MessageRow[]> => {
-      // Pobierz NAJNOWSZE 200 (desc + limit), potem odwróć do rosnącej kolejności
-      // do wyświetlania — inaczej w rozmowach >200 wiadomości widać samą starą historię,
-      // a świeżo wysłana wiadomość znika po refetchu.
+      // NAJNOWSZA paczka (desc + limit), odwrócona do kolejności rosnącej.
       const { data, error } = await supabase
         .from("messages")
         .select("*")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(LATEST_PAGE);
       if (error) throw error;
-      return ((data ?? []) as MessageRow[]).reverse();
+      const page = ((data ?? []) as MessageRow[]).reverse();
+      return mergeLatestPage(qc.getQueryData<MessageRow[]>(messagesKey(conversationId)), page, page.length >= LATEST_PAGE);
     },
     enabled: !!conversationId,
   });
+};
+
+// Po wyjściu z rozmowy — w pamięci (zapisywanej w telefonie) zostaje tylko końcówka wątku.
+// Nie w trakcie przeglądania: przycięcie historii psułoby doczytywanie i skoki.
+export const trimThreadCache = (qc: ReturnType<typeof useQueryClient>, conversationId: string) => {
+  if (!conversationId) return;
+  qc.setQueryData<MessageRow[]>(messagesKey(conversationId), (prev: MessageRow[] | undefined) =>
+    prev && prev.length > THREAD_CACHE_MAX ? prev.slice(prev.length - THREAD_CACHE_MAX) : prev,
+  );
+};
+
+// Starsza paczka przed najstarszą wczytaną wiadomością (przewijanie w górę, skok do starej).
+export const useOlderMessages = (conversationId: string) => {
+  const qc = useQueryClient();
+  const busy = useRef(false);
+  const exhaustedRef = useRef(false);
+  const [loading, setLoading] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
+
+  useEffect(() => {
+    busy.current = false;
+    exhaustedRef.current = false;
+    setLoading(false);
+    setExhausted(false);
+  }, [conversationId]);
+
+  // pageSize — większa paczka przy skoku do odległej wiadomości (mniej zapytań).
+  const loadOlder = useCallback(async (pageSize: number = OLDER_PAGE): Promise<MessageRow[]> => {
+    if (!conversationId || busy.current || exhaustedRef.current) return [];
+    const list = qc.getQueryData<MessageRow[]>(messagesKey(conversationId)) ?? [];
+    const oldest = list[0]?.created_at;
+    if (!oldest) return [];
+    busy.current = true;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .is("deleted_at", null)
+        .lt("created_at", oldest)
+        .order("created_at", { ascending: false })
+        .limit(pageSize);
+      if (error) throw error;
+      const older = ((data ?? []) as MessageRow[]).reverse();
+      if (older.length < pageSize) {
+        exhaustedRef.current = true;
+        setExhausted(true);
+      }
+      if (older.length) {
+        qc.setQueryData<MessageRow[]>(messagesKey(conversationId), (prev: MessageRow[] | undefined) =>
+          mergeOlderMessages(prev ?? [], older),
+        );
+        // Reakcje, ankiety, modlitwy i potwierdzenia — dla nowo wczytanych wiadomości.
+        invalidateThreadAggregates(qc, conversationId);
+      }
+      return older;
+    } finally {
+      busy.current = false;
+      setLoading(false);
+    }
+  }, [conversationId, qc]);
+
+  // Stan bieżący (bez czekania na render) — pętle doczytywania przy skoku do wiadomości.
+  const status = useCallback(() => ({ busy: busy.current, exhausted: exhaustedRef.current }), []);
+
+  return { loadOlder, loadingOlder: loading, exhausted, status };
+};
+
+// Wiadomości spoza wczytanej paczki (cytaty, przypięte) — po id; także usunięte (cytat pokaże
+// „Wiadomość usunięta”).
+export const useMessagesByIds = (conversationId: string, ids: string[]) => {
+  const key = Array.from(new Set(ids)).sort().join(",");
+  return useQuery({
+    queryKey: ["messagesById", conversationId, key],
+    enabled: !!conversationId && key.length > 0,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+    queryFn: async (): Promise<Record<string, MessageRow>> => {
+      const list = key.split(",").filter(Boolean);
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .in("id", list);
+      if (error) return {};
+      const out: Record<string, MessageRow> = {};
+      for (const m of (data ?? []) as MessageRow[]) out[m.id] = m;
+      return out;
+    },
+  });
+};
+
+// Id wczytanych wiadomości wątku (z pamięci podręcznej) — agregaty pytają tylko o nie.
+const loadedIds = (qc: ReturnType<typeof useQueryClient>, conversationId: string, type?: string): string[] =>
+  (qc.getQueryData<MessageRow[]>(messagesKey(conversationId)) ?? [])
+    .filter((m: MessageRow) => !m.deleted_at && (!type || m.message_type === type))
+    .map((m: MessageRow) => m.id);
+
+export const invalidateThreadAggregates = (qc: ReturnType<typeof useQueryClient>, conversationId: string) => {
+  for (const k of ["reactions", "readReceipts", "pollVotes", "prayerResponses"]) {
+    qc.invalidateQueries({ queryKey: [k, conversationId] });
+  }
+};
 
 export interface SendMessageInput {
   content: string;
@@ -462,10 +661,12 @@ export const useSendMessage = (conversationId: string, senderEmail: string | nul
       playSendSound();
       if (row?.id) {
         appendToThread(qc, conversationId, row);
-        // Lista rozmów od razu: rozmowa na górę z „Ty: …” (pełne odświeżenie poniżej).
+        // Lista rozmów od razu: rozmowa na górę z „Ty: …” — bez pełnego pobierania listy (K11).
         applyMessageToConversations(qc, senderEmail, row, conversationId);
-      } else qc.invalidateQueries({ queryKey: ["messages", conversationId] });
-      qc.invalidateQueries({ queryKey: ["conversations"] });
+      } else {
+        qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+        scheduleConversationsRefetch(qc, senderEmail);
+      }
     },
   });
 };
@@ -512,7 +713,8 @@ export const useDeleteMessage = (conversationId: string) => {
       qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) =>
         prev ? prev.filter((m: MessageRow) => m.id !== id) : prev,
       );
-      qc.invalidateQueries({ queryKey: ["conversations"] });
+      // Podgląd ostatniej wiadomości mógł się zmienić — lekkie, zbiorcze odświeżenie listy.
+      qc.invalidateQueries({ queryKey: ["conversations"], refetchType: "none" });
     },
   });
 };
@@ -524,12 +726,17 @@ export const markConversationRead = async (
   conversationId: string,
   userEmail: string,
   latestCreatedAt?: string | null,
-): Promise<void> => {
+): Promise<string | null> => {
+  const at = readMarkTimestamp(latestCreatedAt);
   const { error } = await (supabase.from("conversation_participants") as any)
-    .update({ last_read_at: readMarkTimestamp(latestCreatedAt) })
+    .update({ last_read_at: at })
     .eq("conversation_id", conversationId)
     .ilike("user_email", emailPattern(userEmail));
-  if (error && __DEV__) console.warn("[messenger] markConversationRead failed:", error.message);
+  if (error) {
+    if (__DEV__) console.warn("[messenger] markConversationRead failed:", error.message);
+    return null;
+  }
+  return at;
 };
 
 // Licznik nieprzeczytanych tej rozmowy na liście — od razu na zero (zapis idzie w tle).
@@ -545,6 +752,14 @@ export const clearUnreadLocally = (
     ),
   );
 };
+
+// Moje „przeczytane” na liście (bez pobierania listy): licznik na zero, znacznik od razu.
+export const markReadLocally = (
+  qc: ReturnType<typeof useQueryClient>,
+  userEmail: string | null,
+  conversationId: string,
+  at: string,
+) => patchConversationLocally(qc, userEmail, conversationId, { unread_count: 0, last_read_at: at });
 
 // Zmiana MOJEGO wiersza uczestnika (ulubione, archiwum, wyciszenie, przypięcie). Pusty
 // wynik = nie jestem już uczestnikiem tej rozmowy.
@@ -570,8 +785,8 @@ export const useToggleStarred = (userEmail: string | null) => {
   return useMutation({
     mutationFn: ({ conversationId, starred }: { conversationId: string; starred: boolean }) =>
       updateMyParticipation(conversationId, userEmail, { starred }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["conversations"] });
+    onSuccess: (_data, vars) => {
+      patchConversationLocally(qc, userEmail, vars.conversationId, { starred: vars.starred });
     },
     onError: alertError("Nie udało się", "Nie udało się zmienić ulubionych. Spróbuj ponownie."),
   });
@@ -583,22 +798,45 @@ export const useToggleArchived = (userEmail: string | null) => {
     mutationFn: ({ conversationId, archived }: { conversationId: string; archived: boolean }) =>
       updateMyParticipation(conversationId, userEmail, { archived }),
     onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["conversations"] });
+      patchConversationLocally(qc, userEmail, vars.conversationId, { archived: vars.archived });
       toast.success(vars.archived ? "Rozmowa przeniesiona do archiwum" : "Rozmowa przywrócona z archiwum");
     },
     onError: alertError("Nie udało się", "Nie udało się zmienić archiwum. Spróbuj ponownie."),
   });
 };
 
-export const useToggleMuted = (userEmail: string | null) => {
+// K4 — wyciszenie: na 1 h / 8 h / do jutra 8:00 (muted_until) albo „zawsze” (muted, bez terminu);
+// „off” włącza powiadomienia. Starszy serwer bez kolumny muted_until: „zawsze” i „off” działają
+// po staremu, wyciszenie na czas — czytelny komunikat.
+export type MuteChoice = MuteOption | "off";
+export const useSetMute = (userEmail: string | null) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ conversationId, muted }: { conversationId: string; muted: boolean }) =>
-      updateMyParticipation(conversationId, userEmail, { muted }),
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["conversations"] });
+    mutationFn: async ({ conversationId, choice }: { conversationId: string; choice: MuteChoice }) => {
+      const patch =
+        choice === "off"
+          ? { muted: false, muted_until: null }
+          : choice === "always"
+            ? { muted: true, muted_until: null }
+            : { muted: false, muted_until: muteUntilFor(choice) };
+      try {
+        await updateMyParticipation(conversationId, userEmail, patch);
+        return patch;
+      } catch (e) {
+        if (errorKind(e) !== "config") throw e;
+        if (choice === "off" || choice === "always") {
+          await updateMyParticipation(conversationId, userEmail, { muted: choice === "always" });
+          return { muted: choice === "always", muted_until: null };
+        }
+        throw new Error("Wyciszanie na czas będzie dostępne po aktualizacji serwera. Możesz wyciszyć rozmowę na stałe.");
+      }
+    },
+    onSuccess: (patch, vars) => {
+      patchConversationLocally(qc, userEmail, vars.conversationId, patch);
       qc.invalidateQueries({ queryKey: ["conversation", vars.conversationId] });
-      toast.success(vars.muted ? "Powiadomienia z tej rozmowy wyciszone" : "Powiadomienia z tej rozmowy włączone");
+      if (vars.choice === "off") toast.success("Powiadomienia z tej rozmowy włączone");
+      else if (vars.choice === "always") toast.success("Rozmowa wyciszona", "Włączysz powiadomienia w tym samym menu.");
+      else toast.success(`Rozmowa wyciszona ${mutedUntilLabel(patch.muted_until)}`.trim());
     },
     onError: alertError("Nie udało się", "Nie udało się zmienić powiadomień. Spróbuj ponownie."),
   });
@@ -614,6 +852,11 @@ export interface ConversationDetails {
   /** Skład z rolami (administrator / członek) — okno „Szczegóły rozmowy”. */
   participants: { email: string; role: string | null }[];
   my_muted: boolean;
+  /** Wyciszenie na czas (K4). */
+  my_muted_until: string | null;
+  /** Moje „przeczytane” / dołączenie — separator „Nowe wiadomości” (K11). */
+  my_last_read_at: string | null;
+  my_joined_at: string | null;
   my_starred: boolean;
   // Kanały ogłoszeń (spec §5): kto może pisać + moja rola w rozmowie.
   posting_policy: "everyone" | "admins";
@@ -637,16 +880,20 @@ export const useConversationDetails = (
         .maybeSingle();
       if (error) throw error;
       if (!conv) return null;
+      // „*” — muted_until (migracja 088) jest opcjonalne na starszym serwerze.
       const { data: parts, error: partsErr } = await supabase
         .from("conversation_participants")
-        .select("user_email, muted, starred, role")
+        .select("*")
         .eq("conversation_id", conversationId);
       if (partsErr) throw partsErr;
       const participants = (parts ?? []) as Array<{
         user_email: string;
         muted: boolean | null;
+        muted_until?: string | null;
         starred: boolean | null;
         role: string | null;
+        last_read_at?: string | null;
+        joined_at?: string | null;
       }>;
       const me = participants.find((p) => sameEmail(p.user_email, userEmail));
       return {
@@ -658,6 +905,9 @@ export const useConversationDetails = (
         participant_emails: participants.map((p) => p.user_email),
         participants: participants.map((p) => ({ email: p.user_email, role: p.role ?? null })),
         my_muted: !!me?.muted,
+        my_muted_until: me?.muted_until ?? null,
+        my_last_read_at: me?.last_read_at ?? null,
+        my_joined_at: me?.joined_at ?? null,
         my_starred: !!me?.starred,
         posting_policy: ((conv as any).posting_policy as "everyone" | "admins") ?? "everyone",
         my_role: me?.role ?? null,
@@ -672,11 +922,18 @@ export const useConversationDetails = (
  * wyświetlanej nazwie i imieniu (case-insensitive). Zapisywane do messages.mentions;
  * trigger DB tworzy wspomnianym powiadomienie 'mention' + push niezależnie od obecności.
  */
-export const extractMentions = (text: string, members: MemberMap): string[] => {
+export const extractMentions = (
+  text: string,
+  members: MemberMap,
+  opts: { allowAll?: boolean; exclude?: string | null } = {},
+): string[] => {
   if (!text || !text.includes("@")) return [];
   const lower = text.toLowerCase();
   const out = new Set<string>();
+  // K5: „@wszyscy” → "*" (serwer przyjmie tylko od administratora rozmowy / lidera).
+  if (opts.allowAll && hasMentionAllToken(text)) out.add(MENTION_ALL);
   for (const email of Object.keys(members)) {
+    if (opts.exclude && sameEmail(email, opts.exclude)) continue;
     const name = memberDisplayName(members, email);
     const first = (members[email]?.firstName || name.split(" ")[0] || "").trim();
     for (const cand of [name, first].filter(Boolean)) {
@@ -710,22 +967,20 @@ export interface ReactionAggregate {
 }
 
 /**
- * Reakcje dla wszystkich wiadomości w konwersacji — przy ~200 msg×6 emoji to wciąż <1k wierszy.
+ * Reakcje WCZYTANYCH wiadomości wątku (K11: bez pobierania id całej historii rozmowy).
+ * `ready` — wątek już wczytany (id bierzemy z jego pamięci podręcznej). Po doczytaniu starszych
+ * wiadomości agregaty odświeża invalidateThreadAggregates.
  * Wynik jako Record<messageId, ReactionAggregate[]> — od razu zagregowane do renderowania.
  */
-export const useReactions = (conversationId: string, userEmail: string | null) =>
-  useQuery({
+export const useReactions = (conversationId: string, userEmail: string | null, ready = true) => {
+  const qc = useQueryClient();
+  return useQuery({
     queryKey: ["reactions", conversationId, userEmail],
+    enabled: !!conversationId && ready,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<Record<string, ReactionAggregate[]>> => {
       if (!conversationId) return {};
-      // Najpierw lista message_id z konwersacji (tylko nieusunięte).
-      const { data: msgs, error: mErr } = await supabase
-        .from("messages")
-        .select("id")
-        .eq("conversation_id", conversationId)
-        .is("deleted_at", null);
-      if (mErr) throw mErr;
-      const ids = (msgs ?? []).map((m: any) => m.id);
+      const ids = loadedIds(qc, conversationId);
       if (ids.length === 0) return {};
       const { data, error } = await supabase
         .from("message_reactions")
@@ -758,8 +1013,8 @@ export const useReactions = (conversationId: string, userEmail: string | null) =
       }
       return out;
     },
-    enabled: !!conversationId,
   });
+};
 
 export const useToggleReaction = (
   conversationId: string,
@@ -804,18 +1059,19 @@ export const useToggleReaction = (
 // Ankiety (poll) i prośby o modlitwę (prayer) — spec §2
 // =====================================================================
 
-/** Record<messageId, Record<optionId, { count, mine }>> — agregacja głosów. */
-export const usePollVotes = (conversationId: string, userEmail: string | null) =>
-  useQuery({
+/**
+ * Record<messageId, Record<optionId, { count, mine }>> — agregacja głosów wczytanych ankiet.
+ * Ankieta anonimowa (K7): serwer zwraca e-mail tylko przy moich głosach — liczymy wiersze.
+ */
+export const usePollVotes = (conversationId: string, userEmail: string | null, ready = true) => {
+  const qc = useQueryClient();
+  return useQuery({
     queryKey: ["pollVotes", conversationId, userEmail],
+    enabled: !!conversationId && ready,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<Record<string, Record<string, { count: number; mine: boolean }>>> => {
       if (!conversationId) return {};
-      const { data: msgs } = await supabase
-        .from("messages")
-        .select("id")
-        .eq("conversation_id", conversationId)
-        .eq("message_type", "poll");
-      const ids = (msgs ?? []).map((m: any) => m.id);
+      const ids = loadedIds(qc, conversationId, "poll");
       if (ids.length === 0) return {};
       const { data, error } = await supabase
         .from("poll_votes")
@@ -825,14 +1081,14 @@ export const usePollVotes = (conversationId: string, userEmail: string | null) =
       const out: Record<string, Record<string, { count: number; mine: boolean }>> = {};
       for (const v of (data ?? []) as any[]) {
         const m = (out[v.message_id] ??= {});
-        const o = (m[v.option_id] ??= { count: 0, mine: false });
+        const o = (m[String(v.option_id)] ??= { count: 0, mine: false });
         o.count += 1;
         if (sameEmail(v.user_email, userEmail)) o.mine = true;
       }
       return out;
     },
-    enabled: !!conversationId,
   });
+};
 
 export const useTogglePollVote = (conversationId: string, userEmail: string | null) => {
   const qc = useQueryClient();
@@ -887,18 +1143,16 @@ export const useTogglePollVote = (conversationId: string, userEmail: string | nu
   });
 };
 
-/** Record<messageId, { count, mine }> — odpowiedzi „🙏 Modlę się". */
-export const usePrayerResponses = (conversationId: string, userEmail: string | null) =>
-  useQuery({
+/** Record<messageId, { count, mine }> — odpowiedzi „🙏 Modlę się" (wczytane prośby). */
+export const usePrayerResponses = (conversationId: string, userEmail: string | null, ready = true) => {
+  const qc = useQueryClient();
+  return useQuery({
     queryKey: ["prayerResponses", conversationId, userEmail],
+    enabled: !!conversationId && ready,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<Record<string, { count: number; mine: boolean }>> => {
       if (!conversationId) return {};
-      const { data: msgs } = await supabase
-        .from("messages")
-        .select("id")
-        .eq("conversation_id", conversationId)
-        .eq("message_type", "prayer");
-      const ids = (msgs ?? []).map((m: any) => m.id);
+      const ids = loadedIds(qc, conversationId, "prayer");
       if (ids.length === 0) return {};
       const { data, error } = await supabase
         .from("prayer_responses")
@@ -913,8 +1167,8 @@ export const usePrayerResponses = (conversationId: string, userEmail: string | n
       }
       return out;
     },
-    enabled: !!conversationId,
   });
+};
 
 export const useTogglePrayerResponse = (conversationId: string, userEmail: string | null) => {
   const qc = useQueryClient();
@@ -946,7 +1200,7 @@ export const useTogglePinConversation = (userEmail: string | null) => {
   return useMutation({
     mutationFn: ({ conversationId, pinned }: { conversationId: string; pinned: boolean }) =>
       updateMyParticipation(conversationId, userEmail, { pinned }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["conversations"] }),
+    onSuccess: (_data, vars) => patchConversationLocally(qc, userEmail, vars.conversationId, { pinned: vars.pinned }),
     onError: alertError("Nie udało się", "Nie udało się przypiąć rozmowy. Spróbuj ponownie."),
   });
 };
@@ -1101,18 +1355,15 @@ export interface ReadReceiptRow {
  * Mapa messageId → listy odbiorców, którzy już zobaczyli wiadomość.
  * Używane do pokazania ikonki "✓✓" na własnych bąbelkach.
  */
-export const useReadReceipts = (conversationId: string) =>
-  useQuery({
+export const useReadReceipts = (conversationId: string, ready = true) => {
+  const qc = useQueryClient();
+  return useQuery({
     queryKey: ["readReceipts", conversationId],
+    enabled: !!conversationId && ready,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<Record<string, ReadReceiptRow[]>> => {
       if (!conversationId) return {};
-      const { data: msgs, error: mErr } = await supabase
-        .from("messages")
-        .select("id")
-        .eq("conversation_id", conversationId)
-        .is("deleted_at", null);
-      if (mErr) throw mErr;
-      const ids = (msgs ?? []).map((m: any) => m.id);
+      const ids = loadedIds(qc, conversationId);
       if (ids.length === 0) return {};
       const { data, error } = await supabase
         .from("message_read_receipts")
@@ -1128,8 +1379,8 @@ export const useReadReceipts = (conversationId: string) =>
       }
       return out;
     },
-    enabled: !!conversationId,
   });
+};
 
 export const markMessagesAsRead = async (
   messageIds: string[],
@@ -1201,30 +1452,38 @@ export interface MediaItem {
   createdAt: string;
 }
 
+// K11 — galeria ze stronicowaniem: tylko wiadomości z załącznikami (attachments ≠ '[]'),
+// paczkami od najnowszych; kolejne paczki przy przewijaniu.
+export const MEDIA_PAGE = 40;
 export const useConversationMedia = (conversationId: string, enabled: boolean) =>
-  useQuery({
+  useInfiniteQuery({
     queryKey: ["conversationMedia", conversationId],
-    queryFn: async (): Promise<MediaItem[]> => {
-      if (!conversationId) return [];
-      const { data, error } = await supabase
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }: { pageParam: string | null }): Promise<{ items: MediaItem[]; next: string | null }> => {
+      if (!conversationId) return { items: [], next: null };
+      let q: any = supabase
         .from("messages")
         .select("id, attachments, sender_email, created_at")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)
         .not("attachments", "is", null)
-        .order("created_at", { ascending: false });
+        .neq("attachments", "[]")
+        .neq("attachments", "{}");
+      if (pageParam) q = q.lt("created_at", pageParam);
+      const { data, error } = await q.order("created_at", { ascending: false }).limit(MEDIA_PAGE);
       if (error) throw error;
-      const out: MediaItem[] = [];
-      for (const m of (data ?? []) as Array<{
+      const rows = (data ?? []) as Array<{
         id: string;
         attachments: MessageAttachment[] | null;
         sender_email: string;
         created_at: string;
-      }>) {
+      }>;
+      const items: MediaItem[] = [];
+      for (const m of rows) {
         if (!Array.isArray(m.attachments)) continue;
         for (const a of m.attachments) {
           if (!a?.url) continue;
-          out.push({
+          items.push({
             ...a,
             messageId: m.id,
             senderEmail: m.sender_email,
@@ -1232,8 +1491,9 @@ export const useConversationMedia = (conversationId: string, enabled: boolean) =
           });
         }
       }
-      return out;
+      return { items, next: rows.length >= MEDIA_PAGE ? rows[rows.length - 1].created_at : null };
     },
+    getNextPageParam: (last: { next: string | null }) => last.next,
     enabled: enabled && !!conversationId,
   });
 

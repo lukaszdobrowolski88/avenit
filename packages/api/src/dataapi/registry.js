@@ -319,6 +319,14 @@ export const REGISTRY = {
   // (module:komunikator + res:* grant); członek dostaje granty w migracji 065.
   poll_votes: T('module:komunikator'),
   prayer_responses: T('module:komunikator'),
+  // Komunikator+ (migracja 088). Zgłoszenia wiadomości: dodaje uczestnik rozmowy (zgłaszający
+  // widzi własne), czyta i rozstrzyga moderator — admin aplikacji albo action:komunikator:moderate
+  // (zakres i walidacja: komunikatorPlus.js, wołane z routes.js).
+  message_reports: T(null),
+  // Zablokowane osoby — tabela osobista (ownership.js, właściciel blocker_email).
+  user_blocks: T(null),
+  // link_previews / message_translations — celowo POZA rejestrem: tylko przez fn
+  // (link-preview, translate-message), bez odczytu/zapisu przez /api/db.
   // Młodzieżówka
   mlodziezowka_leaders: T('module:mlodziezowka'),
   mlodziezowka_task_comments: T('module:mlodziezowka'),

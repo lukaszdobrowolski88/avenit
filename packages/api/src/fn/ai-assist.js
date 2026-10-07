@@ -152,9 +152,9 @@ const PROMPTS = {
   },
 };
 
-// Wyciągnij tekst z odpowiedzi Anthropic (łączy bloki type: 'text').
 // Wczytaj konfigurację AI z integration_settings (fallback ENV). Bez tabeli/dostępu → ENV.
-async function getAiConfig(db) {
+// Eksport: używa jej też translate-message (Komunikator+).
+export async function getAiConfig(db) {
   let rows = [];
   try {
     const res = await db.query(
@@ -176,12 +176,15 @@ async function getAiConfig(db) {
 }
 
 // Wywołanie LLM zależne od providera. Zwraca { ok, status?, text?, error? }.
-async function callLLM(cfg, system, userContent) {
+// opts.maxTokens — limit odpowiedzi (domyślnie MAX_TOKENS), opts.signal — przerwanie (timeout).
+export async function callLLM(cfg, system, userContent, opts = {}) {
+  const maxTokens = opts.maxTokens || MAX_TOKENS;
   if (cfg.provider === 'anthropic') {
     const res = await fetch(`${cfg.baseUrl}/v1/messages`, {
       method: 'POST',
       headers: { 'x-api-key': cfg.apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: cfg.model, max_tokens: MAX_TOKENS, system, messages: [{ role: 'user', content: userContent }] }),
+      body: JSON.stringify({ model: cfg.model, max_tokens: maxTokens, system, messages: [{ role: 'user', content: userContent }] }),
+      signal: opts.signal,
     });
     const data = await res.json().catch(() => null);
     if (!res.ok) return { ok: false, status: res.status, error: data?.error?.message || `Błąd API AI (HTTP ${res.status}).` };
@@ -194,7 +197,8 @@ async function callLLM(cfg, system, userContent) {
   const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: { authorization: `Bearer ${cfg.apiKey}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: cfg.model, max_tokens: MAX_TOKENS, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }] }),
+    body: JSON.stringify({ model: cfg.model, max_tokens: maxTokens, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }] }),
+    signal: opts.signal,
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) return { ok: false, status: res.status, error: data?.error?.message || `Błąd API AI (HTTP ${res.status}).` };

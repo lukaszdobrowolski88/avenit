@@ -10,7 +10,8 @@ import { platformDisabledModules } from '../lib/platform-modules.js';
 import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
 import { PII_TABLES, enforcePiiWrite, isPiiTable, redactPii } from './pii.js';
 import { enforceSharedWrite, enforceExpenseApproval, enforceCampaignStatus } from './sharedWrites.js';
-import { isConversationTable, conversationScope, enforceConversationWrite, conversationAudience, conversationDeleteAudience, assertConversationFilters } from './komunikator.js';
+import { isConversationTable, conversationScope, enforceConversationWrite, conversationAudience, conversationDeleteAudience, assertConversationFilters, pollVotesRedactor } from './komunikator.js';
+import { MODERATE_CAPABILITY, reportScope, enforceReportWrite, reportAudience, normalizeBlockWrite, assertVoteFilters, anonymousPollIds, redactVotes } from './komunikatorPlus.js';
 import { isBoardTable, boardScope, enforceBoardWrite, boardAudience } from './boardsScope.js';
 import { isMailTable, mailScope, enforceMailWrite, mailAudience } from './mailScope.js';
 
@@ -263,6 +264,19 @@ export default async function dataApiRoutes(app) {
 
       if (piiRestricted) enforcePiiWrite(q, piiMe);
 
+      // Komunikator+ (komunikatorPlus.js): zgłoszenia wiadomości — zgłaszający widzi własne,
+      // moderator (admin aplikacji albo action:komunikator:moderate) wszystkie i je rozstrzyga.
+      const moderator = isAdmin || !!resolver?.can(MODERATE_CAPABILITY);
+      if (q.table === 'message_reports') {
+        q.__ownerScope = reportScope(req.user, moderator);
+        await enforceReportWrite(q, req, moderator);
+        if (q.op !== 'select' && !q.returning) q.returning = '*';
+      }
+      // Blokady: e-maile małymi literami, bez blokowania siebie, ponowna blokada bez błędu.
+      if (q.table === 'user_blocks') normalizeBlockWrite(q, req.user);
+      // Głosy w ankietach: bez filtrowania po cudzym e-mailu (ankiety anonimowe).
+      if (q.table === 'poll_votes' && q.op === 'select') assertVoteFilters(q.filters, req.user.email);
+
       // Tabele osobiste: wiersze tylko właściciela (patrz ownership.js) — dla każdego, także admina.
       if (isOwnedTable(q.table)) {
         q.__ownerScope = ownerScope(q.table, req.user);
@@ -316,6 +330,12 @@ export default async function dataApiRoutes(app) {
 
       if (piiRestricted && q.op === 'select') data = redactPii(q.table, data, piiMe);
 
+      // Ankiety anonimowe (K7): e-mail głosującego tylko w jego własnych głosach.
+      if (q.table === 'poll_votes' && q.op === 'select' && Array.isArray(data) && data.length) {
+        const anon = await anonymousPollIds(req.db, data.map((r) => r?.message_id));
+        data = redactVotes(data, anon, req.user.email);
+      }
+
       // Egzekwowanie pól przy odczycie: usuń kolumny bez prawa odczytu.
       if (access.resolver && q.op === 'select') {
         const denied = fieldColumns(q.table).filter((c) => !access.resolver.fieldReadable(q.table, c));
@@ -356,12 +376,19 @@ export default async function dataApiRoutes(app) {
       // Realtime: powiadom subskrybentów o zmianach.
       if (q.op !== 'select') {
         const changed = Array.isArray(data) ? data : [data].filter(Boolean);
+        // Zgłoszenia: tylko zgłaszający i moderatorzy.
+        const reportAud = q.table === 'message_reports'
+          ? await reportAudience(req.db, changed, (u) => isModeratorAccount(u, adminRoles, allGrants)).catch(() => new Set())
+          : null;
         // Komunikator: zmiana trafia tylko do uczestników rozmowy.
         const audience = q.__preAudience
+          ?? reportAud
           ?? (await conversationAudience(req.db, q.table, changed).catch(() => new Set()))
           ?? (await boardAudience(req.db, q.table, changed).catch(() => new Set()))
           ?? (await mailAudience(req.db, q.table, changed).catch(() => new Set()));
-        emitChange(req.tenant.slug, q.table, q.op, changed, { audience });
+        // Głosy w ankietach anonimowych — e-mail tylko dla głosującego (także w realtime).
+        const redact = q.table === 'poll_votes' ? await pollVotesRedactor(req.db, changed).catch(() => null) : null;
+        emitChange(req.tenant.slug, q.table, q.op, changed, { audience, ...(redact ? { redact } : {}) });
       }
 
       // Push: nowa wiadomość / zaproszenie do służby. Fire-and-forget — nie blokuje
@@ -414,6 +441,15 @@ export default async function dataApiRoutes(app) {
     emitChange(req.tenant.slug, 'user_presence', 'update', [{ user_email: req.user.email, status }]);
     return reply.send({ ok: true });
   });
+}
+
+// Moderator zgłoszeń Komunikatora: admin aplikacji albo osoba z action:komunikator:moderate
+// (tryb legacy bez grantów — tylko admini).
+function isModeratorAccount(u, adminRoles, grants) {
+  if (!u) return false;
+  if (u.is_super_admin || adminRoles.has(u.role)) return true;
+  if (grants === null) return false;
+  return makeResolver(grants, { role: u.role, userId: u.id, isAdmin: false }).can(MODERATE_CAPABILITY);
 }
 
 // Akceptacja/odrzucenie WŁASNEGO zaproszenia do służby przez zaproszonego,

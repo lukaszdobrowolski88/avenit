@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { Loader, MessageSquare, Upload, ChevronDown, Megaphone } from 'lucide-react';
+import { Loader, MessageSquare, Upload, ChevronDown, Megaphone, Ban } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import ConversationHeader from './ConversationHeader';
@@ -10,6 +10,7 @@ import MediaGalleryModal from './MediaGalleryModal';
 import SearchModal from './SearchModal';
 import PollComposerModal from './PollComposerModal';
 import EventShareModal from './EventShareModal';
+import SeenByModal from './SeenByModal';
 import useMessages from '../hooks/useMessages';
 import useRealtimeMessages from '../hooks/useRealtimeMessages';
 import useTypingStatus from '../hooks/useTypingStatus';
@@ -20,11 +21,14 @@ import usePrayer from '../hooks/usePrayer';
 import usePinnedMessages from '../hooks/usePinnedMessages';
 import useMediaGallery from '../hooks/useMediaGallery';
 import useMessageSearch from '../hooks/useMessageSearch';
+import useBlocks from '../hooks/useBlocks';
 import { usePresence } from '../../../hooks/usePresence';
+import { supabase } from '../../../lib/supabase';
 import { groupMessagesByDate, formatDateSeparator } from '../utils/messageHelpers';
-import { canPostIn, sameEmail } from '../utils/chatLogic';
+import { canPostIn, sameEmail, canMentionAll as canMentionAllIn, isFromBlocked, readSince } from '../utils/chatLogic';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import { confirmDialog, promptDialog } from '../../../lib/dialog';
 
 // Błąd już pokazany użytkownikowi (żeby wywołujący nie pokazywał drugiego komunikatu).
 const handled = (err) => {
@@ -33,20 +37,24 @@ const handled = (err) => {
   return e;
 };
 
+const HIGHLIGHT = ['bg-accent-primary-lighter', 'dark:bg-accent-primary-darkest/30'];
+
 export default function MessageThread({
   conversation,
   userEmail,
   onBack,
   onOpenSettings,
   onMarkAsRead,
-  onToggleMute,
+  onSetMute,
   onDeleteConversation,
   allConversations = [],
-  perms = {}
+  perms = {},
+  isAppAdmin = false
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const messageInputRef = useRef(null);
+  const unreadSeparatorRef = useRef(null);
 
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
@@ -58,41 +66,47 @@ export default function MessageThread({
   const [showPollComposer, setShowPollComposer] = useState(false);
   const [showEventShare, setShowEventShare] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [initialLastRead, setInitialLastRead] = useState(null);
+  const [seenByMessage, setSeenByMessage] = useState(null);
+  const [jumping, setJumping] = useState(false);
+  const [pendingJump, setPendingJump] = useState(null);
+  // „Przeczytane” z chwili wejścia (separator „Nowe wiadomości” i otwarcie przy pierwszej nieprzeczytanej).
+  const [initialLastRead] = useState(() => readSince({ last_read_at: conversation?.lastReadAt, joined_at: conversation?.joinedAt }));
+  const initialUnreadRef = useRef(conversation?.unreadCount || 0);
 
   const {
-    messages, loading, loadingMore, hasMore,
-    sendMessage, editMessage, deleteMessage, loadMore, addMessage, applyRemoteUpdate, removeMessageLocal, forwardMessage
+    messages, loading, loadingMore, hasMore, quoted,
+    sendMessage, editMessage, deleteMessage, loadMore, loadSince, loadUntil,
+    addMessage, applyRemoteUpdate, removeMessageLocal, forwardMessage
   } = useMessages(conversation?.id, userEmail);
 
   const { typingUsers, startTyping, stopTyping } = useTypingStatus(conversation?.id, userEmail, { canWrite: perms.typing !== false });
-  const { isMessageRead, getReadBy, getDeliveryStatus, markMessagesAsRead, fetchReadReceipts } = useReadReceipts(conversation?.id, userEmail);
+  const { getDeliveryStatus, getSeenBy, markMessagesAsRead, fetchReadReceipts } = useReadReceipts(conversation?.id, userEmail);
   const { fetchReactions, toggleReaction, getReactionsForMessage } = useReactions(conversation?.id, userEmail);
   const { fetchVotes, castVote, getResults } = usePolls(conversation?.id, userEmail);
   const { fetchResponses, togglePraying, getForMessage } = usePrayer(conversation?.id, userEmail);
   const { pinnedMessages, togglePin, isMessagePinned } = usePinnedMessages(conversation?.id, userEmail);
-  const { images, files, loading: mediaLoading } = useMediaGallery(conversation?.id, showMediaGallery);
+  const gallery = useMediaGallery(conversation?.id, showMediaGallery);
   const { results: searchResults, loading: searchLoading, search } = useMessageSearch(conversation?.id);
+  const { blocked, isBlocked, block, unblock } = useBlocks(userEmail);
 
   const isAdmin = conversation?.myRole === 'admin';
+  const isDirect = conversation?.type === 'direct';
   const postingPolicy = conversation?.posting_policy || 'everyone';
   const isAnnouncement = conversation?.type === 'announcement' || postingPolicy === 'admins';
   const canPost = canPostIn(conversation);
   const canEditOwn = perms.editMessages !== false;
   const canPin = isAdmin && perms.pin !== false;
+  const mentionAllAllowed = canMentionAllIn(conversation, isAppAdmin);
   // Do przekazania: tylko rozmowy, w których mogę pisać (kanał ogłoszeń — gdy jestem administratorem).
   const forwardTargets = useMemo(() => allConversations.filter(canPostIn), [allConversations]);
-
-  // Zapamiętaj last_read_at przy wejściu (do separatora nieprzeczytanych)
-  useEffect(() => {
-    setInitialLastRead(conversation?.lastReadAt || null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation?.id]);
+  const participants = useMemo(() => conversation?.participants || [], [conversation?.participants]);
+  const participantEmails = useMemo(() => participants.map(p => p.user_email).filter(Boolean), [participants]);
+  const nameOf = useCallback((email) => participants.find(p => sameEmail(p.user_email, email))?.full_name || email, [participants]);
 
   const firstUnreadId = useMemo(() => {
     const boundary = initialLastRead ? new Date(initialLastRead) : null;
     const firstOther = messages.find(m =>
-      !sameEmail(m.sender_email, userEmail) && (!boundary || new Date(m.created_at) > boundary)
+      !sameEmail(m.sender_email, userEmail) && m.message_type !== 'system' && (!boundary || new Date(m.created_at) > boundary)
     );
     // Nie pokazuj separatora, jeśli to pierwsza wiadomość całej rozmowy
     if (firstOther && messages[0] && firstOther.id === messages[0].id && !boundary) return null;
@@ -100,9 +114,10 @@ export default function MessageThread({
   }, [messages, initialLastRead, userEmail]);
 
   // Druga osoba rozmowy 1:1 (status w nagłówku) + nadawcy wiadomości (status przy awatarze).
-  const peerEmail = conversation?.type === 'direct'
-    ? conversation.participants?.find(p => !sameEmail(p.user_email, userEmail))?.user_email || null
+  const peerEmail = isDirect
+    ? participants.find(p => !sameEmail(p.user_email, userEmail))?.user_email || null
     : null;
+  const peerBlocked = !!peerEmail && isBlocked(peerEmail);
   const senderEmails = useMemo(() => {
     const emails = new Set();
     messages.forEach(msg => { if (msg.sender_email && !sameEmail(msg.sender_email, userEmail)) emails.add(msg.sender_email); });
@@ -112,12 +127,14 @@ export default function MessageThread({
   const { getStatus } = usePresence(senderEmails);
 
   const typingUserNames = useMemo(() => {
-    if (!typingUsers.length || !conversation?.participants) return [];
-    return typingUsers.map(email => {
-      const participant = conversation.participants.find(p => sameEmail(p.user_email, email));
-      return participant?.full_name || email.split('@')[0];
-    });
-  }, [typingUsers, conversation?.participants]);
+    if (!typingUsers.length || !participants.length) return [];
+    return typingUsers
+      .filter(email => !blocked.has(String(email).toLowerCase()))
+      .map(email => {
+        const participant = participants.find(p => sameEmail(p.user_email, email));
+        return participant?.full_name || email.split('@')[0];
+      });
+  }, [typingUsers, participants, blocked]);
 
   const handleNewMessage = useCallback(async (newMessage) => {
     if (!sameEmail(newMessage.sender_email, userEmail)) {
@@ -136,19 +153,79 @@ export default function MessageThread({
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   }, []);
 
-  // Przewiń na dół, gdy przyszła NOWA wiadomość na końcu (doczytanie starszych nie przewija).
+  // Podświetl i przewiń do wiadomości, która jest już w DOM.
+  const highlightMessage = useCallback((messageId) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (!element) return false;
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element.classList.add(...HIGHLIGHT);
+    setTimeout(() => element.classList.remove(...HIGHLIGHT), 2000);
+    return true;
+  }, []);
+
+  // Pierwsze wejście: przy nieprzeczytanych — przy separatorze „Nowe wiadomości” (doczytaj, jeśli
+  // pierwsza nieprzeczytana jest starsza niż wczytana paczka); bez nich — na dół (K11).
   const lastMessage = messages[messages.length - 1];
   const didInitialScrollRef = useRef(false);
   useEffect(() => {
-    if (!lastMessage) return;
-    if (!didInitialScrollRef.current) {
-      didInitialScrollRef.current = true;
-      scrollToBottom(false);
+    if (!lastMessage || didInitialScrollRef.current || loading) return;
+    didInitialScrollRef.current = true;
+    const boundaryTs = initialLastRead ? new Date(initialLastRead).getTime() : 0;
+    if (initialUnreadRef.current > 0 && boundaryTs) {
+      const oldestTs = messages[0] ? new Date(messages[0].created_at).getTime() : 0;
+      if (oldestTs > boundaryTs && hasMore) {
+        loadSince(initialLastRead)
+          .then(() => setPendingJump('__unread__'), () => scrollToBottom(false));
+        return;
+      }
+      setPendingJump('__unread__');
       return;
     }
+    scrollToBottom(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastMessage?.id, loading]);
+
+  // Przewiń na dół, gdy przyszła NOWA wiadomość na końcu (doczytanie starszych nie przewija).
+  const prevLastIdRef = useRef(null);
+  useEffect(() => {
+    const id = lastMessage?.id || null;
+    const prev = prevLastIdRef.current;
+    prevLastIdRef.current = id;
+    if (!id || !prev || prev === id || !didInitialScrollRef.current) return;
     if (!showScrollBtn || sameEmail(lastMessage.sender_email, userEmail)) scrollToBottom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMessage?.id]);
+
+  // Skok czeka, aż wiadomość (albo separator) pojawi się w DOM.
+  useEffect(() => {
+    if (!pendingJump) return;
+    const t = setTimeout(() => {
+      if (pendingJump === '__unread__') {
+        if (unreadSeparatorRef.current) unreadSeparatorRef.current.scrollIntoView({ block: 'start' });
+        else scrollToBottom(false);
+        setPendingJump(null);
+        return;
+      }
+      if (highlightMessage(pendingJump)) setPendingJump(null);
+    }, 30);
+    return () => clearTimeout(t);
+  }, [pendingJump, messages, highlightMessage, scrollToBottom]);
+
+  // Skok do wiadomości (wyszukiwarka, cytat, przypięte) — doczytaj starsze aż się znajdzie (K11).
+  const jumpToMessage = useCallback(async (messageId, createdAt = null) => {
+    if (!messageId) return;
+    if (highlightMessage(messageId)) return;
+    setJumping(true);
+    try {
+      const found = await loadUntil(messageId, createdAt);
+      if (found) setPendingJump(messageId);
+      else toast.info(tr('Nie znaleziono tej wiadomości — mogła zostać usunięta.'));
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się wczytać starszych wiadomości.') });
+    } finally {
+      setJumping(false);
+    }
+  }, [highlightMessage, loadUntil]);
 
   // Po doczytaniu starszych wiadomości zachowaj miejsce, które użytkownik czytał.
   const restoreScrollRef = useRef(null);
@@ -199,20 +276,23 @@ export default function MessageThread({
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
-    if (!loading && !loadingMore && hasMore && container.scrollTop < 100) handleLoadMore();
+    if (!loading && !loadingMore && !jumping && hasMore && container.scrollTop < 100 && didInitialScrollRef.current) handleLoadMore();
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     setShowScrollBtn(distanceFromBottom > 300);
-  }, [loading, loadingMore, hasMore, handleLoadMore]);
+  }, [loading, loadingMore, jumping, hasMore, handleLoadMore]);
 
-  // Wysyłka: błąd (np. „W tym kanale piszą tylko administratorzy”, brak sieci) pokazujemy od razu,
-  // a wpisany tekst i załączniki zostają w polu (MessageInput czyści je dopiero po sukcesie).
+  // Wysyłka: błąd (np. „W tym kanale piszą tylko administratorzy”, blokada, brak sieci) pokazujemy
+  // od razu, a wpisany tekst i załączniki zostają w polu (MessageInput czyści je dopiero po sukcesie).
   const handleSendMessage = async (content, attachments, replyToId = null, extra = {}) => {
     stopTyping();
     try {
       await sendMessage(content, attachments, replyToId, extra);
     } catch (err) {
       console.error('Error sending message:', err);
-      toast.error(err, { fallback: tr('Nie udało się wysłać wiadomości. Spróbuj ponownie.') });
+      const fallback = err?.code === 'BLOCKED'
+        ? tr('Nie możesz wysłać wiadomości tej osobie.')
+        : tr('Nie udało się wysłać wiadomości. Spróbuj ponownie.');
+      toast.error(err, { fallback });
       throw handled(err);
     }
     setReplyingTo(null);
@@ -254,6 +334,70 @@ export default function MessageThread({
     }
   }, [togglePin]);
 
+  // Zgłoś wiadomość (K10) — trafia do administratorów; treść zgłoszenia opcjonalna.
+  const handleReport = useCallback(async (message) => {
+    const reason = await promptDialog({
+      title: tr('Zgłoś wiadomość'),
+      message: tr('Zgłoszenie trafi do administratorów kościoła. Napisz krótko, co jest nie tak (opcjonalnie).'),
+      placeholder: tr('np. obraźliwe treści, spam'),
+      confirmLabel: tr('Wyślij zgłoszenie'),
+      defaultValue: '',
+    });
+    if (reason === null || reason === undefined) return;
+    const { error } = await supabase
+      .from('message_reports')
+      .insert({
+        message_id: message.id,
+        conversation_id: conversation?.id,
+        reporter_email: userEmail,
+        reason: String(reason).trim() || null,
+        status: 'open',
+      })
+      .select('id');
+    if (error) {
+      toast.error(error, { fallback: tr('Nie udało się wysłać zgłoszenia. Spróbuj ponownie.') });
+      return;
+    }
+    toast.success(tr('Dziękujemy. Zgłoszenie trafiło do administratorów.'));
+  }, [conversation?.id, userEmail]);
+
+  // Zablokuj / odblokuj osobę (K10).
+  const blockPerson = useCallback(async (email) => {
+    if (!email) return;
+    const name = nameOf(email);
+    const ok = await confirmDialog({
+      title: tr('Zablokować: {name}?', { name }),
+      message: tr('Nie dostaniesz od tej osoby wiadomości prywatnych, a jej wiadomości w grupach będą schowane. Ta osoba nie zobaczy, że ją zablokowano. Możesz to cofnąć w każdej chwili.'),
+      confirmLabel: tr('Zablokuj'),
+      danger: true,
+      isDelete: false,
+    });
+    if (!ok) return;
+    try {
+      await block(email);
+      toast.success(tr('Zablokowano: {name}', { name }));
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się zablokować osoby. Spróbuj ponownie.') });
+    }
+  }, [block, nameOf]);
+
+  const unblockPerson = useCallback(async (email) => {
+    if (!email) return;
+    const name = nameOf(email);
+    try {
+      await unblock(email);
+      toast.success(tr('Odblokowano: {name}', { name }));
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się odblokować osoby. Spróbuj ponownie.') });
+    }
+  }, [unblock, nameOf]);
+
+  const handleBlockSender = useCallback((message) => blockPerson(message?.sender_email), [blockPerson]);
+  const handleToggleBlockPeer = useCallback(() => {
+    if (!peerEmail) return;
+    if (peerBlocked) unblockPerson(peerEmail); else blockPerson(peerEmail);
+  }, [peerEmail, peerBlocked, blockPerson, unblockPerson]);
+
   const handleReply = useCallback((message) => setReplyingTo(message), []);
   const handleCancelReply = useCallback(() => setReplyingTo(null), []);
   const handleForward = useCallback((message) => setForwardingMessage(message), []);
@@ -273,17 +417,9 @@ export default function MessageThread({
     toast.error(tr('Przekazano do {ok} z {total} rozmów. Do pozostałych nie udało się wysłać.', { ok: okCount, total: results.length }));
   }, [forwardMessage]);
 
-  const scrollToMessage = useCallback((messageId) => {
-    const element = document.getElementById(`message-${messageId}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('bg-accent-primary-lighter', 'dark:bg-accent-primary-darkest/30');
-      setTimeout(() => element.classList.remove('bg-accent-primary-lighter', 'dark:bg-accent-primary-darkest/30'), 2000);
-    }
-  }, []);
-
+  const handleShowSeenBy = useCallback((message) => setSeenByMessage(message), []);
   const handleTyping = useCallback(() => startTyping(), [startTyping]);
-  const handleToggleMute = onToggleMute && conversation?.id ? () => onToggleMute(conversation.id) : undefined;
+  const handleSetMute = onSetMute && conversation?.id ? (opt) => onSetMute(conversation.id, opt) : undefined;
 
   const handleDragEnter = useCallback((e) => {
     e.preventDefault(); e.stopPropagation(); dragCounter.current++;
@@ -297,16 +433,16 @@ export default function MessageThread({
   const handleDrop = useCallback((e) => {
     e.preventDefault(); e.stopPropagation(); setIsDragging(false); dragCounter.current = 0;
     const droppedFiles = e.dataTransfer.files;
-    if (droppedFiles && droppedFiles.length > 0 && messageInputRef.current && canPost) {
+    if (droppedFiles && droppedFiles.length > 0 && messageInputRef.current && canPost && !peerBlocked) {
       messageInputRef.current.addFilesFromDrop(droppedFiles);
     }
-  }, [canPost]);
+  }, [canPost, peerBlocked]);
 
   if (!conversation) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-accent-primary-lightest/30 to-accent-secondary-lightest/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800/50 text-center px-4">
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-6 shadow-lg shadow-accent-primary-light/10">
-          <MessageSquare size={40} className="text-accent-primary-light" />
+      <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 text-center px-4">
+        <div className="w-24 h-24 rounded-3xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
+          <MessageSquare size={40} className="text-gray-500 dark:text-gray-400" />
         </div>
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">{tr('Wybierz rozmowę')}</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">{tr('Wybierz rozmowę z listy po lewej stronie lub rozpocznij nową konwersację')}</p>
@@ -316,17 +452,19 @@ export default function MessageThread({
 
   const groupedMessages = groupMessagesByDate(messages);
   const dateGroups = Object.entries(groupedMessages);
+  // Liczba odbiorców (bez nadawcy) — „Przeczytało N z M” w kanale ogłoszeń.
+  const recipientsCount = Math.max(0, participantEmails.length - 1);
 
   return (
     <div
-      className="h-full flex flex-col bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800/50 relative"
+      className="h-full flex flex-col bg-gray-50 dark:bg-gray-900 relative"
       onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}
     >
       {isDragging && (
-        <div className="absolute inset-0 z-50 bg-gradient-to-br from-accent-primary-light/20 to-accent-secondary-light/20 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-accent-primary-light rounded-xl m-2 pointer-events-none motion-safe:animate-pulse">
-          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 border border-accent-primary-lighter/50 dark:border-accent-primary-dark/50">
-            <div className="w-20 h-20 bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 rounded-2xl flex items-center justify-center shadow-lg shadow-accent-primary-light/20">
-              <Upload size={36} className="text-accent-primary" />
+        <div className="absolute inset-0 z-50 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-accent-primary-light rounded-xl m-2 pointer-events-none">
+          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 border border-gray-200/60 dark:border-gray-700/60">
+            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center">
+              <Upload size={36} className="text-gray-700 dark:text-gray-200" />
             </div>
             <p className="text-xl font-bold text-gray-900 dark:text-white">{tr('Upuść pliki tutaj')}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Maksymalnie 10 plików, do 10MB każdy')}</p>
@@ -338,17 +476,19 @@ export default function MessageThread({
         conversation={conversation}
         onBack={onBack}
         onOpenSettings={onOpenSettings}
-        onToggleMute={handleToggleMute}
-        onDelete={conversation.type === 'direct' && isAdmin ? onDeleteConversation : undefined}
+        onSetMute={handleSetMute}
+        onDelete={isDirect && isAdmin ? onDeleteConversation : undefined}
         onOpenMediaGallery={() => setShowMediaGallery(true)}
         onOpenSearch={() => setShowSearch(true)}
         showBackButton={true}
-        peerStatus={peerEmail ? getStatus(peerEmail) : null}
+        peerStatus={peerEmail && !peerBlocked ? getStatus(peerEmail) : null}
+        peerBlocked={peerBlocked}
+        onToggleBlock={isDirect && peerEmail ? handleToggleBlockPeer : undefined}
       />
 
       {/* Baner kanału ogłoszeń */}
       {isAnnouncement && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-accent-primary-lightest/70 dark:bg-accent-primary-darkest/20 border-b border-accent-primary-lighter/50 dark:border-accent-primary-dark/30 text-xs text-accent-primary dark:text-accent-primary-light">
+        <div className="flex items-center gap-2 px-4 py-2 bg-gray-100/80 dark:bg-gray-800/60 border-b border-gray-200/60 dark:border-gray-700/60 text-xs text-gray-700 dark:text-gray-300">
           <Megaphone size={14} />
           {tr('Kanał ogłoszeń – piszą tylko administratorzy')}
         </div>
@@ -358,23 +498,29 @@ export default function MessageThread({
         pinnedMessages={pinnedMessages}
         isExpanded={showPinnedPanel}
         onToggleExpand={() => setShowPinnedPanel(!showPinnedPanel)}
-        onScrollToMessage={scrollToMessage}
+        onScrollToMessage={jumpToMessage}
         onUnpin={handleTogglePin}
         canUnpin={canPin}
       />
 
+      {jumping && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-20 z-30 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 shadow-lg text-xs text-gray-700 dark:text-gray-200" role="status">
+          <Loader size={13} className="animate-spin" /> {tr('Wczytuję starsze wiadomości…')}
+        </div>
+      )}
+
       <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 custom-scrollbar [overflow-anchor:none]">
         {loading && messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center">
-              <Loader size={24} className="animate-spin text-accent-primary" />
+            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              <Loader size={24} className="animate-spin text-gray-600 dark:text-gray-300" />
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Ładowanie wiadomości...')}</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-4 shadow-lg shadow-accent-primary-light/10">
-              <MessageSquare size={32} className="text-accent-primary-light" />
+            <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+              <MessageSquare size={32} className="text-gray-500 dark:text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{tr('Brak wiadomości')}</h3>
             <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs">{tr('Rozpocznij konwersację wysyłając pierwszą wiadomość')}</p>
@@ -383,8 +529,8 @@ export default function MessageThread({
           <>
             {hasMore && (
               <div className="flex justify-center py-3 mb-4">
-                <button onClick={handleLoadMore} disabled={loadingMore}
-                  className="px-4 py-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-accent-primary-lighter/50 dark:border-accent-primary-dark/50 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50">
+                <button type="button" onClick={handleLoadMore} disabled={loadingMore}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50">
                   {loadingMore ? <span className="flex items-center gap-2"><Loader size={14} className="animate-spin" />{tr('Ładowanie...')}</span> : tr('Załaduj starsze wiadomości')}
                 </button>
               </div>
@@ -393,11 +539,11 @@ export default function MessageThread({
             {dateGroups.map(([date, msgs]) => (
               <div key={date}>
                 <div className="flex items-center justify-center my-6">
-                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent" />
-                  <div className="mx-4 px-4 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                  <div className="mx-4 px-4 py-1.5 bg-white/90 dark:bg-gray-800/90 rounded-full border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
                     <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{formatDateSeparator(msgs[0]?.created_at) || date}</span>
                   </div>
-                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent" />
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
                 </div>
 
                 <div className="space-y-3">
@@ -407,19 +553,23 @@ export default function MessageThread({
                     const showAvatar = !prevMessage ||
                       !sameEmail(prevMessage.sender_email, message.sender_email) ||
                       new Date(message.created_at) - new Date(prevMessage.created_at) > 5 * 60 * 1000;
+                    const replyTo = message.reply_to_id
+                      ? (messages.find(m => m.id === message.reply_to_id) || quoted[message.reply_to_id] || null)
+                      : null;
+                    const seen = isOwn ? getSeenBy(message.id, userEmail) : [];
 
                     return (
                       <React.Fragment key={message.id}>
                         {firstUnreadId === message.id && (
-                          <div className="flex items-center justify-center my-4">
-                            <div className="flex-1 h-px bg-accent-primary-light/40" />
+                          <div ref={unreadSeparatorRef} className="flex items-center justify-center my-4 scroll-mt-16">
+                            <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
                             <span className="mx-3 px-3 py-1 rounded-full bg-accent-primary text-white text-[11px] font-semibold shadow-sm">
                               {tr('Nowe wiadomości')}
                             </span>
-                            <div className="flex-1 h-px bg-accent-primary-light/40" />
+                            <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
                           </div>
                         )}
-                        <div id={`message-${message.id}`} className="transition-colors duration-500">
+                        <div id={`message-${message.id}`} className="transition-colors duration-500 rounded-2xl">
                           <MessageBubble
                             message={message}
                             isOwn={isOwn}
@@ -427,25 +577,30 @@ export default function MessageThread({
                             senderStatus={!isOwn ? getStatus(message.sender_email) : null}
                             onEdit={isOwn && canEditOwn ? handleEditMessage : undefined}
                             onDelete={isOwn && canEditOwn ? handleDeleteMessage : undefined}
-                            onReply={handleReply}
+                            onReply={canPost && !peerBlocked ? handleReply : undefined}
                             onForward={handleForward}
                             onTogglePin={handleTogglePin}
                             isPinned={isMessagePinned(message.id)}
                             canPin={canPin}
-                            onScrollToMessage={scrollToMessage}
+                            onScrollToMessage={jumpToMessage}
                             onToggleReaction={toggleReaction}
                             reactions={getReactionsForMessage(message.id)}
-                            isRead={isOwn ? isMessageRead(message.id, userEmail) : false}
-                            readBy={isOwn ? getReadBy(message.id, userEmail) : []}
-                            deliveryStatus={isOwn ? getDeliveryStatus(message.id, userEmail) : null}
+                            deliveryStatus={isOwn ? getDeliveryStatus(message.id, userEmail, participantEmails) : null}
+                            replyToMessage={replyTo}
                             currentUserEmail={userEmail}
                             pollResults={message.message_type === 'poll' ? getResults(message) : null}
                             prayerState={message.message_type === 'prayer' ? getForMessage(message.id) : null}
                             onVote={castVote}
                             onTogglePraying={togglePraying}
-                            showReadCount={isAnnouncement}
-                            readCount={isOwn ? getReadBy(message.id, userEmail).length : 0}
-                            allMessages={messages}
+                            nameOf={nameOf}
+                            showReadCount={isAnnouncement && isOwn}
+                            readCount={seen.length}
+                            readTotal={isAnnouncement ? recipientsCount : null}
+                            seenCount={!isDirect ? seen.length : 0}
+                            onShowSeenBy={!isDirect ? handleShowSeenBy : undefined}
+                            onReport={!isOwn ? handleReport : undefined}
+                            onBlockSender={!isOwn && !isDirect ? handleBlockSender : undefined}
+                            hiddenAsBlocked={!isDirect && isFromBlocked(message, blocked, userEmail)}
                           />
                         </div>
                       </React.Fragment>
@@ -464,6 +619,7 @@ export default function MessageThread({
       {/* Przycisk scroll-to-bottom */}
       {showScrollBtn && (
         <button
+          type="button"
           onClick={() => { scrollToBottom(); setShowScrollBtn(false); }}
           className="absolute right-4 bottom-24 z-20 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/70 rounded-full shadow-lg hover:scale-105 transition-all text-gray-600 dark:text-gray-300"
           title={tr('Przewiń na dół')}
@@ -473,19 +629,32 @@ export default function MessageThread({
         </button>
       )}
 
-      <MessageInput
-        ref={messageInputRef}
-        onSend={handleSendMessage}
-        onTyping={handleTyping}
-        replyingTo={replyingTo}
-        onCancelReply={handleCancelReply}
-        conversationId={conversation.id}
-        participants={conversation.participants || []}
-        currentUserEmail={userEmail}
-        canPost={canPost}
-        onOpenPoll={() => setShowPollComposer(true)}
-        onOpenEventShare={() => setShowEventShare(true)}
-      />
+      {peerBlocked ? (
+        <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/80 dark:bg-gray-900/80">
+          <div className="flex flex-wrap items-center justify-center gap-3 py-1 text-sm text-gray-600 dark:text-gray-300">
+            <Ban size={16} aria-hidden="true" />
+            <span>{tr('Ta osoba jest zablokowana. Nie dostaniesz od niej wiadomości.')}</span>
+            <button type="button" onClick={() => unblockPerson(peerEmail)} className="font-semibold underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">
+              {tr('Odblokuj')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <MessageInput
+          ref={messageInputRef}
+          onSend={handleSendMessage}
+          onTyping={handleTyping}
+          replyingTo={replyingTo}
+          onCancelReply={handleCancelReply}
+          conversationId={conversation.id}
+          participants={participants}
+          currentUserEmail={userEmail}
+          canPost={canPost}
+          canMentionAll={mentionAllAllowed}
+          onOpenPoll={() => setShowPollComposer(true)}
+          onOpenEventShare={() => setShowEventShare(true)}
+        />
+      )}
 
       <ForwardMessageModal
         isOpen={!!forwardingMessage}
@@ -496,13 +665,30 @@ export default function MessageThread({
         onForward={handleForwardSubmit}
       />
 
-      <MediaGalleryModal isOpen={showMediaGallery} onClose={() => setShowMediaGallery(false)} images={images} files={files} loading={mediaLoading} />
+      <MediaGalleryModal
+        isOpen={showMediaGallery}
+        onClose={() => setShowMediaGallery(false)}
+        images={gallery.images}
+        files={gallery.files}
+        loading={gallery.loading}
+        hasMore={gallery.hasMore}
+        loadingMore={gallery.loadingMore}
+        onLoadMore={gallery.loadMore}
+      />
 
-      <SearchModal isOpen={showSearch} onClose={() => setShowSearch(false)} onSearch={search} results={searchResults} loading={searchLoading} onScrollToMessage={scrollToMessage} />
+      <SearchModal isOpen={showSearch} onClose={() => setShowSearch(false)} onSearch={search} results={searchResults} loading={searchLoading} onScrollToMessage={jumpToMessage} />
 
       <PollComposerModal isOpen={showPollComposer} onClose={() => setShowPollComposer(false)} onSubmit={handleCreatePoll} />
 
       <EventShareModal isOpen={showEventShare} onClose={() => setShowEventShare(false)} onShare={handleShareEvent} />
+
+      <SeenByModal
+        isOpen={!!seenByMessage}
+        onClose={() => setSeenByMessage(null)}
+        seen={seenByMessage ? getSeenBy(seenByMessage.id, userEmail) : []}
+        participants={participants}
+        senderEmail={userEmail}
+      />
     </div>
   );
 }

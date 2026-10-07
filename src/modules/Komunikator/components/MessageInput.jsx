@@ -1,5 +1,5 @@
 import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
-import { Send, Paperclip, X, FileText, Loader, Reply, Mic, Plus, BarChart3, Calendar, Lock, Smile, HeartHandshake } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Loader, Reply, Mic, Plus, BarChart3, Calendar, Lock, Smile, HeartHandshake, Users } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatFileSize, isImageFile } from '../utils/messageHelpers';
 import AudioRecorder from './AudioRecorder';
@@ -7,7 +7,9 @@ import EmojiPicker from './EmojiPicker';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
-import { previewText, sameEmail } from '../utils/chatLogic';
+import { previewText, sameEmail, MENTION_ALL, MENTION_ALL_TOKEN } from '../utils/chatLogic';
+import { attachmentUploadPath } from '../utils/attachmentUrl';
+import { SignedImage } from './SignedAttachment';
 
 const DRAFT_PREFIX = 'komunikator_draft_';
 
@@ -22,6 +24,7 @@ const MessageInput = forwardRef(function MessageInput({
   participants = [],
   currentUserEmail = null,
   canPost = true,
+  canMentionAll = false, // K5: „@wszyscy” — administrator rozmowy / lider kanału / admin aplikacji
   onOpenPoll,
   onOpenEventShare
 }, ref) {
@@ -81,12 +84,13 @@ const MessageInput = forwardRef(function MessageInput({
     }
   };
 
-  // Rozwiąż wzmianki @ z treści na listę e-maili
+  // Rozwiąż wzmianki @ z treści na listę e-maili; „@wszyscy” → "*" (K5).
   const resolveMentions = (text) => {
     const emails = [];
     mentionMapRef.current.forEach((email, name) => {
       if (text.includes(`@${name}`)) emails.push(email);
     });
+    if (canMentionAll && new RegExp(`(^|\\s)${MENTION_ALL_TOKEN}(?![\\p{L}0-9_])`, 'iu').test(text)) emails.push(MENTION_ALL);
     return [...new Set(emails)];
   };
 
@@ -96,7 +100,8 @@ const MessageInput = forwardRef(function MessageInput({
       const mimeType = audioBlob.type || 'audio/webm';
       const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
       const fileName = `voice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
-      const filePath = `voice-messages/${fileName}`;
+      // Pierwszy segment ścieżki = rozmowa (prywatne pliki, K1).
+      const filePath = attachmentUploadPath(conversationId, fileName);
 
       const { error: uploadError } = await supabase.storage
         .from('messenger-attachments')
@@ -142,9 +147,10 @@ const MessageInput = forwardRef(function MessageInput({
           toast.error(t('Plik „{name}” przekracza limit 10 MB', { name: file.name }));
           continue;
         }
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.includes('.') ? file.name.split('.').pop() : 'bin';
         const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-        const filePath = `attachments/${fileName}`;
+        // Pierwszy segment ścieżki = rozmowa (prywatne pliki, K1).
+        const filePath = attachmentUploadPath(conversationId, fileName);
         const { error: uploadError } = await supabase.storage.from('messenger-attachments').upload(filePath, file);
         if (uploadError) { console.error('Upload error:', uploadError); failed.push(file.name); continue; }
         const { data: urlData } = supabase.storage.from('messenger-attachments').getPublicUrl(filePath);
@@ -239,8 +245,9 @@ const MessageInput = forwardRef(function MessageInput({
   };
 
   const insertMention = (user) => {
-    const name = user.full_name || user.user_email?.split('@')[0] || '';
-    mentionMapRef.current.set(name, user.user_email);
+    const isAll = user.user_email === MENTION_ALL;
+    const name = isAll ? MENTION_ALL_TOKEN.slice(1) : (user.full_name || user.user_email?.split('@')[0] || '');
+    if (!isAll) mentionMapRef.current.set(name, user.user_email);
     // Zamień wpisywany fragment "@query" na "@name "
     const before = content.slice(0, mention.start - 1); // -1 aby usunąć '@'
     const after = content.slice(mention.start + mention.query.length);
@@ -256,15 +263,18 @@ const MessageInput = forwardRef(function MessageInput({
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
-  // Lista podpowiedzi wzmianek
+  // Lista podpowiedzi wzmianek (na górze „@wszyscy”, gdy wolno — K5)
+  const allEntry = canMentionAll && mention.open && MENTION_ALL_TOKEN.slice(1).startsWith(mention.query)
+    ? [{ user_email: MENTION_ALL, full_name: MENTION_ALL_TOKEN.slice(1), isAll: true }]
+    : [];
   const mentionCandidates = mention.open
-    ? participants
+    ? [...allEntry, ...participants
         .filter(p => !sameEmail(p.user_email, currentUserEmail))
         .filter(p => {
           const name = (p.full_name || p.user_email || '').toLowerCase();
           return name.includes(mention.query);
         })
-        .slice(0, 6)
+        .slice(0, 6)]
     : [];
 
   // Kanał ogłoszeń – brak uprawnień do pisania
@@ -318,7 +328,7 @@ const MessageInput = forwardRef(function MessageInput({
           {attachments.map((att, idx) => (
             <div key={idx} className="relative group flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
               {isImageFile(att.type) ? (
-                <img src={att.url} alt={att.name} className="w-10 h-10 object-cover rounded-lg" />
+                <SignedImage url={att.url} alt={att.name} className="w-10 h-10 object-cover rounded-lg" />
               ) : (
                 <div className="w-10 h-10 bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 rounded-lg flex items-center justify-center">
                   <FileText size={18} className="text-accent-primary-light" />
@@ -359,10 +369,17 @@ const MessageInput = forwardRef(function MessageInput({
               onClick={() => insertMention(p)}
               className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 transition text-left"
             >
-              <span className="w-7 h-7 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                {(p.full_name || p.user_email)?.[0]?.toUpperCase()}
+              <span className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {p.isAll ? <Users size={14} aria-hidden="true" /> : (p.full_name || p.user_email)?.[0]?.toUpperCase()}
               </span>
-              <span className="truncate">{p.full_name || p.user_email}</span>
+              {p.isAll ? (
+                <span className="min-w-0">
+                  <span className="font-semibold">{MENTION_ALL_TOKEN}</span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">{t('Powiadom wszystkich w tej rozmowie')}</span>
+                </span>
+              ) : (
+                <span className="truncate">{p.full_name || p.user_email}</span>
+              )}
             </button>
           ))}
         </div>

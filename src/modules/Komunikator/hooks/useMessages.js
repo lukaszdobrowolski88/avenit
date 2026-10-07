@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
-import { appendMessage, mergeOlderMessages, applyMessageUpdate } from '../utils/chatLogic';
+import { appendMessage, mergeOlderMessages, applyMessageUpdate, attachmentsOf } from '../utils/chatLogic';
+import { copyAttachmentToConversation } from '../utils/attachmentUrl';
 
 // Cache użytkowników na poziomie modułu (współdzielone między instancjami)
 const usersCache = new Map();
@@ -19,6 +20,12 @@ const messagesCache = new Map();
 // Zapisy mają .select(), bo serwer rozsyła realtime na podstawie zwróconych wierszy.
 
 const PAGE_SIZE = 50;
+// Doczytywanie do wskazanej wiadomości (skok z wyszukiwarki/cytatu, pierwsza nieprzeczytana):
+// większe paczki, ciągle od najstarszej wczytanej w dół — lista nigdy nie ma „dziury”.
+const JUMP_PAGE = 200;
+const JUMP_MAX_PAGES = 20;
+const JUMP_CONTEXT = 10;
+const QUOTE_COLS = 'id, conversation_id, content, sender_email, created_at, message_type, attachments, deleted_at';
 
 const withSender = (m) => ({ ...m, sender: usersCache.get(m.sender_email) || m.sender || { email: m.sender_email } });
 
@@ -32,6 +39,9 @@ export default function useMessages(conversationId, userEmail) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  // Cytowane wiadomości spoza wczytanej części (żeby cytat był widoczny i klikalny).
+  const [quoted, setQuoted] = useState({});
+  const quotedAskedRef = useRef(new Set());
 
   // Bieżąca rozmowa i licznik zapytań — odpowiedzi dla nieaktualnej rozmowy/zapytania są odrzucane.
   const convRef = useRef(conversationId);
@@ -97,13 +107,20 @@ export default function useMessages(conversationId, userEmail) {
       if (seq !== requestSeqRef.current || convId !== convRef.current) return;
 
       const rows = (data || []).map(withSender).reverse(); // od najstarszych do najnowszych
-      // Zachowaj wiadomości dodane w międzyczasie (realtime/wysłane), których nie ma w paczce.
+      // Zachowaj wiadomości dodane w międzyczasie (realtime/wysłane), których nie ma w paczce, oraz
+      // wcześniej doczytane STARSZE — ale tylko gdy paczka zachodzi na listę (wtedy nie ma „dziury”).
+      const fetchedIds = new Set(rows.map(r => r.id));
+      const newestFetched = rows.length ? new Date(rows[rows.length - 1].created_at).getTime() : 0;
+      const oldestFetched = rows.length ? new Date(rows[0].created_at).getTime() : Infinity;
+      const olderOf = (list) => (list.some(m => fetchedIds.has(m.id))
+        ? list.filter(m => !fetchedIds.has(m.id) && new Date(m.created_at).getTime() < oldestFetched)
+        : []);
+      const keptOlder = olderOf(messagesRef.current).length > 0;
       updateMessages(convId, prev => {
-        const newestFetched = rows.length ? new Date(rows[rows.length - 1].created_at).getTime() : 0;
-        const later = prev.filter(m => !rows.some(r => r.id === m.id) && new Date(m.created_at).getTime() > newestFetched);
-        return [...rows, ...later];
+        const later = prev.filter(m => !fetchedIds.has(m.id) && new Date(m.created_at).getTime() > newestFetched);
+        return [...olderOf(prev), ...rows, ...later];
       });
-      setHasMore((data || []).length === PAGE_SIZE);
+      if (!keptOlder) setHasMore((data || []).length === PAGE_SIZE);
       setError(null);
       loadSenders(convId, rows);
     } catch (err) {
@@ -149,6 +166,112 @@ export default function useMessages(conversationId, userEmail) {
       if (convId === convRef.current) setLoadingMore(false);
     }
   }, [conversationId, hasMore, updateMessages, loadSenders]);
+
+  // Doczytaj wszystko od najstarszej wczytanej wiadomości w dół do fromIso (włącznie) + kilka
+  // starszych dla kontekstu. Zwraca listę dociągniętych wierszy (bez duplikatów z listy).
+  const loadSince = useCallback(async (fromIso) => {
+    const convId = conversationId;
+    const fromTs = fromIso ? new Date(fromIso).getTime() : NaN;
+    if (!convId || !Number.isFinite(fromTs)) return [];
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      let cursor = messagesRef.current[0]?.created_at || null;
+      const collected = [];
+      let reached = !!cursor && new Date(cursor).getTime() <= fromTs;
+      if (reached) return [];
+      for (let page = 0; !reached && page < JUMP_MAX_PAGES; page++) {
+        let q = supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', convId)
+          .is('deleted_at', null)
+          .gte('created_at', fromIso);
+        if (cursor) q = q.lt('created_at', cursor);
+        const { data, error: fetchError } = await q.order('created_at', { ascending: false }).limit(JUMP_PAGE);
+        if (fetchError) throw fetchError;
+        if (convId !== convRef.current) return [];
+        const rows = data || [];
+        collected.push(...rows);
+        if (rows.length < JUMP_PAGE) { reached = true; break; }
+        cursor = rows[rows.length - 1].created_at;
+      }
+      let context = [];
+      if (reached) {
+        const { data, error: ctxError } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', convId)
+          .is('deleted_at', null)
+          .lt('created_at', fromIso)
+          .order('created_at', { ascending: false })
+          .limit(JUMP_CONTEXT);
+        if (ctxError) throw ctxError;
+        if (convId !== convRef.current) return [];
+        context = data || [];
+        setHasMore(context.length === JUMP_CONTEXT);
+      }
+      const older = [...collected, ...context].map(withSender).reverse();
+      if (older.length) {
+        updateMessages(convId, prev => mergeOlderMessages(prev, older));
+        loadSenders(convId, older);
+      }
+      return older;
+    } finally {
+      loadingMoreRef.current = false;
+      if (convId === convRef.current) setLoadingMore(false);
+    }
+  }, [conversationId, updateMessages, loadSenders]);
+
+  // Skok do wiadomości (wyszukiwarka, cytat, przypięte): doczytaj aż się znajdzie.
+  // Zwraca true, gdy wiadomość jest już na liście. Rzuca błąd sieci/serwera.
+  const loadUntil = useCallback(async (messageId, createdAt = null) => {
+    const convId = conversationId;
+    if (!convId || !messageId) return false;
+    if (messagesRef.current.some(m => m.id === messageId)) return true;
+    let target = createdAt;
+    if (!target) {
+      const { data, error: findError } = await supabase
+        .from('messages')
+        .select('id, conversation_id, created_at, deleted_at')
+        .eq('id', messageId)
+        .maybeSingle();
+      if (findError) throw findError;
+      if (!data || data.deleted_at || String(data.conversation_id) !== String(convId)) return false;
+      target = data.created_at;
+    }
+    const rows = await loadSince(target);
+    return rows.some(r => r.id === messageId) || messagesRef.current.some(m => m.id === messageId);
+  }, [conversationId, loadSince]);
+
+  // Cytaty spoza wczytanej części: dociągnij raz (lekkie kolumny).
+  useEffect(() => {
+    const convId = conversationId;
+    if (!convId || !messages.length) return;
+    const have = new Set(messages.map(m => m.id));
+    const missing = [...new Set(messages.map(m => m.reply_to_id).filter(Boolean))]
+      .filter(id => !have.has(id) && !quotedAskedRef.current.has(id));
+    if (!missing.length) return;
+    missing.forEach(id => quotedAskedRef.current.add(id));
+    supabase
+      .from('messages')
+      .select(QUOTE_COLS)
+      .in('id', missing)
+      .then(async ({ data }) => {
+        if (!data?.length || convId !== convRef.current) return;
+        const senders = [...new Set(data.map(m => m.sender_email))].filter(e => e && !usersCache.has(e));
+        if (senders.length) {
+          const { data: users } = await supabase.from('app_users').select('email, full_name, avatar_url').in('email', senders);
+          (users || []).forEach(u => usersCache.set(u.email, u));
+        }
+        if (convId !== convRef.current) return;
+        setQuoted(prev => {
+          const next = { ...prev };
+          data.forEach(m => { next[m.id] = withSender(m); });
+          return next;
+        });
+      }, () => {});
+  }, [messages, conversationId]);
 
   // Wyślij wiadomość. Rzuca błąd (np. 403 w kanale ogłoszeń) — wywołujący pokazuje komunikat.
   // extra: { messageType, metadata, mentions } – dla ankiet/modlitw/wydarzeń oraz @wzmianek
@@ -242,13 +365,19 @@ export default function useMessages(conversationId, userEmail) {
 
     const results = [];
     for (const targetConvId of targetConversationIds) {
+      // Prywatne pliki (K1) podpisuje serwer tylko uczestnikom rozmowy z pierwszego segmentu
+      // ścieżki — przy przekazaniu kopiujemy plik do folderu docelowej rozmowy (błąd → stary adres).
+      const atts = attachmentsOf(message);
+      const attachments = atts.length
+        ? await Promise.all(atts.map(a => copyAttachmentToConversation(a, targetConvId)))
+        : [];
       const { data, error: sendError } = await supabase
         .from('messages')
         .insert({
           conversation_id: targetConvId,
           sender_email: userEmail,
           content: message.content,
-          attachments: message.attachments || [],
+          attachments,
           forwarded_from: message.id
         })
         .select()
@@ -304,6 +433,8 @@ export default function useMessages(conversationId, userEmail) {
     loadingMoreRef.current = false;
     setLoadingMore(false);
     setHasMore(true);
+    setQuoted({});
+    quotedAskedRef.current = new Set();
     const cached = conversationId ? messagesCache.get(conversationId) : null;
     const next = cached || [];
     messagesRef.current = next;
@@ -325,6 +456,9 @@ export default function useMessages(conversationId, userEmail) {
     editMessage,
     deleteMessage,
     loadMore,
+    loadSince,
+    loadUntil,
+    quoted,
     addMessage,
     applyRemoteUpdate,
     removeMessageLocal,

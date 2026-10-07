@@ -16,6 +16,7 @@ import { tr, useT, appLocale, useI18n } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
 import { toast } from '../../lib/toast';
 import { describeUserAgent } from './components/settingsLogic';
+import ChatQuietHours from '../Komunikator/components/ChatQuietHours';
 import {
   Church, CalendarDays, CheckSquare, PartyPopper, Music, Clapperboard, HeartHandshake, Baby, Home, Languages, Monitor,
 } from 'lucide-react';
@@ -926,6 +927,9 @@ export default function UserSettings() {
               </div>
             )}
           </div>
+
+          {/* CICHE GODZINY CZATU (Komunikator) */}
+          {formData.email && <ChatQuietHours userEmail={formData.email} />}
 
           {/* PREFERENCJE */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">

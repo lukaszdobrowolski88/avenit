@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, KeyRound, UserPlus, LogIn, Lock, AlertTriangle, ChevronDown } from 'lucide-react';
+import { ShieldCheck, KeyRound, UserPlus, LogIn, Lock, AlertTriangle, ChevronDown, MessageSquare } from 'lucide-react';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
 import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
@@ -13,6 +13,8 @@ import { ssoOpenToAnyone } from './settingsLogic';
 //   account_change_emails → lib/account-notify.js
 //   registration_* → /api/auth/register + registration-config
 //   sso_* → lib/sso.js (+ sekret przez fn sso-save-config)
+//   chat_dm_policy / chat_protect_minors → Komunikator (dataapi/komunikator.js: 403 DM_NOT_ALLOWED, fn chat-policy)
+//   chat_private_files → storage messenger-attachments (odczyt tylko przez podpisany link)
 // Dawny zestaw sec_* (nieczytany przez nikogo) i „automatyczne wylogowanie” (brak backendu) usunięte.
 
 const on = (v) => v === 'on';
@@ -41,6 +43,7 @@ export default function SecuritySettings({ get, save, roles = [], campuses = [] 
   const [secretBusy, setSecretBusy] = useState(null);
 
   const regMode = get('registration_mode') || 'closed';
+  const dmPolicy = ['all', 'leaders', 'off'].includes(get('chat_dm_policy')) ? get('chat_dm_policy') : 'all';
   const minLen = String(get('password_min_length') || '8');
   const minLenOptions = [...new Set(['6', '8', '10', '12', '14', '16', minLen])]
     .sort((a, b) => Number(a) - Number(b))
@@ -177,6 +180,41 @@ export default function SecuritySettings({ get, save, roles = [], campuses = [] 
             )}
           </div>
         )}
+      </SettingsCard>
+
+      {/* ── Komunikator: rozmowy prywatne, ochrona niepełnoletnich, prywatne pliki (K9, K1) ── */}
+      <SettingsCard title={tr('Komunikator')} description={tr('Kto może zaczynać rozmowy prywatne i jak chronimy osoby niepełnoletnie.')} icon={MessageSquare}>
+        <SettingRow
+          label={tr('Rozmowy prywatne (1:1)')}
+          hint={dmPolicy === 'off'
+            ? tr('Nikt nie zacznie nowej rozmowy prywatnej. Grupy i kanały działają jak dotąd.')
+            : dmPolicy === 'leaders'
+              ? tr('Rozmowa prywatna jest możliwa, gdy jedną ze stron jest lider (służby lub grupy) albo administrator.')
+              : tr('Każdy może napisać do każdego.')}
+        >
+          <SelectSetting
+            value={dmPolicy}
+            onChange={(v) => save('chat_dm_policy', v)}
+            options={[
+              { value: 'all', label: tr('Wszyscy ze wszystkimi') },
+              { value: 'leaders', label: tr('Tylko z liderem lub administratorem') },
+              { value: 'off', label: tr('Wyłączone') },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={tr('Chroń osoby niepełnoletnie')}
+          hint={tr('Blokuje rozmowy prywatne między osobą poniżej 18 lat a dorosłym (na podstawie daty urodzenia w kartotece). Rozmowy w grupach i kanałach są dozwolone.')}
+        >
+          <Toggle label={tr('Chroń osoby niepełnoletnie')} checked={(get('chat_protect_minors') || 'on') !== 'off'} onChange={(v) => save('chat_protect_minors', onOff(v))} />
+        </SettingRow>
+        <SettingRow
+          label={tr('Prywatne zdjęcia i pliki z czatu')}
+          hint={tr('Pliki z rozmów otworzy tylko uczestnik rozmowy. Włącz, gdy wszyscy mają aktualną aplikację mobilną — starsze wersje nie pokażą wtedy zdjęć.')}
+          last
+        >
+          <Toggle label={tr('Prywatne zdjęcia i pliki z czatu')} checked={on(get('chat_private_files'))} onChange={(v) => save('chat_private_files', onOff(v))} />
+        </SettingRow>
       </SettingsCard>
 
       {/* ── Logowanie kontem Google / Microsoft ── */}

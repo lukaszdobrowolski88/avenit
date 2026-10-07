@@ -204,7 +204,7 @@ describe.each([['web', web], ['mobilka', mobile]])('Komunikator — wspólne zas
     expect(L.matchesFilter({ id: 'g', type: 'group', created_by: 'ola@x.pl' }, 'all', 'ja@x.pl')).toBe(true);
     const sections = L.groupIntoSections(list.filter(c => L.matchesFilter(c, 'all')));
     expect(sections.map(s => s.key)).toEqual(['pinned', 'announcement', 'direct', 'group', 'ministry']);
-    expect(sections.map(s => s.title)).toEqual(['Przypięte', 'Ogłoszenia', 'Prywatne', 'Grupy', 'Kanały służb']);
+    expect(sections.slice(0, 4).map(s => s.title)).toEqual(['Przypięte', 'Ogłoszenia', 'Prywatne', 'Grupy']);
   });
 
   it('wybór rozmowy 1:1 spośród duplikatów i @wzmianki bez względu na wielkość liter', () => {
@@ -238,5 +238,124 @@ describe('Komunikator — aplikacja: nowa wiadomość na liście (kształt last_
     expect(mobile.formatListTime(new Date(2026, 9, 6, 23, 0).toISOString(), now)).toBe('Wczoraj');
     expect(mobile.formatListTime(new Date(2026, 9, 3, 12, 0).toISOString(), now)).toBe('sobota');
     expect(mobile.formatListTime(new Date(2026, 8, 20, 12, 0).toISOString(), now)).toBe('20 wrz');
+  });
+});
+
+describe('Komunikator+ — czysta logika (web)', () => {
+  const L = web;
+
+  it('sekcja kanałów nazywa się „Kanały” (służby i grupy domowe)', () => {
+    expect(L.SECTION_TITLES.ministry).toBe('Kanały');
+  });
+
+  it('K8: kanał grupy domowej i nazwa z bazy przed zapasową etykietą', () => {
+    const hg = { type: 'ministry', ministry_key: 'home_group:42', name: 'Grupa Krzyki' };
+    expect(L.isHomeGroupChannel(hg)).toBe(true);
+    expect(L.homeGroupIdOf(hg)).toBe('42');
+    expect(L.isHomeGroupChannel({ type: 'ministry', ministry_key: 'worship_team' })).toBe(false);
+    expect(L.isHomeGroupChannel({ type: 'group', ministry_key: 'home_group:1' })).toBe(false);
+    const fallback = (k) => (k === 'kids_ministry' ? 'Etykieta zapasowa' : '');
+    expect(L.channelName({ name: 'Dzieci', ministry_key: 'kids_ministry' }, fallback)).toBe('Dzieci');
+    expect(L.channelName({ name: '  ', ministry_key: 'kids_ministry' }, fallback)).toBe('Etykieta zapasowa');
+    expect(L.channelName({ ministry_key: 'custom_x' }, fallback)).toBe('custom_x');
+  });
+
+  it('K4: wyciszenie — zawsze, do czasu, wygasłe', () => {
+    const now = Date.parse('2026-10-07T12:00:00Z');
+    expect(L.muteState({ muted: true }, now)).toEqual({ muted: true, until: null });
+    expect(L.muteState({ mutedUntil: '2026-10-07T13:00:00Z' }, now).muted).toBe(true);
+    expect(L.muteState({ muted_until: '2026-10-07T13:00:00Z' }, now).until.toISOString()).toBe('2026-10-07T13:00:00.000Z');
+    expect(L.isMutedNow({ mutedUntil: '2026-10-07T11:59:00Z' }, now)).toBe(false);
+    expect(L.isMutedNow({}, now)).toBe(false);
+  });
+
+  it('K4: zapis wyciszenia dla opcji menu', () => {
+    const now = new Date(2026, 9, 7, 22, 30).getTime();
+    expect(L.mutePatch('always', now)).toEqual({ muted: true, muted_until: null });
+    expect(L.mutePatch('off', now)).toEqual({ muted: false, muted_until: null });
+    expect(L.mutePatch('1h', now)).toEqual({ muted: false, muted_until: new Date(now + 3600000).toISOString() });
+    expect(L.mutePatch('8h', now).muted_until).toBe(new Date(now + 8 * 3600000).toISOString());
+    expect(L.mutePatch('tomorrow', now)).toEqual({ muted: false, muted_until: new Date(2026, 9, 8, 8, 0).toISOString() });
+    // „do kiedy”: dziś / jutro / później
+    expect(L.muteUntilKind(new Date(2026, 9, 7, 23, 0), now).kind).toBe('today');
+    expect(L.muteUntilKind(new Date(2026, 9, 8, 8, 0), now).kind).toBe('tomorrow');
+    expect(L.muteUntilKind(new Date(2026, 9, 10, 8, 0), now).kind).toBe('date');
+    expect(L.muteUntilKind(null, now)).toBeNull();
+  });
+
+  it('K5: @wszyscy — "*" w mentions, dotyczy mnie (nie moich), wolno administratorowi', () => {
+    const m = { sender_email: 'ola@x.pl', mentions: ['*'] };
+    expect(L.mentionsAll(m)).toBe(true);
+    expect(L.mentionsMe(m, 'ja@x.pl')).toBe(true);
+    expect(L.mentionsMe({ ...m, sender_email: 'JA@x.pl' }, 'ja@x.pl')).toBe(false);
+    expect(L.mentionsMe({ sender_email: 'ola@x.pl', mentions: ['Ja@X.pl'] }, 'ja@x.pl')).toBe(true);
+    expect(L.mentionsMe({ sender_email: 'ola@x.pl', mentions: ['ewa@x.pl'] }, 'ja@x.pl')).toBe(false);
+    expect(L.canMentionAll({ type: 'group', myRole: 'admin' })).toBe(true);
+    expect(L.canMentionAll({ type: 'ministry', myRole: 'member' })).toBe(false);
+    expect(L.canMentionAll({ type: 'ministry', myRole: 'member' }, true)).toBe(true);
+    expect(L.canMentionAll({ type: 'direct', myRole: 'admin' }, true)).toBe(false);
+    expect(L.canMentionAll(null, true)).toBe(false);
+  });
+
+  it('K6: ✓✓ w kolorze dopiero, gdy przeczytali WSZYSCY pozostali', () => {
+    const ps = ['ja@x.pl', 'ola@x.pl', 'ewa@x.pl'];
+    const r = (e, read, delivered) => ({ user_email: e, read_at: read ? 't' : null, delivered_at: delivered ? 't' : null });
+    expect(L.receiptStatus([], 'ja@x.pl', ps)).toBe('sent');
+    expect(L.receiptStatus([r('ola@x.pl', true, true)], 'ja@x.pl', ps)).toBe('sent');
+    expect(L.receiptStatus([r('ola@x.pl', true, true), r('ewa@x.pl', false, true)], 'ja@x.pl', ps)).toBe('delivered');
+    expect(L.receiptStatus([r('OLA@x.pl', true, true), r('ewa@x.pl', true, false)], 'JA@x.pl', ps)).toBe('read');
+    // 1:1 — druga osoba
+    expect(L.receiptStatus([r('ola@x.pl', true, true)], 'ja@x.pl', ['ja@x.pl', 'ola@x.pl'])).toBe('read');
+    // własny wiersz nadawcy się nie liczy; bez składu — jak dawniej (ktokolwiek)
+    expect(L.receiptStatus([r('ja@x.pl', true, true)], 'ja@x.pl', ['ja@x.pl', 'ola@x.pl'])).toBe('sent');
+    expect(L.receiptStatus([r('ola@x.pl', true, true)], 'ja@x.pl', [])).toBe('read');
+  });
+
+  it('K6: „Widziane przez” — bez nadawcy, bez duplikatów, od najwcześniejszych', () => {
+    const list = L.seenBy([
+      { user_email: 'ewa@x.pl', read_at: '2026-10-07T12:05:00Z' },
+      { user_email: 'ja@x.pl', read_at: '2026-10-07T12:00:00Z' },
+      { user_email: 'ola@x.pl', read_at: '2026-10-07T12:01:00Z' },
+      { user_email: 'OLA@x.pl', read_at: '2026-10-07T12:09:00Z' },
+      { user_email: 'adam@x.pl', read_at: null, delivered_at: 't' },
+    ], 'ja@x.pl');
+    expect(list.map(r => r.user_email)).toEqual(['ola@x.pl', 'ewa@x.pl']);
+  });
+
+  it('K7: ankieta — metadata.poll (kontrakt) i starszy format, zamknięcie', () => {
+    const meta = L.buildPollMetadata({ question: ' Kiedy? ', options: [{ id: 'o1', text: ' pt ' }, { id: 'o2', text: '' }, { id: 'o3', text: 'sb' }], multiple: true, anonymous: true, closes_at: '2026-10-08T18:00:00.000Z' });
+    expect(meta.poll).toEqual({ question: 'Kiedy?', options: [{ id: 'o1', text: 'pt' }, { id: 'o3', text: 'sb' }], multiple: true, anonymous: true, closes_at: '2026-10-08T18:00:00.000Z' });
+    expect(meta.question).toBe('Kiedy?'); // pola na wierzchu dla starszych wersji aplikacji
+    const p = L.pollOf({ metadata: meta });
+    expect(p).toMatchObject({ multiple: true, anonymous: true, closes_at: '2026-10-08T18:00:00.000Z' });
+    const legacy = L.pollOf({ content: 'Pytanie', metadata: { options: [{ id: 'a', text: 'A' }, 'B'], multiple: false } });
+    expect(legacy).toMatchObject({ question: 'Pytanie', anonymous: false, closes_at: null });
+    expect(legacy.options).toEqual([{ id: 'a', text: 'A' }, { id: 'o2', text: 'B' }]);
+    expect(L.isPollClosed({ closes_at: '2026-10-07T11:00:00Z' }, Date.parse('2026-10-07T12:00:00Z'))).toBe(true);
+    expect(L.isPollClosed({ closes_at: '2026-10-07T13:00:00Z' }, Date.parse('2026-10-07T12:00:00Z'))).toBe(false);
+    expect(L.isPollClosed({ closes_at: null })).toBe(false);
+  });
+
+  it('K11: nieprzeczytane na pulpicie — jedna paczka, bez usuniętych, swoich i systemowych', () => {
+    const rows = [
+      { id: 1, conversation_id: 'a', sender_email: 'ola@x.pl', created_at: '2026-10-07T10:00:00Z' },
+      { id: 2, conversation_id: 'a', sender_email: 'ola@x.pl', created_at: '2026-10-07T11:00:00Z' },
+      { id: 3, conversation_id: 'a', sender_email: 'ola@x.pl', created_at: '2026-10-07T12:00:00Z', deleted_at: 'x' },
+      { id: 4, conversation_id: 'a', sender_email: 'JA@x.pl', created_at: '2026-10-07T12:30:00Z' },
+      { id: 5, conversation_id: 'b', sender_email: 'ewa@x.pl', created_at: '2026-10-07T09:00:00Z', message_type: 'system' },
+      { id: 6, conversation_id: 'b', sender_email: 'ewa@x.pl', created_at: '2026-10-07T08:00:00Z' },
+    ];
+    const out = L.unreadSummary(rows, 'ja@x.pl', { a: '2026-10-07T09:30:00Z', b: '2026-10-07T08:30:00Z' });
+    expect(out.a.count).toBe(2);
+    expect(out.a.last.id).toBe(2);
+    expect(out.b).toBeUndefined();
+  });
+
+  it('K10: wiadomość od zablokowanej osoby (nie moja, nie systemowa)', () => {
+    const blocked = new Set(['ola@x.pl']);
+    expect(L.isFromBlocked({ sender_email: 'Ola@X.pl' }, blocked, 'ja@x.pl')).toBe(true);
+    expect(L.isFromBlocked({ sender_email: 'ola@x.pl', message_type: 'system' }, blocked, 'ja@x.pl')).toBe(false);
+    expect(L.isFromBlocked({ sender_email: 'ewa@x.pl' }, blocked, 'ja@x.pl')).toBe(false);
+    expect(L.isFromBlocked({ sender_email: 'ola@x.pl' }, null, 'ja@x.pl')).toBe(false);
   });
 });

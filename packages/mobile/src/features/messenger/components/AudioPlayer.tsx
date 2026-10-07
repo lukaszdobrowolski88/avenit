@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Audio, type AVPlaybackStatus } from "expo-av";
 import { Mic, Pause, Play } from "lucide-react-native";
+import { resolveAttachmentUrl } from "../signedUrl";
+import { showError } from "../../../lib/errors";
 
 interface Props {
   uri: string;
@@ -94,13 +96,17 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
     setLoading(true);
     try {
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+      // K1: głosówka z magazynu czatu — podpisany link w chwili odtworzenia (zawsze świeży).
+      const source = await resolveAttachmentUrl(uri);
       const { sound: s } = await Audio.Sound.createAsync(
-        { uri },
+        { uri: source || uri },
         { shouldPlay: true, progressUpdateIntervalMillis: 150 },
       );
       s.setOnPlaybackStatusUpdate(onStatus);
       setSound(s);
       setIsPlaying(true);
+    } catch (e) {
+      showError("Nie udało się odtworzyć", e, "Nie udało się odtworzyć wiadomości głosowej. Spróbuj ponownie.");
     } finally {
       setLoading(false);
     }
@@ -125,6 +131,8 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
       <Pressable
         onPress={toggle}
         hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel={isPlaying ? "Wstrzymaj wiadomość głosową" : "Odtwórz wiadomość głosową"}
         style={{
           width: 32,
           height: 32,

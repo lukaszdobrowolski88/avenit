@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { unreadIdsToMark, sameEmail } from '../utils/chatLogic';
+import { unreadIdsToMark, sameEmail, receiptStatus, seenBy } from '../utils/chatLogic';
 
 const RECEIPT_COLS = 'message_id, user_email, read_at, delivered_at';
 
@@ -129,13 +129,14 @@ export default function useReadReceipts(conversationId, userEmail) {
     return receipts.filter(r => !sameEmail(r.user_email, senderEmail) && r.read_at);
   }, [readReceipts]);
 
-  // Status doręczenia dla ptaszków: 'sent' | 'delivered' | 'read'
-  const getDeliveryStatus = useCallback((messageId, senderEmail) => {
-    const receipts = (readReceipts[messageId] || []).filter(r => !sameEmail(r.user_email, senderEmail));
-    if (receipts.some(r => r.read_at)) return 'read';
-    if (receipts.some(r => r.delivered_at)) return 'delivered';
-    return 'sent';
-  }, [readReceipts]);
+  // Status doręczenia dla ptaszków: 'sent' | 'delivered' | 'read' (K6). Z listą uczestników:
+  // „przeczytane” dopiero, gdy przeczytali WSZYSCY pozostali (1:1 — druga osoba).
+  const getDeliveryStatus = useCallback((messageId, senderEmail, participantEmails = []) =>
+    receiptStatus(readReceipts[messageId] || [], senderEmail, participantEmails), [readReceipts]);
+
+  // „Widziane przez”: kto i kiedy przeczytał (bez nadawcy), od najwcześniejszych.
+  const getSeenBy = useCallback((messageId, senderEmail) =>
+    seenBy(readReceipts[messageId] || [], senderEmail), [readReceipts]);
 
   return {
     readReceipts,
@@ -145,6 +146,7 @@ export default function useReadReceipts(conversationId, userEmail) {
     isMessageRead,
     getReadBy,
     getDeliveryStatus,
+    getSeenBy,
     refetch: fetchReadReceipts
   };
 }

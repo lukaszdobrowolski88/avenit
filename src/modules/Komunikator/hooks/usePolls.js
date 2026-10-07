@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
 import { tr } from '../../../i18n';
-import { sameEmail } from '../utils/chatLogic';
+import { sameEmail, pollOf, isPollClosed } from '../utils/chatLogic';
 
 // Głosy w ankietach: messageId -> [{ id, option_id, user_email }]
 export default function usePolls(conversationId, userEmail) {
@@ -35,10 +35,12 @@ export default function usePolls(conversationId, userEmail) {
   const castVote = useCallback(async (message, optionId) => {
     if (!message?.id || !userEmail || !optionId) return;
     const messageId = message.id;
+    const poll = pollOf(message);
+    if (isPollClosed(poll)) { toast.info(tr('Ankieta jest już zamknięta.')); return; }
     if (votingRef.current.has(messageId)) return; // poprzedni klik jeszcze się zapisuje
     votingRef.current.add(messageId);
 
-    const multiple = !!message.metadata?.multiple;
+    const multiple = poll.multiple;
     const current = votes[messageId] || [];
     const mine = current.filter(v => sameEmail(v.user_email, userEmail));
     const already = mine.find(v => v.option_id === optionId);
@@ -55,22 +57,9 @@ export default function usePolls(conversationId, userEmail) {
         return;
       }
 
-      // Jednokrotny wybór – usuń wcześniejsze głosy tego użytkownika (także te niewidoczne lokalnie)
-      if (!multiple) {
-        const { error } = await supabase
-          .from('poll_votes')
-          .delete()
-          .eq('message_id', messageId)
-          .eq('user_email', userEmail)
-          .select('id, message_id');
-        if (error) throw error;
-        const ids = mine.map(v => v.id);
-        setVotes(prev => ({
-          ...prev,
-          [messageId]: (prev[messageId] || []).filter(v => !ids.includes(v.id))
-        }));
-      }
-
+      // Jednokrotny wybór: nowy głos zastępuje poprzedni — robi to serwer (usuwa poprzedni głos
+      // tej osoby w ankiecie). Bez osobnego kasowania tutaj: po zamknięciu ankiety (403) głos
+      // nie znika. Lokalnie zdejmujemy moje wcześniejsze głosy dopiero po udanym zapisie.
       const { data, error } = await supabase
         .from('poll_votes')
         .insert({ message_id: messageId, option_id: optionId, user_email: userEmail })
@@ -78,9 +67,10 @@ export default function usePolls(conversationId, userEmail) {
         .single();
       if (error) throw error;
 
+      const replaced = multiple ? [] : mine.map(v => v.id);
       setVotes(prev => ({
         ...prev,
-        [messageId]: [...(prev[messageId] || []).filter(v => v.id !== data.id), data]
+        [messageId]: [...(prev[messageId] || []).filter(v => v.id !== data.id && !replaced.includes(v.id)), data]
       }));
     } catch (err) {
       console.error('Error casting vote:', err);
@@ -90,23 +80,26 @@ export default function usePolls(conversationId, userEmail) {
     }
   }, [votes, userEmail]);
 
-  // Wyniki ankiety pogrupowane po opcji
+  // Wyniki ankiety pogrupowane po opcji. Ankieta anonimowa: serwer zwraca e-mail tylko przy moich
+  // głosach — liczymy głosy, nie osoby, i nie pokazujemy, kto głosował.
   const getResults = useCallback((message) => {
     const messageId = message?.id;
-    const options = message?.metadata?.options || [];
+    const poll = pollOf(message);
     const messageVotes = votes[messageId] || [];
     const total = messageVotes.length;
+    const known = messageVotes.filter(v => v.user_email);
 
     return {
       total,
-      voterCount: new Set(messageVotes.map(v => v.user_email)).size,
-      options: options.map(opt => {
+      anonymous: poll.anonymous,
+      voterCount: poll.anonymous ? total : new Set(known.map(v => String(v.user_email).toLowerCase())).size,
+      options: poll.options.map(opt => {
         const optVotes = messageVotes.filter(v => v.option_id === opt.id);
         return {
           ...opt,
           count: optVotes.length,
           percent: total > 0 ? Math.round((optVotes.length / total) * 100) : 0,
-          voters: optVotes.map(v => v.user_email),
+          voters: poll.anonymous ? [] : optVotes.map(v => v.user_email).filter(Boolean),
           hasVoted: optVotes.some(v => sameEmail(v.user_email, userEmail))
         };
       })

@@ -57,13 +57,14 @@ export function matchesFilter(c, filter = 'all', myEmail = null) {
 }
 
 // Sekcje listy (ta sama kolejność w webie i w aplikacji). Przypięte zbierają wszystkie typy.
+// „Kanały” = kanały służb i grup domowych (type='ministry', skład synchronizuje serwer).
 export const SECTION_ORDER = ['pinned', 'announcement', 'direct', 'group', 'ministry'];
 export const SECTION_TITLES = {
   pinned: 'Przypięte',
   announcement: 'Ogłoszenia',
   direct: 'Prywatne',
   group: 'Grupy',
-  ministry: 'Kanały służb',
+  ministry: 'Kanały',
 };
 export const sectionOf = (c) => {
   if (c?.pinned) return 'pinned';
@@ -283,3 +284,148 @@ export function leaveBlocker(conv, myEmail) {
   if (conv.myRole === 'admin' && others.length > 0 && otherAdmins.length === 0) return 'lastAdmin';
   return null;
 }
+
+// ── Komunikator+ ──────────────────────────────────────────────────────────────
+
+// Kanały z automatycznym składem (K8): służby (ministry_key = klucz służby) i grupy domowe
+// (ministry_key = 'home_group:<id>'). Nazwę nadaje serwer (etykieta modułu / nazwa grupy).
+export const HOME_GROUP_PREFIX = 'home_group:';
+export const isHomeGroupChannel = (c) =>
+  c?.type === 'ministry' && String(c?.ministry_key || '').startsWith(HOME_GROUP_PREFIX);
+export const homeGroupIdOf = (c) => (isHomeGroupChannel(c) ? String(c.ministry_key).slice(HOME_GROUP_PREFIX.length) : null);
+// Nazwa kanału: najpierw nazwa z bazy (serwer), dopiero potem zapasowa etykieta po kluczu.
+export const channelName = (c, fallbackByKey = () => '') =>
+  String(c?.name || '').trim() || fallbackByKey(c?.ministry_key) || String(c?.ministry_key || '');
+
+// Wyciszenie (K4): muted = „zawsze”, muted_until = „do…”. Efektywnie wyciszona, gdy jedno z nich.
+export function muteState(c, now = Date.now()) {
+  const n = typeof now === 'number' ? now : ts(now);
+  const until = c?.mutedUntil ?? c?.muted_until ?? null;
+  if (c?.muted) return { muted: true, until: null };
+  const u = ts(until);
+  if (u > n) return { muted: true, until: new Date(u) };
+  return { muted: false, until: null };
+}
+export const isMutedNow = (c, now = Date.now()) => muteState(c, now).muted;
+
+// Zapis wyciszenia dla wybranej opcji. Zwraca kolumny conversation_participants.
+//  '1h' | '8h' | 'tomorrow' (jutro 8:00 czasu lokalnego) | 'always' | 'off'
+export const MUTE_OPTIONS = ['1h', '8h', 'tomorrow', 'always'];
+export function mutePatch(option, now = Date.now()) {
+  const d = new Date(typeof now === 'number' ? now : ts(now));
+  if (option === 'always') return { muted: true, muted_until: null };
+  if (option === '1h') return { muted: false, muted_until: new Date(d.getTime() + 3600000).toISOString() };
+  if (option === '8h') return { muted: false, muted_until: new Date(d.getTime() + 8 * 3600000).toISOString() };
+  if (option === 'tomorrow') {
+    const t = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 8, 0, 0, 0);
+    return { muted: false, muted_until: t.toISOString() };
+  }
+  return { muted: false, muted_until: null };
+}
+
+// „Do kiedy” w formie do wyświetlenia: { kind: 'today'|'tomorrow'|'date', date }.
+export function muteUntilKind(until, now = Date.now()) {
+  if (!until) return null;
+  const u = new Date(until);
+  const n = new Date(typeof now === 'number' ? now : ts(now));
+  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(u) - day(n)) / 86400000);
+  return { kind: diff <= 0 ? 'today' : diff === 1 ? 'tomorrow' : 'date', date: u };
+}
+
+// @wszyscy (K5): wzmianka zapisana jako "*" w messages.mentions.
+export const MENTION_ALL = '*';
+export const MENTION_ALL_TOKEN = '@wszyscy';
+export const mentionsAll = (m) => Array.isArray(m?.mentions) && m.mentions.includes(MENTION_ALL);
+// Czy wiadomość mnie dotyczy (osobiście albo @wszyscy) — własnych nie podświetlamy.
+export const mentionsMe = (m, email) =>
+  !!email && !sameEmail(m?.sender_email, email) && (mentionsUser(m, email) || mentionsAll(m));
+// @wszyscy wolno administratorowi rozmowy (w kanałach serwer nadaje tę rolę liderom) albo
+// administratorowi aplikacji. Nie w rozmowie 1:1. Serwer i tak sprawdza (403).
+export const canMentionAll = (conv, isAppAdmin = false) =>
+  !!conv && conv.type !== 'direct' && (isAppAdmin || (conv.myRole ?? conv.my_role) === 'admin');
+
+// Potwierdzenia (K6). Stan ptaszków mojej wiadomości: 'read' dopiero gdy przeczytali WSZYSCY
+// pozostali uczestnicy (1:1 — druga osoba), 'delivered' gdy u wszystkich doręczona.
+// receipts: [{ user_email, read_at, delivered_at }], participantEmails: e-maile składu rozmowy.
+export function receiptStatus(receipts = [], senderEmail, participantEmails = []) {
+  const others = [...new Set(participantEmails.filter((e) => e && !sameEmail(e, senderEmail)).map(normEmail))];
+  const byEmail = new Map();
+  for (const r of receipts || []) {
+    if (!r?.user_email || sameEmail(r.user_email, senderEmail)) continue;
+    byEmail.set(normEmail(r.user_email), r);
+  }
+  if (!others.length) {
+    // Skład nieznany — zachowanie jak dawniej (ktokolwiek).
+    const list = [...byEmail.values()];
+    if (list.some((r) => r.read_at)) return 'read';
+    if (list.some((r) => r.delivered_at)) return 'delivered';
+    return 'sent';
+  }
+  if (others.every((e) => byEmail.get(e)?.read_at)) return 'read';
+  if (others.every((e) => byEmail.get(e)?.read_at || byEmail.get(e)?.delivered_at)) return 'delivered';
+  return 'sent';
+}
+
+// „Widziane przez”: kto przeczytał (bez nadawcy), od najwcześniej przeczytanych.
+export function seenBy(receipts = [], senderEmail) {
+  const seen = new Map();
+  for (const r of receipts || []) {
+    if (!r?.read_at || !r.user_email || sameEmail(r.user_email, senderEmail)) continue;
+    const k = normEmail(r.user_email);
+    if (!seen.has(k)) seen.set(k, r);
+  }
+  return [...seen.values()].sort((a, b) => ts(a.read_at) - ts(b.read_at));
+}
+
+// Ankieta (K7): definicja w metadata.poll (nowy format) albo bezpośrednio w metadata (starsze).
+export function pollOf(m) {
+  const meta = m?.metadata && typeof m.metadata === 'object' ? m.metadata : {};
+  const p = meta.poll && typeof meta.poll === 'object' ? { ...meta, ...meta.poll } : meta;
+  const options = Array.isArray(p.options) ? p.options.filter(Boolean).map((o, i) =>
+    (typeof o === 'string' ? { id: `o${i + 1}`, text: o } : { ...o, id: o.id ?? `o${i + 1}` })) : [];
+  return {
+    question: String(p.question || m?.content || ''),
+    options,
+    multiple: !!p.multiple,
+    anonymous: !!p.anonymous,
+    closes_at: p.closes_at || null,
+  };
+}
+export const isPollClosed = (poll, now = Date.now()) => {
+  const c = ts(poll?.closes_at);
+  return c > 0 && c <= (typeof now === 'number' ? now : ts(now));
+};
+// Metadane nowej ankiety: pola na wierzchu (starsze wersje aplikacji) + metadata.poll (kontrakt).
+export function buildPollMetadata({ question, options = [], multiple = false, anonymous = false, closes_at = null }) {
+  const poll = {
+    question: String(question || '').trim(),
+    options: options.map((o, i) => ({ id: o.id || `o${i + 1}`, text: String(o.text || '').trim() })).filter((o) => o.text),
+    multiple: !!multiple,
+    anonymous: !!anonymous,
+    closes_at: closes_at || null,
+  };
+  return { ...poll, poll };
+}
+
+// Nieprzeczytane na pulpicie (K11): jedna paczka wiadomości wielu rozmów → { convId: { count, last } },
+// gdzie last to najnowsza NIEPRZECZYTANA cudza wiadomość (bez usuniętych i systemowych).
+export function unreadSummary(rows = [], myEmail, sinceByConv = {}) {
+  const out = {};
+  for (const m of rows) {
+    if (!m?.conversation_id || m.deleted_at) continue;
+    if (sameEmail(m.sender_email, myEmail) || m.message_type === 'system') continue;
+    const cid = String(m.conversation_id);
+    if (ts(m.created_at) <= ts(sinceByConv?.[cid])) continue;
+    const cur = out[cid] || { count: 0, last: null };
+    cur.count += 1;
+    if (!cur.last || ts(m.created_at) > ts(cur.last.created_at)) cur.last = m;
+    out[cid] = cur;
+  }
+  return out;
+}
+
+// Czy wiadomość od zablokowanej osoby trzeba schować (K10): tylko cudze, poza systemowymi.
+export const isFromBlocked = (m, blockedSet, myEmail) =>
+  !!m && !!blockedSet && m.message_type !== 'system' && !sameEmail(m.sender_email, myEmail) &&
+  blockedSet.has(normEmail(m.sender_email));
