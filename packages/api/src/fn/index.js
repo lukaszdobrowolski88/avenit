@@ -71,6 +71,7 @@ const MODULES = [
   'event-assignments-patch',
   'mailing-unsubscribe',
   'song-tags',
+  'push-test',
 ];
 
 export async function registerFunctions(app) {

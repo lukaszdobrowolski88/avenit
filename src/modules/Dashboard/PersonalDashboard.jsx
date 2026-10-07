@@ -27,6 +27,7 @@ import BirthdaysWidget from './widgets/BirthdaysWidget';
 import RsvpSummaryWidget from './widgets/RsvpSummaryWidget';
 import GivingMonthWidget from './widgets/GivingMonthWidget';
 import AttendanceWidget from './widgets/AttendanceWidget';
+import PushPrompt from './components/PushPrompt';
 import { tr, appLocale } from '../../i18n';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
@@ -153,6 +154,9 @@ export default function PersonalDashboard({ user }) {
 
   return (
     <div className="dashboard-root min-h-screen bg-gray-50 dark:bg-gray-900 -m-4 md:-m-6 lg:-m-8 p-4 md:p-6 lg:p-8">
+      {/* Zachęta do włączenia powiadomień w przeglądarce (znika po włączeniu / „Nie teraz”) */}
+      <PushPrompt userEmail={userEmail} />
+
       {/* Header z powitaniem */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-4">

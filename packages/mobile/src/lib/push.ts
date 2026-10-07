@@ -227,6 +227,17 @@ export const registerPushToken = async (userEmail: string) => {
 
   await registerNotificationCategories();
 
+  // Android 8+: serwer wysyła na kanał 'default' (send-push: channelId) — bez utworzenia go
+  // powiadomienia lądowały na kanale zapasowym Expo (bez wyskakującego banera i dźwięku).
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Powiadomienia',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 200, 120, 200],
+      lightColor: '#E9B949',
+    }).catch(() => undefined);
+  }
+
   const projectId = (Constants.expoConfig?.extra as { eas?: { projectId?: string | null } })?.eas
     ?.projectId;
   if (!projectId) {

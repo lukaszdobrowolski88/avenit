@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   Bell,
   BellRing,
+  Send,
   Check,
   FileText,
   Fingerprint,
@@ -34,7 +35,7 @@ import { SettingsGroup, SettingsRow } from '../../../../src/components/ui/Settin
 import { B } from '../../../../src/components/ui/brand';
 import { CampusSelector } from '../../../../src/components/CampusSelector';
 import { useCampus } from '../../../../src/contexts/CampusContext';
-import { tenantWebBase } from '../../../../src/lib/supabase';
+import { supabase, tenantWebBase } from '../../../../src/lib/supabase';
 import { showError } from '../../../../src/lib/errors';
 import { useMyProfile, use2FAStatus } from '../../../../src/features/account/api';
 import { openOnWeb } from '../../../../src/features/modules/useModules';
@@ -122,6 +123,20 @@ export default function AccountScreen() {
         ],
       );
     }
+  };
+
+  // Test przez serwer: wysyłka do WSZYSTKICH moich urządzeń + zrozumiała diagnoza (np. brak
+  // kluczy APNs w projekcie EAS albo brak zarejestrowanego telefonu).
+  const sendPushTest = async () => {
+    if (user?.email) await registerPushToken(user.email).catch(() => undefined);
+    const { data, error } = await supabase.functions.invoke('push-test', { body: {} });
+    if (error) { showError(t('Nie udało się wysłać testu'), error); return; }
+    const res = data as { sent: number; devices: { phones: number; browsers: number }; problems: string[] };
+    const all = (res.devices?.phones ?? 0) + (res.devices?.browsers ?? 0);
+    const summary = all === 0
+      ? t('Ten telefon nie jest jeszcze zarejestrowany do powiadomień. Włącz „Powiadomienia push” powyżej i zezwól na nie.')
+      : t('Wysłano: {sent} z {all} (telefony: {phones}, przeglądarki: {browsers}).', { sent: res.sent, all, phones: res.devices.phones, browsers: res.devices.browsers });
+    Alert.alert(t('Test powiadomień'), [summary, ...(res.problems ?? [])].join('\n\n'));
   };
 
   const handleSignOut = () => {
@@ -268,6 +283,12 @@ export default function AccountScreen() {
           }
           value={pushOn}
           onValueChange={handlePushToggle}
+        />
+        <SettingsRow
+          variant="action"
+          Icon={Send}
+          title={t('Wyślij testowe powiadomienie')}
+          onPress={sendPushTest}
         />
         <SettingsRow
           variant="nav"

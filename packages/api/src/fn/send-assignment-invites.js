@@ -146,13 +146,18 @@ export default async function handler(req, reply) {
       );
       sent++;
 
-      // Push (łączony, informacyjny — akceptacja przez e-mail/aplikację). Best-effort.
+      // Push (łączony). Przy jednej roli — przyciski „Akceptuję / Odrzucam” prosto z powiadomienia
+      // (mobilka: kategoria assignment_invite + data.assignmentId → /api/assignment/:id/respond).
+      // Best-effort.
       try {
+        const single = person.roles.length === 1 ? person.roles[0] : null;
         await sendPushCore(req.db, {
           user_email: person.email,
           title: 'Nowe zaproszenie do służby',
-          body: `${roleLabels.join(', ')} — ${programDate}`,
+          body: `${roleLabels.join(', ')} — ${programTitle}, ${programDate}`,
           link: pushLink,
+          category_id: single ? 'assignment_invite' : undefined,
+          data: { type: 'assignment', assignmentId: single?.id ?? null, event_id: eventId ?? null, program_id: eventId ? null : programId ?? null },
         });
       } catch (e) { req.log?.warn?.({ err: e }, 'invite push failed'); }
     }
