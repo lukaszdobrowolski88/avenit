@@ -396,6 +396,10 @@ export const useConversations = (userEmail: string | null) =>
 export const useMessages = (conversationId: string) =>
   useQuery({
     queryKey: ["messages", conversationId],
+    // Wątek zawsze świeży przy wejściu (np. z powiadomienia) — cache pokazujemy od razu,
+    // ale dociągamy nowe wiadomości, zamiast ufać danym sprzed kilku minut.
+    staleTime: 0,
+    refetchOnMount: "always",
     queryFn: async (): Promise<MessageRow[]> => {
       // Pobierz NAJNOWSZE 200 (desc + limit), potem odwróć do rosnącej kolejności
       // do wyświetlania — inaczej w rozmowach >200 wiadomości widać samą starą historię,

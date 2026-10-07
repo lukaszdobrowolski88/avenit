@@ -65,8 +65,13 @@ function RootEffects() {
       const { data } = await supabase.auth.getSession();
       const email = data.session?.user?.email;
       if (!email) return;
-      if (s === 'active') updatePresence(email, 'online').catch(() => undefined);
-      else updatePresence(email, 'away').catch(() => undefined);
+      if (s === 'active') {
+        updatePresence(email, 'online').catch(() => undefined);
+        // W tle połączenie realtime jest zerwane — wiadomości, które przyszły w tym czasie,
+        // znamy tylko z powiadomień. Po powrocie odświeżamy rozmowy i otwarte wątki.
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+      } else updatePresence(email, 'away').catch(() => undefined);
     };
     tick();
     interval = setInterval(tick, 60_000);
@@ -89,6 +94,14 @@ function RootEffects() {
         | { link?: string; assignmentId?: number | string; campaign_id?: string; recipient_id?: string; rsvp_token?: string }
         | null;
       const action = response.actionIdentifier;
+
+      // Wiadomość z czatu: wątek w pamięci podręcznej nie zna jeszcze tej wiadomości (realtime
+      // było rozłączone) — odśwież go, zanim ekran się otworzy.
+      const convId = (data as { conversation_id?: string } | null)?.conversation_id;
+      if (convId) {
+        queryClient.invalidateQueries({ queryKey: ['messages', convId] });
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      }
 
       // 1. Stary handler dla assignment_invite.
       const handledAssignment = await handleAssignmentAction(action, data ?? undefined);
@@ -122,11 +135,18 @@ function RootEffects() {
       }
     };
     responseSubRef.current = Notifications.addNotificationResponseReceivedListener(handle);
+    const receivedSub = Notifications.addNotificationReceivedListener((n) => {
+      const convId = (n.request.content.data as { conversation_id?: string } | null)?.conversation_id;
+      if (!convId) return;
+      queryClient.invalidateQueries({ queryKey: ['messages', convId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    });
     Notifications.getLastNotificationResponseAsync().then((response) => {
       if (response) handle(response);
     });
     return () => {
       responseSubRef.current?.remove();
+      receivedSub.remove();
     };
   }, [router]);
 
