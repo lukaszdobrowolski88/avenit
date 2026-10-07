@@ -213,6 +213,13 @@ export async function enforceConversationWrite(q, req) {
         if ('sender_email' in r && lower(r.sender_email) !== me) throw new ApiError(403, 'Nie można zmienić nadawcy');
         if ('conversation_id' in r) throw new ApiError(403, 'Nie można przenieść wiadomości');
       }
+      // Treść zmienia WYŁĄCZNIE autor. Administrator rozmowy (w 1:1 obie osoby) może cudzą
+      // wiadomość najwyżej usunąć (moderacja) — wcześniej mógł podmienić jej treść.
+      const MODERATION = new Set(['deleted_at', 'updated_at']);
+      if (rows.some((r) => Object.keys(r).some((k) => !MODERATION.has(k)))) {
+        const authorOnly = (a, push) => `lower(${a}."sender_email") = $${push(me)}`;
+        q.__ownerScope = { ...(q.__ownerScope || {}), update: authorOnly, upsertGuard: authorOnly };
+      }
       return;
     }
     for (const r of rows) {
