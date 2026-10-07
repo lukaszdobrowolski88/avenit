@@ -90,7 +90,6 @@ export default function UserSettings() {
     error: pushError,
     subscribe: subscribePush,
     unsubscribe: unsubscribePush,
-    sendTestNotification
   } = usePushNotifications(formData.email);
 
   // 2FA Hook
@@ -858,9 +857,14 @@ export default function UserSettings() {
             </div>
 
             {!pushSupported ? (
-              <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-gray-500 dark:text-gray-400">
-                <BellOff size={20} />
-                <span>{t('Twoja przeglądarka nie obsługuje powiadomień push.')}</span>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-gray-500 dark:text-gray-400">
+                  <BellOff size={20} />
+                  <span>{isIosBrowser()
+                    ? t('Na iPhonie powiadomienia działają po dodaniu Avenit do ekranu początkowego: Udostępnij → „Do ekranu początkowego”, potem otwórz aplikację z ikony.')
+                    : t('Twoja przeglądarka nie obsługuje powiadomień push.')}</span>
+                </div>
+                <PushServerTest />
               </div>
             ) : (
               <div className="space-y-4">
@@ -917,15 +921,8 @@ export default function UserSettings() {
                   </div>
                 )}
 
-                {pushSubscribed && (
-                  <button
-                    onClick={sendTestNotification}
-                    className="text-sm text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1"
-                  >
-                    <Bell size={14} />
-                    {tr('Wyślij testowe powiadomienie')}
-                  </button>
-                )}
+                {/* Test przez serwer (cały łańcuch: serwer → przeglądarki i telefony tej osoby). */}
+                <PushServerTest />
               </div>
             )}
           </div>
@@ -1225,6 +1222,50 @@ export default function UserSettings() {
 
         </div>
       </div>
+    </div>
+  );
+}
+
+// iPhone/iPad w zwykłej karcie Safari (nie z ekranu początkowego) — tam Web Push nie działa.
+function isIosBrowser() {
+  if (typeof navigator === 'undefined') return false;
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+  return ios && !standalone;
+}
+
+// Prawdziwy test powiadomień: serwer wysyła do WSZYSTKICH urządzeń zalogowanej osoby
+// (przeglądarki z włączonymi powiadomieniami + telefony z aplikacją) i mówi, co poszło nie tak.
+function PushServerTest() {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  const run = async () => {
+    setBusy(true);
+    setResult(null);
+    const { data, error } = await supabase.functions.invoke('push-test', { body: {} });
+    setBusy(false);
+    if (error) { toast.error(error); return; }
+    setResult(data);
+    if (data.sent > 0 && !data.problems?.length) toast.success(tr('Wysłano testowe powiadomienie na {n} urządz.', { n: data.sent }));
+  };
+  const devices = (result?.devices?.phones || 0) + (result?.devices?.browsers || 0);
+  return (
+    <div className="space-y-2">
+      <button type="button" onClick={run} disabled={busy}
+        className="text-sm text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1 disabled:opacity-50">
+        {busy ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
+        {tr('Wyślij testowe powiadomienie na moje urządzenia')}
+      </button>
+      {result && (
+        <div className="text-sm rounded-xl p-3 bg-gray-50 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 space-y-1" role="status">
+          {devices === 0 ? (
+            <p>{tr('Nie masz jeszcze żadnego urządzenia z włączonymi powiadomieniami. Włącz je w tej przeglądarce albo zaloguj się w aplikacji mobilnej i zezwól na powiadomienia.')}</p>
+          ) : (
+            <p>{tr('Wysłano: {sent} z {all} (telefony: {phones}, przeglądarki: {browsers}).', { sent: result.sent, all: devices, phones: result.devices.phones, browsers: result.devices.browsers })}</p>
+          )}
+          {(result.problems || []).map((p) => <p key={p} className="text-red-600 dark:text-red-400">{p}</p>)}
+        </div>
+      )}
     </div>
   );
 }

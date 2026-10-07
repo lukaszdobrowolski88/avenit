@@ -78,7 +78,7 @@ async function sendExpo(pool, payload, sharedData, accessToken) {
   let tokens = [];
   try {
     const res = await pool.query(
-      `SELECT id, expo_token, platform FROM push_tokens WHERE user_email = $1`,
+      `SELECT id, expo_token, platform FROM push_tokens WHERE lower(user_email) = lower($1)`,
       [payload.user_email]
     );
     tokens = res.rows;
@@ -182,7 +182,7 @@ async function sendWeb(pool, payload, sharedData) {
   let subs = [];
   try {
     const res = await pool.query(
-      `SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_email = $1`,
+      `SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE lower(user_email) = lower($1)`,
       [payload.user_email]
     );
     subs = res.rows;

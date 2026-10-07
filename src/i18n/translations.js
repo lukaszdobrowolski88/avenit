@@ -6880,6 +6880,17 @@ const en = {
   'Nie udało się otworzyć pliku. Sprawdź, czy masz dostęp.': 'Couldn\'t open the file. Check that you have access.',
   // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
   'Kto z wolontariuszy nie może służyć i kiedy': 'Which volunteers can\'t serve, and when',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Na iPhonie powiadomienia działają po dodaniu Avenit do ekranu początkowego: Udostępnij → „Do ekranu początkowego”, potem otwórz aplikację z ikony.': 'On iPhone, notifications work after adding Avenit to the Home Screen: Share → “Add to Home Screen”, then open the app from the icon.',
+  'Wysłano testowe powiadomienie na {n} urządz.': 'Test notification sent to {n} device(s).',
+  'Wyślij testowe powiadomienie na moje urządzenia': 'Send a test notification to my devices',
+  'Nie masz jeszcze żadnego urządzenia z włączonymi powiadomieniami. Włącz je w tej przeglądarce albo zaloguj się w aplikacji mobilnej i zezwól na powiadomienia.': 'You don\'t have any device with notifications turned on yet. Turn them on in this browser or sign in to the mobile app and allow notifications.',
+  'Wysłano: {sent} z {all} (telefony: {phones}, przeglądarki: {browsers}).': 'Sent: {sent} of {all} (phones: {phones}, browsers: {browsers}).',
+  'Powiadomienia włączone w tej przeglądarce': 'Notifications turned on in this browser',
+  'Powiadomienia zostały zablokowane w przeglądarce. Możesz je odblokować w ustawieniach strony.': 'Notifications are blocked in the browser. You can unblock them in the site settings.',
+  'Włącz powiadomienia w tej przeglądarce': 'Turn on notifications in this browser',
+  'Nowe wiadomości, zaproszenia do służby i przypomnienia dojdą nawet przy zamkniętej karcie.': 'New messages, serving invitations and reminders will arrive even when the tab is closed.',
+  'Nie teraz': 'Not now',
 };
 
 const uk = {
@@ -13758,6 +13769,17 @@ const uk = {
   'Nie udało się otworzyć pliku. Sprawdź, czy masz dostęp.': 'Не вдалося відкрити файл. Перевірте, чи маєте доступ.',
   // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
   'Kto z wolontariuszy nie może służyć i kiedy': 'Хто з волонтерів не може служити і коли',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Na iPhonie powiadomienia działają po dodaniu Avenit do ekranu początkowego: Udostępnij → „Do ekranu początkowego”, potem otwórz aplikację z ikony.': 'На iPhone сповіщення працюють після додавання Avenit на початковий екран: Поділитися → «На початковий екран», потім відкрийте застосунок з іконки.',
+  'Wysłano testowe powiadomienie na {n} urządz.': 'Тестове сповіщення надіслано на {n} пристр.',
+  'Wyślij testowe powiadomienie na moje urządzenia': 'Надіслати тестове сповіщення на мої пристрої',
+  'Nie masz jeszcze żadnego urządzenia z włączonymi powiadomieniami. Włącz je w tej przeglądarce albo zaloguj się w aplikacji mobilnej i zezwól na powiadomienia.': 'У вас ще немає пристрою з увімкненими сповіщеннями. Увімкніть їх у цьому браузері або увійдіть у мобільний застосунок і дозвольте сповіщення.',
+  'Wysłano: {sent} z {all} (telefony: {phones}, przeglądarki: {browsers}).': 'Надіслано: {sent} з {all} (телефони: {phones}, браузери: {browsers}).',
+  'Powiadomienia włączone w tej przeglądarce': 'Сповіщення увімкнено в цьому браузері',
+  'Powiadomienia zostały zablokowane w przeglądarce. Możesz je odblokować w ustawieniach strony.': 'Сповіщення заблоковано в браузері. Їх можна розблокувати в налаштуваннях сайту.',
+  'Włącz powiadomienia w tej przeglądarce': 'Увімкніть сповіщення в цьому браузері',
+  'Nowe wiadomości, zaproszenia do służby i przypomnienia dojdą nawet przy zamkniętej karcie.': 'Нові повідомлення, запрошення до служіння та нагадування надходитимуть навіть при закритій вкладці.',
+  'Nie teraz': 'Не зараз',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
