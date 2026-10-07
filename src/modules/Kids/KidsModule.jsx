@@ -585,7 +585,7 @@ export default function KidsModule() {
       {/* TABS */}
       <ResponsiveTabs moduleKey="kids"
         tabs={[
-          { id: 'checkin', label: t('Check-in'), icon: UserCheck },
+          { id: 'checkin', label: t('Meldowanie dzieci'), icon: UserCheck },
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
           { id: 'schedule', label: t('Grafik'), icon: Calendar },
           { id: 'groups', label: t('Grupy'), icon: Users, tour: 'kids-tab-groups' },

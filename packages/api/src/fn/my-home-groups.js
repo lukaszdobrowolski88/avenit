@@ -95,10 +95,10 @@ export default async function handler(req, reply) {
     if (mineIds.length) {
       try {
         const { rows: mem } = await req.db.query(
-          `SELECT id, full_name, email, phone, is_leader, group_id
+          `SELECT id, full_name, email, phone, is_leader, role, group_id
              FROM home_group_members
             WHERE group_id = ANY($1::uuid[])
-            ORDER BY is_leader DESC NULLS LAST, full_name ASC`,
+            ORDER BY (role = 'leader' OR is_leader = true) DESC NULLS LAST, full_name ASC`,
           [mineIds]
         );
         for (const r of mem) {
@@ -109,7 +109,9 @@ export default async function handler(req, reply) {
             full_name: r.full_name,
             email: r.email ?? null,
             phone: r.phone ?? null,
-            is_leader: !!r.is_leader,
+            // Lider = rola w grupie (od 060) albo stara flaga is_leader.
+            is_leader: r.role === 'leader' || !!r.is_leader,
+            role: r.role || (r.is_leader ? 'leader' : 'member'),
           });
         }
       } catch { /* pomiń */ }
