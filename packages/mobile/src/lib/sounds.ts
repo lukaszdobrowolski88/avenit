@@ -1,7 +1,7 @@
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 
-// Krótki, delikatny dźwięk wysłania wiadomości (assets/sounds/send.wav, ~0,26 s) + lekka wibracja.
+// Dźwięk wysłania: miękki „szum wysłania” (filtrowany szum w górę, ~0,16 s; wybrany przez właściciela) + lekka wibracja.
 // Na iPhonie respektuje przełącznik wyciszenia (playsInSilentModeIOS domyślnie false).
 // Błędy odtwarzania ignorujemy — dźwięk to dodatek, nie może psuć wysyłki.
 let sendSound: Audio.Sound | null = null;

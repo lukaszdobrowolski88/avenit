@@ -26,9 +26,9 @@ const config: ExpoConfig = {
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    // Białe tło (jak ekran logowania) — splash-icon jest 512×512 bez alfy (logo na bieli),
-    // więc na pomarańczowym tle dawał białą płytę + pomarańczowe pasy. Na bieli = czysto.
-    backgroundColor: '#ffffff',
+    // Logo „avenit · CHURCH MANAGER” (grafiki_avenit/logo, słód na papierze) na przezroczystym tle;
+    // tło = papier, jak ekran logowania — przejście bez błysku.
+    backgroundColor: '#F6F4EE',
   },
   ios: {
     bundleIdentifier: baseId + suffix,
