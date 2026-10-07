@@ -19,7 +19,9 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   scheme: ['avenit', 'schtomy'],
   icon: './assets/icon.png',
-  userInterfaceStyle: 'automatic',
+  // Aplikacja ma tylko jasny wygląd — systemowe wybieraki i okna też jasne (inaczej w trybie
+  // ciemnym telefonu kółka daty/godziny i Alerty były ciemne na tle jasnej apki).
+  userInterfaceStyle: 'light',
   newArchEnabled: true,
   splash: {
     image: './assets/splash-icon.png',
@@ -99,6 +101,12 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
   },
+  // Aktualizacje OTA (eas update): zmiany tylko w JS/TS trafiają na telefony bez nowego builda.
+  // runtimeVersion = wersja aplikacji — po zmianie natywnej podbij `version` i zbuduj od nowa.
+  runtimeVersion: { policy: 'appVersion' },
+  ...(process.env.EAS_PROJECT_ID
+    ? { updates: { url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID}`, fallbackToCacheTimeout: 0 } }
+    : {}),
 };
 
 export default config;
