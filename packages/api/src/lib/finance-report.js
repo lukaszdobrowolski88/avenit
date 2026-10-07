@@ -12,7 +12,8 @@ export async function fetchReportRows(db, from, to, year) {
   const q = async (sql, params) => { try { const { rows } = await db.query(sql, params); return rows; } catch { return []; } };
   const [income, expenses, budget, orgRows] = await Promise.all([
     q('SELECT date, type, source, amount FROM income_transactions WHERE date >= $1 AND date <= $2', [from, to]),
-    q('SELECT payment_date, category, cost_category, contractor, description, amount FROM expense_transactions WHERE payment_date >= $1 AND payment_date <= $2 AND COALESCE(status, 'approved') IN ('approved', 'paid')', [from, to]),
+    q(`SELECT payment_date, category, cost_category, contractor, description, amount FROM expense_transactions
+       WHERE payment_date >= $1 AND payment_date <= $2 AND COALESCE(status, 'approved') IN ('approved', 'paid')`, [from, to]),
     q('SELECT kind, category, description, planned_amount FROM budget_items WHERE year = $1', [year]),
     q("SELECT value FROM app_settings WHERE key='org_name' LIMIT 1", []),
   ]);
