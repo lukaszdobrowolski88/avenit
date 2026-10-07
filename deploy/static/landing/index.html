@@ -293,7 +293,7 @@
     .bw-top { height: 3.8em; display: flex; align-items: center; gap: .8em; padding: 0 1.6em; border-bottom: 1px solid var(--linia); background: rgba(255, 255, 255, .5); font-size: .85em; }
     .bw-top .camp { display: flex; align-items: center; gap: .4em; font-weight: 600; }
     .bw-top .srch { margin-left: auto; display: flex; align-items: center; gap: .5em; padding: .45em .9em; border-radius: 99em; background: var(--biel); border: 1px solid var(--linia); color: var(--pomoc); min-width: 11em; }
-    .bw-top .srch svg, .bw-top .ib svg { width: 1.15em; height: 1.15em; }
+    .bw-top svg { width: 1.15em; height: 1.15em; }
     .bw-top .ib { position: relative; display: flex; align-items: center; gap: .3em; color: var(--tekst); font-weight: 700; }
     .bw-top .ib em { position: absolute; top: -.5em; right: -.6em; min-width: 1.4em; height: 1.4em; border-radius: 99em; background: var(--kurkuma); color: var(--slod); font-style: normal; font-size: .72em; display: grid; place-items: center; font-weight: 800; }
     .bw-top .who { display: flex; align-items: center; gap: .6em; padding-left: .8em; border-left: 1px solid var(--linia); }
@@ -681,7 +681,7 @@
       <div class="wrap">
         <h1 class="dw"><span>Cały kościół.</span><span class="l">Jedna aplikacja<span class="pt">.</span></span></h1>
         <div class="hero-foot">
-          <p class="lead">System do zarządzania kościołem i zborem: nabożeństwa, służby, dzieci, komunikacja i finanse. <b>Na telefonie i w przeglądarce, po polsku, angielsku i ukraińsku.</b></p>
+          <p class="lead">System do zarządzania kościołem: nabożeństwa, służby, dzieci, komunikacja i finanse. <b>Na telefonie i w przeglądarce, po polsku, angielsku i ukraińsku.</b></p>
           <a class="pill pill-lg" href="#kontakt" data-track="cta-hero">Umów prezentację</a>
         </div>
 
@@ -1121,7 +1121,7 @@
     <!-- ═══════════ SChWro ═══════════ -->
     <section class="proof" aria-labelledby="proof-h">
       <div class="wrap proof-in">
-        <h2 class="dw h3" id="proof-h" data-rv><span>Kościół Chrześcijański we&nbsp;Wrocławiu</span><span class="l">już pracuje na Avenit<span class="dot">.</span></span></h2>
+        <h2 class="dw h3" id="proof-h" data-rv><span>Społeczność Chrześcijańska Wrocław&nbsp;Południe</span><span class="l">już pracuje na Avenit<span class="dot">.</span></span></h2>
         <div data-rv style="--d:.1s">
           <div class="addr"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><span class="host">schwro.avenit.pl</span></div>
           <p class="proof-cap">Każdy kościół dostaje własny adres i osobną bazę danych. Twój może wyglądać tak samo, tylko z Waszą nazwą.</p>
@@ -1350,6 +1350,7 @@
 
       // ── język w podglądzie ──
       var DICT = {
+        pl: { church: 'Twój Kościół', s_start: 'Start', dash: 'Pulpit', events: 'Wydarzenia', programs: 'Programy', s_people: 'Ludzie', members: 'Członkowie', groups: 'Grupy domowe', prayer: 'Ściana modlitwy', s_min: 'Służby', worship: 'Grupa Uwielbienia', campus: 'Wszystkie kampusy', search: 'Szukaj…', code: 'PL', date: 'Niedziela, 12 października', hello: 'Dzień dobry, Anno!', ahead: '2 służby przed Tobą.', next: 'Najbliższe', when: 'Niedziela · 10:00', service: 'Nabożeństwo niedzielne', hall: 'Sala główna', aheadT: 'Przed Tobą', tasks: 'zadania do zrobienia', services: 'służby w tym tygodniu', intent: 'Twoja intencja', myMin: 'Moja służba', vocal: 'Wokal · Grupa Uwielbienia', welcome: 'Powitanie · Atmosfera', team: 'Skład na niedzielę', bass: 'Bas', drums: 'Perkusja', pr1: 'Za zdrowie mamy', pr1s: '12 osób się modli', pr2: 'Za obóz młodzieży', pr2s: '8 osób się modli', pGreet: 'Dzień dobry,', pTitle: '2 służby w tym tygodniu', yourMin: 'Twoja służba', vocalS: 'Wokal', accept: 'Przyjmuję', decline: 'Nie mogę', songs: 'Pieśni', giving: 'Dawanie', files: 'Materiały', week: 'W tym tygodniu', w1: 'Próba zespołu', w1s: 'Sobota · 17:00', w2: 'Grupa domowa', w2s: 'Wtorek · 19:00', t1: 'Tomek potwierdził służbę', t1s: 'Bas · niedziela 10:00', t2: 'Nowa prośba o modlitwę', t2s: 'Ściana modlitwy · przed chwilą', t3: 'Od 19.10 nabożeństwo o 11:00', t3s: 'Push · SMS · e-mail do wszystkich' },
         en: { church: 'Your Church', s_start: 'Start', dash: 'Dashboard', events: 'Events', programs: 'Programs', s_people: 'People', members: 'Members', groups: 'Home groups', prayer: 'Prayer wall', s_min: 'Ministries', worship: 'Worship team', campus: 'All campuses', search: 'Search…', code: 'EN', date: 'Sunday, 12 October', hello: 'Good morning, Anna!', ahead: '2 services ahead of you.', next: 'Upcoming', when: 'Sunday · 10:00', service: 'Sunday service', hall: 'Main hall', aheadT: 'Ahead of you', tasks: 'tasks to do', services: 'services this week', intent: 'your prayer request', myMin: 'My ministry', vocal: 'Vocals · Worship team', welcome: 'Welcome · Hospitality', team: 'Sunday line-up', bass: 'Bass', drums: 'Drums', pr1: 'For mum’s health', pr1s: '12 people praying', pr2: 'For the youth camp', pr2s: '8 people praying', pGreet: 'Good morning,', pTitle: '2 services this week', yourMin: 'Your ministry', vocalS: 'Vocals', accept: 'Accept', decline: 'Decline', songs: 'Songs', giving: 'Giving', files: 'Files', t1: 'Tomek confirmed his service', t1s: 'Bass · Sunday 10:00', t2: 'New prayer request', t2s: 'Prayer wall · just now', t3: 'From 19.10 service at 11:00', t3s: 'Push · SMS · e-mail to everyone', week: 'This week', w1: 'Band rehearsal', w1s: 'Saturday · 17:00', w2: 'Home group', w2s: 'Tuesday · 19:00' },
         uk: { church: 'Ваша церква', s_start: 'Старт', dash: 'Панель', events: 'Події', programs: 'Програми', s_people: 'Люди', members: 'Члени', groups: 'Домашні групи', prayer: 'Стіна молитви', s_min: 'Служіння', worship: 'Група прославлення', campus: 'Усі кампуси', search: 'Пошук…', code: 'UK', date: 'Неділя, 12 жовтня', hello: 'Доброго ранку, Анно!', ahead: 'Попереду 2 служіння.', next: 'Найближче', when: 'Неділя · 10:00', service: 'Недільне богослужіння', hall: 'Головна зала', aheadT: 'Попереду', tasks: 'завдання', services: 'служіння цього тижня', intent: 'ваше молитовне прохання', myMin: 'Моє служіння', vocal: 'Вокал · Група прославлення', welcome: 'Зустріч гостей · Атмосфера', team: 'Склад на неділю', bass: 'Бас', drums: 'Барабани', pr1: 'За здоров’я мами', pr1s: '12 людей моляться', pr2: 'За молодіжний табір', pr2s: '8 людей моляться', pGreet: 'Доброго ранку,', pTitle: '2 служіння цього тижня', yourMin: 'Ваше служіння', vocalS: 'Вокал', accept: 'Приймаю', decline: 'Не можу', songs: 'Пісні', giving: 'Пожертви', files: 'Матеріали', t1: 'Томек підтвердив служіння', t1s: 'Бас · неділя 10:00', t2: 'Нове молитовне прохання', t2s: 'Стіна молитви · щойно', t3: 'З 19.10 служіння об 11:00', t3s: 'Push · SMS · e-mail для всіх', week: 'Цього тижня', w1: 'Репетиція гурту', w1s: 'Субота · 17:00', w2: 'Домашня група', w2s: 'Вівторок · 19:00' }
       };
@@ -1360,10 +1361,10 @@
         b.addEventListener('click', function () {
           var lang = b.dataset.lang;
           segBtns.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-          stage.setAttribute('lang', lang === 'pl' ? 'pl' : lang);
+          stage.setAttribute('lang', lang);
           tEls.forEach(function (el) {
             var k = el.dataset.t;
-            el.textContent = lang === 'pl' ? el.dataset.pl : (DICT[lang][k] || el.dataset.pl);
+            el.textContent = (DICT[lang] && DICT[lang][k]) || el.dataset.pl;
           });
         });
       });
