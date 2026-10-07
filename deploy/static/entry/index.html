@@ -6,81 +6,271 @@
   <title>Avenit — logowanie</title>
   <meta name="description" content="Zaloguj się do Avenit." />
   <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#F6F4EE" />
+  <link rel="icon" href="/brand/avenit-znak-kurkuma.png" type="image/png" />
   <style>
+    /* Identyfikacja Avenit: papier / słód / kurkuma, Manrope — jak ekran logowania kościoła
+       (src/styles/login.css). Tryb ciemny wg systemu: grafit, kurkuma tylko jako akcent. */
+    @font-face { font-family: 'Manrope'; font-weight: 300; font-display: swap; src: url('/fonts/Manrope_300Light.ttf') format('truetype'); }
+    @font-face { font-family: 'Manrope'; font-weight: 400; font-display: swap; src: url('/fonts/Manrope_400Regular.ttf') format('truetype'); }
+    @font-face { font-family: 'Manrope'; font-weight: 600; font-display: swap; src: url('/fonts/Manrope_600SemiBold.ttf') format('truetype'); }
+    @font-face { font-family: 'Manrope'; font-weight: 700; font-display: swap; src: url('/fonts/Manrope_700Bold.ttf') format('truetype'); }
+    @font-face { font-family: 'Manrope'; font-weight: 800; font-display: swap; src: url('/fonts/Manrope_800ExtraBold.ttf') format('truetype'); }
+
+    :root {
+      --paper: #F6F4EE; --card: #FFFFFF; --ink: #2A2312; --body: #4A463E; --muted: #6B6557;
+      --placeholder: #7A7466; --mustard: #8A6606; --turmeric: #FFBE0B; --field: #FBFAF6;
+      --field-border: #E2DDD0; --line: #EFEBE2; --divider: #D6D0C2; --chip: #F1EEE6;
+      --err-bg: #FBEAE7; --err: #8F2A1C;
+      --shadow: 0 1px 2px rgba(42, 35, 18, 0.05), 0 30px 70px -30px rgba(42, 35, 18, 0.25);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #121211; --card: #1F1E1D; --ink: #F6F4EE; --body: #CFCAC0; --muted: #A39E92;
+        --placeholder: #8C877C; --mustard: #FFBE0B; --field: #171615; --field-border: #3A3835;
+        --line: #2E2C2A; --divider: #3A3835; --chip: #2A2928;
+        --err-bg: rgba(239, 68, 68, 0.12); --err: #FCA5A5;
+        --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 30px 70px -30px rgba(0, 0, 0, 0.6);
+      }
+      .only-light { display: none !important; }
+    }
+    @media (prefers-color-scheme: light) { .only-dark { display: none !important; } }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
     body {
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: radial-gradient(1200px 600px at 50% -10%, #3a2a12 0%, #0f172a 55%);
-      color: #e2e8f0; padding: 24px;
+      min-height: 100vh; min-height: 100dvh; display: flex; flex-wrap: wrap-reverse;
+      background: var(--paper); color: var(--ink);
+      font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; color: inherit; }
+    :is(button, a):focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+    /* Hasło marki */
+    .hero {
+      flex: 1 1 620px; min-width: 0; padding: 56px clamp(24px, 5vw, 80px);
+      display: flex; flex-direction: column; justify-content: space-between; gap: 64px;
+    }
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .brand img { height: 32px; width: auto; display: block; }
+    .brand-sep { width: 1px; height: 22px; background: var(--divider); }
+    .brand-claim { font-size: 12px; font-weight: 600; letter-spacing: 0.18em; color: var(--muted); }
+    .display { font-size: clamp(40px, 6.4vw, 96px); line-height: 0.98; letter-spacing: -0.045em; font-weight: 400; }
+    .strong { display: block; font-weight: 800; }
+    .light { display: block; font-weight: 300; }
+    .dot { color: var(--turmeric); font-weight: 800; }
+    .lead { margin-top: 32px; max-width: 520px; font-size: 18px; line-height: 1.55; color: var(--body); }
+    .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; font-size: 13px; color: var(--muted); }
+    .foot a { color: inherit; text-decoration: none; }
+    .foot a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+    /* Karta */
+    .side {
+      flex: 1 1 460px; min-width: 0; padding: 40px clamp(16px, 4vw, 64px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
     }
     .card {
-      width: 100%; max-width: 420px; background: #1e293b; border: 1px solid #334155;
-      border-radius: 16px; padding: 32px;
+      width: 100%; max-width: 460px; background: var(--card); border-radius: 28px;
+      padding: 36px clamp(24px, 4vw, 44px) 32px; box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 28px;
+      animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
-    .logo {
-      font-size: 30px; font-weight: 800; letter-spacing: -0.02em; text-align: center;
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .mark { width: 44px; height: 44px; display: block; }
+    .view { display: flex; flex-direction: column; gap: 28px; }
+    .head { display: flex; flex-direction: column; gap: 10px; }
+    .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mustard); }
+    .title { font-size: 36px; line-height: 1.06; letter-spacing: -0.04em; font-weight: 400; }
+    .sub { font-size: 15px; line-height: 1.5; color: var(--muted); }
+
+    form { display: flex; flex-direction: column; gap: 18px; }
+    .field { display: flex; flex-direction: column; gap: 8px; }
+    label { font-size: 13px; font-weight: 700; }
+    .input {
+      width: 100%; height: 52px; border-radius: 14px; border: 1px solid var(--field-border);
+      background: var(--field); padding: 0 16px; font-size: 16px; color: var(--ink); outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
     }
-    h1 { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 24px; }
-    label { display: block; font-size: 13px; color: #94a3b8; margin: 14px 0 6px; }
-    input {
-      width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px;
-      color: #e2e8f0; padding: 12px 14px; font-size: 16px; outline: none;
+    .input::placeholder { color: var(--placeholder); opacity: 1; }
+    .input:focus { border-color: var(--ink); background: var(--card); box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.35); }
+    .pass { position: relative; }
+    .pass .input { padding-right: 56px; }
+    .eye {
+      position: absolute; right: 6px; top: 6px; width: 40px; height: 40px; border: 0; border-radius: 10px;
+      background: transparent; color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
-    input:focus { border-color: #d97706; }
-    button {
-      width: 100%; margin-top: 20px; padding: 13px; border: none; border-radius: 10px;
-      background: #d97706; color: #fff; font-weight: 700; font-size: 16px; cursor: pointer;
-      transition: opacity .2s;
+    .eye:hover { color: var(--ink); background: var(--chip); }
+    .cta {
+      margin-top: 6px; width: 100%; height: 54px; border: 0; border-radius: 999px; background: var(--turmeric);
+      color: #2A2312; font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+      gap: 10px; cursor: pointer; box-shadow: 0 12px 26px -12px rgba(214, 150, 0, 0.75);
+      transition: transform 0.15s, background-color 0.15s;
     }
-    button:hover { opacity: .9; }
-    button:disabled { opacity: .5; cursor: default; }
-    .err { color: #f87171; font-size: 13px; margin-top: 12px; min-height: 18px; text-align: center; }
-    .hint { color: #64748b; font-size: 13px; text-align: center; margin-top: 20px; }
-    .hint a { color: #f59e0b; text-decoration: none; }
-    .picker { margin-top: 8px; }
+    .cta:hover:not(:disabled) { background: #F5B300; transform: translateY(-1px); }
+    .cta:disabled { opacity: 0.7; cursor: default; }
+    .spin {
+      width: 16px; height: 16px; border-radius: 999px; border: 2px solid rgba(42, 35, 18, 0.25);
+      border-top-color: #2A2312; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .err { padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.45; background: var(--err-bg); color: var(--err); }
+    .textlink {
+      align-self: center; border: 0; background: none; font-size: 13px; font-weight: 600; color: var(--muted);
+      cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+    }
+    .textlink:hover { color: var(--ink); }
+    .back {
+      align-self: center; display: inline-flex; align-items: center; gap: 8px; border: 0; background: none;
+      padding: 8px; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer;
+    }
+    .back:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .alt { border-top: 1px solid var(--line); padding-top: 20px; font-size: 14px; color: var(--muted); text-align: center; }
+    .alt a { color: var(--ink); font-weight: 700; text-underline-offset: 3px; }
+    .hint { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+
+    /* Kod 2FA: komórki nad jednym prawdziwym polem (wklejanie, autouzupełnianie kodu). */
+    .otp { position: relative; display: flex; align-items: center; gap: 8px; }
+    .otp-group { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+    .otp-cell {
+      height: 64px; border-radius: 14px; border: 1px solid var(--field-border); background: var(--field);
+      display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .otp.long .otp-cell { height: 56px; font-size: 22px; border-radius: 12px; }
+    .otp-cell.active { border: 2px solid var(--ink); background: var(--card); box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.35); }
+    .otp-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--turmeric); flex-shrink: 0; }
+    .otp input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; font-size: 16px; cursor: text; }
+
+    /* Wybór kościoła */
+    .churches { display: flex; flex-direction: column; gap: 10px; }
     .church {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px; border: 1px solid #334155; border-radius: 10px; margin-top: 10px;
-      cursor: pointer; background: #0f172a; transition: border-color .2s;
+      width: 100%; min-height: 56px; padding: 12px 18px; border-radius: 16px; border: 1px solid var(--field-border);
+      background: var(--field); color: var(--ink); font-size: 16px; font-weight: 700; text-align: left;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer;
+      transition: border-color 0.15s, background-color 0.15s;
     }
-    .church:hover { border-color: #d97706; }
-    .church .arrow { color: #64748b; }
-    .back { background: #334155; margin-top: 12px; }
+    .church:hover { border-color: var(--ink); background: var(--card); }
+    .church svg { flex-shrink: 0; color: var(--muted); }
+
+    .secure { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card { animation: none; }
+      .cta, .input, .otp-cell, .church { transition: none; }
+    }
+    @media (max-width: 640px) {
+      .hero { padding: 40px 24px; gap: 48px; }
+      .side { padding: 24px 16px 8px; }
+      .card { border-radius: 24px; padding: 28px 22px 26px; gap: 24px; }
+      .title { font-size: 32px; }
+      .lead { font-size: 16px; margin-top: 24px; }
+      .otp-cell { height: 56px; font-size: 24px; }
+      .otp.long .otp-cell { height: 48px; font-size: 18px; }
+      .otp, .otp-group { gap: 6px; }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="logo">Avenit</div>
-    <h1 id="title">Zaloguj się</h1>
-
-    <!-- Formularz logowania -->
-    <form id="loginForm">
-      <label for="email">E-mail</label>
-      <input id="email" type="email" autocomplete="username" placeholder="ty@przyklad.pl" autofocus />
-      <label for="password">Hasło</label>
-      <input id="password" type="password" autocomplete="current-password" />
-      <div id="totpWrap" style="display:none">
-        <label for="totp">Kod 2FA</label>
-        <input id="totp" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" />
-      </div>
-      <button type="submit" id="submitBtn">Zaloguj się →</button>
-      <div class="err" id="err"></div>
-    </form>
-
-    <!-- Wybór kościoła (gdy konto w wielu) -->
-    <div id="pickerWrap" style="display:none">
-      <p style="color:#94a3b8;font-size:14px;text-align:center;margin-bottom:4px">
-        Twoje konto należy do kilku kościołów. Wybierz:</p>
-      <div class="picker" id="picker"></div>
-      <button class="back" id="backBtn" type="button">← Wróć</button>
+  <section class="hero">
+    <header class="brand">
+      <img src="/brand/avenit-logo-slod.png" alt="Avenit" class="only-light" />
+      <img src="/brand/avenit-logo-papier.png" alt="Avenit" class="only-dark" />
+      <span class="brand-sep" aria-hidden="true"></span>
+      <span class="brand-claim">CHURCH MANAGER</span>
+    </header>
+    <div>
+      <p class="display"><span class="strong">Cały kościół.</span><span class="light">Jedna aplikacja<span class="dot">.</span></span></p>
+      <p class="lead">Programy nabożeństw, grafiki służb, grupy domowe, kazania, pieśni, modlitwy, komunikacja, finanse i check-in dzieci.</p>
     </div>
+    <footer class="foot">
+      <span>© <span id="year">2026</span> Avenit</span>
+      <a href="https://avenit.pl/polityka-prywatnosci/">Polityka prywatności</a>
+      <a href="https://avenit.pl">avenit.pl</a>
+    </footer>
+  </section>
 
-    <div class="hint">Administrator platformy? <a href="https://admin.avenit.pl">Panel administracyjny</a></div>
-  </div>
+  <main class="side">
+    <div class="card">
+      <img src="/brand/avenit-znak-kurkuma.png" alt="" class="mark" />
+
+      <!-- Logowanie -->
+      <div class="view" id="loginView">
+        <div class="head">
+          <span class="eyebrow">Logowanie</span>
+          <h1 class="title"><span class="strong">Dobrze Cię widzieć.</span><span class="light">Zaloguj się<span class="dot">.</span></span></h1>
+        </div>
+        <form id="loginForm" novalidate>
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" class="input" type="email" autocomplete="username" placeholder="jan@example.com" autofocus required />
+          </div>
+          <div class="field">
+            <label for="password">Hasło</label>
+            <div class="pass">
+              <input id="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••" required />
+              <button type="button" class="eye" id="eyeBtn" aria-label="Pokaż hasło" aria-pressed="false">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <p class="err" id="loginErr" role="alert" hidden></p>
+          <button type="submit" class="cta" id="loginBtn">
+            Zaloguj się
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+          </button>
+        </form>
+        <div class="alt">Administrator platformy? <a href="https://admin.avenit.pl">Panel administracyjny</a></div>
+      </div>
+
+      <!-- Weryfikacja dwuetapowa -->
+      <div class="view" id="codeView" hidden>
+        <div class="head">
+          <span class="eyebrow">Weryfikacja dwuetapowa</span>
+          <h1 class="title" id="codeTitle"></h1>
+          <p class="sub" id="codeSub"></p>
+        </div>
+        <form id="codeForm" novalidate>
+          <div class="otp" id="otp">
+            <div class="otp-group" id="otpA"></div>
+            <span class="otp-dot" aria-hidden="true"></span>
+            <div class="otp-group" id="otpB"></div>
+            <input id="totp" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-label="Kod weryfikacyjny" />
+          </div>
+          <p class="hint" id="codeHint">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Kod zmienia się co 30 sekund.
+          </p>
+          <p class="err" id="codeErr" role="alert" hidden></p>
+          <button type="submit" class="cta" id="codeBtn">Potwierdź</button>
+          <button type="button" class="textlink" id="backupBtn">Użyj kodu zapasowego</button>
+        </form>
+        <button type="button" class="back" data-back>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
+          Powrót do logowania
+        </button>
+      </div>
+
+      <!-- Wybór kościoła (konto w kilku kościołach) -->
+      <div class="view" id="pickerView" hidden>
+        <div class="head">
+          <span class="eyebrow">Twoje wspólnoty</span>
+          <h1 class="title"><span class="strong">Wybierz</span><span class="light">kościół<span class="dot">.</span></span></h1>
+          <p class="sub">Twoje konto należy do kilku kościołów.</p>
+        </div>
+        <div class="churches" id="picker"></div>
+        <p class="err" id="pickerErr" role="alert" hidden></p>
+        <button type="button" class="back" data-back>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
+          Powrót do logowania
+        </button>
+      </div>
+    </div>
+    <p class="secure">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      Połączenie szyfrowane
+    </p>
+  </main>
 
   <script>
     // Wyczyść stary service worker/PWA (gdy app.avenit.pl serwował wcześniej apkę).
@@ -93,13 +283,31 @@
       }).catch(function () {});
     }
 
-    var loginForm = document.getElementById('loginForm');
-    var pickerWrap = document.getElementById('pickerWrap');
-    var picker = document.getElementById('picker');
-    var err = document.getElementById('err');
-    var submitBtn = document.getElementById('submitBtn');
-    var totpWrap = document.getElementById('totpWrap');
-    var backBtn = document.getElementById('backBtn');
+    var $ = function (id) { return document.getElementById(id); };
+    $('year').textContent = new Date().getFullYear();
+
+    var views = { login: $('loginView'), code: $('codeView'), picker: $('pickerView') };
+    var totpCode = '';
+    var useBackup = false;
+    // Wybrany kościół (konto w kilku) — serwer pyta o 2FA dopiero po wyborze, więc kod idzie z nim.
+    var chosenTenant = '';
+
+    function show(name) {
+      for (var k in views) views[k].hidden = k !== name;
+    }
+    function setErr(el, msg) {
+      el.textContent = msg || '';
+      el.hidden = !msg;
+    }
+    function busy(btn, on, label) {
+      btn.disabled = on;
+      if (on) {
+        btn.dataset.html = btn.innerHTML;
+        btn.innerHTML = '<span class="spin" aria-hidden="true"></span>' + label;
+      } else if (btn.dataset.html) {
+        btn.innerHTML = btn.dataset.html;
+      }
+    }
 
     function post(body) {
       return fetch('/api/app-login', {
@@ -109,66 +317,168 @@
       }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); });
     }
 
-    function creds(extra) {
-      var b = {
-        email: document.getElementById('email').value.trim(),
-        password: document.getElementById('password').value,
-      };
-      var t = document.getElementById('totp').value.trim();
-      if (t) b.totpCode = t;
-      if (extra) for (var k in extra) b[k] = extra[k];
+    function creds() {
+      var b = { email: $('email').value.trim(), password: $('password').value };
+      if (totpCode) b.totpCode = totpCode;
+      if (chosenTenant) b.tenant = chosenTenant;
       return b;
     }
 
-    function handle(res) {
-      submitBtn.disabled = false;
-      if (!res.ok) { err.textContent = (res.j && res.j.error) || 'Błąd logowania'; return; }
+    // Wspólna obsługa odpowiedzi; errEl = komunikat w bieżącym widoku.
+    function handle(res, errEl) {
+      if (!res.ok) {
+        setErr(errEl, (res.j && res.j.error) || 'Błąd logowania');
+        if (totpCode) resetCode(); // błędny kod → czyste komórki do ponownego wpisania
+        return;
+      }
       var j = res.j;
-      if (j.requires2fa) {
-        totpWrap.style.display = 'block';
-        document.getElementById('totp').focus();
-        err.textContent = 'Podaj kod z aplikacji Authenticator.';
-        return;
-      }
-      if (j.multiple) {
-        loginForm.style.display = 'none';
-        pickerWrap.style.display = 'block';
-        document.getElementById('title').textContent = 'Wybierz kościół';
-        picker.innerHTML = '';
-        j.tenants.forEach(function (t) {
-          var d = document.createElement('div');
-          d.className = 'church';
-          d.innerHTML = '<span>' + (t.name || t.slug) + '</span><span class="arrow">→</span>';
-          d.onclick = function () { chooseChurch(t.slug); };
-          picker.appendChild(d);
-        });
-        return;
-      }
+      if (j.requires2fa) { openCode(); return; }
+      if (j.multiple) { openPicker(j.tenants || []); return; }
       if (j.redirect) { window.location.href = j.redirect; return; }
-      err.textContent = 'Nieoczekiwana odpowiedź serwera.';
+      setErr(errEl, 'Nieoczekiwana odpowiedź serwera.');
     }
 
-    function chooseChurch(slug) {
-      err.textContent = '';
-      post(creds({ tenant: slug })).then(handle).catch(function () {
-        err.textContent = 'Błąd połączenia.';
-      });
-    }
+    // ── Logowanie ──
+    $('eyeBtn').addEventListener('click', function () {
+      var p = $('password');
+      var visible = p.type === 'password';
+      p.type = visible ? 'text' : 'password';
+      this.setAttribute('aria-pressed', String(visible));
+      this.setAttribute('aria-label', visible ? 'Ukryj hasło' : 'Pokaż hasło');
+    });
 
-    loginForm.addEventListener('submit', function (e) {
+    $('loginForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      err.textContent = '';
-      submitBtn.disabled = true;
-      post(creds()).then(handle).catch(function () {
-        submitBtn.disabled = false; err.textContent = 'Błąd połączenia.';
+      var err = $('loginErr');
+      if (!$('email').value.trim() || !$('password').value) { setErr(err, 'Podaj e-mail i hasło.'); return; }
+      setErr(err, '');
+      totpCode = '';
+      chosenTenant = '';
+      busy($('loginBtn'), true, 'Logowanie...');
+      post(creds()).then(function (res) {
+        busy($('loginBtn'), false);
+        handle(res, err);
+      }).catch(function () {
+        busy($('loginBtn'), false);
+        setErr(err, 'Błąd połączenia.');
       });
     });
 
-    backBtn.addEventListener('click', function () {
-      pickerWrap.style.display = 'none';
-      loginForm.style.display = 'block';
-      document.getElementById('title').textContent = 'Zaloguj się';
-      err.textContent = '';
+    // ── Kod 2FA: 6 cyfr z aplikacji albo 8 znaków kodu zapasowego ──
+    var otpInput = $('totp');
+    function codeLength() { return useBackup ? 8 : 6; }
+    function renderCells() {
+      var len = codeLength(), half = len / 2, v = otpInput.value;
+      var focused = document.activeElement === otpInput;
+      var active = Math.min(v.length, len - 1);
+      $('otp').classList.toggle('long', useBackup);
+      [$('otpA'), $('otpB')].forEach(function (g, gi) {
+        g.textContent = '';
+        for (var i = 0; i < half; i++) {
+          var idx = gi * half + i;
+          var c = document.createElement('span');
+          c.className = 'otp-cell' + (focused && idx === active ? ' active' : '');
+          c.setAttribute('aria-hidden', 'true');
+          c.textContent = v[idx] || '';
+          g.appendChild(c);
+        }
+      });
+    }
+    function resetCode() {
+      otpInput.value = '';
+      totpCode = '';
+      renderCells();
+      otpInput.focus();
+    }
+    function setCodeMode(backup) {
+      useBackup = backup;
+      otpInput.maxLength = codeLength();
+      otpInput.inputMode = backup ? 'text' : 'numeric';
+      otpInput.setAttribute('aria-label', backup ? 'Kod zapasowy' : 'Kod weryfikacyjny');
+      $('codeTitle').innerHTML = backup
+        ? '<span class="strong">Kod zapasowy</span><span class="light">8 znaków<span class="dot">.</span></span>'
+        : '<span class="strong">Wpisz kod</span><span class="light">z aplikacji<span class="dot">.</span></span>';
+      $('codeSub').textContent = backup
+        ? 'Każdy kod zapasowy działa tylko raz.'
+        : 'Otwórz aplikację uwierzytelniającą (np. Google Authenticator) i przepisz 6 cyfr dla konta Avenit.';
+      $('codeHint').hidden = backup;
+      $('backupBtn').textContent = backup ? 'Użyj kodu z aplikacji' : 'Użyj kodu zapasowego';
+      setErr($('codeErr'), '');
+      resetCode();
+    }
+    function openCode() {
+      show('code');
+      setCodeMode(false);
+    }
+    otpInput.addEventListener('input', function () {
+      var v = otpInput.value;
+      otpInput.value = useBackup
+        ? v.toUpperCase().replace(/[^0-9A-F]/g, '').slice(0, 8)
+        : v.replace(/\D/g, '').slice(0, 6);
+      renderCells();
+    });
+    otpInput.addEventListener('focus', renderCells);
+    otpInput.addEventListener('blur', renderCells);
+    $('backupBtn').addEventListener('click', function () { setCodeMode(!useBackup); });
+
+    $('codeForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var err = $('codeErr');
+      if (otpInput.value.length < codeLength()) {
+        setErr(err, useBackup ? 'Wprowadź 8-znakowy kod zapasowy' : 'Wprowadź 6-cyfrowy kod');
+        return;
+      }
+      setErr(err, '');
+      totpCode = otpInput.value;
+      busy($('codeBtn'), true, 'Weryfikacja...');
+      post(creds()).then(function (res) {
+        busy($('codeBtn'), false);
+        handle(res, err);
+      }).catch(function () {
+        busy($('codeBtn'), false);
+        setErr(err, 'Błąd połączenia.');
+      });
+    });
+
+    // ── Wybór kościoła ──
+    function openPicker(tenants) {
+      show('picker');
+      setErr($('pickerErr'), '');
+      var list = $('picker');
+      list.textContent = '';
+      tenants.forEach(function (t) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'church';
+        var name = document.createElement('span');
+        name.textContent = t.name || t.slug;
+        b.appendChild(name);
+        b.insertAdjacentHTML('beforeend', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>');
+        b.addEventListener('click', function () { chooseChurch(t.slug); });
+        list.appendChild(b);
+      });
+      var first = list.querySelector('button');
+      if (first) first.focus();
+    }
+    function chooseChurch(slug) {
+      var err = $('pickerErr');
+      setErr(err, '');
+      chosenTenant = slug;
+      post(creds()).then(function (res) { handle(res, err); }).catch(function () {
+        setErr(err, 'Błąd połączenia.');
+      });
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-back]'), function (b) {
+      b.addEventListener('click', function () {
+        totpCode = '';
+        useBackup = false;
+        chosenTenant = '';
+        $('password').value = '';
+        setErr($('loginErr'), '');
+        show('login');
+        $('password').focus();
+      });
     });
   </script>
 </body>
