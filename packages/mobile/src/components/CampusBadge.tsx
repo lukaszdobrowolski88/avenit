@@ -10,27 +10,32 @@ type Props = {
   className?: string;
 };
 
-// Pill z nazwą kampusu — widoczny tylko gdy admin przegląda "wszystkie lokalizacje".
+// Pigułka z nazwą kampusu — widoczna tylko gdy admin przegląda „wszystkie lokalizacje”.
+// Kolor kampusu = kropka (bez kolorowego tekstu — jasne kolory kampusów były nieczytelne).
 export function CampusBadge({ campus, size = 'sm', className = '' }: Props) {
   if (!campus) return null;
-  const wrapperCls = size === 'sm'
-    ? 'flex-row items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5'
-    : 'flex-row items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5';
-  const textCls = size === 'sm' ? 'text-[10px] font-medium' : 'text-xs font-medium';
-  const iconSize = size === 'sm' ? 10 : 11;
-
-  // Custom kolor kampusu — tłumaczymy hex na 10% alpha (suffix `1a`) jak na webie.
-  const tint = campus.color
-    ? { backgroundColor: `${campus.color}1a` }
-    : undefined;
-  const fg = campus.color ? campus.color : '#4b5563';
-
+  const sm = size === 'sm';
   return (
-    <View className={`${wrapperCls} ${className}`} style={tint}>
-      <MapPin size={iconSize} color={fg} />
-      <Text className={textCls} style={{ color: fg }}>
-        {campus.name}
-      </Text>
+    <View
+      className={className}
+      accessibilityLabel={`Lokalizacja: ${campus.name}`}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        alignSelf: 'flex-start',
+        borderRadius: 999,
+        backgroundColor: '#ECE8DE',
+        paddingHorizontal: sm ? 7 : 9,
+        paddingVertical: 2,
+      }}
+    >
+      {campus.color ? (
+        <View style={{ width: sm ? 6 : 7, height: sm ? 6 : 7, borderRadius: 4, backgroundColor: campus.color }} />
+      ) : (
+        <MapPin size={sm ? 10 : 11} color="#4A463E" />
+      )}
+      <Text style={{ fontSize: sm ? 11 : 12, color: '#4A463E', fontFamily: 'Manrope_600SemiBold' }}>{campus.name}</Text>
     </View>
   );
 }

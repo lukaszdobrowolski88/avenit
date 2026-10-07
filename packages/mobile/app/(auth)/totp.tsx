@@ -1,27 +1,32 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, Text, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { completeTwoFactorLogin, signOut } from '../../src/lib/auth';
+import { GradientButton } from '../../src/components/ui/GradientButton';
+import { B, fieldStyle } from '../../src/components/ui/brand';
+import { showError } from '../../src/lib/errors';
 
+// Drugi krok logowania. Kod z aplikacji (6 cyfr, klawiatura numeryczna) albo kod zapasowy
+// (litery i cyfry — klawiatura zwykła; wcześniej numeryczna uniemożliwiała jego wpisanie).
 export default function TotpScreen() {
   const router = useRouter();
   const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [backup, setBackup] = useState(false);
 
   const handleVerify = async () => {
-    if (code.trim().length < 6) {
-      Alert.alert(
-        'Wpisz kod',
-        'Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej (lub kod zapasowy).',
-      );
+    const value = code.trim();
+    if (!backup && value.length < 6) {
+      Alert.alert('Wpisz kod', 'Wprowadź 6-cyfrowy kod z aplikacji uwierzytelniającej.');
       return;
     }
-    setLoading(true);
+    if (backup && value.length < 6) {
+      Alert.alert('Wpisz kod zapasowy', 'Wprowadź jeden z kodów zapasowych zapisanych przy włączaniu zabezpieczenia.');
+      return;
+    }
     // Serwer weryfikuje kod i dopiero wtedy wydaje sesję (kod zapasowy też obsłuży).
-    const { error } = await completeTwoFactorLogin(code.trim());
-    setLoading(false);
+    const { error } = await completeTwoFactorLogin(backup ? value.toUpperCase() : value);
     if (error) {
-      Alert.alert('Błąd', error.message);
+      showError('Nie udało się zalogować', error, 'Kod jest nieprawidłowy albo wygasł. Wpisz aktualny kod.');
       return;
     }
     router.replace('/(auth)/biometric');
@@ -33,94 +38,62 @@ export default function TotpScreen() {
   };
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: '#F6F4EE',
-        paddingHorizontal: 24,
-        justifyContent: 'center',
-      }}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, backgroundColor: B.paper, paddingHorizontal: 24, justifyContent: 'center' }}
     >
       <Text
-        style={{
-          fontSize: 24,
-          color: '#2A2312',
-          marginBottom: 6,
-          letterSpacing: -0.5,
-          fontFamily: 'Manrope_700Bold',
-        }}
+        accessibilityRole="header"
+        style={{ fontSize: 24, color: B.ink, marginBottom: 6, letterSpacing: -0.5, fontFamily: 'Manrope_700Bold' }}
       >
-        Weryfikacja dwustopniowa
+        Uwierzytelnianie dwuskładnikowe
       </Text>
-      <Text
-        style={{
-          fontSize: 14,
-          color: '#6B6557',
-          marginBottom: 24,
-          fontFamily: 'Manrope_500Medium',
-        }}
-      >
-        Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej.
+      <Text style={{ fontSize: 14, lineHeight: 20, color: B.ink3, marginBottom: 24, fontFamily: 'Manrope_500Medium' }}>
+        {backup
+          ? 'Wpisz jeden z kodów zapasowych. Każdy kod działa tylko raz.'
+          : 'Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej.'}
       </Text>
 
       <TextInput
-        style={{
-          borderWidth: 1,
-          borderColor: '#E6E1D5',
-          borderRadius: 14,
-          paddingHorizontal: 14,
-          paddingVertical: 14,
-          fontSize: 22,
-          textAlign: 'center',
-          letterSpacing: 8,
-          color: '#2A2312',
-          backgroundColor: '#FFFFFF',
-          marginBottom: 24,
-          fontFamily: 'Manrope_600SemiBold',
-        }}
-        keyboardType="number-pad"
-        maxLength={8}
+        key={backup ? 'backup' : 'totp'}
+        style={[
+          fieldStyle,
+          { paddingVertical: 14, fontSize: 22, textAlign: 'center', letterSpacing: backup ? 3 : 8, marginBottom: 24, fontFamily: 'Manrope_600SemiBold' },
+        ]}
+        keyboardType={backup ? 'default' : 'number-pad'}
+        autoCapitalize={backup ? 'characters' : 'none'}
+        autoCorrect={false}
+        textContentType={backup ? 'none' : 'oneTimeCode'}
+        autoComplete={backup ? 'off' : 'one-time-code'}
+        maxLength={backup ? 16 : 6}
         autoFocus
-        placeholder="123456"
-        placeholderTextColor="#857F70"
+        placeholder={backup ? 'ABCD1234' : '123456'}
+        placeholderTextColor={B.ink4}
+        accessibilityLabel={backup ? 'Kod zapasowy' : 'Kod z aplikacji'}
         value={code}
         onChangeText={setCode}
-        editable={!loading}
       />
 
-      <Pressable
-        onPress={handleVerify}
-        disabled={loading}
-        style={{
-          backgroundColor: '#FFBE0B',
-          borderRadius: 26,
-          paddingVertical: 14,
-          alignItems: 'center',
-          marginBottom: 12,
-          opacity: loading ? 0.7 : 1,
-        }}
-      >
-        {loading ? (
-          <ActivityIndicator color="#2A2312" />
-        ) : (
-          <Text style={{ color: '#2A2312', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
-            Zweryfikuj
-          </Text>
-        )}
-      </Pressable>
+      <GradientButton onPress={handleVerify}>Zweryfikuj</GradientButton>
 
-      <Pressable onPress={handleCancel} disabled={loading} style={{ paddingVertical: 8 }}>
-        <Text
-          style={{
-            textAlign: 'center',
-            fontSize: 13,
-            color: '#6B6557',
-            fontFamily: 'Manrope_500Medium',
-          }}
-        >
-          Anuluj i wyloguj
+      <Pressable
+        onPress={() => {
+          setBackup((b) => !b);
+          setCode('');
+        }}
+        accessibilityRole="button"
+        style={{ minHeight: 44, justifyContent: 'center', marginTop: 12 }}
+      >
+        <Text style={{ textAlign: 'center', fontSize: 14, color: B.gold, fontFamily: 'Manrope_600SemiBold' }}>
+          {backup ? 'Użyj kodu z aplikacji' : 'Nie masz telefonu? Użyj kodu zapasowego'}
         </Text>
       </Pressable>
-    </View>
+
+      <Pressable onPress={handleCancel} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+        <Text style={{ textAlign: 'center', fontSize: 13, color: B.ink3, fontFamily: 'Manrope_500Medium' }}>
+          Anuluj i wróć do logowania
+        </Text>
+      </Pressable>
+    </KeyboardAvoidingView>
   );
 }

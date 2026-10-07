@@ -30,6 +30,8 @@ import {
   type Resource,
 } from '../../../src/features/rooms/api';
 import { Empty, Loading, dayLabel } from '../../../src/features/teams/tabs/ui';
+import { friendlyError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
 
 const shiftDay = (ymd: string, delta: number) => {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -76,6 +78,7 @@ export default function RoomsScreen() {
   }, [open, day]);
 
   const save = async () => {
+    if (create.isPending) return;
     if (!resourceId) return Alert.alert('Wybierz salę');
     if (!title.trim()) return Alert.alert('Podaj tytuł', 'Np. „Próba zespołu” albo „Spotkanie grupy”.');
     if (!isValidTime(start) || !isValidTime(end)) return Alert.alert('Wybierz godziny', 'Ustaw początek i koniec rezerwacji.');
@@ -86,23 +89,38 @@ export default function RoomsScreen() {
       setTitle('');
       setNote('');
       setDay(date);
-    } catch (e: any) {
+      toast.success('Zarezerwowano salę', `${rooms.find((r) => r.id === resourceId)?.name ?? ''} · ${dayLabel(date)}, ${start}–${end}`);
+    } catch (e: unknown) {
       if (e instanceof BookingConflict) {
         Alert.alert(
           'Sala zajęta',
           e.conflicts.map((c) => `• ${hm(c.startAt)}–${hm(c.endAt)} ${c.title}`).join('\n'),
         );
       } else {
-        Alert.alert('Nie udało się', e?.message ?? 'Spróbuj ponownie.');
+        Alert.alert('Nie udało się zarezerwować', friendlyError(e, 'Spróbuj ponownie.'));
       }
     }
   };
 
-  const confirmCancel = (b: Booking) =>
-    Alert.alert('Anulować rezerwację?', `${b.title} · ${hm(b.startAt)}–${hm(b.endAt)}`, [
-      { text: 'Nie', style: 'cancel' },
-      { text: 'Anuluj rezerwację', style: 'destructive', onPress: () => cancel.mutate(b.id, { onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? '') }) },
-    ]);
+  const confirmCancel = (b: Booking) => {
+    const room = rooms.find((r) => r.id === b.resourceId)?.name ?? 'Sala';
+    Alert.alert(
+      'Anulować rezerwację?',
+      `„${b.title}” — ${room}, ${dayLabel(day)} ${hm(b.startAt)}–${hm(b.endAt)}. Rezerwacja zniknie, a sala będzie wolna w tym czasie.`,
+      [
+        { text: 'Nie', style: 'cancel' },
+        {
+          text: 'Anuluj rezerwację',
+          style: 'destructive',
+          onPress: () =>
+            cancel.mutate(b.id, {
+              onSuccess: () => toast.success('Anulowano rezerwację', b.title),
+              onError: (e: unknown) => Alert.alert('Nie udało się anulować rezerwacji', friendlyError(e, 'Spróbuj ponownie.')),
+            }),
+        },
+      ],
+    );
+  };
 
   return (
     <>
@@ -155,11 +173,11 @@ export default function RoomsScreen() {
                         </Text>
                         <View style={{ flex: 1 }}>
                           <Text numberOfLines={1} style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{b.title}</Text>
-                          {b.bookedBy ? <Text numberOfLines={1} style={{ fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>{mine ? 'Twoja rezerwacja' : b.bookedBy}</Text> : null}
+                          {b.bookedBy ? <Text numberOfLines={1} style={{ fontSize: 11, color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>{mine ? 'Twoja rezerwacja' : b.bookedBy}</Text> : null}
                         </View>
                         {mine || canDeleteAny ? (
-                          <Pressable onPress={() => confirmCancel(b)} hitSlop={8} className="active:opacity-60">
-                            <Trash2 size={15} color="#857F70" />
+                          <Pressable onPress={() => confirmCancel(b)} disabled={cancel.isPending} hitSlop={8} accessibilityLabel={`Anuluj rezerwację: ${b.title}`} className="active:opacity-60">
+                            <Trash2 size={15} color="#6E685A" />
                           </Pressable>
                         ) : null}
                       </View>
@@ -193,7 +211,7 @@ export default function RoomsScreen() {
               })}
             </View>
             <Label>Tytuł</Label>
-            <TextInput value={title} onChangeText={setTitle} placeholder="np. Próba zespołu" placeholderTextColor="#857F70" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#FFFFFF', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
+            <TextInput value={title} onChangeText={setTitle} placeholder="np. Próba zespołu" placeholderTextColor="#6E685A" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#FFFFFF', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
             <Label>Data</Label>
             <DateField value={date} onChange={setDate} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -207,7 +225,7 @@ export default function RoomsScreen() {
               </View>
             </View>
             <Label>Notatka</Label>
-            <TextInput value={note} onChangeText={setNote} placeholder="opcjonalnie" placeholderTextColor="#857F70" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#FFFFFF', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
+            <TextInput value={note} onChangeText={setNote} placeholder="opcjonalnie" placeholderTextColor="#6E685A" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#FFFFFF', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
             <Pressable
               onPress={save}
               disabled={create.isPending}

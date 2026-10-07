@@ -156,7 +156,7 @@ export const MonthView = ({ items, onPick }: Props) => {
         </View>
         {dayItems.length === 0 ? (
           <View style={styles.emptyWrap}>
-            <CalendarDays size={26} color="#857F70" strokeWidth={1.8} />
+            <CalendarDays size={26} color="#6E685A" strokeWidth={1.8} />
             <Text style={styles.emptyText}>Brak wydarzeń tego dnia</Text>
           </View>
         ) : (
@@ -231,13 +231,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.4,
   },
-  monthSub: { fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium', marginTop: 1 },
+  monthSub: { fontSize: 11, color: '#6E685A', fontFamily: 'Manrope_500Medium', marginTop: 1 },
   weekdayRow: { flexDirection: 'row', paddingHorizontal: 12, marginBottom: 4 },
   weekdayCell: {
     flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    color: '#857F70',
+    color: '#6E685A',
     fontFamily: 'Manrope_700Bold',
     letterSpacing: 0.6,
   },
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    color: '#857F70',
+    color: '#6E685A',
     fontFamily: 'Manrope_500Medium',
     fontSize: 13,
   },

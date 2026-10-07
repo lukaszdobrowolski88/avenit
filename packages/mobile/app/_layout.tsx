@@ -10,12 +10,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import * as Notifications from 'expo-notifications';
-import Toast from 'react-native-toast-message';
 import { ThemeProvider, useTheme } from '../src/contexts/ThemeContext';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { CampusProvider } from '../src/contexts/CampusContext';
 import { I18nProvider } from '../src/i18n';
 import { ErrorBoundary } from '../src/components/shared/ErrorBoundary';
+import { ToastHost } from '../src/components/ui/ToastHost';
 import { QUERY_CACHE_BUSTER, queryClient, queryPersister } from '../src/lib/query-client';
 import { useAppFonts } from '../src/lib/fonts';
 import { supabase } from '../src/lib/supabase';
@@ -94,6 +94,8 @@ function RootEffects() {
       const handledAssignment = await handleAssignmentAction(action, data ?? undefined);
       if (handledAssignment) {
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['assignments'] });
+        queryClient.invalidateQueries({ queryKey: ['event-detail'] });
         queryClient.invalidateQueries({ queryKey: ['programs', 'myAssignments'] });
         return;
       }
@@ -146,8 +148,9 @@ function RootNavigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(app)" />
+        <Stack.Screen name="+not-found" />
       </Stack>
-      <Toast />
+      <ToastHost />
     </>
   );
 }

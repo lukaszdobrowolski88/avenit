@@ -5,13 +5,14 @@ import { B } from '../../../components/ui/brand';
 import { SermonAudioPlayer } from '../../sermons/components/SermonAudioPlayer';
 import { useSetSongAttachments, type SongAttachment } from '../library';
 import { FileTooLarge, isAudio, isImage, isPdf, pickAndUploadSongFile } from '../attachments';
+import { friendlyError } from '../../../lib/errors';
 
 // Materiały pieśni (jak zakładka „Materiały” na webie): pliki (PDF, nuty, obrazy, audio)
 // i linki; MP3 odtwarzane w miejscu. Z prawem edycji pieśni — dodawanie i usuwanie.
 
 const F = { medium: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' } as const;
 
-const open = (url: string) => Linking.openURL(url).catch(() => Alert.alert('Błąd', 'Nie udało się otworzyć materiału.'));
+const open = (url: string) => Linking.openURL(url).catch(() => Alert.alert('Nie udało się otworzyć materiału', 'Sprawdź połączenie albo otwórz go na webie.'));
 
 export const SongMaterials = ({
   songId,
@@ -32,7 +33,7 @@ export const SongMaterials = ({
   const [linkUrl, setLinkUrl] = useState('');
 
   const persist = (next: SongAttachment[], ok?: () => void) =>
-    save.mutate(next, { onSuccess: ok, onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') });
+    save.mutate(next, { onSuccess: ok, onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')) });
 
   const addFile = async () => {
     setUploading(true);
@@ -40,7 +41,7 @@ export const SongMaterials = ({
       const att = await pickAndUploadSongFile();
       if (att) persist([...attachments, att]);
     } catch (e: any) {
-      Alert.alert(e instanceof FileTooLarge ? 'Za duży plik' : 'Nie udało się dodać pliku', e?.message ?? 'Spróbuj ponownie.');
+      Alert.alert(e instanceof FileTooLarge ? 'Za duży plik' : 'Nie udało się dodać pliku', friendlyError(e, 'Spróbuj ponownie.'));
     } finally {
       setUploading(false);
     }
@@ -55,7 +56,7 @@ export const SongMaterials = ({
     });
   };
   const remove = (i: number) =>
-    Alert.alert('Usunąć materiał?', attachments[i]?.name, [
+    Alert.alert('Usunąć materiał?', `„${attachments[i]?.name ?? 'Materiał'}” zniknie z materiałów tej pieśni dla wszystkich.`, [
       { text: 'Anuluj', style: 'cancel' },
       { text: 'Usuń', style: 'destructive', onPress: () => persist(attachments.filter((_, j) => j !== i)) },
     ]);

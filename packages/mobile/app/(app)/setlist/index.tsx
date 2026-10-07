@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import { ChevronRight, Music, Music2 } from 'lucide-react-native';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
+import { friendlyError } from '../../../src/lib/errors';
 import { usePlannedSongs, type PlannedProgram, type PlannedSong } from '../../../src/features/setlist/api';
 import { usePermissions } from '../../../src/lib/permissions';
 
@@ -33,7 +34,7 @@ export default function SetlistScreen() {
         ) : isError ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
             <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Manrope_500Medium' }}>
-              {(error as Error)?.message ?? 'Błąd'}
+              {friendlyError(error, 'Nie udało się wczytać planowanych pieśni.')}
             </Text>
           </View>
         ) : programs.length === 0 ? (
@@ -102,7 +103,7 @@ export default function SetlistScreen() {
                       borderTopColor: '#ECE8DE',
                     }}
                   >
-                    <Text style={{ width: 20, fontSize: 13, color: '#857F70', fontFamily: 'Manrope_700Bold' }}>
+                    <Text style={{ width: 20, fontSize: 13, color: '#6E685A', fontFamily: 'Manrope_700Bold' }}>
                       {i + 1}.
                     </Text>
                     <View style={{ flex: 1 }}>

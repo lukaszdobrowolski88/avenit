@@ -8,6 +8,7 @@ import { Chip, DangerLink, FormInput, FormLabel, PrimaryButton, Sheet } from '..
 import { pickImageForTask, takePhotoForTask, type PickedAsset } from '../../dashboard/task-attachments';
 import { CONDITIONS, useDeleteEquipment, useSaveEquipment } from '../equipment';
 import type { EquipmentItem } from '../data';
+import { friendlyError } from '../../../lib/errors';
 
 // Sprzęt zespołu — formularz jak na webie (EquipmentTab): zdjęcie, nazwa, stan, ilość,
 // wartość jednostkowa, osoba odpowiedzialna, data zakupu, opis i notatki.
@@ -65,7 +66,7 @@ export const EquipmentSheet = ({
         const a = from === 'camera' ? await takePhotoForTask() : await pickImageForTask();
         if (a) setPhoto(a);
       } catch (e: any) {
-        Alert.alert('Nie udało się dodać zdjęcia', e?.message ?? '');
+        Alert.alert('Nie udało się dodać zdjęcia', friendlyError(e, 'Spróbuj ponownie.'));
       }
     };
     const hasPhoto = !!(photo || photoUrl);
@@ -112,7 +113,7 @@ export const EquipmentSheet = ({
           photoUrl,
         },
       },
-      { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') },
+      { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')) },
     );
   };
 
@@ -122,7 +123,7 @@ export const EquipmentSheet = ({
       {
         text: 'Usuń',
         style: 'destructive',
-        onPress: () => del.mutate(item!.id, { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? 'Spróbuj ponownie.') }),
+        onPress: () => del.mutate(item!.id, { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się usunąć', friendlyError(e, 'Spróbuj ponownie.')) }),
       },
     ]);
 

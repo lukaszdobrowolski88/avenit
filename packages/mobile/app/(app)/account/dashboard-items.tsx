@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StatusBar, Switch, Text, View } from 'react-native';
+import { ScrollView, StatusBar, Switch, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { LayoutGrid, Sparkles, type LucideIcon } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
@@ -14,6 +14,7 @@ import {
   useSaveDashboardLayout,
   type DashboardLayout,
 } from '../../../src/features/dashboard/layout';
+import { showError } from '../../../src/lib/errors';
 
 // Konto → Pulpit → elementy sekcji: „Dla Ciebie” (skróty — widoczność i kolejność)
 // albo „Twoje moduły” (dobór automatyczny albo własny wybór i kolejność).
@@ -27,7 +28,7 @@ interface Row {
   Icon: LucideIcon;
 }
 
-const toggleStyle = { trackColor: { true: B.kurkuma, false: '#E3DDD0' }, thumbColor: '#ffffff', ios_backgroundColor: '#E3DDD0' } as const;
+const toggleStyle = { trackColor: { true: B.kurkuma, false: B.fieldBorder }, thumbColor: '#ffffff', ios_backgroundColor: B.fieldBorder } as const;
 
 const ItemRow = ({ row, on, onToggle }: { row: Row; on: boolean; onToggle?: (v: boolean) => void }) => (
   <>
@@ -59,7 +60,7 @@ export default function DashboardItemsScreen() {
   const [scrollEnabled, setScrollEnabled] = useState(true);
 
   const persist = (next: DashboardLayout) =>
-    save.mutate(next, { onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') });
+    save.mutate(next, { onError: (e) => showError('Nie udało się zapisać układu pulpitu', e) });
 
   // ── Dla Ciebie: widoczne skróty (kolejność) + reszta katalogu do dodania ──
   const fy = layout.forYou;

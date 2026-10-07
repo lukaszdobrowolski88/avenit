@@ -33,6 +33,9 @@ export function tr(key: string, vars?: Vars): string {
   return translate(_lang, key, vars);
 }
 
+// Bieżący język poza komponentem (np. w helperach błędów).
+export const appLang = (): LangCode => _lang;
+
 interface I18nValue {
   lang: LangCode;
   setLang: (code: LangCode) => void;

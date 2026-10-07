@@ -1,9 +1,12 @@
-import { Alert, Pressable, RefreshControl, ScrollView, StatusBar, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StatusBar, Text, View } from 'react-native';
 import { Check, Mail, UserCheck, X } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { formatDate } from '../../../src/lib/domain';
 import { useDecideAccount, usePendingAccounts, type PendingAccount } from '../../../src/features/admin/approvals';
-import { Empty, Loading } from '../../../src/features/teams/tabs/ui';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { B } from '../../../src/components/ui/brand';
+import { friendlyError, showError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
 
 export default function ApprovalsScreen() {
   const pending = usePendingAccounts(true);
@@ -13,24 +16,29 @@ export default function ApprovalsScreen() {
   const unverified = list.filter((a) => a.kind === 'email');
 
   const run = (a: PendingAccount, approve: boolean) => {
+    if (decide.isPending) return;
     const go = () =>
       decide.mutate(
         { userId: a.id, approve },
         {
-          onSuccess: () => Alert.alert(approve ? 'Zatwierdzono' : 'Odrzucono', approve ? `${a.name} dostanie e-mail powitalny.` : `Wniosek ${a.email} został usunięty.`),
-          onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? ''),
+          onSuccess: () =>
+            approve
+              ? toast.success('Konto zatwierdzone', `${a.name} dostanie e-mail powitalny.`)
+              : toast.success('Wniosek odrzucony', `Konto ${a.email} zostało usunięte.`),
+          onError: (e) => showError(approve ? 'Nie udało się zatwierdzić konta' : 'Nie udało się odrzucić wniosku', e),
         },
       );
     if (approve) go();
     else
-      Alert.alert('Odrzucić konto?', `${a.name} (${a.email}) — wniosek zostanie usunięty.`, [
+      Alert.alert('Odrzucić konto?', `${a.name} (${a.email}) nie dostanie dostępu, a wniosek zostanie usunięty.`, [
         { text: 'Anuluj', style: 'cancel' },
         { text: 'Odrzuć', style: 'destructive', onPress: go },
       ]);
   };
+  const busyId = decide.isPending ? decide.variables?.userId ?? null : null;
 
   const Row = ({ a, approveLabel }: { a: PendingAccount; approveLabel: string }) => (
-    <View style={{ borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10, gap: 10 }}>
+    <View style={{ borderRadius: 20, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10, gap: 10 }}>
       <View>
         <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{a.name}</Text>
         <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
@@ -39,24 +47,36 @@ export default function ApprovalsScreen() {
         </Text>
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Pressable
-          onPress={() => run(a, true)}
-          disabled={decide.isPending}
-          className="active:opacity-70"
-          style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#15803d', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-        >
-          <Check size={16} color="#ffffff" strokeWidth={2.6} />
-          <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>{approveLabel}</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => run(a, false)}
-          disabled={decide.isPending}
-          className="active:opacity-70"
-          style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#F6F4EE', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-        >
-          <X size={16} color="#b91c1c" strokeWidth={2.6} />
-          <Text style={{ fontSize: 14, color: '#b91c1c', fontFamily: 'Manrope_600SemiBold' }}>Odrzuć</Text>
-        </Pressable>
+        {busyId === a.id ? (
+          <View style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={B.ink} />
+          </View>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => run(a, false)}
+              disabled={decide.isPending}
+              accessibilityRole="button"
+              accessibilityLabel={`Odrzuć: ${a.name}`}
+              className="active:opacity-70"
+              style={{ flex: 1, height: 44, borderRadius: 22, backgroundColor: B.paper, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              <X size={16} color={B.danger} strokeWidth={2.6} />
+              <Text style={{ fontSize: 14, color: B.danger, fontFamily: 'Manrope_600SemiBold' }}>Odrzuć</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => run(a, true)}
+              disabled={decide.isPending}
+              accessibilityRole="button"
+              accessibilityLabel={`${approveLabel}: ${a.name}`}
+              className="active:opacity-70"
+              style={{ flex: 1, height: 44, borderRadius: 22, backgroundColor: B.kurkuma, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              <Check size={16} color={B.ink} strokeWidth={2.6} />
+              <Text style={{ fontSize: 14, color: B.ink, fontFamily: 'Manrope_700Bold' }}>{approveLabel}</Text>
+            </Pressable>
+          </>
+        )}
       </View>
     </View>
   );
@@ -70,9 +90,22 @@ export default function ApprovalsScreen() {
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }}
           refreshControl={<RefreshControl refreshing={pending.isRefetching} onRefresh={() => pending.refetch()} tintColor="#2A2312" />}
         >
-          {pending.isLoading ? <Loading /> : null}
-          {!pending.isLoading && list.length === 0 ? (
-            <Empty Icon={UserCheck} title="Nikt nie czeka" hint="Gdy ktoś zarejestruje się w kościele, pojawi się tutaj." />
+          {pending.isLoading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator color={B.ink} />
+            </View>
+          ) : null}
+          {pending.isError ? (
+            <EmptyState
+              Icon={UserCheck}
+              title="Nie udało się wczytać listy"
+              hint={friendlyError(pending.error)}
+              actionLabel="Spróbuj ponownie"
+              onAction={() => pending.refetch()}
+            />
+          ) : null}
+          {!pending.isLoading && !pending.isError && list.length === 0 ? (
+            <EmptyState Icon={UserCheck} title="Nikt nie czeka na zatwierdzenie" hint="Gdy ktoś zarejestruje się w kościele, pojawi się tutaj." />
           ) : null}
 
           {toApprove.length ? (

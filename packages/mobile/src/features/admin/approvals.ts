@@ -37,9 +37,10 @@ export const usePendingAccounts = (enabled: boolean) =>
     },
   });
 
+// Błąd zostaje obiektem z { message, status } — ekran pokaże go po ludzku (friendlyError).
 const callFn = async (name: string, userId: string) => {
   const { error } = await supabase.functions.invoke(name, { body: { userId } });
-  if (error) throw new Error(error.message || 'Operacja nie powiodła się.');
+  if (error) throw error;
 };
 
 export const useDecideAccount = () => {

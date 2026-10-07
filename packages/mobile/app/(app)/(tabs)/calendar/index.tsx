@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Calendar, CalendarDays, List, Plus } from 'lucide-react-native';
+import { Calendar, CalendarDays, CloudOff, List, Plus } from 'lucide-react-native';
 import { PageHeader } from '../../../../src/components/ui/PageHeader';
 import { useAgenda, type AgendaEvent } from '../../../../src/features/calendar/api';
 import { useCalendarLabel } from '../../../../src/features/calendar/meta';
@@ -21,6 +21,8 @@ import { useAuthSession } from '../../../../src/lib/auth';
 import { useCampusQuery } from '../../../../src/hooks/useCampusQuery';
 import { usePermissions } from '../../../../src/lib/permissions';
 import { NewCalendarEventModal } from '../../../../src/features/calendar/components/NewCalendarEventModal';
+import { EmptyState } from '../../../../src/components/ui/EmptyState';
+import { friendlyError } from '../../../../src/lib/errors';
 
 type ViewMode = 'agenda' | 'month';
 
@@ -74,13 +76,16 @@ export default function CalendarScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
-          title="Kalendarz"
-          subtitle="Wydarzenia"
+          title="Wydarzenia"
+          subtitle="Kalendarz kościoła"
           Icon={Calendar}
           right={
             <View style={styles.viewToggle}>
               <Pressable
                 onPress={() => setView('agenda')}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: view === 'agenda' }}
+                accessibilityLabel="Widok listy"
                 style={[styles.viewBtn, view === 'agenda' && styles.viewBtnActive]}
               >
                 <List
@@ -94,11 +99,14 @@ export default function CalendarScreen() {
                     view === 'agenda' && styles.viewBtnTextActive,
                   ]}
                 >
-                  Agenda
+                  Lista
                 </Text>
               </Pressable>
               <Pressable
                 onPress={() => setView('month')}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: view === 'month' }}
+                accessibilityLabel="Widok miesiąca"
                 style={[styles.viewBtn, view === 'month' && styles.viewBtnActive]}
               >
                 <CalendarDays
@@ -136,6 +144,9 @@ export default function CalendarScreen() {
                 <Pressable
                   key={f.key}
                   onPress={() => setFilter(f.key)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`${f.label}, ${f.count}`}
                   className="flex-row items-center gap-1.5 active:opacity-80"
                   style={{
                     paddingHorizontal: 12,
@@ -155,7 +166,7 @@ export default function CalendarScreen() {
                   </Text>
                   <Text
                     className="text-[12px]"
-                    style={{ color: active ? '#CFC8B6' : '#857F70', fontFamily: 'Manrope_600SemiBold' }}
+                    style={{ color: active ? '#CFC8B6' : '#6E685A', fontFamily: 'Manrope_600SemiBold' }}
                   >
                     {f.count}
                   </Text>
@@ -170,69 +181,44 @@ export default function CalendarScreen() {
             <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
-          <View className="flex-1 items-center justify-center px-6">
-            <Text
-              className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
-            >
-              {(error as Error)?.message ?? 'Błąd'}
-            </Text>
-            <Pressable
-              onPress={() => refetch()}
-              style={{
-                marginTop: 14,
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 12,
-                backgroundColor: '#2A2312',
-              }}
-            >
-              <Text style={{ color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>
-                Spróbuj ponownie
-              </Text>
-            </Pressable>
-          </View>
+          <EmptyState
+            Icon={CloudOff}
+            title="Nie udało się wczytać wydarzeń"
+            hint={friendlyError(error)}
+            actionLabel="Spróbuj ponownie"
+            onAction={() => refetch()}
+            style={{ marginTop: 32 }}
+          />
         ) : view === 'month' ? (
           <MonthView items={items} onPick={openEvent} />
         ) : items.length === 0 ? (
           <ScrollView
-            contentContainerStyle={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 32,
-            }}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 120 }}
             refreshControl={
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 18,
-                backgroundColor: '#FFF8E1',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 12,
-              }}
-            >
-              <Calendar size={28} color="#8A6606" />
-            </View>
-            <Text
-              className="text-[16px]"
-              style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
-            >
-              Brak wydarzeń
-            </Text>
-            <Text
-              className="text-[13px] text-center mt-1"
-              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
-            >
-              {filter !== 'all'
-                ? 'Spróbuj wybrać inny filtr.'
-                : 'Wszystko spokojnie. Pociągnij w dół aby odświeżyć.'}
-            </Text>
+            {filter !== 'all' ? (
+              <EmptyState
+                Icon={Calendar}
+                title={filter === 'mine' ? 'Nie masz zaplanowanych służb' : 'Brak wydarzeń w tym kalendarzu'}
+                hint="Wybierz inny filtr albo pokaż wszystkie wydarzenia."
+                actionLabel="Pokaż wszystkie"
+                onAction={() => setFilter('all')}
+              />
+            ) : (
+              <EmptyState
+                Icon={Calendar}
+                title="Brak nadchodzących wydarzeń"
+                hint={
+                  canCreate
+                    ? 'Dodaj pierwsze wydarzenie — zobaczy je cała wspólnota.'
+                    : 'Gdy pojawią się wydarzenia, zobaczysz je tutaj. Pociągnij w dół, aby odświeżyć.'
+                }
+                actionLabel={canCreate ? 'Dodaj wydarzenie' : undefined}
+                onAction={canCreate ? () => setCreating(true) : undefined}
+              />
+            )}
           </ScrollView>
         ) : (
           <AgendaList
@@ -248,7 +234,8 @@ export default function CalendarScreen() {
       {canCreate ? (
         <Pressable
           onPress={() => setCreating(true)}
-          accessibilityLabel="Nowe wydarzenie"
+          accessibilityRole="button"
+          accessibilityLabel="Dodaj wydarzenie"
           className="active:opacity-80"
           style={{
             position: 'absolute',
@@ -288,7 +275,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E6E1D5',
+    borderColor: '#B5AD99',
   },
   viewBtn: {
     flexDirection: 'row',

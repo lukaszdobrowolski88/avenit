@@ -177,7 +177,15 @@ export default function TeamDetailScreen() {
           />
         );
       case 'checkin':
-        return <KidsTodayTab myEmail={myEmail} canCreateSession={perms.can('res:checkin_sessions:create')} />;
+        return (
+          <KidsTodayTab
+            myEmail={myEmail}
+            canCheckIn={perms.can('res:checkins:create')}
+            canCheckOut={perms.can('res:checkins:update')}
+            canReadHouseholds={perms.can('res:households:read')}
+            scope={scope}
+          />
+        );
       case 'wall':
         return (
           <View>

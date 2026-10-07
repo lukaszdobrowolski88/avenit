@@ -3,23 +3,16 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
+import { respondToAssignment } from './assignments';
+import { showError } from './errors';
 
-// Wywołanie funkcji backendu Avenit (/api/fn/*) z nagłówkiem tenanta i tokenem.
-// Tenant bierzemy DYNAMICZNIE z klienta (ustawiony przy logowaniu), nie z buildu —
-// apka jest uniwersalna dla wszystkich kościołów.
-const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
+// Wywołanie funkcji backendu Avenit (/api/fn/*) przez klienta (tenant z logowania, odświeżanie
+// tokenu). Błąd (np. 403, brak sieci) RZUCA — wcześniej surowy fetch bez sprawdzania statusu
+// kończył się cichym „sukcesem”.
 async function callFn(name: string, body: Record<string, unknown>) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const tenant = supabase.getTenant();
-  return fetch(`${API_URL}/api/fn/${name}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(tenant ? { 'X-Tenant': tenant } : {}),
-      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-    },
-    body: JSON.stringify(body),
-  });
+  const { data, error } = await supabase.functions.invoke(name, { body });
+  if (error) throw error;
+  return data;
 }
 
 Notifications.setNotificationHandler({
@@ -184,6 +177,7 @@ export const handleRsvpInviteAction = async (
     await callFn('rsvp-respond', { token, answer });
   } catch (e) {
     console.warn('[push] rsvp invite action failed:', (e as Error)?.message);
+    showError('Nie udało się zapisać odpowiedzi', e, 'Otwórz zaproszenie w aplikacji i spróbuj ponownie.');
   }
   return true;
 };
@@ -195,12 +189,14 @@ export const handleAssignmentAction = async (
   if (actionIdentifier !== 'accept' && actionIdentifier !== 'reject') return false;
   const assignmentId = (data as { assignmentId?: number | string })?.assignmentId;
   if (!assignmentId) return false;
-  const status = actionIdentifier === 'accept' ? 'accepted' : 'rejected';
-  const { error } = await (supabase.from('schedule_assignments') as any)
-    .update({ status })
-    .eq('id', assignmentId);
-  if (error) {
-    console.warn('[push] update assignment status failed:', error.message);
+  // Ta sama droga co pulpit, web i link z maila: serwer zapisuje odpowiedź i przy odmowie
+  // zdejmuje osobę z grafiku w jednej transakcji (bezpośredni update tabeli dawał 403/„duchy”).
+  try {
+    await respondToAssignment(String(assignmentId), actionIdentifier === 'accept' ? 'accepted' : 'rejected');
+  } catch (e) {
+    console.warn('[push] respond to assignment failed:', (e as Error)?.message);
+    // Akcja z powiadomienia (apka mogła być w tle) — powiedz wprost, że się nie udało.
+    showError('Nie udało się zapisać odpowiedzi', e, 'Otwórz zaproszenie w aplikacji i spróbuj ponownie.');
     return false;
   }
   return true;

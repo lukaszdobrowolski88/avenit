@@ -3,6 +3,8 @@ import { supabase } from '../../lib/supabase';
 import { fetchAssignments, roleText, todayYmd, type AssignmentRow } from '../schedule/assignments';
 
 export interface UpcomingMinistryItem {
+  // Id przydziału (schedule_assignments) — do odpowiedzi „Akceptuję / Odrzucam”.
+  id: string;
   // Cel: program (programId) albo wydarzenie z grafikiem (eventId) — od migracji 055.
   programId: number | null;
   eventId: string | null;
@@ -221,6 +223,7 @@ export const useDashboard = (
       const byDateAsc = (a: AssignmentRow, b: AssignmentRow) =>
         (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? ''));
       const toItem = (a: AssignmentRow): UpcomingMinistryItem => ({
+        id: a.id,
         programId: a.kind === 'program' ? a.programId : null,
         eventId: a.kind === 'event' ? a.eventId : null,
         date: a.date,

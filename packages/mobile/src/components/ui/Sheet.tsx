@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
-import { B } from './brand';
+import { B, fieldStyle } from './brand';
+import { useAsyncPress } from '../../hooks/useAsyncPress';
 
 // Arkusz (pageSheet) w stylu marki: papier, nagłówek z tytułem, przewijana treść
 // i opcjonalna stopka z głównym przyciskiem przyklejona nad klawiaturą.
@@ -101,16 +102,8 @@ export const FormInput = ({ style, multiline, ...props }: TextInputProps) => (
     multiline={multiline}
     {...props}
     style={[
-      {
-        minHeight: 48,
-        borderRadius: 14,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        backgroundColor: B.card,
-        fontSize: 15,
-        color: B.ink,
-        fontFamily: F.medium,
-      },
+      // Biel + ramka jak pola na webie (wcześniej bez ramki — pole zlewało się z białą kartą).
+      fieldStyle,
       multiline ? { minHeight: 96, textAlignVertical: 'top' as const, lineHeight: 21 } : null,
       style,
     ]}
@@ -128,42 +121,64 @@ export const Chip = ({ label, on, onPress, disabled }: { label: string; on: bool
   </Pressable>
 );
 
+// Główny przycisk arkusza. Async `onPress` (zwraca Promise) → przycisk zajęty do końca zapisu,
+// kolejne stuknięcia ignorowane (blokada podwójnego zapisu, jak Button na webie).
 export const PrimaryButton = ({
   label,
   onPress,
-  busy,
+  busy: busyProp,
   disabled,
   tone = 'kurkuma',
 }: {
   label: string;
-  onPress: () => void;
+  onPress: () => unknown;
   busy?: boolean;
   disabled?: boolean;
   tone?: 'kurkuma' | 'ink';
-}) => (
-  <Pressable
-    onPress={onPress}
-    disabled={busy || disabled}
-    className="active:opacity-80"
-    style={{
-      height: 52,
-      borderRadius: 999,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: tone === 'ink' ? B.ink : B.kurkuma,
-      opacity: disabled ? 0.45 : busy ? 0.7 : 1,
-    }}
-  >
-    {busy ? (
-      <ActivityIndicator color={tone === 'ink' ? '#FFFFFF' : B.ink} />
-    ) : (
-      <Text style={{ fontSize: 15, color: tone === 'ink' ? '#FFFFFF' : B.ink, fontFamily: F.bold }}>{label}</Text>
-    )}
-  </Pressable>
-);
+}) => {
+  const { busy, press } = useAsyncPress(onPress, busyProp);
+  return (
+    <Pressable
+      onPress={press}
+      disabled={busy || disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled, busy }}
+      className="active:opacity-80"
+      style={{
+        height: 52,
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: tone === 'ink' ? B.ink : B.kurkuma,
+        opacity: disabled ? 0.45 : busy ? 0.7 : 1,
+      }}
+    >
+      {busy ? (
+        <ActivityIndicator color={tone === 'ink' ? '#FFFFFF' : B.ink} />
+      ) : (
+        <Text style={{ fontSize: 15, color: tone === 'ink' ? '#FFFFFF' : B.ink, fontFamily: F.bold }}>{label}</Text>
+      )}
+    </Pressable>
+  );
+};
 
-export const DangerLink = ({ label, onPress, busy }: { label: string; onPress: () => void; busy?: boolean }) => (
-  <Pressable onPress={onPress} disabled={busy} className="active:opacity-70" style={{ marginTop: 14, height: 46, alignItems: 'center', justifyContent: 'center' }}>
-    <Text style={{ fontSize: 15, color: '#B42318', fontFamily: F.semibold }}>{label}</Text>
-  </Pressable>
-);
+export const DangerLink = ({ label, onPress, busy: busyProp }: { label: string; onPress: () => unknown; busy?: boolean }) => {
+  const { busy, press } = useAsyncPress(onPress, busyProp);
+  return (
+    <Pressable
+      onPress={press}
+      disabled={busy}
+      accessibilityRole="button"
+      accessibilityState={{ busy }}
+      className="active:opacity-70"
+      style={{ marginTop: 14, height: 46, alignItems: 'center', justifyContent: 'center' }}
+    >
+      {busy ? (
+        <ActivityIndicator color={B.danger} />
+      ) : (
+        <Text style={{ fontSize: 15, color: B.danger, fontFamily: F.semibold }}>{label}</Text>
+      )}
+    </Pressable>
+  );
+};

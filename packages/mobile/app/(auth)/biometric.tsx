@@ -36,7 +36,7 @@ export default function BiometricScreen() {
   }, [available, router]);
 
   const enableBiometric = async () => {
-    const ok = await authenticateWithBiometric('Włącz biometrykę dla Avenit');
+    const ok = await authenticateWithBiometric('Włącz odblokowanie biometryczne');
     if (ok) {
       await setBiometricEnabled(true);
     }
@@ -96,11 +96,12 @@ export default function BiometricScreen() {
           fontFamily: 'Manrope_500Medium',
         }}
       >
-        Następnym razem zalogujesz się jednym dotknięciem zamiast wpisywać hasło.
+        Aplikacja będzie chroniona — przy każdym otwarciu odblokujesz ją jednym spojrzeniem lub dotknięciem.
       </Text>
 
       <Pressable
         onPress={enableBiometric}
+        accessibilityRole="button"
         style={{
           backgroundColor: '#FFBE0B',
           borderRadius: 26,
@@ -111,7 +112,7 @@ export default function BiometricScreen() {
       >
         <Text style={{ color: '#2A2312', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>Włącz</Text>
       </Pressable>
-      <Pressable onPress={skip} style={{ paddingVertical: 10 }}>
+      <Pressable onPress={skip} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
         <Text
           style={{
             textAlign: 'center',
@@ -120,7 +121,7 @@ export default function BiometricScreen() {
             fontFamily: 'Manrope_500Medium',
           }}
         >
-          Pomiń
+          Nie teraz
         </Text>
       </Pressable>
     </View>

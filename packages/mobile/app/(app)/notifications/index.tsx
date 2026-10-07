@@ -16,10 +16,13 @@ import {
   Info,
   MessageCircle,
   AtSign,
+  CloudOff,
 } from 'lucide-react-native';
 import { formatRelative } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B, Monogram } from '../../../src/components/ui/brand';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { friendlyError, showError } from '../../../src/lib/errors';
 import {
   useNotifications,
   useMarkAllRead,
@@ -56,13 +59,19 @@ export default function NotificationsScreen() {
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Powiadomienia"
-          subtitle={unreadCount > 0 ? `${unreadCount} nieprzeczytanych` : 'Wszystko odczytane'}
+          subtitle={unreadCount > 0 ? `Nieprzeczytane: ${unreadCount}` : 'Wszystko przeczytane'}
           showBack
           right={
             unreadCount > 0 ? (
               <Pressable
-                onPress={() => markAll.mutate()}
+                onPress={() =>
+                  markAll.mutate(undefined, {
+                    onError: (e) => showError('Nie udało się oznaczyć powiadomień', e),
+                  })
+                }
                 disabled={markAll.isPending}
+                accessibilityRole="button"
+                accessibilityLabel="Oznacz wszystkie jako przeczytane"
                 className="flex-row items-center gap-1 active:opacity-80"
                 style={{
                   paddingHorizontal: 12,
@@ -76,7 +85,7 @@ export default function NotificationsScreen() {
                   className="text-[12px]"
                   style={{ color: '#ffffff', fontFamily: 'Manrope_700Bold' }}
                 >
-                  Odczytane
+                  Przeczytane
                 </Text>
               </Pressable>
             ) : null
@@ -88,14 +97,14 @@ export default function NotificationsScreen() {
             <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
-          <View className="flex-1 items-center justify-center px-6">
-            <Text
-              className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
-            >
-              {(error as Error)?.message ?? 'Błąd'}
-            </Text>
-          </View>
+          <EmptyState
+            Icon={CloudOff}
+            title="Nie udało się wczytać powiadomień"
+            hint={friendlyError(error)}
+            actionLabel="Spróbuj ponownie"
+            onAction={() => refetch()}
+            style={{ marginTop: 24 }}
+          />
         ) : (
           <FlatList
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 }}
@@ -110,33 +119,12 @@ export default function NotificationsScreen() {
               </View>
             )}
             ListEmptyComponent={
-              <View className="items-center mt-12 px-6">
-                <View
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 18,
-                    backgroundColor: '#FFF8E1',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 12,
-                  }}
-                >
-                  <Bell size={28} color="#8A6606" />
-                </View>
-                <Text
-                  className="text-[16px]"
-                  style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
-                >
-                  Brak powiadomień
-                </Text>
-                <Text
-                  className="text-[13px] text-center mt-1"
-                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
-                >
-                  Powiadomienia o wiadomościach, zadaniach i wydarzeniach pojawią się tutaj.
-                </Text>
-              </View>
+              <EmptyState
+                Icon={Bell}
+                title="Brak powiadomień"
+                hint="Powiadomienia o wiadomościach, zadaniach i wydarzeniach pojawią się tutaj."
+                style={{ marginTop: 24 }}
+              />
             }
             renderItem={({ item, index }) => {
               // Serwer może przysłać typ spoza znanych enumów — fallback na 'system'.
@@ -150,6 +138,8 @@ export default function NotificationsScreen() {
                     if (!item.read) markOne.mutate(item.id);
                     if (item.link) navigateFromDeepLink(router, item.link);
                   }}
+                  accessibilityRole={item.link ? 'link' : 'button'}
+                  accessibilityLabel={[item.read ? null : 'Nowe', item.title, item.body, formatRelative(item.created_at)].filter(Boolean).join('. ')}
                   className="active:opacity-80"
                   style={{
                     flexDirection: 'row',

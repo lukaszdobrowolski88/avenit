@@ -1,6 +1,7 @@
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { Calendar, ChevronRight, MapPin, X } from "lucide-react-native";
 import { useUpcomingEvents, type EventMetadata, type ShareableEvent } from "../api";
+import { friendlyError } from "../../../lib/errors";
 
 // Udostępnianie istniejącego wydarzenia w czacie (spec §2) — snapshot do messages.metadata
 // z event_id (RSVP wspiera się o event_registrations po stronie odbiorcy/weba).
@@ -8,13 +9,16 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onShare: (title: string, metadata: EventMetadata) => void;
+  /** Wysyłanie w toku — blokada podwójnego udostępnienia. */
+  busy?: boolean;
 }
 
-export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
-  const { data, isLoading } = useUpcomingEvents();
+export const EventShareModal = ({ visible, onClose, onShare, busy }: Props) => {
+  const { data, isLoading, isError, error } = useUpcomingEvents();
   const events: ShareableEvent[] = data ?? [];
 
   const pick = (e: ShareableEvent) => {
+    if (busy) return;
     onShare(e.title, {
       event_id: e.id,
       title: e.title,
@@ -53,20 +57,26 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
             }}
           >
             <Text style={{ fontSize: 18, color: "#2A2312", fontFamily: "Manrope_700Bold" }}>
-              📅 Udostępnij wydarzenie
+              Udostępnij wydarzenie
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
               <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
-          {isLoading ? (
+          {isLoading || busy ? (
             <View style={{ paddingVertical: 40, alignItems: "center" }}>
               <ActivityIndicator color="#2A2312" />
             </View>
+          ) : isError ? (
+            <Text
+              style={{ paddingVertical: 40, paddingHorizontal: 24, fontSize: 14, color: "#6B6557", fontFamily: "Manrope_500Medium", textAlign: "center" }}
+            >
+              {friendlyError(error, "Nie udało się wczytać wydarzeń. Spróbuj ponownie.")}
+            </Text>
           ) : events.length === 0 ? (
             <View style={{ paddingVertical: 40, alignItems: "center", paddingHorizontal: 24 }}>
-              <Calendar size={28} color="#9A9586" />
+              <Calendar size={28} color="#6E685A" />
               <Text
                 style={{
                   marginTop: 8,
@@ -125,9 +135,9 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
                       ) : null}
                       {e.location ? (
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 1 }}>
-                          <MapPin size={11} color="#857F70" />
+                          <MapPin size={11} color="#6E685A" />
                           <Text
-                            style={{ fontSize: 12, color: "#857F70", fontFamily: "Manrope_400Regular" }}
+                            style={{ fontSize: 12, color: "#6E685A", fontFamily: "Manrope_400Regular" }}
                             numberOfLines={1}
                           >
                             {e.location}
@@ -135,7 +145,7 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
                         </View>
                       ) : null}
                     </View>
-                    <ChevronRight size={18} color="#9A9586" />
+                    <ChevronRight size={18} color="#6E685A" />
                   </Pressable>
                 );
               })}

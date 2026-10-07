@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Plus, X } from "lucide-react-native";
 import type { PollMetadata } from "../api";
 
@@ -7,7 +7,8 @@ import type { PollMetadata } from "../api";
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onCreate: (question: string, metadata: PollMetadata) => void;
+  // false = nie udało się wysłać (treść zostaje w oknie, rodzic pokazał błąd).
+  onCreate: (question: string, metadata: PollMetadata) => Promise<boolean | void> | boolean | void;
 }
 
 const labelStyle = {
@@ -37,6 +38,7 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [multiple, setMultiple] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const reset = () => {
     setQuestion("");
@@ -44,25 +46,32 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
     setMultiple(false);
   };
   const close = () => {
+    if (busy) return;
     reset();
     onClose();
   };
 
   const valid = question.trim().length > 0 && options.filter((o) => o.trim()).length >= 2;
 
-  const create = () => {
+  const create = async () => {
+    if (busy) return;
     const opts = options
       .map((t) => t.trim())
       .filter(Boolean)
       .map((text, i) => ({ id: `o${i + 1}`, text }));
     if (!question.trim() || opts.length < 2) return;
-    onCreate(question.trim(), {
-      question: question.trim(),
-      options: opts,
-      multiple,
-      closes_at: null,
-    });
-    reset();
+    setBusy(true);
+    try {
+      const ok = await onCreate(question.trim(), {
+        question: question.trim(),
+        options: opts,
+        multiple,
+        closes_at: null,
+      });
+      if (ok !== false) reset();
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -91,7 +100,7 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
             }}
           >
             <Text style={{ fontSize: 18, color: "#2A2312", fontFamily: "Manrope_700Bold" }}>
-              📊 Nowa ankieta
+              Nowa ankieta
             </Text>
             <Pressable onPress={close} hitSlop={10}>
               <X size={20} color="#6B6557" />
@@ -105,7 +114,7 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
               value={question}
               onChangeText={setQuestion}
               placeholder="O co pytasz?"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
             />
 
             <Text style={labelStyle}>Opcje</Text>
@@ -115,14 +124,14 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
                   style={[inputStyle, { flex: 1, marginBottom: 0 }]}
                   value={o}
                   placeholder={`Opcja ${i + 1}`}
-                  placeholderTextColor="#857F70"
+                  placeholderTextColor="#6E685A"
                   onChangeText={(t) =>
                     setOptions((prev) => prev.map((x, j) => (j === i ? t : x)))
                   }
                 />
                 {options.length > 2 ? (
                   <Pressable onPress={() => setOptions((prev) => prev.filter((_, j) => j !== i))} hitSlop={8}>
-                    <X size={18} color="#857F70" />
+                    <X size={18} color="#6E685A" />
                   </Pressable>
                 ) : null}
               </View>
@@ -155,22 +164,26 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
               >
                 {multiple ? <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>✓</Text> : null}
               </View>
-              <Text style={{ color: "#3A3427", fontFamily: "Manrope_500Medium" }}>Wielokrotny wybór</Text>
+              <Text style={{ color: "#4A463E", fontFamily: "Manrope_500Medium" }}>Wielokrotny wybór</Text>
             </Pressable>
 
             <Pressable
               onPress={create}
-              disabled={!valid}
+              disabled={!valid || busy}
               style={{
                 marginTop: 10,
                 backgroundColor: "#2A2312",
                 borderRadius: 14,
                 paddingVertical: 14,
                 alignItems: "center",
-                opacity: valid ? 1 : 0.5,
+                opacity: valid && !busy ? 1 : 0.5,
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Manrope_700Bold" }}>Utwórz ankietę</Text>
+              {busy ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Manrope_700Bold" }}>Utwórz ankietę</Text>
+              )}
             </Pressable>
           </ScrollView>
         </Pressable>

@@ -18,6 +18,8 @@ import {
 } from '../../../src/features/attendance/api';
 import { Loading, dayLabel } from '../../../src/features/teams/tabs/ui';
 import { goBack } from '../../../src/lib/navigation';
+import { friendlyError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
 
 export default function AttendanceSessionScreen() {
   const router = useRouter();
@@ -33,6 +35,8 @@ export default function AttendanceSessionScreen() {
   const del = useDeleteSession();
   const [q, setQ] = useState('');
   const [guest, setGuest] = useState('');
+  // Osoby w trakcie zapisu — drugie stuknięcie nie doda drugiego wpisu obecności.
+  const [busyIds, setBusyIds] = useState<Set<number>>(new Set());
 
   // Odznaczenie i usuwanie gości = DELETE wpisu → potrzebne res:attendance_records:delete.
   const canUncheck = perms.can('res:attendance_records:delete');
@@ -61,27 +65,74 @@ export default function AttendanceSessionScreen() {
       Alert.alert('Nie możesz odznaczyć', 'Odznaczanie wymaga uprawnienia do usuwania wpisów obecności. Poproś koordynatora.');
       return;
     }
-    toggle.mutate({ memberId: m.id, recordId }, { onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? '') });
+    if (busyIds.has(m.id)) return;
+    setBusyIds((prev) => new Set(prev).add(m.id));
+    toggle.mutate(
+      { memberId: m.id, recordId },
+      {
+        onError: (e: unknown) => Alert.alert(recordId ? 'Nie udało się odznaczyć' : 'Nie udało się zaznaczyć obecności', friendlyError(e, 'Spróbuj ponownie.')),
+        onSettled: () =>
+          setBusyIds((prev) => {
+            const next = new Set(prev);
+            next.delete(m.id);
+            return next;
+          }),
+      },
+    );
   };
 
   const setHeadcount = (next: number | null) => {
     if (!session) return;
-    update.mutate({ id: session.id, patch: { headcount: next } }, { onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? '') });
+    update.mutate(
+      { id: session.id, patch: { headcount: next } },
+      { onError: (e: unknown) => Alert.alert('Nie udało się zapisać liczby osób', friendlyError(e, 'Spróbuj ponownie.')) },
+    );
   };
 
-  const confirmDelete = () =>
-    Alert.alert('Usunąć sesję?', 'Usunięte zostaną też wszystkie wpisy obecności.', [
+  const addGuestNow = () => {
+    const name = guest.trim();
+    if (!name || addGuest.isPending) return;
+    addGuest.mutate(name, {
+      onSuccess: () => setGuest(''),
+      onError: (e: unknown) => Alert.alert('Nie udało się dodać gościa', friendlyError(e, 'Spróbuj ponownie.')),
+    });
+  };
+
+  const removeGuest = (g: AttendanceRecord) =>
+    Alert.alert('Usunąć gościa?', `„${g.guestName}” zniknie z listy obecnych na tej sesji.`, [
       { text: 'Anuluj', style: 'cancel' },
       {
         text: 'Usuń',
         style: 'destructive',
         onPress: () =>
-          del.mutate(sessionId, {
-            onSuccess: () => goBack(router),
-            onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? ''),
+          removeRecord.mutate(g.id, {
+            onError: (e: unknown) => Alert.alert('Nie udało się usunąć gościa', friendlyError(e, 'Spróbuj ponownie.')),
           }),
       },
     ]);
+
+  const confirmDelete = () => {
+    const label = `„${session?.title || typeLabel}”${session ? ` (${dayLabel(session.date)})` : ''}`;
+    Alert.alert(
+      'Usunąć sesję obecności?',
+      `Sesja ${label} zniknie razem z ${presentCount ? `wpisami obecności (${presentCount})` : 'wpisami obecności'}. Tej operacji nie można cofnąć.`,
+      [
+        { text: 'Anuluj', style: 'cancel' },
+        {
+          text: 'Usuń sesję',
+          style: 'destructive',
+          onPress: () =>
+            del.mutate(sessionId, {
+              onSuccess: () => {
+                toast.success('Usunięto sesję obecności');
+                goBack(router);
+              },
+              onError: (e: unknown) => Alert.alert('Nie udało się usunąć sesji', friendlyError(e, 'Spróbuj ponownie.')),
+            }),
+        },
+      ],
+    );
+  };
 
   return (
     <>
@@ -94,7 +145,7 @@ export default function AttendanceSessionScreen() {
           right={
             canDeleteSession && session ? (
               <Pressable onPress={confirmDelete} hitSlop={10} className="active:opacity-60" accessibilityLabel="Usuń sesję">
-                <Trash2 size={20} color="#857F70" />
+                <Trash2 size={20} color="#6E685A" />
               </Pressable>
             ) : undefined
           }
@@ -146,19 +197,17 @@ export default function AttendanceSessionScreen() {
                 value={guest}
                 onChangeText={setGuest}
                 placeholder="Imię gościa"
-                placeholderTextColor="#857F70"
+                placeholderTextColor="#6E685A"
                 returnKeyType="done"
-                onSubmitEditing={() => {
-                  if (guest.trim()) addGuest.mutate(guest.trim(), { onSuccess: () => setGuest('') });
-                }}
+                onSubmitEditing={addGuestNow}
                 style={{ flex: 1, height: 44, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#FFFFFF', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
               />
               <Pressable
-                onPress={() => {
-                  if (guest.trim()) addGuest.mutate(guest.trim(), { onSuccess: () => setGuest(''), onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? '') });
-                }}
+                onPress={addGuestNow}
+                disabled={addGuest.isPending}
+                accessibilityLabel="Dodaj gościa"
                 className="active:opacity-70"
-                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: guest.trim() ? '#2A2312' : '#D3CCBC', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: guest.trim() ? '#2A2312' : '#D3CCBC', alignItems: 'center', justifyContent: 'center', opacity: addGuest.isPending ? 0.6 : 1 }}
               >
                 <UserPlus size={18} color="#ffffff" />
               </Pressable>
@@ -168,7 +217,7 @@ export default function AttendanceSessionScreen() {
                 <View key={g.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 6, paddingVertical: 5, borderRadius: 999, backgroundColor: '#FFF1C2' }}>
                   <Text style={{ fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_600SemiBold' }}>{g.guestName}</Text>
                   {canUncheck ? (
-                    <Pressable onPress={() => removeRecord.mutate(g.id)} hitSlop={8} className="active:opacity-60">
+                    <Pressable onPress={() => removeGuest(g)} hitSlop={8} accessibilityLabel={`Usuń gościa: ${g.guestName}`} className="active:opacity-60">
                       <X size={13} color="#8A6606" />
                     </Pressable>
                   ) : null}
@@ -180,12 +229,12 @@ export default function AttendanceSessionScreen() {
               Członkowie
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 12, borderRadius: 24, backgroundColor: '#FFFFFF', marginBottom: 10 }}>
-              <Search size={16} color="#857F70" />
+              <Search size={16} color="#6E685A" />
               <TextInput
                 value={q}
                 onChangeText={setQ}
                 placeholder="Szukaj osoby"
-                placeholderTextColor="#857F70"
+                placeholderTextColor="#6E685A"
                 style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}
               />
             </View>
@@ -195,6 +244,9 @@ export default function AttendanceSessionScreen() {
                 <Pressable
                   key={m.id}
                   onPress={() => onToggle(m)}
+                  disabled={busyIds.has(m.id)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on, busy: busyIds.has(m.id) }}
                   className="active:opacity-70"
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: on ? '#F1EEE6' : 'transparent' }}
                 >
@@ -217,7 +269,7 @@ export default function AttendanceSessionScreen() {
               );
             })}
             {members.length === 0 ? (
-              <Text style={{ fontSize: 13, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
+              <Text style={{ fontSize: 13, color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>
                 Brak dostępu do listy członków — możesz dopisać gości i liczbę szacunkową.
               </Text>
             ) : null}

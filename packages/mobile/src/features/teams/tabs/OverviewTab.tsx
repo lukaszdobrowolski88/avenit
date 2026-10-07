@@ -5,6 +5,9 @@ import { pl } from 'date-fns/locale';
 import { ArrowUpRight, CalendarOff, ChevronRight, ClipboardList, MessageSquare, Package, Smile, Users, UserRound } from 'lucide-react-native';
 import { B, InfoBlock, SectionLabel } from '../../../components/ui/brand';
 import { csvNames, splitGrafik, useAnswerAssignment, useGrafik, type GrafikEvent, type GrafikRoleDef } from '../grafik';
+import { friendlyError } from '../../../lib/errors';
+import { toast } from '../../../lib/toast';
+import { respondMessage } from '../../../lib/assignments';
 import { useRoster, type RosterPerson } from '../roster';
 import { useTeamEquipment, type EquipmentItem } from '../data';
 import { useKidsData } from '../kids';
@@ -76,6 +79,14 @@ export const OverviewTab = ({
   const roleCount = roster.data?.roles.length ?? 0;
   const pieces = ((equipment.data ?? []) as EquipmentItem[]).reduce((s, i) => s + i.quantity, 0);
   const openEvent = (id: string) => router.push({ pathname: '/(app)/events/[id]', params: { id } });
+  const respond = (status: 'accepted' | 'rejected') =>
+    answer.mutate(
+      { ids: myPending.map((a) => a.id), status },
+      {
+        onSuccess: () => toast.success(respondMessage(status, { status, already: false })),
+        onError: (e: unknown) => Alert.alert('Nie udało się zapisać odpowiedzi', friendlyError(e, 'Spróbuj ponownie.')),
+      },
+    );
 
   return (
     <View>
@@ -106,7 +117,7 @@ export const OverviewTab = ({
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
               <Pressable
                 disabled={answer.isPending}
-                onPress={() => myPending.forEach((a) => answer.mutate({ id: a.id, status: 'accepted' }))}
+                onPress={() => respond('accepted')}
                 className="active:opacity-80"
                 style={{ flex: 1, height: 44, borderRadius: 999, backgroundColor: B.kurkuma, alignItems: 'center', justifyContent: 'center' }}
               >
@@ -115,9 +126,9 @@ export const OverviewTab = ({
               <Pressable
                 disabled={answer.isPending}
                 onPress={() =>
-                  Alert.alert('Nie możesz służyć?', 'Lider zobaczy odmowę w grafiku.', [
+                  Alert.alert('Nie możesz służyć?', 'Twoje imię zniknie z grafiku na ten dzień, a lider zobaczy odmowę.', [
                     { text: 'Anuluj', style: 'cancel' },
-                    { text: 'Nie mogę', style: 'destructive', onPress: () => myPending.forEach((a) => answer.mutate({ id: a.id, status: 'rejected' })) },
+                    { text: 'Nie mogę', style: 'destructive', onPress: () => respond('rejected') },
                   ])
                 }
                 className="active:opacity-80"

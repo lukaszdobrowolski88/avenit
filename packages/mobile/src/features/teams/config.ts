@@ -117,7 +117,7 @@ export const isTeamKey = (s: string | undefined): s is TeamKey =>
 
 export const TAB_META: Record<TeamTabKey, { label: string; Icon: LucideIcon }> = {
   overview: { label: 'Przegląd', Icon: LayoutGrid },
-  checkin: { label: 'Dziś', Icon: Baby },
+  checkin: { label: 'Meldowanie dzieci', Icon: Baby },
   wall: { label: 'Tablica', Icon: MessageSquare },
   events: { label: 'Wydarzenia', Icon: CalendarDays },
   schedule: { label: 'Grafik', Icon: ClipboardList },

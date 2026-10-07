@@ -83,13 +83,14 @@ export default function Index() {
             fontFamily: 'Manrope_500Medium',
           }}
         >
-          Odblokuj biometryką żeby kontynuować.
+          Użyj Face ID lub odcisku palca, aby kontynuować.
         </Text>
         <Pressable
           onPress={async () => {
             const ok = await authenticateWithBiometric('Odblokuj Avenit');
             setLock(ok ? 'unlocked' : 'locked');
           }}
+          accessibilityRole="button"
           style={{
             backgroundColor: '#2A2312',
             borderRadius: 14,
@@ -106,7 +107,8 @@ export default function Index() {
             await signOut();
             setLock('unlocked');
           }}
-          style={{ marginTop: 12, paddingHorizontal: 24, paddingVertical: 10 }}
+          accessibilityRole="button"
+          style={{ marginTop: 12, paddingHorizontal: 24, minHeight: 44, justifyContent: 'center' }}
         >
           <Text style={{ fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
             Wyloguj

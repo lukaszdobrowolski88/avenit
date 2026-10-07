@@ -121,7 +121,13 @@ export const completeTwoFactorLogin = async (
     return { error: { message: 'Sesja logowania wygasła — zaloguj się ponownie.' } };
   }
   const { email, password, tenant } = pending2fa;
-  const result = await universalLogin(email, password, { tenant, totpCode: code });
+  let result: UniversalLoginResult;
+  try {
+    result = await universalLogin(email, password, { tenant, totpCode: code });
+  } catch (e) {
+    // Brak sieci — oddaj błąd zamiast wyjątku (ekran pokaże go po ludzku).
+    return { error: { message: (e as Error)?.message || 'Network request failed' } };
+  }
   if ('ok' in result) {
     pending2fa = null;
     return { error: null };

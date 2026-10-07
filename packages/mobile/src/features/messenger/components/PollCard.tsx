@@ -17,11 +17,14 @@ export const PollCard = ({ metadata, content, votes, onVote, mine }: Props) => {
   const closed = metadata?.closes_at ? new Date(metadata.closes_at).getTime() < Date.now() : false;
   const fg = mine ? "#ffffff" : "#2A2312";
   const sub = mine ? "#FFF1C2" : "#7A7466";
+  // Mój głos: kurkuma (na ciemnym bąbelku jasna, na jasnym — ciemne złoto).
+  const votedFg = mine ? "#FFBE0B" : "#6B4F05";
+  const votedFill = mine ? "rgba(255,190,11,0.22)" : "#F3E3B0";
 
   return (
     <View style={{ minWidth: 230, maxWidth: 300 }}>
       <Text style={{ fontSize: 12, color: sub, fontFamily: "Manrope_700Bold", marginBottom: 2 }}>
-        📊 Ankieta
+        Ankieta
       </Text>
       <Text style={{ fontSize: 15, color: fg, fontFamily: "Manrope_600SemiBold", marginBottom: 8 }}>
         {question}
@@ -39,7 +42,7 @@ export const PollCard = ({ metadata, content, votes, onVote, mine }: Props) => {
               borderRadius: 10,
               overflow: "hidden",
               borderWidth: 1,
-              borderColor: v.mine ? "#f9a8d4" : mine ? "rgba(255,255,255,0.4)" : "#E6E1D5",
+              borderColor: v.mine ? "#FFBE0B" : mine ? "rgba(255,255,255,0.4)" : "#E6E1D5",
             }}
           >
             <View
@@ -49,7 +52,7 @@ export const PollCard = ({ metadata, content, votes, onVote, mine }: Props) => {
                 top: 0,
                 bottom: 0,
                 width: `${pct}%`,
-                backgroundColor: v.mine ? "#F3E3B0" : mine ? "rgba(255,255,255,0.22)" : "#ECE8DE",
+                backgroundColor: v.mine ? votedFill : mine ? "rgba(255,255,255,0.22)" : "#ECE8DE",
               }}
             />
             <View
@@ -66,13 +69,13 @@ export const PollCard = ({ metadata, content, votes, onVote, mine }: Props) => {
                 style={{
                   flex: 1,
                   fontSize: 14,
-                  color: v.mine ? "#9d174d" : fg,
+                  color: v.mine ? votedFg : fg,
                   fontFamily: v.mine ? "Manrope_700Bold" : "Manrope_500Medium",
                 }}
               >
                 {o.text}
               </Text>
-              <Text style={{ fontSize: 12, color: v.mine ? "#9d174d" : sub, fontFamily: "Manrope_600SemiBold" }}>
+              <Text style={{ fontSize: 12, color: v.mine ? votedFg : sub, fontFamily: "Manrope_600SemiBold" }}>
                 {v.count} · {pct}%
               </Text>
             </View>
@@ -80,7 +83,7 @@ export const PollCard = ({ metadata, content, votes, onVote, mine }: Props) => {
         );
       })}
       <Text style={{ fontSize: 11, color: sub, fontFamily: "Manrope_500Medium", marginTop: 2 }}>
-        {total} {total === 1 ? "głos" : "głosów"}
+        {total} {total === 1 ? "głos" : [2, 3, 4].includes(total % 10) && ![12, 13, 14].includes(total % 100) ? "głosy" : "głosów"}
         {metadata?.multiple ? " · wielokrotny wybór" : ""}
         {closed ? " · zamknięta" : ""}
       </Text>

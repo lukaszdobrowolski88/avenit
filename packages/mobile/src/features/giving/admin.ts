@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { donationTotals, raisedForCampaign, type DonationLike } from './api';
 
 // Pulpity skarbnika / rady (module:giving, module:finance) — kontrakt jak web:
 // Giving/tabs/OverviewTab.jsx + CampaignsTab.jsx, FinanceModule.jsx (decyzje).
@@ -13,10 +14,14 @@ interface CampusScope {
 
 export interface GivingOverview {
   year: number;
+  /** Suma zaksięgowanych (jak web — tylko status 'completed'). */
   yearTotal: number;
   monthTotal: number;
   donors: number;
   count: number;
+  /** Oczekujące w tym roku — pokazywane osobno, poza sumą. */
+  pendingTotal: number;
+  pendingCount: number;
   byFund: { name: string; total: number; pct: number; color: string | null }[];
   months: number[]; // 12 miesięcy bieżącego roku
   recent: { id: string; who: string; amount: number; date: string; fund: string | null }[];
@@ -29,20 +34,42 @@ export const useGivingOverview = (scope: CampusScope, enabled: boolean) =>
     enabled,
     queryFn: async (): Promise<GivingOverview> => {
       const year = new Date().getFullYear();
-      const [donRes, fundsRes, campRes, campDonRes] = await Promise.all([
+      const [donRes, fundsRes, campRes] = await Promise.all([
+        // Zaksięgowane + oczekujące (oczekujące liczymy osobno, poza sumą — jak web).
         scope
-          .withCampusFilter(supabase.from('donations').select('id, amount, donation_date, fund_id, member_id, donor_name, donor_email, is_anonymous'))
+          .withCampusFilter(supabase.from('donations').select('id, amount, status, donation_date, fund_id, member_id, donor_name, donor_email, is_anonymous'))
           .gte('donation_date', `${year}-01-01`)
           .lte('donation_date', `${year}-12-31`)
-          .eq('status', 'completed')
+          .in('status', ['completed', 'pending'])
           .order('donation_date', { ascending: false }),
         supabase.from('giving_funds').select('id, name, color').order('sort_order', { ascending: true }),
-        supabase.from('giving_campaigns').select('id, name, goal_amount, is_active').eq('is_active', true),
-        // „Zebrano” w kampaniach jak web CampaignsTab: dowolny status, po campaign_id.
-        supabase.from('donations').select('campaign_id, amount').not('campaign_id', 'is', null),
+        supabase.from('giving_campaigns').select('id, name, goal_amount, is_active, fund_id, start_date, end_date').eq('is_active', true),
       ]);
       if (donRes.error) throw donRes.error;
-      const donations = asList(donRes.data);
+      if (fundsRes.error) throw fundsRes.error;
+      if (campRes.error) throw campRes.error;
+      const allRows = asList(donRes.data);
+      const pending = donationTotals(allRows);
+      const donations = allRows.filter((d) => (d.status ?? 'completed') === 'completed');
+
+      // „Zebrano” w zbiórkach — ta sama definicja co web (raisedForCampaign): zaksięgowane
+      // darowizny przypisane do zbiórki albo na jej fundusz w czasie trwania.
+      const camps = asList(campRes.data);
+      const fundIds = [...new Set(camps.map((c) => c.fund_id).filter(Boolean).map(String))];
+      const cols = 'id, campaign_id, fund_id, amount, status, donation_date';
+      const [byCampaign, byFund] = await Promise.all([
+        camps.length
+          ? supabase.from('donations').select(cols).eq('status', 'completed').not('campaign_id', 'is', null)
+          : Promise.resolve({ data: [], error: null }),
+        fundIds.length
+          ? supabase.from('donations').select(cols).eq('status', 'completed').in('fund_id', fundIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (byCampaign.error) throw byCampaign.error;
+      if (byFund.error) throw byFund.error;
+      const seen = new Map<string, DonationLike>();
+      for (const d of [...asList(byCampaign.data), ...asList(byFund.data)]) seen.set(String(d.id), d);
+      const campaignDonations = [...seen.values()];
       const fundName = new Map<string, { name: string; color: string | null }>(
         asList(fundsRes.data).map((f) => [String(f.id), { name: String(f.name), color: f.color ?? null }]),
       );
@@ -73,15 +100,14 @@ export const useGivingOverview = (scope: CampusScope, enabled: boolean) =>
         for (const m of asList(ms)) memberName.set(String(m.id), [m.first_name, m.last_name].filter(Boolean).join(' '));
       }
 
-      const raised = new Map<string, number>();
-      for (const d of asList(campDonRes.data)) raised.set(String(d.campaign_id), (raised.get(String(d.campaign_id)) ?? 0) + (Number(d.amount) || 0));
-
       return {
         year,
         yearTotal,
         monthTotal,
         donors: donors.size,
         count: donations.length,
+        pendingTotal: pending.pending,
+        pendingCount: pending.pendingCount,
         byFund: [...fundTotals.entries()]
           .map(([k, total]) => ({
             name: k ? fundName.get(k)?.name ?? 'Fundusz' : 'Bez funduszu',
@@ -100,9 +126,9 @@ export const useGivingOverview = (scope: CampusScope, enabled: boolean) =>
           date: String(d.donation_date ?? '').slice(0, 10),
           fund: d.fund_id ? fundName.get(String(d.fund_id))?.name ?? null : null,
         })),
-        campaigns: asList(campRes.data).map((c) => {
+        campaigns: camps.map((c) => {
           const goal = Number(c.goal_amount) || 0;
-          const r = raised.get(String(c.id)) ?? 0;
+          const r = raisedForCampaign(c, campaignDonations);
           return { id: String(c.id), name: String(c.name), goal, raised: r, pct: goal ? Math.min(100, Math.round((r / goal) * 100)) : 0 };
         }),
       };
@@ -164,7 +190,8 @@ export const useFinanceDecisions = (enabled: boolean) =>
         submittedBy: e.submitted_by ?? null,
         date: e.payment_date ?? e.date ?? null,
       }));
-      return { proposals, expenses, proposalsError: propRes.error?.message ?? null, expensesError: expRes.error?.message ?? null };
+      // Błędy zwracamy osobno (np. brak dostępu do jednej z list) — ekran mówi o nich po ludzku.
+      return { proposals, expenses, proposalsError: propRes.error ?? null, expensesError: expRes.error ?? null };
     },
   });
 
@@ -186,9 +213,12 @@ export const useDecideProposal = (actorEmail: string | null, campusId: number | 
           campus_id: campusId,
         };
         const { data: item, error: iErr } = await (supabase.from('budget_items') as any).insert(row).select().single();
-        if (iErr) throw new Error(iErr.message || 'Nie udało się dodać pozycji do budżetu.');
-        const { error: sErr } = await (supabase.from('budget_proposals') as any).update({ status: 'approved' }).eq('id', p.id);
-        if (sErr) throw new Error(sErr.message || 'Nie udało się zmienić statusu.');
+        if (iErr) throw iErr;
+        const { error: sErr } = await (supabase.from('budget_proposals') as any)
+          .update({ status: 'approved' })
+          .eq('id', p.id)
+          .select('id');
+        if (sErr) throw sErr;
         // Audyt jak na webie; jego błąd nie cofa decyzji (builder nie ma .catch — try).
         try {
           await (supabase.from('budget_audit') as any).insert({
@@ -205,8 +235,12 @@ export const useDecideProposal = (actorEmail: string | null, campusId: number | 
           /* audyt opcjonalny */
         }
       } else {
-        const { error } = await (supabase.from('budget_proposals') as any).update({ status: 'rejected' }).eq('id', p.id);
-        if (error) throw new Error(error.message || 'Nie udało się odrzucić.');
+        const { data, error } = await (supabase.from('budget_proposals') as any)
+          .update({ status: 'rejected' })
+          .eq('id', p.id)
+          .select('id');
+        if (error) throw error;
+        if (Array.isArray(data) && data.length === 0) throw new Error('Ta propozycja została już rozpatrzona albo usunięta.');
       }
       try {
         await supabase.functions.invoke('budget-proposal-notify', { body: { proposalId: p.id, event: 'decided' } });
@@ -225,8 +259,13 @@ export const useDecideExpense = (actorEmail: string | null) => {
       const patch = approve
         ? { status: 'approved', approved_by: actorEmail, approved_at: new Date().toISOString() }
         : { status: 'rejected' };
-      const { error } = await (supabase.from('expense_transactions') as any).update(patch).eq('id', id);
-      if (error) throw new Error(error.message || 'Nie udało się zapisać decyzji.');
+      // Serwer przepuszcza decyzję tylko z action:finance:approve (bez niego — 403).
+      const { data, error } = await (supabase.from('expense_transactions') as any)
+        .update(patch)
+        .eq('id', id)
+        .select('id');
+      if (error) throw error;
+      if (Array.isArray(data) && data.length === 0) throw new Error('Ten wydatek został już rozpatrzony albo usunięty.');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['finance'] }),
   });

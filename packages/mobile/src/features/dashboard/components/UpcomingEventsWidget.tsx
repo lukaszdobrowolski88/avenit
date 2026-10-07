@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { WidgetCard } from './WidgetCard';
+import { EmptyRow, WidgetCard } from './WidgetCard';
 import { dayLabel } from './NextUpCard';
 import { D, F } from '../theme';
 import type { UpcomingEvent } from '../extras';
@@ -13,10 +13,23 @@ const parseLocal = (ymd: string) => {
   return new Date(y, (m ?? 1) - 1, d ?? 1);
 };
 
-// Kolejne wydarzenia (pierwsze jest w karcie „Najbliższe” nad listą).
-export const UpcomingEventsWidget = ({ events }: { events: UpcomingEvent[] }) => {
+// Kolejne wydarzenia (pierwsze jest w karcie „Najbliższe” nad listą). `showEmpty` — gdy nie ma
+// żadnego nadchodzącego wydarzenia (ani karty „Najbliższe”), mówimy o tym zamiast znikać.
+export const UpcomingEventsWidget = ({ events, showEmpty }: { events: UpcomingEvent[]; showEmpty?: boolean }) => {
   const router = useRouter();
-  if (events.length === 0) return null;
+  if (events.length === 0) {
+    if (!showEmpty) return null;
+    return (
+      <WidgetCard title="Wydarzenia">
+        <EmptyRow
+          text="Brak nadchodzących wydarzeń"
+          hint="Gdy pojawią się w kalendarzu, zobaczysz je tutaj."
+          actionLabel="Kalendarz"
+          onAction={() => goToTab(router, 'calendar')}
+        />
+      </WidgetCard>
+    );
+  }
   return (
     <WidgetCard title="Wydarzenia" actionLabel="Kalendarz" onAction={() => goToTab(router, 'calendar')}>
       <View style={{ padding: 8 }}>

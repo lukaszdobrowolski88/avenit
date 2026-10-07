@@ -15,14 +15,15 @@ import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { useAuthSession } from '../../../src/lib/auth';
-import { useMyGiving, formatMoney, type Donation } from '../../../src/features/giving/api';
+import { useMyGiving, formatMoney, isCashDonation, type Donation } from '../../../src/features/giving/api';
+import { friendlyError } from '../../../src/lib/errors';
 
 const isCompleted = (d: Donation) => (d.status ?? 'completed') === 'completed';
 const yearOf = (iso: string) => String(iso ?? '').slice(0, 4);
 
 export default function GivingStatementScreen() {
   const { user } = useAuthSession();
-  const { data, isLoading, refetch, isRefetching } = useMyGiving(user?.email ?? null);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useMyGiving(user?.email ?? null);
   const donations = useMemo(() => ((data?.donations ?? []) as Donation[]).filter(isCompleted), [data]);
   const currency = data?.currency ?? 'PLN';
 
@@ -39,20 +40,28 @@ export default function GivingStatementScreen() {
     () => donations.filter((d) => yearOf(d.donation_date) === activeYear),
     [donations, activeYear],
   );
-  const total = useMemo(() => inYear.reduce((s, d) => s + Number(d.amount ?? 0), 0), [inYear]);
+  // Jak web (PIT): do odliczenia tylko wpłaty na rachunek; gotówka osobno, z adnotacją.
+  const deductible = useMemo(() => inYear.filter((d) => !isCashDonation(d)), [inYear]);
+  const cash = useMemo(() => inYear.filter(isCashDonation), [inYear]);
+  const total = useMemo(() => deductible.reduce((s, d) => s + Number(d.amount ?? 0), 0), [deductible]);
+  const cashTotal = useMemo(() => cash.reduce((s, d) => s + Number(d.amount ?? 0), 0), [cash]);
 
   const donorName = (user?.full_name as string | undefined)?.trim() || user?.email || '';
 
   const share = async () => {
-    const lines = inYear
-      .map((d) => `• ${formatDate(d.donation_date, 'd MMM yyyy')} — ${formatMoney(d.amount, currency)}`)
-      .join('\n');
+    const line = (d: Donation) => `• ${formatDate(d.donation_date, 'd MMM yyyy')} — ${formatMoney(d.amount, currency)}`;
+    const cashPart = cash.length
+      ? `\n\nWpłaty gotówkowe (nie podlegają odliczeniu — art. 26 ust. 7 ustawy o PIT):\n` +
+        `${cash.map(line).join('\n')}\nRazem gotówką: ${formatMoney(cashTotal, currency)}`
+      : '';
     const message =
       `Zestawienie darowizn za rok ${activeYear}\n` +
       `Darczyńca: ${donorName}\n\n` +
-      `${lines || 'Brak darowizn w tym roku.'}\n\n` +
-      `Razem: ${formatMoney(total, currency)}\n` +
-      `(zestawienie wygenerowane w aplikacji Avenit)`;
+      `Wpłaty na rachunek (do odliczenia):\n` +
+      `${deductible.map(line).join('\n') || 'Brak wpłat na rachunek w tym roku.'}\n` +
+      `Razem do odliczenia: ${formatMoney(total, currency)}` +
+      cashPart +
+      `\n\n(zestawienie wygenerowane w aplikacji Avenit)`;
     try {
       await Share.share({ message });
     } catch {
@@ -69,6 +78,19 @@ export default function GivingStatementScreen() {
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator color="#2A2312" />
+          </View>
+        ) : isError ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+            <Text style={{ fontSize: 14, color: '#4A463E', textAlign: 'center', lineHeight: 20, fontFamily: 'Manrope_500Medium' }}>
+              {friendlyError(error, 'Nie udało się wczytać Twoich darowizn.')}
+            </Text>
+            <Pressable
+              onPress={() => refetch()}
+              className="active:opacity-70"
+              style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: '#2A2312' }}
+            >
+              <Text style={{ color: '#F6F4EE', fontFamily: 'Manrope_700Bold', fontSize: 14 }}>Spróbuj ponownie</Text>
+            </Pressable>
           </View>
         ) : donations.length === 0 ? (
           <ScrollView
@@ -141,14 +163,26 @@ export default function GivingStatementScreen() {
               }}
             >
               <Text style={{ fontSize: 12, color: '#2A2312', fontFamily: 'Manrope_600SemiBold', letterSpacing: 0.3 }}>
-                SUMA ZA ROK {activeYear}
+                DO ODLICZENIA ZA ROK {activeYear}
               </Text>
               <Text style={{ fontSize: 30, color: '#2A2312', marginTop: 4, letterSpacing: -0.8, fontFamily: 'Manrope_700Bold' }}>
                 {formatMoney(total, currency)}
               </Text>
               <Text style={{ fontSize: 12, color: '#2A2312', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
-                {inYear.length} {inYear.length === 1 ? 'wpłata' : 'wpłat'} · {donorName}
+                {deductible.length}{' '}
+                {deductible.length === 1
+                  ? 'wpłata'
+                  : [2, 3, 4].includes(deductible.length % 10) && ![12, 13, 14].includes(deductible.length % 100)
+                    ? 'wpłaty'
+                    : 'wpłat'}{' '}
+                na rachunek · {donorName}
               </Text>
+              {cash.length ? (
+                <Text style={{ fontSize: 12, color: '#4A463E', marginTop: 8, lineHeight: 17, fontFamily: 'Manrope_500Medium' }}>
+                  Gotówką: {formatMoney(cashTotal, currency)} — wpłaty gotówkowe nie podlegają odliczeniu
+                  (art. 26 ust. 7 ustawy o PIT).
+                </Text>
+              ) : null}
             </View>
 
             {/* Lista wpłat */}
@@ -170,6 +204,7 @@ export default function GivingStatementScreen() {
               >
                 <Text style={{ fontSize: 14, color: '#4A463E', fontFamily: 'Manrope_500Medium' }}>
                   {formatDate(d.donation_date, 'd MMM yyyy')}
+                  {isCashDonation(d) ? ' · gotówka' : ''}
                 </Text>
                 <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                   {formatMoney(d.amount, currency)}
@@ -178,7 +213,7 @@ export default function GivingStatementScreen() {
             ))}
 
             <Text
-              style={{ fontSize: 11, color: '#857F70', textAlign: 'center', marginTop: 8, fontFamily: 'Manrope_400Regular', lineHeight: 16 }}
+              style={{ fontSize: 11, color: '#6E685A', textAlign: 'center', marginTop: 8, fontFamily: 'Manrope_400Regular', lineHeight: 16 }}
             >
               Zestawienie orientacyjne na podstawie zarejestrowanych wpłat. Oficjalne
               potwierdzenie do PIT wystaw w biurze wspólnoty.

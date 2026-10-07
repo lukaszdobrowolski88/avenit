@@ -28,6 +28,7 @@ import { ProgramTypesSheet } from '../../../src/features/programs/components/Pro
 import { usePermissions } from '../../../src/lib/permissions';
 import { useAuthSession } from '../../../src/lib/auth';
 import { toYmd } from '../../../src/components/ui/DateField';
+import { friendlyError } from '../../../src/lib/errors';
 
 const fallbackTitle = (title: string | null, typeName?: string | null): string => {
   if (title && title.trim()) return title;
@@ -100,7 +101,7 @@ const ProgramCard = ({ program, events }: { program: ProgramListItem; events: Li
               </View>
             ) : null}
           </View>
-          <ChevronRight size={18} color="#857F70" strokeWidth={2.2} />
+          <ChevronRight size={18} color="#6E685A" strokeWidth={2.2} />
         </View>
       </Pressable>
     </Link>
@@ -117,8 +118,8 @@ const TypeSection = ({
   eventsByProgram: Map<number, LinkedEvent[]>;
 }) => {
   if (programs.length === 0) return null;
-  const color = type?.color || '#857F70';
-  const name = type?.name || 'Inne';
+  const color = type?.color || '#6E685A';
+  const name = type?.name || 'Bez kategorii';
   return (
     <View className="mb-4">
       <View className="flex-row items-center gap-2 px-5 mb-2">
@@ -133,7 +134,7 @@ const TypeSection = ({
         >
           {name}
         </Text>
-        <Text className="text-[11px]" style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
+        <Text className="text-[11px]" style={{ color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>
           {programs.length}
         </Text>
       </View>
@@ -196,7 +197,7 @@ export default function ProgramsScreen() {
         style={{ backgroundColor: '#F6F4EE' }}
       >
         <Text className="text-center" style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}>
-          {(programsQuery.error as Error)?.message ?? 'Błąd'}
+          {friendlyError(programsQuery.error, 'Nie udało się wczytać programów.')}
         </Text>
         <Pressable
           onPress={() => programsQuery.refetch()}
@@ -243,7 +244,7 @@ export default function ProgramsScreen() {
                 className="active:opacity-70"
                 style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: '#FFFFFF' }}
               >
-                <Text style={{ fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Typy</Text>
+                <Text style={{ fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Kategorie</Text>
               </Pressable>
             ) : undefined
           }

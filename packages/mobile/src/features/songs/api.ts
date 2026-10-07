@@ -251,15 +251,18 @@ export const useReorderSuggestions = (programId: number | null) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (orderedIds: string[]) => {
-      await Promise.all(
+      // Błąd zapisu kolejności nie może przepaść po cichu (lista wyglądałaby na zapisaną).
+      const results = await Promise.all(
         orderedIds.map((id, idx) =>
           (supabase.from('program_song_suggestions') as any)
             .update({ sort_order: idx })
             .eq('id', id),
         ),
       );
+      const failed = results.find((r: any) => r?.error);
+      if (failed) throw failed.error;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['programSongs', programId] });
     },
   });

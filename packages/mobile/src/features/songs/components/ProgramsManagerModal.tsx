@@ -28,6 +28,7 @@ import {
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { KEYS, type Song } from '../../../lib/domain';
+import { friendlyError } from '../../../lib/errors';
 import {
   useAddSongToProgram,
   useDeleteSuggestion,
@@ -118,18 +119,18 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
 
             <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
               <View style={styles.searchBox}>
-                <Search size={16} color="#857F70" />
+                <Search size={16} color="#6E685A" />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Szukaj programu…"
-                  placeholderTextColor="#857F70"
+                  placeholderTextColor="#6E685A"
                   value={search}
                   onChangeText={setSearch}
                   autoCapitalize="none"
                 />
                 {search ? (
                   <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                    <X size={14} color="#857F70" />
+                    <X size={14} color="#6E685A" />
                   </Pressable>
                 ) : null}
               </View>
@@ -216,7 +217,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
   const [showPicker, setShowPicker] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingMode, setEditingMode] = useState<'key' | 'note' | null>(null);
-  const [draftKey, setDraftKey] = useState('C');
+  const [draftKey, setDraftKey] = useState('');
   const [draftNote, setDraftNote] = useState('');
 
   const rows = localOrder ?? [];
@@ -229,14 +230,23 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
     if (next < 0 || next >= rows.length) return;
     const copy = rows.slice();
     [copy[idx], copy[next]] = [copy[next], copy[idx]];
+    const before = rows;
     setLocalOrder(copy);
-    reorderMut.mutate(copy.map((r) => r.id));
+    reorderMut.mutate(
+      copy.map((r) => r.id),
+      {
+        onError: (e: unknown) => {
+          setLocalOrder(before);
+          Alert.alert('Nie udało się zmienić kolejności', friendlyError(e, 'Spróbuj ponownie.'));
+        },
+      },
+    );
   };
 
   const startKeyEdit = (row: ProgramSuggestionRow) => {
     setEditingId(row.id);
     setEditingMode('key');
-    setDraftKey(row.song_key ?? row.song?.key ?? 'C');
+    setDraftKey(row.song_key ?? row.song?.key ?? '');
   };
   const startNoteEdit = (row: ProgramSuggestionRow) => {
     setEditingId(row.id);
@@ -247,24 +257,29 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
     setEditingId(null);
     setEditingMode(null);
   };
-  const saveKey = (id: string) => {
-    updateMut.mutate({ id, patch: { song_key: draftKey } });
-    closeEdit();
-  };
-  const saveNote = (id: string) => {
-    updateMut.mutate({ id, patch: { note: draftNote.trim() || null } });
-    closeEdit();
-  };
+  const saveFailed = (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.'));
+  const saveKey = (id: string) =>
+    updateMut.mutate({ id, patch: { song_key: draftKey || null } }, { onSuccess: closeEdit, onError: saveFailed });
+  const saveNote = (id: string) =>
+    updateMut.mutate({ id, patch: { note: draftNote.trim() || null } }, { onSuccess: closeEdit, onError: saveFailed });
 
-  const confirmDelete = (id: string) => {
-    Alert.alert('Usunąć pieśń z programu?', 'Tej operacji nie można cofnąć.', [
-      { text: 'Anuluj', style: 'cancel' },
-      {
-        text: 'Usuń',
-        style: 'destructive',
-        onPress: () => deleteMut.mutate(id),
-      },
-    ]);
+  const confirmDelete = (row: ProgramSuggestionRow) => {
+    const title = row.song?.title ?? 'Pieśń';
+    Alert.alert(
+      'Usunąć pieśń z programu?',
+      `„${title}” zniknie z pieśni proponowanych na „${program.title || formatProgramDate(program.date)}”. Sama pieśń zostaje w bazie.`,
+      [
+        { text: 'Anuluj', style: 'cancel' },
+        {
+          text: 'Usuń z programu',
+          style: 'destructive',
+          onPress: () =>
+            deleteMut.mutate(row.id, {
+              onError: (e: unknown) => Alert.alert('Nie udało się usunąć', friendlyError(e, 'Spróbuj ponownie.')),
+            }),
+        },
+      ],
+    );
   };
 
   const handleAddSong = (song: Pick<Song, 'id' | 'key'>) => {
@@ -277,7 +292,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
       },
       {
         onSuccess: () => setShowPicker(false),
-        onError: (e: any) => Alert.alert('Błąd', e?.message ?? 'Nie udało się dodać.'),
+        onError: (e: unknown) => Alert.alert('Nie udało się dodać pieśni', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
   };
@@ -374,7 +389,8 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                     </Pressable>
                     <View style={{ flex: 1 }} />
                     <Pressable
-                      onPress={() => confirmDelete(row.id)}
+                      onPress={() => confirmDelete(row)}
+                      accessibilityLabel={`Usuń z programu: ${row.song?.title ?? 'pieśń'}`}
                       hitSlop={6}
                       style={[styles.actionBtn, styles.actionBtnDanger]}
                     >
@@ -386,6 +402,9 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                     <View style={styles.inlineEditor}>
                       <Text style={styles.section}>WYBIERZ TONACJĘ</Text>
                       <View style={styles.keysGrid}>
+                        <Pressable onPress={() => setDraftKey('')} style={[styles.keyBtn, !draftKey && styles.keyBtnActive, { paddingHorizontal: 10, width: 'auto' as const }]}>
+                          <Text style={[styles.keyText, !draftKey && styles.keyTextActive]}>Nie ustalono</Text>
+                        </Pressable>
                         {KEYS.map((k) => {
                           const active = draftKey === k;
                           return (
@@ -405,7 +424,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                         <Pressable onPress={closeEdit} style={styles.btnGhost}>
                           <Text style={styles.btnGhostText}>Anuluj</Text>
                         </Pressable>
-                        <Pressable onPress={() => saveKey(row.id)} style={styles.btnPrimary}>
+                        <Pressable onPress={() => saveKey(row.id)} disabled={updateMut.isPending} style={[styles.btnPrimary, updateMut.isPending && { opacity: 0.6 }]}>
                           <Text style={styles.btnPrimaryText}>Zapisz</Text>
                         </Pressable>
                       </View>
@@ -418,7 +437,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                       <TextInput
                         style={styles.noteInput}
                         placeholder="Np. fragment, zwrotka, kiedy zaśpiewać…"
-                        placeholderTextColor="#857F70"
+                        placeholderTextColor="#6E685A"
                         value={draftNote}
                         onChangeText={setDraftNote}
                         multiline
@@ -489,15 +508,15 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
       >
         <Text style={styles.section}>WYBIERZ PIEŚŃ</Text>
         <Pressable onPress={onCancel} hitSlop={8}>
-          <X size={16} color="#857F70" />
+          <X size={16} color="#6E685A" />
         </Pressable>
       </View>
       <View style={styles.searchBox}>
-        <Search size={16} color="#857F70" />
+        <Search size={16} color="#6E685A" />
         <TextInput
           style={styles.searchInput}
           placeholder="Szukaj po tytule lub autorze…"
-          placeholderTextColor="#857F70"
+          placeholderTextColor="#6E685A"
           value={query}
           onChangeText={setQuery}
           autoCapitalize="none"
@@ -512,7 +531,7 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
           style={{
             paddingVertical: 16,
             textAlign: 'center',
-            color: '#857F70',
+            color: '#6E685A',
             fontFamily: 'Manrope_500Medium',
           }}
         >
@@ -536,7 +555,7 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
                   {s.title}
                 </Text>
                 {s.author ? (
-                  <Text numberOfLines={1} style={{ fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
+                  <Text numberOfLines={1} style={{ fontSize: 12, color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>
                     {s.author}
                   </Text>
                 ) : null}

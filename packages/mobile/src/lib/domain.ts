@@ -145,6 +145,15 @@ export const formatRelative = (date: Date | string) => {
   return formatDistanceToNow(d, { addSuffix: true, locale: pl });
 };
 
+// Polska odmiana liczebników: 1 zadanie, 2–4 zadania (poza 12–14), 5+ / 0 zadań.
+//   `${n} ${plural(n, 'osoba', 'osoby', 'osób')}`
+export const plural = (n: number, one: string, few: string, many: string) => {
+  if (n === 1) return one;
+  const d = n % 10;
+  const t = n % 100;
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
+};
+
 export const WEEKDAYS_PL = [
   'Niedziela',
   'Poniedziałek',

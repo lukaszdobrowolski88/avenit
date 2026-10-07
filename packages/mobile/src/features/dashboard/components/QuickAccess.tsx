@@ -11,7 +11,7 @@ import { goToTab } from '../../../lib/navigation';
 // Kolejność skrótów: najpierw służby, do których należę, potem to, co członek otwiera
 // najczęściej. Kalendarz i Czat są na dolnym pasku, więc ich tu nie dublujemy.
 const PRIORITY = [
-  'programs', 'homegroups', 'prayer', 'sermons', 'teaching', 'worship', 'media',
+  'programs', 'homegroups', 'prayer', 'teaching', 'worship', 'media',
   'atmosfera', 'kids', 'mlodziezowka', 'members', 'boards', 'songs', 'forms',
 ];
 const SKIP = new Set(['calendar', 'komunikator']);

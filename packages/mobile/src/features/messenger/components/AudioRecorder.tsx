@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { showError } from "../../../lib/errors";
 import { Audio } from "expo-av";
 import { Mic, Pause, Play, Send, Square, X } from "lucide-react-native";
 
@@ -83,7 +84,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
         setIsRecording(true);
       } catch (e: any) {
         if (__DEV__) console.warn("[recorder] start failed", e);
-        Alert.alert("Błąd", e?.message ?? "Nie udało się uruchomić nagrywania.");
+        showError("Nie udało się nagrywać", e, "Nie udało się uruchomić nagrywania. Spróbuj ponownie.");
         onCancel();
       }
     })();
@@ -131,7 +132,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
       setIsRecording(false);
       setRecording(null);
     } catch (e: any) {
-      Alert.alert("Błąd", e?.message ?? "Nie udało się zakończyć nagrywania.");
+      showError("Nie udało się nagrywać", e, "Nie udało się zakończyć nagrywania. Spróbuj ponownie.");
     }
   };
 
@@ -171,8 +172,8 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
     setSending(true);
     try {
       await onSend(preview.uri, preview.mime, preview.durationMs);
-    } catch (e: any) {
-      Alert.alert("Błąd wysyłki", e?.message ?? "Nie udało się wysłać wiadomości.");
+    } catch {
+      // Błąd wysyłki pokazuje ekran rozmowy (handleSendVoice) — nagranie zostaje do ponowienia.
     } finally {
       setSending(false);
     }
@@ -225,7 +226,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             justifyContent: "center",
           }}
         >
-          <X size={16} color="#ef4444" strokeWidth={2.4} />
+          <X size={16} color="#B42318" strokeWidth={2.4} />
         </Pressable>
 
         <View
@@ -271,7 +272,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
               width: 8,
               height: 8,
               borderRadius: 4,
-              backgroundColor: isPaused ? "#FFBE0B" : "#ef4444",
+              backgroundColor: isPaused ? "#FFBE0B" : "#B42318",
             }}
           />
           <Text
@@ -361,7 +362,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             opacity: sending ? 0.5 : 1,
           }}
         >
-          <X size={16} color="#ef4444" strokeWidth={2.4} />
+          <X size={16} color="#B42318" strokeWidth={2.4} />
         </Pressable>
 
         <Pressable
@@ -410,7 +411,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
           <Text
             style={{
               fontSize: 11,
-              color: "#857F70",
+              color: "#6E685A",
               fontFamily: "Manrope_500Medium",
               fontVariant: ["tabular-nums"],
             }}

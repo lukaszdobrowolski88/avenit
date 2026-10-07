@@ -22,6 +22,7 @@ import { usePermissions } from '../../../src/lib/permissions';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { SESSION_TYPES, useCreateSession, useSessions, type Session, type SessionType } from '../../../src/features/attendance/api';
 import { DateBlock, Empty, Loading, dayLabel } from '../../../src/features/teams/tabs/ui';
+import { friendlyError } from '../../../src/lib/errors';
 
 const TYPE_LABEL = Object.fromEntries(SESSION_TYPES.map((t) => [t.key, t.label])) as Record<SessionType, string>;
 
@@ -75,6 +76,7 @@ export default function AttendanceScreen() {
   };
 
   const save = async () => {
+    if (create.isPending) return;
     const hc = headcount.trim() ? Number(headcount) : null;
     if (hc != null && (!Number.isFinite(hc) || hc < 0)) {
       Alert.alert('Błędna liczba', 'Liczba osób musi być nieujemną liczbą.');
@@ -85,7 +87,7 @@ export default function AttendanceScreen() {
       setOpen(false);
       router.push({ pathname: '/(app)/attendance/[id]', params: { id } });
     } catch (e: any) {
-      Alert.alert('Nie udało się', e?.message ?? 'Spróbuj ponownie.');
+      Alert.alert('Nie udało się utworzyć sesji', friendlyError(e, 'Spróbuj ponownie.'));
     }
   };
 
@@ -133,11 +135,11 @@ export default function AttendanceScreen() {
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={{ fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{s.count}</Text>
-                <Text style={{ fontSize: 10, color: '#857F70', fontFamily: 'Manrope_600SemiBold' }}>
+                <Text style={{ fontSize: 10, color: '#6E685A', fontFamily: 'Manrope_600SemiBold' }}>
                   {s.estimated ? 'szacunkowo' : 'obecnych'}
                 </Text>
               </View>
-              <ChevronRight size={16} color="#857F70" />
+              <ChevronRight size={16} color="#6E685A" />
             </Pressable>
           ))}
         </ScrollView>
@@ -169,7 +171,7 @@ export default function AttendanceScreen() {
               })}
             </View>
             <Label>Nazwa (opcjonalnie)</Label>
-            <TextInput value={title} onChangeText={setTitle} placeholder="np. Nabożeństwo niedzielne" placeholderTextColor="#857F70" style={inputStyle} />
+            <TextInput value={title} onChangeText={setTitle} placeholder="np. Nabożeństwo niedzielne" placeholderTextColor="#6E685A" style={inputStyle} />
             <Label>Data</Label>
             <DateField value={date} onChange={setDate} />
             <Label>Liczba osób (szacunkowo, opcjonalnie)</Label>
@@ -178,10 +180,10 @@ export default function AttendanceScreen() {
               onChangeText={(t) => setHeadcount(t.replace(/\D/g, ''))}
               keyboardType="number-pad"
               placeholder="np. 85"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               style={inputStyle}
             />
-            <Text style={{ fontSize: 12, lineHeight: 17, color: '#857F70', marginTop: 10, fontFamily: 'Manrope_400Regular' }}>
+            <Text style={{ fontSize: 12, lineHeight: 17, color: '#6E685A', marginTop: 10, fontFamily: 'Manrope_400Regular' }}>
               Po utworzeniu odhaczysz obecnych z listy członków i dopiszesz gości.
             </Text>
             <Pressable

@@ -12,6 +12,7 @@ import { SermonAudioPlayer } from '../../../src/features/sermons/components/Serm
 import { B, Monogram } from '../../../src/components/ui/brand';
 import { SermonVideo } from '../../../src/features/sermons/components/SermonVideo';
 import { useSermon } from '../../../src/features/sermons/api';
+import { friendlyError } from '../../../src/lib/errors';
 
 export default function SermonDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,9 +40,9 @@ export default function SermonDetailScreen() {
         <View className="flex-1 items-center justify-center px-6">
           <Text
             className="text-center"
-            style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
+            style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
           >
-            {(error as Error)?.message ?? 'Błąd'}
+            {friendlyError(error, 'Nie udało się wczytać kazania.')}
           </Text>
         </View>
       </View>
@@ -113,7 +114,7 @@ export default function SermonDetailScreen() {
               </Text>
               <Text
                 className="text-[14px]"
-                style={{ color: '#3A3427', fontFamily: 'Manrope_400Regular', lineHeight: 22 }}
+                style={{ color: '#2A2312', fontFamily: 'Manrope_400Regular', lineHeight: 22 }}
               >
                 {sermon.notes}
               </Text>
@@ -123,7 +124,7 @@ export default function SermonDetailScreen() {
           {!sermon.audio_url && !sermon.video_url ? (
             <Text
               className="text-[13px] text-center mt-2"
-              style={{ color: '#857F70', fontFamily: 'Manrope_400Regular' }}
+              style={{ color: '#6E685A', fontFamily: 'Manrope_400Regular' }}
             >
               Brak dostępnego nagrania dla tego kazania.
             </Text>

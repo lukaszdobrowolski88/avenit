@@ -4,7 +4,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CalendarPlus, ChevronLeft, ChevronRight, Minus, Pencil, Plus } from 'lucide-react-native';
 import { B } from '../../../src/components/ui/brand';
-import { useSongLibrary, useSongRecord, useSongUsage, type SongListItem, type SongRecord, type SongUse } from '../../../src/features/songs/library';
+import {
+  buildSongTagList,
+  useSongLibrary,
+  useSongRecord,
+  useSongTagDictionary,
+  useSongUsage,
+  type SongListItem,
+  type SongRecord,
+  type SongUse,
+} from '../../../src/features/songs/library';
+import { friendlyError } from '../../../src/lib/errors';
 import { TransposeControl } from '../../../src/features/songs/components/TransposeControl';
 import { LyricsView } from '../../../src/features/songs/components/LyricsView';
 import { ChordsView } from '../../../src/features/songs/components/ChordsView';
@@ -49,7 +59,8 @@ export default function SongDetailScreen() {
   const [editing, setEditing] = useState(false);
 
   const canEdit = perms.can('res:songs:update');
-  const allTags = useMemo(() => Array.from(new Set(((library.data ?? []) as SongListItem[]).flatMap((s) => s.tags))), [library.data]);
+  const dict = useSongTagDictionary();
+  const allTags = useMemo(() => buildSongTagList(dict.data ?? [], (library.data ?? []) as SongListItem[]), [dict.data, library.data]);
 
   // Domyślna zakładka: tekst, a bez tekstu — akordy albo materiały.
   useEffect(() => {
@@ -71,7 +82,7 @@ export default function SongDetailScreen() {
           <ChevronLeft size={20} color={B.ink} />
         </Pressable>
         <Text style={{ marginTop: 40, textAlign: 'center', color: B.ink3, fontFamily: F.medium }}>
-          {q.isError ? (q.error as Error)?.message ?? 'Błąd' : 'Pieśń nie istnieje albo została usunięta.'}
+          {q.isError ? friendlyError(q.error, 'Nie udało się wczytać pieśni.') : 'Pieśń nie istnieje albo została usunięta.'}
         </Text>
       </View>
     );

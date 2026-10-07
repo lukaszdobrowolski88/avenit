@@ -10,8 +10,8 @@ export const D = {
   ink: '#2A2312', // słód
   // Meta (godzina, miejsce, liczniki).
   ink2: '#6B6557',
-  // Podpisy, nieaktywne zakładki.
-  ink3: '#857F70',
+  // Podpisy, nieaktywne zakładki — #6E685A: 5,5:1 na bieli (jak web po audycie; było 3,9:1).
+  ink3: '#6E685A',
   hair: '#ECE8DE',
   accent: '#FFBE0B', // kurkuma
   accentSoft: '#FFF1C2',

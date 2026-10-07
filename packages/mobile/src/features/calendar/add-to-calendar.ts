@@ -1,6 +1,8 @@
 import { Alert, Platform } from 'react-native';
 import * as ExpoCalendar from 'expo-calendar';
 import type { AgendaEvent } from './api';
+import { showError } from '../../lib/errors';
+import { toast } from '../../lib/toast';
 
 // Zapis wydarzenia w kalendarzu telefonu (iOS: kalendarz domyślny, Android: pierwszy zapisywalny).
 export const addToPhoneCalendar = async (
@@ -23,7 +25,7 @@ export const addToPhoneCalendar = async (
           cals.find((c) => c.allowsModifications))?.id ?? null;
     }
     if (!calendarId) {
-      Alert.alert('Błąd', 'Nie znaleziono kalendarza, do którego można zapisać wydarzenie.');
+      Alert.alert('Brak kalendarza w telefonie', 'Nie znaleziono kalendarza, do którego można zapisać wydarzenie.');
       return;
     }
     await ExpoCalendar.createEventAsync(calendarId, {
@@ -34,8 +36,8 @@ export const addToPhoneCalendar = async (
       notes: notes ?? undefined,
       allDay: event.allDay,
     });
-    Alert.alert('Dodano do kalendarza', 'Wydarzenie zapisano w kalendarzu telefonu.');
+    toast.success('Dodano do kalendarza', 'Wydarzenie zapisano w kalendarzu telefonu.');
   } catch (err) {
-    Alert.alert('Błąd', (err as Error)?.message ?? 'Nie udało się zapisać wydarzenia.');
+    showError('Nie udało się dodać do kalendarza', err, 'Nie udało się zapisać wydarzenia w kalendarzu telefonu.');
   }
 };

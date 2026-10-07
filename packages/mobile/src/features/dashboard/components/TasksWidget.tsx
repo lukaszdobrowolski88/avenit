@@ -32,6 +32,8 @@ import {
 } from 'lucide-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '../../../lib/domain';
+import { showError } from '../../../lib/errors';
+import { toast } from '../../../lib/toast';
 import { DateField } from '../../../components/ui/DateField';
 import { EmptyRow, WidgetCard } from './WidgetCard';
 import { D, F } from '../theme';
@@ -150,7 +152,7 @@ const Label = ({ children }: { children: string }) => (
 
 const inputStyle = {
   borderWidth: 1,
-  borderColor: '#E6E1D5',
+  borderColor: '#B5AD99',
   borderRadius: 14,
   paddingHorizontal: 14,
   paddingVertical: 12,
@@ -161,7 +163,7 @@ const inputStyle = {
 };
 
 // Pole daty w stylu pól formularza (białe z ramką).
-const pickerStyle = { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E6E1D5', height: 48 };
+const pickerStyle = { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#B5AD99', height: 48 };
 
 const addDays = (iso: string, days: number): string => {
   const d = new Date(iso);
@@ -208,23 +210,11 @@ const TaskFormModal = ({
   const handleSubmit = () => {
     const t = form.title.trim();
     if (!t) {
-      Alert.alert('Wpisz tytuł', 'Tytuł zadania jest wymagany.');
+      Alert.alert('Uzupełnij tytuł', 'Tytuł zadania jest wymagany.');
       return;
     }
-    let dueIso: string | null = null;
-    const dt = dateText.trim();
-    if (dt) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dt)) {
-        Alert.alert('Błędna data', 'Format: YYYY-MM-DD');
-        return;
-      }
-      const parsed = new Date(dt);
-      if (isNaN(parsed.getTime())) {
-        Alert.alert('Błędna data', 'Sprawdź wpisaną datę.');
-        return;
-      }
-      dueIso = dt;
-    }
+    // Termin z DateField (zawsze RRRR-MM-DD albo pusty).
+    const dueIso: string | null = /^\d{4}-\d{2}-\d{2}$/.test(dateText.trim()) ? dateText.trim() : null;
     onSubmit({ ...form, title: t, due_date: dueIso });
   };
 
@@ -251,14 +241,14 @@ const TaskFormModal = ({
       const att = await uploadTaskAttachment(form.id ?? null, asset);
       setForm((f) => ({ ...f, attachments: [...f.attachments, att] }));
     } catch (e: any) {
-      Alert.alert('Błąd uploadu', e?.message ?? 'Nie udało się wgrać pliku');
+      showError('Nie udało się dodać załącznika', e, 'Spróbuj ponownie albo wybierz mniejszy plik.');
     } finally {
       setUploading(false);
     }
   };
 
   const handleRemoveAttachment = (att: TaskAttachment) => {
-    Alert.alert('Usunąć załącznik?', att.name, [
+    Alert.alert('Usunąć załącznik?', `„${att.name}” zostanie usunięty z zadania.`, [
       { text: 'Anuluj', style: 'cancel' },
       {
         text: 'Usuń',
@@ -322,7 +312,7 @@ const TaskFormModal = ({
               value={form.title}
               onChangeText={(v) => setForm((f) => ({ ...f, title: v }))}
               placeholder="Co jest do zrobienia?"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               style={[inputStyle, { marginBottom: 14 }]}
               autoFocus={!isEdit}
               returnKeyType="next"
@@ -382,7 +372,7 @@ const TaskFormModal = ({
                     }}
                     hitSlop={8}
                   >
-                    <X size={16} color="#857F70" />
+                    <X size={16} color="#6E685A" />
                   </Pressable>
                 </>
               ) : (
@@ -409,7 +399,7 @@ const TaskFormModal = ({
                   >
                     Nikt — tap aby przypisać
                   </Text>
-                  <UserIcon size={16} color="#857F70" />
+                  <UserIcon size={16} color="#6E685A" />
                 </>
               )}
             </Pressable>
@@ -494,7 +484,7 @@ const TaskFormModal = ({
               value={form.description}
               onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
               placeholder="Szczegóły zadania..."
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               multiline
               style={[
                 inputStyle,
@@ -589,7 +579,7 @@ const TaskFormModal = ({
                       hitSlop={8}
                       style={{ padding: 4 }}
                     >
-                      <Trash2 size={14} color="#857F70" />
+                      <Trash2 size={14} color="#6E685A" />
                     </Pressable>
                   </View>
                 );
@@ -854,15 +844,15 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
       onSuccess: () => {
         setModalOpen(false);
         setEditing(null);
+        toast.success(form.id ? 'Zadanie zapisane' : 'Zadanie dodane');
       },
-      onError: (err: any) =>
-        Alert.alert('Błąd', err?.message ?? 'Nie udało się zapisać zadania'),
+      onError: (err) => showError('Nie udało się zapisać zadania', err),
     });
   };
 
   const handleDelete = () => {
     if (!editing?.id) return;
-    Alert.alert('Usunąć zadanie?', 'Tej operacji nie można cofnąć.', [
+    Alert.alert('Usunąć zadanie?', `„${editing.title}” zniknie z listy zadań u wszystkich osób, które je widzą. Tej operacji nie można cofnąć.`, [
       { text: 'Anuluj', style: 'cancel' },
       {
         text: 'Usuń',
@@ -872,9 +862,9 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
             onSuccess: () => {
               setModalOpen(false);
               setEditing(null);
+              toast.success('Zadanie usunięte');
             },
-            onError: (err: any) =>
-              Alert.alert('Błąd', err?.message ?? 'Nie udało się usunąć'),
+            onError: (err) => showError('Nie udało się usunąć zadania', err),
           });
         },
       },
@@ -896,8 +886,7 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
         attachments: (Array.isArray(t.attachments) ? t.attachments : []),
       },
       {
-        onError: (err: any) =>
-          Alert.alert('Błąd', err?.message ?? 'Nie udało się zaktualizować'),
+        onError: (err) => showError('Nie udało się zmienić statusu zadania', err),
       },
     );
   };
@@ -929,7 +918,7 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
       >
         <View style={{ height: 6 }} />
         {items.length === 0 ? (
-          <EmptyRow text="Brak zadań do zrobienia" />
+          <EmptyRow text="Brak zadań do zrobienia" hint="Dodaj zadanie dla siebie albo przypisz je komuś." actionLabel="Dodaj" onAction={openNew} />
         ) : (
           items.slice(0, 5).map((t, idx, arr) => {
             const meta = STATUS_META[t.status as Status] ?? STATUS_META.todo;
@@ -979,7 +968,7 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                     numberOfLines={1}
                     style={{
                       fontSize: 14,
-                      color: done ? '#857F70' : '#2A2312',
+                      color: done ? '#6E685A' : '#2A2312',
                       textDecorationLine: done ? 'line-through' : 'none',
                       fontFamily: 'Manrope_500Medium',
                     }}
@@ -1011,7 +1000,7 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
                       >
-                        <UserIcon size={9} color="#857F70" strokeWidth={2.4} />
+                        <UserIcon size={9} color="#6E685A" strokeWidth={2.4} />
                         <Text
                           style={{
                             fontSize: 10,
@@ -1031,7 +1020,7 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
                       >
-                        <Paperclip size={9} color="#857F70" strokeWidth={2.4} />
+                        <Paperclip size={9} color="#6E685A" strokeWidth={2.4} />
                         <Text
                           style={{
                             fontSize: 10,
@@ -1047,7 +1036,7 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
                       >
-                        <MessageCircleIcon size={9} color="#857F70" strokeWidth={2.4} />
+                        <MessageCircleIcon size={9} color="#6E685A" strokeWidth={2.4} />
                         <Text
                           style={{
                             fontSize: 10,
@@ -1063,11 +1052,11 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
                       >
-                        <Lock size={9} color="#857F70" strokeWidth={2.4} />
+                        <Lock size={9} color="#6E685A" strokeWidth={2.4} />
                         <Text
                           style={{
                             fontSize: 10,
-                            color: '#857F70',
+                            color: '#6E685A',
                             fontFamily: 'Manrope_600SemiBold',
                           }}
                         >

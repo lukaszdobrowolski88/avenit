@@ -5,6 +5,7 @@ import { B } from '../../../components/ui/brand';
 import { Chip, FormInput, FormLabel, PrimaryButton, Sheet } from '../../../components/ui/Sheet';
 import { useProposals, useSubmitProposal, type Proposal } from '../proposals';
 import { money } from '../tabs/ui';
+import { friendlyError } from '../../../lib/errors';
 
 // Propozycje budżetu zespołu: lista ze statusem + zgłoszenie nowej pozycji do skarbnika.
 
@@ -46,7 +47,7 @@ const ProposalSheet = ({ visible, financeName, myEmail, onClose }: { visible: bo
           onClose();
           Alert.alert('Wysłano', 'Propozycja trafiła do zatwierdzenia przez osoby od finansów.');
         },
-        onError: (e: any) => Alert.alert('Nie udało się wysłać', e?.message ?? 'Spróbuj ponownie.'),
+        onError: (e: unknown) => Alert.alert('Nie udało się wysłać', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
   };

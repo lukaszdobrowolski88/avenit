@@ -1,5 +1,33 @@
+import { Alert } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
+import { friendlyError } from "../../lib/errors";
+import { toast } from "../../lib/toast";
+
+// Kolejność zapisu wymuszona przez serwer (packages/api/src/dataapi/komunikator.js), jak web:
+//  1) rozmowa (created_by = zalogowany), 2) skład — twórca jako 'admin', cały w JEDNYM zapisie
+//  (pierwszy skład dodaje tylko twórca pustej rozmowy), 3) dopiero potem wiadomości (pisze
+//  tylko uczestnik; w kanale „tylko administratorzy” — administrator rozmowy).
+// Zapisy, które mają dotrzeć do innych przez realtime, idą z `.select()`.
+
+// Porównanie e-maili bez względu na wielkość liter (serwer porównuje lower()).
+export const normEmail = (e: string | null | undefined) => String(e ?? "").trim().toLowerCase();
+export const sameEmail = (a: string | null | undefined, b: string | null | undefined) =>
+  !!a && !!b && normEmail(a) === normEmail(b);
+// Wzorzec do .ilike() dla dokładnego e-maila bez względu na wielkość liter (% i _ dosłownie).
+export const emailPattern = (e: string) => String(e ?? "").replace(/[\\%_]/g, "\\$&");
+
+// Czy mogę pisać w rozmowie (kanał „tylko administratorzy”: tylko administratorzy rozmowy).
+export const canPostIn = (
+  c: { posting_policy?: string | null; my_role?: string | null } | null | undefined,
+): boolean => {
+  if (!c) return false;
+  return (c.posting_policy || "everyone") !== "admins" || c.my_role === "admin";
+};
+
+// Błąd zapisu w czacie po ludzku (hooki listy rozmów nie mają własnej obsługi błędów).
+const alertError = (title: string, fallback: string) => (e: unknown) =>
+  Alert.alert(title, friendlyError(e, fallback));
 
 export interface ConversationListItem {
   id: string;
@@ -14,6 +42,8 @@ export interface ConversationListItem {
   muted?: boolean;
   pinned?: boolean;
   posting_policy?: "everyone" | "admins";
+  /** Moja rola w rozmowie ('admin' | 'member'). */
+  my_role?: string | null;
   description?: string | null;
   unread_count?: number;
   participants_count?: number;
@@ -171,7 +201,7 @@ export const MINISTRY_CHANNEL_META: Record<
   atmosfera: { label: "Atmosfera", tint: "#6B6557", bg: "#ECE8DE" },
   kids: { label: "Dzieci", tint: "#FFBE0B", bg: "#FFF1C2" },
   groups: { label: "Grupy domowe", tint: "#6B6557", bg: "#ECE8DE" },
-  mlodziezowka: { label: "Młodzieżówka", tint: "#f43f5e", bg: "#ffe4e6" },
+  mlodziezowka: { label: "Młodzieżówka", tint: "#6B6557", bg: "#ECE8DE" },
 };
 
 export interface MessageAttachment {
@@ -217,13 +247,13 @@ export interface MessageRow {
   mentions?: string[] | null;
 }
 
-export const EDIT_WINDOW_MINUTES = 5;
-
+// Jak web (MessageBubble): edytować można własną wiadomość tekstową z treścią — bez limitu
+// czasu; ankiet, wydarzeń i próśb o modlitwę nie edytujemy.
 export const canEditMessage = (msg: MessageRow, userEmail: string | null): boolean => {
-  if (!userEmail || msg.sender_email !== userEmail) return false;
+  if (!userEmail || !sameEmail(msg.sender_email, userEmail)) return false;
   if (msg.deleted_at) return false;
-  const ageMs = Date.now() - new Date(msg.created_at).getTime();
-  return ageMs <= EDIT_WINDOW_MINUTES * 60 * 1000;
+  if (msg.message_type && msg.message_type !== "text") return false;
+  return !!msg.content;
 };
 
 export const useConversations = (userEmail: string | null) =>
@@ -232,10 +262,11 @@ export const useConversations = (userEmail: string | null) =>
     queryFn: async (): Promise<ConversationListItem[]> => {
       if (!userEmail) return [];
       // Konwersacje, w których jestem uczestnikiem (z metadata: starred/archived/muted).
+      // ilike — wiersz uczestnika bywa zapisany inną wielkością liter (np. z tabeli zespołu).
       const { data: parts, error: partsErr } = await supabase
         .from("conversation_participants")
-        .select("conversation_id, last_read_at, starred, archived, muted, pinned")
-        .eq("user_email", userEmail);
+        .select("conversation_id, last_read_at, starred, archived, muted, pinned, role")
+        .ilike("user_email", emailPattern(userEmail));
       if (partsErr) throw partsErr;
       const ids = (parts ?? []).map((p: any) => p.conversation_id);
       const lastReadByConv = new Map<string, string | null>(
@@ -243,7 +274,7 @@ export const useConversations = (userEmail: string | null) =>
       );
       const flagsByConv = new Map<
         string,
-        { starred: boolean; archived: boolean; muted: boolean; pinned: boolean }
+        { starred: boolean; archived: boolean; muted: boolean; pinned: boolean; role: string | null }
       >(
         (parts ?? []).map((p: any) => [
           p.conversation_id,
@@ -252,6 +283,7 @@ export const useConversations = (userEmail: string | null) =>
             archived: !!p.archived,
             muted: !!p.muted,
             pinned: !!p.pinned,
+            role: p.role ?? null,
           },
         ]),
       );
@@ -295,17 +327,18 @@ export const useConversations = (userEmail: string | null) =>
         const all = allMessagesByConv.get(cid) ?? [];
         const count = all.filter(
           (m: any) =>
-            m.sender_email !== userEmail &&
+            !sameEmail(m.sender_email, userEmail) &&
             new Date(m.created_at).getTime() > lastReadMs,
         ).length;
         unreadByConv.set(cid, count);
       }
 
       // Liczba uczestników per konwersacja + dla direct - email drugiego uczestnika.
-      const { data: allParts } = await supabase
+      const { data: allParts, error: allPartsErr } = await supabase
         .from("conversation_participants")
         .select("conversation_id, user_email")
         .in("conversation_id", visibleIds);
+      if (allPartsErr) throw allPartsErr;
       const partsCountByConv = new Map<string, number>();
       const peerByConv = new Map<string, string>();
       for (const r of (allParts ?? []) as any[]) {
@@ -314,7 +347,7 @@ export const useConversations = (userEmail: string | null) =>
           (partsCountByConv.get(r.conversation_id) ?? 0) + 1,
         );
         // Pierwszy znaleziony uczestnik różny od mnie — to "peer" dla direct.
-        if (r.user_email && r.user_email !== userEmail && !peerByConv.has(r.conversation_id)) {
+        if (r.user_email && !sameEmail(r.user_email, userEmail) && !peerByConv.has(r.conversation_id)) {
           peerByConv.set(r.conversation_id, r.user_email);
         }
       }
@@ -325,6 +358,7 @@ export const useConversations = (userEmail: string | null) =>
           archived: false,
           muted: false,
           pinned: false,
+          role: null,
         };
         return {
           id: c.id,
@@ -339,6 +373,7 @@ export const useConversations = (userEmail: string | null) =>
           muted: flags.muted,
           pinned: flags.pinned,
           posting_policy: (c.posting_policy as "everyone" | "admins") ?? "everyone",
+          my_role: flags.role,
           description: c.description ?? null,
           unread_count: unreadByConv.get(c.id) ?? 0,
           participants_count: partsCountByConv.get(c.id) ?? 0,
@@ -388,133 +423,162 @@ export interface SendMessageInput {
   mentions?: string[];
 }
 
+// Dopisz wiadomość do cache wątku bez duplikatów (wysłana albo z realtime).
+const appendToThread = (qc: ReturnType<typeof useQueryClient>, conversationId: string, row: MessageRow) =>
+  qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) => {
+    if (!prev) return [row];
+    if (prev.some((m: MessageRow) => m.id === row.id)) return prev;
+    return [...prev, row];
+  });
+
 export const useSendMessage = (conversationId: string, senderEmail: string | null) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: SendMessageInput | string) => {
-      if (!senderEmail) throw new Error("Brak zalogowanego użytkownika");
+    mutationFn: async (input: SendMessageInput | string): Promise<MessageRow | null> => {
+      if (!senderEmail) throw new Error("Twoja sesja wygasła. Zaloguj się ponownie.");
+      if (!conversationId) throw new Error("Nie wybrano rozmowy.");
       const data: SendMessageInput =
         typeof input === "string" ? { content: input } : input;
-      const { error } = await (supabase.from("messages") as any).insert({
-        conversation_id: conversationId,
-        sender_email: senderEmail,
-        content: data.content,
-        attachments: data.attachments ?? [],
-        reply_to_id: data.replyToId ?? null,
-        message_type: data.messageType ?? "text",
-        metadata: data.metadata ?? {},
-        mentions: data.mentions ?? [],
-      });
+      // .select() — wiersz wraca od razu (pokazujemy go bez czekania), a serwer rozsyła go
+      // uczestnikom przez realtime. Błąd (np. kanał „tylko administratorzy”) rzucamy dalej.
+      const { data: row, error } = await (supabase.from("messages") as any)
+        .insert({
+          conversation_id: conversationId,
+          sender_email: senderEmail,
+          content: data.content,
+          attachments: data.attachments ?? [],
+          reply_to_id: data.replyToId ?? null,
+          message_type: data.messageType ?? "text",
+          metadata: data.metadata ?? {},
+          mentions: data.mentions ?? [],
+        })
+        .select()
+        .single();
       if (error) throw error;
+      return (row as MessageRow) ?? null;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+    onSuccess: (row) => {
+      if (row?.id) appendToThread(qc, conversationId, row);
+      else qc.invalidateQueries({ queryKey: ["messages", conversationId] });
       qc.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 };
 
+// Edycja własnej wiadomości. Serwer zawęża zapis do autora (lub administratora rozmowy);
+// pusty wynik = brak prawa do tej wiadomości.
 export const useEditMessage = (conversationId: string) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, content }: { id: string; content: string }) => {
-      const { error } = await (supabase.from("messages") as any)
+    mutationFn: async ({ id, content }: { id: string; content: string }): Promise<MessageRow> => {
+      const { data, error } = await (supabase.from("messages") as any)
         .update({ content, edited_at: new Date().toISOString() })
-        .eq("id", id);
+        .eq("id", id)
+        .select();
       if (error) throw error;
+      const row = (Array.isArray(data) ? data[0] : data) as MessageRow | undefined;
+      if (!row) throw new Error("Możesz edytować tylko własne wiadomości.");
+      return row;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+    onSuccess: (row) => {
+      qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) =>
+        prev ? prev.map((m: MessageRow) => (m.id === row.id ? { ...m, ...row } : m)) : prev,
+      );
     },
   });
 };
 
+// Usunięcie (miękkie) własnej wiadomości — znika u wszystkich przez realtime.
 export const useDeleteMessage = (conversationId: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase.from("messages") as any)
+      const { data, error } = await (supabase.from("messages") as any)
         .update({ deleted_at: new Date().toISOString() })
-        .eq("id", id);
+        .eq("id", id)
+        .select("id, conversation_id, deleted_at");
       if (error) throw error;
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        throw new Error("Możesz usuwać tylko własne wiadomości.");
+      }
+      return id;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+    onSuccess: (id) => {
+      qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) =>
+        prev ? prev.filter((m: MessageRow) => m.id !== id) : prev,
+      );
+      qc.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 };
 
+// „Przeczytane” — zapis w tle (bez komunikatów, jak web); błąd tylko w konsoli dewelopera.
 export const markConversationRead = async (
   conversationId: string,
   userEmail: string,
 ): Promise<void> => {
-  await (supabase.from("conversation_participants") as any)
+  const { error } = await (supabase.from("conversation_participants") as any)
     .update({ last_read_at: new Date().toISOString() })
     .eq("conversation_id", conversationId)
-    .eq("user_email", userEmail);
+    .ilike("user_email", emailPattern(userEmail));
+  if (error && __DEV__) console.warn("[messenger] markConversationRead failed:", error.message);
+};
+
+// Zmiana MOJEGO wiersza uczestnika (ulubione, archiwum, wyciszenie, przypięcie). Pusty
+// wynik = nie jestem już uczestnikiem tej rozmowy.
+const updateMyParticipation = async (
+  conversationId: string,
+  userEmail: string | null,
+  patch: Record<string, unknown>,
+) => {
+  if (!userEmail) throw new Error("Twoja sesja wygasła. Zaloguj się ponownie.");
+  const { data, error } = await (supabase.from("conversation_participants") as any)
+    .update(patch)
+    .eq("conversation_id", conversationId)
+    .ilike("user_email", emailPattern(userEmail))
+    .select("conversation_id, user_email");
+  if (error) throw error;
+  if (!data || (Array.isArray(data) && data.length === 0)) {
+    throw new Error("Nie jesteś już uczestnikiem tej rozmowy.");
+  }
 };
 
 export const useToggleStarred = (userEmail: string | null) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ conversationId, starred }: { conversationId: string; starred: boolean }) => {
-      if (!userEmail) throw new Error("Brak zalogowanego");
-      const { error } = await (supabase.from("conversation_participants") as any)
-        .update({ starred })
-        .eq("conversation_id", conversationId)
-        .eq("user_email", userEmail);
-      if (error) throw error;
-    },
+    mutationFn: ({ conversationId, starred }: { conversationId: string; starred: boolean }) =>
+      updateMyParticipation(conversationId, userEmail, { starred }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["conversations"] });
     },
+    onError: alertError("Nie udało się", "Nie udało się zmienić ulubionych. Spróbuj ponownie."),
   });
 };
 
 export const useToggleArchived = (userEmail: string | null) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      conversationId,
-      archived,
-    }: {
-      conversationId: string;
-      archived: boolean;
-    }) => {
-      if (!userEmail) throw new Error("Brak zalogowanego");
-      const { error } = await (supabase.from("conversation_participants") as any)
-        .update({ archived })
-        .eq("conversation_id", conversationId)
-        .eq("user_email", userEmail);
-      if (error) throw error;
-    },
-    onSuccess: () => {
+    mutationFn: ({ conversationId, archived }: { conversationId: string; archived: boolean }) =>
+      updateMyParticipation(conversationId, userEmail, { archived }),
+    onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["conversations"] });
+      toast.success(vars.archived ? "Rozmowa przeniesiona do archiwum" : "Rozmowa przywrócona z archiwum");
     },
+    onError: alertError("Nie udało się", "Nie udało się zmienić archiwum. Spróbuj ponownie."),
   });
 };
 
 export const useToggleMuted = (userEmail: string | null) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      conversationId,
-      muted,
-    }: {
-      conversationId: string;
-      muted: boolean;
-    }) => {
-      if (!userEmail) throw new Error("Brak zalogowanego");
-      const { error } = await (supabase.from("conversation_participants") as any)
-        .update({ muted })
-        .eq("conversation_id", conversationId)
-        .eq("user_email", userEmail);
-      if (error) throw error;
-    },
+    mutationFn: ({ conversationId, muted }: { conversationId: string; muted: boolean }) =>
+      updateMyParticipation(conversationId, userEmail, { muted }),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["conversations"] });
       qc.invalidateQueries({ queryKey: ["conversation", vars.conversationId] });
+      toast.success(vars.muted ? "Powiadomienia z tej rozmowy wyciszone" : "Powiadomienia z tej rozmowy włączone");
     },
+    onError: alertError("Nie udało się", "Nie udało się zmienić powiadomień. Spróbuj ponownie."),
   });
 };
 
@@ -530,6 +594,8 @@ export interface ConversationDetails {
   // Kanały ogłoszeń (spec §5): kto może pisać + moja rola w rozmowie.
   posting_policy: "everyone" | "admins";
   my_role: string | null;
+  /** Czy jestem uczestnikiem (kanał służby bywa widoczny przed dołączeniem). */
+  is_participant: boolean;
 }
 
 export const useConversationDetails = (
@@ -547,17 +613,18 @@ export const useConversationDetails = (
         .maybeSingle();
       if (error) throw error;
       if (!conv) return null;
-      const { data: parts } = await supabase
+      const { data: parts, error: partsErr } = await supabase
         .from("conversation_participants")
         .select("user_email, muted, starred, role")
         .eq("conversation_id", conversationId);
+      if (partsErr) throw partsErr;
       const participants = (parts ?? []) as Array<{
         user_email: string;
         muted: boolean | null;
         starred: boolean | null;
         role: string | null;
       }>;
-      const me = participants.find((p) => p.user_email === userEmail);
+      const me = participants.find((p) => sameEmail(p.user_email, userEmail));
       return {
         id: (conv as any).id,
         type: (conv as any).type,
@@ -569,6 +636,7 @@ export const useConversationDetails = (
         my_starred: !!me?.starred,
         posting_policy: ((conv as any).posting_policy as "everyone" | "admins") ?? "everyone",
         my_role: me?.role ?? null,
+        is_participant: !!me,
       };
     },
     enabled: !!conversationId,
@@ -659,7 +727,7 @@ export const useReactions = (conversationId: string, userEmail: string | null) =
           });
           g.count += 1;
           g.users.push(r.user_email);
-          if (r.user_email === userEmail) g.hasUserReacted = true;
+          if (sameEmail(r.user_email, userEmail)) g.hasUserReacted = true;
         }
         out[mid] = Object.values(grouped);
       }
@@ -675,35 +743,34 @@ export const useToggleReaction = (
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ messageId, emoji }: { messageId: string; emoji: string }) => {
-      if (!userEmail) throw new Error("Brak zalogowanego");
+      if (!userEmail) throw new Error("Twoja sesja wygasła. Zaloguj się ponownie.");
       // Sprawdź, czy ta sama reakcja już istnieje.
       const { data: existing, error: fErr } = await supabase
         .from("message_reactions")
         .select("id")
         .eq("message_id", messageId)
-        .eq("user_email", userEmail)
+        .ilike("user_email", emailPattern(userEmail))
         .eq("emoji", emoji)
         .maybeSingle();
       if (fErr && (fErr as any).code !== "PGRST116") throw fErr;
       const existingId = (existing as { id?: string } | null)?.id;
       if (existingId) {
-        const { error } = await supabase
-          .from("message_reactions")
+        const { error } = await (supabase.from("message_reactions") as any)
           .delete()
-          .eq("id", existingId);
+          .eq("id", existingId)
+          .select("id, message_id");
         if (error) throw error;
       } else {
-        const { error } = await (supabase.from("message_reactions") as any).insert({
-          message_id: messageId,
-          user_email: userEmail,
-          emoji,
-        });
+        const { error } = await (supabase.from("message_reactions") as any)
+          .insert({ message_id: messageId, user_email: userEmail, emoji })
+          .select("id, message_id");
         if (error) throw error;
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reactions", conversationId] });
     },
+    onError: alertError("Nie udało się", "Nie udało się zapisać reakcji. Spróbuj ponownie."),
   });
 };
 
@@ -734,7 +801,7 @@ export const usePollVotes = (conversationId: string, userEmail: string | null) =
         const m = (out[v.message_id] ??= {});
         const o = (m[v.option_id] ??= { count: 0, mine: false });
         o.count += 1;
-        if (v.user_email === userEmail) o.mine = true;
+        if (sameEmail(v.user_email, userEmail)) o.mine = true;
       }
       return out;
     },
@@ -753,35 +820,44 @@ export const useTogglePollVote = (conversationId: string, userEmail: string | nu
       optionId: string;
       multiple?: boolean;
     }) => {
-      if (!userEmail) throw new Error("Brak zalogowanego");
-      const { data: existing } = await supabase
+      if (!userEmail) throw new Error("Twoja sesja wygasła. Zaloguj się ponownie.");
+      const mine = emailPattern(userEmail);
+      const { data: existing, error: fErr } = await supabase
         .from("poll_votes")
         .select("id")
         .eq("message_id", messageId)
         .eq("option_id", optionId)
-        .eq("user_email", userEmail)
+        .ilike("user_email", mine)
         .maybeSingle();
+      if (fErr && (fErr as any).code !== "PGRST116") throw fErr;
       if ((existing as { id?: string } | null)?.id) {
         // Ponowny klik w wybraną opcję = wycofanie głosu (spec §2).
-        await supabase.from("poll_votes").delete().eq("id", (existing as any).id);
+        const { error } = await (supabase.from("poll_votes") as any)
+          .delete()
+          .eq("id", (existing as any).id)
+          .select("id, message_id");
+        if (error) throw error;
         return;
       }
       // Jednokrotny wybór → usuń wcześniejsze głosy usera w tej ankiecie.
       if (!multiple) {
-        await supabase
-          .from("poll_votes")
+        const { error } = await (supabase.from("poll_votes") as any)
           .delete()
           .eq("message_id", messageId)
-          .eq("user_email", userEmail);
+          .ilike("user_email", mine)
+          .select("id, message_id");
+        if (error) throw error;
       }
-      const { error } = await (supabase.from("poll_votes") as any).insert({
-        message_id: messageId,
-        option_id: optionId,
-        user_email: userEmail,
-      });
+      const { error } = await (supabase.from("poll_votes") as any)
+        .insert({ message_id: messageId, option_id: optionId, user_email: userEmail })
+        .select("id, message_id");
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pollVotes", conversationId] }),
+    onError: (e) => {
+      qc.invalidateQueries({ queryKey: ["pollVotes", conversationId] });
+      Alert.alert("Nie udało się zagłosować", friendlyError(e, "Spróbuj ponownie."));
+    },
   });
 };
 
@@ -807,7 +883,7 @@ export const usePrayerResponses = (conversationId: string, userEmail: string | n
       for (const r of (data ?? []) as any[]) {
         const o = (out[r.message_id] ??= { count: 0, mine: false });
         o.count += 1;
-        if (r.user_email === userEmail) o.mine = true;
+        if (sameEmail(r.user_email, userEmail)) o.mine = true;
       }
       return out;
     },
@@ -818,22 +894,23 @@ export const useTogglePrayerResponse = (conversationId: string, userEmail: strin
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ messageId, responding }: { messageId: string; responding: boolean }) => {
-      if (!userEmail) throw new Error("Brak zalogowanego");
+      if (!userEmail) throw new Error("Twoja sesja wygasła. Zaloguj się ponownie.");
       if (responding) {
-        await supabase
-          .from("prayer_responses")
+        const { error } = await (supabase.from("prayer_responses") as any)
           .delete()
           .eq("message_id", messageId)
-          .eq("user_email", userEmail);
+          .ilike("user_email", emailPattern(userEmail))
+          .select("message_id, user_email");
+        if (error) throw error;
       } else {
-        const { error } = await (supabase.from("prayer_responses") as any).insert({
-          message_id: messageId,
-          user_email: userEmail,
-        });
+        const { error } = await (supabase.from("prayer_responses") as any)
+          .insert({ message_id: messageId, user_email: userEmail })
+          .select("message_id, user_email");
         if (error) throw error;
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["prayerResponses", conversationId] }),
+    onError: alertError("Nie udało się", "Nie udało się zapisać „Modlę się”. Spróbuj ponownie."),
   });
 };
 
@@ -841,15 +918,10 @@ export const useTogglePrayerResponse = (conversationId: string, userEmail: strin
 export const useTogglePinConversation = (userEmail: string | null) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ conversationId, pinned }: { conversationId: string; pinned: boolean }) => {
-      if (!userEmail) throw new Error("Brak zalogowanego");
-      const { error } = await (supabase.from("conversation_participants") as any)
-        .update({ pinned })
-        .eq("conversation_id", conversationId)
-        .eq("user_email", userEmail);
-      if (error) throw error;
-    },
+    mutationFn: ({ conversationId, pinned }: { conversationId: string; pinned: boolean }) =>
+      updateMyParticipation(conversationId, userEmail, { pinned }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["conversations"] }),
+    onError: alertError("Nie udało się", "Nie udało się przypiąć rozmowy. Spróbuj ponownie."),
   });
 };
 
@@ -875,7 +947,7 @@ export const useUpcomingEvents = () =>
         .gte("date", today)
         .order("date", { ascending: true })
         .limit(50);
-      if (error) return [];
+      if (error) throw error;
       return ((data ?? []) as any[])
         .filter((e) => e.title)
         .map((e) => ({
@@ -934,20 +1006,19 @@ export const useTogglePin = (
       messageId: string;
       pinned: boolean;
     }) => {
-      if (!userEmail) throw new Error("Brak zalogowanego");
+      if (!userEmail) throw new Error("Twoja sesja wygasła. Zaloguj się ponownie.");
+      // .select() — przypięcie widzą od razu pozostali uczestnicy (realtime).
       if (pinned) {
-        const { error } = await supabase
-          .from("pinned_messages")
+        const { error } = await (supabase.from("pinned_messages") as any)
           .delete()
           .eq("message_id", messageId)
-          .eq("conversation_id", conversationId);
+          .eq("conversation_id", conversationId)
+          .select("id, message_id, conversation_id");
         if (error) throw error;
       } else {
-        const { error } = await (supabase.from("pinned_messages") as any).insert({
-          message_id: messageId,
-          conversation_id: conversationId,
-          pinned_by: userEmail,
-        });
+        const { error } = await (supabase.from("pinned_messages") as any)
+          .insert({ message_id: messageId, conversation_id: conversationId, pinned_by: userEmail })
+          .select("id, message_id, conversation_id");
         if (error) throw error;
       }
     },
@@ -1047,10 +1118,10 @@ export const markMessagesAsRead = async (
     delivered_at: now,
   }));
   // ignoreDuplicates:false — przeczytanie MUSI nadpisać ewentualny wiersz „tylko doręczone".
-  const { error } = await (supabase.from("message_read_receipts") as any).upsert(
-    rows,
-    { onConflict: "message_id,user_email", ignoreDuplicates: false },
-  );
+  // .select() — nadawca widzi „przeczytane” na żywo (realtime z wierszami).
+  const { error } = await (supabase.from("message_read_receipts") as any)
+    .upsert(rows, { onConflict: "message_id,user_email", ignoreDuplicates: false })
+    .select("message_id, user_email, read_at, delivered_at");
   if (error && (error as any).code !== "42P01") {
     if (__DEV__) console.warn("[messenger] markMessagesAsRead failed:", error.message);
   }
@@ -1069,10 +1140,9 @@ export const markMessagesDelivered = async (
     delivered_at: now,
     read_at: null,
   }));
-  const { error } = await (supabase.from("message_read_receipts") as any).upsert(
-    rows,
-    { onConflict: "message_id,user_email", ignoreDuplicates: true },
-  );
+  const { error } = await (supabase.from("message_read_receipts") as any)
+    .upsert(rows, { onConflict: "message_id,user_email", ignoreDuplicates: true })
+    .select("message_id, user_email, read_at, delivered_at");
   if (error && (error as any).code !== "42P01") {
     if (__DEV__) console.warn("[messenger] markMessagesDelivered failed:", error.message);
   }
@@ -1085,7 +1155,7 @@ export const deliveryStatusFor = (
   receipts: ReadReceiptRow[] | undefined,
   senderEmail: string,
 ): DeliveryStatus => {
-  const others = (receipts ?? []).filter((r) => r.user_email !== senderEmail);
+  const others = (receipts ?? []).filter((r) => !sameEmail(r.user_email, senderEmail));
   if (others.some((r) => r.read_at)) return "read";
   if (others.some((r) => r.delivered_at)) return "delivered";
   return "sent";
@@ -1141,6 +1211,11 @@ export const useConversationMedia = (conversationId: string, enabled: boolean) =
     enabled: enabled && !!conversationId,
   });
 
+export interface ForwardResult {
+  sent: number;
+  total: number;
+}
+
 export const useForwardMessage = (senderEmail: string | null) => {
   const qc = useQueryClient();
   return useMutation({
@@ -1152,20 +1227,23 @@ export const useForwardMessage = (senderEmail: string | null) => {
       conversationIds: string[];
       content: string;
       attachments?: MessageAttachment[];
-    }) => {
-      if (!senderEmail) throw new Error("Brak zalogowanego");
-      if (conversationIds.length === 0) return;
+    }): Promise<ForwardResult> => {
+      if (!senderEmail) throw new Error("Twoja sesja wygasła. Zaloguj się ponownie.");
+      if (conversationIds.length === 0) return { sent: 0, total: 0 };
       // Osobno do każdej rozmowy: serwer odrzuca wiadomość w kanale „tylko administratorzy”
       // albo w rozmowie, w której nie jestem — zbiorczy insert przepadał wtedy w całości.
-      const failed: string[] = [];
+      let firstError: unknown = null;
+      let sent = 0;
       for (const cid of conversationIds) {
         const { error } = await (supabase.from("messages") as any)
           .insert({ conversation_id: cid, sender_email: senderEmail, content, attachments: attachments ?? [] })
           .select("id");
-        if (error) failed.push(cid);
+        if (error) firstError = firstError ?? error;
+        else sent += 1;
       }
-      if (failed.length === conversationIds.length) throw new Error("Nie udało się przekazać wiadomości");
-      if (failed.length) throw new Error(`Przekazano do ${conversationIds.length - failed.length} z ${conversationIds.length} rozmów — w pozostałych nie możesz pisać.`);
+      // Nic nie poszło → błąd (z powodem z serwera). Część poszła → wynik, ekran powie ile.
+      if (sent === 0) throw firstError ?? new Error("Nie udało się przekazać wiadomości.");
+      return { sent, total: conversationIds.length };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["conversations"] });

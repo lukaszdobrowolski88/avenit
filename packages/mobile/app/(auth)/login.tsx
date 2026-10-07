@@ -18,28 +18,36 @@ import {
 } from '../../src/lib/auth';
 import { Image } from 'expo-image';
 import { GradientButton } from '../../src/components/ui/GradientButton';
+import { B, fieldStyle } from '../../src/components/ui/brand';
+import { showError } from '../../src/lib/errors';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   // Gdy jeden e-mail jest w wielu kościołach — lista do wyboru.
   const [choices, setChoices] = useState<LoginTenant[] | null>(null);
 
   const submit = async (chosenTenant?: string) => {
     if (!email || !password) {
-      Alert.alert('Brak danych', 'Wpisz email i hasło.');
+      Alert.alert('Uzupełnij dane', 'Wpisz adres e-mail i hasło.');
       return;
     }
+    if (loading) return;
     setLoading(true);
     const trimmed = email.trim();
-    const result = await universalLogin(
-      trimmed,
-      password,
-      chosenTenant ? { tenant: chosenTenant } : undefined,
-    );
-    setLoading(false);
+    let result: Awaited<ReturnType<typeof universalLogin>>;
+    try {
+      result = await universalLogin(trimmed, password, chosenTenant ? { tenant: chosenTenant } : undefined);
+    } catch (e) {
+      // Brak sieci / serwer nieosiągalny — wcześniej przycisk zostawał w nieskończoność w trybie ładowania.
+      showError('Nie udało się zalogować', e);
+      return;
+    } finally {
+      setLoading(false);
+    }
     if ('ok' in result) {
       setChoices(null);
       router.replace('/(auth)/biometric');
@@ -56,19 +64,27 @@ export default function LoginScreen() {
       router.replace('/(auth)/totp');
       return;
     }
-    Alert.alert('Błąd logowania', result.error.message);
+    showError('Nie udało się zalogować', result.error, 'Sprawdź adres e-mail i hasło, a potem spróbuj ponownie.');
   };
 
   const handleLogin = () => submit();
 
   const handleReset = async () => {
-    if (!email) {
-      Alert.alert('Wpisz email', 'Podaj adres email aby zresetować hasło.');
+    if (!email.trim()) {
+      Alert.alert('Wpisz adres e-mail', 'Podaj adres e-mail konta, a wyślemy link do ustawienia nowego hasła.');
       return;
     }
-    const { error } = await sendPasswordReset(email.trim());
-    if (error) Alert.alert('Błąd', error.message);
-    else Alert.alert('Sprawdź pocztę', 'Wysłaliśmy link do resetu hasła.');
+    if (resetting) return;
+    setResetting(true);
+    try {
+      const { error } = await sendPasswordReset(email.trim());
+      if (error) showError('Nie udało się wysłać linku', error);
+      else Alert.alert('Sprawdź pocztę', 'Jeśli konto istnieje, wysłaliśmy na ten adres link do ustawienia nowego hasła.');
+    } catch (e) {
+      showError('Nie udało się wysłać linku', e);
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -111,7 +127,7 @@ export default function LoginScreen() {
                 style={{
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: '#E6E1D5',
+                  borderColor: B.fieldBorder,
                   backgroundColor: '#FFFFFF',
                   paddingHorizontal: 16,
                   paddingVertical: 16,
@@ -171,27 +187,17 @@ export default function LoginScreen() {
                 letterSpacing: 1.2,
               }}
             >
-              Email
+              Adres e-mail
             </Text>
             <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: '#E6E1D5',
-                borderRadius: 14,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                fontSize: 15,
-                color: '#2A2312',
-                backgroundColor: '#FFFFFF',
-                marginBottom: 14,
-                fontFamily: 'Manrope_500Medium',
-              }}
+              style={[fieldStyle, { marginBottom: 14 }]}
+              accessibilityLabel="Adres e-mail"
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
               textContentType="emailAddress"
               placeholder="ty@avenit.pl"
-              placeholderTextColor="#857F70"
+              placeholderTextColor={B.ink4}
               value={email}
               onChangeText={setEmail}
               editable={!loading}
@@ -210,24 +216,14 @@ export default function LoginScreen() {
               Hasło
             </Text>
             <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: '#E6E1D5',
-                borderRadius: 14,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                fontSize: 15,
-                color: '#2A2312',
-                backgroundColor: '#FFFFFF',
-                marginBottom: 18,
-                fontFamily: 'Manrope_500Medium',
-              }}
+              style={[fieldStyle, { marginBottom: 18 }]}
+              accessibilityLabel="Hasło"
               autoCapitalize="none"
               autoComplete="password"
               textContentType="password"
               secureTextEntry
               placeholder="••••••••"
-              placeholderTextColor="#857F70"
+              placeholderTextColor={B.ink4}
               value={password}
               onChangeText={setPassword}
               editable={!loading}
@@ -239,7 +235,13 @@ export default function LoginScreen() {
               </GradientButton>
             </View>
 
-            <Pressable onPress={handleReset} disabled={loading}>
+            <Pressable
+              onPress={handleReset}
+              disabled={loading || resetting}
+              accessibilityRole="button"
+              hitSlop={8}
+              style={{ minHeight: 44, justifyContent: 'center' }}
+            >
               <Text
                 style={{
                   textAlign: 'center',

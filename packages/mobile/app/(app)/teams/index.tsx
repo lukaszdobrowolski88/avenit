@@ -60,7 +60,7 @@ export default function TeamsListScreen() {
               style={{
                 paddingVertical: 40,
                 textAlign: 'center',
-                color: '#857F70',
+                color: '#6E685A',
                 fontFamily: 'Manrope_500Medium',
               }}
             >

@@ -2,19 +2,10 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
+import { showError } from '../../src/lib/errors';
+import { B, fieldStyle } from '../../src/components/ui/brand';
 
-const inputStyle = {
-  borderWidth: 1,
-  borderColor: '#E6E1D5',
-  borderRadius: 14,
-  paddingHorizontal: 14,
-  paddingVertical: 12,
-  fontSize: 15,
-  color: '#2A2312',
-  backgroundColor: '#FFFFFF',
-  marginBottom: 14,
-  fontFamily: 'Manrope_500Medium',
-} as const;
+const inputStyle = { ...fieldStyle, marginBottom: 14 } as const;
 
 const labelStyle = {
   fontSize: 12,
@@ -64,22 +55,29 @@ export default function ResetPasswordScreen() {
   }, [params.access_token, params.refresh_token]);
 
   const handleSubmit = async () => {
-    if (password.length < 8) {
-      Alert.alert('Hasło za krótkie', 'Minimum 8 znaków.');
+    if (loading) return;
+    if (password.length < 6) {
+      Alert.alert('Za krótkie hasło', 'Hasło musi mieć min. 6 znaków.');
       return;
     }
     if (password !== confirm) {
-      Alert.alert('Hasła się różnią', 'Wpisz to samo hasło dwa razy.');
+      Alert.alert('Hasła nie są identyczne', 'Wpisz to samo hasło w obu polach.');
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setLoading(false);
+    let error: unknown = null;
+    try {
+      ({ error } = await supabase.auth.updateUser({ password }));
+    } catch (e) {
+      error = e;
+    } finally {
+      setLoading(false);
+    }
     if (error) {
-      Alert.alert('Błąd', error.message);
+      showError('Nie udało się zmienić hasła', error);
       return;
     }
-    Alert.alert('Hasło zmienione', 'Możesz się teraz zalogować.');
+    Alert.alert('Hasło zostało zmienione', 'Możesz się teraz zalogować nowym hasłem.');
     router.replace('/(auth)/login');
   };
 
@@ -185,18 +183,20 @@ export default function ResetPasswordScreen() {
         style={inputStyle}
         secureTextEntry
         placeholder="••••••••"
-        placeholderTextColor="#857F70"
+        placeholderTextColor={B.ink4}
+        accessibilityLabel="Nowe hasło"
         value={password}
         onChangeText={setPassword}
         editable={!loading}
       />
 
-      <Text style={labelStyle}>Powtórz</Text>
+      <Text style={labelStyle}>Potwierdź hasło</Text>
       <TextInput
         style={[inputStyle, { marginBottom: 22 }]}
         secureTextEntry
         placeholder="••••••••"
-        placeholderTextColor="#857F70"
+        placeholderTextColor={B.ink4}
+        accessibilityLabel="Potwierdź hasło"
         value={confirm}
         onChangeText={setConfirm}
         editable={!loading}

@@ -23,6 +23,7 @@ import {
 } from '../api';
 import { programEmailHtml, sendProgramEmail, useProgramRecipients, type Recipient } from '../email';
 import { newItemId, type PlanItem } from '../schedule';
+import { friendlyError } from '../../../lib/errors';
 
 // Narzędzia programu (jak pasek narzędzi edytora na webie): duplikowanie, szablony planu,
 // wysyłka e-mailem. Eksporty (PDF/PPT/ProPresenter) zostają na webie.
@@ -96,7 +97,7 @@ export const DuplicateProgramModal = ({
           onClose();
           onDone(id);
         },
-        onError: (e: any) => Alert.alert('Nie udało się zduplikować', e?.message ?? 'Spróbuj ponownie.'),
+        onError: (e: unknown) => Alert.alert('Nie udało się zduplikować', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
   return (
@@ -154,7 +155,7 @@ export const SaveTemplateModal = ({
           onClose();
           Alert.alert('Zapisano szablon', `„${name.trim()}” jest dostępny przy każdym programie.`);
         },
-        onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.'),
+        onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
   };
@@ -211,7 +212,7 @@ export const TemplatesSheet = ({
       {
         text: 'Usuń',
         style: 'destructive',
-        onPress: () => del.mutate(t.id, { onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? 'Spróbuj ponownie.') }),
+        onPress: () => del.mutate(t.id, { onError: (e: unknown) => Alert.alert('Nie udało się usunąć', friendlyError(e, 'Spróbuj ponownie.')) }),
       },
     ]);
   const list = (q.data ?? []) as ProgramTemplate[];
@@ -302,7 +303,7 @@ export const SendEmailSheet = ({
       onClose();
       Alert.alert('Wysłano program', `Do ${chosen.length} ${chosen.length === 1 ? 'osoby' : 'osób'}.`);
     } catch (e: any) {
-      Alert.alert('Nie udało się wysłać', e?.message ?? 'Spróbuj ponownie.');
+      Alert.alert('Nie udało się wysłać', friendlyError(e, 'Spróbuj ponownie.'));
     } finally {
       setBusy(false);
     }

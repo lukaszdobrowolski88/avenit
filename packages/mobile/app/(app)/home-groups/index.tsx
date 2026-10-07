@@ -19,6 +19,8 @@ import {
   useHomeGroups,
   type HomeGroup,
 } from '../../../src/features/home-groups/api';
+import { plural } from '../../../src/features/home-groups/utils';
+import { friendlyError } from '../../../src/lib/errors';
 
 const DAY_SHORT: Record<string, string> = {
   Poniedziałek: 'PN', Wtorek: 'WT', Środa: 'ŚR', Czwartek: 'CZ', Piątek: 'PT', Sobota: 'SO', Niedziela: 'ND',
@@ -33,7 +35,7 @@ const GroupRow = ({ group }: { group: HomeGroup }) => {
   const time = formatMeetingTime(group.meeting_time);
   const campus = getCampus(group.campus_id ?? null);
   const isToday = !!day && day === TODAY;
-  const people = `${group.members_count} ${group.members_count === 1 ? 'osoba' : 'osób'}`;
+  const people = `${group.members_count} ${plural(group.members_count, 'osoba', 'osoby', 'osób')}`;
   return (
     <ListRow
       leading={<InfoBlock top={DAY_SHORT[day] ?? (day ? day.slice(0, 2).toUpperCase() : '—')} bottom={time || null} dark={isToday} />}
@@ -125,10 +127,17 @@ export default function HomeGroupsListScreen() {
             }}
           >
             <Text
-              style={{ textAlign: 'center', color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
+              style={{ textAlign: 'center', color: '#4A463E', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
             >
-              {(error as Error)?.message ?? 'Błąd'}
+              {friendlyError(error, 'Nie udało się wczytać grup domowych.')}
             </Text>
+            <Pressable
+              onPress={() => refetch()}
+              className="active:opacity-70"
+              style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: '#2A2312' }}
+            >
+              <Text style={{ color: '#F6F4EE', fontFamily: 'Manrope_700Bold', fontSize: 14 }}>Spróbuj ponownie</Text>
+            </Pressable>
           </View>
         ) : (
           <ScrollView

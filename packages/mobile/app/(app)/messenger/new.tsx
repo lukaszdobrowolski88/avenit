@@ -15,6 +15,8 @@ import { Image } from "expo-image";
 import { Check, Search, UserPlus, Users, X } from "lucide-react-native";
 import { PageHeader } from "../../../src/components/ui/PageHeader";
 import { useAuthSession } from "../../../src/lib/auth";
+import { usePermissions } from "../../../src/lib/permissions";
+import { friendlyError } from "../../../src/lib/errors";
 import {
   createGroupConversation,
   findOrCreateDirect,
@@ -62,6 +64,10 @@ export default function NewConversationScreen() {
   const { user } = useAuthSession();
   const myEmail = user?.email ?? null;
   const people = usePeopleDirectory(myEmail);
+  const perms = usePermissions();
+  // Jak web: zakładanie rozmów wymaga prawa do rozmów i składu (serwer i tak to sprawdza).
+  const canCreate =
+    perms.can("res:conversations:create") && perms.can("res:conversation_participants:create");
 
   const [mode, setMode] = useState<Mode>("direct");
   const [query, setQuery] = useState("");
@@ -88,8 +94,11 @@ export default function NewConversationScreen() {
     setBusy(true);
     try {
       openThread(await findOrCreateDirect(myEmail, person.email));
-    } catch (e: any) {
-      Alert.alert("Nie udało się otworzyć rozmowy", e?.message ?? "Spróbuj ponownie.");
+    } catch (e) {
+      Alert.alert(
+        "Nie udało się otworzyć rozmowy",
+        friendlyError(e, "Nie udało się utworzyć rozmowy. Spróbuj ponownie."),
+      );
     } finally {
       setBusy(false);
     }
@@ -102,15 +111,18 @@ export default function NewConversationScreen() {
       Alert.alert("Podaj nazwę grupy", "Nazwa pomoże wszystkim znaleźć rozmowę.");
       return;
     }
-    if (selected.length < 2) {
-      Alert.alert("Wybierz osoby", "Grupa potrzebuje co najmniej dwóch osób poza Tobą.");
+    if (selected.length < 1) {
+      Alert.alert("Wybierz osoby", "Dodaj do grupy co najmniej jedną osobę.");
       return;
     }
     setBusy(true);
     try {
       openThread(await createGroupConversation(myEmail, name, selected));
-    } catch (e: any) {
-      Alert.alert("Nie udało się utworzyć grupy", e?.message ?? "Spróbuj ponownie.");
+    } catch (e) {
+      Alert.alert(
+        "Nie udało się utworzyć grupy",
+        friendlyError(e, "Nie udało się utworzyć grupy. Spróbuj ponownie."),
+      );
     } finally {
       setBusy(false);
     }
@@ -178,7 +190,7 @@ export default function NewConversationScreen() {
               value={groupName}
               onChangeText={setGroupName}
               placeholder="Nazwa grupy, np. Zespół na Wielkanoc"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               style={{
                 height: 46,
                 borderRadius: 14,
@@ -228,12 +240,12 @@ export default function NewConversationScreen() {
               backgroundColor: "#ECE8DE",
             }}
           >
-            <Search size={16} color="#857F70" />
+            <Search size={16} color="#6E685A" />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="Szukaj po imieniu lub e-mailu"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               autoCorrect={false}
               autoCapitalize="none"
               style={{ flex: 1, fontSize: 14, color: "#2A2312", fontFamily: "Manrope_400Regular" }}
@@ -241,10 +253,22 @@ export default function NewConversationScreen() {
           </View>
         </View>
 
-        {people.isLoading ? (
+        {perms.ready && !canCreate ? (
+          <Text
+            style={{ textAlign: "center", marginTop: 32, marginHorizontal: 24, color: "#6B6557", fontFamily: "Manrope_500Medium", lineHeight: 20 }}
+          >
+            Nie możesz zakładać nowych rozmów. Poproś administratora o dostęp.
+          </Text>
+        ) : people.isLoading || !perms.ready ? (
           <View style={{ paddingTop: 40 }}>
             <ActivityIndicator color="#2A2312" />
           </View>
+        ) : people.isError ? (
+          <Text
+            style={{ textAlign: "center", marginTop: 32, marginHorizontal: 24, color: "#6B6557", fontFamily: "Manrope_500Medium", lineHeight: 20 }}
+          >
+            {friendlyError(people.error, "Nie udało się wczytać listy osób. Spróbuj ponownie.")}
+          </Text>
         ) : (
           <FlatList
             data={list}
@@ -253,7 +277,7 @@ export default function NewConversationScreen() {
             contentContainerStyle={{ paddingHorizontal: 8, paddingTop: 8, paddingBottom: 160 }}
             ListEmptyComponent={
               <Text
-                style={{ textAlign: "center", marginTop: 32, color: "#857F70", fontFamily: "Manrope_500Medium" }}
+                style={{ textAlign: "center", marginTop: 32, color: "#6E685A", fontFamily: "Manrope_500Medium" }}
               >
                 {query ? "Nikogo nie znaleziono" : "Brak innych osób z kontem"}
               </Text>
@@ -312,7 +336,7 @@ export default function NewConversationScreen() {
           />
         )}
 
-        {mode === "group" ? (
+        {mode === "group" && canCreate ? (
           <View style={{ position: "absolute", left: 16, right: 16, bottom: 108 }}>
             <Pressable
               onPress={createGroup}

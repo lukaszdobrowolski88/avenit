@@ -16,6 +16,7 @@ import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useTeachings, type ProgramTeaching } from '../../../src/features/teachings/api';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { B, InfoBlock, Monogram } from '../../../src/components/ui/brand';
+import { friendlyError } from '../../../src/lib/errors';
 
 const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
   <Pressable
@@ -131,8 +132,8 @@ const TeachingCard = ({ teaching, latest }: { teaching: ProgramTeaching; latest?
               Icon={PlaySquare}
               label="YouTube"
               url={teaching.youtubeUrl}
-              tint="#dc2626"
-              bg="#fee2e2"
+              tint="#2A2312"
+              bg="#ECE8DE"
             />
             <MediaButton
               Icon={Headphones}
@@ -215,7 +216,7 @@ export default function TeachingsScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
-        <PageHeader title="Nauczania" subtitle="Słowo z nabożeństw" Icon={BookOpen} showBack />
+        <PageHeader title="Nauczanie" subtitle="Słowo z nabożeństw" Icon={BookOpen} showBack />
 
         {!isLoading && !isError && (data ?? []).length > 0 ? (
           <>
@@ -228,18 +229,18 @@ export default function TeachingsScreen() {
                   height: 40,
                 }}
               >
-                <Search size={16} color="#857F70" />
+                <Search size={16} color="#6E685A" />
                 <TextInput
                   style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_400Regular', paddingVertical: 0 }}
                   placeholder="Szukaj: tytuł, mówca, werset…"
-                  placeholderTextColor="#857F70"
+                  placeholderTextColor="#6E685A"
                   value={search}
                   onChangeText={setSearch}
                   returnKeyType="search"
                 />
                 {search.length > 0 ? (
                   <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                    <X size={15} color="#857F70" />
+                    <X size={15} color="#6E685A" />
                   </Pressable>
                 ) : null}
               </View>
@@ -269,9 +270,9 @@ export default function TeachingsScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
+              style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
             >
-              {(error as Error)?.message ?? 'Błąd'}
+              {friendlyError(error, 'Nie udało się wczytać nauczań. Pociągnij w dół, aby spróbować ponownie.')}
             </Text>
           </View>
         ) : (data ?? []).length === 0 ? (

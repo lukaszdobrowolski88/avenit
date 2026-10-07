@@ -49,9 +49,18 @@ import { PromptModal } from '../../../src/components/ui/PromptModal';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 import { IconWell, ListCard, ListRow, SectionLabel, Tile } from '../../../src/components/ui/brand';
 import { goBack } from '../../../src/lib/navigation';
+import { friendlyError, showError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
+
+const downloadsLabel = (n: number) => {
+  if (n === 1) return '1 pobranie';
+  const d = n % 10;
+  const h = n % 100;
+  return `${n} ${d >= 2 && d <= 4 && !(h >= 12 && h <= 14) ? 'pobrania' : 'pobrań'}`;
+};
 
 const ICON_BY_TYPE = {
-  pdf: { Icon: FileText, tint: '#dc2626', bg: '#fee2e2' },
+  pdf: { Icon: FileText, tint: '#2A2312', bg: '#ECE8DE' },
   image: { Icon: ImageIcon, tint: '#2A2312', bg: '#ECE8DE' },
   audio: { Icon: FileAudio, tint: '#2A2312', bg: '#ECE8DE' },
   video: { Icon: FileVideo, tint: '#2A2312', bg: '#ECE8DE' },
@@ -98,15 +107,24 @@ export default function MaterialsScreen() {
         label: 'Usuń',
         destructive: true,
         run: () =>
-          Alert.alert('Usunąć plik?', `„${file.name}” zniknie dla wszystkich.`, [
-            { text: 'Anuluj', style: 'cancel' },
-            {
-              text: 'Usuń',
-              style: 'destructive',
-              onPress: () =>
-                remove.mutate(file, { onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? '') }),
-            },
-          ]),
+          Alert.alert(
+            `Usunąć plik „${file.name}”?`,
+            'Plik zniknie dla wszystkich, którzy mają do niego dostęp (także z udostępnień). Tego nie można cofnąć.',
+            [
+              { text: 'Anuluj', style: 'cancel' },
+              {
+                text: 'Usuń',
+                style: 'destructive',
+                onPress: () => {
+                  if (remove.isPending) return;
+                  remove.mutate(file, {
+                    onSuccess: () => toast.success('Usunięto plik', file.name),
+                    onError: (e) => showError('Nie udało się usunąć', e, 'Nie udało się usunąć pliku. Spróbuj ponownie.'),
+                  });
+                },
+              },
+            ],
+          ),
       });
     }
     if (Platform.OS === 'ios') {
@@ -141,13 +159,14 @@ export default function MaterialsScreen() {
     space === undefined ? 'Materiały' : space === null ? 'Ogólne' : spaces.find((x) => x.key === space)?.label ?? 'Pliki';
 
   const handleUpload = async () => {
+    if (upload.isPending) return;
     try {
       const asset = await pickDocument();
       if (!asset) return;
       await upload.mutateAsync(asset);
-      Alert.alert('Wysłano', 'Plik został dodany do materiałów.');
-    } catch (e: any) {
-      Alert.alert('Błąd', e?.message ?? 'Nie udało się wysłać pliku.');
+      toast.success('Dodano plik', asset.name ?? undefined);
+    } catch (e) {
+      showError('Nie udało się wysłać pliku', e, 'Spróbuj ponownie.');
     }
   };
 
@@ -164,12 +183,12 @@ export default function MaterialsScreen() {
     try {
       const url = await getDownloadUrl(file.storage_path);
       if (!url) {
-        Alert.alert('Błąd', 'Nie udało się otworzyć pliku.');
+        Alert.alert('Nie udało się otworzyć pliku', 'Brak adresu pliku. Spróbuj ponownie za chwilę.');
         return;
       }
       await Linking.openURL(url);
-    } catch {
-      Alert.alert('Błąd', 'Nie udało się otworzyć pliku.');
+    } catch (e) {
+      showError('Nie udało się otworzyć pliku', e, 'Spróbuj ponownie.');
     }
   };
 
@@ -224,7 +243,12 @@ export default function MaterialsScreen() {
             </Text>
           </View>
           {space !== undefined ? (
-            <Pressable onPress={handleUpload} disabled={upload.isPending} className="active:opacity-80">
+            <Pressable
+              onPress={handleUpload}
+              disabled={upload.isPending}
+              accessibilityLabel="Dodaj plik"
+              className="active:opacity-80"
+            >
               {upload.isPending ? (
                 <View
                   style={{
@@ -271,7 +295,7 @@ export default function MaterialsScreen() {
             </Pressable>
             {path.data!.map((p: FolderRow) => (
               <View key={p.id} className="flex-row items-center gap-1">
-                <ChevronRight size={12} color="#857F70" />
+                <ChevronRight size={12} color="#6E685A" />
                 <Pressable onPress={() => setFolderId(p.id)}>
                   <Text
                     className="text-[12px]"
@@ -338,13 +362,13 @@ export default function MaterialsScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: '#fee2e2',
+                backgroundColor: '#ECE8DE',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <FolderOpen size={28} color="#dc2626" />
+              <FolderOpen size={28} color="#2A2312" />
             </View>
             <Text
               className="text-[16px] text-center"
@@ -356,7 +380,7 @@ export default function MaterialsScreen() {
               className="text-[13px] text-center mt-1"
               style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
-              Sprawdź połączenie i spróbuj ponownie.
+              {friendlyError(folders.error ?? files.error, 'Sprawdź połączenie i spróbuj ponownie.')}
             </Text>
             <Pressable
               onPress={onRefresh}
@@ -420,7 +444,7 @@ export default function MaterialsScreen() {
                         }
                         dividerInset={72}
                         title={file.name}
-                        subtitle={`${formatBytes(file.file_size)}${file.download_count > 0 ? ` · ${file.download_count} pobrań` : ''}`}
+                        subtitle={`${formatBytes(file.file_size)}${file.download_count > 0 ? ` · ${downloadsLabel(file.download_count)}` : ''}`}
                         onPress={() => handleOpenFile(file)}
                         onLongPress={() => fileActions(file)}
                         noChevron
@@ -432,7 +456,7 @@ export default function MaterialsScreen() {
                             className="active:opacity-60"
                             style={{ padding: 4 }}
                           >
-                            <MoreHorizontal size={18} color="#857F70" />
+                            <MoreHorizontal size={18} color="#6E685A" />
                           </Pressable>
                         }
                       />
@@ -479,11 +503,19 @@ export default function MaterialsScreen() {
         title="Zmień nazwę pliku"
         initialValue={renaming?.name ?? ''}
         onCancel={() => setRenaming(null)}
-        onConfirm={(name) => {
+        onConfirm={async (name) => {
           const f = renaming;
-          setRenaming(null);
-          if (f && name !== f.name) {
-            rename.mutate({ id: f.id, name }, { onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? '') });
+          if (!f) return;
+          if (name === f.name) {
+            setRenaming(null);
+            return;
+          }
+          try {
+            await rename.mutateAsync({ id: f.id, name });
+            setRenaming(null);
+            toast.success('Zmieniono nazwę pliku');
+          } catch (e) {
+            showError('Nie udało się zmienić nazwy', e, 'Spróbuj ponownie.');
           }
         }}
       />

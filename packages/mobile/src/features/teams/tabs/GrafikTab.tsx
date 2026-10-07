@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, Share, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Check, ChevronRight, ClipboardList, Clock, Plus, Send, Share2, UserX, X } from 'lucide-react-native';
+import { AlertTriangle, Check, ChevronRight, ClipboardList, Clock, Plus, Send, Share2, UserX, X } from 'lucide-react-native';
 import { B } from '../../../components/ui/brand';
+import { friendlyError } from '../../../lib/errors';
+import { toast } from '../../../lib/toast';
+import { respondMessage } from '../../../lib/assignments';
 import {
   csvNames,
+  inviteSummary,
   splitGrafik,
   unavailableOn,
   useAnswerAssignment,
@@ -27,8 +31,25 @@ const F = { medium: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 
 
 type Range = 'upcoming' | 'mine' | 'past';
 
+// 1 osobę, 2 osoby, 5 osób (biernik — „powiadom 2 osoby”).
+const personAcc = (n: number) => {
+  if (n === 1) return 'osobę';
+  const d = n % 10;
+  const t = n % 100;
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? 'osoby' : 'osób';
+};
+
+const STATUS_WORD: Record<GrafikAssignment['status'], string> = {
+  accepted: 'potwierdził(a)',
+  pending: 'czeka na odpowiedź',
+  rejected: 'odmówił(a)',
+};
+
+// Osoba w roli: ✓ = potwierdzone, zegar + „czeka” = zaproszenie bez odpowiedzi, przekreślone = odmowa.
 const PersonChip = ({ name, status, isMe }: { name: string; status: GrafikAssignment['status'] | null; isMe: boolean }) => (
   <View
+    accessible
+    accessibilityLabel={`${name}${status ? `, ${STATUS_WORD[status]}` : ''}`}
     style={{
       flexDirection: 'row',
       alignItems: 'center',
@@ -52,23 +73,32 @@ const PersonChip = ({ name, status, isMe }: { name: string; status: GrafikAssign
     >
       {isMe ? `${name} (Ty)` : name}
     </Text>
+    {status === 'pending' ? <Text style={{ fontSize: 11, color: isMe ? B.goldDeep : B.ink3, fontFamily: F.semibold }}>czeka</Text> : null}
+    {status === 'rejected' ? <Text style={{ fontSize: 11, color: '#B42318', fontFamily: F.semibold }}>odmowa</Text> : null}
   </View>
 );
 
+// Podsumowanie statusów słowami (na telefonie nie ma podpowiedzi po najechaniu jak na webie).
 const Tally = ({ sa }: { sa: GrafikAssignment[] }) => {
-  const n = (s: string) => sa.filter((a) => a.status === s).length;
+  const s = inviteSummary(sa);
   const items = [
-    { k: 'accepted', v: n('accepted'), Icon: Check, c: '#15803d' },
-    { k: 'pending', v: n('pending'), Icon: Clock, c: B.gold },
-    { k: 'rejected', v: n('rejected'), Icon: X, c: '#B42318' },
+    { k: 'accepted', v: s.accepted, Icon: Check, c: '#15803d', label: 'potw.' },
+    { k: 'pending', v: s.pending, Icon: Clock, c: B.gold, label: 'czeka' },
+    { k: 'rejected', v: s.rejected, Icon: X, c: '#B42318', label: s.rejected === 1 ? 'odmowa' : 'odmowy' },
   ].filter((x) => x.v > 0);
   if (!items.length) return null;
   return (
-    <View style={{ flexDirection: 'row', gap: 8 }}>
-      {items.map(({ k, v, Icon, c }) => (
-        <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+    <View
+      accessible
+      accessibilityLabel={`Potwierdzone: ${s.accepted}, czeka na odpowiedź: ${s.pending}, odmówiło: ${s.rejected}`}
+      style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}
+    >
+      {items.map(({ k, v, Icon, c, label }) => (
+        <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
           <Icon size={12} color={c} strokeWidth={2.8} />
-          <Text style={{ fontSize: 12, color: c, fontFamily: F.bold }}>{v}</Text>
+          <Text style={{ fontSize: 12, color: c, fontFamily: F.bold }}>
+            {v} {label}
+          </Text>
         </View>
       ))}
     </View>
@@ -140,9 +170,13 @@ export const GrafikTab = ({
   const availability = useTeamAvailability(teamKey, upcomingDates[0] ?? null, upcomingDates[upcomingDates.length - 1] ?? null);
   const blockouts = availability.data ?? [];
 
+  // Zapis obsady: od razu na ekranie; przy błędzie obsada wraca (grafik.ts) i pokazujemy powód.
   const savePicked = (names: string[]) => {
     if (!picking || !pickingEvent) return;
-    const done = { onSuccess: () => setPicking(null), onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') };
+    const done = {
+      onSuccess: () => setPicking(null),
+      onError: (e: unknown) => Alert.alert('Nie udało się zapisać grafiku', friendlyError(e, 'Zmiana nie została zapisana. Spróbuj ponownie.')),
+    };
     if (picking.role === 'absent') {
       setNote.mutate({ eventId: pickingEvent.id, field: 'absencja', value: names.join(', ') }, done);
     } else {
@@ -150,24 +184,37 @@ export const GrafikTab = ({
     }
   };
 
+  // „Powiadom (n)”: mail + powiadomienie w aplikacji do osób, które jeszcze go nie dostały.
   const sendInvites = (ev: GrafikEvent) =>
     send.mutate(ev.id, {
       onSuccess: (r) =>
         Alert.alert(
-          r.sent ? 'Wysłano zaproszenia' : 'Nic do wysłania',
+          r.sent ? 'Wysłano powiadomienia' : 'Nikogo nie powiadomiono',
           r.sent
             ? `Powiadomiono: ${r.sent}${r.failed ? `, nie udało się: ${r.failed}` : ''}.`
-            : r.emailReady === false
-              ? 'Serwer nie ma skonfigurowanej poczty.'
-              : 'Nowe osoby nie mają e-maila w profilu albo już dostały zaproszenie.',
+            : r.failed
+              ? 'Nie udało się wysłać powiadomień. Spróbuj ponownie.'
+              : 'Brak nowych osób do powiadomienia (sprawdź, czy mają e-mail w profilu).',
         ),
-      onError: (e: any) => Alert.alert('Nie udało się wysłać', e?.message ?? 'Spróbuj ponownie.'),
+      onError: (e: unknown) => Alert.alert('Nie udało się wysłać', friendlyError(e, 'Spróbuj ponownie.')),
     });
+
+  const answerMine = (ids: string[], status: 'accepted' | 'rejected') =>
+    answer.mutate(
+      { ids, status },
+      {
+        onSuccess: () => toast.success(respondMessage(status, { status, already: false })),
+        onError: (e: unknown) => Alert.alert('Nie udało się zapisać odpowiedzi', friendlyError(e, 'Spróbuj ponownie.')),
+      },
+    );
 
   const saveNote = (ev: GrafikEvent) => {
     const v = notes[ev.id];
-    if (v == null || v === (ev.team.notatki ?? '')) return;
-    setNote.mutate({ eventId: ev.id, field: 'notatki', value: v.trim() }, { onError: (e: any) => Alert.alert('Nie udało się zapisać notatki', e?.message ?? '') });
+    if (v == null || v.trim() === (ev.team.notatki ?? '')) return;
+    setNote.mutate(
+      { eventId: ev.id, field: 'notatki', value: v.trim() },
+      { onError: (e: unknown) => Alert.alert('Nie udało się zapisać notatki', `${friendlyError(e, 'Spróbuj ponownie.')} Tekst został w polu.`) },
+    );
   };
 
   return (
@@ -217,7 +264,10 @@ export const GrafikTab = ({
         const absent = csvNames(ev.team.absencja);
         const reported = [...unavailableOn(blockouts, ev.date)].filter((n) => !absent.includes(n));
         const mine = ev.sa.filter((a) => a.status === 'pending' && isMe(ev, a.name));
-        const toSend = ev.sa.filter((a) => a.status === 'pending' && !a.emailSent && a.email).length;
+        const summary = inviteSummary(ev.sa);
+        const toSend = summary.toSend;
+        // Odmowy osób, których już nie ma w roli (serwer zdejmuje je z grafiku przy odmowie).
+        const declined = ev.sa.filter((a) => a.status === 'rejected' && !csvNames(ev.team[a.roleKey]).includes(a.name));
         const past = range === 'past';
         return (
           <View key={ev.id} style={{ borderRadius: 22, backgroundColor: B.card, marginBottom: 12, overflow: 'hidden' }}>
@@ -231,11 +281,11 @@ export const GrafikTab = ({
                 <Text numberOfLines={2} style={{ fontSize: 16, color: B.ink, letterSpacing: -0.3, fontFamily: F.bold }}>
                   {ev.title}
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 }}>
-                  <Text style={{ fontSize: 13, color: B.ink3, fontFamily: F.medium }}>
-                    {dayLabel(ev.date)}
-                    {ev.time ? ` · ${ev.time}` : ''}
-                  </Text>
+                <Text style={{ marginTop: 2, fontSize: 13, color: B.ink3, fontFamily: F.medium }}>
+                  {dayLabel(ev.date)}
+                  {ev.time ? ` · ${ev.time}` : ''}
+                </Text>
+                <View style={{ marginTop: 3 }}>
                   <Tally sa={ev.sa} />
                 </View>
               </View>
@@ -250,7 +300,7 @@ export const GrafikTab = ({
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Pressable
                     disabled={answer.isPending}
-                    onPress={() => mine.forEach((a) => answer.mutate({ id: a.id, status: 'accepted' }))}
+                    onPress={() => answerMine(mine.map((a) => a.id), 'accepted')}
                     className="active:opacity-80"
                     style={{ flex: 1, height: 40, borderRadius: 999, backgroundColor: B.ink, alignItems: 'center', justifyContent: 'center' }}
                   >
@@ -261,7 +311,7 @@ export const GrafikTab = ({
                     onPress={() =>
                       Alert.alert('Nie możesz służyć?', 'Twoje imię zniknie z grafiku na ten dzień, a lider zobaczy odmowę.', [
                         { text: 'Anuluj', style: 'cancel' },
-                        { text: 'Nie mogę', style: 'destructive', onPress: () => mine.forEach((a) => answer.mutate({ id: a.id, status: 'rejected' })) },
+                        { text: 'Nie mogę', style: 'destructive', onPress: () => answerMine(mine.map((a) => a.id), 'rejected') },
                       ])
                     }
                     className="active:opacity-80"
@@ -317,6 +367,13 @@ export const GrafikTab = ({
               </Text>
             ) : null}
 
+            {declined.length && !past ? (
+              <Text style={{ paddingHorizontal: 14, paddingVertical: 9, borderTopWidth: 1, borderTopColor: B.line, fontSize: 12, lineHeight: 17, color: '#B42318', fontFamily: F.semibold }}>
+                Odmówili: {declined.map((a) => `${a.name} (${roles.find((r) => r.key === a.roleKey)?.label ?? a.roleKey})`).join(', ')}
+                {canEdit ? <Text style={{ color: B.ink3, fontFamily: F.medium }}> — ponowne przypisanie wyśle nowe zaproszenie.</Text> : null}
+              </Text>
+            ) : null}
+
             {canEdit && !past ? (
               <Pressable
                 onPress={() => setPicking({ eventId: ev.id, role: 'absent' })}
@@ -352,28 +409,44 @@ export const GrafikTab = ({
               </Text>
             ) : null}
 
-            {canSend && !past && ev.sa.length ? (
-              <View style={{ padding: 12, paddingTop: 4 }}>
-                <Pressable
-                  onPress={() => sendInvites(ev)}
-                  disabled={send.isPending}
-                  className="active:opacity-80"
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    height: 44,
-                    borderRadius: 999,
-                    backgroundColor: toSend ? B.kurkuma : B.paper,
-                    opacity: send.isPending ? 0.6 : 1,
-                  }}
-                >
-                  <Send size={15} color={toSend ? B.ink : B.ink3} />
-                  <Text style={{ fontSize: 14, color: toSend ? B.ink : B.ink3, fontFamily: F.bold }}>
-                    {toSend ? `Wyślij zaproszenia · ${toSend}` : 'Zaproszenia wysłane'}
-                  </Text>
-                </Pressable>
+            {canSend && !past && (toSend > 0 || summary.noEmail.length > 0 || summary.pending > 0) ? (
+              <View style={{ padding: 12, paddingTop: 4, gap: 6 }}>
+                {toSend > 0 ? (
+                  <>
+                    <Pressable
+                      onPress={() => sendInvites(ev)}
+                      disabled={send.isPending}
+                      accessibilityLabel={`Powiadom o służbie: ${toSend} ${personAcc(toSend)}`}
+                      className="active:opacity-80"
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        height: 44,
+                        borderRadius: 999,
+                        backgroundColor: B.kurkuma,
+                        opacity: send.isPending ? 0.6 : 1,
+                      }}
+                    >
+                      <Send size={15} color={B.ink} />
+                      <Text style={{ fontSize: 14, color: B.ink, fontFamily: F.bold }}>{`Powiadom (${toSend})`}</Text>
+                    </Pressable>
+                    <Text style={{ fontSize: 12, lineHeight: 16, color: B.ink4, textAlign: 'center', fontFamily: F.medium }}>
+                      Wybór osób nie wysyła powiadomień — wyślesz je tym przyciskiem.
+                    </Text>
+                  </>
+                ) : summary.pending > summary.noEmail.length ? (
+                  <Text style={{ fontSize: 12, color: B.ink3, textAlign: 'center', fontFamily: F.semibold }}>Wszyscy z e-mailem zostali powiadomieni.</Text>
+                ) : null}
+                {summary.noEmail.length ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                    <AlertTriangle size={13} color={B.gold} style={{ marginTop: 2 }} />
+                    <Text style={{ flex: 1, fontSize: 12, lineHeight: 17, color: B.gold, fontFamily: F.semibold }}>
+                      Bez e-maila — nie dostaną powiadomienia: {summary.noEmail.join(', ')}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             ) : (
               <View style={{ height: 4 }} />

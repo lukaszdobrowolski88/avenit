@@ -28,7 +28,8 @@ const fromYmd = (s: string) => {
 const INK = '#2A2312';
 const INK2 = '#4A463E';
 const INK3 = '#6B6557';
-const INK4 = '#857F70';
+// Tekst drugorzędny jak web po audycie (5,5:1 na bieli).
+const INK4 = '#6E685A';
 const PAPER = '#F6F4EE';
 const WELL = '#ECE8DE';
 const KURKUMA = '#FFBE0B';
@@ -39,14 +40,17 @@ const WEEK = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
 const MONTHS = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+// Pole jak pola tekstowe (FormInput) i web: biel + ramka #B5AD99.
 const fieldStyle = {
   flexDirection: 'row' as const,
   alignItems: 'center' as const,
   gap: 10,
-  height: 46,
+  height: 48,
   borderRadius: 14,
   paddingHorizontal: 14,
-  backgroundColor: WELL,
+  backgroundColor: '#FFFFFF',
+  borderWidth: 1,
+  borderColor: '#B5AD99',
 };
 
 const ClearButton = ({ onPress }: { onPress: () => void }) => (
@@ -124,6 +128,8 @@ export const DateField = ({
           setOpen(true);
         }}
         className="active:opacity-70"
+        accessibilityRole="button"
+        accessibilityLabel={selected ? `Data: ${format(selected, 'd MMMM yyyy', { locale: pl })}` : placeholder}
         style={[fieldStyle, style]}
       >
         <CalendarDays size={17} color={INK2} />

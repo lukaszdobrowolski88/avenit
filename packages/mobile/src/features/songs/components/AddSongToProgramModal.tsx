@@ -15,6 +15,7 @@ import { Calendar, Check, Music, Search, X } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { KEYS, type Song } from '../../../lib/domain';
+import { friendlyError } from '../../../lib/errors';
 import {
   useAddSongToProgram,
   useProgramSuggestionCounts,
@@ -49,7 +50,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
 
   const [search, setSearch] = useState('');
   const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
-  const [songKey, setSongKey] = useState<string>(song?.key ?? 'C');
+  const [songKey, setSongKey] = useState<string>(song?.key ?? '');
   const [note, setNote] = useState('');
 
   const filtered = useMemo(() => {
@@ -70,12 +71,12 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
     setSearch('');
     setSelectedProgramId(null);
     setNote('');
-    setSongKey(song?.key ?? 'C');
+    setSongKey(song?.key ?? '');
     onClose();
   };
 
   const handleSave = async () => {
-    if (!selectedProgramId || !songId) return;
+    if (!selectedProgramId || !songId || addMutation.isPending) return;
     try {
       await addMutation.mutateAsync({
         programId: selectedProgramId,
@@ -86,7 +87,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
       Alert.alert('Dodano do programu', 'Pieśń została zaproponowana w wybranym programie.');
       handleClose();
     } catch (e: any) {
-      Alert.alert('Błąd', e?.message ?? 'Nie udało się dodać pieśni do programu.');
+      Alert.alert('Nie udało się dodać pieśni do programu', friendlyError(e, 'Spróbuj ponownie.'));
     }
   };
 
@@ -125,7 +126,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
           </View>
           {alreadyAdded ? (
             <View style={styles.addedBadge}>
-              <Check size={11} color="#857F70" strokeWidth={2.6} />
+              <Check size={11} color="#6E685A" strokeWidth={2.6} />
               <Text style={styles.addedBadgeText}>DODANA</Text>
             </View>
           ) : isSelected ? (
@@ -169,7 +170,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
             {addMutation.isPending ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={[styles.saveBtnText, !selectedProgramId && { color: '#857F70' }]}>Dodaj</Text>
+              <Text style={[styles.saveBtnText, !selectedProgramId && { color: '#6E685A' }]}>Dodaj</Text>
             )}
           </Pressable>
         </View>
@@ -177,18 +178,18 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
         <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
           <Text style={styles.section}>WYBIERZ PROGRAM (od dzisiaj)</Text>
           <View style={styles.searchBox}>
-            <Search size={16} color="#857F70" />
+            <Search size={16} color="#6E685A" />
             <TextInput
               style={styles.searchInput}
               placeholder="Szukaj programu…"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                <X size={14} color="#857F70" />
+                <X size={14} color="#6E685A" />
               </Pressable>
             ) : null}
           </View>
@@ -227,6 +228,9 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
               TONACJA WYKONANIA{song?.key ? `  ·  pieśń: ${song.key}` : ''}
             </Text>
             <View style={styles.keysGrid}>
+              <Pressable onPress={() => setSongKey('')} style={[styles.keyBtn, !songKey && styles.keyBtnActive, { paddingHorizontal: 10, width: 'auto' as const }]}>
+                <Text style={[styles.keyText, !songKey && styles.keyTextActive]}>Nie ustalono</Text>
+              </Pressable>
               {KEYS.map((k) => {
                 const active = songKey === k;
                 return (
@@ -247,7 +251,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
             <TextInput
               style={styles.noteInput}
               placeholder="Opcjonalna notatka, np. fragment, zwrotka, kiedy zaśpiewać…"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               value={note}
               onChangeText={setNote}
               multiline

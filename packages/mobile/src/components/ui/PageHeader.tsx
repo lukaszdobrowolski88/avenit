@@ -28,6 +28,8 @@ export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: P
       {showBack ? (
         <Pressable
           onPress={() => goBack(router)}
+          accessibilityRole="button"
+          accessibilityLabel="Wstecz"
           className="active:opacity-60"
           hitSlop={10}
           style={{
@@ -61,6 +63,7 @@ export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: P
           </Text>
         ) : null}
         <Text
+          accessibilityRole="header"
           style={{
             marginTop: 2,
             fontSize: 27,

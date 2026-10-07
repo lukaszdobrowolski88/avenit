@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Heart, Users } from 'lucide-react-native';
-import { formatDate } from '../../../lib/domain';
+import { formatDate, plural } from '../../../lib/domain';
 import { EmptyRow, WidgetCard } from './WidgetCard';
 import { D, F } from '../theme';
 import type { RecentPrayer } from '../api';
@@ -34,7 +34,12 @@ export const MyPrayersWidget = ({ items }: { items: RecentPrayer[] }) => {
       onAction={() => router.push('/(app)/prayers')}
     >
       {items.length === 0 ? (
-        <EmptyRow text="Nie masz aktywnych intencji" actionLabel="Dodaj" onAction={() => router.push('/(app)/prayers')} />
+        <EmptyRow
+          text="Nie masz aktywnych intencji"
+          hint="Podziel się prośbą — wspólnota będzie się modlić."
+          actionLabel="Dodaj intencję"
+          onAction={() => router.push('/(app)/prayers/new')}
+        />
       ) : (
         <>
           {items.slice(0, 3).map((p, idx, arr) => {
@@ -73,7 +78,7 @@ export const MyPrayersWidget = ({ items }: { items: RecentPrayer[] }) => {
                         {meta.label}
                       </Text>
                     </View>
-                    <Text style={{ fontSize: 10, color: D.ink3, fontFamily: F.medium }}>
+                    <Text style={{ fontSize: 11, color: D.ink3, fontFamily: F.medium }}>
                       {formatDate(p.created_at, 'd.MM.yyyy')}
                     </Text>
                   </View>
@@ -100,8 +105,9 @@ export const MyPrayersWidget = ({ items }: { items: RecentPrayer[] }) => {
                     <Text
                       style={{ fontSize: 11, color: D.ink2, fontFamily: F.medium }}
                     >
-                      {p.prayer_count}{' '}
-                      {p.prayer_count === 1 ? 'osoba się modli' : 'osób się modli'}
+                      {p.prayer_count > 0
+                        ? `${p.prayer_count} ${plural(p.prayer_count, 'osoba się modli', 'osoby się modlą', 'osób się modli')}`
+                        : 'Nikt jeszcze się nie modli'}
                     </Text>
                   </View>
                 </Pressable>

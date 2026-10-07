@@ -1,4 +1,5 @@
 import { Alert, Platform, Pressable, Text, View } from "react-native";
+import { showError } from "../../../lib/errors";
 import * as ExpoCalendar from "expo-calendar";
 import type { EventMetadata } from "../api";
 
@@ -38,13 +39,13 @@ export const EventCard = ({ metadata, content, bubbleMine }: Props) => {
         calendarId = w?.id ?? null;
       }
       if (!calendarId) {
-        Alert.alert("Błąd", "Nie znaleziono kalendarza do zapisu.");
+        Alert.alert("Nie udało się dodać", "Nie znaleziono w telefonie kalendarza, do którego można zapisać wydarzenie.");
         return;
       }
       const hasTime = !!metadata?.time;
       const start = new Date(`${metadata?.date ?? ""}T${metadata?.time || "00:00"}:00`);
       if (isNaN(start.getTime())) {
-        Alert.alert("Błąd", "Wydarzenie nie ma poprawnej daty.");
+        Alert.alert("Nie udało się dodać", "To wydarzenie nie ma poprawnej daty.");
         return;
       }
       const end = hasTime ? new Date(start.getTime() + 60 * 60 * 1000) : start;
@@ -58,7 +59,7 @@ export const EventCard = ({ metadata, content, bubbleMine }: Props) => {
       });
       Alert.alert("Dodano do kalendarza", "Wydarzenie zapisano w kalendarzu telefonu.");
     } catch (err) {
-      Alert.alert("Błąd", (err as Error)?.message ?? "Nie udało się zapisać wydarzenia.");
+      showError("Nie udało się dodać do kalendarza", err, "Nie udało się zapisać wydarzenia w kalendarzu telefonu.");
     }
   };
 

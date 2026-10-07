@@ -16,7 +16,9 @@ export interface Shortcut {
 }
 
 export const useShortcutCatalog = () => {
-  const { personal, items, ready } = useModules();
+  const { personal, items: groupItems, settings, ready } = useModules();
+  // Ustawienia nie są w grupach menu, ale skrót do nich na pulpicie nadal ma sens.
+  const items = useMemo(() => (settings ? [...groupItems, settings] : groupItems), [groupItems, settings]);
   const catalog = useMemo((): Shortcut[] => {
     const own: Shortcut[] = personal
       .filter((p) => p.key !== 'notifications') // dzwonek jest w nagłówku pulpitu

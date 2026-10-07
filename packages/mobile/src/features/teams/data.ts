@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase, tenantWebBase } from '../../lib/supabase';
 import { todayYmd } from '../schedule/assignments';
+import { eventIncludesTeam, parseTypeRules } from './grafik';
 import type { TeamConfig, TeamKey } from './config';
 
 // Dane zakładek zespołu — kontrakt 1:1 z webem (src/modules/shared/*Tab.jsx).
@@ -23,6 +24,7 @@ export interface TeamEvent {
   endTime: string | null;
   location: string | null;
   eventType: string | null;
+  moduleKey: string | null;
   maxParticipants: number | null;
   archived: boolean;
   createdBy: string | null;
@@ -31,41 +33,105 @@ export interface TeamEvent {
 // Wydarzenia działają też dla modułów z kreatora (klucz spoza TeamKey).
 export type EventsCfg = { key: string; eventsTable: 'events' | 'mlodziezowka_events' };
 
-// Wydarzenie jest archiwalne, gdy oznaczone albo minęło (EventsTab.jsx:590-593).
+export interface TeamEventsData {
+  own: TeamEvent[]; // własne wydarzenia modułu (events.module_key = moduł)
+  serving: TeamEvent[]; // „Służymy na” — nadchodzące wydarzenia innych kalendarzy, w których służy ten zespół
+}
+
+const toTeamEvent = (e: any, today: string): TeamEvent => {
+  const date = String(e.date ?? '').slice(0, 10);
+  return {
+    id: String(e.id),
+    title: e.title || 'Wydarzenie',
+    description: e.description ?? null,
+    date,
+    time: e.time ? String(e.time).slice(0, 5) : null,
+    endTime: e.end_time ? String(e.end_time).slice(0, 5) : null,
+    location: e.location ?? null,
+    eventType: e.event_type ?? null,
+    moduleKey: e.module_key ?? null,
+    maxParticipants: e.max_participants ?? null,
+    archived: !!e.is_archived || (!!date && date < today),
+    createdBy: e.created_by ?? null,
+  };
+};
+const byStart = (a: TeamEvent, b: TeamEvent) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? ''));
+
+// Zakładka „Wydarzenia” jak web (src/modules/shared/EventsTab.jsx): własne wydarzenia modułu
+// + „Służymy na” — wydarzenia z innych kalendarzy, w których ta służba służy (ten sam predykat
+// co Grafik: eventIncludesTeam). Dawniej był tu tylko module_key, więc zakładka mówiła „Brak
+// wydarzeń”, a Grafik pokazywał nabożeństwa — i zachęcała do tworzenia duplikatów.
+// Archiwalne = oznaczone albo minione (EventsTab.jsx isArchivedEvent).
 export const useTeamEvents = (cfg: EventsCfg, scope: CampusScope) =>
   useQuery({
     queryKey: ['team', cfg.key, 'events', scope.selectedCampusId],
-    queryFn: async (): Promise<TeamEvent[]> => {
+    queryFn: async (): Promise<TeamEventsData> => {
       const today = todayYmd();
-      const { data, error } = await scope
-        .withCampusFilter(
-          supabase
-            .from('events')
-            .select('id, title, description, date, time, end_time, location, event_type, max_participants, is_archived, created_by'),
-        )
-        .eq('module_key', cfg.key)
-        .order('date', { ascending: true });
-      if (error) throw error;
-      return asList(data)
-        .map((e) => {
-          const date = String(e.date ?? '').slice(0, 10);
-          return {
-            id: String(e.id),
-            title: e.title ?? 'Wydarzenie',
-            description: e.description ?? null,
-            date,
-            time: e.time ? String(e.time).slice(0, 5) : null,
-            endTime: e.end_time ? String(e.end_time).slice(0, 5) : null,
-            location: e.location ?? null,
-            eventType: e.event_type ?? null,
-            maxParticipants: e.max_participants ?? null,
-            archived: !!e.is_archived || (!!date && date < today),
-            createdBy: e.created_by ?? null,
-          };
-        })
-        .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')));
+      const cols = 'id, title, description, date, time, end_time, location, event_type, module_key, max_participants, is_archived, created_by, assignments, team_types';
+      const [ownRes, upcomingRes, rulesRes] = await Promise.all([
+        scope.withCampusFilter(supabase.from('events').select(cols)).eq('module_key', cfg.key).order('date', { ascending: true }),
+        scope.withCampusFilter(supabase.from('events').select(cols)).gte('date', today).order('date', { ascending: true }).limit(400),
+        supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle(),
+      ]);
+      if (ownRes.error) throw ownRes.error;
+      const rules = parseTypeRules((rulesRes as any)?.data?.value);
+      const own = asList(ownRes.data).map((e) => toTeamEvent(e, today)).sort(byStart);
+      // Błąd drugiego zapytania nie ukrywa własnych wydarzeń — sekcja „Służymy na” jest dodatkiem.
+      const serving = upcomingRes.error
+        ? []
+        : asList(upcomingRes.data)
+            .filter((e) => (e.module_key || '') !== cfg.key && eventIncludesTeam(e, cfg.key, rules))
+            .map((e) => toTeamEvent(e, today))
+            .filter((e) => !e.archived)
+            .sort(byStart);
+      return { own, serving };
     },
   });
+
+// Etykieta typu jak web (EventsListView.eventTypeLabel): z konfiguracji, potem domyślna,
+// potem surowa wartość wielką literą — nigdy „nabozesnstwo” na karcie.
+const DEFAULT_TYPE_LABELS: Record<string, string> = {
+  spotkanie: 'Spotkanie',
+  wydarzenie: 'Wydarzenie',
+  szkolenie: 'Szkolenie',
+  inne: 'Inne',
+  'nabożeństwo': 'Nabożeństwo',
+  nabozenstwo: 'Nabożeństwo',
+  nabozesnstwo: 'Nabożeństwo',
+  proba: 'Próba',
+  koncert: 'Koncert',
+  warsztat: 'Warsztat',
+  produkcja: 'Produkcja',
+  streaming: 'Streaming',
+  integracja: 'Integracja',
+  zajecia: 'Zajęcia',
+  wycieczka: 'Wycieczka',
+  przedstawienie: 'Przedstawienie',
+  wyjazd: 'Wyjazd',
+};
+export const eventTypeLabel = (value: string | null | undefined, options: { key: string; label: string }[] = []) => {
+  if (!value) return '';
+  const hit = options.find((o) => o.key === value);
+  if (hit?.label) return hit.label;
+  const def = DEFAULT_TYPE_LABELS[String(value).toLowerCase()];
+  if (def) return def;
+  const s = String(value);
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+// Walidacja jak web (EventsModule.validateNewEvent): tytuł, data, koniec po początku.
+export interface EventFormErrors {
+  title?: string;
+  date?: string;
+  endTime?: string;
+}
+export const validateEventForm = (f: { title: string; date: string; time: string | null; endTime: string | null }): EventFormErrors => {
+  const e: EventFormErrors = {};
+  if (!f.title.trim()) e.title = 'Podaj tytuł wydarzenia.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date || '')) e.date = 'Wybierz datę — bez niej wydarzenie nie trafi do kalendarza.';
+  if (f.time && f.endTime && f.endTime.slice(0, 5) <= f.time.slice(0, 5)) e.endTime = 'Koniec musi być później niż początek.';
+  return e;
+};
 
 export interface EventTypeOption {
   key: string;
@@ -142,48 +208,72 @@ export const useEventTypes = (key: string) =>
     },
   });
 
-const ymdLocal = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const hmLocal = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+export interface NewTeamEventInput {
+  title: string;
+  description: string | null;
+  eventType: string;
+  date: string; // YYYY-MM-DD
+  time: string | null; // HH:MM
+  endTime: string | null; // HH:MM
+  location: string | null;
+  authorEmail: string;
+}
 
+// Nowe wydarzenie zespołu — kształt jak EventsTab.jsx (date/time osobno + module_key). Zapis
+// sprawdzany (.select) — zwraca id; walidacja jak na webie, także tu (ostatnia linia obrony).
 export const useCreateTeamEvent = (cfg: EventsCfg, campusIdForInsert: number | null) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: {
-      title: string;
-      description: string | null;
-      eventType: string;
-      startDate: string; // ISO
-      location: string | null;
-      authorEmail: string;
-    }) => {
-      const start = new Date(input.startDate);
-      // Kształt jak EventsTab.jsx:552 — date/time osobno + module_key.
-      const { error } = await (supabase.from('events') as any).insert({
-        title: input.title,
-        description: input.description,
-        location: input.location,
-        event_type: input.eventType,
-        module_key: cfg.key,
-        date: ymdLocal(start),
-        time: hmLocal(start),
-        created_by: input.authorEmail,
-        campus_id: campusIdForInsert,
-      });
+    mutationFn: async (input: NewTeamEventInput): Promise<string> => {
+      const errs = validateEventForm(input);
+      const first = errs.title ?? errs.date ?? errs.endTime;
+      if (first) throw new Error(first);
+      const { data, error } = await (supabase.from('events') as any)
+        .insert({
+          title: input.title.trim(),
+          description: input.description,
+          location: input.location,
+          event_type: input.eventType,
+          module_key: cfg.key,
+          date: input.date,
+          time: input.time || null,
+          end_time: input.endTime || null,
+          created_by: input.authorEmail,
+          campus_id: campusIdForInsert,
+        })
+        .select('id')
+        .single();
       if (error) throw error;
+      if (!data) throw new Error('Nie udało się zapisać wydarzenia. Spróbuj ponownie.');
+      return String((data as any).id);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', cfg.key, 'events'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['team'] });
+      qc.invalidateQueries({ queryKey: ['agenda'] });
+    },
   });
 };
 
+// Usunięcie wydarzenia. Przydziały w grafiku i materiały wydarzenia sprząta baza (klucze obce
+// ON DELETE CASCADE, migracja 083) — bez „duchów” w „Mojej służbie”. Sprawdzamy, że wiersz
+// faktycznie zniknął (zakres kampusu/właściciela może dać 0 usuniętych bez błędu).
 export const useDeleteTeamEvent = (cfg: EventsCfg) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from(cfg.eventsTable).delete().eq('id', id);
+      const { data, error } = await (supabase.from(cfg.eventsTable) as any).delete().eq('id', id).select('id');
       if (error) throw error;
+      if (Array.isArray(data) && data.length === 0) {
+        throw new Error('Nie udało się usunąć wydarzenia — mogło zostać już usunięte albo nie masz do niego uprawnień.');
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', cfg.key, 'events'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['team'] });
+      qc.invalidateQueries({ queryKey: ['event-detail'] });
+      qc.invalidateQueries({ queryKey: ['agenda'] });
+      qc.invalidateQueries({ queryKey: ['assignments'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
   });
 };
 
@@ -338,14 +428,16 @@ export const useTeamEquipment = (key: string, enabled = true) =>
     },
   });
 
-// ─── Finanse (FinanceTab.jsx + zapytania modułów) ─────────────────────────────
+// ─── Finanse (FinanceTab.jsx + finance/money.js na webie) ─────────────────────
+
+export type ExpenseStatus = 'draft' | 'submitted' | 'approved' | 'paid' | 'rejected' | null;
 
 export interface BudgetLine {
   id: string;
   description: string;
   category: string | null;
   planned: number;
-  spent: number;
+  spent: number; // tylko zatwierdzone/opłacone
 }
 export interface Expense {
   id: string;
@@ -355,14 +447,29 @@ export interface Expense {
   description: string | null;
   detailed: string | null;
   hasDocuments: boolean;
+  status: ExpenseStatus;
+  category: string | null;
 }
 export interface TeamFinance {
   year: number;
   lines: BudgetLine[];
   expenses: Expense[];
   planned: number;
-  spent: number;
+  spent: number; // wykorzystanie budżetu = zatwierdzone/opłacone wydatki pozycji
+  pendingSum: number; // wnioski czekające na akceptację
+  pendingCount: number;
 }
+
+const num = (v: unknown) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+// Do sum wchodzą tylko wydatki zatwierdzone i opłacone; brak statusu = stare wpisy sprzed
+// akceptacji (jak zatwierdzone). Wnioski („submitted”), szkice i odrzucone — osobno (money.js).
+export const isCountedExpense = (e: { status: ExpenseStatus | string | null }) => !e.status || e.status === 'approved' || e.status === 'paid';
+export const isPendingExpense = (e: { status: ExpenseStatus | string | null }) => e.status === 'submitted' || e.status === 'draft';
+// Porównanie bez wielkości liter i nadmiarowych spacji (literówka w spacji nie odpina wydatku).
+const normKey = (v: unknown) => String(v ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
 
 export const useTeamFinance = (cfg: TeamConfig, scope: CampusScope) =>
   useQuery({
@@ -385,42 +492,50 @@ export const useTeamFinance = (cfg: TeamConfig, scope: CampusScope) =>
       ]);
       if (budgetRes.error) throw budgetRes.error;
       if (expRes.error) throw expRes.error;
-      const expenses = asList(expRes.data);
-      // Wydano na linię = wydatki o tej samej kategorii i opisie (FinanceTab.jsx:55-59).
+      const expenses: Expense[] = asList(expRes.data).map((e) => ({
+        id: String(e.id),
+        date: e.payment_date ?? e.date ?? null,
+        amount: num(e.amount),
+        contractor: e.contractor ?? e.vendor ?? null,
+        description: e.description ?? null,
+        detailed: e.detailed_description ?? null,
+        hasDocuments: Array.isArray(e.documents) && e.documents.length > 0,
+        status: (e.status ?? null) as ExpenseStatus,
+        category: e.category ?? null,
+      }));
+      // Wykorzystanie pozycji = WLICZANE wydatki o tej samej kategorii i opisie (FinanceTab.jsx).
       const lines: BudgetLine[] = asList(budgetRes.data)
         .filter((b) => b.kind !== 'income')
         .map((b) => {
           const desc = String(b.description ?? b.name ?? '');
           const spent = expenses
-            .filter((e) => e.category === b.category && e.description === b.description)
-            .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+            .filter((e) => isCountedExpense(e) && normKey(e.category) === normKey(b.category) && normKey(e.description) === normKey(b.description))
+            .reduce((s, e) => s + e.amount, 0);
           return {
             id: String(b.id),
             description: desc || 'Pozycja budżetu',
             category: b.category ?? null,
-            planned: Number(b.planned_amount) || 0,
+            planned: num(b.planned_amount),
             spent,
           };
         });
+      const pending = expenses.filter(isPendingExpense);
       return {
         year,
         lines,
-        expenses: expenses.map((e) => ({
-          id: String(e.id),
-          date: e.payment_date ?? e.date ?? null,
-          amount: Number(e.amount) || 0,
-          contractor: e.contractor ?? e.vendor ?? null,
-          description: e.description ?? null,
-          detailed: e.detailed_description ?? null,
-          hasDocuments: Array.isArray(e.documents) && e.documents.length > 0,
-        })),
+        expenses,
         planned: lines.reduce((s, l) => s + l.planned, 0),
-        spent: expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0),
+        spent: lines.reduce((s, l) => s + l.spent, 0),
+        pendingSum: pending.reduce((s, e) => s + e.amount, 0),
+        pendingCount: pending.length,
       };
     },
   });
 
-// Wydatek z telefonu — kształt jak WorshipModule.jsx:1442-1453; paragon w bucket `finance`.
+// Wydatek z telefonu — kształt jak WorshipModule.jsx (saveExpense); paragon w bucket `finance`.
+// Bez prawa zatwierdzania finansów serwer zapisuje go jako WNIOSEK (status 'submitted',
+// nieopłacony) — nie wlicza się do wykorzystania, dopóki skarbnik go nie zatwierdzi.
+// Zwraca status nadany przez serwer (żeby powiedzieć „czeka na akceptację”).
 export const useAddTeamExpense = (cfg: TeamConfig) => {
   const qc = useQueryClient();
   return useMutation({
@@ -432,7 +547,7 @@ export const useAddTeamExpense = (cfg: TeamConfig) => {
       detailed: string;
       responsible: string | null;
       receipt: { uri: string; mimeType: string; name: string } | null;
-    }) => {
+    }): Promise<{ status: ExpenseStatus }> => {
       const documents: { name: string; url: string; uploadedAt: string }[] = [];
       if (input.receipt) {
         const ext = input.receipt.name.split('.').pop() || 'jpg';
@@ -441,7 +556,7 @@ export const useAddTeamExpense = (cfg: TeamConfig) => {
         const { error: upErr } = await supabase.storage
           .from('finance')
           .upload(path, buf, { contentType: input.receipt.mimeType });
-        if (upErr) throw new Error(upErr.message || 'Nie udało się wysłać paragonu.');
+        if (upErr) throw new Error('Nie udało się wysłać zdjęcia paragonu. Spróbuj ponownie albo zapisz wydatek bez niego.');
         // Pliki są serwowane publicznie tylko na subdomenie kościoła (nie na api.*).
         documents.push({
           name: input.receipt.name,
@@ -449,21 +564,29 @@ export const useAddTeamExpense = (cfg: TeamConfig) => {
           uploadedAt: new Date().toISOString(),
         });
       }
-      const { error } = await (supabase.from('expense_transactions') as any).insert({
-        payment_date: input.date,
-        amount: input.amount,
-        contractor: input.contractor || null,
-        category: cfg.financeName,
-        description: input.budgetLine,
-        detailed_description: input.detailed || null,
-        responsible_person: input.responsible,
-        documents,
-        tags: [],
-        team_type: cfg.financeName,
-      });
+      const { data, error } = await (supabase.from('expense_transactions') as any)
+        .insert({
+          payment_date: input.date,
+          amount: input.amount,
+          contractor: input.contractor || null,
+          category: cfg.financeName,
+          description: input.budgetLine,
+          detailed_description: input.detailed || null,
+          responsible_person: input.responsible,
+          documents,
+          tags: [],
+          team_type: cfg.financeName,
+        })
+        .select('id, status')
+        .single();
       if (error) throw error;
+      return { status: ((data as any)?.status ?? null) as ExpenseStatus };
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', cfg.key, 'finance'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['team', cfg.key, 'finance'] });
+      qc.invalidateQueries({ queryKey: ['finance'] });
+      qc.invalidateQueries({ queryKey: ['approvals'] });
+    },
   });
 };
 
@@ -511,7 +634,7 @@ async function loadBoard(boardId: string): Promise<TeamBoard> {
   const labels: BoardStatusLabel[] = (settingsOf(statusCol).labels ?? []).map((l: any) => ({
     id: String(l.id),
     title: String(l.title ?? l.id),
-    color: String(l.color ?? '#857F70'),
+    color: String(l.color ?? '#6E685A'),
   }));
   const groupName = new Map<string, string>(asList(groups).map((g) => [String(g.id), String(g.name)]));
   const cellsById: Record<string, Record<string, unknown>> = {};

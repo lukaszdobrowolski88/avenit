@@ -37,10 +37,10 @@ const OpenButton = ({ url }: { url: string }) => (
   <Pressable
     onPress={() => Linking.openURL(url)}
     className="flex-row items-center justify-center gap-2 mb-4 active:opacity-80"
-    style={{ paddingVertical: 12, borderRadius: 14, backgroundColor: '#fee2e2' }}
+    style={{ paddingVertical: 12, borderRadius: 14, backgroundColor: '#ECE8DE' }}
   >
-    <PlaySquare size={18} color="#dc2626" />
-    <Text className="text-[14px]" style={{ color: '#dc2626', fontFamily: 'Manrope_700Bold' }}>
+    <PlaySquare size={18} color="#2A2312" />
+    <Text className="text-[14px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
       Obejrzyj wideo
     </Text>
   </Pressable>
@@ -77,8 +77,8 @@ export const SermonVideo = ({ url }: { url: string }) => {
         className="flex-row items-center justify-center gap-1.5 mt-2 active:opacity-70"
         style={{ paddingVertical: 8 }}
       >
-        <PlaySquare size={14} color="#dc2626" />
-        <Text className="text-[12px]" style={{ color: '#dc2626', fontFamily: 'Manrope_600SemiBold' }}>
+        <PlaySquare size={14} color="#2A2312" />
+        <Text className="text-[12px]" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
           Otwórz w aplikacji wideo
         </Text>
       </Pressable>

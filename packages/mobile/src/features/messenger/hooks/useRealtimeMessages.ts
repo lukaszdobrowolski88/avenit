@@ -35,7 +35,9 @@ export const useRealtimeMessages = (conversationId: string) => {
           // Shim realtime IGNORUJE `filter` (conversation_id=eq.X) i dostarcza INSERT-y
           // ze WSZYSTKICH konwersacji przez wspólne WS. Bez tego guardu wiadomość z innej
           // rozmowy trafiłaby do otwartego wątku (przeciek treści) — filtrujemy po kliencie.
-          if (msg?.conversation_id !== conversationId) return;
+          if (String(msg?.conversation_id) !== String(conversationId)) return;
+          // Wiadomość usunięta, zanim dotarła — nie pokazuj.
+          if (msg.deleted_at) return;
           qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) => {
             if (!prev) return [msg];
             if (prev.some((m: MessageRow) => m.id === msg.id)) return prev;
@@ -57,14 +59,14 @@ export const useRealtimeMessages = (conversationId: string) => {
           // Jak wyżej: filtr jest ignorowany przez shim, więc odrzucamy zdarzenia z
           // innych konwersacji (tu tylko podmieniamy istniejące wiersze, ale guard
           // chroni przed zbędną pracą i ewentualnym wstrzyknięciem obcego wiersza).
-          if (updated?.conversation_id !== conversationId) return;
+          if (String(updated?.conversation_id) !== String(conversationId)) return;
           qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) => {
             if (!prev) return prev;
             // Soft-deleted (deleted_at is set) — usuwamy z listy.
             if (updated.deleted_at) {
               return prev.filter((m: MessageRow) => m.id !== updated.id);
             }
-            return prev.map((m: MessageRow) => (m.id === updated.id ? updated : m));
+            return prev.map((m: MessageRow) => (m.id === updated.id ? { ...m, ...updated } : m));
           });
           qc.invalidateQueries({ queryKey: ["conversations"] });
         },
@@ -112,6 +114,26 @@ export const useRealtimeMessages = (conversationId: string) => {
           qc.invalidateQueries({ queryKey: ["prayerResponses", conversationId] });
         },
       )
+      // Skład / role / ustawienia rozmowy (np. kanał „tylko administratorzy”) — odśwież nagłówek
+      // i prawo pisania.
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversation_participants" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { conversation_id?: string } | null;
+          if (row?.conversation_id && String(row.conversation_id) !== String(conversationId)) return;
+          qc.invalidateQueries({ queryKey: ["conversation", conversationId] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversations" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { id?: string } | null;
+          if (row?.id && String(row.id) !== String(conversationId)) return;
+          qc.invalidateQueries({ queryKey: ["conversation", conversationId] });
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -145,6 +167,23 @@ export const useRealtimeConversations = (userEmail: string | null) => {
         },
         () => {
           qc.invalidateQueries({ queryKey: ["conversations", userEmail] });
+        },
+      )
+      // Dodanie do rozmowy (ktoś założył ze mną rozmowę/grupę), usunięcie ze składu,
+      // zmiana nazwy lub usunięcie rozmowy — serwer wysyła te zmiany tylko uczestnikom.
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversation_participants" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["conversations", userEmail] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversations" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["conversations", userEmail] });
+          qc.invalidateQueries({ queryKey: ["conversation"] });
         },
       )
       .subscribe();

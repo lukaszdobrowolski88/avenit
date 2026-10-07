@@ -11,10 +11,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Copy, KeyRound, ShieldCheck, ShieldOff, Smartphone } from 'lucide-react-native';
+import { KeyRound, ShieldCheck, ShieldOff, Smartphone } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
+import { B } from '../../../src/components/ui/brand';
 import { supabase } from '../../../src/lib/supabase';
+import { showError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
 import { use2FAStatus, useBackupCodes } from '../../../src/features/account/api';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -28,9 +31,9 @@ const CodesGrid = ({ codes }: { codes: string[] }) => (
       gap: 8,
       padding: 14,
       borderRadius: 14,
-      backgroundColor: '#f8fafc',
+      backgroundColor: '#FFFFFF',
       borderWidth: 1,
-      borderColor: '#E3DDD0',
+      borderColor: B.fieldBorder,
     }}
   >
     {codes.map((c, i) => (
@@ -79,7 +82,7 @@ export default function TwoFactorScreen() {
     const { data, error } = await supabase.auth.twoFactorSetup();
     setBusy(false);
     if (error || !data) {
-      Alert.alert('Błąd', error?.message ?? 'Nie udało się rozpocząć konfiguracji.');
+      showError('Nie udało się rozpocząć konfiguracji', error, 'Spróbuj ponownie za chwilę.');
       return;
     }
     setSetupData({ secret: data.secret, otpauthUrl: data.otpauthUrl, backupCodes: data.backupCodes });
@@ -90,7 +93,7 @@ export default function TwoFactorScreen() {
   const confirmEnable = async () => {
     if (!setupData) return;
     if (code.trim().length < 6) {
-      Alert.alert('Kod', 'Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej.');
+      Alert.alert('Wpisz kod', 'Wprowadź 6-cyfrowy kod weryfikacyjny z aplikacji uwierzytelniającej.');
       return;
     }
     setBusy(true);
@@ -101,9 +104,10 @@ export default function TwoFactorScreen() {
     });
     setBusy(false);
     if (error) {
-      Alert.alert('Nieprawidłowy kod', error.message);
+      showError('Nie udało się włączyć', error, 'Kod jest nieprawidłowy albo wygasł. Wpisz aktualny kod z aplikacji.');
       return;
     }
+    toast.success('Uwierzytelnianie dwuskładnikowe zostało włączone!');
     setNewCodes(setupData.backupCodes);
     setStep('codes');
     qc.invalidateQueries({ queryKey: ['2fa-status'] });
@@ -113,7 +117,7 @@ export default function TwoFactorScreen() {
   const runPrompt = async () => {
     const c = promptCode.trim();
     if (c.length < 6) {
-      Alert.alert('Kod', 'Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej.');
+      Alert.alert('Wpisz kod', 'Wprowadź 6-cyfrowy kod weryfikacyjny z aplikacji uwierzytelniającej.');
       return;
     }
     setBusy(true);
@@ -121,18 +125,18 @@ export default function TwoFactorScreen() {
       const { error } = await supabase.auth.twoFactorDisable({ code: c });
       setBusy(false);
       if (error) {
-        Alert.alert('Błąd', error.message);
+        showError('Nie udało się wyłączyć', error, 'Kod jest nieprawidłowy albo wygasł. Wpisz aktualny kod z aplikacji.');
         return;
       }
       setPromptFor(null);
       setPromptCode('');
       qc.invalidateQueries({ queryKey: ['2fa-status'] });
-      Alert.alert('Wyłączono', 'Weryfikacja dwustopniowa została wyłączona.');
+      toast.success('Uwierzytelnianie dwuskładnikowe zostało wyłączone.');
     } else if (promptFor === 'regen') {
       const { data, error } = await supabase.auth.regenerateBackupCodes({ code: c });
       setBusy(false);
       if (error || !data) {
-        Alert.alert('Błąd', error?.message ?? 'Nie udało się wygenerować kodów.');
+        showError('Nie udało się wygenerować kodów', error, 'Kod jest nieprawidłowy albo wygasł. Wpisz aktualny kod z aplikacji.');
         return;
       }
       setPromptFor(null);
@@ -157,7 +161,7 @@ export default function TwoFactorScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
-        <PageHeader title="Weryfikacja dwustopniowa" subtitle="Dodatkowe zabezpieczenie konta" showBack />
+        <PageHeader title="Uwierzytelnianie dwuskładnikowe" subtitle="Bezpieczeństwo i logowanie" showBack />
 
         {status.isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -173,13 +177,13 @@ export default function TwoFactorScreen() {
                       width: 56,
                       height: 56,
                       borderRadius: 16,
-                      backgroundColor: '#d1fae5',
+                      backgroundColor: B.kurkumaSoft,
                       alignItems: 'center',
                       justifyContent: 'center',
                       marginBottom: 10,
                     }}
                   >
-                    <KeyRound size={26} color="#059669" />
+                    <KeyRound size={26} color={B.goldDeep} />
                   </View>
                   <Text style={{ fontSize: 18, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                     Kody zapasowe
@@ -194,7 +198,8 @@ export default function TwoFactorScreen() {
                     }}
                   >
                     Zapisz je w bezpiecznym miejscu. Pozwolą zalogować się, gdy nie masz dostępu do
-                    aplikacji. Nie zobaczysz ich ponownie.
+                    aplikacji uwierzytelniającej. Nie zobaczysz ich ponownie — przytrzymaj kod, aby go
+                    skopiować.
                   </Text>
                 </View>
                 <CodesGrid codes={newCodes} />
@@ -205,7 +210,7 @@ export default function TwoFactorScreen() {
                       setNewCodes([]);
                     }}
                   >
-                    Zapisałem/am kody
+                    Mam zapisane kody
                   </GradientButton>
                 </View>
               </View>
@@ -227,15 +232,18 @@ export default function TwoFactorScreen() {
                   <Text selectable style={styles.secretText}>
                     {setupData.secret}
                   </Text>
-                  <Copy size={15} color="#857F70" />
                 </View>
+                <Text style={[styles.help, { marginTop: 6, fontSize: 12 }]}>Przytrzymaj klucz, aby go skopiować.</Text>
 
                 <Text style={[styles.sectionTitle, { marginTop: 18 }]}>3. Wpisz kod z aplikacji</Text>
                 <TextInput
                   style={styles.codeInput}
                   placeholder="000000"
-                  placeholderTextColor="#9A9586"
+                  placeholderTextColor={B.ink4}
                   keyboardType="number-pad"
+                  textContentType="oneTimeCode"
+                  autoComplete="one-time-code"
+                  accessibilityLabel="Kod z aplikacji"
                   maxLength={6}
                   value={code}
                   onChangeText={setCode}
@@ -260,13 +268,13 @@ export default function TwoFactorScreen() {
               </View>
             ) : enabled ? (
               <View>
-                <View style={[styles.statusCard, { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }]}>
-                  <ShieldCheck size={22} color="#059669" />
+                <View style={[styles.statusCard, { backgroundColor: B.okBg, borderColor: B.okBg }]}>
+                  <ShieldCheck size={22} color={B.okFg} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, color: '#065f46', fontFamily: 'Manrope_700Bold' }}>
-                      2FA jest włączone
+                    <Text style={{ fontSize: 15, color: B.okFg, fontFamily: 'Manrope_700Bold' }}>
+                      Aktywowane
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#047857', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
+                    <Text style={{ fontSize: 13, color: B.okFg, marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                       Logowanie wymaga kodu z aplikacji uwierzytelniającej.
                     </Text>
                   </View>
@@ -275,7 +283,7 @@ export default function TwoFactorScreen() {
                 <View style={styles.infoRow}>
                   <KeyRound size={16} color="#6B6557" />
                   <Text style={styles.infoText}>
-                    Kody zapasowe: {unusedBackup} nieużytych
+                    Kody zapasowe: pozostało {unusedBackup} z 10
                   </Text>
                 </View>
 
@@ -297,31 +305,31 @@ export default function TwoFactorScreen() {
                   }}
                   style={styles.dangerBtn}
                 >
-                  <ShieldOff size={16} color="#dc2626" />
-                  <Text style={styles.dangerBtnText}>Wyłącz 2FA</Text>
+                  <ShieldOff size={16} color={B.danger} />
+                  <Text style={styles.dangerBtnText}>Wyłącz uwierzytelnianie dwuskładnikowe</Text>
                 </Pressable>
               </View>
             ) : (
               <View>
-                <View style={[styles.statusCard, { backgroundColor: '#FFF8E1', borderColor: '#F3E3B0' }]}>
-                  <ShieldOff size={22} color="#8A6606" />
+                <View style={[styles.statusCard, { backgroundColor: B.kurkumaSoft, borderColor: B.kurkumaSoft }]}>
+                  <ShieldOff size={22} color={B.goldDeep} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, color: '#8A6606', fontFamily: 'Manrope_700Bold' }}>
-                      2FA jest wyłączone
+                    <Text style={{ fontSize: 15, color: B.goldDeep, fontFamily: 'Manrope_700Bold' }}>
+                      Wyłączone
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#8A6606', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
-                      Włącz dodatkowe zabezpieczenie, by chronić swoje konto.
+                    <Text style={{ fontSize: 13, color: B.goldDeep, marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
+                      Włącz, aby zwiększyć bezpieczeństwo konta.
                     </Text>
                   </View>
                 </View>
                 {status.data?.required ? (
                   <Text style={[styles.help, { marginTop: 10 }]}>
-                    Administrator wymaga 2FA dla Twojego konta.
+                    Administrator wymaga uwierzytelniania dwuskładnikowego dla Twojego konta.
                   </Text>
                 ) : null}
                 <View style={{ marginTop: 18 }}>
                   <GradientButton onPress={beginSetup} loading={busy}>
-                    Włącz weryfikację dwustopniową
+                    Włącz uwierzytelnianie dwuskładnikowe
                   </GradientButton>
                 </View>
               </View>
@@ -338,7 +346,7 @@ export default function TwoFactorScreen() {
         onRequestClose={() => setPromptFor(null)}
       >
         <Pressable
-          style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'center', padding: 24 }}
+          style={{ flex: 1, backgroundColor: 'rgba(12,10,9,0.35)', justifyContent: 'center', padding: 24 }}
           onPress={() => setPromptFor(null)}
         >
           <Pressable
@@ -346,16 +354,21 @@ export default function TwoFactorScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginBottom: 4 }}>
-              {promptFor === 'disable' ? 'Wyłącz 2FA' : 'Nowe kody zapasowe'}
+              {promptFor === 'disable' ? 'Wyłączyć uwierzytelnianie dwuskładnikowe?' : 'Nowe kody zapasowe'}
             </Text>
             <Text style={{ fontSize: 13, color: '#6B6557', marginBottom: 14, fontFamily: 'Manrope_400Regular' }}>
-              Potwierdź 6-cyfrowym kodem z aplikacji uwierzytelniającej.
+              {promptFor === 'disable'
+                ? 'Logowanie nie będzie już wymagało kodu. Potwierdź 6-cyfrowym kodem z aplikacji uwierzytelniającej.'
+                : 'Dotychczasowe kody zapasowe przestaną działać. Potwierdź 6-cyfrowym kodem z aplikacji.'}
             </Text>
             <TextInput
               style={styles.codeInput}
               placeholder="000000"
-              placeholderTextColor="#9A9586"
+              placeholderTextColor={B.ink4}
               keyboardType="number-pad"
+              textContentType="oneTimeCode"
+              autoComplete="one-time-code"
+              accessibilityLabel="Kod z aplikacji"
               maxLength={6}
               value={promptCode}
               onChangeText={setPromptCode}
@@ -407,14 +420,14 @@ const styles = {
     paddingHorizontal: 14,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E3DDD0',
+    borderColor: B.fieldBorder,
   } as const,
   secretText: { flex: 1, fontSize: 15, letterSpacing: 2, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' } as const,
   codeInput: {
     borderWidth: 1,
-    borderColor: '#E6E1D5',
+    borderColor: B.fieldBorder,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -444,8 +457,8 @@ const styles = {
     paddingVertical: 13,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#fecaca',
-    backgroundColor: '#fef2f2',
+    borderColor: B.dangerBg,
+    backgroundColor: B.dangerBg,
   } as const,
-  dangerBtnText: { fontSize: 14, color: '#dc2626', fontFamily: 'Manrope_700Bold' } as const,
+  dangerBtnText: { fontSize: 14, color: B.danger, fontFamily: 'Manrope_700Bold' } as const,
 };

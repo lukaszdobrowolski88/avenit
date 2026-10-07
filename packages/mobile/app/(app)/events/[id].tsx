@@ -50,6 +50,9 @@ import { useLinkProgram, useUpdateAssignmentStatus } from '../../../src/features
 import { ProgramFormModal } from '../../../src/features/programs/components/ProgramFormModal';
 import { ProgramPickerSheet } from '../../../src/features/programs/components/LinkPickers';
 import { formatTime } from '../../../src/lib/domain';
+import { friendlyError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
+import { respondMessage } from '../../../src/lib/assignments';
 import {
   useCancelEvent,
   useEventRegistrations,
@@ -100,7 +103,7 @@ const hm = (d: Date) => format(d, 'HH:mm');
 
 const openUrl = (url: string | null) => {
   if (!url) return;
-  Linking.openURL(url).catch(() => Alert.alert('Błąd', 'Nie udało się otworzyć linku.'));
+  Linking.openURL(url).catch(() => Alert.alert('Nie udało się otworzyć linku', 'Sprawdź, czy adres jest poprawny, albo otwórz go na webie.'));
 };
 const openMaps = (place: string) =>
   openUrl(
@@ -143,7 +146,9 @@ export default function EventScreen() {
             {q.isError ? 'Nie udało się wczytać wydarzenia' : 'Wydarzenie niedostępne'}
           </Text>
           <Text style={{ marginTop: 6, fontSize: 14, color: B.ink3, fontFamily: F.medium, textAlign: 'center' }}>
-            {q.isError ? (q.error as Error)?.message : 'Mogło zostać usunięte albo nie jest widoczne dla Ciebie.'}
+            {q.isError
+              ? friendlyError(q.error, 'Sprawdź połączenie i spróbuj ponownie.')
+              : 'Mogło zostać usunięte albo nie jest widoczne dla Ciebie.'}
           </Text>
           {q.isError ? (
             <Pressable onPress={() => q.refetch()} style={[btn.base, btn.dark, { marginTop: 16, paddingHorizontal: 22 }]}>
@@ -208,7 +213,7 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
       { eventId: ev.eventId, programId },
       {
         onSuccess: () => setPickingProgram(false),
-        onError: (e: any) => Alert.alert('Nie udało się zmienić programu', e?.message ?? 'Spróbuj ponownie.'),
+        onError: (e: unknown) => Alert.alert('Nie udało się zmienić programu', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
   const programMenu = () =>
@@ -577,13 +582,19 @@ const MyServiceCard = ({
     respond.mutate(
       { id: a.id, status },
       {
-        onSuccess: () => {
+        onSuccess: (r) => {
           qc.invalidateQueries({ queryKey: ['event-detail', eventId] });
           qc.invalidateQueries({ queryKey: ['agenda'] });
+          toast.success(respondMessage(status, r));
         },
-        onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? 'Spróbuj ponownie.'),
+        onError: (e: unknown) => Alert.alert('Nie udało się zapisać odpowiedzi', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
+  const reject = (a: MyAssignment) =>
+    Alert.alert('Nie możesz służyć?', `${[a.role, a.team].filter(Boolean).join(' · ')} — Twoje imię zniknie z grafiku, a lider zobaczy odmowę.`, [
+      { text: 'Anuluj', style: 'cancel' },
+      { text: 'Nie mogę', style: 'destructive', onPress: () => answer(a, 'rejected') },
+    ]);
   const rows = assignments.length
     ? assignments
     : [{ id: '', team: '', role: fallbackRole ?? 'Służba', status: null } as MyAssignment];
@@ -616,7 +627,7 @@ const MyServiceCard = ({
               </Pressable>
               {a.status !== 'rejected' ? (
                 <Pressable
-                  onPress={() => answer(a, 'rejected')}
+                  onPress={() => reject(a)}
                   disabled={respond.isPending}
                   className="active:opacity-80"
                   style={[btn.base, { flex: 1, paddingVertical: 11, backgroundColor: 'rgba(42,35,18,0.1)' }]}
@@ -667,10 +678,10 @@ const Attendance = ({
   const doSignUp = () =>
     signUp.mutate(
       { guests, fullName: myName ?? '' },
-      { onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') },
+      { onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')) },
     );
   const doCancel = () =>
-    cancel.mutate(undefined, { onError: (e: any) => Alert.alert('Nie udało się wypisać', e?.message ?? 'Spróbuj ponownie.') });
+    cancel.mutate(undefined, { onError: (e: unknown) => Alert.alert('Nie udało się wypisać', friendlyError(e, 'Spróbuj ponownie.')) });
   const openWebEvent = () => {
     const base = tenantWebBase();
     if (base) openUrl(`${base}/wydarzenie/${ev.eventId}`);
@@ -1085,7 +1096,7 @@ const FileRow = ({ file, first }: { file: EventFile; first: boolean }) => {
   const Icon = image ? ImageIcon : FileText;
   return (
     <Pressable
-      onPress={() => (file.url ? openUrl(file.url) : Alert.alert('Błąd', 'Nie udało się otworzyć pliku.'))}
+      onPress={() => (file.url ? openUrl(file.url) : Alert.alert('Nie udało się otworzyć pliku', 'Plik nie ma adresu — otwórz go na webie.'))}
       className="active:opacity-70"
       style={{
         flexDirection: 'row',

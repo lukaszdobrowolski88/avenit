@@ -25,9 +25,10 @@ import {
   fileIconType,
   type SharedFile,
 } from '../../../src/features/materials/api';
+import { friendlyError, showError } from '../../../src/lib/errors';
 
 const ICON_BY_TYPE = {
-  pdf: { Icon: FileText, tint: '#dc2626', bg: '#fee2e2' },
+  pdf: { Icon: FileText, tint: '#2A2312', bg: '#ECE8DE' },
   image: { Icon: ImageIcon, tint: '#2A2312', bg: '#ECE8DE' },
   audio: { Icon: FileAudio, tint: '#2A2312', bg: '#ECE8DE' },
   video: { Icon: FileVideo, tint: '#2A2312', bg: '#ECE8DE' },
@@ -43,12 +44,12 @@ export default function SharedMaterialsScreen() {
     try {
       const url = await getDownloadUrl(file.storage_path);
       if (!url) {
-        Alert.alert('Błąd', 'Nie udało się otworzyć pliku.');
+        Alert.alert('Nie udało się otworzyć pliku', 'Brak adresu pliku. Spróbuj ponownie za chwilę.');
         return;
       }
       await Linking.openURL(url);
-    } catch {
-      Alert.alert('Błąd', 'Nie udało się otworzyć pliku.');
+    } catch (e) {
+      showError('Nie udało się otworzyć pliku', e, 'Spróbuj ponownie.');
     }
   };
 
@@ -64,9 +65,16 @@ export default function SharedMaterialsScreen() {
           </View>
         ) : isError ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Manrope_500Medium' }}>
-              {(error as Error)?.message ?? 'Błąd'}
+            <Text style={{ color: '#4A463E', textAlign: 'center', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}>
+              {friendlyError(error, 'Nie udało się wczytać udostępnionych plików.')}
             </Text>
+            <Pressable
+              onPress={() => refetch()}
+              className="active:opacity-70"
+              style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: '#2A2312' }}
+            >
+              <Text style={{ color: '#F6F4EE', fontFamily: 'Manrope_700Bold', fontSize: 14 }}>Spróbuj ponownie</Text>
+            </Pressable>
           </View>
         ) : files.length === 0 ? (
           <ScrollView
@@ -135,7 +143,7 @@ export default function SharedMaterialsScreen() {
                     <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }} numberOfLines={2}>
                       {f.name}
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#857F70', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
+                    <Text style={{ fontSize: 12, color: '#6E685A', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                       {formatBytes(f.file_size || 0)}
                       {f.shared_label && f.shared_label !== 'folder' ? ` · ${f.shared_label}` : ''}
                     </Text>

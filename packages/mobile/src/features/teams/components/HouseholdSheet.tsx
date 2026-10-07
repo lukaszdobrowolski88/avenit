@@ -13,6 +13,7 @@ import {
   type ParentContact,
 } from '../kids';
 import { fold } from '../tabs/ui';
+import { friendlyError } from '../../../lib/errors';
 
 // Rodzina (households + parent_contacts) jak HouseholdManager na webie: dane, opiekunowie
 // (główny kontakt, kto może odebrać dziecko) i dzieci. Telefon głównego kontaktu
@@ -107,15 +108,19 @@ export const HouseholdSheet = ({
     if (!n) return Alert.alert('Podaj nazwę rodziny', 'np. Kowalscy');
     save.mutate(
       { household, name: n, phoneFull: phone.trim() || null, address: address.trim() || null, notes: notes.trim() || null, contacts },
-      { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') },
+      { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')) },
     );
   };
 
   const remove = () =>
-    Alert.alert('Usunąć rodzinę?', 'Dzieci zostaną na liście uczniów, ale bez powiązania z rodziną.', [
+    Alert.alert(
+      'Usunąć rodzinę?',
+      `Rodzina „${household?.name ?? ''}” zniknie razem z kontaktami opiekunów${household?.contacts.length ? ` (${household.contacts.length})` : ''}. Dzieci zostaną na liście uczniów, ale bez powiązania z rodziną.`,
+      [
       { text: 'Anuluj', style: 'cancel' },
-      { text: 'Usuń', style: 'destructive', onPress: () => del.mutate(household!.id, { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? '') }) },
-    ]);
+      { text: 'Usuń', style: 'destructive', onPress: () => del.mutate(household!.id, { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się usunąć', friendlyError(e, 'Spróbuj ponownie.')) }) },
+      ],
+    );
 
   return (
     <Sheet
@@ -207,7 +212,18 @@ export const HouseholdSheet = ({
                   {k.birthYear ? <Text style={{ color: B.ink4, fontFamily: F.medium }}>{`  ${k.birthYear}`}</Text> : null}
                 </Text>
                 {canEdit ? (
-                  <Pressable onPress={() => setHousehold.mutate({ studentId: k.id, householdId: null })} hitSlop={10} accessibilityLabel={`Odłącz: ${k.name}`} style={{ padding: 4 }}>
+                  <Pressable
+                    onPress={() =>
+                      setHousehold.mutate(
+                        { studentId: k.id, householdId: null },
+                        { onError: (e: unknown) => Alert.alert('Nie udało się odłączyć dziecka', friendlyError(e, 'Spróbuj ponownie.')) },
+                      )
+                    }
+                    disabled={setHousehold.isPending}
+                    hitSlop={10}
+                    accessibilityLabel={`Odłącz od rodziny: ${k.name}`}
+                    style={{ padding: 4 }}
+                  >
                     <X size={16} color={B.ink4} />
                   </Pressable>
                 ) : null}
@@ -228,7 +244,7 @@ export const HouseholdSheet = ({
                 {candidates.map((st) => (
                   <Pressable
                     key={st.id}
-                    onPress={() => setHousehold.mutate({ studentId: st.id, householdId: household.id }, { onError: (e: any) => Alert.alert('Nie udało się dodać', e?.message ?? '') })}
+                    onPress={() => setHousehold.mutate({ studentId: st.id, householdId: household.id }, { onError: (e: unknown) => Alert.alert('Nie udało się dodać', friendlyError(e, 'Spróbuj ponownie.')) })}
                     className="active:opacity-70"
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}
                   >

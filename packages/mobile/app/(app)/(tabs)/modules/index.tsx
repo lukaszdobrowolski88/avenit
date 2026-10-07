@@ -8,93 +8,83 @@ import {
   Text,
   TextInput,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowUpRight, Search, UserCheck, X } from 'lucide-react-native';
+import { ArrowUpRight, Search, SearchX, UserCheck, X } from 'lucide-react-native';
 import { openModule, useModules, type ModuleItem } from '../../../../src/features/modules/useModules';
+import { wordStartScore } from '../../../../src/features/modules/nav';
 import { useAuthSession } from '../../../../src/lib/auth';
 import { useUnreadNotificationsCount } from '../../../../src/features/notifications/api';
 import { usePendingAccounts } from '../../../../src/features/admin/approvals';
 import { B, FeatureCard, IconWell, ListCard, ListRow, SectionLabel } from '../../../../src/components/ui/brand';
+import { EmptyState } from '../../../../src/components/ui/EmptyState';
 
-const GAP = 10;
 const SIDE = 16;
 
-// Kafel siatki (Wspólnota): biały na papierze, ikona u góry, nazwa na dole — jak na pulpicie.
-const GridTile = ({ item, width, onPress }: { item: ModuleItem; width: number; onPress: () => void }) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityLabel={item.isWeb ? `${item.label}, otwiera się w przeglądarce` : item.label}
-    className="active:opacity-70"
-    style={{ width, minHeight: 108, borderRadius: 22, backgroundColor: B.card, padding: 12, justifyContent: 'space-between' }}
-  >
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <IconWell Icon={item.Icon} size={40} />
-      {item.isWeb ? <ArrowUpRight size={15} color={B.ink4} strokeWidth={2} /> : null}
-    </View>
-    <Text numberOfLines={2} style={{ marginTop: 12, fontSize: 13, lineHeight: 17, color: B.ink, letterSpacing: -0.2, fontFamily: 'Manrope_600SemiBold' }}>
-      {item.label}
-    </Text>
-  </Pressable>
-);
-
+// Zakładka „Moduły” — to samo menu co web: grupy Start / Ludzie / Służby / Komunikacja /
+// Finanse / Narzędzia / Moje moduły (src/features/modules/nav.ts = navConfig weba), w grupie
+// kolejność z ustawień kościoła. Moduły bez ekranu w apce (↗) otwierają się w przeglądarce,
+// od razu zalogowane (bilet SSO).
 export default function ModulesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const { user } = useAuthSession();
-  const { ready, groups, personal, items, perms } = useModules();
+  const { ready, groups, settings, personal, items, perms } = useModules();
   const unread = useUnreadNotificationsCount(user?.email ?? null);
   const canManageUsers = perms.can('action:settings:manage_users');
   const pending = usePendingAccounts(canManageUsers);
   const pendingCount = (pending.data ?? []).filter((a: { kind: string }) => a.kind === 'admin').length;
   const [query, setQuery] = useState('');
 
-  const tileWidth = Math.floor((width - SIDE * 2 - GAP * 2) / 3);
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   const total = items.length + personal.length;
 
-  // Rola w służbie — lider w słodzie, członek w kurkumie (jak ekran Zespoły).
+  // Rola w służbie — lider / członek zespołu (jak ekran Zespoły).
   const roleOf = (key: string) => {
     const mine = perms.ministries.filter((m) => m.ministry_key === key);
     if (!mine.length) return null;
     return mine.some((m) => m.role === 'leader') ? 'leader' : 'member';
   };
 
-  const results = useMemo(
-    () => (q ? items.filter((it) => it.label.toLowerCase().includes(q)) : []),
-    [items, q],
-  );
+  // Wyszukiwanie od początku słowa, także po słowach kluczowych (np. „ccli” → Analityka,
+  // „kazania” → Nauczanie) — jak ⌘K na webie. Najpierw trafienia w nazwę.
+  const results = useMemo(() => {
+    if (!q) return [];
+    const pool: ModuleItem[] = settings ? [...items, settings] : items;
+    return pool
+      .map((it) => ({ it, score: wordStartScore(q, it.label, it.keywords ?? '') }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((r) => r.it);
+  }, [items, settings, q]);
   const personalResults = useMemo(
-    () => (q ? personal.filter((p) => p.label.toLowerCase().includes(q)) : []),
+    () => (q ? personal.filter((p) => wordStartScore(q, p.label, p.short) > 0) : []),
     [personal, q],
   );
-  const byKey = (section: string) => groups.find((g) => g.section === section)?.items ?? [];
 
-  const listRow = (it: ModuleItem, tone?: 'paper' | 'kurkuma' | 'slod', role?: string | null) => (
-    <ListRow
-      key={it.key}
-      leading={<IconWell Icon={it.Icon} size={42} tone={tone} />}
-      dividerInset={72}
-      title={it.label}
-      meta={
-        role ? (
-          <Text style={{ fontSize: 11, marginTop: 3, letterSpacing: 1, textTransform: 'uppercase', color: B.gold, fontFamily: 'Manrope_700Bold' }}>
-            {role}
-          </Text>
-        ) : null
-      }
-      right={it.isWeb ? <ArrowUpRight size={17} color={B.ink4} strokeWidth={2} /> : undefined}
-      noChevron={it.isWeb}
-      onPress={() => openModule(it, router)}
-    />
-  );
-
-  const community = byKey('community');
-  const teams = byKey('teams');
-  const manage = byKey('manage');
+  const moduleRow = (it: ModuleItem) => {
+    const role = it.group === 'ministries' ? roleOf(it.key) : null;
+    return (
+      <ListRow
+        key={it.key}
+        leading={<IconWell Icon={it.Icon} size={42} tone={role === 'leader' ? 'slod' : role === 'member' ? 'kurkuma' : 'paper'} />}
+        dividerInset={72}
+        title={it.label}
+        subtitle={it.isWeb ? it.hint ?? null : null}
+        meta={
+          role ? (
+            <Text style={{ fontSize: 12, marginTop: 3, color: B.gold, fontFamily: 'Manrope_700Bold' }}>
+              {role === 'leader' ? 'Jesteś liderem' : 'Jesteś w zespole'}
+            </Text>
+          ) : null
+        }
+        right={it.isWeb ? <ArrowUpRight size={17} color={B.ink4} strokeWidth={2} /> : undefined}
+        noChevron={it.isWeb}
+        onPress={() => openModule(it, router)}
+      />
+    );
+  };
 
   return (
     <>
@@ -111,7 +101,10 @@ export default function ModulesScreen() {
           <Text style={{ fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: B.gold, fontFamily: 'Manrope_600SemiBold' }}>
             {ready ? `Moduły · ${total} dla Ciebie` : 'Moduły · wczytywanie…'}
           </Text>
-          <Text style={{ marginTop: 10, fontSize: 34, lineHeight: 39, letterSpacing: -1.3, color: B.ink, fontFamily: 'Manrope_700Bold' }}>
+          <Text
+            accessibilityRole="header"
+            style={{ marginTop: 10, fontSize: 34, lineHeight: 39, letterSpacing: -1.3, color: B.ink, fontFamily: 'Manrope_700Bold' }}
+          >
             Cały kościół.
           </Text>
           <Text style={{ fontSize: 34, lineHeight: 39, letterSpacing: -1.3, color: B.ink, fontFamily: 'Manrope_300Light' }}>
@@ -126,6 +119,8 @@ export default function ModulesScreen() {
             gap: 10,
             backgroundColor: B.card,
             borderRadius: 24,
+            borderWidth: 1,
+            borderColor: B.fieldBorder,
             paddingHorizontal: 16,
             height: 48,
           }}
@@ -137,10 +132,11 @@ export default function ModulesScreen() {
             placeholder="Szukaj modułu…"
             placeholderTextColor={B.ink4}
             autoCorrect={false}
+            accessibilityLabel="Szukaj modułu"
             style={{ flex: 1, fontSize: 15, color: B.ink, fontFamily: 'Manrope_500Medium' }}
           />
           {query ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={10}>
+            <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Wyczyść wyszukiwanie">
               <X size={16} color={B.ink3} />
             </Pressable>
           ) : null}
@@ -152,7 +148,7 @@ export default function ModulesScreen() {
           </View>
         ) : null}
 
-        {/* Wyszukiwanie: jedna lista wyników zamiast sekcji. */}
+        {/* Wyszukiwanie: jedna lista wyników zamiast grup. */}
         {ready && q ? (
           results.length + personalResults.length > 0 ? (
             <>
@@ -167,13 +163,17 @@ export default function ModulesScreen() {
                     onPress={() => router.push(p.route as never)}
                   />
                 ))}
-                {results.map((it) => listRow(it))}
+                {results.map(moduleRow)}
               </ListCard>
             </>
           ) : (
-            <Text style={{ marginTop: 32, textAlign: 'center', color: B.ink3, fontFamily: 'Manrope_500Medium' }}>
-              Brak modułu o nazwie „{query.trim()}”
-            </Text>
+            <EmptyState
+              Icon={SearchX}
+              title={`Nie znaleziono „${q}”`}
+              hint="Sprawdź pisownię albo wpisz początek nazwy modułu. Jeśli modułu brakuje, poproś administratora o dostęp."
+              actionLabel="Wyczyść wyszukiwanie"
+              onAction={() => setQuery('')}
+            />
           )
         ) : null}
 
@@ -204,7 +204,8 @@ export default function ModulesScreen() {
                       <Pressable
                         key={p.key}
                         onPress={() => router.push(p.route as never)}
-                        accessibilityLabel={p.label}
+                        accessibilityRole="button"
+                        accessibilityLabel={badge > 0 ? `${p.label}, ${badge} nowych` : p.label}
                         className="active:opacity-70"
                         style={{ width: 76, alignItems: 'center', gap: 8 }}
                       >
@@ -241,38 +242,35 @@ export default function ModulesScreen() {
               </>
             ) : null}
 
-            {community.length > 0 ? (
-              <>
-                <SectionLabel count={community.length}>Wspólnota</SectionLabel>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
-                  {community.map((it) => (
-                    <GridTile key={it.key} item={it} width={tileWidth} onPress={() => openModule(it, router)} />
-                  ))}
-                </View>
-              </>
+            {groups.map((g) => (
+              <View key={g.id}>
+                <SectionLabel count={g.items.length}>{g.title}</SectionLabel>
+                <ListCard>{g.items.map(moduleRow)}</ListCard>
+              </View>
+            ))}
+
+            {settings ? (
+              <ListCard style={{ marginTop: 22 }}>
+                <ListRow
+                  leading={<IconWell Icon={settings.Icon} size={42} />}
+                  dividerInset={72}
+                  title="Ustawienia kościoła"
+                  subtitle={settings.hint ?? null}
+                  right={<ArrowUpRight size={17} color={B.ink4} strokeWidth={2} />}
+                  noChevron
+                  onPress={() => openModule(settings, router)}
+                />
+              </ListCard>
             ) : null}
 
-            {teams.length > 0 ? (
-              <>
-                <SectionLabel count={teams.length}>Zespoły i służby</SectionLabel>
-                <ListCard>
-                  {teams.map((it) => {
-                    const role = roleOf(it.key);
-                    return listRow(
-                      it,
-                      role === 'leader' ? 'slod' : role === 'member' ? 'kurkuma' : 'paper',
-                      role === 'leader' ? 'Lider' : role === 'member' ? 'Członek zespołu' : null,
-                    );
-                  })}
-                </ListCard>
-              </>
-            ) : null}
-
-            {manage.length > 0 ? (
-              <>
-                <SectionLabel count={manage.length}>Zarządzanie</SectionLabel>
-                <ListCard>{manage.map((it) => listRow(it))}</ListCard>
-              </>
+            {groups.length === 0 && !settings ? (
+              <EmptyState
+                Icon={SearchX}
+                title="Nie masz jeszcze dostępu do modułów"
+                hint="Poproś administratora kościoła o nadanie uprawnień. Pociągnij w dół, aby odświeżyć."
+                actionLabel="Odśwież"
+                onAction={() => perms.refetch()}
+              />
             ) : null}
 
             <Text style={{ marginTop: 22, paddingHorizontal: 4, fontSize: 12, lineHeight: 17, color: B.ink4, fontFamily: 'Manrope_500Medium' }}>

@@ -13,6 +13,10 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import { DateField, TimeField, isValidTime, toYmd } from '../../../components/ui/DateField';
+import { fieldStyle } from '../../../components/ui/brand';
+import { PrimaryButton } from '../../../components/ui/Sheet';
+import { showError } from '../../../lib/errors';
+import { toast } from '../../../lib/toast';
 import { useModules } from '../../modules/useModules';
 import {
   useCreateCalendarEvent,
@@ -51,15 +55,8 @@ const Label = ({ children }: { children: string }) => (
   </Text>
 );
 
-const inputStyle = {
-  height: 46,
-  borderRadius: 14,
-  paddingHorizontal: 14,
-  backgroundColor: '#ECE8DE',
-  fontSize: 15,
-  color: '#2A2312',
-  fontFamily: 'Manrope_500Medium',
-} as const;
+// Pola jak na webie: biel + ramka (wcześniej szare tło bez ramki).
+const inputStyle = { ...fieldStyle, minHeight: 48, paddingVertical: 10 } as const;
 
 export const NewCalendarEventModal = ({
   visible,
@@ -138,13 +135,14 @@ export const NewCalendarEventModal = ({
       if (editing) await update.mutateAsync(payload);
       else await create.mutateAsync(payload);
       onClose();
-    } catch (e: any) {
-      Alert.alert(editing ? 'Nie udało się zapisać' : 'Nie udało się dodać', e?.message ?? 'Spróbuj ponownie.');
+      toast.success(editing ? 'Zapisano zmiany' : 'Wydarzenie dodane');
+    } catch (e) {
+      showError(editing ? 'Nie udało się zapisać wydarzenia' : 'Nie udało się dodać wydarzenia', e);
     }
   };
 
   const confirmDelete = () =>
-    Alert.alert('Usunąć wydarzenie?', `„${editing?.title ?? ''}” zniknie z kalendarza u wszystkich.`, [
+    Alert.alert('Usunąć wydarzenie?', `„${editing?.title ?? ''}” zniknie z kalendarza u wszystkich, razem z grafikiem służb tego wydarzenia. Tej operacji nie można cofnąć.`, [
       { text: 'Anuluj', style: 'cancel' },
       {
         text: 'Usuń',
@@ -154,8 +152,9 @@ export const NewCalendarEventModal = ({
             await remove.mutateAsync();
             onClose();
             onDeleted?.();
-          } catch (e: any) {
-            Alert.alert('Nie udało się usunąć', e?.message ?? 'Spróbuj ponownie.');
+            toast.success('Wydarzenie usunięte');
+          } catch (e) {
+            showError('Nie udało się usunąć wydarzenia', e);
           }
         },
       },
@@ -166,13 +165,13 @@ export const NewCalendarEventModal = ({
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 4 }}>
           <Text style={{ flex: 1, fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{editing ? 'Edytuj wydarzenie' : 'Nowe wydarzenie'}</Text>
-          <Pressable onPress={onClose} hitSlop={10} className="active:opacity-60">
+          <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Zamknij" className="active:opacity-60">
             <X size={22} color="#4A463E" />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <Label>Tytuł</Label>
-          <TextInput value={title} onChangeText={setTitle} placeholder="np. Spotkanie liderów" placeholderTextColor="#857F70" style={inputStyle} />
+          <TextInput value={title} onChangeText={setTitle} placeholder="Np. spotkanie liderów" placeholderTextColor="#6E685A" style={inputStyle} />
 
           <Label>Kalendarz</Label>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -206,7 +205,7 @@ export const NewCalendarEventModal = ({
           </View>
 
           <Label>Miejsce</Label>
-          <TextInput value={location} onChangeText={setLocation} placeholder="np. Sala główna" placeholderTextColor="#857F70" style={inputStyle} />
+          <TextInput value={location} onChangeText={setLocation} placeholder="Np. sala główna" placeholderTextColor="#6E685A" style={inputStyle} />
 
           <Label>Opis</Label>
           {editing?.hasDetailsHtml ? (
@@ -218,38 +217,19 @@ export const NewCalendarEventModal = ({
               value={description}
               onChangeText={setDescription}
               placeholder="Co warto wiedzieć? (opcjonalnie)"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               multiline
               style={[inputStyle, { height: 96, paddingTop: 12, textAlignVertical: 'top' as const }]}
             />
           )}
 
-          <Text style={{ fontSize: 12, lineHeight: 17, color: '#857F70', marginTop: 14, fontFamily: 'Manrope_400Regular' }}>
+          <Text style={{ fontSize: 12, lineHeight: 17, color: '#6E685A', marginTop: 14, fontFamily: 'Manrope_400Regular' }}>
             Program, służby, zapisy, płatności i widoczność ustawisz na webie na stronie wydarzenia.
           </Text>
 
-          <Pressable
-            onPress={save}
-            disabled={busy}
-            className="active:opacity-80"
-            style={{
-              marginTop: 20,
-              height: 52,
-              borderRadius: 16,
-              backgroundColor: '#2A2312',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: busy ? 0.6 : 1,
-            }}
-          >
-            {busy ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>
-                {editing ? 'Zapisz zmiany' : 'Dodaj wydarzenie'}
-              </Text>
-            )}
-          </Pressable>
+          <View style={{ marginTop: 20 }}>
+            <PrimaryButton label={editing ? 'Zapisz zmiany' : 'Dodaj wydarzenie'} onPress={save} busy={busy} tone="ink" />
+          </View>
           {editing && canDelete ? (
             <Pressable
               onPress={confirmDelete}

@@ -39,6 +39,21 @@ import {
 } from '../../../src/features/prayers/api';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useT } from '../../../src/i18n';
+import { friendlyError, showError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
+
+// Krótki cytat intencji do potwierdzeń.
+const excerpt = (text: string | null | undefined, max = 60) => {
+  const t = String(text ?? '').replace(/\s+/g, ' ').trim();
+  return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+};
+
+const prayingLabel = (n: number) => {
+  if (n === 1) return 'osoba modli się';
+  const d = n % 10;
+  const h = n % 100;
+  return d >= 2 && d <= 4 && !(h >= 12 && h <= 14) ? 'osoby modlą się' : 'osób modli się';
+};
 
 type Scope = 'active' | 'answered' | 'mine' | 'all';
 
@@ -142,7 +157,7 @@ const PrayerCard = ({
           </View>
           <Text
             className="text-[11px]"
-            style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}
+            style={{ color: '#6E685A', fontFamily: 'Manrope_500Medium' }}
           >
             {formatRelative(prayer.created_at)}
           </Text>
@@ -160,12 +175,12 @@ const PrayerCard = ({
           {prayer.status === 'answered' && (
             <View
               className="flex-row items-center gap-1 px-2 py-0.5"
-              style={{ borderRadius: 999, backgroundColor: '#d1fae5' }}
+              style={{ borderRadius: 999, backgroundColor: '#FFF1C2' }}
             >
-              <Sparkles size={10} color="#059669" />
+              <Sparkles size={10} color="#6B4F05" />
               <Text
                 className="text-[10px]"
-                style={{ color: '#047857', fontFamily: 'Manrope_700Bold' }}
+                style={{ color: '#6B4F05', fontFamily: 'Manrope_700Bold' }}
               >
                 {t('Wysłuchana')}
               </Text>
@@ -185,18 +200,18 @@ const PrayerCard = ({
             className="p-3 mb-2"
             style={{
               borderRadius: 12,
-              backgroundColor: '#ecfdf5',
+              backgroundColor: '#FFF1C2',
             }}
           >
             <Text
               className="text-[11px] mb-1"
-              style={{ color: '#047857', fontFamily: 'Manrope_700Bold' }}
+              style={{ color: '#6B4F05', fontFamily: 'Manrope_700Bold' }}
             >
               {t('Świadectwo:')}
             </Text>
             <Text
               className="text-[13px]"
-              style={{ color: '#064e3b', fontFamily: 'Manrope_400Regular' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_400Regular' }}
             >
               {prayer.answered_testimony}
             </Text>
@@ -216,13 +231,18 @@ const PrayerCard = ({
             style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
           >
             {prayer.prayer_count > 0
-              ? `${prayer.prayer_count} ${prayer.prayer_count === 1 ? t('osoba modli się') : t('osób modli się')}`
+              ? `${prayer.prayer_count} ${t(prayingLabel(prayer.prayer_count))}`
               : t('Bądź pierwszą osobą modlącą się')}
           </Text>
           <Pressable
-            onPress={() =>
-              toggle.mutate({ requestId: prayer.id, currentlyPraying: !!iAmPraying })
-            }
+            onPress={() => {
+              if (toggle.isPending) return;
+              toggle.mutate(
+                { requestId: prayer.id, currentlyPraying: !!iAmPraying },
+                { onError: (e) => showError('Nie udało się zapisać', e, 'Spróbuj ponownie.') },
+              );
+            }}
+            accessibilityLabel={iAmPraying ? t('Przestań się modlić za tę intencję') : t('Modlę się za tę intencję')}
             disabled={toggle.isPending || !userEmail || prayer.status !== 'active'}
             className="flex-row items-center gap-1.5 active:opacity-80"
             style={{
@@ -255,7 +275,7 @@ const PrayerCard = ({
         {prayer.is_author && (
           <View
             className="flex-row items-center gap-4 mt-3 pt-3"
-            style={{ borderTopWidth: 1, borderTopColor: '#f1f0ee', flexWrap: 'wrap' }}
+            style={{ borderTopWidth: 1, borderTopColor: '#ECE8DE', flexWrap: 'wrap' }}
           >
             {prayer.status === 'answered' ? (
               <OwnerAction
@@ -268,12 +288,12 @@ const PrayerCard = ({
               <OwnerAction
                 Icon={CheckCircle2}
                 label={t("Wysłuchana")}
-                tint="#059669"
+                tint="#6B4F05"
                 onPress={() => onMarkAnswered(prayer)}
               />
             )}
             <OwnerAction Icon={Pencil} label={t("Edytuj")} tint="#4A463E" onPress={() => onEdit(prayer)} />
-            <OwnerAction Icon={Trash2} label={t("Usuń")} tint="#dc2626" onPress={() => onDelete(prayer)} />
+            <OwnerAction Icon={Trash2} label={t("Usuń")} tint="#B42318" onPress={() => onDelete(prayer)} />
           </View>
         )}
       </View>
@@ -328,18 +348,24 @@ export default function PrayersScreen() {
   };
 
   const confirmDelete = (p: PrayerRequest) => {
-    Alert.alert(t('Usunąć intencję?'), t('Tej operacji nie można cofnąć.'), [
-      { text: 'Anuluj', style: 'cancel' },
-      {
-        text: 'Usuń',
-        style: 'destructive',
-        onPress: () =>
-          del.mutate(p.id, {
-            onError: (e: any) =>
-              Alert.alert(t('Błąd'), e?.message ?? t('Nie udało się usunąć intencji.')),
-          }),
-      },
-    ]);
+    Alert.alert(
+      `${t('Usunąć intencję')} „${excerpt(p.content)}”?`,
+      t('Zniknie ze ściany modlitwy dla wszystkich, razem z liczbą modlących się. Tego nie można cofnąć.'),
+      [
+        { text: t('Anuluj'), style: 'cancel' },
+        {
+          text: t('Usuń'),
+          style: 'destructive',
+          onPress: () => {
+            if (del.isPending) return;
+            del.mutate(p.id, {
+              onSuccess: () => toast.success('Usunięto intencję'),
+              onError: (e) => showError('Nie udało się usunąć', e, 'Nie udało się usunąć intencji. Spróbuj ponownie.'),
+            });
+          },
+        },
+      ],
+    );
   };
 
   const openAnswered = (p: PrayerRequest) => {
@@ -348,22 +374,26 @@ export default function PrayersScreen() {
   };
 
   const confirmAnswered = () => {
-    if (!answeredFor) return;
+    if (!answeredFor || markAnswered.isPending) return;
     markAnswered.mutate(
       { id: answeredFor.id, answered: true, testimony: testimony.trim() || null },
       {
-        onSuccess: () => setAnsweredFor(null),
-        onError: (e: any) =>
-          Alert.alert(t('Błąd'), e?.message ?? t('Nie udało się zapisać.')),
+        onSuccess: () => {
+          setAnsweredFor(null);
+          toast.success('Oznaczono jako wysłuchaną');
+        },
+        onError: (e) => showError('Nie udało się zapisać', e, 'Spróbuj ponownie.'),
       }
     );
   };
 
   const reopen = (p: PrayerRequest) => {
+    if (markAnswered.isPending) return;
     markAnswered.mutate(
       { id: p.id, answered: false },
       {
-        onError: (e: any) => Alert.alert(t('Błąd'), e?.message ?? t('Nie udało się zapisać.')),
+        onSuccess: () => toast.success('Intencja znów jest aktywna'),
+        onError: (e) => showError('Nie udało się zapisać', e, 'Spróbuj ponownie.'),
       }
     );
   };
@@ -373,12 +403,13 @@ export default function PrayersScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
-          title={t("Modlitwy")}
+          title={t("Ściana modlitwy")}
           subtitle={t("Intencje społeczności")}
           showBack
           right={
             <Pressable
               onPress={() => router.push('/(app)/prayers/new')}
+              accessibilityLabel={t('Dodaj intencję')}
               className="active:opacity-80"
             >
               <GradientIcon
@@ -407,7 +438,7 @@ export default function PrayersScreen() {
               height: 40,
             }}
           >
-            <Search size={16} color="#857F70" />
+            <Search size={16} color="#6E685A" />
             <TextInput
               style={{
                 flex: 1,
@@ -417,14 +448,14 @@ export default function PrayersScreen() {
                 paddingVertical: 0,
               }}
               placeholder={t("Szukaj w intencjach…")}
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               value={search}
               onChangeText={setSearch}
               returnKeyType="search"
             />
             {search.length > 0 && (
               <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                <X size={15} color="#857F70" />
+                <X size={15} color="#6E685A" />
               </Pressable>
             )}
           </View>
@@ -456,10 +487,17 @@ export default function PrayersScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
+              style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
             >
-              {(error as Error)?.message ?? t('Błąd')}
+              {friendlyError(error, t('Nie udało się wczytać intencji.'))}
             </Text>
+            <Pressable
+              onPress={() => refetch()}
+              className="active:opacity-70"
+              style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: '#2A2312' }}
+            >
+              <Text style={{ color: '#F6F4EE', fontFamily: 'Manrope_700Bold', fontSize: 14 }}>{t('Spróbuj ponownie')}</Text>
+            </Pressable>
           </View>
         ) : list.length === 0 ? (
           <ScrollView
@@ -532,7 +570,7 @@ export default function PrayersScreen() {
       >
         <Pressable
           style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' }}
-          onPress={() => setAnsweredFor(null)}
+          onPress={() => !markAnswered.isPending && setAnsweredFor(null)}
         >
           <Pressable
             style={{
@@ -545,9 +583,9 @@ export default function PrayersScreen() {
             onPress={(e) => e.stopPropagation()}
           >
             <View className="flex-row items-center gap-2 mb-1">
-              <Sparkles size={18} color="#059669" />
+              <Sparkles size={18} color="#8A6606" />
               <Text style={{ fontSize: 18, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
-                {t('Modlitwa wysłuchana 🙌')}
+                {t('Modlitwa wysłuchana')}
               </Text>
             </View>
             <Text
@@ -571,7 +609,7 @@ export default function PrayersScreen() {
                 fontFamily: 'Manrope_400Regular',
               }}
               placeholder={t("Jak Bóg odpowiedział na tę modlitwę?")}
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               multiline
               value={testimony}
               onChangeText={setTestimony}

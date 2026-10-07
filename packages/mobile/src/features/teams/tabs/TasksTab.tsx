@@ -3,6 +3,7 @@ import { ActionSheetIOS, Alert, Platform, Pressable, Text, TextInput, View } fro
 import { Briefcase, Calendar, Plus, Users } from 'lucide-react-native';
 import { useAddTask, useSetTaskStatus, useTeamBoard, type BoardStatusLabel, type BoardTask, type TeamBoard } from '../data';
 import { Card, Empty, Loading, dayLabel } from './ui';
+import { friendlyError } from '../../../lib/errors';
 
 // Zadania zespołu = tablica Projektów (boards.source_kind) jak ModuleBoard na webie.
 export const TasksTab = ({
@@ -41,7 +42,7 @@ export const TasksTab = ({
     const apply = (labelId: string) =>
       setStatus.mutate(
         { itemId: task.id, cells: data.cellsById[task.id] ?? {}, statusColumnId: data.statusColumnId!, labelId },
-        { onError: (e: any) => Alert.alert('Nie udało się zmienić statusu', e?.message ?? '') },
+        { onError: (e: unknown) => Alert.alert('Nie udało się zmienić statusu', friendlyError(e, 'Spróbuj ponownie.')) },
       );
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -65,7 +66,7 @@ export const TasksTab = ({
       { boardId: data.boardId, groupId: data.firstGroupId, name, createdBy: myEmail },
       {
         onSuccess: () => setDraft(''),
-        onError: (e: any) => Alert.alert('Nie udało się dodać', e?.message ?? ''),
+        onError: (e: unknown) => Alert.alert('Nie udało się dodać', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
   };
@@ -94,7 +95,7 @@ export const TasksTab = ({
           value={draft}
           onChangeText={setDraft}
           placeholder="Nowe zadanie…"
-          placeholderTextColor="#857F70"
+          placeholderTextColor="#6E685A"
           returnKeyType="done"
           onSubmitEditing={submit}
           style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
@@ -143,19 +144,19 @@ export const TasksTab = ({
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
                   {t.date ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Calendar size={11} color="#857F70" />
+                      <Calendar size={11} color="#6E685A" />
                       <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>{dayLabel(t.date)}</Text>
                     </View>
                   ) : null}
                   {t.people.length ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Users size={11} color="#857F70" />
+                      <Users size={11} color="#6E685A" />
                       <Text numberOfLines={1} style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                         {t.people.join(', ')}
                       </Text>
                     </View>
                   ) : null}
-                  {t.groupName ? <Text style={{ fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>{t.groupName}</Text> : null}
+                  {t.groupName ? <Text style={{ fontSize: 12, color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>{t.groupName}</Text> : null}
                 </View>
               </View>
               <Pressable

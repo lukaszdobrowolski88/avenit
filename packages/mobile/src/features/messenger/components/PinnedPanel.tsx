@@ -60,7 +60,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
             numberOfLines={1}
             style={{
               fontSize: 13,
-              color: "#7c2d12",
+              color: "#6B4F05",
               fontFamily: "Manrope_500Medium",
               marginTop: 1,
             }}
@@ -142,7 +142,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
                   numberOfLines={2}
                   style={{
                     fontSize: 13,
-                    color: "#7c2d12",
+                    color: "#6B4F05",
                     fontFamily: "Manrope_400Regular",
                     marginTop: 1,
                   }}

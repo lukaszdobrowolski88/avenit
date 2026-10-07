@@ -62,12 +62,12 @@ export const PeopleTab = ({
             marginBottom: 12,
           }}
         >
-          <Search size={16} color="#857F70" />
+          <Search size={16} color="#6E685A" />
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Szukaj osoby"
-            placeholderTextColor="#857F70"
+            placeholderTextColor="#6E685A"
             style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}
           />
         </View>

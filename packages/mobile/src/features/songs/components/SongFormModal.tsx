@@ -14,10 +14,14 @@ import {
 import { Plus, X } from 'lucide-react-native';
 import { B } from '../../../components/ui/brand';
 import { KEYS } from '../../../lib/domain';
-import { useDeleteSong, useSaveSong, type SongInput, type SongRecord } from '../library';
+import { friendlyError } from '../../../lib/errors';
+import { toast } from '../../../lib/toast';
+import { useDeleteSong, useSaveSong, useSongTagOp, type SongInput, type SongRecord } from '../library';
 
 // Nowa pieśń / edycja (jak SongForm na webie: dane podstawowe, tagi, tekst).
 // Rozpiskę akordów w taktach edytuje się na webie (edytor taktów) — tu jej nie ruszamy.
+// Tonacja może zostać „Nie ustalono” (pusta, nie „C”); tagi pochodzą ze wspólnego słownika
+// w bazie (app_settings.song_tags) — nowy tag trafia do słownika dla wszystkich liderów.
 
 const F = { medium: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' } as const;
 const METERS = ['4/4', '3/4', '6/8', '2/4', '12/8'];
@@ -62,9 +66,11 @@ export const SongFormModal = ({
 }) => {
   const save = useSaveSong(song?.id ?? null);
   const del = useDeleteSong();
+  const tagOp = useSongTagOp();
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
-  const [key, setKey] = useState<string>('C');
+  const [key, setKey] = useState<string>('');
+  const [titleError, setTitleError] = useState<string | null>(null);
   const [tempo, setTempo] = useState('');
   const [meter, setMeter] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -75,7 +81,8 @@ export const SongFormModal = ({
     if (!visible) return;
     setTitle(song?.title ?? '');
     setAuthor(song?.author ?? '');
-    setKey(song?.key ?? 'C');
+    setKey(song?.key ?? '');
+    setTitleError(null);
     setTempo(song?.tempo ?? '');
     setMeter(song?.meter ?? '');
     setTags(song?.tags ?? []);
@@ -87,13 +94,17 @@ export const SongFormModal = ({
   const tagOptions = useMemo(() => Array.from(new Set([...allTags, ...tags])).sort((a, b) => a.localeCompare(b, 'pl')), [allTags, tags]);
 
   const submit = () => {
-    if (!title.trim()) return Alert.alert('Podaj tytuł pieśni');
+    if (save.isPending) return;
+    if (!title.trim()) {
+      setTitleError('Podaj tytuł pieśni.');
+      return;
+    }
     const t = tempo.trim().replace(',', '.');
     if (t && !(Number(t) > 0 && Number(t) <= 300)) return Alert.alert('Tempo', 'Podaj tempo w BPM (1–300).');
     const payload: SongInput = {
       title: title.trim(),
       author: author.trim() || null,
-      key,
+      key: key || null,
       tempo: t || null,
       meter: meter.trim() || null,
       tags,
@@ -102,9 +113,10 @@ export const SongFormModal = ({
     save.mutate(payload, {
       onSuccess: (id) => {
         onClose();
+        toast.success(song ? 'Zapisano pieśń' : 'Dodano pieśń', payload.title);
         onSaved?.(id);
       },
-      onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.'),
+      onError: (e: unknown) => Alert.alert('Nie udało się zapisać pieśni', friendlyError(e, 'Zmiany są nadal w oknie — spróbuj ponownie.')),
     });
   };
 
@@ -120,16 +132,32 @@ export const SongFormModal = ({
               onClose();
               onDeleted?.();
             },
-            onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? 'Spróbuj ponownie.'),
+            onError: (e: unknown) => Alert.alert('Nie udało się usunąć pieśni', friendlyError(e, 'Spróbuj ponownie.')),
           }),
       },
     ]);
 
+  // Nowy tag: istniejący (bez względu na wielkość liter) tylko zaznaczamy; nowy zapisujemy
+  // w słowniku w bazie, żeby widzieli go wszyscy (web: „Dodaj tag”).
   const addTag = () => {
-    const t = newTag.trim();
-    if (!t) return;
-    if (!tags.includes(t)) setTags([...tags, t]);
-    setNewTag('');
+    const t = newTag.replace(/\s+/g, ' ').trim();
+    if (!t || tagOp.isPending) return;
+    const existing = tagOptions.find((x) => x.toLowerCase() === t.toLowerCase());
+    if (existing) {
+      if (!tags.includes(existing)) setTags([...tags, existing]);
+      setNewTag('');
+      return;
+    }
+    tagOp.mutate(
+      { action: 'add', tag: t },
+      {
+        onSuccess: () => {
+          setTags((prev) => (prev.includes(t) ? prev : [...prev, t]));
+          setNewTag('');
+        },
+        onError: (e: unknown) => Alert.alert('Nie udało się dodać tagu', friendlyError(e, 'Spróbuj ponownie.')),
+      },
+    );
   };
 
   return (
@@ -143,13 +171,29 @@ export const SongFormModal = ({
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <Label>Tytuł</Label>
-          <TextInput value={title} onChangeText={setTitle} placeholder="np. Wielki jest nasz Bóg" placeholderTextColor={B.ink4} style={input} />
+          <TextInput
+            value={title}
+            onChangeText={(v) => {
+              setTitle(v);
+              if (titleError && v.trim()) setTitleError(null);
+            }}
+            placeholder="np. Wielki jest nasz Bóg"
+            placeholderTextColor={B.ink4}
+            accessibilityLabel="Tytuł pieśni"
+            style={[input, titleError ? { borderWidth: 1, borderColor: '#B42318' } : null]}
+          />
+          {titleError ? (
+            <Text accessibilityRole="alert" style={{ marginTop: 6, marginLeft: 2, fontSize: 13, color: '#B42318', fontFamily: F.semibold }}>
+              {titleError}
+            </Text>
+          ) : null}
 
           <Label>Autor</Label>
           <TextInput value={author} onChangeText={setAuthor} placeholder="np. Chris Tomlin" placeholderTextColor={B.ink4} style={input} />
 
           <Label>Tonacja</Label>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            <Chip label="Nie ustalono" on={!key} onPress={() => setKey('')} />
             {KEYS.map((k) => (
               <Chip key={k} label={k} on={key === k} onPress={() => setKey(k)} />
             ))}
@@ -187,8 +231,13 @@ export const SongFormModal = ({
               returnKeyType="done"
               style={[input, { flex: 1 }]}
             />
-            <Pressable onPress={addTag} style={{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: B.card }}>
-              <Plus size={18} color={B.ink} />
+            <Pressable
+              onPress={addTag}
+              disabled={tagOp.isPending}
+              accessibilityLabel="Dodaj tag"
+              style={{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: B.card, opacity: tagOp.isPending ? 0.5 : 1 }}
+            >
+              {tagOp.isPending ? <ActivityIndicator size="small" color={B.ink} /> : <Plus size={18} color={B.ink} />}
             </Pressable>
           </View>
 
@@ -215,7 +264,7 @@ export const SongFormModal = ({
           </Pressable>
           {song && canDelete ? (
             <Pressable onPress={remove} disabled={del.isPending} className="active:opacity-70" style={{ marginTop: 10, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 15, color: '#B42318', fontFamily: F.semibold }}>Usuń pieśń</Text>
+              {del.isPending ? <ActivityIndicator color="#B42318" /> : <Text style={{ fontSize: 15, color: '#B42318', fontFamily: F.semibold }}>Usuń pieśń</Text>}
             </Pressable>
           ) : null}
         </ScrollView>

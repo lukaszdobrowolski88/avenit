@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 
+// Zapis „tylko własnej” intencji: serwer zawęża wiersze do autora — pusty wynik = nie moja
+// (albo już usunięta). Mówimy to wprost zamiast cichego „sukcesu”.
+const ensureRows = (data: unknown, message: string) => {
+  if (Array.isArray(data) && data.length === 0) throw new Error(message);
+};
+
 export type PrayerCategory = 'zdrowie' | 'rodzina' | 'finanse' | 'duchowe' | 'inne';
 export type PrayerStatus = 'active' | 'answered' | 'archived';
 export type PrayerVisibility = 'public' | 'leaders_only';
@@ -51,19 +57,18 @@ export const useTogglePrayer = (userEmail: string | null) => {
       requestId: string;
       currentlyPraying: boolean;
     }) => {
-      if (!userEmail) throw new Error('Brak zalogowanego użytkownika');
+      if (!userEmail) throw new Error('Twoja sesja wygasła. Zaloguj się ponownie.');
       if (currentlyPraying) {
-        const { error } = await supabase
-          .from('prayer_interactions')
+        const { error } = await (supabase.from('prayer_interactions') as any)
           .delete()
           .eq('request_id', requestId)
-          .eq('user_email', userEmail);
+          .eq('user_email', userEmail)
+          .select('request_id');
         if (error) throw error;
       } else {
-        const { error } = await (supabase.from('prayer_interactions') as any).insert({
-          request_id: requestId,
-          user_email: userEmail,
-        });
+        const { error } = await (supabase.from('prayer_interactions') as any)
+          .insert({ request_id: requestId, user_email: userEmail })
+          .select('request_id');
         if (error) throw error;
       }
     },
@@ -86,17 +91,19 @@ export const useCreatePrayer = (userEmail: string | null) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreatePrayerInput) => {
-      if (!userEmail) throw new Error('Brak zalogowanego użytkownika');
-      const { error } = await (supabase.from('prayer_requests') as any).insert({
-        user_email: userEmail,
-        content: input.content,
-        category: input.category,
-        requester_name: input.requester_name ?? null,
-        is_anonymous: input.is_anonymous ?? false,
-        visibility: input.visibility ?? 'public',
-        status: 'active',
-        is_active: true,
-      });
+      if (!userEmail) throw new Error('Twoja sesja wygasła. Zaloguj się ponownie.');
+      const { error } = await (supabase.from('prayer_requests') as any)
+        .insert({
+          user_email: userEmail,
+          content: input.content,
+          category: input.category,
+          requester_name: input.requester_name ?? null,
+          is_anonymous: input.is_anonymous ?? false,
+          visibility: input.visibility ?? 'public',
+          status: 'active',
+          is_active: true,
+        })
+        .select('id');
       if (error) throw error;
     },
     onSuccess: () => {
@@ -122,7 +129,7 @@ export const useEditPrayer = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: EditPrayerInput) => {
-      const { error } = await (supabase.from('prayer_requests') as any)
+      const { data, error } = await (supabase.from('prayer_requests') as any)
         .update({
           content: input.content,
           category: input.category,
@@ -130,8 +137,10 @@ export const useEditPrayer = () => {
           is_anonymous: input.is_anonymous ?? false,
           visibility: input.visibility ?? 'public',
         })
-        .eq('id', input.id);
+        .eq('id', input.id)
+        .select('id');
       if (error) throw error;
+      ensureRows(data, 'Możesz edytować tylko własne intencje.');
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['prayers'] });
@@ -153,13 +162,15 @@ export const useMarkAnswered = () => {
       answered?: boolean;
       testimony?: string | null;
     }) => {
-      const { error } = await (supabase.from('prayer_requests') as any)
+      const { data, error } = await (supabase.from('prayer_requests') as any)
         .update({
           status: answered ? 'answered' : 'active',
           answered_testimony: answered ? (testimony?.trim() || null) : null,
         })
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
       if (error) throw error;
+      ensureRows(data, 'Możesz zmieniać tylko własne intencje.');
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['prayers'] });
@@ -173,8 +184,9 @@ export const useDeletePrayer = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('prayer_requests').delete().eq('id', id);
+      const { data, error } = await (supabase.from('prayer_requests') as any).delete().eq('id', id).select('id');
       if (error) throw error;
+      ensureRows(data, 'Możesz usunąć tylko własną intencję.');
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['prayers'] });

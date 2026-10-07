@@ -10,6 +10,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { friendlyError } from "../../../lib/errors";
 import { FileText, X } from "lucide-react-native";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
@@ -25,7 +26,7 @@ type Tab = "images" | "files";
 
 export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) => {
   const { width } = useWindowDimensions();
-  const { data, isLoading } = useConversationMedia(conversationId, visible);
+  const { data, isLoading, isError, error } = useConversationMedia(conversationId, visible);
   const [tab, setTab] = useState<Tab>("images");
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
 
@@ -83,7 +84,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
           justifyContent: "center",
         }}
       >
-        <FileText size={18} color="#dc2626" />
+        <FileText size={18} color="#2A2312" />
       </View>
       <View style={{ flex: 1 }}>
         <Text
@@ -99,7 +100,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
         <Text
           style={{
             fontSize: 11,
-            color: "#857F70",
+            color: "#6E685A",
             fontFamily: "Manrope_500Medium",
             marginTop: 2,
           }}
@@ -192,6 +193,12 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
             <ActivityIndicator color="#2A2312" />
           </View>
+        ) : isError ? (
+          <Text
+            style={{ textAlign: "center", marginTop: 48, marginHorizontal: 24, color: "#4A463E", fontFamily: "Manrope_500Medium" }}
+          >
+            {friendlyError(error, "Nie udało się wczytać zdjęć i plików z rozmowy.")}
+          </Text>
         ) : tab === "images" ? (
           <FlatList
             data={images}

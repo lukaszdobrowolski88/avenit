@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { isLeaderRow, normEmail, normName } from './utils';
 
 export interface HomeGroupLeader {
   id: string;
@@ -29,6 +30,8 @@ export interface HomeGroupMember {
   email: string | null;
   phone: string | null;
   is_leader: boolean;
+  /** Rola w grupie ('leader' | 'member'), gdy serwer ją zwraca. */
+  role?: string | null;
 }
 
 interface CampusScope {
@@ -47,8 +50,26 @@ interface ScopedGroup extends HomeGroup {
 // pobranie współdzielone przez listę i detal (ten sam queryKey, różne `select`).
 const fetchScopedGroups = async (): Promise<ScopedGroup[]> => {
   const { data, error } = await supabase.functions.invoke('my-home-groups');
-  if (error || !data) return [];
-  return ((data as { groups?: ScopedGroup[] }).groups ?? []) as ScopedGroup[];
+  // Błąd pokazujemy (zamiast pustej listy, która wyglądała jak „brak grup”).
+  if (error) throw error;
+  return ((data as { groups?: ScopedGroup[] } | null)?.groups ?? []) as ScopedGroup[];
+};
+
+// Lider = członek grupy z rolą 'leader' (jak web). Serwer wskazuje lidera grupy (group.leader),
+// a wiersze osób mogą mieć role/is_leader — łączymy oba źródła. Liderzy na górze, potem A–Z.
+export const withLeaders = (group: HomeGroup | null, members: HomeGroupMember[]): HomeGroupMember[] => {
+  const leader = group?.leader ?? null;
+  const isGroupLeader = (m: HomeGroupMember) =>
+    !!leader &&
+    (String(m.id) === String(leader.id) ||
+      (!!normEmail(m.email) && normEmail(m.email) === normEmail(leader.email)) ||
+      (!normEmail(m.email) && !!normName(m.full_name) && normName(m.full_name) === normName(leader.full_name)));
+  return members
+    .map((m) => ({ ...m, is_leader: isLeaderRow(m) || isGroupLeader(m) }))
+    .sort((a, b) => {
+      if (a.is_leader !== b.is_leader) return a.is_leader ? -1 : 1;
+      return String(a.full_name ?? '').localeCompare(String(b.full_name ?? ''), 'pl');
+    });
 };
 
 export const useHomeGroups = ({ selectedCampusId }: CampusScope) =>
@@ -72,7 +93,7 @@ export const useHomeGroupDetail = (id: string) =>
       groups,
     ): { group: HomeGroup | null; members: HomeGroupMember[]; is_mine: boolean } => {
       const g = groups.find((x) => String(x.id) === String(id)) ?? null;
-      return { group: g, members: g?.members ?? [], is_mine: g?.is_mine ?? false };
+      return { group: g, members: withLeaders(g, g?.members ?? []), is_mine: g?.is_mine ?? false };
     },
   });
 

@@ -14,6 +14,8 @@ import {
 import { Lock, X } from 'lucide-react-native';
 import { useUpdateMember, type MemberRow, type MemberStatus } from '../api';
 import { DateField } from '../../../components/ui/DateField';
+import { showError } from '../../../lib/errors';
+import { toast } from '../../../lib/toast';
 
 const STATUSES: MemberStatus[] = ['Członek', 'Sympatyk', 'Gość'];
 
@@ -32,7 +34,7 @@ const Label = ({ children, locked }: { children: string; locked?: boolean }) => 
     <Text style={{ fontSize: 12, color: '#8A6606', fontFamily: 'Manrope_700Bold', letterSpacing: 1.2, textTransform: 'uppercase' }}>
       {children}
     </Text>
-    {locked ? <Lock size={11} color="#857F70" /> : null}
+    {locked ? <Lock size={11} color="#6E685A" /> : null}
   </View>
 );
 
@@ -78,12 +80,13 @@ export const EditMemberModal = ({
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const save = async () => {
+    if (update.isPending) return;
     if (!form.first_name.trim() || !form.last_name.trim()) {
       Alert.alert('Uzupełnij dane', 'Imię i nazwisko są wymagane.');
       return;
     }
     if (form.birth_date && !/^\d{4}-\d{2}-\d{2}$/.test(form.birth_date)) {
-      Alert.alert('Błędna data urodzenia', 'Wpisz datę jako RRRR-MM-DD.');
+      Alert.alert('Błędna data urodzenia', 'Wybierz datę urodzenia z kalendarza.');
       return;
     }
     try {
@@ -101,8 +104,9 @@ export const EditMemberModal = ({
         },
       });
       onClose();
-    } catch (e: any) {
-      Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.');
+      toast.success('Zapisano zmiany');
+    } catch (e) {
+      showError('Nie udało się zapisać', e, 'Nie udało się zapisać danych osoby. Spróbuj ponownie.');
     }
   };
 
@@ -116,14 +120,14 @@ export const EditMemberModal = ({
           onChangeText={set(key)}
           editable={!locked}
           placeholder={opts.placeholder}
-          placeholderTextColor="#857F70"
+          placeholderTextColor="#6E685A"
           keyboardType={opts.keyboard}
           autoCapitalize={opts.keyboard === 'email-address' ? 'none' : 'sentences'}
           multiline={opts.multiline}
           style={[
             inputStyle,
             opts.multiline ? { height: 96, paddingTop: 12, textAlignVertical: 'top' as const } : null,
-            locked ? { color: '#857F70' } : null,
+            locked ? { color: '#6E685A' } : null,
           ]}
         />
       </>
@@ -135,7 +139,7 @@ export const EditMemberModal = ({
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 4 }}>
           <Text style={{ flex: 1, fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Edytuj dane</Text>
-          <Pressable onPress={onClose} hitSlop={10} className="active:opacity-60">
+          <Pressable onPress={onClose} disabled={update.isPending} hitSlop={10} accessibilityLabel="Zamknij" className="active:opacity-60">
             <X size={22} color="#4A463E" />
           </Pressable>
         </View>
@@ -163,7 +167,7 @@ export const EditMemberModal = ({
                     opacity: can('status') ? 1 : 0.5,
                   }}
                 >
-                  <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#3A3427', fontFamily: 'Manrope_600SemiBold' }}>{st}</Text>
+                  <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#4A463E', fontFamily: 'Manrope_600SemiBold' }}>{st}</Text>
                 </Pressable>
               );
             })}
@@ -176,7 +180,7 @@ export const EditMemberModal = ({
           {can('birth_date') ? (
             <DateField value={form.birth_date} onChange={set('birth_date')} optional placeholder="Nie podano" />
           ) : (
-            <Text style={[inputStyle, { lineHeight: 46, color: '#857F70' }]}>{form.birth_date || '—'}</Text>
+            <Text style={[inputStyle, { lineHeight: 46, color: '#6E685A' }]}>{form.birth_date || '—'}</Text>
           )}
           {field('notes', 'Notatki', { multiline: true })}
 

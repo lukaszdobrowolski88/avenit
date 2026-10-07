@@ -418,3 +418,206 @@ export const ageFrom = (birthYear: string | null) => {
   if (!y || y < 1990) return null;
   return new Date().getFullYear() - y;
 };
+
+// ─── Meldowanie dzieci ─────────────────────────────────────────────────────────
+// Kontrakt jak web (src/modules/Kids/checkin/hooks/useCheckin.js + utils/kiosk.js):
+//   • sesja na DZIŚ (data lokalna) powstaje dopiero przy pierwszym meldowaniu — samo otwarcie
+//     ekranu niczego nie tworzy (dawniej przycisk/ekran zostawiał puste „fałszywe” sesje),
+//   • sala jest opcjonalna (bez sal dziecko trafia do „Bez sali”),
+//   • jeden losowy kod odbioru na rodzinę w sesji (rodzic ma jedną naklejkę); dzieci już
+//     zameldowane są pomijane (bez podwójnego meldowania).
+
+// Bez znaków, które łatwo pomylić na naklejce: 0/O/Q/D, 1/I/L/J, 2/Z, 5/S, 6/G, 8/B, U/V.
+export const PICKUP_CODE_ALPHABET = 'ACEFHKMNPRTWXY3479';
+
+const randomIndex = (max: number) => {
+  const c: any = (globalThis as any).crypto;
+  if (c && typeof c.getRandomValues === 'function') {
+    const limit = Math.floor(256 / max) * max;
+    const buf = new Uint8Array(1);
+    for (;;) {
+      c.getRandomValues(buf);
+      if (buf[0] < limit) return buf[0] % max;
+    }
+  }
+  return Math.floor(Math.random() * max);
+};
+
+export const normalizePickupCode = (input: string) => String(input || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+// security_code: nowy format to jeden kod („K7HX”), stary — końcówki telefonów „1234|5678”.
+export const splitStoredCodes = (stored: string | null | undefined) =>
+  String(stored || '')
+    .split('|')
+    .map(normalizePickupCode)
+    .filter(Boolean);
+export const pickupCodeMatches = (stored: string | null | undefined, entered: string) => {
+  const code = normalizePickupCode(entered);
+  return !!code && splitStoredCodes(stored).includes(code);
+};
+const isRandomCode = (code: string | null | undefined) =>
+  typeof code === 'string' && code.length >= 4 && code.length <= 6 && [...code].every((ch) => PICKUP_CODE_ALPHABET.includes(ch));
+
+const generatePickupCode = (length = 4) => {
+  let out = '';
+  for (let i = 0; i < length; i++) out += PICKUP_CODE_ALPHABET[randomIndex(PICKUP_CODE_ALPHABET.length)];
+  return out;
+};
+export const generateUniquePickupCode = (taken: Set<string>) => {
+  for (let i = 0; i < 50; i++) {
+    const code = generatePickupCode(4);
+    if (!taken.has(code)) return code;
+  }
+  return generatePickupCode(5);
+};
+
+const localYmd = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const localHm = (d = new Date()) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+const addHours = (hm: string, h: number) => {
+  const [hh, mm] = String(hm || '09:00').split(':').map(Number);
+  return `${String(Math.min(23, (hh || 0) + h)).padStart(2, '0')}:${String(mm || 0).padStart(2, '0')}`;
+};
+
+// Wydarzenie z dzisiejszego kalendarza, które najlepiej nazywa sesję: trwające albo najbliższe.
+const pickSessionEvent = (events: any[], now = new Date()) => {
+  const list = (events || []).filter((e) => e && e.title);
+  if (!list.length) return null;
+  const nowHM = localHm(now);
+  const hm = (t: unknown) => String(t || '').slice(0, 5);
+  const sorted = [...list].sort((a, b) => hm(a.time).localeCompare(hm(b.time)));
+  const ongoing = sorted.find((e) => e.time && e.end_time && hm(e.time) <= nowHM && nowHM <= hm(e.end_time));
+  if (ongoing) return ongoing;
+  return sorted.find((e) => !e.time || hm(e.time) >= nowHM) ?? sorted[sorted.length - 1];
+};
+
+export interface CheckinLocation {
+  id: string;
+  name: string;
+}
+
+// Sale meldowania (opcjonalne). Błąd odczytu nie blokuje meldowania — wtedy „Bez sali”.
+export const useCheckinLocations = (enabled: boolean) =>
+  useQuery({
+    queryKey: ['kids', 'locations'],
+    enabled,
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<CheckinLocation[]> => {
+      const { data, error } = await supabase.from('checkin_locations').select('id, name, room_number, sort_order').eq('is_active', true).order('sort_order', { ascending: true });
+      if (error) return [];
+      return asList(data).map((l) => ({ id: String(l.id), name: [l.name, l.room_number].filter(Boolean).join(' · ') || 'Sala' }));
+    },
+  });
+
+export interface CheckinResult {
+  sessionCreated: boolean;
+  // Kody odbioru do przekazania rodzicom (jedna naklejka na rodzinę).
+  groups: { code: string; children: string[] }[];
+  skipped: string[]; // już zameldowane w tej sesji
+}
+
+export const useCheckInChildren = (myEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ children, locationId }: { children: KidsStudent[]; locationId: string | null }): Promise<CheckinResult> => {
+      if (!children.length) throw new Error('Zaznacz co najmniej jedno dziecko.');
+      const today = localYmd();
+
+      // 1) Sesja na dziś — istniejąca albo nowa (dopiero teraz, przy pierwszym meldowaniu).
+      const { data: sessions, error: sErr } = await supabase
+        .from('checkin_sessions')
+        .select('id')
+        .eq('session_date', today)
+        .eq('is_active', true)
+        .order('start_time', { ascending: true })
+        .limit(1);
+      if (sErr) throw sErr;
+      let sessionId: string | null = asList(sessions)[0]?.id != null ? String(asList(sessions)[0].id) : null;
+      let sessionCreated = false;
+      if (!sessionId) {
+        let event: any = null;
+        try {
+          const { data: evs } = await supabase.from('events').select('title, time, end_time').eq('date', today);
+          event = pickSessionEvent(asList(evs));
+        } catch {
+          /* kalendarz niedostępny — zostaje nazwa domyślna */
+        }
+        const start = event?.time ? String(event.time).slice(0, 5) : localHm();
+        const end = event?.end_time ? String(event.end_time).slice(0, 5) : addHours(start, 3);
+        const [y, m, d] = today.split('-');
+        const { data: created, error: cErr } = await (supabase.from('checkin_sessions') as any)
+          .insert({
+            name: event?.title || `Meldowanie – ${d}.${m}.${y}`,
+            session_date: today,
+            start_time: start,
+            end_time: end,
+            is_active: true,
+            created_by: myEmail || 'system',
+          })
+          .select('id')
+          .single();
+        if (cErr) throw cErr;
+        sessionId = String((created as any).id);
+        sessionCreated = true;
+      }
+
+      // 2) Aktywne meldowania sesji — blokada podwójnego meldowania i unikalne kody.
+      const { data: active, error: aErr } = await supabase
+        .from('checkins')
+        .select('id, student_id, household_id, security_code')
+        .eq('session_id', sessionId)
+        .is('checked_out_at', null);
+      if (aErr) throw aErr;
+      const activeRows = asList(active);
+      const activeStudents = new Set(activeRows.map((r) => String(r.student_id)));
+      const taken = new Set<string>();
+      for (const r of activeRows) for (const c of splitStoredCodes(r.security_code)) taken.add(c);
+
+      // 3) Rodzinami: wspólny kod (ponownie ten sam, jeśli rodzina już ma kod w tej sesji).
+      const byFamily = new Map<string, KidsStudent[]>();
+      for (const ch of children) {
+        const k = ch.householdId ? `h:${ch.householdId}` : `s:${ch.id}`;
+        byFamily.set(k, [...(byFamily.get(k) ?? []), ch]);
+      }
+      const groups: CheckinResult['groups'] = [];
+      const skipped: string[] = [];
+      let done = 0;
+      try {
+        for (const [, kids] of byFamily) {
+          const householdId = kids[0].householdId;
+          const fresh = kids.filter((k) => !activeStudents.has(String(k.id)));
+          kids.filter((k) => activeStudents.has(String(k.id))).forEach((k) => skipped.push(k.name));
+          if (!fresh.length) continue;
+          const reuse = householdId
+            ? activeRows.find((r) => String(r.household_id) === String(householdId) && isRandomCode(r.security_code))
+            : null;
+          const code = reuse ? String(reuse.security_code) : generateUniquePickupCode(taken);
+          taken.add(code);
+          for (const k of fresh) {
+            const { error } = await (supabase.from('checkins') as any)
+              .insert({
+                session_id: sessionId,
+                student_id: Number.isFinite(Number(k.id)) ? Number(k.id) : k.id,
+                location_id: locationId || null,
+                household_id: householdId || null,
+                security_code: code,
+                checked_in_by: myEmail || 'system',
+                is_guest: false,
+              })
+              .select('id')
+              .single();
+            if (error) throw error;
+            done++;
+          }
+          groups.push({ code, children: fresh.map((k) => k.name) });
+        }
+      } catch (e) {
+        if (done > 0) throw new Error('Zameldowano tylko część dzieci. Sprawdź listę obecnych i spróbuj ponownie dla pozostałych.');
+        throw e;
+      }
+      return { sessionCreated, groups, skipped };
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['kids', 'today'] });
+    },
+  });
+};

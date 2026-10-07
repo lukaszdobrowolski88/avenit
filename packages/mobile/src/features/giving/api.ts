@@ -57,6 +57,64 @@ export const METHOD_LABELS: Record<string, string> = {
   other: 'Inne',
 };
 
+export const STATUS_LABELS: Record<string, string> = {
+  completed: 'Zaksięgowana',
+  pending: 'Oczekuje',
+  failed: 'Nieudana',
+  refunded: 'Zwrócona',
+};
+
+// ── Sumy jak web (Giving/lib/givingApi.js) ─────────────────────────────────
+// „Suma” = tylko zaksięgowane; oczekujące pokazujemy osobno, nieudane/zwrócone pomijamy.
+export const isCompletedDonation = (d: { status?: string | null }) => (d.status ?? 'completed') === 'completed';
+export const isPendingDonation = (d: { status?: string | null }) => d.status === 'pending';
+
+export const donationTotals = (rows: { amount: number | string | null; status?: string | null }[]) => {
+  const t = { completed: 0, completedCount: 0, pending: 0, pendingCount: 0 };
+  for (const d of rows ?? []) {
+    const a = Number(d.amount) || 0;
+    if (isCompletedDonation(d)) {
+      t.completed += a;
+      t.completedCount += 1;
+    } else if (isPendingDonation(d)) {
+      t.pending += a;
+      t.pendingCount += 1;
+    }
+  }
+  return t;
+};
+
+// Zestawienie PIT: odliczyć można darowiznę pieniężną udokumentowaną dowodem wpłaty na rachunek
+// (art. 26 ust. 7 ustawy o PIT) — gotówka idzie osobno, z adnotacją (jak web).
+export const isCashDonation = (d: { method?: string | null }) => d.method === 'cash';
+
+// Zebrano w zbiórce — jedna definicja z webem (raisedForCampaign): zaksięgowane darowizny
+// przypisane do zbiórki, a bez przypisania — wpłaty na fundusz zbiórki w jej oknie dat.
+export interface CampaignLike {
+  id: string | number;
+  fund_id?: string | number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+}
+export interface DonationLike {
+  amount: number | string | null;
+  status?: string | null;
+  campaign_id?: string | number | null;
+  fund_id?: string | number | null;
+  donation_date?: string | null;
+}
+export const donationCountsForCampaign = (d: DonationLike, c: CampaignLike) => {
+  if (!d || !c || d.status !== 'completed') return false;
+  if (d.campaign_id) return String(d.campaign_id) === String(c.id);
+  if (!c.fund_id || String(d.fund_id ?? '') !== String(c.fund_id)) return false;
+  const day = String(d.donation_date ?? '').slice(0, 10);
+  if (c.start_date && day < String(c.start_date).slice(0, 10)) return false;
+  if (c.end_date && day > String(c.end_date).slice(0, 10)) return false;
+  return true;
+};
+export const raisedForCampaign = (c: CampaignLike, donations: DonationLike[]) =>
+  (donations ?? []).filter((d) => donationCountsForCampaign(d, c)).reduce((s, d) => s + (Number(d.amount) || 0), 0);
+
 export const formatMoney = (amount: number | null | undefined, currency = 'PLN'): string => {
   const n = Number(amount ?? 0);
   const fixed = n.toFixed(2).replace('.', ',');
@@ -86,7 +144,7 @@ export const useGivingCampaigns = () =>
     queryKey: ['giving', 'campaigns'],
     queryFn: async (): Promise<GivingCampaign[]> => {
       const { data, error } = await supabase.functions.invoke('giving-campaigns', { body: {} });
-      if (error) return [];
+      if (error) throw error;
       return (((data as any)?.campaigns ?? []) as GivingCampaign[]);
     },
   });
@@ -111,7 +169,8 @@ export const useMyGiving = (userEmail: string | null) =>
       // ustala członka z ZALOGOWANEGO usera (nie z parametru). Bezpośredni odczyt
       // tabeli `donations` odsłaniałby cudze wpłaty (uprawnienia są per-tabela).
       const { data, error } = await supabase.functions.invoke('my-giving');
-      if (error || !data) return empty;
-      return data as MyGivingData;
+      // Błąd pokazujemy — pusty wynik wyglądał jak „brak darowizn” albo brak powiązania konta.
+      if (error) throw error;
+      return (data as MyGivingData) ?? empty;
     },
   });

@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthSession } from '../../../lib/auth';
 import { findOrCreateDirect } from '../../messenger/start';
@@ -6,6 +6,7 @@ import { D, F } from '../theme';
 import { WidgetCard } from './WidgetCard';
 import type { OnlineUser } from '../api';
 import { goToTab } from '../../../lib/navigation';
+import { showError } from '../../../lib/errors';
 
 interface Props {
   users: OnlineUser[];
@@ -88,8 +89,8 @@ export const OnlineUsersWidget = ({ users, offlineCount }: Props) => {
     try {
       const id = await findOrCreateDirect(me.email, email);
       router.push({ pathname: '/(app)/messenger/[conversationId]', params: { conversationId: id } });
-    } catch (e: any) {
-      Alert.alert('Nie udało się otworzyć rozmowy', e?.message ?? 'Spróbuj ponownie.');
+    } catch (e) {
+      showError('Nie udało się otworzyć rozmowy', e);
     }
   };
   const onlineCount = users.filter((u) => u.status === 'online').length;
