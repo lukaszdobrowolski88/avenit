@@ -65,7 +65,11 @@ export function verifyTOTP(secret, code, window = 1) {
 
 // Kody zapasowe: JSONB — tablica stringów (legacy) lub obiektów {code, used, usedAt}.
 // Zwraca { ok, updated } — updated to nowa wartość kolumny do zapisania (zużycie kodu).
-export function consumeBackupCode(backupCodes, code) {
+export function consumeBackupCode(rawCodes, code) {
+  // Format bazy bywa różny (text[] z napisami JSON albo jsonb) — sprowadź do [{code, used}].
+  const backupCodes = Array.isArray(rawCodes) && typeof rawCodes[0] === 'string' && !String(rawCodes[0]).trim().startsWith('{')
+    ? rawCodes
+    : normalizeBackupCodes(rawCodes);
   if (!Array.isArray(backupCodes) || backupCodes.length === 0) return { ok: false };
   const needle = String(code).toUpperCase();
   if (typeof backupCodes[0] === 'string') {
@@ -81,4 +85,54 @@ export function consumeBackupCode(backupCodes, code) {
     i === idx ? { ...c, used: true, usedAt: new Date().toISOString() } : c
   );
   return { ok: true, updated };
+}
+
+// ── Kody zapasowe: różne formaty kolumny w bazach tenantów ─────────────────────
+// W części baz (np. tenant schwro, dane z Supabase) app_users.totp_backup_codes to text[],
+// gdzie każdy element jest NAPISEM JSON '{"code":"…","used":false}'; w nowszych — jsonb z
+// tablicą obiektów. Do 2026-10 serwer zapisywał zawsze jsonb (błąd „is of type text[] but
+// expression is of type jsonb” przy wyłączaniu 2FA), a przy logowaniu porównywał kod z całym
+// napisem JSON — kody zapasowe nie działały.
+
+// Dowolny format → [{ code, used }].
+export function normalizeBackupCodes(raw) {
+  let list = raw;
+  if (typeof list === 'string') {
+    try { list = JSON.parse(list); } catch { return []; }
+  }
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((c) => {
+      if (c && typeof c === 'object') return { ...c, code: String(c.code || '').toUpperCase(), used: !!c.used };
+      if (typeof c === 'string') {
+        const s = c.trim();
+        if (s.startsWith('{')) {
+          try { const o = JSON.parse(s); return { ...o, code: String(o.code || '').toUpperCase(), used: !!o.used }; } catch { return null; }
+        }
+        return { code: s.toUpperCase(), used: false };
+      }
+      return null;
+    })
+    .filter((c) => c && c.code);
+}
+
+const columnKind = new Map(); // nazwa bazy → 'text[]' | 'jsonb'
+async function backupColumnKind(db) {
+  const key = db?.options?.connectionString || 'default';
+  if (columnKind.has(key)) return columnKind.get(key);
+  let kind = 'jsonb';
+  try {
+    const { rows } = await db.query(
+      `SELECT udt_name FROM information_schema.columns WHERE table_name = 'app_users' AND column_name = 'totp_backup_codes' LIMIT 1`
+    );
+    if (rows[0]?.udt_name === '_text') kind = 'text[]';
+  } catch { /* zostaje jsonb */ }
+  columnKind.set(key, kind);
+  return kind;
+}
+
+// Wartość parametru dla UPDATE … SET totp_backup_codes = $n zgodna z typem kolumny.
+export async function backupCodesParam(db, codes) {
+  const list = normalizeBackupCodes(codes);
+  return (await backupColumnKind(db)) === 'text[]' ? list.map((c) => JSON.stringify(c)) : JSON.stringify(list);
 }
