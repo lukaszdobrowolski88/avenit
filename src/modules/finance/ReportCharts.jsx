@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   AreaChart, Area, PieChart, Pie, Cell,
 } from 'recharts';
+import { appLocale } from '../../i18n';
 
 // Kategoryczna paleta (slot order = mechanizm CVD, nie kosmetyka — nie cyklować).
 export const CATEGORICAL = ['#2a78d6', '#1baf7a', '#eda100', '#008300', '#4a3aa7', '#e34948', '#e87ba4', '#eb6834'];
@@ -15,7 +16,7 @@ const AXIS = '#898781';     // muted — czytelny w obu motywach
 const GRID = 'rgba(136,135,129,0.25)';
 
 const num = (v) => Number(v || 0);
-const pln = (n) => num(n).toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' zł';
+const pln = (n) => num(n).toLocaleString(appLocale(), { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' zł';
 const compact = (n) => {
   const a = Math.abs(num(n));
   if (a >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + ' mln';
@@ -41,8 +42,13 @@ function ChartTooltip({ active, payload, label }) {
 
 const axisProps = { stroke: AXIS, tick: { fill: AXIS, fontSize: 11 }, tickLine: false, axisLine: { stroke: GRID } };
 
+// Pusty stan zamiast wykresu z osią 0–4 i dymkiem „0 zł”.
+const hasMoney = (buckets) => (buckets || []).some((b) => num(b.income) !== 0 || num(b.expense) !== 0);
+const NoData = ({ tr, text }) => <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-10">{text || tr('Brak wpływów i wydatków w tym okresie')}</p>;
+
 /** Grupowany słupkowy: Wpływy vs Wydatki w kubełkach czasu. */
 export function IncomeExpenseBarChart({ buckets, height = 300, tr = (x) => x }) {
+  if (!hasMoney(buckets)) return <NoData tr={tr} />;
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={buckets} margin={{ top: 8, right: 8, left: 8, bottom: 0 }} barGap={2}>
@@ -60,6 +66,7 @@ export function IncomeExpenseBarChart({ buckets, height = 300, tr = (x) => x }) 
 
 /** Skumulowany przepływ gotówki (area z gradientem). */
 export function CashFlowAreaChart({ buckets, height = 260, tr = (x) => x }) {
+  if (!hasMoney(buckets)) return <NoData tr={tr} />;
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={buckets} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
@@ -82,7 +89,7 @@ export function CashFlowAreaChart({ buckets, height = 260, tr = (x) => x }) {
 /** Donut wg kategorii. data=[{name, amount, pct, color?}]. */
 export function CategoryDonut({ data, height = 280, tr = (x) => x }) {
   const slices = (data || []).filter((d) => d.amount > 0);
-  if (!slices.length) return <p className="text-center text-gray-400 py-8">{tr('Brak danych')}</p>;
+  if (!slices.length) return <NoData tr={tr} text={tr('Brak danych w tym okresie')} />;
   return (
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
@@ -99,6 +106,7 @@ export function CategoryDonut({ data, height = 280, tr = (x) => x }) {
 /** Porównanie rok-do-roku: grupowany słupkowy (poprz. vs bież.). */
 export function YoYBars({ yoy, prevLabel, nowLabel, height = 240, tr = (x) => x }) {
   if (!yoy) return null;
+  if (![yoy.income, yoy.expense].some((v) => num(v.now) !== 0 || num(v.prev) !== 0)) return <NoData tr={tr} text={tr('Brak danych do porównania')} />;
   const data = [
     { label: tr('Przychody'), prev: yoy.income.prev, now: yoy.income.now },
     { label: tr('Wydatki'), prev: yoy.expense.prev, now: yoy.expense.now },

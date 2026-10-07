@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { DEFAULT_FORM_EMAIL_TEMPLATES, personalizeFormEmail } from '../utils/formEmailTemplates';
 import { formatPrice } from '../utils/fieldTypes';
+import { appLocale } from '../../../i18n';
 
 export function useFormEmails() {
   // Wyslij email potwierdzajacy rejestracje
@@ -102,7 +103,7 @@ export function useFormEmails() {
     const deadlineDays = emailSettings?.paymentDeadlineDays || 7;
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + deadlineDays);
-    const deadlineStr = deadline.toLocaleDateString('pl-PL', {
+    const deadlineStr = deadline.toLocaleDateString(appLocale(), {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -452,7 +453,7 @@ function formatAnswerValue(value, field) {
 
   // Dla daty
   if (field.type === 'date' && value) {
-    return new Date(value).toLocaleDateString('pl-PL');
+    return new Date(value).toLocaleDateString(appLocale());
   }
 
   return String(value);

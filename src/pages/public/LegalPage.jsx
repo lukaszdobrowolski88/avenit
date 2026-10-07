@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { appLocale } from '../../i18n';
 
 // Publiczne strony prawne (bez logowania): polityka prywatności / regulamin.
 // Treść domyślna (RODO, kontekst wspólnoty) — organizacja może ją nadpisać własną
@@ -26,7 +27,7 @@ export default function LegalPage({ kind = 'privacy' }) {
 
   const [contact, setContact] = useState('kontakt@' + (typeof window !== 'undefined' ? window.location.hostname.split('.').slice(-2).join('.') : 'avenit.pl'));
   const org = orgName || 'wspólnota korzystająca z aplikacji';
-  const today = new Date().toLocaleDateString('pl-PL');
+  const today = new Date().toLocaleDateString(appLocale());
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 py-10 px-4">

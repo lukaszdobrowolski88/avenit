@@ -4,6 +4,7 @@ import Popover from '../components/Popover';
 import { BarChart, DonutChart, Battery } from './Charts';
 import { groupItemsByColumn } from '../lib/viewData';
 import { findLabel } from '../lib/columnTypes';
+import { tr } from '../../../i18n';
 
 // Wylicza dane widżetu z pakietu tablic.
 export function computeWidget(widget, bundle) {
@@ -12,12 +13,12 @@ export function computeWidget(widget, bundle) {
   const column = columns.find(c => c.id === widget.columnId);
 
   if (widget.type === 'number') {
-    if (widget.aggregation === 'count' || !column) return { value: items.length, label: 'elementów' };
+    if (widget.aggregation === 'count' || !column) return { value: items.length, label: tr('elementów') };
     const nums = items.map(i => i.cells?.[column.id]).filter(v => typeof v === 'number');
-    if (widget.aggregation === 'sum') return { value: nums.reduce((a, b) => a + b, 0), label: `suma: ${column.name}` };
-    if (widget.aggregation === 'avg') return { value: nums.length ? Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10 : 0, label: `średnia: ${column.name}` };
+    if (widget.aggregation === 'sum') return { value: nums.reduce((a, b) => a + b, 0), label: tr('suma: {name}', { name: column.name }) };
+    if (widget.aggregation === 'avg') return { value: nums.length ? Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10 : 0, label: tr('średnia: {name}', { name: column.name }) };
     const filled = items.filter(i => i.cells?.[column.id] != null).length;
-    return { value: filled, label: `wypełnione: ${column.name}` };
+    return { value: filled, label: tr('wypełnione: {name}', { name: column.name }) };
   }
 
   if (widget.type === 'chart' || widget.type === 'battery') {
@@ -44,15 +45,15 @@ export function WidgetCard({ widget, bundle, boardName, editing, onEdit, onRemov
     <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 ${SIZE_CLASS[widget.size] || SIZE_CLASS.small}`}>
       <div className="flex items-start justify-between mb-2">
         <div>
-          <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{widget.title || 'Widżet'}</h3>
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{widget.title || tr('Widżet')}</h3>
           <p className="text-[11px] text-gray-400">{boardName}</p>
         </div>
         {editing && (
           <Popover align="right" width={150} trigger={<button className="text-gray-400 hover:text-gray-600 p-1"><MoreHorizontal size={16} /></button>}>
             {({ close }) => (
               <div className="p-1.5">
-                <button onClick={() => { onEdit(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm"><Pencil size={14} /> Edytuj</button>
-                <button onClick={() => { onRemove(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> Usuń</button>
+                <button onClick={() => { onEdit(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm"><Pencil size={14} /> {tr('Edytuj')}</button>
+                <button onClick={() => { onRemove(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń')}</button>
               </div>
             )}
           </Popover>
@@ -71,11 +72,11 @@ export function WidgetCard({ widget, bundle, boardName, editing, onEdit, onRemov
         <div className="max-h-64 overflow-y-auto custom-scrollbar -mx-1">
           {(d.rows || []).map(r => (
             <div key={r.id} className="flex items-center gap-2 px-1 py-1.5 border-b border-gray-50 dark:border-gray-700/40 text-sm">
-              <span className="flex-1 truncate text-gray-700 dark:text-gray-200">{r.name || 'Bez nazwy'}</span>
+              <span className="flex-1 truncate text-gray-700 dark:text-gray-200">{r.name || tr('Bez nazwy')}</span>
               {r.status && <span className="text-[10px] px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: r.status.color }}>{r.status.title}</span>}
             </div>
           ))}
-          {(!d.rows || d.rows.length === 0) && <div className="text-center text-sm text-gray-400 py-4">Brak elementów</div>}
+          {(!d.rows || d.rows.length === 0) && <div className="text-center text-sm text-gray-400 py-4">{tr('Brak elementów')}</div>}
         </div>
       )}
     </div>

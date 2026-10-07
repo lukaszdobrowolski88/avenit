@@ -11,6 +11,7 @@ import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const emptyForm = {
   title: '',
@@ -102,7 +103,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
   };
 
   const save = async () => {
-    if (!form.session_date) { toast.error('Podaj datę sesji.'); return; }
+    if (!form.session_date) { toast.error(tr('Podaj datę sesji.')); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -126,20 +127,20 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
       load();
     } catch (err) {
       console.error('Save attendance session error:', err);
-      toast.error('Nie udało się zapisać sesji: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać sesji: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (s) => {
-    if (!await confirmDialog('Usunąć tę sesję wraz z listą obecności?')) return;
+    if (!await confirmDialog(tr('Usunąć tę sesję wraz z listą obecności?'))) return;
     try {
       const { error } = await supabase.from('attendance_sessions').delete().eq('id', s.id);
       if (error) throw error;
       load();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
@@ -168,20 +169,20 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Szukaj sesji, typu, notatki..."
+            placeholder={tr('Szukaj sesji, typu, notatki...')}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
           />
         </div>
-        <div className="w-48"><CustomSelect value={typeFilter} onChange={setTypeFilter} options={typeOptionsAll} compact icon={Filter} /></div>
+        <div className="w-48"><CustomSelect value={typeFilter} onChange={setTypeFilter} options={typeOptionsAll.map((o) => ({ ...o, label: tr(o.label) }))} compact icon={Filter} /></div>
         <button data-tour="att-add-session" onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
-          <Plus size={16} /> Dodaj sesję
+          <Plus size={16} /> {tr('Dodaj sesję')}
         </button>
       </div>
 
       {/* Podsumowanie */}
       <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">Sesji: <b className="text-gray-900 dark:text-white">{filtered.length}</b></span>
-        <span className="text-gray-500 dark:text-gray-400">Łączna frekwencja: <b className="text-accent-primary dark:text-accent-primary-light">{totalAttendance}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Sesji:')} <b className="text-gray-900 dark:text-white">{filtered.length}</b></span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('Łączna frekwencja:')} <b className="text-accent-primary dark:text-accent-primary-light">{totalAttendance}</b></span>
       </div>
 
       {/* Lista */}
@@ -189,16 +190,16 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
         {loading ? (
           <Spinner center />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={ClipboardList} title="Brak sesji dla wybranych filtrów." />
+          <EmptyState icon={ClipboardList} title={tr('Brak sesji dla wybranych filtrów.')} />
         ) : (
           <DataTable flush>
             <THead>
               <tr>
-                <TH>Data</TH>
-                <TH>Sesja</TH>
-                <TH>Typ</TH>
-                <TH align="right">Frekwencja</TH>
-                <TH align="right"><span className="sr-only">Akcje</span></TH>
+                <TH>{tr('Data')}</TH>
+                <TH>{tr('Sesja')}</TH>
+                <TH>{tr('Typ')}</TH>
+                <TH align="right">{tr('Frekwencja')}</TH>
+                <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
               </tr>
             </THead>
             <tbody>
@@ -209,22 +210,22 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
                   <TR key={s.id} onClick={() => setDetail(s)}>
                     <TD muted numeric className="whitespace-nowrap">{formatDate(s.session_date)}</TD>
                     <TD>
-                      <div className="font-medium text-gray-900 dark:text-white">{s.title || sessionTypeLabel(s.session_type)}</div>
+                      <div className="font-medium text-gray-900 dark:text-white">{s.title || tr(sessionTypeLabel(s.session_type))}</div>
                       {s.note && <div className="text-xs text-gray-400 truncate max-w-[280px]">{s.note}</div>}
                     </TD>
                     <TD muted>
                       <span className="inline-flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full" style={{ background: sessionTypeColor(s.session_type) }} />
-                        {sessionTypeLabel(s.session_type)}
+                        {tr(sessionTypeLabel(s.session_type))}
                       </span>
                     </TD>
                     <TD align="right" numeric className="whitespace-nowrap">
                       <span className="font-semibold text-gray-900 dark:text-white">{count}</span>
-                      <span className="ml-1 text-xs text-gray-400">{usesRecords ? 'obecnych' : 'szacunkowo'}</span>
+                      <span className="ml-1 text-xs text-gray-400">{usesRecords ? tr('obecnych') : tr('szacunkowo')}</span>
                     </TD>
                     <TD align="right" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                        <button onClick={() => setDetail(s)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700" title="Lista obecności"><ChevronRight size={16} /></button>
+                        <button onClick={() => setDetail(s)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700" title={tr('Lista obecności')}><ChevronRight size={16} /></button>
                         <button onClick={() => openEdit(s)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
                         <button onClick={() => remove(s)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
                       </div>
@@ -241,34 +242,34 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
       <Modal
         isOpen={modalOpen}
         onClose={() => !saving && setModalOpen(false)}
-        title={editing ? 'Edytuj sesję' : 'Nowa sesja'}
+        title={editing ? tr('Edytuj sesję') : tr('Nowa sesja')}
         footer={<>
-          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
-          <Button data-tour="att-session-save" onClick={save} loading={saving}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>{tr('Anuluj')}</Button>
+          <Button data-tour="att-session-save" onClick={save} loading={saving}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł (opcjonalnie)</label>
-            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Nabożeństwo niedzielne" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł (opcjonalnie)')}</label>
+            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={tr('np. Nabożeństwo niedzielne')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Data')}</label>
               <DateInput data-tour="att-session-date" value={form.session_date} onChange={e => setForm(f => ({ ...f, session_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
-            <CustomSelect label="Typ" value={form.session_type} onChange={v => setForm(f => ({ ...f, session_type: v }))} options={typeOptionsForm} />
+            <CustomSelect label={tr('Typ')} value={form.session_type} onChange={v => setForm(f => ({ ...f, session_type: v }))} options={typeOptionsForm.map((o) => ({ ...o, label: tr(o.label) }))} />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Szybka liczba obecnych (headcount)</label>
-            <input type="number" min="0" step="1" value={form.headcount} onChange={e => setForm(f => ({ ...f, headcount: e.target.value }))} placeholder="np. 120" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-            <p className="text-xs text-gray-400 mt-1 ml-1">Użyj tego pola dla szybkiego zliczenia. Imienną listę obecnych odznaczysz w szczegółach sesji.</p>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Szybka liczba obecnych (headcount)')}</label>
+            <input type="number" min="0" step="1" value={form.headcount} onChange={e => setForm(f => ({ ...f, headcount: e.target.value }))} placeholder={tr('np. 120')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <p className="text-xs text-gray-400 mt-1 ml-1">{tr('Użyj tego pola dla szybkiego zliczenia. Imienną listę obecnych odznaczysz w szczegółach sesji.')}</p>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatka</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatka')}</label>
             <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
           </div>
         </div>
@@ -337,7 +338,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
       }
       await loadRecords();
     } catch (err) {
-      toast.error('Nie udało się zapisać obecności: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać obecności: {msg}', { msg: err.message || err }));
     } finally {
       setBusyId(null);
     }
@@ -353,7 +354,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
       setGuestName('');
       await loadRecords();
     } catch (err) {
-      toast.error('Nie udało się dodać gościa: ' + (err.message || err));
+      toast.error(tr('Nie udało się dodać gościa: {msg}', { msg: err.message || err }));
     } finally {
       setAddingGuest(false);
     }
@@ -365,7 +366,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
       if (error) throw error;
       await loadRecords();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
@@ -376,11 +377,11 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"><ArrowLeft size={18} /></button>
           <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{session.title || sessionTypeLabel(session.session_type)}</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{session.title || tr(sessionTypeLabel(session.session_type))}</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full" style={{ background: sessionTypeColor(session.session_type) }} />
-                {sessionTypeLabel(session.session_type)}
+                {tr(sessionTypeLabel(session.session_type))}
               </span>
               · {formatDate(session.session_date)}
             </p>
@@ -389,11 +390,11 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
         <div className="flex items-center gap-4 text-sm">
           <div className="text-center px-3">
             <div className="text-xl font-bold text-accent-primary dark:text-accent-primary-light tabular-nums">{presentCount}</div>
-            <div className="text-xs text-gray-400">obecnych imiennie</div>
+            <div className="text-xs text-gray-400">{tr('obecnych imiennie')}</div>
           </div>
           <div className="text-center px-3 border-l border-gray-200 dark:border-gray-700">
             <div className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{session.headcount ?? '—'}</div>
-            <div className="text-xs text-gray-400">szybka liczba</div>
+            <div className="text-xs text-gray-400">{tr('szybka liczba')}</div>
           </div>
         </div>
       </div>
@@ -404,13 +405,13 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
           <div className="p-4 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-2 mb-3">
               <Users size={16} className="text-gray-400" />
-              <h4 className="font-semibold text-gray-900 dark:text-white">Odznacz obecnych członków</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white">{tr('Odznacz obecnych członków')}</h4>
             </div>
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Szukaj członka..."
+                placeholder={tr('Szukaj członka...')}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
               />
             </div>
@@ -419,7 +420,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
             {loading ? (
               <Spinner center />
             ) : filteredMembers.length === 0 ? (
-              <EmptyState icon={Users} title="Brak członków w bazie dla tego kampusu." compact />
+              <EmptyState icon={Users} title={tr('Brak członków w bazie dla tego kampusu.')} compact />
             ) : (
               <ul className="divide-y divide-gray-50 dark:divide-gray-700/50">
                 {filteredMembers.map(m => {
@@ -448,20 +449,20 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 h-fit">
           <div className="flex items-center gap-2 mb-3">
             <UserPlus size={16} className="text-gray-400" />
-            <h4 className="font-semibold text-gray-900 dark:text-white">Goście</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">{tr('Goście')}</h4>
           </div>
           <div className="flex gap-2 mb-3">
             <input
               value={guestName}
               onChange={e => setGuestName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') addGuest(); }}
-              placeholder="Imię i nazwisko gościa"
+              placeholder={tr('Imię i nazwisko gościa')}
               className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
             />
             <button onClick={addGuest} disabled={addingGuest || !guestName.trim()} className="px-3 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md disabled:opacity-60"><Plus size={16} /></button>
           </div>
           {guestRecords.length === 0 ? (
-            <EmptyState icon={UserPlus} title="Brak gości." compact />
+            <EmptyState icon={UserPlus} title={tr('Brak gości.')} compact />
           ) : (
             <ul className="space-y-2">
               {guestRecords.map(g => (

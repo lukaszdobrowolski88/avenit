@@ -6,6 +6,7 @@ import { useParams } from 'react-router-dom';
 import { Loader2, Heart } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { formatMoney } from './lib/givingApi';
+import { tr } from '../../i18n';
 
 const REFRESH_MS = 60000; // odświeżanie co ~60 s
 
@@ -16,16 +17,16 @@ export default function CampaignWidgetPage() {
   const [error, setError] = useState('');
 
   const fetchProgress = useCallback(async () => {
-    if (!id) { setError('Brak identyfikatora kampanii.'); setLoading(false); return; }
+    if (!id) { setError(tr('Brak identyfikatora kampanii.')); setLoading(false); return; }
     try {
       const { data: res, error: fnErr } = await supabase.functions.invoke('campaign-progress', {
         body: { campaign_id: id },
       });
-      if (fnErr || res?.error) throw new Error(res?.error || fnErr?.message || 'Nie udało się pobrać danych');
+      if (fnErr || res?.error) throw new Error(res?.error || fnErr?.message || tr('Nie udało się pobrać danych'));
       setData(res);
       setError('');
     } catch (err) {
-      setError(err.message || 'Nie udało się pobrać danych kampanii.');
+      setError(err.message || tr('Nie udało się pobrać danych kampanii.'));
     } finally {
       setLoading(false);
     }
@@ -45,7 +46,7 @@ export default function CampaignWidgetPage() {
       <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-6 text-gray-400">
-            <Loader2 size={18} className="animate-spin" /> Ładowanie...
+            <Loader2 size={18} className="animate-spin" /> {tr('Ładowanie...')}
           </div>
         ) : error ? (
           <div className="py-6 text-center text-sm text-red-500">{error}</div>
@@ -55,12 +56,12 @@ export default function CampaignWidgetPage() {
               <div className="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
                 <Heart className="text-white" size={16} />
               </div>
-              <h1 className="font-bold text-gray-900 dark:text-white text-base truncate">{data?.name || 'Zbiórka'}</h1>
+              <h1 className="font-bold text-gray-900 dark:text-white text-base truncate">{data?.name || tr('Zbiórka')}</h1>
             </div>
 
             <div className="flex justify-between items-baseline text-sm mb-1.5">
               <span className="font-bold text-gray-900 dark:text-white text-lg">{formatMoney(data?.raised, currency)}</span>
-              <span className="text-gray-400">z {formatMoney(data?.goal, currency)}</span>
+              <span className="text-gray-400">{tr('z {amount}', { amount: formatMoney(data?.goal, currency) })}</span>
             </div>
 
             <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">

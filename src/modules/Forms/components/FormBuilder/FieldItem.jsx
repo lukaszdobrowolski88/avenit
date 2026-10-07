@@ -61,7 +61,7 @@ export default function FieldItem({
             disabled
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-400"
           >
-            <option>{field.placeholder || 'Wybierz...'}</option>
+            <option>{field.placeholder || tr('Wybierz...')}</option>
           </select>
         );
 
@@ -75,7 +75,7 @@ export default function FieldItem({
               </label>
             ))}
             {(field.options || []).length > 3 && (
-              <p className="text-xs text-gray-400">+{field.options.length - 3} więcej...</p>
+              <p className="text-xs text-gray-400">{tr('+{n} więcej...', { n: field.options.length - 3 })}</p>
             )}
           </div>
         );
@@ -90,7 +90,7 @@ export default function FieldItem({
               </label>
             ))}
             {(field.options || []).length > 3 && (
-              <p className="text-xs text-gray-400">+{field.options.length - 3} więcej...</p>
+              <p className="text-xs text-gray-400">{tr('+{n} więcej...', { n: field.options.length - 3 })}</p>
             )}
           </div>
         );

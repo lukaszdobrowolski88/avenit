@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Copy, Check, Sparkles, AlertTriangle } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Panel wyniku AI: stan ładowania, błąd, wynik z przyciskiem „Kopiuj".
-export default function ResultPanel({ loading, error, result, title = 'Wynik', emptyHint }) {
+export default function ResultPanel({ loading, error, result, title = tr('Wynik'), emptyHint }) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -21,7 +22,7 @@ export default function ResultPanel({ loading, error, result, title = 'Wynik', e
       <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <Sparkles size={18} className="animate-pulse text-accent-primary dark:text-accent-primary-light" />
-          <span className="text-sm">Asystent generuje odpowiedź…</span>
+          <span className="text-sm">{tr('Asystent generuje odpowiedź…')}</span>
         </div>
       </div>
     );
@@ -33,7 +34,7 @@ export default function ResultPanel({ loading, error, result, title = 'Wynik', e
         <div className="flex items-start gap-3">
           <AlertTriangle size={18} className="text-red-500 dark:text-red-400 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-red-700 dark:text-red-300">Nie udało się wygenerować odpowiedzi</p>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">{tr('Nie udało się wygenerować odpowiedzi')}</p>
             <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>
           </div>
         </div>
@@ -45,7 +46,7 @@ export default function ResultPanel({ loading, error, result, title = 'Wynik', e
     return (
       <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-8 text-center">
         <Sparkles size={28} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-        <p className="text-sm text-gray-500 dark:text-gray-400">{emptyHint || 'Wynik pojawi się tutaj.'}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{emptyHint || tr('Wynik pojawi się tutaj.')}</p>
       </div>
     );
   }
@@ -59,7 +60,7 @@ export default function ResultPanel({ loading, error, result, title = 'Wynik', e
           className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-xs font-medium transition"
         >
           {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-          {copied ? 'Skopiowano' : 'Kopiuj'}
+          {copied ? tr('Skopiowano') : tr('Kopiuj')}
         </button>
       </div>
       <div className="p-5">

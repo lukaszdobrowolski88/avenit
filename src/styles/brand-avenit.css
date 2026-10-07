@@ -14,7 +14,8 @@ html[data-color-preset="avenit"] {
   --gray-100: 241 238 230;
   --gray-200: 230 225 213;
   --gray-300: 207 200 182;
-  --gray-400: 133 127 112;
+  /* gray-400 = tekst drugorzędny: #6E685A daje 5,5:1 na bieli i 5,0:1 na papierze (było 3,99/3,63 — WCAG 1.4.3). */
+  --gray-400: 110 104 90;
   --gray-500: 107 101 87;
   --gray-600: 74 70 62;
   --gray-700: 58 52 39;
@@ -30,8 +31,9 @@ html.dark[data-color-preset="avenit"] {
   --gray-100: 236 234 229;
   --gray-200: 218 215 209;
   --gray-300: 190 186 179;
-  --gray-400: 154 150 143;
-  --gray-500: 122 118 111;
+  /* Ciemny: gray-500 #96928B = 5,4:1 na karcie (było 3,7), gray-400 #A8A49D = 5,2:1 także na gray-700. */
+  --gray-400: 168 164 157;
+  --gray-500: 150 146 139;
   --gray-600: 80 78 74;
   --gray-700: 50 49 46;
   --gray-800: 31 30 29;
@@ -176,7 +178,7 @@ html[data-color-preset="avenit"] :is(div, section, main):is(.bg-gradient-to-br, 
 
 /* Pola-divy: pełna biel (bez półprzezroczystości i rozmycia), ramka jak w zwykłych polach. */
 html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl { background-color: #FFFFFF !important; backdrop-filter: none !important; }
-html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl:not(.border-accent-primary-light) { border-color: rgb(var(--gray-200)) !important; }
+html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl:not(.border-accent-primary-light):not(:hover) { border-color: rgb(var(--field-border)) !important; }
 
 /* Tabele: globalny nagłówek z gradientem akcentu (index.css) → spokojny papier, hover wiersza neutralny. */
 html[data-color-preset="avenit"] thead { background-image: none !important; background-color: rgb(var(--gray-50)); }
@@ -306,8 +308,27 @@ html[data-color-preset="avenit"] :is(div, span):is(.w-12, .w-14, .w-16, .w-20).r
 html.dark[data-color-preset="avenit"] :is(div, span):is(.w-12, .w-14, .w-16, .w-20).rounded-2xl:is(.bg-gray-100, .bg-gray-50):has(> svg) { background-color: rgb(var(--gray-700)) !important; }
 html.dark[data-color-preset="avenit"] :is(div, span):is(.w-12, .w-14, .w-16, .w-20).rounded-2xl:is(.bg-gray-100, .bg-gray-50) > svg { color: #FFBE0B !important; }
 
-/* Fokus z klawiatury — kurkuma. */
-html[data-color-preset="avenit"] :is(button, a, [role="button"], [role="tab"]):focus-visible { outline: 2px solid #FFBE0B; outline-offset: 2px; }
+/* Fokus z klawiatury. Jasny motyw: obrys słodem + halo kurkumy (sama kurkuma na bieli/papierze
+   miała 1,5–1,7:1 i ginęła; słód ma 14:1, a marka zostaje w halo). Ciemny: kurkuma (10:1).
+   Obejmuje też elementy z tabindex, summary i pola edytowalne (WCAG 2.4.7 / 1.4.11). */
+html[data-color-preset="avenit"] :is(button, a, summary, [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="switch"], [role="checkbox"], [contenteditable="true"], [tabindex]:not([tabindex="-1"])):not(.ui-field):focus-visible { outline: 2px solid #FFBE0B; outline-offset: 2px; }
+html[data-color-preset="avenit"]:not(.dark) :is(button, a, summary, [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="switch"], [role="checkbox"], [contenteditable="true"], [tabindex]:not([tabindex="-1"])):not(.ui-field):not(.dark *):focus-visible {
+  outline: 2px solid #2A2312;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px #FFBE0B;
+}
+/* Pola-divy (CustomSelect, kalendarz, godzina) z klawiatury — jak pole tekstowe w fokusie. */
+html[data-color-preset="avenit"] .ui-field.rounded-xl:focus-visible,
+html[data-color-preset="avenit"] .ui-field:focus-within:has(input:focus-visible) {
+  border-color: #FFBE0B !important;
+  box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.35) !important;
+  outline: none;
+}
+html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl:focus-visible,
+html[data-color-preset="avenit"]:not(.dark) .ui-field:focus-within:has(input:focus-visible) {
+  border-color: #8A6606 !important;
+  box-shadow: 0 0 0 1px #8A6606, 0 0 0 5px rgba(255, 190, 11, 0.45) !important;
+}
 
 /* Przyciski drugorzędne na szarym tle (wariant secondary) też jako pigułki. */
 html[data-color-preset="avenit"] :is(button, a):is(.bg-gray-100, .bg-gray-50):is(.rounded-lg, .rounded-xl):not(.w-full):not(.flex-col) { border-radius: 9999px !important; }
@@ -414,11 +435,16 @@ html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="2"].w-14
 /* Wybrany kafelek-filtr: słód z głębią. */
 html[data-color-preset="avenit"]:not(.dark) [data-pick][data-pick][data-pick][data-selected="true"] { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 14px 28px -14px rgba(42, 35, 18, 0.65) !important; }
 
-/* Pola: fokus jako ciepła poświata kurkumy. */
+/* Pola: fokus jako ciepła poświata kurkumy. W jasnym motywie ramka musztardą (5,3:1) + mocniejsze
+   halo — sama kurkuma z poświatą 22% miała ~1,1:1 i nie było widać, które pole jest aktywne. */
 html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):focus {
   border-color: #FFBE0B !important;
-  box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.22) !important;
+  box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.30) !important;
   outline: none;
+}
+html[data-color-preset="avenit"]:not(.dark) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.dark *):not(.ui-field *):focus {
+  border-color: #8A6606 !important;
+  box-shadow: 0 0 0 1px #8A6606, 0 0 0 5px rgba(255, 190, 11, 0.40) !important;
 }
 
 /* Karta „Najbliższe”: gradient jasnej kurkumy + koła z key visualu. */
@@ -524,7 +550,9 @@ html.dark[data-color-preset="avenit"] :is(.dark\:hover\:bg-gray-800, .dark\:hove
    i pól-divów (.ui-field: CustomSelect, CustomDatePicker, TimeInput). */
 html[data-color-preset="avenit"] {
   --field-bg: #FFFFFF;
-  --field-border: 230 225 213;
+  /* Ramka pola #B5AD99 (2,2:1 na bieli; było 1,3:1) — widać, gdzie zaczyna się pole (WCAG 1.4.11). */
+  --field-border: 181 173 153;
+  --field-border-hover: 140 132 112;
   --field-radius: 14px;
   --field-text: rgb(var(--gray-900));
   --field-text-muted: rgb(var(--gray-500));
@@ -532,7 +560,9 @@ html[data-color-preset="avenit"] {
 }
 html.dark[data-color-preset="avenit"] {
   --field-bg: rgb(var(--gray-800));
-  --field-border: 58 57 54;
+  /* Ciemny: #64615B (2,6:1 na karcie; było 1,44:1). */
+  --field-border: 100 97 91;
+  --field-border-hover: 150 146 139;
   --field-text: #F3F1EC;
   --field-text-muted: #9C978E;
   --field-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23BEBAB3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -554,7 +584,7 @@ html[data-color-preset="avenit"] .ui-field.rounded-xl {
 html[data-color-preset="avenit"] :is(input, textarea, select):disabled:not(.ui-field *) { color: var(--field-text-muted) !important; -webkit-text-fill-color: var(--field-text-muted); }
 html[data-color-preset="avenit"] :is(input, textarea)::placeholder { color: rgb(var(--gray-400)); opacity: 1; }
 html[data-color-preset="avenit"] .ui-field.rounded-xl:hover,
-html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.ui-field *):not(:focus):hover { border-color: rgb(var(--gray-300)) !important; }
+html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.ui-field *):not(:focus):hover { border-color: rgb(var(--field-border-hover)) !important; }
 html[data-color-preset="avenit"] .ui-field.rounded-xl.border-accent-primary-light { border-color: #FFBE0B !important; box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.22) !important; }
 /* Natywny <select> wygląda jak CustomSelect: bez systemowej strzałki, ta sama ikona chevron. */
 html[data-color-preset="avenit"] select:not([multiple]):not([size]) {
@@ -613,7 +643,10 @@ html[data-color-preset="avenit"]:not(.dark) div:is(.flex, .inline-flex).p-1:has(
 /* Przełączniki on/off: włączony zawsze kurkuma, wyłączony ciepła szarość; bez uniesień i poświaty. */
 html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6):is(.rounded-full) { box-shadow: none !important; transform: none !important; }
 html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6).rounded-full:is(.bg-accent-primary, .bg-accent-primary-light, .bg-emerald-500, .bg-green-500, .bg-blue-500, .bg-violet-500) { background-color: #FFBE0B !important; }
-html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6).rounded-full:is(.bg-gray-200, .bg-gray-300) { background-color: #D9D3C4 !important; }
+/* Wyłączony: #A09884 (2,9:1 do tła; było 1,5:1). Włączony: kurkuma z cienkim obrysem słodu. */
+html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6).rounded-full:is(.bg-gray-200, .bg-gray-300) { background-color: #A09884 !important; }
+html.dark[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6).rounded-full:is(.bg-gray-200, .bg-gray-300, .dark\:bg-gray-600, .dark\:bg-gray-700) { background-color: #6A6760 !important; }
+html[data-color-preset="avenit"]:not(.dark) :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6).rounded-full:is(.bg-accent-primary, .bg-accent-primary-light, .bg-emerald-500, .bg-green-500, .bg-blue-500, .bg-violet-500) { box-shadow: inset 0 0 0 1.5px rgba(42, 35, 18, 0.55) !important; }
 html[data-color-preset="avenit"] .peer:checked ~ [class*="peer-checked:bg-"] { background-color: #FFBE0B !important; }
 html[data-color-preset="avenit"] :is(button, div, span, label):is(.w-9, .w-10, .w-11, .w-12):is(.h-5, .h-6).rounded-full > span.bg-white { box-shadow: 0 1px 3px rgba(42, 35, 18, 0.25) !important; }
 
@@ -644,3 +677,11 @@ html[data-color-preset="avenit"] :is(button, a):is(.from-blue-400, .from-blue-50
   color: #2A2312 !important;
   box-shadow: none !important;
 }
+
+/* ═══ Kolory statusów jako TEKST — czytelne na bieli/papierze (WCAG 1.4.3, audyt A11Y-10) ══════
+   Zielenie/czerwienie/bursztyny Tailwinda 500/600 miały 1,9–3,8:1. Tylko jasny motyw i tylko
+   poza ciemnymi wyspami (np. ciemny pasek boczny) — w ciemnym zostają jaśniejsze odcienie. */
+html[data-color-preset="avenit"]:not(.dark) :is(.text-green-500, .text-green-600):not(.dark *) { color: #15803D !important; }
+html[data-color-preset="avenit"]:not(.dark) :is(.text-emerald-500, .text-emerald-600):not(.dark *) { color: #047857 !important; }
+html[data-color-preset="avenit"]:not(.dark) .text-red-500:not(.dark *) { color: #DC2626 !important; }
+html[data-color-preset="avenit"]:not(.dark) :is(.text-amber-500, .text-amber-600, .text-yellow-500, .text-yellow-600, .text-orange-500):not(.dark *) { color: #B45309 !important; }

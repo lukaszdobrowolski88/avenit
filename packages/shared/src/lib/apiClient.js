@@ -13,6 +13,32 @@ const SESSION_KEY = 'avenit.auth.session';
 // gdzie tenant nie jest zaszyty w buildzie, tylko ustalany przy logowaniu po e-mailu.
 const TENANT_KEY = 'avenit.tenant';
 
+// ── Sygnał nieudanego zapisu ───────────────────────────────────────────────
+// Kształt { data, error } się nie zmienia (nie rzucamy), ale przy nieudanym
+// insert/update/upsert/delete i functions.invoke emitujemy zdarzenie
+// `avenit:write-error` na window. Web (Toaster) po chwili pokazuje ludzki komunikat,
+// jeśli wywołujący sam nie pokazał błędu — koniec „cichych” zapisów.
+// `avenit:write-ok` (udany zapis) pozwala pominąć błąd, który wywołujący naprawił
+// ponowieniem (np. zapis bez opcjonalnej kolumny). W React Native brak dispatchEvent → no-op.
+export const WRITE_ERROR_EVENT = 'avenit:write-error';
+export const WRITE_OK_EVENT = 'avenit:write-ok';
+const WRITE_OPS = new Set(['insert', 'update', 'upsert', 'delete']);
+// Funkcje wyłącznie odczytujące — ich błąd nie jest „nieudanym zapisem”.
+const READ_ONLY_FN = /(^|-)get$|availability$|progress$|^account-events$|^my-permissions$/;
+
+function emitWriteSignal(type, detail) {
+  try {
+    if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+    if (typeof CustomEvent !== 'function') return;
+    window.dispatchEvent(new CustomEvent(type, { detail: { at: Date.now(), ...detail } }));
+  } catch { /* sygnał pomocniczy — nigdy nie psuje zapytania */ }
+}
+
+function valueColumns(values) {
+  const row = Array.isArray(values) ? values[0] : values;
+  return row && typeof row === 'object' ? Object.keys(row) : [];
+}
+
 export function createApiClient({
   apiUrl = '',
   tenant = null,
@@ -232,11 +258,27 @@ export function createApiClient({
     single() { this._q.single = true; return this; }
     maybeSingle() { this._q.single = 'maybe'; return this; }
     throwOnError() { this._throw = true; return this; }
+    // Zapis „w tle” (np. obecność, kolejność) — błąd nie wywoła globalnego komunikatu.
+    silent() { this._silent = true; return this; }
+
+    _signal(type, extra) {
+      const q = this._q;
+      if (this._silent || !WRITE_OPS.has(q.op)) return;
+      emitWriteSignal(type, { kind: 'db', table: q.table, op: q.op, columns: valueColumns(q.values), ...extra });
+    }
 
     async _run() {
       const q = this._q;
       // insert/update/delete bez .select() => nie zwracaj wierszy
-      const { res, payload } = await requestJson('/api/db', q);
+      let res;
+      let payload;
+      try {
+        ({ res, payload } = await requestJson('/api/db', q));
+      } catch (e) {
+        // Brak sieci / przerwane połączenie — zachowanie bez zmian (wyjątek), tylko sygnał.
+        this._signal(WRITE_ERROR_EVENT, { status: 0, code: 'network', message: e?.message || 'Network error' });
+        throw e;
+      }
       if (!res.ok || payload?.error) {
         const error = {
           message: payload?.error || `HTTP ${res.status}`,
@@ -244,10 +286,12 @@ export function createApiClient({
           details: payload?.details || null,
           hint: null,
         };
+        this._signal(WRITE_ERROR_EVENT, { status: res.status, code: error.code, message: error.message, details: error.details });
         if (this._throw) throw Object.assign(new Error(error.message), error);
         // single() z 0 wierszy: supabase zwraca data:null + error PGRST116 — już tak jest z API.
         return { data: q.single ? null : null, error, count: null, status: res.status, statusText: '' };
       }
+      this._signal(WRITE_OK_EVENT, { status: res.status });
       return {
         data: payload.data ?? (q.single ? null : []),
         error: null,
@@ -517,6 +561,13 @@ export function createApiClient({
           const clean = String(path).replace(/^\//, '');
           return { data: { publicUrl: `${storageOrigin()}/storage/${bucket}/${clean}` } };
         },
+        // Podpisany, krótko ważny link (buckety wrażliwe, np. deklaracje członkowskie).
+        async createSignedUrl(path, expiresIn = 300) {
+          const clean = String(path).replace(/^\//, '');
+          const { res, payload } = await requestJson(`/api/storage/${bucket}/sign`, { path: clean, expiresIn });
+          if (!res.ok) return { data: null, error: { message: payload?.error || `HTTP ${res.status}` } };
+          return { data: { signedUrl: `${storageOrigin()}${payload.signedPath}` }, error: null };
+        },
         async remove(paths) {
           const { res, payload } = await (async () => {
             const r = await request(`/api/storage/${bucket}`, {
@@ -546,10 +597,21 @@ export function createApiClient({
 
   // ── Functions ──────────────────────────────────────────────────────────
   const functions = {
+    // opts.silent = true → błąd bez globalnego komunikatu (wywołujący obsługuje go sam po cichu).
     async invoke(name, opts = {}) {
-      const { res, payload } = await requestJson(`/api/fn/${name}`, opts.body || {});
+      const signal = !opts.silent && !READ_ONLY_FN.test(String(name));
+      let res;
+      let payload;
+      try {
+        ({ res, payload } = await requestJson(`/api/fn/${name}`, opts.body || {}));
+      } catch (e) {
+        if (signal) emitWriteSignal(WRITE_ERROR_EVENT, { kind: 'fn', fn: name, status: 0, code: 'network', message: e?.message || 'Network error' });
+        throw e;
+      }
       if (!res.ok) {
-        return { data: null, error: { message: payload?.error || `HTTP ${res.status}`, status: res.status, context: payload } };
+        const error = { message: payload?.error || `HTTP ${res.status}`, status: res.status, context: payload };
+        if (signal) emitWriteSignal(WRITE_ERROR_EVENT, { kind: 'fn', fn: name, status: res.status, code: payload?.code || String(res.status), message: error.message });
+        return { data: null, error };
       }
       return { data: payload, error: null };
     },

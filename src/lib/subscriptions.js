@@ -4,6 +4,7 @@
 
 import { supabase } from './supabase';
 import { clearTenantCache } from './tenantContext';
+import { appLocale } from '../i18n';
 
 /**
  * Pobiera wszystkie dostępne plany
@@ -306,7 +307,7 @@ export function calculateDiscountedPrice(price, coupon) {
  */
 export function formatPrice(priceInGrosze, currency = 'PLN') {
   const amount = priceInGrosze / 100;
-  return new Intl.NumberFormat('pl-PL', {
+  return new Intl.NumberFormat(appLocale(), {
     style: 'currency',
     currency: currency
   }).format(amount);

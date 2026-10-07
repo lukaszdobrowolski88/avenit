@@ -1,6 +1,6 @@
-// Zbiórki (Dawanie, member-facing) — aktywne kampanie z postępem. „Zebrano" liczymy
-// z zakończonych darowizn do funduszu kampanii (donations.fund_id = campaign.fund_id),
-// opcjonalnie w oknie dat kampanii. Tabele giving_* nie są wystawione przez /api/db
+// Zbiórki (Dawanie, member-facing) — aktywne kampanie z postępem. „Zebrano" = zaksięgowane
+// darowizny przypisane do zbiórki (campaign_id), a bez przypisania — na fundusz zbiórki
+// w jej oknie dat (ta sama definicja co campaign-progress i moduł Hojność). Tabele giving_* nie są wystawione przez /api/db
 // (niezarejestrowane), więc czytamy je serwerowo tu — bez ujawniania pojedynczych wpłat.
 //
 // Brak wpisu w FN_CAPABILITY => preHandler = requireUser (każdy zalogowany).
@@ -39,27 +39,30 @@ export default async function handler(req, reply) {
       } catch { /* bez nazw */ }
     }
 
-    // Zebrano per fundusz (sumy zakończonych wpłat). Pojedyncze wpłaty NIE wychodzą.
-    const raisedByFund = new Map();
-    if (fundIds.length) {
-      try {
-        const { rows } = await req.db.query(
-          `SELECT fund_id, COALESCE(SUM(amount),0)::float8 AS raised
-             FROM donations
-            WHERE fund_id = ANY($1) AND COALESCE(status,'completed') = 'completed'
-            GROUP BY fund_id`,
-          [fundIds]
-        );
-        for (const r of rows) raisedByFund.set(String(r.fund_id), r.raised);
-      } catch { /* brak donations → 0 */ }
-    }
+    // Zebrano per zbiórka (sumy zaksięgowanych wpłat). Pojedyncze wpłaty NIE wychodzą.
+    const raisedByCampaign = new Map();
+    try {
+      const { rows } = await req.db.query(
+        `SELECT c.id, COALESCE(SUM(d.amount),0)::float8 AS raised
+           FROM giving_campaigns c
+           JOIN donations d ON d.status = 'completed'
+            AND (d.campaign_id = c.id
+                 OR (d.campaign_id IS NULL AND c.fund_id IS NOT NULL AND d.fund_id = c.fund_id
+                     AND (c.start_date IS NULL OR d.donation_date >= c.start_date)
+                     AND (c.end_date IS NULL OR d.donation_date <= c.end_date)))
+          WHERE c.id = ANY($1)
+          GROUP BY c.id`,
+        [campaigns.map((c) => c.id)]
+      );
+      for (const r of rows) raisedByCampaign.set(String(r.id), r.raised);
+    } catch { /* brak donations → 0 */ }
 
     const out = campaigns.map((c) => ({
       id: c.id,
       name: c.name,
       description: c.description ?? null,
       goal_amount: c.goal_amount ?? 0,
-      raised: c.fund_id ? (raisedByFund.get(String(c.fund_id)) ?? 0) : 0,
+      raised: raisedByCampaign.get(String(c.id)) ?? 0,
       fund_id: c.fund_id ?? null,
       fund_name: c.fund_id ? (fundName.get(String(c.fund_id)) ?? null) : null,
       start_date: c.start_date ?? null,

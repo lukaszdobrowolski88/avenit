@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
+import { tr } from '../../../i18n';
 
 // Wątek aktualizacji + dziennik aktywności dla pojedynczego elementu.
 export function useItemUpdates(item, boardId, { userEmail, userName } = {}) {
@@ -33,7 +34,7 @@ export function useItemUpdates(item, boardId, { userEmail, userName } = {}) {
       author_email: userEmail || null, author_name: userName || null,
       body, mentions, likes: [],
     }).select().single();
-    if (error) { toast.error('Nie udało się dodać komentarza' + (error.message ? `: ${error.message}` : '')); return; }
+    if (error) { toast.error(error.message ? tr('Nie udało się dodać komentarza: {msg}', { msg: error.message }) : tr('Nie udało się dodać komentarza')); return; }
     setUpdates(prev => [...prev, data]);
 
     // Powiadomienia dla wzmiankowanych osób (typ 'mention')
@@ -55,14 +56,14 @@ export function useItemUpdates(item, boardId, { userEmail, userName } = {}) {
     const next = likes.includes(userEmail) ? likes.filter(e => e !== userEmail) : [...likes, userEmail];
     setUpdates(prev => prev.map(u => u.id === update.id ? { ...u, likes: next } : u));
     const { error } = await supabase.from('board_item_updates').update({ likes: next }).eq('id', update.id);
-    if (error) { setUpdates(prev => prev.map(u => u.id === update.id ? { ...u, likes } : u)); toast.error('Nie udało się zapisać reakcji'); }
+    if (error) { setUpdates(prev => prev.map(u => u.id === update.id ? { ...u, likes } : u)); toast.error(tr('Nie udało się zapisać reakcji')); }
   }, [userEmail]);
 
   const deleteUpdate = useCallback(async (id) => {
     const prevUpdates = updates;
     setUpdates(prev => prev.filter(u => u.id !== id && u.parent_update_id !== id));
     const { error } = await supabase.from('board_item_updates').delete().eq('id', id);
-    if (error) { setUpdates(prevUpdates); toast.error('Nie udało się usunąć komentarza'); }
+    if (error) { setUpdates(prevUpdates); toast.error(tr('Nie udało się usunąć komentarza')); }
   }, [updates]);
 
   return { updates, activity, loading, reload: load, addUpdate, toggleLike, deleteUpdate };

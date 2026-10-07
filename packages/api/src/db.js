@@ -6,6 +6,10 @@ import { config } from './config.js';
 
 const { Pool } = pg;
 
+// NUMERIC/DECIMAL (kwoty) jako liczby, nie tekst. Domyślnie pg zwraca je jako string i klient
+// sumował je jak napisy („0100.0050.00”, NaN w realizacji budżetu). parseFloat wystarcza dla kwot.
+pg.types.setTypeParser(1700, (v) => (v === null ? null : parseFloat(v)));
+
 // URL bazy platform, np. postgres://user:pass@host:5432/avenit_platform
 export const platformPool = new Pool({
   connectionString: config.DATABASE_URL,

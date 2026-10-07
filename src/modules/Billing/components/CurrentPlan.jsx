@@ -14,7 +14,7 @@ import {
   Clock,
   Zap
 } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import EmptyState from '../../../components/EmptyState';
 import Button from '../../../components/Button';
 
@@ -52,11 +52,11 @@ export default function CurrentPlan({ onUpgrade }) {
 
   const getStatusBadge = (status) => {
     const config = {
-      trialing: { label: 'Trial', icon: Clock, color: 'blue' },
-      active: { label: 'Aktywna', icon: CheckCircle, color: 'green' },
+      trialing: { label: tr('Trial'), icon: Clock, color: 'blue' },
+      active: { label: tr('Aktywna'), icon: CheckCircle, color: 'green' },
       past_due: { label: tr('Zaległa płatność'), icon: AlertTriangle, color: 'red' },
-      suspended: { label: 'Zawieszona', icon: AlertTriangle, color: 'red' },
-      cancelled: { label: 'Anulowana', icon: AlertTriangle, color: 'gray' }
+      suspended: { label: tr('Zawieszona'), icon: AlertTriangle, color: 'red' },
+      cancelled: { label: tr('Anulowana'), icon: AlertTriangle, color: 'gray' }
     };
 
     const { label, icon: Icon, color } = config[status] || config.cancelled;
@@ -119,9 +119,9 @@ export default function CurrentPlan({ onUpgrade }) {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
         <EmptyState
           icon={Package}
-          title="Brak aktywnej subskrypcji"
+          title={tr('Brak aktywnej subskrypcji')}
           subtitle={tr('Wybierz plan, aby korzystać z pełnych możliwości aplikacji.')}
-          action={<Button onClick={onUpgrade}>Wybierz plan</Button>}
+          action={<Button onClick={onUpgrade}>{tr('Wybierz plan')}</Button>}
         />
       </div>
     );
@@ -145,7 +145,7 @@ export default function CurrentPlan({ onUpgrade }) {
               {getStatusBadge(subscription.status)}
             </div>
             <p className="text-gray-600 dark:text-gray-400">
-              {subscription.billing_cycle === 'yearly' ? 'Plan roczny' : tr('Plan miesięczny')}
+              {subscription.billing_cycle === 'yearly' ? tr('Plan roczny') : tr('Plan miesięczny')}
             </p>
           </div>
           <div className="text-right">
@@ -157,7 +157,7 @@ export default function CurrentPlan({ onUpgrade }) {
               )}
             </div>
             <div className="text-sm text-gray-500">
-              /{subscription.billing_cycle === 'yearly' ? 'rok' : tr('miesiąc')}
+              /{subscription.billing_cycle === 'yearly' ? tr('rok') : tr('miesiąc')}
             </div>
           </div>
         </div>
@@ -174,9 +174,9 @@ export default function CurrentPlan({ onUpgrade }) {
         }`}>
           <Calendar size={16} />
           {subscription.status === 'trialing' ? (
-            <span>Trial kończy się za <strong>{daysLeft}</strong> dni ({new Date(subscription.current_period_end).toLocaleDateString('pl-PL')})</span>
+            <span>{tr('Trial kończy się za')} <strong>{daysLeft}</strong> {tr('dni')} ({new Date(subscription.current_period_end).toLocaleDateString(appLocale())})</span>
           ) : (
-            <span>Następne odnowienie: <strong>{new Date(subscription.current_period_end).toLocaleDateString('pl-PL')}</strong></span>
+            <span>{tr('Następne odnowienie:')} <strong>{new Date(subscription.current_period_end).toLocaleDateString(appLocale())}</strong></span>
           )}
         </div>
       )}
@@ -201,13 +201,13 @@ export default function CurrentPlan({ onUpgrade }) {
               limit={subscription.max_users}
             />
             <UsageBar
-              label="Grupy"
+              label={tr('Grupy')}
               icon={Layers}
               current={usage.groups}
               limit={subscription.max_groups}
             />
             <UsageBar
-              label="Dzieci"
+              label={tr('Dzieci')}
               icon={Baby}
               current={usage.kids}
               limit={subscription.max_kids}
@@ -223,14 +223,14 @@ export default function CurrentPlan({ onUpgrade }) {
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:shadow-lg transition"
         >
           <Zap size={16} />
-          {subscription.plan_slug === 'enterprise' ? tr('Zarządzaj planem') : 'Ulepsz plan'}
+          {subscription.plan_slug === 'enterprise' ? tr('Zarządzaj planem') : tr('Ulepsz plan')}
         </button>
         {subscription.status === 'trialing' && (
           <button
             onClick={onUpgrade}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition"
           >
-            Aktywuj teraz
+            {tr('Aktywuj teraz')}
           </button>
         )}
       </div>

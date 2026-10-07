@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { SESSION_TYPES, sessionTypeLabel, sessionTypeColor, sessionAttendance, weekStart, shortDate } from '../lib/attendanceApi';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
+import { tr } from '../../../i18n';
 
 const WEEKS = 12;
 
@@ -110,10 +111,10 @@ export default function TrendsTab({ withCampusFilter }) {
   }, [sessions, recordCounts, recordMembers]);
 
   const cards = [
-    { label: 'Śr. frekwencja / sesję', value: stats.avg, icon: TrendingUp, tint: 'from-emerald-500 to-teal-500' },
-    { label: 'Sesji (12 tyg.)', value: stats.count, icon: BarChart3, tint: 'from-blue-500 to-indigo-500' },
-    { label: 'Sesji w tym miesiącu', value: stats.monthSessions, icon: Calendar, tint: 'from-amber-500 to-orange-500' },
-    { label: `Retencja (${stats.last4Count} sesje)`, value: stats.retention, icon: Repeat, tint: 'from-violet-500 to-purple-500' },
+    { label: tr('Śr. frekwencja / sesję'), value: stats.avg, icon: TrendingUp, tint: 'from-emerald-500 to-teal-500' },
+    { label: tr('Sesji (12 tyg.)'), value: stats.count, icon: BarChart3, tint: 'from-blue-500 to-indigo-500' },
+    { label: tr('Sesji w tym miesiącu'), value: stats.monthSessions, icon: Calendar, tint: 'from-amber-500 to-orange-500' },
+    { label: tr('Retencja ({n} sesje)', { n: stats.last4Count }), value: stats.retention, icon: Repeat, tint: 'from-violet-500 to-purple-500' },
   ];
 
   if (loading) return <Spinner center />;
@@ -121,7 +122,7 @@ export default function TrendsTab({ withCampusFilter }) {
   if (sessions.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-        <EmptyState icon={BarChart3} title="Brak sesji w ostatnich 12 tygodniach." subtitle="Dodaj sesje w zakładce „Sesje”, aby zobaczyć trendy." />
+        <EmptyState icon={BarChart3} title={tr('Brak sesji w ostatnich 12 tygodniach.')} subtitle={tr('Dodaj sesje w zakładce „Sesje”, aby zobaczyć trendy.')} />
       </div>
     );
   }
@@ -144,7 +145,7 @@ export default function TrendsTab({ withCampusFilter }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trend tygodniowy */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Frekwencja tygodniowo (12 tyg.)</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">{tr('Frekwencja tygodniowo (12 tyg.)')}</h3>
           <div className="flex items-end justify-between gap-1.5 h-40">
             {weekly.map((w, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group">
@@ -159,14 +160,14 @@ export default function TrendsTab({ withCampusFilter }) {
 
         {/* Podział wg typu */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Frekwencja wg typu</h3>
-          {byType.length === 0 ? <EmptyState icon={BarChart3} title="Brak danych." compact /> : (
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">{tr('Frekwencja wg typu')}</h3>
+          {byType.length === 0 ? <EmptyState icon={BarChart3} title={tr('Brak danych.')} compact /> : (
             <div className="space-y-3">
               {byType.map(t => (
                 <div key={t.value}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />{t.name}
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />{tr(t.name)}
                     </span>
                     <span className="font-medium text-gray-900 dark:text-white tabular-nums">{t.amount}</span>
                   </div>
@@ -184,12 +185,12 @@ export default function TrendsTab({ withCampusFilter }) {
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex items-center gap-2 mb-2">
           <Users size={16} className="text-accent-primary dark:text-accent-primary-light" />
-          <h3 className="font-semibold text-gray-900 dark:text-white">Retencja członków</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white">{tr('Retencja członków')}</h3>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          W ostatnich <b className="text-gray-900 dark:text-white">{stats.last4Count}</b> sesjach obecnych było imiennie
-          <b className="text-accent-primary dark:text-accent-primary-light"> {stats.retention}</b> unikalnych członków.
-          Wskaźnik liczy tylko osoby odznaczone imiennie na liście obecności (nie szybką liczbę headcount).
+          {tr('W ostatnich')} <b className="text-gray-900 dark:text-white">{stats.last4Count}</b> {tr('sesjach obecnych było imiennie')}
+          <b className="text-accent-primary dark:text-accent-primary-light"> {stats.retention}</b> {tr('unikalnych członków.')}{' '}
+          {tr('Wskaźnik liczy tylko osoby odznaczone imiennie na liście obecności (nie szybką liczbę headcount).')}
         </p>
       </div>
     </div>

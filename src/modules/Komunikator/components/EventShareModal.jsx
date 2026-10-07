@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Search } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { useT, tr } from '../../../i18n';
+import { useT, tr, appLocale } from '../../../i18n';
 import Modal from '../../../components/Modal';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
@@ -12,6 +12,7 @@ export default function EventShareModal({ isOpen, onClose, onShare }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
+  const [sharingId, setSharingId] = useState(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,17 +45,26 @@ export default function EventShareModal({ isOpen, onClose, onShare }) {
     !query || e.title?.toLowerCase().includes(query.toLowerCase())
   );
 
-  const handleShare = (ev) => {
-    onShare?.({
-      event_id: ev.id,
-      title: ev.title,
-      date: ev.date,
-      time: ev.time,
-      location: ev.location,
-      max_participants: ev.max_participants,
-      description: ev.description
-    });
-    onClose();
+  // Zamknij dopiero po udanym wysłaniu; błąd pokazuje wątek (MessageThread).
+  const handleShare = async (ev) => {
+    if (sharingId) return;
+    setSharingId(ev.id);
+    try {
+      await onShare?.({
+        event_id: ev.id,
+        title: ev.title,
+        date: ev.date,
+        time: ev.time,
+        location: ev.location,
+        max_participants: ev.max_participants,
+        description: ev.description
+      });
+      onClose();
+    } catch {
+      /* komunikat już pokazany */
+    } finally {
+      setSharingId(null);
+    }
   };
 
   return (
@@ -88,13 +98,16 @@ export default function EventShareModal({ isOpen, onClose, onShare }) {
             {filtered.map(ev => {
               let dateLabel = ev.date;
               try {
-                dateLabel = new Date(`${ev.date}T${ev.time || '00:00'}`).toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'long' });
+                dateLabel = new Date(`${ev.date}T${ev.time || '00:00'}`).toLocaleDateString(appLocale(), { weekday: 'short', day: 'numeric', month: 'long' });
               } catch { /* surowe */ }
               return (
                 <button
                   key={ev.id}
+                  type="button"
                   onClick={() => handleShare(ev)}
-                  className="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition text-left"
+                  disabled={!!sharingId}
+                  aria-busy={sharingId === ev.id}
+                  className="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition text-left disabled:opacity-50"
                 >
                   <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center flex-shrink-0">
                     <Calendar size={16} className="text-white" />

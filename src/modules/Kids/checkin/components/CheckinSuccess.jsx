@@ -1,148 +1,114 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { printLabels } from '../utils/labelGenerator';
-import { CheckCircle, Printer, Check } from 'lucide-react';
+import { splitStoredCodes } from '../utils/kiosk';
+import { CheckCircle, Printer, Check, Info } from 'lucide-react';
+import Button from '../../../../components/Button';
 import { tr } from '../../../../i18n';
 
 export default function CheckinSuccess({
   checkins,
+  skipped = [],
   onDone,
   autoPrint = true,
-  autoReturnSeconds = 5
+  autoReturnSeconds = 8,
 }) {
   const [countdown, setCountdown] = useState(autoReturnSeconds);
-  const [printed, setPrinted] = useState(false);
+  const printedRef = useRef(false);
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
 
   useEffect(() => {
-    if (autoPrint && checkins?.length > 0 && !printed) {
+    if (autoPrint && checkins?.length > 0 && !printedRef.current) {
+      printedRef.current = true;
       printLabels(checkins);
-      setPrinted(true);
     }
-  }, [autoPrint, checkins, printed]);
+  }, [autoPrint, checkins]);
 
   useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      onDone();
+    if (countdown <= 0) {
+      doneRef.current?.();
+      return undefined;
     }
-  }, [countdown, onDone]);
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
-  const handlePrintAgain = () => {
-    printLabels(checkins);
-  };
-
-  const handleDoneNow = () => {
-    onDone();
-  };
-
-  // Pobierz listę kodów bezpieczeństwa (ostatnie 4 cyfry telefonów osób z can_pickup)
-  const securityCodesList = checkins?.[0]?.security_codes_list || [];
-  // Alternatywnie parsuj z security_code jeśli security_codes_list nie jest dostępne
-  const securityCodesFromField = checkins?.[0]?.security_code?.split('|') || [];
-  const displayCodes = securityCodesList.length > 0
-    ? securityCodesList
-    : securityCodesFromField.map(code => ({ code, name: '' }));
-
-  const isGuest = checkins?.some(c => c.is_guest);
-
-  const childrenNames = checkins?.map(c => {
-    if (c.is_guest) return c.guest_name;
-    return c.kids_students?.full_name || 'Nieznane';
-  }) || [];
+  // Losowy kod odbioru (jeden na meldowanie rodziny); starsze meldowania mogą mieć kilka.
+  const codes = [...new Set((checkins || []).flatMap((c) => splitStoredCodes(c.security_code)))];
+  const isGuest = checkins?.some((c) => c.is_guest);
+  const childrenNames = (checkins || []).map((c) => (c.is_guest ? c.guest_name : c.kids_students?.full_name || tr('Dziecko')));
 
   return (
-    <div className="flex flex-col items-center justify-center px-5 py-10 min-h-full text-center">
-      {/* Success icon */}
-      <div className="w-24 h-24 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mb-6 animate-[scaleIn_0.3s_ease-out]">
-        <CheckCircle size={48} className="text-green-500 dark:text-green-400" />
+    <div className="flex flex-col items-center justify-center px-5 py-8 min-h-full text-center">
+      <div className="w-24 h-24 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-full flex items-center justify-center mb-5 motion-safe:animate-[kidsScaleIn_0.3s_ease-out]">
+        <CheckCircle size={48} className="text-accent-primary dark:text-accent-primary-light" />
       </div>
 
-      {/* Title */}
-      <h1 className="text-3xl sm:text-4xl font-bold text-green-500 dark:text-green-400 mb-4">
-        Zameldowano!
+      <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        {tr('Zameldowano!')}
       </h1>
 
-      {/* Security codes */}
-      <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-6 sm:px-10 py-5 rounded-2xl mb-6">
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          {displayCodes.length > 1 ? tr('Kody bezpieczeństwa (ostatnie 4 cyfry telefonu)') : tr('Kod bezpieczeństwa')}
-        </div>
-        <div className="flex flex-wrap justify-center gap-3">
-          {displayCodes.map((codeInfo, index) => (
-            <div key={index} className="flex flex-col items-center">
-              <div className="text-4xl sm:text-5xl font-bold text-accent-primary dark:text-accent-primary-light tracking-widest">
-                {codeInfo.code}
-              </div>
-              {codeInfo.name && (
-                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  {codeInfo.name}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        {displayCodes.length > 1 && (
-          <div className="text-xs text-gray-500 dark:text-gray-500 mt-3 text-center">
-            {tr('Każdy z tych kodów może być użyty do odbioru dziecka')}
+      {codes.length > 0 && (
+        <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-6 sm:px-10 py-5 rounded-2xl mb-5">
+          <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+            {tr('Kod odbioru')}
           </div>
-        )}
-      </div>
+          <div className="flex flex-wrap justify-center gap-4">
+            {codes.map((code) => (
+              <div key={code} className="text-5xl sm:text-6xl font-bold text-gray-900 dark:text-white tracking-[0.2em] tabular-nums">
+                {code}
+              </div>
+            ))}
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-300 mt-3 max-w-xs mx-auto">
+            {tr('Zachowaj naklejkę z tym kodem — bez niej nie wydamy dziecka.')}
+          </div>
+        </div>
+      )}
 
-      {/* Children list */}
-      <div className="mb-8">
-        <div className="text-base text-gray-600 dark:text-gray-400 mb-2">
-          Zameldowane dzieci:
+      <div className="mb-5">
+        <div className="text-base text-gray-600 dark:text-gray-400 mb-1">
+          {tr('Zameldowane dzieci:')}
         </div>
         <div className="text-xl font-semibold text-gray-900 dark:text-white">
           {childrenNames.join(', ')}
           {isGuest && (
-            <span className="ml-2 bg-amber-400 dark:bg-amber-500 text-black px-2 py-0.5 rounded text-xs font-bold align-middle">
-              {tr('GOŚĆ')}
+            <span className="ml-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-2 py-0.5 rounded text-xs font-bold align-middle">
+              {tr('Gość')}
             </span>
           )}
         </div>
       </div>
 
-      {/* Print info */}
-      <div className="flex items-center gap-2 mb-8 text-gray-500 dark:text-gray-400">
+      {skipped.length > 0 && (
+        <div className="flex items-center gap-2 mb-5 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-xl">
+          <Info size={16} />
+          {tr('Pominięto dzieci zameldowane wcześniej: {n}', { n: skipped.length })}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mb-6 text-gray-500 dark:text-gray-400">
         <Printer size={20} />
         <span>{tr('Etykiety zostały wysłane do drukarki')}</span>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-4 mb-8">
-        <button
-          onClick={handlePrintAgain}
-          className="flex items-center gap-2 px-5 py-3 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-        >
-          <Printer size={18} />
-          Drukuj ponownie
-        </button>
-        <button
-          onClick={handleDoneNow}
-          className="flex items-center gap-2 px-5 py-3 text-base font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
-        >
-          <Check size={18} />
-          Gotowe
-        </button>
+      <div className="flex gap-4 mb-6 flex-wrap justify-center">
+        <Button variant="secondary" size="lg" icon={Printer} onClick={() => printLabels(checkins)}>
+          {tr('Drukuj ponownie')}
+        </Button>
+        <Button size="lg" icon={Check} onClick={() => onDone()}>
+          {tr('Gotowe')}
+        </Button>
       </div>
 
-      {/* Auto return countdown */}
-      <div className="text-sm text-gray-400 dark:text-gray-500">
-        Powrót do ekranu głównego za {countdown}s...
+      <div className="text-sm text-gray-500 dark:text-gray-400" aria-live="off">
+        {tr('Powrót do ekranu głównego za {n}s...', { n: countdown })}
       </div>
 
       <style>{`
-        @keyframes scaleIn {
-          from {
-            transform: scale(0);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
+        @keyframes kidsScaleIn {
+          from { transform: scale(0.6); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
       `}</style>
     </div>

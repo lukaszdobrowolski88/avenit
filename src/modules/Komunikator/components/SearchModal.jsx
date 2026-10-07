@@ -103,7 +103,7 @@ export default function SearchModal({
       {/* Results */}
       <div>
         {loading ? (
-          <Spinner center label="Wyszukiwanie..." />
+          <Spinner center label={tr('Wyszukiwanie...')} />
         ) : searchQuery.length < 2 ? (
           <EmptyState
             compact
@@ -116,13 +116,13 @@ export default function SearchModal({
             compact
             icon={MessageSquare}
             title={tr('Brak wyników')}
-            subtitle={`Nie znaleziono wiadomości dla "${searchQuery}"`}
+            subtitle={tr('Nie znaleziono wiadomości dla "{q}"', { q: searchQuery })}
           />
         ) : (
           <div className="px-4 py-2">
             <div className="px-3 py-2 mb-2">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Znaleziono {results.length} wiadomości
+                {tr('Znaleziono {n} wiadomości', { n: results.length })}
               </span>
             </div>
             {results.map((msg) => (

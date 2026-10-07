@@ -12,14 +12,31 @@ import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
-import { tr, useT } from '../../i18n';
+import { tr, useT, appLocale, useI18n } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
+import { toast } from '../../lib/toast';
+import { describeUserAgent } from './components/settingsLogic';
+import {
+  Church, CalendarDays, CheckSquare, PartyPopper, Music, Clapperboard, HeartHandshake, Baby, Home, Languages, Monitor,
+} from 'lucide-react';
 
 export default function UserSettings() {
   const t = useT();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
+  // Komunikaty jako toast (w polu widzenia), nie baner na górze długiej strony (UXE-23).
+  const setMessage = (m) => {
+    if (!m?.text) return;
+    if (m.type === 'error') toast.error(m.text);
+    else if (m.type === 'info') toast.info(m.text);
+    else toast.success(m.text);
+  };
+  const { lang, setLang, languages } = useI18n();
+  const [mailEnabled, setMailEnabled] = useState(false);
+  useEffect(() => {
+    supabase.from('app_modules').select('is_enabled').eq('key', 'mail').maybeSingle()
+      .then(({ data }) => setMailEnabled(data?.is_enabled === true));
+  }, []);
   const [userSession, setUserSession] = useState(null);
 
   // Dane formularza
@@ -108,8 +125,8 @@ export default function UserSettings() {
   };
   useEffect(() => { loadSessions(); }, []);
   const handleLogoutOthers = async () => {
-    if (!await confirmDialog(tr('Wylogować ze wszystkich innych urządzeń?'))) return;
-    await supabase.auth.logoutOthers?.();
+    if (!await confirmDialog({ title: tr('Wylogować pozostałe urządzenia?'), message: tr('Zostaniesz zalogowany tylko na tym urządzeniu.'), confirmLabel: tr('Wyloguj inne urządzenia') })) return;
+    try { await supabase.auth.logoutOthers?.(); } catch { toast.error(tr('Nie udało się wylogować pozostałych urządzeń.')); return; }
     loadSessions();
     setMessage({ type: 'success', text: tr('Wylogowano z pozostałych urządzeń') });
   };
@@ -282,7 +299,7 @@ export default function UserSettings() {
         if (error) throw error;
       }
 
-      setMessage({ type: 'success', text: 'Podpis email zapisany.' });
+      setMessage({ type: 'success', text: tr('Podpis email zapisany.') });
     } catch (err) {
       setMessage({ type: 'error', text: tr('Nie udało się zapisać podpisu.') });
     }
@@ -329,7 +346,7 @@ export default function UserSettings() {
     if (result.success) {
       setBackupCodesData({ unused: result.backupCodes.map(c => ({ code: c })), used: [] });
       setRegenerateCode('');
-      setMessage({ type: 'success', text: 'Wygenerowano nowe kody zapasowe.' });
+      setMessage({ type: 'success', text: tr('Wygenerowano nowe kody zapasowe.') });
     } else {
       setMessage({ type: 'error', text: result.error || tr('Nie udało się wygenerować kodów.') });
     }
@@ -338,7 +355,7 @@ export default function UserSettings() {
   const copyBackupCodes = () => {
     const codes = backupCodesData.unused.map(c => c.code).join('\n');
     navigator.clipboard.writeText(codes);
-    setMessage({ type: 'success', text: 'Kody skopiowane do schowka.' });
+    setMessage({ type: 'success', text: tr('Kody skopiowane do schowka.') });
   };
 
   const downloadBackupCodes = () => {
@@ -407,7 +424,7 @@ export default function UserSettings() {
 
         if (!error) {
           setIcalSubscription({ ...icalSubscription, token: newToken, export_preferences: icalPreferences });
-          setMessage({ type: 'success', text: tr('Token kalendarza został zresetowany. Poprzedni link przestał działać.') });
+          setMessage({ type: 'success', text: tr('Utworzyliśmy nowy link do kalendarza. Poprzedni już nie działa.') });
         } else {
           throw error;
         }
@@ -449,7 +466,7 @@ export default function UserSettings() {
 
       if (!error) {
         setIcalSubscription({ ...icalSubscription, export_preferences: icalPreferences });
-        setMessage({ type: 'success', text: 'Preferencje kalendarza zapisane.' });
+        setMessage({ type: 'success', text: tr('Preferencje kalendarza zapisane.') });
       } else {
         throw error;
       }
@@ -469,7 +486,7 @@ export default function UserSettings() {
   // Kopiowanie URL do schowka
   const copyIcalUrl = () => {
     navigator.clipboard.writeText(getIcalSubscriptionUrl());
-    setMessage({ type: 'success', text: 'Link skopiowany do schowka!' });
+    setMessage({ type: 'success', text: tr('Link skopiowany do schowka!') });
   };
 
   // Pobieranie pliku .ics
@@ -494,22 +511,24 @@ export default function UserSettings() {
       setMessage({ type: 'success', text: tr('Hasło zostało zmienione.') });
       setPassData({ newPassword: '', confirmPassword: '' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      setMessage({ type: 'error', text: err.message || tr('Nie udało się zmienić hasła.') });
     }
     setSaving(false);
+  };
+
+  // „iPhone · Safari” / „Aplikacja Avenit · iPhone” zamiast surowego user-agenta (UXE-14).
+  const sessionLabel = (ua) => {
+    const d = describeUserAgent(ua);
+    if (!d) return tr('Nieznane urządzenie');
+    if (d.app) return [tr('Aplikacja Avenit'), d.device].filter(Boolean).join(' · ');
+    return [d.device, d.browser].filter(Boolean).join(' · ') || tr('Nieznane urządzenie');
   };
 
   if (loading) return <Spinner center />;
 
   return (
     <div className="space-y-6 pb-10">
-      <PageHeader icon={User} title={t('Mój profil')} subtitle={t('Dane konta, powiadomienia, bezpieczeństwo i kalendarz')} />
-
-      {message && (
-        <div className={`p-4 rounded-xl flex items-center gap-2 cursor-pointer animate-fade-in ${message.type === 'success' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}`} onClick={() => setMessage(null)}>
-          {message.type === 'success' ? <CheckCircle size={20}/> : <AlertCircle size={20}/>} {message.text}
-        </div>
-      )}
+      <PageHeader icon={User} title={t('Mój profil')} subtitle={tr('Konto, bezpieczeństwo, powiadomienia i kalendarz')} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -544,21 +563,21 @@ export default function UserSettings() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><User size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Dane Osobowe</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Dane osobowe')}</h3>
             </div>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Imię i Nazwisko')}</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Imię i nazwisko')}</label>
                 <input 
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-accent-primary-light dark:focus:border-accent-primary-light outline-none transition"
                   value={formData.full_name}
                   onChange={e => setFormData({...formData, full_name: e.target.value})}
-                  placeholder="Np. Jan Kowalski"
+                  placeholder={tr('Np. Jan Kowalski')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Adres Email</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Adres e-mail')}</label>
                 <div className="relative">
                   <Mail size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
                   <input 
@@ -567,22 +586,275 @@ export default function UserSettings() {
                     disabled
                   />
                 </div>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">Zmiana adresu email wymaga kontaktu z administratorem.</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">{tr('Zmiana adresu e-mail wymaga kontaktu z administratorem.')}</p>
               </div>
             </div>
 
             <div className="mt-6 flex justify-end">
               <button onClick={handleSaveProfile} disabled={saving} className="bg-accent-primary dark:bg-accent-primary-light text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition flex items-center gap-2">
-                {saving ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} Zapisz zmiany
+                {saving ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} {tr('Zapisz zmiany')}
               </button>
             </div>
+          </div>
+
+          {/* BEZPIECZEŃSTWO */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
+            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
+              <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-xl text-red-600 dark:text-red-400"><Lock size={24} /></div>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Zmiana hasła')}</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Nowe hasło')}</label>
+                <div className="relative">
+                  <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
+                  <input 
+                    type="password"
+                    className="w-full p-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-red-400 dark:focus:border-red-500 outline-none transition"
+                    placeholder="••••••••"
+                    value={passData.newPassword}
+                    onChange={e => setPassData({...passData, newPassword: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Potwierdź hasło')}</label>
+                <div className="relative">
+                  <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
+                  <input 
+                    type="password"
+                    className="w-full p-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-red-400 dark:focus:border-red-500 outline-none transition"
+                    placeholder="••••••••"
+                    value={passData.confirmPassword}
+                    onChange={e => setPassData({...passData, confirmPassword: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button onClick={handleChangePassword} disabled={saving} className="bg-gray-800 dark:bg-gray-700 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-black dark:hover:bg-gray-600 transition flex items-center gap-2">
+                {saving ? <Loader2 size={18} className="animate-spin"/> : <Lock size={18}/>} {tr('Zmień hasło')}
+              </button>
+            </div>
+          </div>
+
+          {/* UWIERZYTELNIANIE DWUSKŁADNIKOWE (2FA) */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
+            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
+              <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400">
+                <Shield size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Uwierzytelnianie dwuskładnikowe')}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Dodatkowa warstwa bezpieczeństwa dla Twojego konta')}</p>
+              </div>
+            </div>
+
+            {twoFactorStatus.enabled ? (
+              <div className="space-y-4">
+                {/* Status: Włączone */}
+                <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck size={24} className="text-emerald-600 dark:text-emerald-400" />
+                    <div>
+                      <p className="font-medium text-emerald-800 dark:text-emerald-300">{t('2FA włączone')}</p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                        {tr('Aktywowane')} {twoFactorStatus.verifiedAt
+                          ? new Date(twoFactorStatus.verifiedAt).toLocaleDateString(appLocale())
+                          : ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kody zapasowe */}
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <KeyRound size={18} className="text-gray-600 dark:text-gray-400" />
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{tr('Kody zapasowe')}</span>
+                    </div>
+                    <button
+                      onClick={handleShowBackupCodes}
+                      className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
+                    >
+                      {tr('Pokaż kody')}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {tr('Kody zapasowe pozwalają zalogować się, gdy nie masz dostępu do aplikacji Google Authenticator.')}
+                  </p>
+                </div>
+
+                {/* Modal z kodami zapasowymi */}
+                {showBackupCodes && (
+                  <Modal
+                    isOpen
+                    onClose={() => setShowBackupCodes(false)}
+                    closeOnBackdrop={false}
+                    size="sm"
+                    title={tr('Kody zapasowe')}
+                    footer={<Button variant="secondary" onClick={() => setShowBackupCodes(false)}>{tr('Zamknij')}</Button>}
+                  >
+                    <div className="p-6">
+                      <div className="space-y-2 mb-4">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {tr('Pozostało:')} <span className="font-medium text-emerald-600">{backupCodesData.unused.length}</span> {tr('z 10 kodów')}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg font-mono text-sm">
+                          {backupCodesData.unused.map((c, i) => (
+                            <div key={i} className="text-gray-800 dark:text-gray-200">{c.code}</div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 mb-4">
+                        <Button variant="secondary" icon={Copy} onClick={copyBackupCodes} className="flex-1">
+                          {tr('Kopiuj')}
+                        </Button>
+                        <Button variant="secondary" icon={Download} onClick={downloadBackupCodes} className="flex-1">
+                          {tr('Pobierz')}
+                        </Button>
+                      </div>
+
+                      {/* Regeneracja kodów */}
+                      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          {tr('Wygeneruj nowe kody (wymagany kod z aplikacji):')}
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={regenerateCode}
+                            onChange={(e) => setRegenerateCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            placeholder="000000"
+                            className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-center font-mono tracking-widest"
+                          />
+                          <Button
+                            onClick={handleRegenerateBackupCodes}
+                            loading={twoFactorLoading}
+                            icon={RefreshCw}
+                            aria-label={tr('Wygeneruj nowe kody')}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </Modal>
+                )}
+
+                {/* Wyłączanie 2FA */}
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldOff size={18} className="text-red-600 dark:text-red-400" />
+                    <span className="font-medium text-red-800 dark:text-red-300">{t('Wyłącz 2FA')}</span>
+                  </div>
+                  <p className="text-xs text-red-600 dark:text-red-400 mb-3">
+                    {tr('Wprowadź kod z aplikacji Google Authenticator, aby wyłączyć uwierzytelnianie dwuskładnikowe.')}
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={disable2FACode}
+                      onChange={(e) => setDisable2FACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      className="flex-1 px-3 py-2 border border-red-200 dark:border-red-800 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-center font-mono tracking-widest"
+                    />
+                    <button
+                      onClick={handleDisable2FA}
+                      disabled={twoFactorLoading}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                    >
+                      {twoFactorLoading ? <Loader2 size={16} className="animate-spin" /> : <ShieldOff size={16} />}
+                      {tr('Wyłącz')}
+                    </button>
+                  </div>
+                </div>
+
+                {twoFactorError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+                    <AlertCircle size={16} />
+                    {typeof twoFactorError === 'string' ? twoFactorError : tr('Wystąpił błąd')}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Status: Wyłączone */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <ShieldOff size={24} className="text-gray-400" />
+                    <div>
+                      <p className="font-medium text-gray-700 dark:text-gray-300">{t('2FA wyłączone')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {tr('Włącz, aby zwiększyć bezpieczeństwo konta')}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShow2FASetup(true)}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition flex items-center gap-2"
+                  >
+                    <Shield size={16} />
+                    {tr('Włącz 2FA')}
+                  </button>
+                </div>
+
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="mb-2 font-medium">{t('Jak działa 2FA?')}</p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs">
+                    <li>{t('Zainstaluj aplikację Google Authenticator lub podobną na telefonie')}</li>
+                    <li>{t('Zeskanuj kod QR lub wprowadź klucz ręcznie')}</li>
+                    <li>{t('Przy każdym logowaniu wprowadź 6-cyfrowy kod z aplikacji')}</li>
+                  </ol>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Modal konfiguracji 2FA */}
+          {show2FASetup && (
+            <TwoFactorSetup
+              userEmail={formData.email}
+              onEnabled={handle2FASetupComplete}
+              onClose={() => setShow2FASetup(false)}
+            />
+          )}
+
+          {/* Aktywne sesje (urządzenia) */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Zalogowane urządzenia')}</h3>
+              {sessions.length > 1 && (
+                <button onClick={handleLogoutOthers} className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline">{tr('Wyloguj inne urządzenia')}</button>
+              )}
+            </div>
+            {sessions.length === 0 ? (
+              <EmptyState compact icon={Smartphone} title={tr('Brak aktywnych sesji do wyświetlenia.')} />
+            ) : (
+              <div className="space-y-2">
+                {sessions.map(s => (
+                  <div key={s.id} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div className="min-w-0">
+                      <div className="text-sm text-gray-800 dark:text-gray-200 truncate flex items-center gap-2">
+                        <Monitor size={15} className="text-gray-400 shrink-0" aria-hidden="true" />
+                        {sessionLabel(s.user_agent)}
+                      </div>
+                      <div className="text-xs text-gray-400">{tr('Zalogowano')}: {new Date(s.created_at).toLocaleString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                    {s.current && <span className="text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">{tr('ta sesja')}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* POWIADOMIENIA PUSH */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><Smartphone size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Powiadomienia Push</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Powiadomienia push')}</h3>
             </div>
 
             {!pushSupported ? (
@@ -658,187 +930,18 @@ export default function UserSettings() {
             )}
           </div>
 
-          {/* UWIERZYTELNIANIE DWUSKŁADNIKOWE (2FA) */}
+          {/* PREFERENCJE */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-              <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400">
-                <Shield size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Uwierzytelnianie dwuskładnikowe')}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Dodatkowa warstwa bezpieczeństwa dla Twojego konta')}</p>
-              </div>
+              <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><Languages size={24} aria-hidden="true" /></div>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Preferencje')}</h3>
             </div>
-
-            {twoFactorStatus.enabled ? (
-              <div className="space-y-4">
-                {/* Status: Włączone */}
-                <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck size={24} className="text-emerald-600 dark:text-emerald-400" />
-                    <div>
-                      <p className="font-medium text-emerald-800 dark:text-emerald-300">{t('2FA włączone')}</p>
-                      <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                        Aktywowane {twoFactorStatus.verifiedAt
-                          ? new Date(twoFactorStatus.verifiedAt).toLocaleDateString('pl-PL')
-                          : ''}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Kody zapasowe */}
-                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <KeyRound size={18} className="text-gray-600 dark:text-gray-400" />
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Kody zapasowe</span>
-                    </div>
-                    <button
-                      onClick={handleShowBackupCodes}
-                      className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
-                    >
-                      {tr('Pokaż kody')}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {tr('Kody zapasowe pozwalają zalogować się, gdy nie masz dostępu do aplikacji Google Authenticator.')}
-                  </p>
-                </div>
-
-                {/* Modal z kodami zapasowymi */}
-                {showBackupCodes && (
-                  <Modal
-                    isOpen
-                    onClose={() => setShowBackupCodes(false)}
-                    closeOnBackdrop={false}
-                    size="sm"
-                    title="Kody zapasowe"
-                    footer={<Button variant="secondary" onClick={() => setShowBackupCodes(false)}>Zamknij</Button>}
-                  >
-                    <div className="p-6">
-                      <div className="space-y-2 mb-4">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Pozostało: <span className="font-medium text-emerald-600">{backupCodesData.unused.length}</span> z 10 kodów
-                        </p>
-                        <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg font-mono text-sm">
-                          {backupCodesData.unused.map((c, i) => (
-                            <div key={i} className="text-gray-800 dark:text-gray-200">{c.code}</div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 mb-4">
-                        <Button variant="secondary" icon={Copy} onClick={copyBackupCodes} className="flex-1">
-                          Kopiuj
-                        </Button>
-                        <Button variant="secondary" icon={Download} onClick={downloadBackupCodes} className="flex-1">
-                          Pobierz
-                        </Button>
-                      </div>
-
-                      {/* Regeneracja kodów */}
-                      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                          Wygeneruj nowe kody (wymagany kod z aplikacji):
-                        </p>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={regenerateCode}
-                            onChange={(e) => setRegenerateCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                            placeholder="000000"
-                            className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-center font-mono tracking-widest"
-                          />
-                          <Button
-                            onClick={handleRegenerateBackupCodes}
-                            loading={twoFactorLoading}
-                            icon={RefreshCw}
-                            aria-label="Wygeneruj nowe kody"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </Modal>
-                )}
-
-                {/* Wyłączanie 2FA */}
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
-                  <div className="flex items-center gap-2 mb-3">
-                    <ShieldOff size={18} className="text-red-600 dark:text-red-400" />
-                    <span className="font-medium text-red-800 dark:text-red-300">{t('Wyłącz 2FA')}</span>
-                  </div>
-                  <p className="text-xs text-red-600 dark:text-red-400 mb-3">
-                    {tr('Wprowadź kod z aplikacji Google Authenticator, aby wyłączyć uwierzytelnianie dwuskładnikowe.')}
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={disable2FACode}
-                      onChange={(e) => setDisable2FACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="000000"
-                      className="flex-1 px-3 py-2 border border-red-200 dark:border-red-800 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-center font-mono tracking-widest"
-                    />
-                    <button
-                      onClick={handleDisable2FA}
-                      disabled={twoFactorLoading}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
-                    >
-                      {twoFactorLoading ? <Loader2 size={16} className="animate-spin" /> : <ShieldOff size={16} />}
-                      Wyłącz
-                    </button>
-                  </div>
-                </div>
-
-                {twoFactorError && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
-                    <AlertCircle size={16} />
-                    {typeof twoFactorError === 'string' ? twoFactorError : tr('Wystąpił błąd')}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Status: Wyłączone */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <ShieldOff size={24} className="text-gray-400" />
-                    <div>
-                      <p className="font-medium text-gray-700 dark:text-gray-300">{t('2FA wyłączone')}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {tr('Włącz, aby zwiększyć bezpieczeństwo konta')}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShow2FASetup(true)}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition flex items-center gap-2"
-                  >
-                    <Shield size={16} />
-                    {tr('Włącz 2FA')}
-                  </button>
-                </div>
-
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  <p className="mb-2 font-medium">{t('Jak działa 2FA?')}</p>
-                  <ol className="list-decimal list-inside space-y-1 text-xs">
-                    <li>{t('Zainstaluj aplikację Google Authenticator lub podobną na telefonie')}</li>
-                    <li>{t('Zeskanuj kod QR lub wprowadź klucz ręcznie')}</li>
-                    <li>{t('Przy każdym logowaniu wprowadź 6-cyfrowy kod z aplikacji')}</li>
-                  </ol>
-                </div>
-              </div>
-            )}
+            <label htmlFor="profile-language" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Język aplikacji')}</label>
+            <select id="profile-language" value={lang} onChange={(e) => setLang(e.target.value)} className="w-full sm:w-72 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+              {languages.map((l) => <option key={l.code} value={l.code}>{l.flag} {l.label}</option>)}
+            </select>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{tr('Dotyczy tylko Ciebie i tej przeglądarki.')}</p>
           </div>
-
-          {/* Modal konfiguracji 2FA */}
-          {show2FASetup && (
-            <TwoFactorSetup
-              userEmail={formData.email}
-              onEnabled={handle2FASetupComplete}
-              onClose={() => setShow2FASetup(false)}
-            />
-          )}
 
           {/* SUBSKRYPCJA KALENDARZA iCAL */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
@@ -847,9 +950,9 @@ export default function UserSettings() {
                 <Calendar size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Subskrypcja Kalendarza</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Subskrypcja kalendarza')}</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Synchronizuj wydarzenia z Google Calendar, Apple Calendar lub Outlook
+                  {tr('Synchronizuj wydarzenia z Google Calendar, Apple Calendar lub Outlook')}
                 </p>
               </div>
             </div>
@@ -857,20 +960,20 @@ export default function UserSettings() {
             {/* Konfiguracja źródeł */}
             <div className="space-y-4 mb-6">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Wybierz co chcesz eksportować:
+                {tr('Wybierz co chcesz eksportować:')}
               </p>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[
-                  { key: 'programs', label: t('Nabożeństwa'), icon: '⛪' },
-                  { key: 'events', label: t('Wydarzenia'), icon: '📅' },
-                  { key: 'tasks', label: t('Zadania'), icon: '✅' },
-                  { key: 'mlodziezowka', label: t('Młodzieżówka'), icon: '🎉' },
-                  { key: 'worship', label: 'Uwielbienie', icon: '🎵' },
-                  { key: 'media', label: 'Media', icon: '🎬' },
-                  { key: 'atmosfera', label: t('Atmosfera'), icon: '💚' },
-                  { key: 'kids', label: 'Dzieci', icon: '👶' },
-                  { key: 'homegroups', label: 'Grupy Domowe', icon: '🏠' }
+                  { key: 'programs', label: t('Nabożeństwa'), icon: Church },
+                  { key: 'events', label: t('Wydarzenia'), icon: CalendarDays },
+                  { key: 'tasks', label: t('Zadania'), icon: CheckSquare },
+                  { key: 'mlodziezowka', label: t('Młodzieżówka'), icon: PartyPopper },
+                  { key: 'worship', label: t('Uwielbienie'), icon: Music },
+                  { key: 'media', label: t('Media'), icon: Clapperboard },
+                  { key: 'atmosfera', label: t('Atmosfera'), icon: HeartHandshake },
+                  { key: 'kids', label: t('Dzieci'), icon: Baby },
+                  { key: 'homegroups', label: t('Grupy domowe'), icon: Home }
                 ].map(item => (
                   <label
                     key={item.key}
@@ -889,7 +992,7 @@ export default function UserSettings() {
                       })}
                       className="sr-only"
                     />
-                    <span className="text-lg">{item.icon}</span>
+                    <item.icon size={18} aria-hidden="true" className={icalPreferences[item.key] ? 'text-accent-secondary dark:text-accent-secondary-light' : 'text-gray-400'} />
                     <span className={`text-sm font-medium ${
                       icalPreferences[item.key]
                         ? 'text-accent-secondary-dark dark:text-accent-secondary-light'
@@ -910,7 +1013,7 @@ export default function UserSettings() {
               <div className="space-y-4">
                 <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                    Link subskrypcji (dodaj do aplikacji kalendarzowej)
+                    {tr('Link subskrypcji (dodaj do aplikacji kalendarzowej)')}
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -922,7 +1025,7 @@ export default function UserSettings() {
                     <button
                       onClick={copyIcalUrl}
                       className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                      title="Kopiuj link"
+                      title={tr('Kopiuj link')}
                     >
                       <Copy size={18} />
                     </button>
@@ -936,21 +1039,21 @@ export default function UserSettings() {
                     <button
                       onClick={downloadIcs}
                       className="px-3 py-2 bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary dark:text-accent-secondary-light rounded-lg hover:bg-accent-secondary-lighter dark:hover:bg-accent-secondary-darkest/50 transition"
-                      title="Pobierz plik .ics"
+                      title={tr('Pobierz plik .ics')}
                     >
                       <Download size={18} />
                     </button>
                   </div>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    Wklej ten link w Google Calendar (Inne kalendarze → Z adresu URL) lub Apple Calendar (Plik → Nowa subskrypcja)
+                    {tr('Wklej ten link w Google Calendar (Inne kalendarze → Z adresu URL) lub Apple Calendar (Plik → Nowa subskrypcja)')}
                   </p>
                 </div>
 
                 {/* Statystyki */}
                 {icalSubscription.last_accessed_at && (
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Ostatnia synchronizacja: {new Date(icalSubscription.last_accessed_at).toLocaleString('pl-PL')}
-                    {icalSubscription.access_count > 0 && ` (łączna liczba: ${icalSubscription.access_count})`}
+                    {tr('Ostatnia synchronizacja:')} {new Date(icalSubscription.last_accessed_at).toLocaleString(appLocale())}
+                    {icalSubscription.access_count > 0 && ` (${tr('łączna liczba: {n}', { n: icalSubscription.access_count })})`}
                   </div>
                 )}
 
@@ -961,16 +1064,16 @@ export default function UserSettings() {
                     className="flex-1 px-4 py-2.5 bg-accent-secondary text-white font-medium rounded-xl hover:bg-accent-secondary transition flex items-center justify-center gap-2"
                   >
                     {icalLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                    Zapisz preferencje
+                    {tr('Zapisz preferencje')}
                   </button>
                   <button
                     onClick={handleCreateOrResetIcal}
                     disabled={icalLoading}
                     className="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition flex items-center gap-2"
-                    title={t('Resetuj token (poprzedni link przestanie działać)')}
+                    title={tr('Utwórz nowy link (poprzedni przestanie działać)')}
                   >
                     <RefreshCw size={16} />
-                    Resetuj token
+                    {tr('Utwórz nowy link')}
                   </button>
                 </div>
               </div>
@@ -981,7 +1084,7 @@ export default function UserSettings() {
                 className="w-full px-4 py-3 bg-gradient-to-r from-accent-secondary-light to-accent-primary-light text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-secondary-light/30 transition flex items-center justify-center gap-2"
               >
                 {icalLoading ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
-                Utwórz subskrypcję kalendarza
+                {tr('Utwórz subskrypcję kalendarza')}
               </button>
             )}
 
@@ -993,10 +1096,10 @@ export default function UserSettings() {
                 closeOnBackdrop={false}
                 size="sm"
                 icon={QrCode}
-                title="Kod QR kalendarza"
+                title={tr('Kod QR kalendarza')}
                 footer={<>
-                  <Button variant="secondary" onClick={() => setShowIcalQrCode(false)}>Zamknij</Button>
-                  <Button icon={Copy} onClick={copyIcalUrl}>Kopiuj link</Button>
+                  <Button variant="secondary" onClick={() => setShowIcalQrCode(false)}>{tr('Zamknij')}</Button>
+                  <Button icon={Copy} onClick={copyIcalUrl}>{tr('Kopiuj link')}</Button>
                 </>}
               >
                 <div className="p-6">
@@ -1004,7 +1107,7 @@ export default function UserSettings() {
                     <div className="p-4 bg-white rounded-xl">
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getIcalSubscriptionUrl())}`}
-                        alt="QR Code"
+                        alt={tr('Kod QR')}
                         className="w-48 h-48"
                       />
                     </div>
@@ -1023,19 +1126,20 @@ export default function UserSettings() {
                 {tr('Jak dodać kalendarz?')}
               </p>
               <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1 list-disc list-inside">
-                <li><strong>Google Calendar:</strong> Ustawienia → Dodaj kalendarz → Z adresu URL</li>
-                <li><strong>Apple Calendar:</strong> Plik → Nowa subskrypcja kalendarza</li>
-                <li><strong>Outlook:</strong> Dodaj kalendarz → Subskrybuj z internetu</li>
+                <li><strong>Google Calendar:</strong> {tr('Ustawienia → Dodaj kalendarz → Z adresu URL')}</li>
+                <li><strong>Apple Calendar:</strong> {tr('Plik → Nowa subskrypcja kalendarza')}</li>
+                <li><strong>Outlook:</strong> {tr('Dodaj kalendarz → Subskrybuj z internetu')}</li>
               </ul>
             </div>
           </div>
 
+          {mailEnabled && (<>
           {/* PODPIS EMAIL */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
             <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400"><FileText size={24} /></div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Podpis Email (HTML)</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Podpis w wiadomościach e-mail')}</h3>
               </div>
               {/* Toggle HTML/Preview */}
               <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
@@ -1071,21 +1175,21 @@ export default function UserSettings() {
 
               {signatureMode === 'html' ? (
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Kod HTML podpisu</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kod HTML podpisu')}</label>
                   <textarea
                     value={mailSignature}
                     onChange={(e) => setMailSignature(e.target.value)}
                     placeholder={`<div style="font-family: Arial, sans-serif;">
-  <p style="margin: 0; color: #333;">Z pozdrowieniami,</p>
-  <p style="margin: 5px 0 0; font-weight: bold; color: #333;">{t('Jan Kowalski')}</p>
-  <p style="margin: 5px 0 0; color: #666; font-size: 14px;">{t('Kościół [Nazwa]')}</p>
+  <p style="margin: 0; color: #333;">${tr('Z pozdrowieniami,')}</p>
+  <p style="margin: 5px 0 0; font-weight: bold; color: #333;">${t('Jan Kowalski')}</p>
+  <p style="margin: 5px 0 0; color: #666; font-size: 14px;">${t('Kościół [Nazwa]')}</p>
   <p style="margin: 5px 0 0; color: #666; font-size: 12px;">Tel: +48 123 456 789</p>
 </div>`}
                     rows={10}
                     className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-accent-primary dark:focus:border-accent-primary outline-none transition resize-none font-mono text-sm"
                   />
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    Wskazówka: Możesz skopiować podpis z Gmail, Outlook lub wygenerować go w narzędziach online.
+                    {tr('Wskazówka: Możesz skopiować podpis z Gmail, Outlook lub wygenerować go w narzędziach online.')}
                   </p>
                 </div>
               ) : (
@@ -1113,78 +1217,11 @@ export default function UserSettings() {
                 disabled={savingSignature}
                 className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:opacity-95 transition flex items-center gap-2"
               >
-                {savingSignature ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} Zapisz podpis
+                {savingSignature ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} {tr('Zapisz podpis')}
               </button>
             </div>
           </div>
-
-          {/* BEZPIECZEŃSTWO */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
-            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-              <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-xl text-red-600 dark:text-red-400"><Lock size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Bezpieczeństwo')}</h3>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Nowe hasło')}</label>
-                <div className="relative">
-                  <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
-                  <input 
-                    type="password"
-                    className="w-full p-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-red-400 dark:focus:border-red-500 outline-none transition"
-                    placeholder="••••••••"
-                    value={passData.newPassword}
-                    onChange={e => setPassData({...passData, newPassword: e.target.value})}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Potwierdź hasło')}</label>
-                <div className="relative">
-                  <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
-                  <input 
-                    type="password"
-                    className="w-full p-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-red-400 dark:focus:border-red-500 outline-none transition"
-                    placeholder="••••••••"
-                    value={passData.confirmPassword}
-                    onChange={e => setPassData({...passData, confirmPassword: e.target.value})}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button onClick={handleChangePassword} disabled={saving} className="bg-gray-800 dark:bg-gray-700 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-black dark:hover:bg-gray-600 transition flex items-center gap-2">
-                {saving ? <Loader2 size={18} className="animate-spin"/> : <Lock size={18}/>} Zmień hasło
-              </button>
-            </div>
-          </div>
-
-          {/* Aktywne sesje (urządzenia) */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Aktywne sesje')}</h3>
-              {sessions.length > 1 && (
-                <button onClick={handleLogoutOthers} className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline">{tr('Wyloguj pozostałe')}</button>
-              )}
-            </div>
-            {sessions.length === 0 ? (
-              <EmptyState compact icon={Smartphone} title={tr('Brak aktywnych sesji do wyświetlenia.')} />
-            ) : (
-              <div className="space-y-2">
-                {sessions.map(s => (
-                  <div key={s.id} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <div className="min-w-0">
-                      <div className="text-sm text-gray-800 dark:text-gray-200 truncate">{s.user_agent || tr('Nieznane urządzenie')}</div>
-                      <div className="text-xs text-gray-400">{tr('Zalogowano')}: {new Date(s.created_at).toLocaleString()}</div>
-                    </div>
-                    {s.current && <span className="text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">{tr('ta sesja')}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          </>)}
 
         </div>
       </div>

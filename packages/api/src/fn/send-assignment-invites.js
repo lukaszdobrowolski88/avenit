@@ -21,8 +21,17 @@ const ROLE_NAMES = {
   projekcja: 'Projekcja', transmisja: 'Transmisja', foto: 'Fotograf', video: 'Wideo',
 };
 const roleName = (key, fallbackLabel) => fallbackLabel || ROLE_NAMES[key] || key;
+// Nazwy osób, ról i tytuły wydarzeń wpisują użytkownicy — w HTML maila zawsze escapowane.
+export const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-function emailHtml({ assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl, contextLabel = 'Program' }) {
+export function emailHtml({ assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl, contextLabel = 'Program' }) {
+  assignedByName = escapeHtml(assignedByName);
+  programDate = escapeHtml(programDate);
+  programTitle = escapeHtml(programTitle);
+  contextLabel = escapeHtml(contextLabel);
+  acceptUrl = escapeHtml(acceptUrl);
+  rejectUrl = escapeHtml(rejectUrl);
+  roles = (roles || []).map(escapeHtml);
   const rolesHtml = roles.map((r) => `
     <tr><td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#1f2937;font-size:15px;font-weight:600;">${r}</td></tr>`).join('');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -101,7 +110,9 @@ export default async function handler(req, reply) {
     }
 
     // Ten sam mechanizm co reszta maili systemowych: SendGrid lub SMTP.
-    const emailReady = !!(config.SENDGRID_API_KEY || config.DEFAULT_SMTP_HOST);
+    // Produkcja wysyła przez Resend (lib/email.js) — sprawdzanie tylko SendGrid/SMTP dawało
+    // fałszywe „brak konfiguracji”.
+    const emailReady = !!(config.RESEND_API_KEY || config.SENDGRID_API_KEY || config.DEFAULT_SMTP_HOST);
     if (!emailReady) {
       return reply.send({ success: false, emailReady: false, sent: 0, error: 'Brak konfiguracji e-mail na serwerze (SMTP/SendGrid).' });
     }

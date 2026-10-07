@@ -1,42 +1,17 @@
-// Port edge function send-assignment-email: zaproszenie do służby (SendGrid).
-// Oryginał: supabase/functions/send-assignment-email/index.ts.
+// Port edge function send-assignment-email: zaproszenie do służby (pojedyncze, STARE — grafik
+// wysyła dziś wsadowo przez send-assignment-invites). Oryginał: supabase/functions/send-assignment-email.
+// Utwardzone (audyt 2026-10): treść escapowana, linki tylko do strony odpowiedzi tej aplikacji,
+// odbiorca musi być przypisany do programu — inaczej funkcja byłaby przekaźnikiem dowolnych maili
+// z dowolnymi linkami w imieniu kościoła. Wysyłka przez wspólne lib/email.js (Resend/SendGrid/SMTP).
 import { config } from '../config.js';
+import { sendEmail } from '../lib/email.js';
+import { escapeHtml } from './send-assignment-invites.js';
 
 export const name = 'send-assignment-email';
 
-const FROM_NAME_DEFAULT = 'Avenit';
-
-// Wyślij email przez SendGrid API (payload identyczny jak w oryginale).
-async function sendViaSendGrid(to, subject, htmlContent) {
-  try {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.SENDGRID_API_KEY}`,
-      },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }],
-        from: { email: config.MAILING_FROM_EMAIL, name: config.MAILING_FROM_NAME || FROM_NAME_DEFAULT },
-        subject: subject,
-        content: [{ type: 'text/html', value: htmlContent }],
-      }),
-    });
-
-    if (response.status !== 202) {
-      const data = await response.json().catch(() => ({}));
-      return { success: false, error: data?.errors?.[0]?.message || 'SendGrid error' };
-    }
-
-    const messageId = response.headers.get('x-message-id') || undefined;
-    return { success: true, messageId };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
-
 // Generuj HTML emaila.
-function generateEmailHtml(params) {
+function generateEmailHtml(raw) {
+  const params = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, escapeHtml(v)]));
   return `
 <!DOCTYPE html>
 <html>
@@ -164,6 +139,24 @@ export default async function handler(req, reply) {
       return reply.code(404).send({ error: 'Program not found', details: 'no rows' });
     }
 
+    // Linki tylko do strony odpowiedzi TEJ aplikacji (host żądania).
+    const host = String(req.headers.host || '').toLowerCase();
+    const okUrl = (u) => {
+      try {
+        const url = new URL(String(u));
+        return /^https?:$/.test(url.protocol) && url.host.toLowerCase() === host && url.pathname === '/assignment-response';
+      } catch { return false; }
+    };
+    if (!okUrl(acceptUrl) || !okUrl(rejectUrl)) {
+      return reply.code(400).send({ error: 'Nieprawidłowe linki odpowiedzi' });
+    }
+    // Odbiorca musi mieć przypisanie w tym programie.
+    const { rows: who } = await req.db.query(
+      `SELECT 1 FROM schedule_assignments WHERE program_id = $1 AND lower(assigned_email) = lower($2) LIMIT 1`,
+      [programId, String(to)]
+    );
+    if (!who.length) return reply.code(400).send({ error: 'Ta osoba nie jest przypisana do tego programu' });
+
     // Formatuj datę.
     const programDate = new Date(program.date).toLocaleDateString('pl-PL', {
       weekday: 'long',
@@ -173,13 +166,12 @@ export default async function handler(req, reply) {
     });
     const programTitle = 'Nabożeństwo';
 
-    // Sprawdź czy SendGrid jest skonfigurowany.
-    if (!config.SENDGRID_API_KEY) {
-      req.log.warn('SENDGRID_API_KEY not configured, skipping email');
+    // Czy jakakolwiek wysyłka jest skonfigurowana (Resend / SendGrid / SMTP — jak lib/email.js).
+    if (!(config.RESEND_API_KEY || config.SENDGRID_API_KEY || config.DEFAULT_SMTP_HOST)) {
+      req.log.warn('email not configured, skipping assignment email');
       return reply.send({
         success: false,
         error: 'Email service not configured',
-        details: 'SENDGRID_API_KEY is not set',
       });
     }
 
@@ -197,8 +189,14 @@ export default async function handler(req, reply) {
     // Temat emaila.
     const subject = `Zaproszenie do służby: ${roleName} - ${programDate}`;
 
-    // Wyślij email.
-    const result = await sendViaSendGrid(to, subject, htmlContent);
+    // Wyślij email (wspólny helper — ten sam kanał co reszta maili systemowych).
+    let result;
+    try {
+      await sendEmail({ to, subject, html: htmlContent });
+      result = { success: true };
+    } catch (e) {
+      result = { success: false, error: e.message };
+    }
 
     if (result.success) {
       return reply.send({

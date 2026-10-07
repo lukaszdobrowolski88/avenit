@@ -18,7 +18,7 @@ export default function SmsPreview({ sender, body }) {
             <div className="px-6 pt-4 pb-2 flex items-center justify-between text-[11px] font-semibold text-gray-900 dark:text-white">
               <span>9:41</span>
               <span className="flex items-center gap-1">
-                <MessageSquare size={11} /> Wiadomości
+                <MessageSquare size={11} /> {tr('Wiadomości')}
               </span>
             </div>
 
@@ -37,7 +37,7 @@ export default function SmsPreview({ sender, body }) {
                 <div className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-2xl rounded-bl-sm px-3 py-2 text-[13px] leading-snug whitespace-pre-wrap break-words">
                   {text}
                 </div>
-                <div className="text-[10px] text-gray-400 mt-1">teraz</div>
+                <div className="text-[10px] text-gray-400 mt-1">{tr('teraz')}</div>
               </div>
             </div>
           </div>
@@ -49,7 +49,7 @@ export default function SmsPreview({ sender, body }) {
         <span className={`px-2 py-0.5 rounded ${encoding === 'unicode' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
           {encoding === 'unicode' ? 'Unicode' : 'GSM-7'}
         </span>
-        <span>{charCount} znaków</span>
+        <span>{tr('{n} znaków', { n: charCount })}</span>
         <span>·</span>
         <span>{parts || 1} {(parts || 1) === 1 ? tr('część') : tr('części')}</span>
       </div>

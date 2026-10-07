@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { refreshAppModules } from './useAppModules';
 
 export function useModules() {
   const [modules, setModules] = useState([]);
@@ -136,6 +137,7 @@ export function useModules() {
       await initializeCustomModule(moduleData.key);
 
       setModules(prev => [...prev, data]);
+      refreshAppModules();
       return { success: true, data };
     } catch (err) {
       console.error('Błąd dodawania modułu:', err);
@@ -156,6 +158,7 @@ export function useModules() {
       if (updateError) throw updateError;
 
       setModules(prev => prev.map(m => m.id === id ? data : m));
+      refreshAppModules();
       return { success: true, data };
     } catch (err) {
       console.error('Błąd aktualizacji modułu:', err);
@@ -174,6 +177,7 @@ export function useModules() {
       if (deleteError) throw deleteError;
 
       setModules(prev => prev.filter(m => m.id !== id));
+      refreshAppModules();
       return { success: true };
     } catch (err) {
       console.error('Błąd usuwania modułu:', err);
@@ -201,7 +205,9 @@ export function useModules() {
           .eq('id', update.id)
       );
 
-      await Promise.all(promises);
+      const results = await Promise.all(promises);
+      const failed = results.find((r) => r && r.error);
+      if (failed) throw failed.error;
 
       // Wymuś odświeżenie przez "dotknięcie" ostatniego modułu z timestampem
       // To zapewni że realtime wyłapie zmianę
@@ -212,6 +218,7 @@ export function useModules() {
           .update({ updated_at: new Date().toISOString() })
           .eq('id', lastModule.id);
       }
+      refreshAppModules();
 
       return { success: true };
     } catch (err) {

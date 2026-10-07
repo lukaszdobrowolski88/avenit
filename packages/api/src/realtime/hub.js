@@ -46,12 +46,16 @@ export function registerClient(socket, ctx) {
 
 const OP_TO_EVENT = { insert: 'INSERT', upsert: 'INSERT', update: 'UPDATE', delete: 'DELETE' };
 
-export function emitChange(tenantSlug, table, op, rows) {
+// opts.audience: Set e-maili (małymi literami), do których wolno wysłać zmianę — np. uczestnicy
+// rozmowy w Komunikatorze. Brak (null/undefined) = bez ograniczenia odbiorców.
+export function emitChange(tenantSlug, table, op, rows, opts = {}) {
   const eventType = OP_TO_EVENT[op] || 'UPDATE';
   const list = rows?.length ? rows : [null];
+  const audience = opts.audience || null;
   for (const client of clients) {
     if (client.tenant !== tenantSlug) continue;
     if (!client.tables.has(table) && !client.tables.has('*')) continue;
+    if (audience && !audience.has(String(client.email ?? '').toLowerCase())) continue;
     for (const row of list) {
       // Tabela osobista: tylko wiersze tego klienta (null = tabela zwykła, bez filtra).
       if (realtimeVisible(table, row, client) === false) continue;

@@ -38,7 +38,11 @@ export default function PermissionsAdmin() {
   const [copyFrom, setCopyFrom] = useState(''); // źródło do skopiowania nadpisań: 'role:x' | 'user:id'
 
   // Macierz = katalog statyczny (moduły systemowe) + moduły własne doklejone z DB.
-  const groups = useMemo(() => dynamicCapabilityGroups(dbModules, dbTabs), [dbModules, dbTabs]);
+  // Nazwy modułów z app_modules (np. „Małe SchWro”), a nie zaszyte w katalogu (UXE-12).
+  const groups = useMemo(() => dynamicCapabilityGroups(dbModules, dbTabs).map((g) => {
+    const dbLabel = dbModules.find((m) => m.key === g.key)?.label;
+    return dbLabel ? { ...g, label: dbLabel } : g;
+  }), [dbModules, dbTabs]);
 
   const load = async () => {
     const [r, g, u, mods, tabs, mem] = await Promise.all([
@@ -75,7 +79,7 @@ export default function PermissionsAdmin() {
     return s ? rows.filter((r) => tr(r.label).toLowerCase().includes(s) || r.cap.toLowerCase().includes(s)) : rows;
   };
   const searchInput = (
-    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Szukaj uprawnienia… (np. „usuwanie”, „media”, „kwota”)')}
+    <input type="search" aria-label={tr('Szukaj uprawnienia')} value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Szukaj uprawnienia… (np. „usuwanie”, „media”, „kwota”)')}
       className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
   );
 
@@ -203,7 +207,7 @@ export default function PermissionsAdmin() {
               <TD align="right">
                 {!r.is_system && (
                   <button className="text-rose-500 opacity-60 group-hover/row:opacity-100 transition-opacity" onClick={async () => {
-                    if (!await confirmDialog(tr('Usunąć rolę?') + ` ${r.label}`)) return;
+                    if (!await confirmDialog(tr('Usunąć rolę „{name}”? Osoby z tą rolą stracą jej uprawnienia.', { name: r.label }))) return;
                     try { await supabase.from('app_roles').delete().eq('key', r.key); await load(); flash(tr('Usunięto')); } catch (e) { setErr(e.message); }
                   }}><Trash2 size={15} /></button>
                 )}
@@ -231,9 +235,9 @@ export default function PermissionsAdmin() {
       <div>
         <label className="block text-sm text-gray-500 mb-1">{tr('Użytkownik')}</label>
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <input value={userQ} onChange={(e) => setUserQ(e.target.value)} placeholder={tr('Szukaj osoby…')}
+          <input type="search" aria-label={tr('Szukaj osoby')} value={userQ} onChange={(e) => setUserQ(e.target.value)} placeholder={tr('Szukaj osoby…')}
             className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm min-w-[180px]" />
-          <select value={selectedUser || ''} onChange={(e) => setSelectedUser(e.target.value || null)} className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm min-w-[240px]">
+          <select aria-label={tr('Wybierz osobę')} value={selectedUser || ''} onChange={(e) => setSelectedUser(e.target.value || null)} className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm min-w-[240px]">
             <option value="">{tr('— Wybierz osobę —')}</option>
             {users.filter((u) => { const s = userQ.trim().toLowerCase(); return !s || (u.full_name || u.name || u.email || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s); })
               .map((u) => <option key={u.id} value={u.id}>{u.full_name || u.name || u.email} ({u.role})</option>)}
@@ -266,7 +270,7 @@ export default function PermissionsAdmin() {
             <p className="text-xs text-gray-500 mb-2">{tr('Wartość „dziedz.” = z roli i służb. Zaznacz, aby nadpisać dla tej osoby.')} {uGrants.length > 0 && <button className="text-rose-500 underline ml-2" onClick={async () => { for (const g of uGrants) await supabase.from('permission_grants').delete().eq('id', g.id); await load(); }}>{tr('Wyczyść nadpisania')}</button>}</p>
             <div className="flex flex-wrap items-center gap-2 mb-3 text-sm">
               <span className="text-gray-500">{tr('Kopiuj nadpisania z')}:</span>
-              <select value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} className="px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm">
+              <select aria-label={tr('Kopiuj nadpisania z')} value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} className="px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm">
                 <option value="">{tr('— wybierz źródło —')}</option>
                 <optgroup label={tr('Role')}>
                   {roles.filter((r) => !r.is_admin).map((r) => <option key={`role:${r.key}`} value={`role:${r.key}`}>{tr('Rola')}: {r.label}</option>)}
@@ -371,7 +375,7 @@ function NewRole({ onClose, onCreated, roles }) {
     >
       <div className="p-6">
         <label className="block text-sm text-gray-500 mb-1">{tr('Nazwa')}</label>
-        <input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value, key: f.key || slug(e.target.value) })} placeholder="Skarbnik" className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+        <input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value, key: f.key || slug(e.target.value) })} placeholder={tr('Skarbnik')} className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
         <label className="block text-sm text-gray-500 mb-1">{tr('Klucz (identyfikator)')}</label>
         <input value={f.key} onChange={(e) => setF({ ...f, key: slug(e.target.value) })} placeholder="skarbnik" className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm font-mono" />
         <label className="block text-sm text-gray-500 mb-1">{tr('Preset startowy (kopiuje uprawnienia)')}</label>

@@ -1,4 +1,6 @@
 import { toast } from './toast';
+import { escapeHtml } from './html';
+import { appLocale } from '../i18n';
 // ProPresenter Export - Generates Pro6 compatible playlist XML
 // Pro6 format can be imported into ProPresenter 7
 
@@ -101,7 +103,7 @@ const generateSongXML = (song, songKey) => {
 // Generate playlist XML with song references
 const generatePlaylistXML = (program, songs, songsMap) => {
   const playlistUUID = generateUUID();
-  const formattedDate = program.date ? new Date(program.date).toLocaleDateString('pl-PL', {
+  const formattedDate = program.date ? new Date(program.date).toLocaleDateString(appLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -249,7 +251,7 @@ Utworzono przez Avenit
 
 // Alternative: Export just the service order as text for manual entry
 export const exportServiceOrderText = (program, songsMap) => {
-  const formattedDate = program.date ? new Date(program.date).toLocaleDateString('pl-PL', {
+  const formattedDate = program.date ? new Date(program.date).toLocaleDateString(appLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -280,7 +282,7 @@ export const exportServiceOrderText = (program, songsMap) => {
   }).catch(() => {
     // Fallback - show in new window
     const win = window.open('', '', 'width=600,height=400');
-    win.document.write(`<pre style="font-family:monospace;padding:20px;">${text}</pre>`);
+    win.document.write(`<pre style="font-family:monospace;padding:20px;">${escapeHtml(text)}</pre>`);
   });
 
   return text;

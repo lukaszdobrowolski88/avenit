@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Users, Music, Zap, Sparkles, Baby, Home, Heart, UserCheck, Shield, ChevronRight, Inbox } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { getInitials, stringToColor } from '../../../utils/text';
@@ -49,7 +49,7 @@ function formatMessageTime(dateStr) {
   if (diffMins < 60) return `${diffMins} min`;
   if (diffHours < 24) return `${diffHours} godz.`;
   if (diffDays < 7) return `${diffDays} dni`;
-  return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' });
 }
 
 // Skróć tekst
@@ -118,7 +118,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
             if (conv.type === 'direct') {
               const { data: participants } = await supabase
                 .from('conversation_participants')
-                .select('user_email, users(full_name, avatar_url)')
+                .select('user_email, user_name, avatar_url')
                 .eq('conversation_id', conv.id)
                 .neq('user_email', userEmail)
                 .limit(1);
@@ -126,8 +126,8 @@ export default function UnreadMessagesWidget({ userEmail }) {
               if (participants?.[0]) {
                 otherParticipant = {
                   email: participants[0].user_email,
-                  full_name: participants[0].users?.full_name,
-                  avatar_url: participants[0].users?.avatar_url
+                  full_name: participants[0].user_name,
+                  avatar_url: participants[0].avatar_url
                 };
                 displayName = otherParticipant.full_name || otherParticipant.email?.split('@')[0];
               }
@@ -142,7 +142,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
                 .from('app_users')
                 .select('full_name, avatar_url, email')
                 .eq('email', messages[0].sender_email)
-                .single();
+                .maybeSingle();
               sender = {
                 email: messages[0].sender_email,
                 full_name: senderData?.full_name,

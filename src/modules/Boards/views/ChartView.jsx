@@ -21,7 +21,7 @@ export default function ChartView({ data, config, onUpdateConfig }) {
   }, [items, col]);
 
   if (!col) {
-    return <div className="text-center py-16 text-gray-400 text-sm">Dodaj kolumnę typu Status, Priorytet, Lista, Osoby lub Pole wyboru, aby zobaczyć wykres.</div>;
+    return <div className="text-center py-16 text-gray-400 text-sm">{tr('Dodaj kolumnę typu Status, Priorytet, Lista, Osoby lub Pole wyboru, aby zobaczyć wykres.')}</div>;
   }
 
   return (
@@ -44,7 +44,7 @@ export default function ChartView({ data, config, onUpdateConfig }) {
         </div>
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-        <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">Elementy wg „{col.name}" ({items.length})</h3>
+        <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">{tr('Elementy wg „{name}" ({count})', { name: col.name, count: items.length })}</h3>
         {chartType === 'pie' ? <DonutChart data={chartData} size={220} /> : <BarChart data={chartData} height={280} />}
       </div>
     </div>

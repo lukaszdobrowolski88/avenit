@@ -20,7 +20,7 @@ export default async function handler(req, reply) {
   let campaign;
   try {
     const { rows } = await req.db.query(
-      `SELECT id, name, goal_amount FROM giving_campaigns WHERE id = $1`,
+      `SELECT id, name, goal_amount, fund_id, start_date, end_date FROM giving_campaigns WHERE id = $1`,
       [campaign_id]
     );
     campaign = rows[0];
@@ -32,14 +32,20 @@ export default async function handler(req, reply) {
     return reply.code(404).send({ error: 'Kampania nie znaleziona' });
   }
 
-  // 2. Zebrano = SUMA zaksięgowanych darowizn (bez ujawniania darczyńców).
+  // 2. Zebrano = SUMA zaksięgowanych darowizn (bez ujawniania darczyńców). Ta sama definicja
+  // co w module Hojność i w aplikacji członka (raisedForCampaign / giving-campaigns):
+  // darowizny przypisane do zbiórki, a bez przypisania — na fundusz zbiórki w jej oknie dat.
   let raised = 0;
   try {
     const { rows } = await req.db.query(
       `SELECT COALESCE(SUM(amount), 0) AS raised
          FROM donations
-        WHERE campaign_id = $1 AND status = 'completed'`,
-      [campaign_id]
+        WHERE status = 'completed'
+          AND (campaign_id = $1
+               OR (campaign_id IS NULL AND $2::uuid IS NOT NULL AND fund_id = $2::uuid
+                   AND ($3::date IS NULL OR donation_date >= $3::date)
+                   AND ($4::date IS NULL OR donation_date <= $4::date)))`,
+      [campaign_id, campaign.fund_id || null, campaign.start_date || null, campaign.end_date || null]
     );
     raised = Number(rows[0]?.raised) || 0;
   } catch (err) {

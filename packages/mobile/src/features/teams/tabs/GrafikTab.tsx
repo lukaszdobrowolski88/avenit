@@ -259,7 +259,7 @@ export const GrafikTab = ({
                   <Pressable
                     disabled={answer.isPending}
                     onPress={() =>
-                      Alert.alert('Nie możesz służyć?', 'Lider zobaczy odmowę w grafiku.', [
+                      Alert.alert('Nie możesz służyć?', 'Twoje imię zniknie z grafiku na ten dzień, a lider zobaczy odmowę.', [
                         { text: 'Anuluj', style: 'cancel' },
                         { text: 'Nie mogę', style: 'destructive', onPress: () => mine.forEach((a) => answer.mutate({ id: a.id, status: 'rejected' })) },
                       ])

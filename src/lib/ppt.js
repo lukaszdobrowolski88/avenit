@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { toast } from './toast';
+import { escapeHtml } from './html';
+import { tr, appLocale } from '../i18n';
 
 // Domyślne URL-e dla grafik PPT (można zmienić na URL-e z Supabase Storage)
 const DEFAULT_GRAPHICS = {
@@ -27,7 +29,7 @@ export const generatePPT = async (program, songsMap) => {
   const printWindow = window.open('', '', 'width=1000,height=700');
 
   if (!printWindow) {
-    toast.error('Nie można otworzyć nowego okna. Sprawdź czy przeglądarka nie blokuje wyskakujących okien.');
+    toast.error(tr('Nie można otworzyć nowego okna. Sprawdź czy przeglądarka nie blokuje wyskakujących okien.'));
     return;
   }
 
@@ -124,7 +126,7 @@ export const generatePPT = async (program, songsMap) => {
   let slidesHtml = '';
 
   // Formatowanie daty
-  const formattedDate = program.date ? new Date(program.date).toLocaleDateString('pl-PL', {
+  const formattedDate = program.date ? new Date(program.date).toLocaleDateString(appLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -172,14 +174,14 @@ export const generatePPT = async (program, songsMap) => {
         // Slajd z tłem - bez overlay, 100% oryginalna grafika
         slidesHtml += `
           <div class="slide content with-bg" style="background-image: url('${seriesGraphics.songBackground}'); background-size: cover; background-position: center;">
-            ${displayText ? `<div class="text">${displayText.replace(/\n/g, '<br/>')}</div>` : ''}
+            ${displayText ? `<div class="text">${escapeHtml(displayText).replace(/\n/g, '<br/>')}</div>` : ''}
           </div>
         `;
       } else {
         // Slajd bez tła
         slidesHtml += `
           <div class="slide content">
-            ${displayText ? `<div class="text">${displayText.replace(/\n/g, '<br/>')}</div>` : ''}
+            ${displayText ? `<div class="text">${escapeHtml(displayText).replace(/\n/g, '<br/>')}</div>` : ''}
           </div>
         `;
       }

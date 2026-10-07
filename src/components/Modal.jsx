@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { tr } from '../i18n';
+import { useFocusTrap } from './ui/useFocusTrap';
 
 // Kanoniczny Modal. Dwa tryby (kompatybilne wstecznie):
 //  • CIENKI (bez onClose) — tylko portal + `fixed inset-0 z-[100]`. Dzieci dostarczają
@@ -15,6 +17,9 @@ import { X } from 'lucide-react';
 //    Bez tytułu i stopki — dzieci trafiają wprost do panelu (stary układ, np. Boards ItemPanel).
 //  zIndex — gdy okno musi leżeć nad innym oknem z wyższą warstwą; closeOnBackdrop={false} —
 //  klik w tło nie zamyka (formularze, w których łatwo stracić dane).
+//  Dostępność (tryb bogaty): przy otwarciu fokus przechodzi do okna (pole z autoFocus albo
+//  element z `data-autofocus` ma pierwszeństwo), Tab/Shift+Tab nie wychodzą poza okno, po
+//  zamknięciu fokus wraca na przycisk, który je otworzył; tytuł jest nazwą okna (aria-labelledby).
 const SIZES = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl', full: 'max-w-6xl' };
 
 // Esc zamyka tylko najwyżej leżące okno (okna potrafią się zagnieżdżać).
@@ -30,6 +35,8 @@ export default function Modal({
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const closable = Boolean(onClose);
+  const panelRef = useRef(null);
+  useFocusTrap(panelRef, Boolean(isOpen && closable));
   useEffect(() => {
     if (!isOpen || !closable) return undefined;
     openStack.push(id);
@@ -63,10 +70,12 @@ export default function Modal({
         onClick={closeOnBackdrop ? onClose : undefined}
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={typeof title === 'string' ? title : undefined}
-        className={`modal-panel relative w-full ${SIZES[size] || SIZES.md} max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl animate-in fade-in zoom-in-95 duration-150 ${structured ? 'flex flex-col overflow-hidden' : 'overflow-y-auto custom-scrollbar'} ${className}`}
+        tabIndex={-1}
+        aria-labelledby={title ? `${id}-title` : undefined}
+        className={`modal-panel outline-none relative w-full ${SIZES[size] || SIZES.md} max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl animate-in fade-in zoom-in-95 duration-150 ${structured ? 'flex flex-col overflow-hidden' : 'overflow-y-auto custom-scrollbar'} ${className}`}
       >
         {title && (
           <div className="modal-head shrink-0 flex items-start gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -76,12 +85,12 @@ export default function Modal({
               </div>
             )}
             <div className="min-w-0 flex-1 self-center">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{title}</h2>
+              <h2 id={`${id}-title`} className="text-lg font-bold text-gray-900 dark:text-white truncate">{title}</h2>
               {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
             </div>
-            <button onClick={onClose} aria-label="Zamknij"
-              className="p-1.5 -mr-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 transition shrink-0">
-              <X size={18} />
+            <button type="button" onClick={onClose} aria-label={tr('Zamknij')}
+              className="p-2 -mr-2 -my-0.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition shrink-0">
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
         )}

@@ -1,10 +1,11 @@
+import { appLocale } from '../../../i18n';
 // Helpery modułu Analityki (BI / Dashboard liderów)
 
 // Formatowanie kwoty w PLN
 export function formatMoney(amount, currency = 'PLN') {
   const n = Number(amount) || 0;
   try {
-    return new Intl.NumberFormat('pl-PL', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
+    return new Intl.NumberFormat(appLocale(), { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
   } catch {
     return `${n.toFixed(0)} ${currency}`;
   }
@@ -14,7 +15,7 @@ export function formatMoney(amount, currency = 'PLN') {
 export function formatNumber(value) {
   const n = Number(value) || 0;
   try {
-    return new Intl.NumberFormat('pl-PL').format(n);
+    return new Intl.NumberFormat(appLocale()).format(n);
   } catch {
     return String(n);
   }

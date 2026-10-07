@@ -6,13 +6,14 @@ import Button from '../components/Button';
 import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Download, Printer, Repeat, CheckCircle, XCircle, Clock, Copy, AlertTriangle, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Settings, Banknote, CreditCard, FolderOpen, Mail, CalendarClock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import CustomSelect from '../components/CustomSelect';
 import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import PageHeader from '../components/PageHeader';
 import { useT } from '../i18n';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { computeRange, shiftRangeYears, MONTHS_PL, yearOptions } from './finance/reportRange';
 import { buildReportModel, toCsvBlob, toXlsxBlob, reportElToPdfBlob, printReportEl, blobToBase64, download, slugForRange } from './finance/reportExport';
@@ -21,6 +22,10 @@ import { usePermissions } from '../contexts/PermissionsContext';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import { DateInput } from '../components/pickers';
 import { confirmDialog, promptDialog } from '../lib/dialog';
+import {
+  num, withNumbers, isCountedExpense, isPendingExpense, realizationFor, matchesBudgetItem, normKey,
+  fmtMoney, fmtPct, fmtDate, parseLocalDate, localDateStr, nextPeriodStart, missingFields, planBudgetCopy, humanSaveError,
+} from './finance/money';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -62,12 +67,12 @@ function useDropdownPosition(triggerRef, isOpen) {
 // Custom Date Picker Component
 const CustomDatePicker = ({ label, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
+  const [viewDate, setViewDate] = useState(value ? (parseLocalDate(value) || new Date()) : new Date());
   const triggerRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
 
   useEffect(() => {
-    if (value) setViewDate(new Date(value));
+    if (value) setViewDate(parseLocalDate(value) || new Date());
   }, [value]);
 
   useEffect(() => {
@@ -113,19 +118,25 @@ const CustomDatePicker = ({ label, value, onChange }) => {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const blanks = Array.from({ length: startDay }, (_, i) => i);
 
-  const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
-  const displayValue = value ? new Date(value).toLocaleDateString('pl-PL') : '';
+  const monthName = viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
+  const displayValue = value ? fmtDate(value) : '';
 
   return (
     <div className="relative w-full">
       {label && <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{label}</label>}
       <div
         ref={triggerRef}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-label={label ? `${label}: ${displayValue || tr('Wybierz datę')}` : undefined}
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(!isOpen); } else if (e.key === 'Escape') setIsOpen(false); }}
         className={`w-full px-4 py-3 border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
           ${isOpen
             ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
-            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
+            : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }
         `}
       >
@@ -239,10 +250,26 @@ const SYSTEM_MODULE_KEYS = new Set([
   'programs', 'boards', 'rooms', 'attendance', 'rsvp', 'finance', 'care',
 ]);
 
+// Puste formularze — „Dodaj…” zawsze startuje od nich (bez id poprzednio edytowanego rekordu).
+const EMPTY_BUDGET = { kind: 'expense', category: '', description: '', planned_amount: '', period_type: 'year' };
+const EMPTY_INCOME = { date: '', amount: '', type: 'Kolekta', source: '', notes: '', tags: [] };
+const EMPTY_EXPENSE = {
+  payment_date: '', amount: '', contractor: '', category: '', cost_category: '', description: '',
+  detailed_description: '', responsible_person: '', invoice_number: '', due_date: '', is_paid: true,
+  submit_for_approval: false, documents: [], tags: [],
+};
+// Wartość „Opis kosztu” oznaczająca wydatek spoza pozycji budżetu (opis wpisywany ręcznie).
+const OFF_BUDGET = '__off_budget__';
+
 const FinanceModule = () => {
   const t = useT();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
-  const { logoUrl } = usePermissions();
+  const { logoUrl, can } = usePermissions();
+  // Zatwierdzanie/odrzucanie/opłacanie wydatków i decyzje o propozycjach budżetu —
+  // serwer odrzuca je (403) bez tego uprawnienia, więc UI ich nie proponuje.
+  const canApprove = can('action:finance:approve');
+  // Blokada przycisków „Zapisz” w trakcie zapisu (brak podwójnych rekordów).
+  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('budget');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [budgetItems, setBudgetItems] = useState([]);
@@ -270,39 +297,41 @@ const FinanceModule = () => {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
 
   // Forms
-  const [budgetForm, setBudgetForm] = useState({
-    kind: 'expense',
-    category: '',
-    description: '',
-    planned_amount: '',
-    period_type: 'year'
-  });
+  const [budgetForm, setBudgetForm] = useState(EMPTY_BUDGET);
+  const [incomeForm, setIncomeForm] = useState(EMPTY_INCOME);
+  // cost_category = własna kategoria kosztu (niezależna od budżetu); submit_for_approval →
+  // status 'submitted' (wniosek o zwrot); documents = [{url, name}].
+  const [expenseForm, setExpenseForm] = useState(EMPTY_EXPENSE);
+  // Wydatek spoza pozycji budżetu (opis wpisany ręcznie) i pola z błędem walidacji.
+  const [expenseOffBudget, setExpenseOffBudget] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
-  const [incomeForm, setIncomeForm] = useState({
-    date: '',
-    amount: '',
-    type: 'Kolekta',
-    source: '',
-    notes: '',
-    tags: []
-  });
-
-  const [expenseForm, setExpenseForm] = useState({
-    payment_date: '',
-    amount: '',
-    contractor: '',
-    category: '',
-    cost_category: '',   // własna kategoria kosztu (niezależna od powiązania z budżetem)
-    description: '',
-    detailed_description: '',
-    responsible_person: '',
-    invoice_number: '',
-    due_date: '',
-    is_paid: true,
-    submit_for_approval: false, // wniosek o zwrot / do akceptacji → status 'submitted'
-    documents: [], // Array of {url: string, name: string}
-    tags: []
-  });
+  // Otwieranie/zamykanie modali: „Dodaj” = czysty formularz, zamknięcie czyści stan edycji
+  // (wcześniej „Dodaj” po anulowanej edycji robiło UPDATE starego rekordu).
+  const openCreateBudget = () => { setBudgetForm(EMPTY_BUDGET); setFormErrors({}); setShowBudgetModal(true); };
+  const openEditBudget = (item) => { setBudgetForm({ ...item, planned_amount: String(num(item.planned_amount)) }); setFormErrors({}); setShowBudgetModal(true); };
+  const closeBudgetModal = () => { if (saving) return; setShowBudgetModal(false); setBudgetForm(EMPTY_BUDGET); setFormErrors({}); };
+  const openCreateIncome = () => { setIncomeForm({ ...EMPTY_INCOME, date: localDateStr() }); setNewTag(''); setFormErrors({}); setShowIncomeModal(true); };
+  const openEditIncome = (tx) => { setIncomeForm({ ...EMPTY_INCOME, ...tx, amount: String(num(tx.amount)), source: tx.source || '', notes: tx.notes || '', tags: tx.tags || [] }); setNewTag(''); setFormErrors({}); setShowIncomeModal(true); };
+  const closeIncomeModal = () => { if (saving) return; setShowIncomeModal(false); setIncomeForm(EMPTY_INCOME); setFormErrors({}); };
+  const openCreateExpense = () => {
+    setExpenseForm({ ...EMPTY_EXPENSE, payment_date: localDateStr(), is_paid: canApprove, submit_for_approval: !canApprove });
+    setExpenseOffBudget(false); setNewTag(''); setFormErrors({}); setShowExpenseModal(true);
+  };
+  const openEditExpense = (tx) => {
+    // Opis, którego nie ma wśród pozycji budżetu tej służby = wydatek spoza budżetu.
+    const linked = budgetItems.find((b) => b.kind !== 'income' && matchesBudgetItem(tx, b));
+    setExpenseForm({
+      ...EMPTY_EXPENSE, ...tx, amount: String(num(tx.amount)),
+      contractor: tx.contractor || '', responsible_person: tx.responsible_person || '',
+      description: linked ? linked.description : (tx.description || ''),
+      detailed_description: tx.detailed_description || '', cost_category: tx.cost_category || '', category: linked ? linked.category : (tx.category || ''),
+      invoice_number: tx.invoice_number || '', due_date: tx.due_date || '', documents: tx.documents || [], tags: tx.tags || [],
+    });
+    setExpenseOffBudget(!linked && !!tx.description);
+    setNewTag(''); setFormErrors({}); setShowExpenseModal(true);
+  };
+  const closeExpenseModal = () => { if (saving) return; setShowExpenseModal(false); setExpenseForm(EMPTY_EXPENSE); setExpenseOffBudget(false); setFormErrors({}); };
 
   const [uploadingFile, setUploadingFile] = useState(false);
   const [expandedBudgetItems, setExpandedBudgetItems] = useState({}); // For expandable expense lists
@@ -335,7 +364,7 @@ const FinanceModule = () => {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const incomeCategories = categories.filter((c) => c.kind === 'income' && c.is_active !== false);
   const expenseCategories = categories.filter((c) => c.kind === 'expense' && c.is_active !== false);
-  const tagColor = (name) => tagPalette.find((t) => t.name.toLowerCase() === String(name).toLowerCase())?.color || '#6366f1';
+  const tagColor = (name) => tagPalette.find((t) => String(t.name || '').toLowerCase() === String(name).toLowerCase())?.color || '#6b7280';
 
   const fetchCategories = async () => {
     try {
@@ -356,7 +385,7 @@ const FinanceModule = () => {
     const known = new Set(tagPalette.map((t) => t.name.toLowerCase()));
     const fresh = (tags || []).filter((t) => t && !known.has(String(t).toLowerCase()));
     if (!fresh.length) return;
-    const PALETTE = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#a855f7', '#14b8a6', '#ec4899'];
+    const PALETTE = ['#8A6606', '#6b7280', '#166534', '#9a3412', '#1e40af', '#57534e', '#0f766e', '#7c2d12'];
     try {
       for (let i = 0; i < fresh.length; i++) {
         await supabase.from('finance_tags').insert([{ name: fresh[i], color: PALETTE[(tagPalette.length + i) % PALETTE.length] }]);
@@ -366,22 +395,32 @@ const FinanceModule = () => {
   };
 
   // Menedżer kategorii (CRUD na expense_categories, rodzaj income/expense).
-  const [catForm, setCatForm] = useState({ name: '', kind: 'expense', color: '#6366f1' });
+  const [catForm, setCatForm] = useState({ name: '', kind: 'expense', color: '#8A6606' });
   const [vendorName, setVendorName] = useState('');
   const saveCategory = async () => {
     if (!catForm.name.trim()) { toast.error(tr('Podaj nazwę kategorii')); return; }
     try {
-      await supabase.from('expense_categories').insert([{ name: catForm.name.trim(), kind: catForm.kind, color: catForm.color, is_active: true }]);
-      setCatForm({ name: '', kind: catForm.kind, color: '#6366f1' });
+      const { error } = await supabase.from('expense_categories').insert([{ name: catForm.name.trim(), kind: catForm.kind, color: catForm.color, is_active: true }]);
+      if (error) throw error;
+      toast.success(tr('Dodano kategorię „{name}”', { name: catForm.name.trim() }));
+      setCatForm({ name: '', kind: catForm.kind, color: '#8A6606' });
       fetchCategories();
-    } catch (e) { toast.error(tr('Błąd zapisywania: ') + e.message); }
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
   };
   const toggleCategoryActive = async (c) => {
-    try { await supabase.from('expense_categories').update({ is_active: !(c.is_active !== false) }).eq('id', c.id); fetchCategories(); } catch (e) { toast.error(e.message); }
+    try {
+      const { error } = await supabase.from('expense_categories').update({ is_active: !(c.is_active !== false) }).eq('id', c.id);
+      if (error) throw error;
+      fetchCategories();
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
   };
-  const deleteCategory = async (id) => {
-    if (!await confirmDialog(tr('Usunąć tę kategorię? Istniejące transakcje zachowają swoją nazwę kategorii.'))) return;
-    try { await supabase.from('expense_categories').delete().eq('id', id); fetchCategories(); } catch (e) { toast.error(tr('Błąd usuwania: ') + e.message); }
+  const deleteCategory = async (c) => {
+    if (!await confirmDialog(tr('Usunąć kategorię „{name}”? Istniejące transakcje zachowają swoją nazwę kategorii.', { name: c.name }))) return;
+    try {
+      const { error } = await supabase.from('expense_categories').delete().eq('id', c.id);
+      if (error) throw error;
+      fetchCategories();
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
   };
 
   // E-mail zalogowanego (do audytu akceptacji/zgłoszeń).
@@ -398,28 +437,60 @@ const FinanceModule = () => {
   };
   useEffect(() => { fetchRecurring(); }, []);
   const saveRecurring = async () => {
-    if (!recurringForm.title.trim() || !recurringForm.amount) { toast.error(tr('Podaj nazwę i kwotę')); return; }
+    const missing = missingFields(recurringForm, [['title', tr('nazwę')], ['amount', tr('kwotę')], ['next_run_date', tr('datę pierwszego wykonania')]]);
+    if (missing.length) {
+      setFormErrors(Object.fromEntries([['title', !recurringForm.title.trim()], ['amount', !recurringForm.amount], ['next_run_date', !recurringForm.next_run_date]]));
+      toast.error(tr('Uzupełnij: {fields}', { fields: missing.join(', ') }));
+      return;
+    }
+    if (recurringForm.end_date && recurringForm.end_date < recurringForm.next_run_date) { toast.error(tr('Data końca jest wcześniejsza niż pierwsze wykonanie.')); return; }
     const payload = {
       kind: recurringForm.kind, title: recurringForm.title.trim(), amount: parseFloat(recurringForm.amount),
       category: recurringForm.category || null, team_type: recurringForm.team_type || null, contractor: recurringForm.contractor || null,
       frequency: recurringForm.frequency, day_of_month: recurringForm.day_of_month ? parseInt(recurringForm.day_of_month) : null,
       next_run_date: recurringForm.next_run_date || null, end_date: recurringForm.end_date || null, is_active: recurringForm.is_active,
     };
+    setSaving(true);
     try {
-      if (recurringForm.id) await supabase.from('finance_recurring').update(payload).eq('id', recurringForm.id);
-      else await supabase.from('finance_recurring').insert([payload]);
-      setShowRecurringModal(false); setRecurringForm(emptyRecurring); fetchRecurring();
-    } catch (e) { toast.error(tr('Błąd zapisywania: ') + e.message); }
+      const { error } = recurringForm.id
+        ? await supabase.from('finance_recurring').update(payload).eq('id', recurringForm.id)
+        : await supabase.from('finance_recurring').insert([payload]);
+      if (error) throw error;
+      toast.success(recurringForm.id ? tr('Zapisano zmiany planu') : tr('Dodano plan cykliczny'));
+      setShowRecurringModal(false); setRecurringForm(emptyRecurring); setFormErrors({}); fetchRecurring();
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
+    finally { setSaving(false); }
   };
-  const toggleRecurring = async (r) => { try { await supabase.from('finance_recurring').update({ is_active: !r.is_active }).eq('id', r.id); fetchRecurring(); } catch (e) { toast.error(e.message); } };
-  const deleteRecurring = async (id) => { if (!await confirmDialog(tr('Usunąć ten plan cykliczny?'))) return; try { await supabase.from('finance_recurring').delete().eq('id', id); fetchRecurring(); } catch (e) { toast.error(e.message); } };
+  const toggleRecurring = async (r) => {
+    try {
+      const { error } = await supabase.from('finance_recurring').update({ is_active: !r.is_active }).eq('id', r.id);
+      if (error) throw error;
+      fetchRecurring();
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
+  };
+  const deleteRecurring = async (r) => {
+    if (!await confirmDialog(tr('Usunąć plan cykliczny „{name}”? Nowe transakcje z tego planu przestaną powstawać.', { name: r.title }))) return;
+    try {
+      const { error } = await supabase.from('finance_recurring').delete().eq('id', r.id);
+      if (error) throw error;
+      fetchRecurring();
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
+  };
 
   // ── Kontrahenci (finance_vendors) — autouzupełnianie + auto-dopis ──────────
   const [vendors, setVendors] = useState([]);
   const fetchVendors = async () => { try { const { data } = await supabase.from('finance_vendors').select('*').order('name'); setVendors(data || []); } catch { /* brak tabeli */ } };
   useEffect(() => { fetchVendors(); }, []);
-  const addVendor = async (name) => { const n = String(name || '').trim(); if (!n) return; try { await supabase.from('finance_vendors').insert([{ name: n }]); fetchVendors(); } catch (e) { toast.error(e.message); } };
-  const deleteVendor = async (id) => { try { await supabase.from('finance_vendors').delete().eq('id', id); fetchVendors(); } catch (e) { toast.error(e.message); } };
+  const addVendor = async (name) => {
+    const n = String(name || '').trim(); if (!n) return;
+    try { const { error } = await supabase.from('finance_vendors').insert([{ name: n }]); if (error) throw error; fetchVendors(); }
+    catch (e) { toast.error(humanSaveError(e, tr)); }
+  };
+  const deleteVendor = async (v) => {
+    if (!await confirmDialog(tr('Usunąć kontrahenta „{name}” z listy podpowiedzi? Wydatki zachowają jego nazwę.', { name: v.name }))) return;
+    try { const { error } = await supabase.from('finance_vendors').delete().eq('id', v.id); if (error) throw error; fetchVendors(); }
+    catch (e) { toast.error(humanSaveError(e, tr)); }
+  };
 
   // Sumy poprzedniego roku (do porównania rok-do-roku w Raportach).
   const [prevYearTotals, setPrevYearTotals] = useState({ income: 0, expense: 0 });
@@ -429,11 +500,11 @@ const FinanceModule = () => {
       try {
         const [inc, exp] = await Promise.all([
           supabase.from('income_transactions').select('amount').gte('date', from).lte('date', to),
-          supabase.from('expense_transactions').select('amount').gte('payment_date', from).lte('payment_date', to),
+          supabase.from('expense_transactions').select('amount, status').gte('payment_date', from).lte('payment_date', to),
         ]);
         setPrevYearTotals({
-          income: (inc.data || []).reduce((s, r) => s + Number(r.amount || 0), 0),
-          expense: (exp.data || []).reduce((s, r) => s + Number(r.amount || 0), 0),
+          income: (inc.data || []).reduce((s, r) => s + num(r.amount), 0),
+          expense: (exp.data || []).filter(isCountedExpense).reduce((s, r) => s + num(r.amount), 0),
         });
       } catch { setPrevYearTotals({ income: 0, expense: 0 }); }
     })();
@@ -470,7 +541,9 @@ const FinanceModule = () => {
   const [reportPrev, setReportPrev] = useState({ income: [], expense: [] });
   const [reportLoading, setReportLoading] = useState(false);
 
+  const reportReqRef = useRef(0);
   const fetchReportData = async (range) => {
+    const reqId = ++reportReqRef.current;
     setReportLoading(true);
     try {
       const prev = shiftRangeYears(range, 1);
@@ -480,18 +553,22 @@ const FinanceModule = () => {
         withCampusFilter(supabase.from('budget_items').select('*')).eq('year', range.year).order('category'),
         supabase.from('finance_balances').select('*').eq('year', range.year).maybeSingle(),
         supabase.from('income_transactions').select('amount').gte('date', prev.from).lte('date', prev.to),
-        supabase.from('expense_transactions').select('amount').gte('payment_date', prev.from).lte('payment_date', prev.to),
+        supabase.from('expense_transactions').select('amount, status').gte('payment_date', prev.from).lte('payment_date', prev.to),
       ]);
-      setReportIncome(inc.data || []);
-      setReportExpense(exp.data || []);
-      setReportBudget(bud.data || []);
+      // Odpowiedź do starszego zakresu (szybkie przełączanie Rok → Miesiąc) nie nadpisuje nowszej.
+      if (reqId !== reportReqRef.current) return;
+      const failed = [inc, exp, bud].find((r) => r.error);
+      if (failed) toast.error(tr('Nie udało się wczytać części danych raportu. Odśwież stronę.'));
+      setReportIncome(withNumbers(inc.data));
+      setReportExpense(withNumbers(exp.data));
+      setReportBudget(withNumbers(bud.data, ['planned_amount']));
       const b = bal.data;
       setReportBalances(b
-        ? { bank_pln: b.bank_pln || 0, cash_pln: b.cash_pln || 0, bank_currency: b.bank_currency || 0, cash_currency: b.cash_currency || 0, currency_type: b.currency_type || 'EUR' }
+        ? { bank_pln: num(b.bank_pln), cash_pln: num(b.cash_pln), bank_currency: num(b.bank_currency), cash_currency: num(b.cash_currency), currency_type: b.currency_type || 'EUR' }
         : { bank_pln: 0, cash_pln: 0, bank_currency: 0, cash_currency: 0, currency_type: 'EUR' });
-      setReportPrev({ income: pinc.data || [], expense: pexp.data || [] });
-    } catch (e) { console.error('Error fetching report data:', e); }
-    finally { setReportLoading(false); }
+      setReportPrev({ income: withNumbers(pinc.data), expense: withNumbers(pexp.data) });
+    } catch (e) { console.error('Error fetching report data:', e); toast.error(tr('Nie udało się wczytać raportu.')); }
+    finally { if (reqId === reportReqRef.current) setReportLoading(false); }
   };
 
   useEffect(() => {
@@ -507,6 +584,12 @@ const FinanceModule = () => {
 
   // ── Pobieranie raportu (CSV / XLSX / PDF) ────────────────────────────────
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  useEffect(() => {
+    if (!showDownloadMenu) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setShowDownloadMenu(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showDownloadMenu]);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const doDownload = async (fmt) => {
     setShowDownloadMenu(false);
@@ -574,12 +657,8 @@ const FinanceModule = () => {
     catch { setSchedules([]); }
   };
   useEffect(() => { fetchSchedules(); /* eslint-disable-next-line */ }, []);
-  const nextRunFor = (cadence) => {
-    const d = new Date();
-    if (cadence === 'monthly') return new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().slice(0, 10);
-    if (cadence === 'quarterly') { const q = Math.floor(d.getMonth() / 3) + 1; return new Date(d.getFullYear(), q * 3, 1).toISOString().slice(0, 10); }
-    return new Date(d.getFullYear() + 1, 0, 1).toISOString().slice(0, 10);
-  };
+  // 1. dzień następnego okresu w czasie lokalnym (toISOString dawał ostatni dzień poprzedniego).
+  const nextRunFor = (cadence) => nextPeriodStart(cadence);
   const saveSchedule = async () => {
     const recipients = scheduleForm.recipients.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
     if (recipients.length === 0) { toast.error(tr('Podaj adresy e-mail')); return; }
@@ -587,15 +666,26 @@ const FinanceModule = () => {
       cadence: scheduleForm.cadence, recipients, include_csv: !!scheduleForm.include_csv,
       is_active: !!scheduleForm.is_active, next_run_date: nextRunFor(scheduleForm.cadence),
     };
+    setSaving(true);
     try {
-      if (editingScheduleId) await supabase.from('finance_report_schedules').update(payload).eq('id', editingScheduleId);
-      else await supabase.from('finance_report_schedules').insert([{ ...payload, created_by: currentUserEmail || null }]);
+      const { error } = editingScheduleId
+        ? await supabase.from('finance_report_schedules').update(payload).eq('id', editingScheduleId)
+        : await supabase.from('finance_report_schedules').insert([{ ...payload, created_by: currentUserEmail || null }]);
+      if (error) throw error;
       setShowScheduleModal(false); setScheduleForm(emptySchedule); setEditingScheduleId(null); fetchSchedules();
       toast.success(tr('Harmonogram zapisany'));
-    } catch (e) { toast.error(tr('Błąd: ') + (e.message || e)); }
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
+    finally { setSaving(false); }
   };
-  const toggleSchedule = async (s) => { try { await supabase.from('finance_report_schedules').update({ is_active: !s.is_active }).eq('id', s.id); fetchSchedules(); } catch (e) { toast.error(e.message); } };
-  const deleteSchedule = async (id) => { if (!await confirmDialog(tr('Usunąć ten harmonogram?'))) return; try { await supabase.from('finance_report_schedules').delete().eq('id', id); fetchSchedules(); } catch (e) { toast.error(e.message); } };
+  const toggleSchedule = async (s) => {
+    try { const { error } = await supabase.from('finance_report_schedules').update({ is_active: !s.is_active }).eq('id', s.id); if (error) throw error; fetchSchedules(); }
+    catch (e) { toast.error(humanSaveError(e, tr)); }
+  };
+  const deleteSchedule = async (id) => {
+    if (!await confirmDialog(tr('Usunąć ten harmonogram? Raporty przestaną być wysyłane automatycznie.'))) return;
+    try { const { error } = await supabase.from('finance_report_schedules').delete().eq('id', id); if (error) throw error; fetchSchedules(); }
+    catch (e) { toast.error(humanSaveError(e, tr)); }
+  };
   const openEditSchedule = (s) => {
     setEditingScheduleId(s.id);
     setScheduleForm({ cadence: s.cadence || 'monthly', recipients: (s.recipients || []).join(', '), include_csv: s.include_csv !== false, is_active: s.is_active !== false });
@@ -613,45 +703,72 @@ const FinanceModule = () => {
   };
   useEffect(() => { fetchProposals(); /* eslint-disable-next-line */ }, []);
   const saveProposal = async () => {
-    if (!proposalForm.team_type || !proposalForm.description.trim() || !proposalForm.amount) { toast.error(tr('Wypełnij pola')); return; }
+    const missing = missingFields(proposalForm, [['team_type', tr('służbę')], ['description', tr('opis')], ['amount', tr('kwotę')]]);
+    if (missing.length) { toast.error(tr('Uzupełnij: {fields}', { fields: missing.join(', ') })); return; }
+    setSaving(true);
     try {
-      await supabase.from('budget_proposals').insert([{
+      const { error } = await supabase.from('budget_proposals').insert([{
         year: selectedYear, kind: proposalForm.kind, team_type: proposalForm.team_type, category: proposalForm.team_type,
         description: proposalForm.description.trim(), amount: parseFloat(proposalForm.amount), note: proposalForm.note || null,
         submitted_by: currentUserEmail || null, status: 'pending',
       }]);
+      if (error) throw error;
       setShowProposalModal(false); setProposalForm(emptyProposal); fetchProposals();
       toast.success(tr('Propozycja zgłoszona'));
-    } catch (e) { toast.error(tr('Błąd: ') + e.message); }
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
+    finally { setSaving(false); }
   };
+  const [decidingProposal, setDecidingProposal] = useState(null);
   const approveProposal = async (p) => {
+    if (decidingProposal) return;
+    setDecidingProposal(p.id);
     try {
       const targetYear = p.year || selectedYear;   // pozycja trafia do budżetu ROKU DOCELOWEGO propozycji
-      const { data } = await supabase.from('budget_items').insert([{
+      const { data, error } = await supabase.from('budget_items').insert([{
         year: targetYear, kind: p.kind || 'expense', category: p.category || p.team_type, team_type: p.team_type || p.category,
-        description: p.description, planned_amount: p.amount, period_type: 'year', campus_id: campusIdForInsert,
+        description: p.description, planned_amount: num(p.amount), period_type: 'year', campus_id: campusIdForInsert,
       }]).select();
-      await supabase.from('budget_proposals').update({ status: 'approved' }).eq('id', p.id);
-      await logBudgetAudit('created', { id: data?.[0]?.id, kind: p.kind, category: p.category || p.team_type, description: p.description, planned_amount: p.amount });
+      // Status zmieniamy DOPIERO po udanym dodaniu pozycji — inaczej propozycja znikała bez śladu.
+      if (error) throw error;
+      const { error: stErr } = await supabase.from('budget_proposals').update({ status: 'approved' }).eq('id', p.id);
+      if (stErr) {
+        // Cofnij pozycję, żeby przy ponownej próbie nie powstał duplikat.
+        if (data?.[0]?.id) await supabase.from('budget_items').delete().eq('id', data[0].id);
+        throw stErr;
+      }
+      await logBudgetAudit('created', { id: data?.[0]?.id, kind: p.kind, category: p.category || p.team_type, description: p.description, planned_amount: num(p.amount) });
       supabase.functions.invoke('budget-proposal-notify', { body: { proposalId: p.id, event: 'decided' } }).catch(() => {});
       fetchProposals(); fetchBudgetItems();
-      toast.success(tr('Zatwierdzono do budżetu') + ` (${targetYear})`);
-    } catch (e) { toast.error(tr('Błąd: ') + e.message); }
+      toast.success(tr('Zatwierdzono do budżetu {year}', { year: targetYear }));
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
+    finally { setDecidingProposal(null); }
   };
-  const rejectProposal = async (id) => {
+  const rejectProposal = async (p) => {
+    if (!await confirmDialog({ title: tr('Odrzucić propozycję?'), message: tr('„{name}” nie trafi do budżetu. Zgłaszający dostanie powiadomienie.', { name: p.description }), danger: true })) return;
+    setDecidingProposal(p.id);
     try {
-      await supabase.from('budget_proposals').update({ status: 'rejected' }).eq('id', id);
-      supabase.functions.invoke('budget-proposal-notify', { body: { proposalId: id, event: 'decided' } }).catch(() => {});
+      const { error } = await supabase.from('budget_proposals').update({ status: 'rejected' }).eq('id', p.id);
+      if (error) throw error;
+      supabase.functions.invoke('budget-proposal-notify', { body: { proposalId: p.id, event: 'decided' } }).catch(() => {});
       fetchProposals();
-    } catch (e) { toast.error(e.message); }
+      toast.success(tr('Propozycja odrzucona'));
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
+    finally { setDecidingProposal(null); }
   };
 
   // ── Status wydatku (workflow akceptacji) ──────────────────────────────────
+  // Decyzje (zatwierdź / odrzuć / opłacone) tylko z action:finance:approve — serwer to egzekwuje.
+  const STATUS_TOAST = { approved: 'Wydatek zatwierdzony', rejected: 'Wydatek odrzucony', paid: 'Oznaczono jako opłacony', submitted: 'Wysłano do akceptacji' };
   const setExpenseStatus = async (id, status) => {
     const patch = { status };
     if (status === 'approved') { patch.approved_by = currentUserEmail; patch.approved_at = new Date().toISOString(); }
-    if (status === 'paid') { patch.is_paid = true; patch.paid_date = new Date().toISOString().slice(0, 10); }
-    try { await supabase.from('expense_transactions').update(patch).eq('id', id); fetchExpenseTransactions(); } catch (e) { toast.error(e.message); }
+    if (status === 'paid') { patch.is_paid = true; patch.paid_date = localDateStr(); }
+    try {
+      const { error } = await supabase.from('expense_transactions').update(patch).eq('id', id);
+      if (error) throw error;
+      toast.success(tr(STATUS_TOAST[status] || 'Zapisano'));
+      fetchExpenseTransactions();
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
   };
 
   // Stan początkowy - salda kont
@@ -671,9 +788,9 @@ const FinanceModule = () => {
     currency_type: 'EUR'
   });
 
-  // Fetch budget items
+  // Fetch budget items (także na Wydatkach — formularz wydatku wybiera pozycję budżetu)
   useEffect(() => {
-    if (activeTab === 'budget') {
+    if (activeTab === 'budget' || activeTab === 'expenses') {
       fetchBudgetItems();
     }
   }, [activeTab, selectedYear, selectedCampusId]);
@@ -713,7 +830,7 @@ const FinanceModule = () => {
         .from('finance_balances')
         .select('*')
         .eq('year', selectedYear)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching balances:', error);
@@ -722,10 +839,10 @@ const FinanceModule = () => {
 
       if (data) {
         setAccountBalances({
-          bank_pln: data.bank_pln || 0,
-          bank_currency: data.bank_currency || 0,
-          cash_pln: data.cash_pln || 0,
-          cash_currency: data.cash_currency || 0,
+          bank_pln: num(data.bank_pln),
+          bank_currency: num(data.bank_currency),
+          cash_pln: num(data.cash_pln),
+          cash_currency: num(data.cash_currency),
           currency_type: data.currency_type || 'EUR'
         });
       }
@@ -735,6 +852,7 @@ const FinanceModule = () => {
   };
 
   const saveAccountBalances = async () => {
+    setSaving(true);
     try {
       const balanceData = {
         year: selectedYear,
@@ -750,7 +868,7 @@ const FinanceModule = () => {
         .from('finance_balances')
         .select('id')
         .eq('year', selectedYear)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
@@ -768,10 +886,11 @@ const FinanceModule = () => {
       setAccountBalances(balanceData);
       setShowBalanceModal(false);
       toast.success(tr('Stan kont zapisany pomyślnie'));
+      if (activeTab === 'reports') fetchReportData(reportRange);
     } catch (error) {
       console.error('Error saving balances:', error);
-      toast.error(tr('Błąd zapisywania: ') + error.message);
-    }
+      toast.error(humanSaveError(error, tr));
+    } finally { setSaving(false); }
   };
 
   const openBalanceModal = () => {
@@ -795,9 +914,10 @@ const FinanceModule = () => {
         .order('category');
 
       if (error) throw error;
-      setBudgetItems(data || []);
+      setBudgetItems(withNumbers(data, ['planned_amount', 'actual_amount']));
     } catch (error) {
       console.error('Error fetching budget items:', error);
+      toast.error(tr('Nie udało się wczytać budżetu. Odśwież stronę.'));
     } finally {
       setLoading(false);
     }
@@ -814,9 +934,10 @@ const FinanceModule = () => {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      setIncomeTransactions(data || []);
+      setIncomeTransactions(withNumbers(data));
     } catch (error) {
       console.error('Error fetching income transactions:', error);
+      toast.error(tr('Nie udało się wczytać wpływów. Odśwież stronę.'));
     } finally {
       setLoading(false);
     }
@@ -833,9 +954,10 @@ const FinanceModule = () => {
         .order('payment_date', { ascending: false });
 
       if (error) throw error;
-      setExpenseTransactions(data || []);
+      setExpenseTransactions(withNumbers(data));
     } catch (error) {
       console.error('Error fetching expense transactions:', error);
+      toast.error(tr('Nie udało się wczytać wydatków. Odśwież stronę.'));
     } finally {
       setLoading(false);
     }
@@ -866,20 +988,25 @@ const FinanceModule = () => {
     const label = await promptDialog(tr('Nazwa wersji (np. „Projekt zarządu", „Zatwierdzony")'));
     if (label === null) return;
     try {
-      await supabase.from('budget_versions').insert([{ year: selectedYear, label: label.trim() || `Wersja ${new Date().toLocaleDateString('pl-PL')}`, snapshot: budgetItems, created_by: currentUserEmail || null }]);
+      const { error } = await supabase.from('budget_versions').insert([{ year: selectedYear, label: label.trim() || tr('Wersja {date}', { date: new Date().toLocaleDateString(appLocale()) }), snapshot: budgetItems, created_by: currentUserEmail || null }]);
+      if (error) throw error;
       toast.success(tr('Zapisano wersję budżetu'));
       fetchBudgetHistory();
-    } catch (e) { toast.error(tr('Błąd zapisu wersji: ') + e.message); }
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
   };
   // Audyt ładowany od razu — żeby oznaczenia „zmieniono" były widoczne bez otwierania Historii.
   useEffect(() => { fetchBudgetHistory(); /* eslint-disable-next-line */ }, [selectedYear, budgetItems.length]);
 
   const saveBudgetItem = async () => {
-    if (!budgetForm.category || !budgetForm.planned_amount) {
-      toast.error(tr('Wypełnij wymagane pola'));
+    const isIncome = (budgetForm.kind || 'expense') === 'income';
+    const missing = missingFields(budgetForm, [['category', isIncome ? tr('kategorię wpływu') : tr('służbę')], ['planned_amount', tr('planowaną kwotę')]]);
+    if (missing.length) {
+      setFormErrors({ category: !budgetForm.category, planned_amount: !budgetForm.planned_amount });
+      toast.error(tr('Uzupełnij: {fields}', { fields: missing.join(', ') }));
       return;
     }
 
+    setSaving(true);
     try {
       if (budgetForm.id) {
         const before = budgetItems.find((b) => b.id === budgetForm.id) || null;
@@ -897,6 +1024,17 @@ const FinanceModule = () => {
           .eq('id', budgetForm.id);
 
         if (error) throw error;
+        // Zmiana służby lub opisu pozycji przenosi przypisane wydatki (wiązanie jest po tekście) —
+        // bez tego literówka poprawiona w budżecie odpinała wszystkie wydatki i realizacja spadała do 0.
+        if (before && before.kind !== 'income' && (normKey(before.category) !== normKey(budgetForm.category) || normKey(before.description) !== normKey(budgetForm.description))) {
+          const linked = expenseTransactions.filter((e) => matchesBudgetItem(e, before)).map((e) => e.id);
+          if (linked.length) {
+            const { error: moveErr } = await supabase.from('expense_transactions')
+              .update({ category: budgetForm.category, description: budgetForm.description, team_type: budgetForm.category })
+              .in('id', linked);
+            if (moveErr) toast.error(tr('Pozycja zapisana, ale nie udało się przenieść przypisanych wydatków.'));
+          }
+        }
         await logBudgetAudit('updated', { id: budgetForm.id, kind: budgetForm.kind, category: budgetForm.category, description: budgetForm.description, planned_amount: parseFloat(budgetForm.planned_amount) }, before);
       } else {
         // Insert new item
@@ -918,20 +1056,25 @@ const FinanceModule = () => {
         await logBudgetAudit('created', { id: data?.[0]?.id, kind: budgetForm.kind, category: budgetForm.category, description: budgetForm.description, planned_amount: parseFloat(budgetForm.planned_amount) });
       }
 
+      toast.success(budgetForm.id ? tr('Zapisano zmiany pozycji') : tr('Dodano pozycję {amount}', { amount: fmtMoney(budgetForm.planned_amount) }));
       setShowBudgetModal(false);
-      setBudgetForm({ kind: 'expense', category: '', description: '', planned_amount: '', period_type: 'year' });
+      setBudgetForm(EMPTY_BUDGET);
+      setFormErrors({});
       fetchBudgetItems();
+      fetchExpenseTransactions();
     } catch (error) {
       console.error('Error saving budget item:', error);
-      toast.error(tr('Błąd zapisywania: ') + error.message);
-    }
+      toast.error(humanSaveError(error, tr));
+    } finally { setSaving(false); }
   };
 
   const deleteBudgetItem = async (id) => {
-    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę pozycję budżetową?'))) return;
+    const target = budgetItems.find((b) => b.id === id);
+    const label = target ? [target.category, target.description].filter(Boolean).join(' — ') : '';
+    if (!await confirmDialog(tr('Usunąć pozycję budżetu „{name}”? Przypisane wydatki zostaną, ale przestaną się wliczać do jej realizacji.', { name: label }))) return;
 
     try {
-      const before = budgetItems.find((b) => b.id === id) || null;
+      const before = target || null;
       const { error } = await supabase
         .from('budget_items')
         .delete()
@@ -947,13 +1090,29 @@ const FinanceModule = () => {
   };
 
   // Kopiuje pozycje budżetowe z poprzedniego roku do bieżącego (plan, bez realizacji).
+  const [copyingBudget, setCopyingBudget] = useState(false);
   const copyBudgetFromLastYear = async () => {
+    if (copyingBudget) return;
     const prev = selectedYear - 1;
-    if (!await confirmDialog(tr(`Skopiować pozycje budżetu z roku ${prev} do ${selectedYear}?`))) return;
+    setCopyingBudget(true);
     try {
-      const { data: prevItems } = await supabase.from('budget_items').select('*').eq('year', prev);
-      if (!prevItems || prevItems.length === 0) { toast.error(tr(`Brak pozycji budżetu w roku ${prev}`)); return; }
-      const rows = prevItems.map((it) => ({
+      // Tylko bieżący kampus i aktualny stan roku docelowego — drugi klik nie podwaja planu.
+      const [{ data: prevItems, error: prevErr }, { data: currentItems, error: curErr }] = await Promise.all([
+        withCampusFilter(supabase.from('budget_items').select('*')).eq('year', prev),
+        withCampusFilter(supabase.from('budget_items').select('kind, category, description')).eq('year', selectedYear),
+      ]);
+      if (prevErr || curErr) throw (prevErr || curErr);
+      if (!prevItems || prevItems.length === 0) { toast.info(tr('Brak pozycji budżetu w roku {year}', { year: prev })); return; }
+      const plan = planBudgetCopy(prevItems, currentItems);
+      if (plan.toCopy.length === 0) {
+        toast.info(tr('Wszystkie pozycje z roku {from} są już w budżecie {to}.', { from: prev, to: selectedYear }));
+        return;
+      }
+      const msg = plan.skipped > 0
+        ? tr('Dodać {n} pozycji z roku {from} (razem {sum}) do budżetu {to}? {skipped} pozycji już jest w budżecie i zostanie pominiętych.', { n: plan.toCopy.length, from: prev, sum: fmtMoney(plan.total), to: selectedYear, skipped: plan.skipped })
+        : tr('Dodać {n} pozycji z roku {from} (razem {sum}) do budżetu {to}?', { n: plan.toCopy.length, from: prev, sum: fmtMoney(plan.total), to: selectedYear });
+      if (!await confirmDialog({ title: tr('Kopiuj budżet z {year}', { year: prev }), message: msg, confirmLabel: tr('Kopiuj') })) return;
+      const rows = plan.toCopy.map((it) => ({
         year: selectedYear, kind: it.kind || 'expense', category: it.category, team_type: it.team_type || it.category,
         description: it.description, planned_amount: it.planned_amount,
         period_type: it.period_type || 'year', period_value: it.period_value || null,
@@ -961,17 +1120,21 @@ const FinanceModule = () => {
       }));
       const { error } = await supabase.from('budget_items').insert(rows);
       if (error) throw error;
-      toast.success(tr(`Skopiowano ${rows.length} pozycji z ${prev}`));
+      toast.success(tr('Skopiowano {n} pozycji z {year}', { n: rows.length, year: prev }));
       fetchBudgetItems();
-    } catch (e) { toast.error(tr('Błąd kopiowania: ') + e.message); }
+    } catch (e) { toast.error(humanSaveError(e, tr)); }
+    finally { setCopyingBudget(false); }
   };
 
   const saveIncome = async () => {
-    if (!incomeForm.date || !incomeForm.amount || !incomeForm.source) {
-      toast.error(tr('Wypełnij wymagane pola'));
+    const missing = missingFields(incomeForm, [['date', tr('datę')], ['amount', tr('kwotę')], ['source', tr('źródło')]]);
+    if (missing.length) {
+      setFormErrors({ date: !incomeForm.date, amount: !incomeForm.amount, source: !String(incomeForm.source || '').trim() });
+      toast.error(tr('Uzupełnij: {fields}', { fields: missing.join(', ') }));
       return;
     }
 
+    setSaving(true);
     try {
       if (incomeForm.id) {
         // Update existing income
@@ -1002,18 +1165,22 @@ const FinanceModule = () => {
         if (error) throw error;
       }
 
-      await ensureTagsInPalette(incomeForm.tags);
+      toast.success(incomeForm.id ? tr('Zapisano zmiany wpływu') : tr('Dodano wpływ {amount}', { amount: fmtMoney(incomeForm.amount) }));
       setShowIncomeModal(false);
-      setIncomeForm({ date: '', amount: '', type: 'Kolekta', source: '', notes: '', tags: [] });
+      const tags = incomeForm.tags;
+      setIncomeForm(EMPTY_INCOME);
+      setFormErrors({});
       fetchIncomeTransactions();
+      ensureTagsInPalette(tags);
     } catch (error) {
       console.error('Error saving income:', error);
-      toast.error(tr('Błąd zapisywania: ') + error.message);
-    }
+      toast.error(humanSaveError(error, tr));
+    } finally { setSaving(false); }
   };
 
   const deleteIncome = async (id) => {
-    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć ten wpływ?'))) return;
+    const tx = incomeTransactions.find((i) => i.id === id);
+    if (!await confirmDialog(tr('Usunąć wpływ „{name}” ({amount}) z {date}? Tego nie da się cofnąć.', { name: tx?.source || tx?.type || '', amount: fmtMoney(tx?.amount), date: fmtDate(tx?.date) }))) return;
 
     try {
       const { error } = await supabase
@@ -1078,70 +1245,76 @@ const FinanceModule = () => {
   };
 
   const saveExpense = async () => {
-    if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.category || !expenseForm.description || !expenseForm.responsible_person) {
-      toast.error(tr('Wypełnij wymagane pola'));
+    // Wymagane: data, kwota, służba i opis (z budżetu albo własny — „poza budżetem”).
+    const missing = missingFields(expenseForm, [
+      ['payment_date', tr('datę dokumentu')], ['amount', tr('kwotę')], ['category', tr('służbę')],
+      ['description', expenseOffBudget ? tr('opis wydatku') : tr('pozycję budżetu')],
+    ]);
+    if (missing.length) {
+      setFormErrors({ payment_date: !expenseForm.payment_date, amount: !expenseForm.amount, category: !expenseForm.category, description: !String(expenseForm.description || '').trim() });
+      toast.error(tr('Uzupełnij: {fields}', { fields: missing.join(', ') }));
       return;
     }
 
+    const base = {
+      payment_date: expenseForm.payment_date,
+      amount: parseFloat(expenseForm.amount),
+      contractor: String(expenseForm.contractor || '').trim() || null,
+      category: expenseForm.category,
+      team_type: expenseForm.category,
+      cost_category: expenseForm.cost_category || null,
+      description: String(expenseForm.description || '').trim(),
+      detailed_description: expenseForm.detailed_description,
+      responsible_person: String(expenseForm.responsible_person || '').trim() || null,
+      invoice_number: expenseForm.invoice_number || null,
+      due_date: expenseForm.due_date || null,
+      documents: expenseForm.documents,
+      tags: expenseForm.tags,
+    };
+
+    setSaving(true);
     try {
       if (expenseForm.id) {
-        // Update existing expense
-        const { error } = await supabase
-          .from('expense_transactions')
-          .update({
-            payment_date: expenseForm.payment_date,
-            amount: parseFloat(expenseForm.amount),
-            contractor: expenseForm.contractor,
-            category: expenseForm.category,
-            cost_category: expenseForm.cost_category || null,
-            description: expenseForm.description,
-            detailed_description: expenseForm.detailed_description,
-            responsible_person: expenseForm.responsible_person,
-            invoice_number: expenseForm.invoice_number || null,
-            due_date: expenseForm.due_date || null,
-            is_paid: expenseForm.is_paid !== false,
-            documents: expenseForm.documents,
-            tags: expenseForm.tags
-          })
-          .eq('id', expenseForm.id);
-
+        // Bez prawa zatwierdzania nie wysyłamy pól decyzji (is_paid/status) — serwer odrzuciłby zapis.
+        const patch = canApprove ? { ...base, is_paid: expenseForm.is_paid !== false } : base;
+        const { error } = await supabase.from('expense_transactions').update(patch).eq('id', expenseForm.id);
         if (error) throw error;
       } else {
-        // Insert new expense
+        // Osoba bez action:finance:approve składa WNIOSEK (status 'submitted', nieopłacony) —
+        // zatwierdza go i oznacza jako opłacony ktoś z uprawnieniem.
+        const asRequest = !canApprove || !!expenseForm.submit_for_approval;
         const { error } = await supabase.from('expense_transactions').insert([{
-          payment_date: expenseForm.payment_date,
-          amount: parseFloat(expenseForm.amount),
-          contractor: expenseForm.contractor,
-          category: expenseForm.category,
-          cost_category: expenseForm.cost_category || null,
-          description: expenseForm.description,
-          detailed_description: expenseForm.detailed_description,
-          responsible_person: expenseForm.responsible_person,
-          invoice_number: expenseForm.invoice_number || null,
-          due_date: expenseForm.due_date || null,
-          is_paid: expenseForm.is_paid !== false,
-          status: expenseForm.submit_for_approval ? 'submitted' : 'approved',
-          submitted_by: expenseForm.submit_for_approval ? currentUserEmail : null,
-          documents: expenseForm.documents,
-          tags: expenseForm.tags
+          ...base,
+          is_paid: asRequest ? false : expenseForm.is_paid !== false,
+          status: asRequest ? 'submitted' : 'approved',
+          submitted_by: asRequest ? (currentUserEmail || null) : null,
         }]);
-
         if (error) throw error;
       }
 
-      await ensureTagsInPalette(expenseForm.tags);
-      await ensureVendor(expenseForm.contractor);
+      const asRequestMsg = !expenseForm.id && (!canApprove || expenseForm.submit_for_approval);
+      toast.success(expenseForm.id
+        ? tr('Zapisano zmiany wydatku')
+        : asRequestMsg
+          ? tr('Wniosek {amount} wysłany do akceptacji', { amount: fmtMoney(expenseForm.amount) })
+          : tr('Dodano wydatek {amount}', { amount: fmtMoney(expenseForm.amount) }));
+      const { tags, contractor } = expenseForm;
       setShowExpenseModal(false);
-      setExpenseForm({ payment_date: '', amount: '', contractor: '', category: '', cost_category: '', description: '', detailed_description: '', responsible_person: '', invoice_number: '', due_date: '', is_paid: true, submit_for_approval: false, documents: [], tags: [] });
+      setExpenseForm(EMPTY_EXPENSE);
+      setExpenseOffBudget(false);
+      setFormErrors({});
       fetchExpenseTransactions();
+      ensureTagsInPalette(tags);
+      ensureVendor(contractor);
     } catch (error) {
       console.error('Error saving expense:', error);
-      toast.error(tr('Błąd zapisywania: ') + error.message);
-    }
+      toast.error(humanSaveError(error, tr));
+    } finally { setSaving(false); }
   };
 
   const deleteExpense = async (id) => {
-    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć ten wydatek?'))) return;
+    const tx = expenseTransactions.find((e) => e.id === id);
+    if (!await confirmDialog(tr('Usunąć wydatek „{name}” ({amount})? Tego nie da się cofnąć.', { name: tx?.description || tx?.contractor || '', amount: fmtMoney(tx?.amount) }))) return;
 
     try {
       const { error } = await supabase
@@ -1168,12 +1341,8 @@ const FinanceModule = () => {
     setForm({ ...form, tags: form.tags.filter(t => t !== tag) });
   };
 
-  const calculateRealization = (category, description) => {
-    const total = expenseTransactions
-      .filter(exp => exp.category === category && exp.description === description)
-      .reduce((sum, exp) => sum + (exp.amount || 0), 0);
-    return total;
-  };
+  // Realizacja pozycji = zatwierdzone/opłacone wydatki tej służby z tym opisem (bez wielkości liter/spacji).
+  const calculateRealization = (category, description) => realizationFor({ category, description }, expenseTransactions);
 
   const getProgressBarColor = (percentage) => {
     if (percentage < 80) return 'from-green-500 to-green-600';
@@ -1184,7 +1353,7 @@ const FinanceModule = () => {
   // Filtrowanie wpływów
   const filteredIncomeTransactions = incomeTransactions.filter(transaction => {
     if (incomeFilters.type && transaction.type !== incomeFilters.type) return false;
-    if (incomeFilters.source && !transaction.source.toLowerCase().includes(incomeFilters.source.toLowerCase())) return false;
+    if (incomeFilters.source && !String(transaction.source || '').toLowerCase().includes(incomeFilters.source.toLowerCase())) return false;
     if (incomeFilters.tag && (!transaction.tags || !transaction.tags.includes(incomeFilters.tag))) return false;
     if (incomeFilters.dateFrom && transaction.date < incomeFilters.dateFrom) return false;
     if (incomeFilters.dateTo && transaction.date > incomeFilters.dateTo) return false;
@@ -1195,8 +1364,8 @@ const FinanceModule = () => {
   const filteredExpenseTransactions = expenseTransactions.filter(transaction => {
     if (expenseFilters.category && transaction.category !== expenseFilters.category) return false;
     if (expenseFilters.cost_category && transaction.cost_category !== expenseFilters.cost_category) return false;
-    if (expenseFilters.contractor && !transaction.contractor.toLowerCase().includes(expenseFilters.contractor.toLowerCase())) return false;
-    if (expenseFilters.responsible && !transaction.responsible_person.toLowerCase().includes(expenseFilters.responsible.toLowerCase())) return false;
+    if (expenseFilters.contractor && !String(transaction.contractor || '').toLowerCase().includes(expenseFilters.contractor.toLowerCase())) return false;
+    if (expenseFilters.responsible && !String(transaction.responsible_person || '').toLowerCase().includes(expenseFilters.responsible.toLowerCase())) return false;
     if (expenseFilters.tag && (!transaction.tags || !transaction.tags.includes(expenseFilters.tag))) return false;
     if (expenseFilters.dateFrom && transaction.payment_date < expenseFilters.dateFrom) return false;
     if (expenseFilters.dateTo && transaction.payment_date > expenseFilters.dateTo) return false;
@@ -1204,16 +1373,32 @@ const FinanceModule = () => {
   });
 
   // Pobierz unikalne wartości dla filtrów
-  const uniqueIncomeSources = [...new Set(incomeTransactions.map(t => t.source))];
-  const uniqueIncomeTags = [...new Set(incomeTransactions.flatMap(t => t.tags || []))];
-  const uniqueExpenseContractors = [...new Set(expenseTransactions.map(t => t.contractor))];
-  const uniqueExpenseResponsible = [...new Set(expenseTransactions.map(t => t.responsible_person))];
-  const uniqueExpenseTags = [...new Set(expenseTransactions.flatMap(t => t.tags || []))];
+  // Wydatki z planów cyklicznych i z mobilki mogą nie mieć kontrahenta/osoby — puste pomijamy.
+  const uniqueIncomeSources = [...new Set(incomeTransactions.map(t => t.source).filter(Boolean))];
+  const uniqueIncomeTags = [...new Set(incomeTransactions.flatMap(t => t.tags || []).filter(Boolean))];
+  const uniqueExpenseContractors = [...new Set(expenseTransactions.map(t => t.contractor).filter(Boolean))];
+  const uniqueExpenseResponsible = [...new Set(expenseTransactions.map(t => t.responsible_person).filter(Boolean))];
+  const uniqueExpenseTags = [...new Set(expenseTransactions.flatMap(t => t.tags || []).filter(Boolean))];
+  const incomeTypeOptions = [...new Set([
+    ...(incomeCategories.length ? incomeCategories.map((c) => c.name) : ['Kolekta', 'Darowizny', 'Inne']),
+    ...incomeTransactions.map((t) => t.type).filter(Boolean),
+  ])];
+  const pendingExpenses = expenseTransactions.filter(isPendingExpense);
 
   const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 2 + i);
 
-  // Get unique categories from budget items for expense category dropdown
-  const budgetCategories = [...new Set(budgetItems.map(item => item.category))].map(cat => ({ value: cat, label: cat }));
+  // Kategorie (służby) do wydatku: najpierw te z budżetu, potem pozostałe służby — wydatek
+  // da się zapisać także bez pozycji budżetowej („poza budżetem”).
+  const budgetCategories = [...new Set(budgetItems.filter((i) => i.kind !== 'income').map(item => item.category).filter(Boolean))].map(cat => ({ value: cat, label: cat }));
+  const expenseCategoryOptions = [
+    ...budgetCategories,
+    ...serviceOptions.filter((o) => !budgetCategories.some((b) => b.value === o.value)),
+    ...(expenseForm.category && !budgetCategories.some((b) => b.value === expenseForm.category) && !serviceOptions.some((o) => o.value === expenseForm.category)
+      ? [{ value: expenseForm.category, label: expenseForm.category }] : []),
+  ];
+  const budgetDescriptionsFor = (category) => budgetItems
+    .filter((item) => item.kind !== 'income' && normKey(item.category) === normKey(category) && item.description)
+    .map((item) => ({ value: item.description, label: `${item.description} · ${fmtMoney(item.planned_amount)}` }));
 
   // Budżet dzieli się na planowane WYDATKI i PRZYCHODY (kolumna kind).
   const [budgetPeriod, setBudgetPeriod] = useState('all'); // filtr okresu: all|year|quarter|month
@@ -1229,21 +1414,25 @@ const FinanceModule = () => {
 
   return (
     <div className="space-y-8">
-      <PageHeader moduleKey="finance" icon={DollarSign} title="Finanse" subtitle={t('Zarządzanie budżetem i finansami kościoła')}
+      <PageHeader moduleKey="finance" icon={DollarSign} title={tr('Finanse')} subtitle={t('Zarządzanie budżetem i finansami kościoła')}
         actions={
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCategoryModal(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 text-sm font-medium shadow-sm hover:bg-white dark:hover:bg-gray-900 backdrop-blur-sm shrink-0"
               title={tr('Zarządzaj kategoriami')}
+              aria-label={tr('Zarządzaj kategoriami')}
             >
-              <Tag size={15} /> {tr('Kategorie')}
+              <Tag size={15} /> <span className="hidden sm:inline">{tr('Kategorie')}</span>
             </button>
-            <CustomSelect
-              value={selectedYear}
-              onChange={(val) => setSelectedYear(parseInt(val))}
-              options={years.map(y => ({ value: y, label: y.toString() }))}
-            />
+            {/* Raporty mają własny wybór okresu — rok modułu ukrywamy, żeby nie było dwóch selektorów. */}
+            {activeTab !== 'reports' && (
+              <CustomSelect
+                value={selectedYear}
+                onChange={(val) => setSelectedYear(parseInt(val))}
+                options={years.map(y => ({ value: y, label: y.toString() }))}
+              />
+            )}
           </div>
         } />
 
@@ -1264,10 +1453,10 @@ const FinanceModule = () => {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Budżet {selectedYear}
+              {tr('Budżet')} {selectedYear}
             </h2>
             <div className="flex items-center gap-2 flex-wrap">
-              <select value={budgetPeriod} onChange={(e) => setBudgetPeriod(e.target.value)} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200">
+              <select value={budgetPeriod} onChange={(e) => setBudgetPeriod(e.target.value)} aria-label={tr('Okres pozycji')} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200">
                 <option value="all">{tr('Wszystkie okresy')}</option>
                 <option value="year">{tr('Roczny')}</option>
                 <option value="quarter">{tr('Kwartalny')}</option>
@@ -1277,36 +1466,43 @@ const FinanceModule = () => {
                 onClick={() => { fetchBudgetHistory(); setShowBudgetHistory(true); }}
                 className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
                 title={tr('Historia zmian i wersje')}
+                aria-label={tr('Historia zmian i wersje')}
               >
-                <Clock size={16} /> {tr('Historia')}
+                <Clock size={16} /> <span className="hidden sm:inline">{tr('Historia')}</span>
               </button>
               <button
                 onClick={saveBudgetVersion}
                 className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
                 title={tr('Zapisz migawkę bieżącego budżetu')}
+                aria-label={tr('Zapisz wersję')}
               >
-                <Copy size={16} /> {tr('Zapisz wersję')}
+                <Copy size={16} /> <span className="hidden sm:inline">{tr('Zapisz wersję')}</span>
               </button>
               <button
                 onClick={copyBudgetFromLastYear}
-                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
+                disabled={copyingBudget}
+                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm disabled:opacity-60"
                 title={tr('Kopiuj z zeszłego roku')}
+                aria-label={tr('Kopiuj z {year}', { year: selectedYear - 1 })}
               >
-                <Copy size={16} /> {tr('Kopiuj z')} {selectedYear - 1}
+                {copyingBudget ? <Spinner size={14} /> : <Copy size={16} />} <span className="hidden sm:inline">{tr('Kopiuj z {year}', { year: selectedYear - 1 })}</span>
               </button>
               <button
                 onClick={() => exportToCsv(`budzet-${selectedYear}.csv`, budgetItems, [
                   { label: 'Służba', value: 'category' }, { label: 'Opis', value: 'description' },
-                  { label: 'Plan', value: 'planned_amount' },
-                  { label: 'Realizacja', value: (r) => calculateRealization(r.category, r.description) },
+                  { label: 'Rodzaj', value: (r) => (r.kind === 'income' ? 'przychód' : 'wydatek') },
+                  { label: 'Okres', value: (r) => ({ year: 'roczny', quarter: 'kwartalny', month: 'miesięczny' }[r.period_type || 'year'] || r.period_type) },
+                  { label: 'Plan', value: (r) => num(r.planned_amount) },
+                  { label: 'Realizacja', value: (r) => (r.kind === 'income' ? calculateIncomeRealization(r.category) : calculateRealization(r.category, r.description)) },
                 ])}
                 className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
                 title={tr('Eksport CSV')}
+                aria-label={tr('Eksport CSV')}
               >
                 <Download size={16} /> CSV
               </button>
               <button
-                onClick={() => setShowBudgetModal(true)}
+                onClick={openCreateBudget}
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
@@ -1318,16 +1514,16 @@ const FinanceModule = () => {
           {/* Podsumowanie planu: przychody vs wydatki */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
             <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-900/10 p-4">
-              <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase">{tr('Planowane przychody')}</div>
-              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{totalPlannedIncome.toLocaleString('pl-PL')} zł</div>
+              <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase">{tr('Planowane przychody')}</div>
+              <div className="text-xl sm:text-2xl font-bold text-emerald-800 dark:text-emerald-300 tabular-nums">{fmtMoney(totalPlannedIncome)}</div>
             </div>
             <div className="rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50/60 dark:bg-red-900/10 p-4">
               <div className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase">{tr('Planowane wydatki')}</div>
-              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{totalPlannedExpense.toLocaleString('pl-PL')} zł</div>
+              <div className="text-xl sm:text-2xl font-bold text-red-700 dark:text-red-300 tabular-nums">{fmtMoney(totalPlannedExpense)}</div>
             </div>
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-4">
               <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{tr('Planowany bilans')}</div>
-              <div className={`text-2xl font-bold ${totalPlannedIncome - totalPlannedExpense >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{(totalPlannedIncome - totalPlannedExpense).toLocaleString('pl-PL')} zł</div>
+              <div className={`text-xl sm:text-2xl font-bold tabular-nums ${totalPlannedIncome - totalPlannedExpense >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(totalPlannedIncome - totalPlannedExpense)}</div>
             </div>
           </div>
 
@@ -1340,35 +1536,35 @@ const FinanceModule = () => {
                   <tr>
                     <TH>{tr('Kategoria')}</TH>
                     <TH>{tr('Opis')}</TH>
-                    <TH align="right">{tr('Plan (PLN)')}</TH>
-                    <TH align="right">{tr('Realizacja (PLN)')}</TH>
+                    <TH align="right">{tr('Plan (zł)')}</TH>
+                    <TH align="right">{tr('Realizacja (zł)')}</TH>
                     <TH align="center">{tr('% Realizacji')}</TH>
                     <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
                   </tr>
                 </THead>
                 <tbody>
                   {incomeBudgetItems.map((it) => {
-                    const planned = Number(it.planned_amount || 0);
+                    const planned = num(it.planned_amount);
                     const real = calculateIncomeRealization(it.category);
-                    const pct = planned > 0 ? Math.round((real / planned) * 100) : 0;
+                    const pct = planned > 0 ? (real / planned) * 100 : 0;
                     return (
                       <TR key={it.id}>
                         <TD className="font-semibold text-gray-900 dark:text-white">{it.category}</TD>
                         <TD muted>{it.description}</TD>
                         <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                           <span className="inline-flex items-center gap-1.5 justify-end">
-                            {planned.toLocaleString('pl-PL')} zł
+                            {fmtMoney(planned)}
                             {itemChanges(it.id).length > 0 && (
-                              <button onClick={() => setChangeItem(itemChanges(it.id))} title={tr('Kwota zmieniona — pokaż historię')} className="text-amber-500 hover:text-amber-600"><Clock size={13} /></button>
+                              <button onClick={() => setChangeItem(itemChanges(it.id))} title={tr('Kwota zmieniona — pokaż historię')} aria-label={tr('Kwota zmieniona — pokaż historię')} className="text-amber-700 hover:text-amber-800 dark:text-amber-400"><Clock size={13} /></button>
                             )}
                           </span>
                         </TD>
-                        <TD align="right" numeric className="text-emerald-600 font-medium whitespace-nowrap">{real.toLocaleString('pl-PL')} zł</TD>
-                        <TD align="center" numeric>{pct}%</TD>
+                        <TD align="right" numeric className="text-emerald-700 dark:text-emerald-400 font-medium whitespace-nowrap">{fmtMoney(real)}</TD>
+                        <TD align="center" numeric>{fmtPct(pct, 0)}</TD>
                         <TD align="right" className="whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                            <button onClick={() => { setBudgetForm({ ...it, planned_amount: String(it.planned_amount) }); setShowBudgetModal(true); }} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg" title={tr('Edytuj')}><Edit2 size={16} /></button>
-                            <button onClick={() => deleteBudgetItem(it.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg" title={tr('Usuń')}><Trash2 size={16} /></button>
+                          <div className="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <button onClick={() => openEditBudget(it)} className="p-2 text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 rounded-lg" title={tr('Edytuj')} aria-label={tr('Edytuj pozycję {name}', { name: it.category })}><Edit2 size={16} /></button>
+                            <button onClick={() => deleteBudgetItem(it.id)} className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg" title={tr('Usuń')} aria-label={tr('Usuń pozycję {name}', { name: it.category })}><Trash2 size={16} /></button>
                           </div>
                         </TD>
                       </TR>
@@ -1376,8 +1572,8 @@ const FinanceModule = () => {
                   })}
                   <TR className="bg-gray-50/70 dark:bg-gray-800/40 font-semibold">
                     <TD className="text-gray-900 dark:text-white" colSpan={2}>{tr('Suma przychodów')}</TD>
-                    <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">{totalPlannedIncome.toLocaleString('pl-PL')} zł</TD>
-                    <TD align="right" numeric className="text-emerald-600 whitespace-nowrap">{incomeBudgetItems.reduce((s, it) => s + calculateIncomeRealization(it.category), 0).toLocaleString('pl-PL')} zł</TD>
+                    <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">{fmtMoney(totalPlannedIncome)}</TD>
+                    <TD align="right" numeric className="text-emerald-700 dark:text-emerald-400 whitespace-nowrap">{fmtMoney(incomeBudgetItems.reduce((s, it) => s + calculateIncomeRealization(it.category), 0))}</TD>
                     <TD />
                     <TD />
                   </TR>
@@ -1395,7 +1591,7 @@ const FinanceModule = () => {
                 <div className="flex items-center gap-2 font-semibold text-red-700 dark:text-red-300 mb-1"><AlertTriangle size={18} /> {tr('Przekroczony budżet')} ({over.length})</div>
                 <ul className="text-sm text-red-700/90 dark:text-red-300/90 list-disc pl-6">
                   {over.slice(0, 6).map((it) => (
-                    <li key={it.id}>{it.category} — {it.description}: {tr('plan')} {Number(it.planned_amount).toLocaleString('pl-PL')} zł, {tr('wydano')} {calculateRealization(it.category, it.description).toLocaleString('pl-PL')} zł</li>
+                    <li key={it.id}>{it.category} — {it.description}: {tr('plan')} {fmtMoney(it.planned_amount)}, {tr('wydano')} {fmtMoney(calculateRealization(it.category, it.description))}</li>
                   ))}
                 </ul>
               </div>
@@ -1405,18 +1601,57 @@ const FinanceModule = () => {
           {loading ? (
             <Spinner center />
           ) : budgetItems.length === 0 ? (
-            <EmptyState icon={DollarSign} title={`Brak pozycji budżetowych na rok ${selectedYear}`} />
+            <EmptyState
+              icon={DollarSign}
+              title={tr('Brak pozycji budżetowych na rok {year}', { year: selectedYear })}
+              subtitle={tr('Dodaj pierwszą pozycję albo skopiuj plan z poprzedniego roku.')}
+              action={<Button onClick={openCreateBudget}><Plus size={16} /> {tr('Dodaj pozycję budżetową')}</Button>}
+            />
           ) : expenseBudgetItems.length === 0 ? null : (
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <>
+            {/* Telefon: karty zamiast szerokiej tabeli — plan, wydano i pozostało zawsze na ekranie. */}
+            <div className="sm:hidden space-y-2">
+              <div className="text-sm font-bold text-red-700 dark:text-red-300 flex items-center gap-2 px-1"><ArrowDownRight size={16} /> {tr('Planowane wydatki')}</div>
+              {expenseBudgetItems.map((item) => {
+                const planned = num(item.planned_amount);
+                const realization = calculateRealization(item.category, item.description);
+                const pct = planned > 0 ? (realization / planned) * 100 : 0;
+                const remaining = planned - realization;
+                return (
+                  <div key={item.id} className="rounded-2xl border border-gray-200 dark:border-gray-700 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{item.category}</div>
+                        {item.description && <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{item.description}</div>}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => openEditBudget(item)} className="p-2 text-gray-500 dark:text-gray-400 rounded-lg" aria-label={tr('Edytuj pozycję {name}', { name: item.category })}><Edit2 size={16} /></button>
+                        <button onClick={() => deleteBudgetItem(item.id)} className="p-2 text-red-600 dark:text-red-400 rounded-lg" aria-label={tr('Usuń pozycję {name}', { name: item.category })}><Trash2 size={16} /></button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
+                      <div><div className="text-gray-500 dark:text-gray-400">{tr('Plan')}</div><div className="font-semibold text-gray-900 dark:text-white tabular-nums">{fmtMoney(planned)}</div></div>
+                      <div><div className="text-gray-500 dark:text-gray-400">{tr('Wydano')}</div><div className="font-semibold text-gray-900 dark:text-white tabular-nums">{fmtMoney(realization)}</div></div>
+                      <div className="text-right"><div className="text-gray-500 dark:text-gray-400">{t('Pozostało')}</div><div className={`font-semibold tabular-nums ${remaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(remaining)}</div></div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2"><div className={`h-2 rounded-full bg-gradient-to-r ${getProgressBarColor(pct)}`} style={{ width: `${Math.min(pct, 100)}%` }} /></div>
+                      <span className="text-xs font-semibold tabular-nums text-gray-700 dark:text-gray-200">{fmtPct(pct)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="hidden sm:block rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="px-4 py-2.5 bg-red-50 dark:bg-red-900/10 text-sm font-bold text-red-700 dark:text-red-300 flex items-center gap-2"><ArrowDownRight size={16} /> {tr('Planowane wydatki')}</div>
               <DataTable flush>
                 <THead>
                   <tr>
                     <TH>{t('Służba')}</TH>
                     <TH>{t('Opis kosztu')}</TH>
-                    <TH align="right">Plan (PLN)</TH>
-                    <TH align="right">Realizacja (PLN)</TH>
-                    <TH align="center">% Realizacji</TH>
+                    <TH align="right">{tr('Plan (zł)')}</TH>
+                    <TH align="right">{tr('Realizacja (zł)')}</TH>
+                    <TH align="center">{tr('% Realizacji')}</TH>
                     <TH align="right">{t('Pozostało')}</TH>
                     <TH align="center"><span className="sr-only">{t('Akcje')}</span></TH>
                   </tr>
@@ -1450,7 +1685,7 @@ const FinanceModule = () => {
                       }, 0);
 
                       items.forEach((item, itemIndex) => {
-                        const planned = Number(item.planned_amount || 0);
+                        const planned = num(item.planned_amount);
                         const realization = calculateRealization(item.category, item.description);
                         const percentage = planned > 0 ? (realization / planned) * 100 : 0;
                         const remaining = planned - realization;
@@ -1472,9 +1707,9 @@ const FinanceModule = () => {
                             <TD muted>{item.description}</TD>
                             <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                               <span className="inline-flex items-center gap-1.5 justify-end">
-                                {Number(item.planned_amount || 0).toLocaleString('pl-PL')} zł
+                                {fmtMoney(planned)}
                                 {itemChanges(item.id).length > 0 && (
-                                  <button onClick={() => setChangeItem(itemChanges(item.id))} title={tr('Kwota zmieniona — pokaż historię')} className="text-amber-500 hover:text-amber-600">
+                                  <button onClick={() => setChangeItem(itemChanges(item.id))} title={tr('Kwota zmieniona — pokaż historię')} aria-label={tr('Kwota zmieniona — pokaż historię')} className="text-amber-700 hover:text-amber-800 dark:text-amber-400">
                                     <Clock size={13} />
                                   </button>
                                 )}
@@ -1492,7 +1727,7 @@ const FinanceModule = () => {
                                 }));
                               }}
                             >
-                              {realization.toLocaleString('pl-PL')} zł
+                              {fmtMoney(realization)}
                               {expandedBudgetItems[`${item.id}`] ?
                                 <ChevronUp size={16} className="inline ml-1" /> :
                                 <ChevronDown size={16} className="inline ml-1" />
@@ -1501,7 +1736,7 @@ const FinanceModule = () => {
                             <TD>
                               <div className="space-y-2">
                                 <div className="text-center font-semibold tabular-nums text-gray-900 dark:text-white">
-                                  {percentage.toFixed(1)}%
+                                  {fmtPct(percentage)}
                                 </div>
                                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                                   <div
@@ -1511,18 +1746,16 @@ const FinanceModule = () => {
                                 </div>
                               </div>
                             </TD>
-                            <TD align="right" numeric className={`font-semibold whitespace-nowrap ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {remaining.toLocaleString('pl-PL')} zł
+                            <TD align="right" numeric className={`font-semibold whitespace-nowrap ${remaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                              {fmtMoney(remaining)}
                             </TD>
                             <TD align="center">
-                              <div className="flex justify-center gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                              <div className="flex justify-center gap-1 opacity-60 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity">
                                 <button
-                                  onClick={() => {
-                                    setBudgetForm(item);
-                                    setShowBudgetModal(true);
-                                  }}
-                                  className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                                  onClick={() => openEditBudget(item)}
+                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
                                   title={tr('Edytuj')}
+                                  aria-label={tr('Edytuj pozycję {name}', { name: item.description || item.category })}
                                 >
                                   <Edit2 size={16} />
                                 </button>
@@ -1530,6 +1763,7 @@ const FinanceModule = () => {
                                   onClick={() => deleteBudgetItem(item.id)}
                                   className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                                   title={tr('Usuń')}
+                                  aria-label={tr('Usuń pozycję {name}', { name: item.description || item.category })}
                                 >
                                   <Trash2 size={16} />
                                 </button>
@@ -1540,9 +1774,7 @@ const FinanceModule = () => {
 
                         // Add expandable expense list row
                         if (expandedBudgetItems[`${item.id}`]) {
-                          const categoryExpenses = expenseTransactions.filter(
-                            (exp) => exp.category === item.category && exp.description === item.description
-                          );
+                          const categoryExpenses = expenseTransactions.filter((exp) => matchesBudgetItem(exp, item));
 
                           rows.push(
                             <TR key={`expenses-${item.id}`} className="bg-gray-50/70 dark:bg-gray-800/40">
@@ -1550,7 +1782,7 @@ const FinanceModule = () => {
                                 {categoryExpenses.length > 0 ? (
                                   <div className="space-y-2">
                                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                      Wydatki: {item.category} - {item.description}
+                                      {tr('Wydatki:')} {item.category} - {item.description}
                                     </p>
                                     <div className="space-y-1">
                                       {categoryExpenses.map((expense) => (
@@ -1561,7 +1793,7 @@ const FinanceModule = () => {
                                           <div className="flex flex-col">
                                             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{tr('Data')}</span>
                                             <span className="text-gray-900 dark:text-white">
-                                              {new Date(expense.payment_date).toLocaleDateString('pl-PL')}
+                                              {fmtDate(expense.payment_date)}
                                             </span>
                                           </div>
                                           <div className="flex flex-col">
@@ -1571,8 +1803,11 @@ const FinanceModule = () => {
                                           <div className="flex flex-col">
                                             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kwota')}</span>
                                             <span className="font-bold text-gray-900 dark:text-white">
-                                              {expense.amount.toLocaleString('pl-PL')} zł
+                                              {fmtMoney(expense.amount)}
                                             </span>
+                                            {!isCountedExpense(expense) && (
+                                              <span className="text-[11px] text-gray-500 dark:text-gray-400">{tr((EXPENSE_STATUS[expense.status] || {}).label || expense.status)} · {tr('nie wliczony')}</span>
+                                            )}
                                           </div>
                                           <div className="flex flex-col">
                                             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Szczegółowy opis')}</span>
@@ -1587,7 +1822,7 @@ const FinanceModule = () => {
                                     </div>
                                     <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
                                       <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                        Suma: {categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString('pl-PL')} zł
+                                        {tr('Suma:')} {fmtMoney(categoryExpenses.filter(isCountedExpense).reduce((sum, exp) => sum + num(exp.amount), 0))}
                                       </span>
                                     </div>
                                   </div>
@@ -1612,19 +1847,19 @@ const FinanceModule = () => {
                       rows.push(
                         <TR key={`subtotal-${category}`} className="bg-gray-50/70 dark:bg-gray-800/40 font-semibold">
                           <TD className="text-gray-900 dark:text-white" colSpan={2}>
-                            Podsumowanie: {category}
+                            {tr('Podsumowanie:')} {category}
                           </TD>
                           <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                            {categoryTotalPlanned.toLocaleString('pl-PL')} zł
+                            {fmtMoney(categoryTotalPlanned)}
                           </TD>
                           <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                            {categoryTotalRealization.toLocaleString('pl-PL')} zł
+                            {fmtMoney(categoryTotalRealization)}
                           </TD>
                           <TD align="center" numeric className="text-gray-900 dark:text-white">
-                            {categoryPercentage.toFixed(1)}%
+                            {fmtPct(categoryPercentage)}
                           </TD>
-                          <TD align="right" numeric className={`whitespace-nowrap ${categoryTotalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {categoryTotalRemaining.toLocaleString('pl-PL')} zł
+                          <TD align="right" numeric className={`whitespace-nowrap ${categoryTotalRemaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                            {fmtMoney(categoryTotalRemaining)}
                           </TD>
                           <TD />
                         </TR>
@@ -1640,16 +1875,16 @@ const FinanceModule = () => {
                           {tr('SUMA CAŁKOWITA')}
                         </TD>
                         <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                          {grandTotalPlanned.toLocaleString('pl-PL')} zł
+                          {fmtMoney(grandTotalPlanned)}
                         </TD>
                         <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                          {grandTotalRealization.toLocaleString('pl-PL')} zł
+                          {fmtMoney(grandTotalRealization)}
                         </TD>
                         <TD align="center" numeric className="text-gray-900 dark:text-white">
-                          {grandPercentage.toFixed(1)}%
+                          {fmtPct(grandPercentage)}
                         </TD>
-                        <TD align="right" numeric className={`whitespace-nowrap ${grandTotalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {grandTotalRemaining.toLocaleString('pl-PL')} zł
+                        <TD align="right" numeric className={`whitespace-nowrap ${grandTotalRemaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                          {fmtMoney(grandTotalRemaining)}
                         </TD>
                         <TD />
                       </TR>
@@ -1660,6 +1895,7 @@ const FinanceModule = () => {
                 </tbody>
               </DataTable>
             </div>
+            </>
           )}
 
           {/* Propozycje budżetu od służb */}
@@ -1678,9 +1914,13 @@ const FinanceModule = () => {
                       <div className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{p.team_type} — {p.description} <span className="text-xs font-normal text-gray-400">({tr('budżet')} {p.year})</span></div>
                       <div className="text-xs text-gray-400 truncate">{p.note ? `${p.note} · ` : ''}{tr('zgłosił')}: {p.submitted_by || '—'}</div>
                     </div>
-                    <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0">{Number(p.amount).toLocaleString('pl-PL')} zł</div>
-                    <button onClick={() => approveProposal(p)} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg shrink-0" title={tr('Zatwierdź do budżetu')}><CheckCircle size={16} /></button>
-                    <button onClick={() => rejectProposal(p.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg shrink-0" title={tr('Odrzuć')}><XCircle size={16} /></button>
+                    <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0 tabular-nums">{fmtMoney(p.amount)}</div>
+                    {canApprove && (
+                      <>
+                        <button onClick={() => approveProposal(p)} disabled={!!decidingProposal} className="p-2 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg shrink-0 disabled:opacity-50" title={tr('Zatwierdź do budżetu')} aria-label={tr('Zatwierdź do budżetu: {name}', { name: p.description })}>{decidingProposal === p.id ? <Spinner size={16} /> : <CheckCircle size={16} />}</button>
+                        <button onClick={() => rejectProposal(p)} disabled={!!decidingProposal} className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg shrink-0 disabled:opacity-50" title={tr('Odrzuć')} aria-label={tr('Odrzuć propozycję: {name}', { name: p.description })}><XCircle size={16} /></button>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1691,25 +1931,26 @@ const FinanceModule = () => {
 
       {activeTab === 'income' && (
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Wpływy {selectedYear}
+              {tr('Wpływy')} {selectedYear}
             </h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => exportToCsv(`wplywy-${selectedYear}.csv`, filteredIncomeTransactions, [
                   { label: 'Data', value: 'date' }, { label: 'Typ', value: 'type' }, { label: 'Źródło', value: 'source' },
-                  { label: 'Kwota', value: 'amount' }, { label: 'Notatka', value: 'notes' },
+                  { label: 'Kwota', value: (r) => num(r.amount) }, { label: 'Notatka', value: 'notes' },
                   { label: 'Tagi', value: (r) => (r.tags || []).join(', ') },
                 ])}
                 className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
                 title={tr('Eksport CSV')}
+                aria-label={tr('Eksport CSV')}
               >
                 <Download size={16} /> CSV
               </button>
               <button
                 data-tour="fin-income-add"
-                onClick={() => setShowIncomeModal(true)}
+                onClick={openCreateIncome}
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
@@ -1718,19 +1959,28 @@ const FinanceModule = () => {
             </div>
           </div>
 
-          {/* Filtry wpływów */}
+          {/* Darowizny z Hojności to osobna księga — mówimy o tym wprost, żeby nie liczyć ich dwa razy. */}
+          <p className="mb-4 text-sm text-gray-600 dark:text-gray-300 flex items-start gap-2">
+            <Banknote size={16} className="shrink-0 mt-0.5 text-gray-400" />
+            <span>
+              {tr('Darowizny online i zapisane w module Hojność nie pojawiają się tu automatycznie.')}{' '}
+              {can('module:giving') && <Link to="/giving" className="font-semibold text-gray-900 dark:text-white underline underline-offset-2">{tr('Zobacz Hojność')}</Link>}
+              {' · '}{tr('Wpisz je tutaj jako wpływ typu „Darowizny”, jeśli mają wejść do bilansu.')}
+            </span>
+          </p>
+
+          {/* Filtry wpływów (tylko gdy jest co filtrować) */}
+          {incomeTransactions.length > 0 && (
           <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">{t('Filtry')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
               <CustomSelect
-                label="Typ"
+                label={tr('Typ')}
                 value={incomeFilters.type}
                 onChange={(val) => setIncomeFilters({...incomeFilters, type: val})}
                 options={[
                   { value: '', label: tr('Wszystkie') },
-                  { value: 'Kolekta', label: 'Kolekta' },
-                  { value: 'Darowizny', label: 'Darowizny' },
-                  { value: 'Inne', label: tr('Inne') }
+                  ...incomeTypeOptions.map((v) => ({ value: v, label: tr(v) })),
                 ]}
                 placeholder={t('Wszystkie')}
               />
@@ -1745,7 +1995,7 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label="Tag"
+                label={tr('Tag')}
                 value={incomeFilters.tag}
                 onChange={(val) => setIncomeFilters({...incomeFilters, tag: val})}
                 options={[
@@ -1755,12 +2005,12 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomDatePicker
-                label="Data od"
+                label={tr('Data od')}
                 value={incomeFilters.dateFrom}
                 onChange={(val) => setIncomeFilters({...incomeFilters, dateFrom: val})}
               />
               <CustomDatePicker
-                label="Data do"
+                label={tr('Data do')}
                 value={incomeFilters.dateTo}
                 onChange={(val) => setIncomeFilters({...incomeFilters, dateTo: val})}
               />
@@ -1774,17 +2024,31 @@ const FinanceModule = () => {
               </button>
             )}
           </div>
+          )}
 
           {loading ? (
             <Spinner center />
           ) : filteredIncomeTransactions.length === 0 ? (
-            <EmptyState icon={TrendingUp} title={incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : tr('Brak wpływów pasujących do filtrów')} />
+            incomeTransactions.length === 0 ? (
+              <EmptyState
+                icon={TrendingUp}
+                title={tr('Brak wpływów na rok {year}', { year: selectedYear })}
+                subtitle={tr('Zapisz kolektę, darowiznę lub inny wpływ.')}
+                action={<Button onClick={openCreateIncome}><Plus size={16} /> {tr('Dodaj pierwszy wpływ')}</Button>}
+              />
+            ) : (
+              <EmptyState
+                icon={TrendingUp}
+                title={tr('Brak wpływów pasujących do filtrów')}
+                action={<Button variant="secondary" onClick={() => setIncomeFilters({ type: '', source: '', tag: '', dateFrom: '', dateTo: '' })}>{tr('Wyczyść filtry')}</Button>}
+              />
+            )
           ) : (
             <DataTable>
                 <THead>
                   <tr>
                     <TH>{tr('Data')}</TH>
-                    <TH>Typ</TH>
+                    <TH>{tr('Typ')}</TH>
                     <TH>{t('Źródło')}</TH>
                     <TH align="right">{t('Kwota')}</TH>
                     <TH>{t('Notatka')}</TH>
@@ -1796,18 +2060,18 @@ const FinanceModule = () => {
                   {filteredIncomeTransactions.map((transaction) => (
                     <TR key={transaction.id}>
                       <TD numeric className="whitespace-nowrap">
-                        {new Date(transaction.date).toLocaleDateString('pl-PL')}
+                        {fmtDate(transaction.date)}
                       </TD>
                       <TD>
-                        <StatusPill color={STATUS_COLORS.success}>
-                          {transaction.type}
+                        <StatusPill color={STATUS_COLORS.neutral}>
+                          {tr(transaction.type || 'Inne')}
                         </StatusPill>
                       </TD>
                       <TD>
                         {transaction.source}
                       </TD>
                       <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                        {transaction.amount.toLocaleString('pl-PL')} zł
+                        {fmtMoney(transaction.amount)}
                       </TD>
                       <TD muted>
                         {transaction.notes || ''}
@@ -1829,14 +2093,12 @@ const FinanceModule = () => {
                         ) : null}
                       </TD>
                       <TD align="center">
-                        <div className="flex justify-center gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                        <div className="flex justify-center gap-1 opacity-60 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity">
                           <button
-                            onClick={() => {
-                              setIncomeForm(transaction);
-                              setShowIncomeModal(true);
-                            }}
-                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                            onClick={() => openEditIncome(transaction)}
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
                             title={tr('Edytuj')}
+                            aria-label={tr('Edytuj wpływ {name}', { name: transaction.source || '' })}
                           >
                             <Edit2 size={16} />
                           </button>
@@ -1844,6 +2106,7 @@ const FinanceModule = () => {
                             onClick={() => deleteIncome(transaction.id)}
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                             title={tr('Usuń')}
+                            aria-label={tr('Usuń wpływ {name}', { name: transaction.source || '' })}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -1859,52 +2122,64 @@ const FinanceModule = () => {
 
       {activeTab === 'expenses' && (
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Wydatki {selectedYear}
+              {tr('Wydatki')} {selectedYear}
             </h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => exportToCsv(`wydatki-${selectedYear}.csv`, filteredExpenseTransactions, [
                   { label: 'Data', value: 'payment_date' }, { label: 'Kategoria', value: 'category' },
                   { label: 'Kategoria kosztu', value: 'cost_category' }, { label: 'Opis', value: 'description' },
-                  { label: 'Kontrahent', value: 'contractor' }, { label: 'Kwota', value: 'amount' },
-                  { label: 'Status', value: 'status' }, { label: 'Nr faktury', value: 'invoice_number' },
+                  { label: 'Kontrahent', value: 'contractor' }, { label: 'Kwota', value: (r) => num(r.amount) },
+                  { label: 'Status', value: (r) => (EXPENSE_STATUS[r.status || 'approved'] || {}).label || r.status }, { label: 'Nr faktury', value: 'invoice_number' },
                   { label: 'Termin', value: 'due_date' }, { label: 'Opłacone', value: (r) => (r.is_paid === false ? 'nie' : 'tak') },
                   { label: 'Odpowiedzialny', value: 'responsible_person' },
                   { label: 'Tagi', value: (r) => (r.tags || []).join(', ') },
                 ])}
                 className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
                 title={tr('Eksport CSV')}
+                aria-label={tr('Eksport CSV')}
               >
                 <Download size={16} /> CSV
               </button>
               <button
-                onClick={() => setShowExpenseModal(true)}
+                onClick={openCreateExpense}
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
-                Dodaj wydatek
+                {canApprove ? tr('Dodaj wydatek') : tr('Zgłoś wydatek')}
               </button>
             </div>
           </div>
 
-          {/* Filtry wydatków */}
+          {/* Podsumowanie: wliczone do bilansu vs czekające na decyzję */}
+          {expenseTransactions.length > 0 && (
+            <div className="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
+              <span>{tr('Wliczone do bilansu')}: <b className="text-gray-900 dark:text-white tabular-nums">{fmtMoney(expenseTransactions.filter(isCountedExpense).reduce((s2, e) => s2 + num(e.amount), 0))}</b></span>
+              {pendingExpenses.length > 0 && (
+                <span>{tr('Czeka na akceptację')}: <b className="text-amber-800 dark:text-amber-300 tabular-nums">{fmtMoney(pendingExpenses.reduce((s2, e) => s2 + num(e.amount), 0))}</b> ({pendingExpenses.length})</span>
+              )}
+            </div>
+          )}
+
+          {/* Filtry wydatków (tylko gdy jest co filtrować) */}
+          {expenseTransactions.length > 0 && (
           <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">{t('Filtry')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
               <CustomSelect
-                label="Kategoria"
+                label={tr('Służba')}
                 value={expenseFilters.category}
                 onChange={(val) => setExpenseFilters({...expenseFilters, category: val})}
                 options={[
                   { value: '', label: tr('Wszystkie') },
-                  ...budgetCategories
+                  ...[...new Set(expenseTransactions.map((e) => e.category).filter(Boolean))].map((c) => ({ value: c, label: c })),
                 ]}
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label={tr('Kategoria kosztu')}
+                label={tr('Rodzaj kosztu')}
                 value={expenseFilters.cost_category}
                 onChange={(val) => setExpenseFilters({...expenseFilters, cost_category: val})}
                 options={[
@@ -1914,7 +2189,7 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label="Kontrahent"
+                label={tr('Kontrahent')}
                 value={expenseFilters.contractor}
                 onChange={(val) => setExpenseFilters({...expenseFilters, contractor: val})}
                 options={[
@@ -1924,7 +2199,7 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label="Osoba odpowiedzialna"
+                label={tr('Osoba odpowiedzialna')}
                 value={expenseFilters.responsible}
                 onChange={(val) => setExpenseFilters({...expenseFilters, responsible: val})}
                 options={[
@@ -1936,7 +2211,7 @@ const FinanceModule = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <CustomSelect
-                label="Tag"
+                label={tr('Tag')}
                 value={expenseFilters.tag}
                 onChange={(val) => setExpenseFilters({...expenseFilters, tag: val})}
                 options={[
@@ -1946,12 +2221,12 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomDatePicker
-                label="Data od"
+                label={tr('Data od')}
                 value={expenseFilters.dateFrom}
                 onChange={(val) => setExpenseFilters({...expenseFilters, dateFrom: val})}
               />
               <CustomDatePicker
-                label="Data do"
+                label={tr('Data do')}
                 value={expenseFilters.dateTo}
                 onChange={(val) => setExpenseFilters({...expenseFilters, dateTo: val})}
               />
@@ -1965,11 +2240,25 @@ const FinanceModule = () => {
               </button>
             )}
           </div>
+          )}
 
           {loading ? (
             <Spinner center />
           ) : filteredExpenseTransactions.length === 0 ? (
-            <EmptyState icon={Receipt} title={expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : tr('Brak wydatków pasujących do filtrów')} />
+            expenseTransactions.length === 0 ? (
+              <EmptyState
+                icon={Receipt}
+                title={tr('Brak wydatków na rok {year}', { year: selectedYear })}
+                subtitle={canApprove ? tr('Zapisz fakturę, rachunek lub inny koszt.') : tr('Zgłoś wydatek lub wniosek o zwrot — trafi do akceptacji.')}
+                action={<Button onClick={openCreateExpense}><Plus size={16} /> {canApprove ? tr('Dodaj pierwszy wydatek') : tr('Zgłoś wydatek')}</Button>}
+              />
+            ) : (
+              <EmptyState
+                icon={Receipt}
+                title={tr('Brak wydatków pasujących do filtrów')}
+                action={<Button variant="secondary" onClick={() => setExpenseFilters({ category: '', cost_category: '', contractor: '', responsible: '', tag: '', dateFrom: '', dateTo: '' })}>{tr('Wyczyść filtry')}</Button>}
+              />
+            )
           ) : (
             <DataTable minWidth={900}>
                 <THead>
@@ -1988,16 +2277,18 @@ const FinanceModule = () => {
                   {filteredExpenseTransactions.map((transaction) => (
                     <TR key={transaction.id}>
                       <TD numeric className="whitespace-nowrap">
-                        {new Date(transaction.payment_date).toLocaleDateString('pl-PL')}
+                        {fmtDate(transaction.payment_date)}
                       </TD>
                       <TD>
                         <div className="flex flex-col items-start gap-1">
-                          <StatusPill color={STATUS_COLORS.danger}>
-                            {transaction.category}
-                          </StatusPill>
+                          {transaction.category && (
+                            <StatusPill color={STATUS_COLORS.neutral}>
+                              {transaction.category}
+                            </StatusPill>
+                          )}
                           {transaction.cost_category && (() => {
                             const cc = expenseCategories.find((c) => c.name === transaction.cost_category);
-                            const col = cc?.color || '#6366f1';
+                            const col = cc?.color || STATUS_COLORS.neutral;
                             return (
                               <StatusPill color={col}>
                                 {transaction.cost_category}
@@ -2013,7 +2304,7 @@ const FinanceModule = () => {
                         {transaction.contractor}
                       </TD>
                       <TD align="right" numeric>
-                        <div className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{transaction.amount.toLocaleString('pl-PL')} zł</div>
+                        <div className={`font-semibold whitespace-nowrap ${isCountedExpense(transaction) ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`} title={isCountedExpense(transaction) ? undefined : tr('Nie wliczony do sum, dopóki nie zostanie zatwierdzony')}>{fmtMoney(transaction.amount)}</div>
                         <div className="flex flex-col items-end gap-1 mt-1">
                           {transaction.status && transaction.status !== 'approved' && (
                             <StatusPill color={(EXPENSE_STATUS[transaction.status] || EXPENSE_STATUS.approved).color}>
@@ -2022,11 +2313,11 @@ const FinanceModule = () => {
                           )}
                           {transaction.is_paid === false && (
                             <StatusPill color={STATUS_COLORS.warning}>
-                              {tr('Do zapłaty')}{transaction.due_date ? ` · ${transaction.due_date}` : ''}
+                              {tr('Do zapłaty')}{transaction.due_date ? ` · ${fmtDate(transaction.due_date)}` : ''}
                             </StatusPill>
                           )}
                           {transaction.invoice_number && (
-                            <span className="text-[10px] text-gray-400">FV {transaction.invoice_number}</span>
+                            <span className="text-[11px] text-gray-500 dark:text-gray-400">{tr('FV')} {transaction.invoice_number}</span>
                           )}
                         </div>
                       </TD>
@@ -2042,7 +2333,7 @@ const FinanceModule = () => {
                                 href={doc.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 justify-center"
+                                className="text-xs text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-accent-primary flex items-center gap-1 justify-center"
                               >
                                 <FileText size={12} />
                                 {doc.name}
@@ -2052,26 +2343,24 @@ const FinanceModule = () => {
                         ) : null}
                       </TD>
                       <TD align="center">
-                        <div className="flex justify-center gap-1 flex-wrap opacity-60 group-hover/row:opacity-100 transition-opacity">
-                          {transaction.status === 'submitted' && (
+                        <div className="flex justify-center gap-1 flex-wrap opacity-60 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity">
+                          {canApprove && transaction.status === 'submitted' && (
                             <>
-                              <button onClick={() => setExpenseStatus(transaction.id, 'approved')} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title={tr('Zatwierdź')}><CheckCircle size={16} /></button>
-                              <button onClick={() => setExpenseStatus(transaction.id, 'rejected')} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title={tr('Odrzuć')}><XCircle size={16} /></button>
+                              <button onClick={() => setExpenseStatus(transaction.id, 'approved')} className="p-2 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title={tr('Zatwierdź')} aria-label={tr('Zatwierdź wydatek {name}', { name: transaction.description || '' })}><CheckCircle size={16} /></button>
+                              <button onClick={() => setExpenseStatus(transaction.id, 'rejected')} className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title={tr('Odrzuć')} aria-label={tr('Odrzuć wydatek {name}', { name: transaction.description || '' })}><XCircle size={16} /></button>
                             </>
                           )}
                           {transaction.status === 'draft' && (
-                            <button onClick={() => setExpenseStatus(transaction.id, 'submitted')} className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition" title={tr('Wyślij do akceptacji')}><Clock size={16} /></button>
+                            <button onClick={() => setExpenseStatus(transaction.id, 'submitted')} className="p-2 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition" title={tr('Wyślij do akceptacji')} aria-label={tr('Wyślij do akceptacji')}><Clock size={16} /></button>
                           )}
-                          {transaction.is_paid === false && (transaction.status === 'approved' || transaction.status === 'paid') && (
-                            <button onClick={() => setExpenseStatus(transaction.id, 'paid')} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title={tr('Oznacz jako opłacone')}><Banknote size={16} /></button>
+                          {canApprove && transaction.is_paid === false && (transaction.status === 'approved' || transaction.status === 'paid') && (
+                            <button onClick={() => setExpenseStatus(transaction.id, 'paid')} className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition" title={tr('Oznacz jako opłacone')} aria-label={tr('Oznacz jako opłacone')}><Banknote size={16} /></button>
                           )}
                           <button
-                            onClick={() => {
-                              setExpenseForm(transaction);
-                              setShowExpenseModal(true);
-                            }}
-                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                            onClick={() => openEditExpense(transaction)}
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
                             title={tr('Edytuj')}
+                            aria-label={tr('Edytuj wydatek {name}', { name: transaction.description || '' })}
                           >
                             <Edit2 size={16} />
                           </button>
@@ -2079,6 +2368,7 @@ const FinanceModule = () => {
                             onClick={() => deleteExpense(transaction.id)}
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                             title={tr('Usuń')}
+                            aria-label={tr('Usuń wydatek {name}', { name: transaction.description || '' })}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -2098,7 +2388,7 @@ const FinanceModule = () => {
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Transakcje cykliczne')}</h2>
             <button
-              onClick={() => { setRecurringForm(emptyRecurring); setShowRecurringModal(true); }}
+              onClick={() => { setRecurringForm({ ...emptyRecurring, next_run_date: localDateStr() }); setFormErrors({}); setShowRecurringModal(true); }}
               className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
             >
               <Plus size={18} /> {tr('Nowy plan')}
@@ -2107,14 +2397,15 @@ const FinanceModule = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{tr('Automatycznie generowane wpływy i wydatki (np. czynsz, pensje, stałe kolekty). Codziennie rano system tworzy należne pozycje.')}</p>
 
           {recurringItems.length === 0 ? (
-            <EmptyState icon={Repeat} title={tr('Brak planów cyklicznych')} subtitle={tr('Dodaj pierwszy plan, aby automatyzować powtarzalne transakcje.')} />
+            <EmptyState icon={Repeat} title={tr('Brak planów cyklicznych')} subtitle={tr('Dodaj pierwszy plan, aby automatyzować powtarzalne transakcje.')}
+              action={<Button onClick={() => { setRecurringForm({ ...emptyRecurring, next_run_date: localDateStr() }); setFormErrors({}); setShowRecurringModal(true); }}><Plus size={16} /> {tr('Nowy plan')}</Button>} />
           ) : (
             <div className="space-y-2">
               {recurringItems.map((r) => {
                 const FREQ = { weekly: tr('co tydzień'), biweekly: tr('co 2 tygodnie'), monthly: tr('co miesiąc'), quarterly: tr('co kwartał'), yearly: tr('co rok') };
                 return (
                   <div key={r.id} className={`flex items-center gap-3 p-4 rounded-2xl border ${r.is_active ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-800 opacity-60'}`}>
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${r.kind === 'income' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' : 'bg-red-100 dark:bg-red-900/30 text-red-600'}`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${r.kind === 'income' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
                       {r.kind === 'income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -2122,17 +2413,22 @@ const FinanceModule = () => {
                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {FREQ[r.frequency] || r.frequency}
                         {r.category ? ` · ${r.category}` : ''}
-                        {r.next_run_date ? ` · ${tr('następna')}: ${r.next_run_date}` : ''}
+                        {r.next_run_date ? ` · ${tr('następna')}: ${fmtDate(r.next_run_date)}` : ''}
                       </div>
+                      {r.is_active && !r.next_run_date && (
+                        <div className="text-xs font-medium text-amber-800 dark:text-amber-300 mt-0.5 flex items-center gap-1">
+                          <AlertTriangle size={12} /> {tr('Brak daty wykonania — plan się nie uruchomi. Edytuj i ustaw datę.')}
+                        </div>
+                      )}
                     </div>
-                    <div className={`font-bold shrink-0 ${r.kind === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {r.kind === 'income' ? '+' : '−'}{Number(r.amount).toLocaleString('pl-PL')} zł
+                    <div className={`font-bold shrink-0 tabular-nums ${r.kind === 'income' ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
+                      {r.kind === 'income' ? '+' : '−'}{fmtMoney(r.amount)}
                     </div>
                     <button onClick={() => toggleRecurring(r)} className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 shrink-0">
                       {r.is_active ? tr('Wstrzymaj') : tr('Wznów')}
                     </button>
-                    <button onClick={() => { setRecurringForm({ ...emptyRecurring, ...r, amount: String(r.amount), day_of_month: r.day_of_month || '', next_run_date: r.next_run_date || '', end_date: r.end_date || '' }); setShowRecurringModal(true); }} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg shrink-0" title={tr('Edytuj')}><Edit2 size={16} /></button>
-                    <button onClick={() => deleteRecurring(r.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg shrink-0" title={tr('Usuń')}><Trash2 size={16} /></button>
+                    <button onClick={() => { setRecurringForm({ ...emptyRecurring, ...r, amount: String(num(r.amount)), title: r.title || '', category: r.category || '', team_type: r.team_type || '', contractor: r.contractor || '', day_of_month: r.day_of_month || '', next_run_date: r.next_run_date || '', end_date: r.end_date || '' }); setFormErrors({}); setShowRecurringModal(true); }} className="p-2 text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg shrink-0" title={tr('Edytuj')} aria-label={tr('Edytuj plan {name}', { name: r.title })}><Edit2 size={16} /></button>
+                    <button onClick={() => deleteRecurring(r)} className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg shrink-0" title={tr('Usuń')} aria-label={tr('Usuń plan {name}', { name: r.title })}><Trash2 size={16} /></button>
                   </div>
                 );
               })}
@@ -2154,7 +2450,7 @@ const FinanceModule = () => {
               </div>
               {reportMode === 'month' && (
                 <>
-                  <CustomSelect value={reportAnchor.month} onChange={(v) => setReportAnchor((a) => ({ ...a, month: parseInt(v) }))} options={MONTHS_PL.map((m, i) => ({ value: i, label: m }))} />
+                  <CustomSelect value={reportAnchor.month} onChange={(v) => setReportAnchor((a) => ({ ...a, month: parseInt(v) }))} options={MONTHS_PL.map((m, i) => ({ value: i, label: tr(m) }))} />
                   <CustomSelect value={reportAnchor.year} onChange={(v) => setReportAnchor((a) => ({ ...a, year: parseInt(v) }))} options={yearOptions().map((y) => ({ value: y, label: String(y) }))} />
                 </>
               )}
@@ -2219,24 +2515,25 @@ const FinanceModule = () => {
               </div>
               <div className="sm:text-right text-sm">
                 <p className="font-semibold text-gray-900 dark:text-white">{reportRange.label}</p>
-                <p className="text-gray-500 dark:text-gray-400 tabular-nums">{reportRange.from} – {reportRange.to}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{tr('Wygenerowano')}: {new Date().toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                <p className="text-gray-500 dark:text-gray-400 tabular-nums">{fmtDate(reportRange.from)} – {fmtDate(reportRange.to)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{tr('Wygenerowano')}: {new Date().toLocaleString(appLocale(), { dateStyle: 'short', timeStyle: 'short' })}</p>
               </div>
             </div>
             {(() => {
-              const fmt = (n) => Number(n || 0).toLocaleString('pl-PL');
               const { income: tIncome, expense: tExpense, balance: tBalance } = reportModel.totals;
-              const totalPlanned = reportBudget.reduce((s, i) => s + (i.planned_amount || 0), 0);
+              // Realizacja budżetu = wydatki vs PLAN WYDATKÓW (plan przychodów to inna wielkość).
+              const totalPlanned = reportModel.kpis.plannedExpense;
               const budgetExec = totalPlanned > 0 ? (tExpense / totalPlanned) * 100 : 0;
+              const signed = (n) => (n > 0 ? '+' : '') + fmtMoney(n);
               return (
                 <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                   <div className="bg-gradient-to-r from-accent-primary to-accent-secondary p-6 text-white">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-accent-primary-lighter text-sm font-medium mb-1">{tr('Bilans okresu')} • {reportRange.label}</p>
-                        <p className="text-4xl font-bold">{tBalance >= 0 ? '+' : ''}{fmt(tBalance)} zł</p>
+                        <p className="text-white opacity-80 text-sm font-medium mb-1">{tr('Bilans okresu')} • {reportRange.label}</p>
+                        <p className="text-3xl sm:text-4xl font-bold tabular-nums">{signed(tBalance)}</p>
                       </div>
-                      <button onClick={openBalanceModal} className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition print:hidden pdf-exclude" title={t('Edytuj stany początkowe')}>
+                      <button onClick={openBalanceModal} className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition print:hidden pdf-exclude" title={t('Edytuj stany początkowe')} aria-label={t('Edytuj stany początkowe')}>
                         <Settings size={20} />
                       </button>
                     </div>
@@ -2244,29 +2541,33 @@ const FinanceModule = () => {
                   <div className="p-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2"><ArrowUpRight size={16} className="text-green-500" /><span className="text-xs font-medium uppercase">{tr('Wpływy')}</span></div>
-                        <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmt(tIncome)} zł</p>
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2"><ArrowUpRight size={16} className="text-green-600" /><span className="text-xs font-medium uppercase">{tr('Wpływy')}</span></div>
+                        <p className="text-lg sm:text-xl font-bold text-green-700 dark:text-green-400 tabular-nums">{fmtMoney(tIncome)}</p>
                       </div>
                       <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2"><ArrowDownRight size={16} className="text-red-500" /><span className="text-xs font-medium uppercase">{tr('Wydatki')}</span></div>
-                        <p className="text-xl font-bold text-red-600 dark:text-red-400">{fmt(tExpense)} zł</p>
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2"><ArrowDownRight size={16} className="text-red-600" /><span className="text-xs font-medium uppercase">{tr('Wydatki')}</span></div>
+                        <p className="text-lg sm:text-xl font-bold text-red-700 dark:text-red-400 tabular-nums">{fmtMoney(tExpense)}</p>
+                        {reportModel.kpis.pendingCount > 0 && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tr('+ {amount} czeka na akceptację', { amount: fmtMoney(reportModel.kpis.pendingTotal) })}</p>
+                        )}
                       </div>
                       <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">{tBalance >= 0 ? <TrendingUp size={16} className="text-green-500" /> : <ArrowDownRight size={16} className="text-red-500" />}<span className="text-xs font-medium uppercase">{tr('Bilans')}</span></div>
-                        <p className={`text-xl font-bold ${tBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{tBalance >= 0 ? '+' : ''}{fmt(tBalance)} zł</p>
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">{tBalance >= 0 ? <TrendingUp size={16} className="text-green-600" /> : <ArrowDownRight size={16} className="text-red-600" />}<span className="text-xs font-medium uppercase">{tr('Bilans')}</span></div>
+                        <p className={`text-lg sm:text-xl font-bold tabular-nums ${tBalance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{signed(tBalance)}</p>
                       </div>
                       <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2"><PieChart size={16} /><span className="text-xs font-medium uppercase">{t('Budżet')} {reportRange.year}</span></div>
-                        <p className="text-xl font-bold text-gray-900 dark:text-white">{budgetExec.toFixed(1)}%</p>
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2"><PieChart size={16} /><span className="text-xs font-medium uppercase">{tr('Budżet wydatków {year}', { year: reportRange.year })}</span></div>
+                        <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tabular-nums">{totalPlanned > 0 ? fmtPct(budgetExec) : '—'}</p>
+                        {totalPlanned > 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tr('z planu {amount}', { amount: fmtMoney(totalPlanned) })}</p>}
                         <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5"><div className={`h-1.5 rounded-full ${budgetExec < 80 ? 'bg-green-500' : budgetExec <= 100 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.min(budgetExec, 100)}%` }} /></div>
                       </div>
                     </div>
                     {(reportBalances.bank_pln > 0 || reportBalances.cash_pln > 0 || reportBalances.bank_currency > 0 || reportBalances.cash_currency > 0) && (
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="flex items-center gap-2 text-sm"><CreditCard size={16} className="text-gray-400" /><span className="text-gray-500 dark:text-gray-400">{tr('Bank')} ({reportRange.year}):</span><span className="font-semibold text-gray-900 dark:text-white">{fmt(reportBalances.bank_pln)} zł</span></div>
-                        <div className="flex items-center gap-2 text-sm"><Banknote size={16} className="text-gray-400" /><span className="text-gray-500 dark:text-gray-400">{t('Gotówka')}:</span><span className="font-semibold text-gray-900 dark:text-white">{fmt(reportBalances.cash_pln)} zł</span></div>
-                        {reportBalances.bank_currency > 0 && <div className="flex items-center gap-2 text-sm"><CreditCard size={16} className="text-amber-500" /><span className="text-gray-500 dark:text-gray-400">{tr('Bank')} {reportBalances.currency_type}:</span><span className="font-semibold text-gray-900 dark:text-white">{fmt(reportBalances.bank_currency)}</span></div>}
-                        {reportBalances.cash_currency > 0 && <div className="flex items-center gap-2 text-sm"><Banknote size={16} className="text-cyan-500" /><span className="text-gray-500 dark:text-gray-400">{t('Gotówka')} {reportBalances.currency_type}:</span><span className="font-semibold text-gray-900 dark:text-white">{fmt(reportBalances.cash_currency)}</span></div>}
+                        <div className="flex items-center gap-2 text-sm"><CreditCard size={16} className="text-gray-400" /><span className="text-gray-500 dark:text-gray-400">{tr('Bank')} ({reportRange.year}):</span><span className="font-semibold text-gray-900 dark:text-white tabular-nums">{fmtMoney(reportBalances.bank_pln)}</span></div>
+                        <div className="flex items-center gap-2 text-sm"><Banknote size={16} className="text-gray-400" /><span className="text-gray-500 dark:text-gray-400">{t('Gotówka')}:</span><span className="font-semibold text-gray-900 dark:text-white tabular-nums">{fmtMoney(reportBalances.cash_pln)}</span></div>
+                        {reportBalances.bank_currency > 0 && <div className="flex items-center gap-2 text-sm"><CreditCard size={16} className="text-gray-400" /><span className="text-gray-500 dark:text-gray-400">{tr('Bank')} {reportBalances.currency_type}:</span><span className="font-semibold text-gray-900 dark:text-white tabular-nums">{num(reportBalances.bank_currency).toLocaleString(appLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>}
+                        {reportBalances.cash_currency > 0 && <div className="flex items-center gap-2 text-sm"><Banknote size={16} className="text-gray-400" /><span className="text-gray-500 dark:text-gray-400">{t('Gotówka')} {reportBalances.currency_type}:</span><span className="font-semibold text-gray-900 dark:text-white tabular-nums">{num(reportBalances.cash_currency).toLocaleString(appLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>}
                       </div>
                     )}
                   </div>
@@ -2277,7 +2578,6 @@ const FinanceModule = () => {
             {/* KPI — szybkie wskaźniki okresu */}
             {(() => {
               const k = reportModel.kpis;
-              const fmt = (n) => Number(n || 0).toLocaleString('pl-PL');
               const Tile = ({ icon, label, value, sub, tone }) => (
                 <div className={`rounded-2xl border p-4 ${tone === 'warn' ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'}`}>
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1.5">{icon}<span className="text-xs font-medium uppercase">{label}</span></div>
@@ -2287,10 +2587,10 @@ const FinanceModule = () => {
               );
               return (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Tile icon={<ArrowUpRight size={15} className="text-green-500" />} label={tr('Śr. wpływ')} value={`${fmt(Math.round(k.avgIncome))} zł`} sub={`${k.incomeCount} ${tr('transakcji')}`} />
-                  <Tile icon={<ArrowDownRight size={15} className="text-red-500" />} label={tr('Śr. wydatek')} value={`${fmt(Math.round(k.avgExpense))} zł`} sub={`${k.expenseCount} ${tr('transakcji')}`} />
-                  <Tile icon={<PieChart size={15} className="text-accent-primary" />} label={tr('Największa kategoria')} value={k.topCategory ? `${fmt(Math.round(k.topCategory.amount))} zł` : '—'} sub={k.topCategory?.name || ''} />
-                  <Tile icon={<AlertTriangle size={15} className={k.unpaidCount ? 'text-amber-500' : 'text-gray-400'} />} label={tr('Do zapłaty')} value={`${fmt(k.unpaidTotal)} zł`} sub={`${k.unpaidCount} ${tr('nieopłaconych')}`} tone={k.unpaidCount ? 'warn' : undefined} />
+                  <Tile icon={<ArrowUpRight size={15} className="text-green-600" />} label={tr('Śr. wpływ')} value={fmtMoney(k.avgIncome)} sub={tr('Liczba transakcji: {n}', { n: k.incomeCount })} />
+                  <Tile icon={<ArrowDownRight size={15} className="text-red-600" />} label={tr('Śr. wydatek')} value={fmtMoney(k.avgExpense)} sub={tr('Liczba transakcji: {n}', { n: k.expenseCount })} />
+                  <Tile icon={<PieChart size={15} className="text-accent-primary" />} label={tr('Największa kategoria')} value={k.topCategory ? fmtMoney(k.topCategory.amount) : '—'} sub={k.topCategory?.name || ''} />
+                  <Tile icon={<AlertTriangle size={15} className={k.unpaidCount ? 'text-amber-700' : 'text-gray-400'} />} label={tr('Do zapłaty')} value={fmtMoney(k.unpaidTotal)} sub={tr('Nieopłacone: {n}', { n: k.unpaidCount })} tone={k.unpaidCount ? 'warn' : undefined} />
                 </div>
               );
             })()}
@@ -2305,7 +2605,7 @@ const FinanceModule = () => {
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-accent-primary" />{tr('Przepływ gotówki (skumulowany)')}</h3>
               <CashFlowAreaChart buckets={reportModel.buckets} tr={tr} />
-              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">{tr('Saldo na koniec okresu')}: <span className={`font-bold ${reportModel.totals.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(reportModel.buckets.at(-1)?.cumulative || 0).toLocaleString('pl-PL')} zł</span></div>
+              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">{tr('Saldo na koniec okresu')}: <span className={`font-bold tabular-nums ${reportModel.totals.balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(reportModel.buckets.at(-1)?.cumulative)}</span></div>
             </div>
 
             {/* Donuty kategorii */}
@@ -2343,9 +2643,9 @@ const FinanceModule = () => {
                         <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">{idx + 1}</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{e.description || e.contractor}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{e.contractor} · {e.category} · {e.date}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{e.contractor} · {e.category} · {fmtDate(e.date)}</p>
                         </div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString('pl-PL')} zł</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap tabular-nums">{fmtMoney(e.amount)}</p>
                       </div>
                     ))}
                   </div>
@@ -2359,11 +2659,11 @@ const FinanceModule = () => {
                       const STc = { draft: ['Szkic', '#9ca3af'], submitted: ['Do akceptacji', '#eda100'], approved: ['Zatwierdzone', '#2a78d6'], rejected: ['Odrzucone', '#e34948'], paid: ['Opłacone', '#0ca30c'] };
                       const total = reportModel.expenseStatus.reduce((a, s) => a + s.amount, 0) || 1;
                       return reportModel.expenseStatus.map((s) => {
-                        const [lbl, col] = STc[s.status] || [s.status, '#6366f1'];
+                        const [lbl, col] = STc[s.status] || [s.status, '#6b7280'];
                         const pct = (s.amount / total) * 100;
                         return (
                           <div key={s.status}>
-                            <div className="flex justify-between text-sm mb-1"><span className="text-gray-700 dark:text-gray-300">{tr(lbl)} <span className="text-gray-400">({s.count})</span></span><span className="font-semibold text-gray-900 dark:text-white">{Number(s.amount).toLocaleString('pl-PL')} zł</span></div>
+                            <div className="flex justify-between text-sm mb-1"><span className="text-gray-700 dark:text-gray-300">{tr(lbl)} <span className="text-gray-500">({s.count})</span>{(s.status === 'submitted' || s.status === 'draft' || s.status === 'rejected') && <span className="text-xs text-gray-500"> · {tr('poza bilansem')}</span>}</span><span className="font-semibold text-gray-900 dark:text-white tabular-nums">{fmtMoney(s.amount)}</span></div>
                             <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2"><div className="h-2 rounded-full" style={{ width: `${pct}%`, background: col }} /></div>
                           </div>
                         );
@@ -2394,16 +2694,16 @@ const FinanceModule = () => {
                       return (
                         <TR key={b.category}>
                           <TD className="font-medium text-gray-900 dark:text-white">{b.category}</TD>
-                          <TD align="right" numeric className="whitespace-nowrap">{Number(b.planned).toLocaleString('pl-PL')} zł</TD>
-                          <TD align="right" numeric className="whitespace-nowrap">{Number(b.realized).toLocaleString('pl-PL')} zł</TD>
-                          <TD><div className="flex items-center gap-2"><div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2"><div className={`h-2 rounded-full bg-gradient-to-r ${progressColor}`} style={{ width: `${Math.min(b.pct, 100)}%` }} /></div><span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white w-14 text-right">{b.pct.toFixed(0)}%</span></div></TD>
-                          <TD align="right" numeric className={`font-semibold whitespace-nowrap ${b.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(b.remaining).toLocaleString('pl-PL')} zł</TD>
+                          <TD align="right" numeric className="whitespace-nowrap">{fmtMoney(b.planned)}</TD>
+                          <TD align="right" numeric className="whitespace-nowrap">{fmtMoney(b.realized)}</TD>
+                          <TD><div className="flex items-center gap-2"><div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2"><div className={`h-2 rounded-full bg-gradient-to-r ${progressColor}`} style={{ width: `${Math.min(b.pct, 100)}%` }} /></div><span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white w-14 text-right">{fmtPct(b.pct, 0)}</span></div></TD>
+                          <TD align="right" numeric className={`font-semibold whitespace-nowrap ${b.remaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(b.remaining)}</TD>
                         </TR>
                       );
                     })}
                   </tbody>
                 </DataTable>
-              ) : <EmptyState icon={DollarSign} title={t('Brak pozycji budżetowych')} compact />}
+              ) : <EmptyState icon={DollarSign} title={tr('Brak planu wydatków na rok {year}', { year: reportRange.year })} compact />}
             </div>
 
             {/* Nieopłacone zobowiązania / faktury */}
@@ -2422,14 +2722,14 @@ const FinanceModule = () => {
                   </THead>
                   <tbody>
                     {reportModel.unpaidInvoices.map((e, idx) => {
-                      const overdue = e.due_date && e.due_date < new Date().toISOString().slice(0, 10);
+                      const overdue = e.due_date && e.due_date < localDateStr();
                       return (
                         <TR key={idx}>
                           <TD className="font-medium text-gray-900 dark:text-white">{e.contractor}</TD>
                           <TD muted className="truncate max-w-[220px]">{e.description}</TD>
                           <TD muted numeric>{e.invoice_number || ''}</TD>
-                          <TD muted numeric className="whitespace-nowrap"><span className={overdue ? 'text-red-600 font-semibold' : ''}>{e.due_date || ''}{overdue ? ' ⚠' : ''}</span></TD>
-                          <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString('pl-PL')} zł</TD>
+                          <TD muted numeric className="whitespace-nowrap"><span className={overdue ? 'text-red-700 dark:text-red-400 font-semibold' : ''}>{fmtDate(e.due_date)}{overdue ? ` · ${tr('po terminie')}` : ''}</span></TD>
+                          <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{fmtMoney(e.amount)}</TD>
                         </TR>
                       );
                     })}
@@ -2466,22 +2766,22 @@ const FinanceModule = () => {
           {/* Dodawanie nowej kategorii */}
           <div className="flex flex-wrap items-end gap-2 mb-5 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
-              <input value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
+              <label htmlFor="fin-cat-name" className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
+              <input id="fin-cat-name" value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
                 onKeyDown={(e) => { if (e.key === 'Enter') saveCategory(); }}
                 placeholder={tr('np. Sprzęt, Kolekta')} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white" />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Rodzaj')}</label>
-              <select value={catForm.kind} onChange={(e) => setCatForm({ ...catForm, kind: e.target.value })}
+              <label htmlFor="fin-cat-kind" className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Rodzaj')}</label>
+              <select id="fin-cat-kind" value={catForm.kind} onChange={(e) => setCatForm({ ...catForm, kind: e.target.value })}
                 className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white">
                 <option value="expense">{tr('Wydatek')}</option>
                 <option value="income">{tr('Wpływ')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kolor')}</label>
-              <input type="color" value={catForm.color} onChange={(e) => setCatForm({ ...catForm, color: e.target.value })}
+              <label htmlFor="fin-cat-color" className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kolor')}</label>
+              <input id="fin-cat-color" type="color" value={catForm.color} onChange={(e) => setCatForm({ ...catForm, color: e.target.value })}
                 className="w-10 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer p-0.5" />
             </div>
             <button onClick={saveCategory} className="px-4 py-2 rounded-lg bg-accent-primary text-white text-sm font-medium shrink-0">{tr('Dodaj')}</button>
@@ -2497,12 +2797,12 @@ const FinanceModule = () => {
                 )}
                 {categories.filter((c) => c.kind === kind).map((c) => (
                   <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700">
-                    <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: c.color || '#6366f1' }} />
+                    <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: c.color || '#6b7280' }} />
                     <span className={`text-sm flex-1 ${c.is_active === false ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'}`}>{c.name}</span>
                     <button onClick={() => toggleCategoryActive(c)} className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
                       {c.is_active === false ? tr('Włącz') : tr('Wyłącz')}
                     </button>
-                    <button onClick={() => deleteCategory(c.id)} className="text-red-500 hover:text-red-600 p-1" title={tr('Usuń')}><Trash2 size={15} /></button>
+                    <button onClick={() => deleteCategory(c)} className="text-red-600 hover:text-red-700 dark:text-red-400 p-1" title={tr('Usuń')} aria-label={tr('Usuń kategorię {name}', { name: c.name })}><Trash2 size={15} /></button>
                   </div>
                 ))}
               </div>
@@ -2513,7 +2813,7 @@ const FinanceModule = () => {
           <div className="mt-2 pt-4 border-t border-gray-100 dark:border-gray-800">
             <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Kontrahenci')}</div>
             <div className="flex gap-2 mb-2">
-              <input value={vendorName} onChange={(e) => setVendorName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }}
+              <input value={vendorName} aria-label={tr('Kontrahenci')} onChange={(e) => setVendorName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }}
                 placeholder={tr('np. Sklep muzyczny')} className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none text-gray-800 dark:text-gray-100" />
               <button onClick={() => { if (vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }} className="px-3 rounded-lg bg-accent-primary text-white text-sm shrink-0">{tr('Dodaj')}</button>
             </div>
@@ -2522,7 +2822,7 @@ const FinanceModule = () => {
               {vendors.map((v) => (
                 <div key={v.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
                   <span className="text-sm flex-1 truncate text-gray-800 dark:text-gray-100">{v.name}</span>
-                  <button onClick={() => deleteVendor(v.id)} className="text-red-500 hover:text-red-600 p-1" title={tr('Usuń')}><Trash2 size={14} /></button>
+                  <button onClick={() => deleteVendor(v)} className="text-red-600 hover:text-red-700 dark:text-red-400 p-1" title={tr('Usuń')} aria-label={tr('Usuń kontrahenta {name}', { name: v.name })}><Trash2 size={14} /></button>
                 </div>
               ))}
             </div>
@@ -2532,12 +2832,12 @@ const FinanceModule = () => {
 
       <Modal
         isOpen={showRecurringModal}
-        onClose={() => setShowRecurringModal(false)}
+        onClose={() => { if (!saving) { setShowRecurringModal(false); setRecurringForm(emptyRecurring); setFormErrors({}); } }}
         title={recurringForm.id ? tr('Edytuj plan cykliczny') : tr('Nowy plan cykliczny')}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setShowRecurringModal(false)}>{tr('Anuluj')}</Button>
-          <Button onClick={saveRecurring}>{tr('Zapisz')}</Button>
+          <Button variant="secondary" disabled={saving} onClick={() => { setShowRecurringModal(false); setRecurringForm(emptyRecurring); setFormErrors({}); }}>{tr('Anuluj')}</Button>
+          <Button onClick={saveRecurring} loading={saving}>{recurringForm.id ? tr('Zapisz zmiany') : tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
@@ -2550,15 +2850,15 @@ const FinanceModule = () => {
             ))}
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
-            <input value={recurringForm.title} onChange={(e) => setRecurringForm({ ...recurringForm, title: e.target.value })}
-              placeholder={tr('np. Czynsz, Pensja, Stała kolekta')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')} <span className="text-red-600" aria-hidden="true">*</span></label>
+            <input value={recurringForm.title} onChange={(e) => setRecurringForm({ ...recurringForm, title: e.target.value })} aria-invalid={!!formErrors.title} aria-required="true"
+              placeholder={tr('np. Czynsz, Pensja, Stała kolekta')} className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${formErrors.title ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
-              <input type="number" value={recurringForm.amount} onChange={(e) => setRecurringForm({ ...recurringForm, amount: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (zł)')} <span className="text-red-600" aria-hidden="true">*</span></label>
+              <input type="number" step="0.01" min="0" inputMode="decimal" value={recurringForm.amount} onChange={(e) => setRecurringForm({ ...recurringForm, amount: e.target.value })} aria-invalid={!!formErrors.amount} aria-required="true"
+                placeholder="0,00" className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${formErrors.amount ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`} />
             </div>
             <CustomSelect
               label={tr('Częstotliwość')}
@@ -2588,11 +2888,11 @@ const FinanceModule = () => {
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Następne wykonanie')}</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Następne wykonanie')} <span className="text-red-600" aria-hidden="true">*</span></label>
               <DateInput value={recurringForm.next_run_date} onChange={(e) => setRecurringForm({ ...recurringForm, next_run_date: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${formErrors.next_run_date ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`} />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Koniec (opcjonalnie)')}</label>
@@ -2609,8 +2909,8 @@ const FinanceModule = () => {
         title={`${tr('Propozycja do budżetu')} ${selectedYear}`}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setShowProposalModal(false)}>{tr('Anuluj')}</Button>
-          <Button onClick={saveProposal}>{tr('Zgłoś')}</Button>
+          <Button variant="secondary" disabled={saving} onClick={() => setShowProposalModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveProposal} loading={saving}>{tr('Zgłoś')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
@@ -2635,9 +2935,9 @@ const FinanceModule = () => {
               placeholder={tr('np. Nowy mikrofon, wyjazd')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
-            <input type="number" value={proposalForm.amount} onChange={(e) => setProposalForm({ ...proposalForm, amount: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="0.00" />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (zł)')}</label>
+            <input type="number" step="0.01" min="0" inputMode="decimal" value={proposalForm.amount} onChange={(e) => setProposalForm({ ...proposalForm, amount: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="0,00" />
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Uzasadnienie (opcjonalnie)')}</label>
@@ -2687,7 +2987,7 @@ const FinanceModule = () => {
         icon={CalendarClock}
         footer={<>
           {editingScheduleId && <Button variant="secondary" onClick={() => { setEditingScheduleId(null); setScheduleForm(emptySchedule); }}>{tr('Nowy')}</Button>}
-          <Button onClick={saveSchedule}>{editingScheduleId ? tr('Zapisz zmiany') : tr('Dodaj harmonogram')}</Button>
+          <Button onClick={saveSchedule} loading={saving}>{editingScheduleId ? tr('Zapisz zmiany') : tr('Dodaj harmonogram')}</Button>
         </>}
       >
         <div className="p-6">
@@ -2700,11 +3000,11 @@ const FinanceModule = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">{s.cadence === 'monthly' ? tr('Co miesiąc') : s.cadence === 'quarterly' ? tr('Co kwartał') : tr('Co rok')}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{(s.recipients || []).join(', ')}</p>
-                    {s.next_run_date && <p className="text-[11px] text-gray-400">{tr('Następna wysyłka')}: {s.next_run_date}</p>}
+                    {s.next_run_date && <p className="text-[11px] text-gray-500 dark:text-gray-400">{tr('Następna wysyłka')}: {fmtDate(s.next_run_date)}</p>}
                   </div>
-                  <button onClick={() => toggleSchedule(s)} className={`text-xs px-2 py-1 rounded-lg ${s.is_active !== false ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'}`}>{s.is_active !== false ? tr('Aktywny') : tr('Wstrzymany')}</button>
-                  <button onClick={() => openEditSchedule(s)} className="text-gray-400 hover:text-accent-primary"><Edit2 size={16} /></button>
-                  <button onClick={() => deleteSchedule(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
+                  <button onClick={() => toggleSchedule(s)} className={`text-xs px-2 py-1 rounded-lg ${s.is_active !== false ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'}`}>{s.is_active !== false ? tr('Aktywny') : tr('Wstrzymany')}</button>
+                  <button onClick={() => openEditSchedule(s)} className="p-1 text-gray-500 hover:text-accent-primary" aria-label={tr('Edytuj harmonogram')}><Edit2 size={16} /></button>
+                  <button onClick={() => deleteSchedule(s.id)} className="p-1 text-gray-500 hover:text-red-600" aria-label={tr('Usuń harmonogram')}><Trash2 size={16} /></button>
                 </div>
               ))}
             </div>
@@ -2741,9 +3041,9 @@ const FinanceModule = () => {
             {changeItem.map((a) => (
               <div key={a.id} className="px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
                 <div className="font-medium text-gray-800 dark:text-gray-100">
-                  {Number(a.before?.planned_amount || 0).toLocaleString('pl-PL')} zł <span className="text-gray-400">→</span> {Number(a.after?.planned_amount || 0).toLocaleString('pl-PL')} zł
+                  {fmtMoney(a.before?.planned_amount)} <span className="text-gray-400">→</span> {fmtMoney(a.after?.planned_amount)}
                 </div>
-                <div className="text-xs text-gray-400">{a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}</div>
+                <div className="text-xs text-gray-400">{a.actor || '—'} · {new Date(a.created_at).toLocaleString(appLocale())}</div>
               </div>
             ))}
           </div>
@@ -2765,7 +3065,7 @@ const FinanceModule = () => {
                 <div key={v.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
                   <Copy size={14} className="text-gray-400 shrink-0" />
                   <span className="font-medium text-gray-800 dark:text-gray-100 flex-1 truncate">{v.label}</span>
-                  <span className="text-xs text-gray-400">{Array.isArray(v.snapshot) ? v.snapshot.length : 0} {tr('poz.')} · {new Date(v.created_at).toLocaleDateString('pl-PL')}</span>
+                  <span className="text-xs text-gray-400">{Array.isArray(v.snapshot) ? v.snapshot.length : 0} {tr('poz.')} · {new Date(v.created_at).toLocaleDateString(appLocale())}</span>
                 </div>
               ))}
             </div>
@@ -2786,9 +3086,9 @@ const FinanceModule = () => {
                       <div className="text-gray-800 dark:text-gray-100 truncate">{a.category}{a.description ? ` — ${a.description}` : ''}</div>
                       <div className="text-xs text-gray-400">
                         {a.action === 'updated' && beforeAmt != null && afterAmt != null && beforeAmt !== afterAmt
-                          ? `${Number(beforeAmt).toLocaleString('pl-PL')} → ${Number(afterAmt).toLocaleString('pl-PL')} zł · `
-                          : (afterAmt != null ? `${Number(afterAmt).toLocaleString('pl-PL')} zł · ` : '')}
-                        {a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}
+                          ? `${fmtMoney(beforeAmt)} → ${fmtMoney(afterAmt)} · `
+                          : (afterAmt != null ? `${fmtMoney(afterAmt)} · ` : '')}
+                        {a.actor || '—'} · {new Date(a.created_at).toLocaleString(appLocale())}
                       </div>
                     </div>
                   </div>
@@ -2801,13 +3101,13 @@ const FinanceModule = () => {
 
       <Modal
         isOpen={showBudgetModal}
-        onClose={() => setShowBudgetModal(false)}
-        title={t('Nowa pozycja budżetowa')}
+        onClose={closeBudgetModal}
+        title={budgetForm.id ? tr('Edytuj pozycję budżetową') : t('Nowa pozycja budżetowa')}
         size="sm"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowBudgetModal(false)}>Anuluj</Button>
-          <Button onClick={saveBudgetItem}>Zapisz</Button>
+          <Button variant="secondary" disabled={saving} onClick={closeBudgetModal}>{tr('Anuluj')}</Button>
+          <Button onClick={saveBudgetItem} loading={saving}>{budgetForm.id ? tr('Zapisz zmiany') : tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
@@ -2821,17 +3121,17 @@ const FinanceModule = () => {
           </div>
           {(budgetForm.kind || 'expense') === 'income' ? (
             <CustomSelect
-              label={tr('Kategoria wpływu')}
+              label={`${tr('Kategoria wpływu')} *`}
               value={budgetForm.category}
               onChange={(val) => setBudgetForm({ ...budgetForm, category: val })}
               options={incomeCategories.length > 0
                 ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
-                : [{ value: 'Kolekta', label: 'Kolekta' }, { value: 'Darowizny', label: 'Darowizny' }, { value: 'Inne', label: tr('Inne') }]}
+                : [{ value: 'Kolekta', label: tr('Kolekta') }, { value: 'Darowizny', label: tr('Darowizny') }, { value: 'Inne', label: tr('Inne') }]}
               placeholder={tr('Wybierz kategorię')}
             />
           ) : (
             <CustomSelect
-              label={tr('Kategoria (Służba)')}
+              label={`${tr('Służba')} *`}
               value={budgetForm.category}
               onChange={(val) => setBudgetForm({...budgetForm, category: val})}
               options={serviceOptions.length > 0 ? serviceOptions : [
@@ -2846,6 +3146,10 @@ const FinanceModule = () => {
               placeholder={t('Wybierz służbę')}
             />
           )}
+          {formErrors.category && <p className="text-xs text-red-700 dark:text-red-400 -mt-2">{tr('Wybierz z listy.')}</p>}
+          {budgetForm.id && (budgetForm.kind || 'expense') !== 'income' && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Zmiana służby lub opisu przeniesie też przypisane do tej pozycji wydatki.')}</p>
+          )}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
             <textarea
@@ -2856,15 +3160,21 @@ const FinanceModule = () => {
               placeholder={t('Opis kosztów')}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Planowana kwota (PLN)</label>
+              <label htmlFor="fin-budget-amount" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Planowana kwota (zł)')} <span className="text-red-600" aria-hidden="true">*</span></label>
               <input
+                id="fin-budget-amount"
                 type="number"
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                step="0.01"
+                min="0"
+                inputMode="decimal"
+                aria-required="true"
+                aria-invalid={!!formErrors.planned_amount}
+                className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${formErrors.planned_amount ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
                 value={budgetForm.planned_amount}
                 onChange={(e) => setBudgetForm({...budgetForm, planned_amount: e.target.value})}
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
             <CustomSelect
@@ -2884,30 +3194,36 @@ const FinanceModule = () => {
       {/* MODAL: Income */}
       <Modal
         isOpen={showIncomeModal}
-        onClose={() => setShowIncomeModal(false)}
-        title={t('Nowy wpływ')}
+        onClose={closeIncomeModal}
+        title={incomeForm.id ? tr('Edytuj wpływ') : t('Nowy wpływ')}
         size="sm"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowIncomeModal(false)}>Anuluj</Button>
-          <Button data-tour="fin-income-save" onClick={saveIncome}>Zapisz</Button>
+          <Button variant="secondary" disabled={saving} onClick={closeIncomeModal}>{tr('Anuluj')}</Button>
+          <Button data-tour="fin-income-save" onClick={saveIncome} loading={saving}>{incomeForm.id ? tr('Zapisz zmiany') : tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           <CustomDatePicker
-            label={tr('Data wpływu')}
+            label={`${tr('Data wpływu')} *`}
             value={incomeForm.date}
             onChange={(val) => setIncomeForm({...incomeForm, date: val})}
           />
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+            <label htmlFor="fin-income-amount" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (zł)')} <span className="text-red-600" aria-hidden="true">*</span></label>
             <input
+              id="fin-income-amount"
               data-tour="fin-income-amount"
               type="number"
-              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              step="0.01"
+              min="0"
+              inputMode="decimal"
+              aria-required="true"
+              aria-invalid={!!formErrors.amount}
+              className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${formErrors.amount ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
               value={incomeForm.amount}
               onChange={(e) => setIncomeForm({...incomeForm, amount: e.target.value})}
-              placeholder="0.00"
+              placeholder="0,00"
             />
           </div>
           <CustomSelect
@@ -2917,16 +3233,19 @@ const FinanceModule = () => {
             options={incomeCategories.length > 0
               ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
               : [
-                { value: 'Kolekta', label: 'Kolekta' },
-                { value: 'Darowizny', label: 'Darowizny' },
+                { value: 'Kolekta', label: tr('Kolekta') },
+                { value: 'Darowizny', label: tr('Darowizny') },
                 { value: 'Inne', label: tr('Inne') },
               ]}
           />
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Źródło')}</label>
+            <label htmlFor="fin-income-source" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Źródło')} <span className="text-red-600" aria-hidden="true">*</span></label>
             <input
+              id="fin-income-source"
               data-tour="fin-income-source"
-              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              aria-required="true"
+              aria-invalid={!!formErrors.source}
+              className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${formErrors.source ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
               value={incomeForm.source}
               onChange={(e) => setIncomeForm({...incomeForm, source: e.target.value})}
               placeholder={t('np. Kolekta niedzielna')}
@@ -2985,40 +3304,151 @@ const FinanceModule = () => {
       {/* MODAL: Expense */}
       <Modal
         isOpen={showExpenseModal}
-        onClose={() => setShowExpenseModal(false)}
-        title={t('Nowy wydatek')}
+        onClose={closeExpenseModal}
+        title={expenseForm.id ? tr('Edytuj wydatek') : canApprove ? t('Nowy wydatek') : tr('Zgłoś wydatek')}
         size="xl"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
-          <Button onClick={saveExpense}>Zapisz</Button>
+          <Button variant="secondary" disabled={saving || uploadingFile} onClick={closeExpenseModal}>{tr('Anuluj')}</Button>
+          <Button onClick={saveExpense} loading={saving} disabled={uploadingFile}>{expenseForm.id ? tr('Zapisz zmiany') : (!canApprove || expenseForm.submit_for_approval) ? tr('Wyślij do akceptacji') : tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
+          {!canApprove && !expenseForm.id && (
+            <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
+              {tr('Wydatek trafi do akceptacji osoby, która zatwierdza finanse. Do tego czasu nie wlicza się do sum.')}
+            </p>
+          )}
           {/* Wiersz 1: Data i Kwota */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <CustomDatePicker
-              label="Data dokumentu"
+              label={`${tr('Data dokumentu')} *`}
               value={expenseForm.payment_date}
               onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
             />
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+              <label htmlFor="fin-expense-amount" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (zł)')} <span className="text-red-600" aria-hidden="true">*</span></label>
               <input
+                id="fin-expense-amount"
                 type="number"
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                step="0.01"
+                min="0"
+                inputMode="decimal"
+                aria-required="true"
+                aria-invalid={!!formErrors.amount}
+                className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${formErrors.amount ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
                 value={expenseForm.amount}
                 onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
           </div>
 
-          {/* Wiersz 2: Kontrahent i Osoba odpowiedzialna */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Wiersz 2: Służba i pozycja budżetu (albo wydatek spoza budżetu z własnym opisem) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Kontrahent')}</label>
+              <CustomSelect
+                label={`${tr('Służba')} *`}
+                value={expenseForm.category}
+                onChange={(val) => {
+                  setExpenseForm({ ...expenseForm, category: val, description: '' });
+                  setExpenseOffBudget(budgetDescriptionsFor(val).length === 0);
+                }}
+                options={expenseCategoryOptions}
+                placeholder={tr('Wybierz służbę')}
+              />
+              {formErrors.category && <p className="text-xs text-red-700 dark:text-red-400 mt-1">{tr('Wybierz służbę.')}</p>}
+            </div>
+            {expenseForm.category && (
+              <div>
+                <CustomSelect
+                  label={`${tr('Pozycja budżetu')} *`}
+                  value={expenseOffBudget ? OFF_BUDGET : expenseForm.description}
+                  onChange={(val) => {
+                    if (val === OFF_BUDGET) { setExpenseOffBudget(true); setExpenseForm({ ...expenseForm, description: '' }); }
+                    else { setExpenseOffBudget(false); setExpenseForm({ ...expenseForm, description: val }); }
+                  }}
+                  options={[...budgetDescriptionsFor(expenseForm.category), { value: OFF_BUDGET, label: tr('Inny wydatek (poza budżetem)') }]}
+                  placeholder={tr('Wybierz pozycję')}
+                />
+                {formErrors.description && !expenseOffBudget && <p className="text-xs text-red-700 dark:text-red-400 mt-1">{tr('Wybierz pozycję budżetu albo „Inny wydatek”.')}</p>}
+              </div>
+            )}
+          </div>
+          {expenseForm.category && expenseOffBudget && (
+            <div>
+              <label htmlFor="fin-expense-desc" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis wydatku')} <span className="text-red-600" aria-hidden="true">*</span></label>
               <input
+                id="fin-expense-desc"
+                aria-required="true"
+                aria-invalid={!!formErrors.description}
+                className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${formErrors.description ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`}
+                value={expenseForm.description}
+                onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
+                placeholder={tr('np. Naprawa nagłośnienia')}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tr('Wydatek spoza budżetu — nie wliczy się do realizacji żadnej pozycji.')}</p>
+            </div>
+          )}
+
+          {/* Wiersz 3: Faktura (nr / termin) + załączniki — obok kwoty, bo zwykle wpisuje się je razem */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="fin-expense-invoice" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nr faktury (opcjonalnie)')}</label>
+              <input id="fin-expense-invoice" value={expenseForm.invoice_number} onChange={(e) => setExpenseForm({ ...expenseForm, invoice_number: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="FV/2026/..." />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Termin płatności')}</label>
+              <DateInput value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Załączniki (opcjonalnie)')}</label>
+            <div className="space-y-2">
+              <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
+                {uploadingFile ? <Spinner size={18} /> : <Upload size={18} className="text-gray-400" />}
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {uploadingFile ? tr('Przesyłanie...') : tr('Załącz fakturę lub paragon')}
+                </span>
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  className="sr-only"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                  disabled={uploadingFile}
+                  multiple
+                />
+              </label>
+              {expenseForm.documents && expenseForm.documents.length > 0 && (
+                <div className="space-y-2">
+                  {expenseForm.documents.map((doc, idx) => (
+                    <div key={idx} className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+                      <span className="text-xs text-gray-700 dark:text-gray-200 flex items-center gap-1 truncate">
+                        <FileText size={14} />
+                        {doc.name}
+                      </span>
+                      <button
+                        onClick={() => removeDocument(idx)}
+                        className="text-gray-500 hover:text-red-600 dark:text-gray-400 ml-2 flex-shrink-0"
+                        aria-label={tr('Usuń załącznik {name}', { name: doc.name })}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Wiersz 4: Kontrahent i Osoba odpowiedzialna */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="fin-expense-contractor" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Kontrahent')}</label>
+              <input
+                id="fin-expense-contractor"
                 list="fin-vendors"
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={expenseForm.contractor}
@@ -3030,8 +3460,9 @@ const FinanceModule = () => {
               </datalist>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Osoba odpowiedzialna')}</label>
+              <label htmlFor="fin-expense-responsible" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Osoba odpowiedzialna')}</label>
               <input
+                id="fin-expense-responsible"
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={expenseForm.responsible_person}
                 onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
@@ -3040,64 +3471,29 @@ const FinanceModule = () => {
             </div>
           </div>
 
-          {/* Wiersz 3: Kategoria i Opis kosztu */}
-          <div className="grid grid-cols-2 gap-4">
-            <CustomSelect
-              label={tr('Kategoria (powiązana z budżetem)')}
-              value={expenseForm.category}
-              onChange={(val) => setExpenseForm({...expenseForm, category: val, description: ''})}
-              options={budgetCategories.length > 0 ? budgetCategories : [{ value: '', label: tr('Najpierw dodaj pozycje budżetowe') }]}
-              placeholder={t('Wybierz kategorię')}
-            />
-            {expenseForm.category && (
-              <CustomSelect
-                label={tr('Opis kosztu (z budżetu)')}
-                value={expenseForm.description}
-                onChange={(val) => setExpenseForm({...expenseForm, description: val})}
-                options={budgetItems
-                  .filter(item => item.category === expenseForm.category)
-                  .map(item => ({ value: item.description, label: item.description }))}
-                placeholder={t('Wybierz opis kosztu')}
-              />
-            )}
-          </div>
+          {/* Rodzaj kosztu (własna kategoria, niezależna od budżetu) */}
+          <CustomSelect
+            label={tr('Rodzaj kosztu (opcjonalnie)')}
+            value={expenseForm.cost_category}
+            onChange={(val) => setExpenseForm({...expenseForm, cost_category: val})}
+            options={[{ value: '', label: tr('— brak —') }, ...expenseCategories.map((c) => ({ value: c.name, label: c.name }))]}
+            placeholder={t('Wybierz kategorię kosztu')}
+          />
 
-          {/* Wiersz 3b: Kategoria kosztu (własna, niezależna od budżetu) */}
-          <div className="grid grid-cols-1">
-            <CustomSelect
-              label={tr('Kategoria kosztu (własna)')}
-              value={expenseForm.cost_category}
-              onChange={(val) => setExpenseForm({...expenseForm, cost_category: val})}
-              options={[{ value: '', label: tr('— brak —') }, ...expenseCategories.map((c) => ({ value: c.name, label: c.name }))]}
-              placeholder={t('Wybierz kategorię kosztu')}
-            />
-          </div>
-
-          {/* Wiersz 3c: Faktura (nr / termin / opłacone) */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nr faktury (opcjonalnie)')}</label>
-              <input value={expenseForm.invoice_number} onChange={(e) => setExpenseForm({ ...expenseForm, invoice_number: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="FV/2026/..." />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Termin płatności')}</label>
-              <DateInput value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-              <input type="checkbox" className="w-4 h-4" checked={expenseForm.is_paid !== false} onChange={(e) => setExpenseForm({ ...expenseForm, is_paid: e.target.checked })} />
-              {tr('Opłacone')}
-            </label>
-            {!expenseForm.id && (
+          {canApprove && (
+            <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                <input type="checkbox" className="w-4 h-4" checked={!!expenseForm.submit_for_approval} onChange={(e) => setExpenseForm({ ...expenseForm, submit_for_approval: e.target.checked })} />
-                {tr('Wniosek o zwrot / wyślij do akceptacji')}
+                <input type="checkbox" className="w-4 h-4" checked={expenseForm.is_paid !== false && !expenseForm.submit_for_approval} disabled={!!expenseForm.submit_for_approval && !expenseForm.id} onChange={(e) => setExpenseForm({ ...expenseForm, is_paid: e.target.checked })} />
+                {tr('Opłacone')}
               </label>
-            )}
-          </div>
+              {!expenseForm.id && (
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                  <input type="checkbox" className="w-4 h-4" checked={!!expenseForm.submit_for_approval} onChange={(e) => setExpenseForm({ ...expenseForm, submit_for_approval: e.target.checked })} />
+                  {tr('Wniosek o zwrot / wyślij do akceptacji')}
+                </label>
+              )}
+            </div>
+          )}
 
           {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
           <div>
@@ -3109,43 +3505,6 @@ const FinanceModule = () => {
               onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
               placeholder={t('Dodatkowe informacje o wydatku...')}
             />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Załączniki (opcjonalnie)')}</label>
-            <div className="space-y-2">
-              <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
-                <Upload size={18} className="text-gray-400" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
-                </span>
-                <input
-                  type="file"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                  disabled={uploadingFile}
-                  multiple
-                />
-              </label>
-              {expenseForm.documents && expenseForm.documents.length > 0 && (
-                <div className="space-y-2">
-                  {expenseForm.documents.map((doc, idx) => (
-                    <div key={idx} className="flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                      <span className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1 truncate">
-                        <FileText size={14} />
-                        {doc.name}
-                      </span>
-                      <button
-                        onClick={() => removeDocument(idx)}
-                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 ml-2 flex-shrink-0"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
@@ -3191,11 +3550,11 @@ const FinanceModule = () => {
       <Modal
         isOpen={showBalanceModal}
         onClose={() => setShowBalanceModal(false)}
-        title={`Stan początkowy kont - ${selectedYear}`}
+        title={tr('Stan początkowy kont - {year}', { year: selectedYear })}
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowBalanceModal(false)}>Anuluj</Button>
-          <Button onClick={saveAccountBalances}>Zapisz</Button>
+          <Button variant="secondary" disabled={saving} onClick={() => setShowBalanceModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveAccountBalances} loading={saving}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-5">
@@ -3203,13 +3562,13 @@ const FinanceModule = () => {
           <div>
             <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-              Złotówki (PLN)
+              {tr('Złotówki (PLN)')}
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                   <CreditCard size={12} className="inline mr-1" />
-                  Rachunek bankowy
+                  {tr('Rachunek bankowy')}
                 </label>
                 <input
                   type="number"
@@ -3217,7 +3576,7 @@ const FinanceModule = () => {
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={balanceForm.bank_pln}
                   onChange={(e) => setBalanceForm({...balanceForm, bank_pln: e.target.value})}
-                  placeholder="0.00"
+                  placeholder="0,00"
                 />
               </div>
               <div>
@@ -3231,7 +3590,7 @@ const FinanceModule = () => {
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={balanceForm.cash_pln}
                   onChange={(e) => setBalanceForm({...balanceForm, cash_pln: e.target.value})}
-                  placeholder="0.00"
+                  placeholder="0,00"
                 />
               </div>
             </div>
@@ -3241,26 +3600,27 @@ const FinanceModule = () => {
           <div>
             <h4 className="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
               <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-              Waluta obca
+              {tr('Waluta obca')}
             </h4>
             <div className="mb-3">
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Typ waluty')}</label>
+              <label htmlFor="fin-currency-type" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Typ waluty')}</label>
               <select
+                id="fin-currency-type"
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={balanceForm.currency_type}
                 onChange={(e) => setBalanceForm({...balanceForm, currency_type: e.target.value})}
               >
-                <option value="EUR">EUR - Euro</option>
+                <option value="EUR">{tr('EUR - Euro')}</option>
                 <option value="USD">{tr('USD - Dolar amerykański')}</option>
-                <option value="GBP">GBP - Funt brytyjski</option>
-                <option value="CHF">CHF - Frank szwajcarski</option>
+                <option value="GBP">{tr('GBP - Funt brytyjski')}</option>
+                <option value="CHF">{tr('CHF - Frank szwajcarski')}</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                   <CreditCard size={12} className="inline mr-1" />
-                  Rachunek walutowy
+                  {tr('Rachunek walutowy')}
                 </label>
                 <input
                   type="number"
@@ -3268,7 +3628,7 @@ const FinanceModule = () => {
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={balanceForm.bank_currency}
                   onChange={(e) => setBalanceForm({...balanceForm, bank_currency: e.target.value})}
-                  placeholder="0.00"
+                  placeholder="0,00"
                 />
               </div>
               <div>
@@ -3282,7 +3642,7 @@ const FinanceModule = () => {
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={balanceForm.cash_currency}
                   onChange={(e) => setBalanceForm({...balanceForm, cash_currency: e.target.value})}
-                  placeholder="0.00"
+                  placeholder="0,00"
                 />
               </div>
             </div>
@@ -3290,7 +3650,7 @@ const FinanceModule = () => {
 
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300">
             <p className="font-medium mb-1">{t('💡 Wskazówka')}</p>
-            <p>Wprowadź stany kont na początek roku {selectedYear}. System automatycznie doliczy wpływy i wydatki, aby pokazać aktualny stan.</p>
+            <p>{tr('Wprowadź stany kont na początek roku {year}. System automatycznie doliczy wpływy i wydatki, aby pokazać aktualny stan.', { year: selectedYear })}</p>
           </div>
         </div>
       </Modal>

@@ -50,6 +50,8 @@ const MODULES = [
   'send-assignment-invites',
   'board-form-get',
   'board-form-submit',
+  'public-form-get',
+  'public-form-submit',
   'admin-set-user-password',
   'approve-user',
   'admin-create-user',
@@ -66,6 +68,9 @@ const MODULES = [
   'sso-save-config',
   'finance-report-email',
   'budget-proposal-notify',
+  'event-assignments-patch',
+  'mailing-unsubscribe',
+  'song-tags',
 ];
 
 export async function registerFunctions(app) {
@@ -89,9 +94,13 @@ export async function registerFunctions(app) {
       : (cap ? [app.requireUser, app.block2FAPending, requireCapability(cap)] : [app.requireUser, app.block2FAPending]);
     // routePath pozwala funkcji nadpisać ścieżkę (np. ical z tokenem w URL).
     const route = mod.routePath || `/api/fn/${name}`;
-    app[method](route, { preHandler }, mod.default);
+    // rateLimit (publiczne formularze) — limit per IP, jak przy rejestracji/logowaniu.
+    const routeOpts = { preHandler, ...(mod.rateLimit ? { config: { rateLimit: mod.rateLimit } } : {}) };
+    // methods: kilka metod pod tą samą ścieżką (np. wypis z mailingu: GET strona, POST jednym kliknięciem).
+    const methods = Array.isArray(mod.methods) && mod.methods.length ? mod.methods.map((m) => m.toLowerCase()) : [method];
+    for (const m of methods) app[m](route, routeOpts, mod.default);
     if (mod.routePath && mod.routePathAlias) {
-      app[method](mod.routePathAlias, { preHandler }, mod.default);
+      app[method](mod.routePathAlias, routeOpts, mod.default);
     }
   }
 }

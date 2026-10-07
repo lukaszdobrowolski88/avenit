@@ -10,8 +10,8 @@ import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 
 const TABS = [
-  { id: 'accounts', label: tr('Konta zewnętrzne'), icon: Server },
-  { id: 'filters', label: tr('Filtry'), icon: Filter }
+  { id: 'accounts', label: 'Konta zewnętrzne', icon: Server },
+  { id: 'filters', label: 'Filtry', icon: Filter }
 ];
 
 export default function MailSettingsModal({
@@ -119,7 +119,7 @@ export default function MailSettingsModal({
       setSyncStatus({
         accountId: account.id,
         success: result?.success,
-        message: result?.message || (result?.success ? `Pobrano ${result?.saved || 0} nowych wiadomości` : tr('Błąd synchronizacji'))
+        message: result?.message || (result?.success ? tr('Pobrano {n} nowych wiadomości', { n: result?.saved || 0 }) : tr('Błąd synchronizacji'))
       });
     } catch (err) {
       setSyncStatus({ accountId: account.id, success: false, message: err.message });
@@ -169,7 +169,7 @@ export default function MailSettingsModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Ustawienia poczty"
+      title={tr('Ustawienia poczty')}
       icon={Settings}
       size="xl"
     >
@@ -190,7 +190,7 @@ export default function MailSettingsModal({
                 `}
               >
                 <Icon size={16} />
-                {tab.label}
+                {tr(tab.label)}
               </button>
             );
           })}
@@ -207,15 +207,12 @@ export default function MailSettingsModal({
                   <div className="text-sm text-blue-700 dark:text-blue-300">
                     <p className="font-medium mb-1">{tr('Informacja o kontach zewnętrznych')}</p>
                     <p>
-                      Możesz połączyć zewnętrzne konta email (Gmail, Outlook, inne) aby odbierać
-                      i wysyłać wiadomości bezpośrednio z tej aplikacji. Wymaga to podania
-                      danych IMAP/SMTP twojego dostawcy poczty.
+                      {tr('Możesz połączyć zewnętrzne konta e-mail (Gmail, Outlook, inne), aby odbierać i wysyłać wiadomości bezpośrednio z tej aplikacji. Wymaga to podania danych IMAP/SMTP Twojego dostawcy poczty.')}
                     </p>
                     <p className="mt-2 flex items-center gap-1">
                       <Star size={14} className="text-amber-500" />
                       <span>
-                        Konto oznaczone jako <strong>systemowe</strong> będzie używane do wysyłania
-                        wiadomości z kont wewnętrznych do odbiorców zewnętrznych.
+                        {tr('Konto oznaczone jako')} <strong>{tr('systemowe')}</strong> {tr('będzie używane do wysyłania wiadomości z kont wewnętrznych do odbiorców zewnętrznych.')}
                       </span>
                     </p>
                   </div>
@@ -250,7 +247,7 @@ export default function MailSettingsModal({
                         {account.system_default && (
                           <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-full">
                             <Star size={12} className="fill-current" />
-                            Systemowe
+                            {tr('Systemowe')}
                           </span>
                         )}
                         {connectionStatus?.accountId === account.id && (
@@ -261,7 +258,7 @@ export default function MailSettingsModal({
                         {!account.system_default && (
                           <button
                             onClick={() => onSetSystemDefault(account.id)}
-                            title="Ustaw jako konto systemowe"
+                            title={tr('Ustaw jako konto systemowe')} aria-label={tr('Ustaw jako konto systemowe')}
                             className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
                           >
                             <Star size={16} />
@@ -269,7 +266,7 @@ export default function MailSettingsModal({
                         )}
                         <button
                           onClick={() => handleEditAccount(account)}
-                          title="Edytuj ustawienia"
+                          title={tr('Edytuj ustawienia')} aria-label={tr('Edytuj ustawienia')}
                           className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                         >
                           <Edit2 size={16} />
@@ -277,7 +274,7 @@ export default function MailSettingsModal({
                         <button
                           onClick={() => handleSyncMail(account)}
                           disabled={syncingAccount === account.id}
-                          title={tr('Synchronizuj pocztę')}
+                          title={tr('Synchronizuj pocztę')} aria-label={tr('Synchronizuj pocztę')}
                           className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50"
                         >
                           {syncingAccount === account.id ? (
@@ -285,7 +282,7 @@ export default function MailSettingsModal({
                           ) : (
                             <RefreshCw size={14} />
                           )}
-                          {syncingAccount === account.id ? tr('Synchronizuję...') : 'Synchronizuj'}
+                          {syncingAccount === account.id ? tr('Synchronizuję...') : tr('Synchronizuj')}
                         </button>
                         <button
                           onClick={() => handleTestConnection(account)}
@@ -295,7 +292,7 @@ export default function MailSettingsModal({
                           {testingConnection && connectionStatus?.accountId === account.id ? (
                             <Loader2 size={14} className="animate-spin" />
                           ) : (
-                            'Testuj'
+                            tr('Testuj')
                           )}
                         </button>
                         <button
@@ -330,12 +327,12 @@ export default function MailSettingsModal({
               {showAccountForm ? (
                 <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl space-y-4">
                   <h3 className="font-medium text-gray-800 dark:text-white">
-                    {editingAccountId ? 'Edytuj konto' : tr('Dodaj konto zewnętrzne')}
+                    {editingAccountId ? tr('Edytuj konto') : tr('Dodaj konto zewnętrzne')}
                   </h3>
 
                   <div>
                     <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      Adres email
+                      {tr('Adres email')}
                     </label>
                     <input
                       type="email"
@@ -355,7 +352,7 @@ export default function MailSettingsModal({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        Serwer IMAP
+                        {tr('Serwer IMAP')}
                       </label>
                       <input
                         type="text"
@@ -367,7 +364,7 @@ export default function MailSettingsModal({
                     </div>
                     <div>
                       <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        Port IMAP
+                        {tr('Port IMAP')}
                       </label>
                       <input
                         type="number"
@@ -381,7 +378,7 @@ export default function MailSettingsModal({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        Serwer SMTP
+                        {tr('Serwer SMTP')}
                       </label>
                       <input
                         type="text"
@@ -393,7 +390,7 @@ export default function MailSettingsModal({
                     </div>
                     <div>
                       <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        Port SMTP
+                        {tr('Port SMTP')}
                       </label>
                       <input
                         type="number"
@@ -406,7 +403,7 @@ export default function MailSettingsModal({
 
                   <div>
                     <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      {editingAccountId ? tr('Nowe hasło (pozostaw puste aby nie zmieniać)') : tr('Hasło aplikacji')}
+                      {editingAccountId ? tr('Nowe hasło (pozostaw puste, aby nie zmieniać)') : tr('Hasło aplikacji')}
                     </label>
                     <div className="relative">
                       <input
@@ -419,6 +416,7 @@ export default function MailSettingsModal({
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? tr('Ukryj hasło') : tr('Pokaż hasło')}
                         className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -434,7 +432,7 @@ export default function MailSettingsModal({
 
                   <div className="flex justify-end gap-2">
                     <Button variant="secondary" onClick={resetForm}>
-                      Anuluj
+                      {tr('Anuluj')}
                     </Button>
                     <Button
                       onClick={handleSaveAccount}
@@ -442,7 +440,7 @@ export default function MailSettingsModal({
                       disabled={!accountForm.external_email || !accountForm.imap_host || (!editingAccountId && !accountForm.password)}
                       icon={editingAccountId ? Check : Plus}
                     >
-                      {editingAccountId ? 'Zapisz zmiany' : 'Dodaj konto'}
+                      {editingAccountId ? tr('Zapisz zmiany') : tr('Dodaj konto')}
                     </Button>
                   </div>
                 </div>
@@ -463,8 +461,7 @@ export default function MailSettingsModal({
             <div className="space-y-4">
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Reguły filtrowania pozwalają automatycznie sortować przychodzące wiadomości
-                  do odpowiednich folderów na podstawie nadawcy, tematu lub treści.
+                  {tr('Reguły filtrowania pozwalają automatycznie sortować przychodzące wiadomości do odpowiednich folderów na podstawie nadawcy, tematu lub treści.')}
                 </p>
               </div>
 

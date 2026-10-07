@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUpRight, MapPin, CalendarDays } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 // Pulpit w motywie „Avenit” — to samo co karta „Najbliższe” i liczniki w aplikacji mobilnej
 // (NextUpCard / Greeting): karta-bohater w jasnej kurkumie z najbliższym wydarzeniem i ciemna
@@ -28,8 +28,8 @@ function dayLabel(dateStr) {
   if (diff === 0) return tr('Dziś');
   if (diff === 1) return tr('Jutro');
   const label = diff < 7
-    ? date.toLocaleDateString('pl-PL', { weekday: 'long' })
-    : date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+    ? date.toLocaleDateString(appLocale(), { weekday: 'long' })
+    : date.toLocaleDateString(appLocale(), { day: 'numeric', month: 'long' });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 

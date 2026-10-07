@@ -1,9 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { toast } from '../../../lib/toast';
+import { tr } from '../../../i18n';
+import { sameEmail } from '../utils/chatLogic';
 
 // Głosy w ankietach: messageId -> [{ id, option_id, user_email }]
 export default function usePolls(conversationId, userEmail) {
   const [votes, setVotes] = useState({});
+  const votingRef = useRef(new Set()); // strażnik podwójnego kliknięcia (per ankieta)
 
   const fetchVotes = useCallback(async (messageIds) => {
     if (!messageIds || messageIds.length === 0) return;
@@ -32,15 +36,19 @@ export default function usePolls(conversationId, userEmail) {
   const castVote = useCallback(async (message, optionId) => {
     if (!message?.id || !userEmail || !optionId) return;
     const messageId = message.id;
+    if (votingRef.current.has(messageId)) return; // poprzedni klik jeszcze się zapisuje
+    votingRef.current.add(messageId);
+
     const multiple = !!message.metadata?.multiple;
     const current = votes[messageId] || [];
-    const mine = current.filter(v => v.user_email === userEmail);
+    const mine = current.filter(v => sameEmail(v.user_email, userEmail));
     const already = mine.find(v => v.option_id === optionId);
 
     try {
       if (already) {
         // Klik w wybraną opcję = wycofanie głosu
-        await supabase.from('poll_votes').delete().eq('id', already.id);
+        const { error } = await supabase.from('poll_votes').delete().eq('id', already.id).select('id, message_id');
+        if (error) throw error;
         setVotes(prev => ({
           ...prev,
           [messageId]: (prev[messageId] || []).filter(v => v.id !== already.id)
@@ -48,10 +56,16 @@ export default function usePolls(conversationId, userEmail) {
         return;
       }
 
-      // Jednokrotny wybór – usuń wcześniejsze głosy tego użytkownika
-      if (!multiple && mine.length > 0) {
+      // Jednokrotny wybór – usuń wcześniejsze głosy tego użytkownika (także te niewidoczne lokalnie)
+      if (!multiple) {
+        const { error } = await supabase
+          .from('poll_votes')
+          .delete()
+          .eq('message_id', messageId)
+          .eq('user_email', userEmail)
+          .select('id, message_id');
+        if (error) throw error;
         const ids = mine.map(v => v.id);
-        await supabase.from('poll_votes').delete().in('id', ids);
         setVotes(prev => ({
           ...prev,
           [messageId]: (prev[messageId] || []).filter(v => !ids.includes(v.id))
@@ -71,6 +85,9 @@ export default function usePolls(conversationId, userEmail) {
       }));
     } catch (err) {
       console.error('Error casting vote:', err);
+      toast.error(err, { fallback: tr('Nie udało się zapisać głosu. Spróbuj ponownie.') });
+    } finally {
+      votingRef.current.delete(messageId);
     }
   }, [votes, userEmail]);
 
@@ -91,26 +108,26 @@ export default function usePolls(conversationId, userEmail) {
           count: optVotes.length,
           percent: total > 0 ? Math.round((optVotes.length / total) * 100) : 0,
           voters: optVotes.map(v => v.user_email),
-          hasVoted: optVotes.some(v => v.user_email === userEmail)
+          hasVoted: optVotes.some(v => sameEmail(v.user_email, userEmail))
         };
       })
     };
   }, [votes, userEmail]);
 
-  // Realtime
+  // Realtime (serwer wysyła tylko zdarzenia z moich rozmów)
   useEffect(() => {
     if (!conversationId) return;
     const channel = supabase
       .channel(`poll-votes-${conversationId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
+        if (payload?.eventType === 'INSERT' && payload.new?.message_id) {
           const v = payload.new;
           setVotes(prev => {
             const existing = prev[v.message_id] || [];
             if (existing.some(x => x.id === v.id)) return prev;
             return { ...prev, [v.message_id]: [...existing, v] };
           });
-        } else if (payload.eventType === 'DELETE') {
+        } else if (payload?.eventType === 'DELETE' && payload.old?.message_id) {
           const v = payload.old;
           setVotes(prev => ({
             ...prev,

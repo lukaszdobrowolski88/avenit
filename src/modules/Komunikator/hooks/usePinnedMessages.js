@@ -109,7 +109,8 @@ export default function usePinnedMessages(conversationId, userEmail) {
         .from('pinned_messages')
         .delete()
         .eq('message_id', messageId)
-        .eq('conversation_id', conversationId);
+        .eq('conversation_id', conversationId)
+        .select('id, conversation_id'); // serwer roześle zmianę pozostałym uczestnikom
 
       if (error) throw error;
 
@@ -148,8 +149,10 @@ export default function usePinnedMessages(conversationId, userEmail) {
         schema: 'public',
         table: 'pinned_messages',
         filter: `conversation_id=eq.${conversationId}`
-      }, () => {
-        // Odśwież przy każdej zmianie
+      }, (payload) => {
+        // Filtr kanału nie jest stosowany po stronie serwera — pomiń zmiany z innych rozmów.
+        const row = payload?.new || payload?.old;
+        if (row?.conversation_id && row.conversation_id !== conversationId) return;
         fetchPinnedMessages();
       })
       .subscribe();

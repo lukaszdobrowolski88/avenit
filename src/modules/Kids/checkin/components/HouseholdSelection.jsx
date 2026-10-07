@@ -1,58 +1,63 @@
 import React from 'react';
 import { ArrowLeft, Users } from 'lucide-react';
+import Button from '../../../../components/Button';
 import { tr } from '../../../../i18n';
+import { maskPhone, pluralForm } from '../utils/kiosk';
+
+export const childrenCountLabel = (n) =>
+  pluralForm(n, tr('{n} dziecko', { n }), tr('{n} dzieci', { n }), tr('{n} dzieci', { n }));
 
 export default function HouseholdSelection({ households, onSelect, onBack }) {
+  const n = households.length;
+  const familiesLabel = pluralForm(
+    n,
+    tr('Znaleźliśmy {n} rodzinę z tym numerem', { n }),
+    tr('Znaleźliśmy {n} rodziny z tym numerem', { n }),
+    tr('Znaleźliśmy {n} rodzin z tym numerem', { n }),
+  );
+
   return (
-    <div className="flex flex-col items-center px-5 py-10 min-h-full">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">
+    <div className="flex flex-col items-center px-5 py-6 sm:py-8 min-h-full">
+      <div className="text-center mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
           {tr('Wybierz rodzinę')}
         </h1>
-        <p className="text-base text-gray-600 dark:text-gray-400">
-          Znaleziono {households.length} rodzin z tym numerem telefonu
-        </p>
+        <p className="text-base text-gray-600 dark:text-gray-400">{familiesLabel}</p>
       </div>
 
-      {/* Household cards */}
       <div className="flex flex-col gap-4 w-full max-w-lg">
         {households.map((household) => {
-          const primaryContact = household.parent_contacts?.find(c => c.is_primary)
+          const primaryContact = household.parent_contacts?.find((c) => c.is_primary)
             || household.parent_contacts?.[0];
           const childrenCount = household.kids_students?.length || 0;
+          // Na ekranie kiosku nie pokazujemy pełnych numerów innych rodzin.
+          const masked = maskPhone(primaryContact?.phone);
 
           return (
             <button
               key={household.id}
+              type="button"
               onClick={() => onSelect(household)}
-              className="flex flex-col items-start p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl cursor-pointer transition-all text-left w-full hover:border-accent-primary-light dark:hover:border-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20"
+              className="flex flex-col items-start p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl cursor-pointer transition text-left w-full hover:border-accent-primary dark:hover:border-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 focus:outline-none focus-visible:ring-4 focus-visible:ring-accent-primary/30"
             >
-              {/* Family name */}
-              <div className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                 {household.name}
               </div>
-
-              {/* Primary contact */}
               {primaryContact && (
-                <div className="text-base text-gray-600 dark:text-gray-400 mb-1">
+                <div className="text-base text-gray-600 dark:text-gray-400">
                   {primaryContact.full_name}
-                  {primaryContact.phone && ` • ${primaryContact.phone}`}
+                  {masked && <span className="tabular-nums">{` • ${masked}`}</span>}
                 </div>
               )}
-
-              {/* Children count */}
-              <div className="flex items-center gap-2 mt-2">
-                <span className="flex items-center gap-1.5 bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-3 py-1 rounded-full text-sm font-semibold">
+              <div className="flex items-center gap-2 mt-3">
+                <span className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-1 rounded-full text-sm font-semibold">
                   <Users size={14} />
-                  {childrenCount} {childrenCount === 1 ? 'dziecko' : childrenCount < 5 ? 'dzieci' : 'dzieci'}
+                  {childrenCountLabel(childrenCount)}
                 </span>
               </div>
-
-              {/* Children names preview */}
-              {household.kids_students?.length > 0 && (
-                <div className="mt-3 text-sm text-gray-500 dark:text-gray-500">
-                  {household.kids_students.map(s => s.full_name).join(', ')}
+              {childrenCount > 0 && (
+                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  {household.kids_students.map((s) => s.full_name).join(', ')}
                 </div>
               )}
             </button>
@@ -60,14 +65,9 @@ export default function HouseholdSelection({ households, onSelect, onBack }) {
         })}
       </div>
 
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="mt-8 flex items-center gap-2 px-6 py-3 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-      >
-        <ArrowLeft size={18} />
+      <Button variant="secondary" size="lg" icon={ArrowLeft} onClick={onBack} className="mt-8">
         {tr('Wróć do wyszukiwania')}
-      </button>
+      </Button>
     </div>
   );
 }

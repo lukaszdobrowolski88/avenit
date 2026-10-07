@@ -123,14 +123,14 @@ export default function Dashboard() {
         />
         <StatCard
           icon={CheckCircle}
-          label="Aktywnych"
+          label={tr('Aktywnych')}
           value={stats.activeTenants}
           subValue={`${stats.trialTenants} w trialu`}
           color="green"
         />
         <StatCard
           icon={AlertCircle}
-          label="Zawieszonych"
+          label={tr('Zawieszonych')}
           value={stats.suspendedTenants}
           color="red"
         />

@@ -3,6 +3,7 @@ import { Star, Link as LinkIcon, Paperclip, Plus, X, ExternalLink } from 'lucide
 import Popover from '../Popover';
 import { evalFormula } from '../../lib/formula';
 import { DateInput } from '../../../../components/pickers';
+import { tr } from '../../../../i18n';
 
 // ── Tekst (inline) ───────────────────────────────────────────────────
 export function TextCell({ value, onChange, readOnly, align = 'left' }) {
@@ -75,15 +76,15 @@ export function TimelineCell({ value, onChange, readOnly }) {
     <Popover width={240} trigger={Bar}>
       {() => (
         <div className="p-3 space-y-2">
-          <label className="block text-xs text-gray-500">Początek
+          <label className="block text-xs text-gray-500">{tr('Początek')}
             <DateInput compact value={v.start || ''} onChange={(e) => onChange({ ...v, start: e.target.value || null })}
               className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1.5 outline-none [color-scheme:light] dark:[color-scheme:dark]" />
           </label>
-          <label className="block text-xs text-gray-500">Koniec
+          <label className="block text-xs text-gray-500">{tr('Koniec')}
             <DateInput compact value={v.end || ''} onChange={(e) => onChange({ ...v, end: e.target.value || null })}
               className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1.5 outline-none [color-scheme:light] dark:[color-scheme:dark]" />
           </label>
-          {(v.start || v.end) && <button onClick={() => onChange(null)} className="text-xs text-gray-400 hover:text-red-500">Wyczyść</button>}
+          {(v.start || v.end) && <button onClick={() => onChange(null)} className="text-xs text-gray-400 hover:text-red-500">{tr('Wyczyść')}</button>}
         </div>
       )}
     </Popover>
@@ -115,9 +116,9 @@ export function LinkCell({ value, onChange, readOnly }) {
         <div className="p-3 space-y-2">
           <input value={v.url || ''} onChange={(e) => onChange({ ...v, url: e.target.value })} placeholder="https://..."
             className="w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1.5 outline-none" />
-          <input value={v.text || ''} onChange={(e) => onChange({ ...v, text: e.target.value })} placeholder="Tekst (opcjonalnie)"
+          <input value={v.text || ''} onChange={(e) => onChange({ ...v, text: e.target.value })} placeholder={tr('Tekst (opcjonalnie)')}
             className="w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1.5 outline-none" />
-          {v.url && <a href={v.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-accent-primary"><ExternalLink size={12} /> Otwórz</a>}
+          {v.url && <a href={v.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-accent-primary"><ExternalLink size={12} /> {tr('Otwórz')}</a>}
         </div>
       )}
     </Popover>
@@ -159,10 +160,10 @@ export function FilesCell({ value = [], onChange, readOnly }) {
             </div>
           ))}
           <div className="space-y-1 pt-1 border-t border-gray-100 dark:border-gray-700">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nazwa" className="w-full text-xs bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('Nazwa')} className="w-full text-xs bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" />
             <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL" className="w-full text-xs bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" />
             <button onClick={() => { if (url) { onChange([...files, { name: name || url, url }]); setName(''); setUrl(''); } }}
-              className="flex items-center gap-1 text-xs text-accent-primary"><Plus size={13} /> Dodaj plik</button>
+              className="flex items-center gap-1 text-xs text-accent-primary"><Plus size={13} /> {tr('Dodaj plik')}</button>
           </div>
         </div>
       )}

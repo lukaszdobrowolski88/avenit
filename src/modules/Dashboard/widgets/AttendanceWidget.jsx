@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardCheck } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 
@@ -52,7 +52,7 @@ export default function AttendanceWidget() {
             <div className="w-full flex items-end justify-center h-16">
               <div className="w-full max-w-[18px] rounded-t bg-gradient-to-t from-blue-500 to-indigo-400 transition-all group-hover:opacity-80" style={{ height: `${Math.max(4, Math.round(((s.headcount || 0) / max) * 100))}%` }} />
             </div>
-            <span className="text-[9px] text-gray-400">{s.session_date ? new Date(s.session_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'numeric' }) : ''}</span>
+            <span className="text-[9px] text-gray-400">{s.session_date ? new Date(s.session_date).toLocaleDateString(appLocale(), { day: 'numeric', month: 'numeric' }) : ''}</span>
           </div>
         ))}
       </div>

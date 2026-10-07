@@ -1,3 +1,4 @@
+import { appLocale } from '../../../i18n';
 // Helpery modułu Frekwencja dorosłych (Attendance)
 
 export const SESSION_TYPES = [
@@ -23,7 +24,7 @@ export function memberName(m) {
 export function formatDate(dateStr) {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleDateString('pl-PL');
+    return new Date(dateStr).toLocaleDateString(appLocale());
   } catch {
     return dateStr;
   }

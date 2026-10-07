@@ -23,7 +23,7 @@ import ScheduleSendButton from '../components/ScheduleSendButton';
 import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
-import { tr } from '../i18n';
+import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import { confirmDialog } from '../lib/dialog';
@@ -92,7 +92,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
     setIsOpen(false);
   };
 
-  const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+  const monthName = viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
   const startDay = (new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay() + 6) % 7;
 
@@ -109,7 +109,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
+            {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -474,7 +474,7 @@ export default function AtmosferaTeamModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader moduleKey="atmosfera" icon={HeartHandshake} title="Atmosfera Team" />
+      <PageHeader moduleKey="atmosfera" icon={HeartHandshake} title={tr('Atmosfera Team')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs moduleKey="atmosfera"
@@ -509,8 +509,8 @@ export default function AtmosferaTeamModule() {
       {activeTab === 'members' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[30] transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Członkowie ({team.length})</h2>
-          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: 'Atmosfera', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj</button>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Członkowie')} ({team.length})</h2>
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: 'Atmosfera', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj')}</button>
         </div>
         <DataTable tableClassName="min-w-[700px]">
           <THead>
@@ -529,7 +529,7 @@ export default function AtmosferaTeamModule() {
                           <StatusPill key={idx} color={STATUS_COLORS.accent}>{name}</StatusPill>
                         ))
                       ) : (
-                        <span className="text-gray-400 dark:text-gray-500 text-xs italic">Brak przypisanych</span>
+                        <span className="text-gray-400 dark:text-gray-500 text-xs italic">{tr('Brak przypisanych')}</span>
                       )}
                     </div>
                   </TD>
@@ -655,19 +655,19 @@ export default function AtmosferaTeamModule() {
       <Modal
         isOpen={showExpenseModal}
         onClose={() => setShowExpenseModal(false)}
-        title={`Nowy wydatek - ${expenseForm.ministry}`}
+        title={tr('Nowy wydatek - {ministry}', { ministry: expenseForm.ministry })}
         size="xl"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>Anuluj</Button>
-          <Button onClick={saveExpense}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveExpense}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
           {/* Wiersz 1: Data i Kwota */}
           <div className="grid grid-cols-2 gap-4">
             <CustomDatePicker
-              label="Data dokumentu"
+              label={tr('Data dokumentu')}
               value={expenseForm.payment_date}
               onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
             />
@@ -739,7 +739,7 @@ export default function AtmosferaTeamModule() {
               <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                 <Upload size={18} className="text-gray-400" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
+                  {uploadingFile ? tr('Przesyłanie...') : tr('Dodaj plik(i)')}
                 </span>
                 <input
                   type="file"

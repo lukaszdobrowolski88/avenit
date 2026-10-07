@@ -96,7 +96,7 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
 
   const setLink = useCallback(async () => {
     const previousUrl = editor?.getAttributes('link').href;
-    const url = await promptDialog('URL linku:', previousUrl);
+    const url = await promptDialog(tr('URL linku:'), previousUrl);
 
     if (url === null) return;
 
@@ -129,14 +129,14 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive('bold')}
-            title="Pogrubienie"
+            title={tr('Pogrubienie')}
           >
             <Bold size={16} />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleItalic().run()}
             active={editor.isActive('italic')}
-            title="Kursywa"
+            title={tr('Kursywa')}
           >
             <Italic size={16} />
           </ToolbarButton>
@@ -161,7 +161,7 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
           <ToolbarButton
             onClick={() => editor.chain().focus().setParagraph().run()}
             active={editor.isActive('paragraph')}
-            title="Paragraf"
+            title={tr('Paragraf')}
           >
             <Type size={16} />
           </ToolbarButton>
@@ -218,14 +218,14 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             active={editor.isActive('bulletList')}
-            title="Lista punktowana"
+            title={tr('Lista punktowana')}
           >
             <List size={16} />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             active={editor.isActive('orderedList')}
-            title="Lista numerowana"
+            title={tr('Lista numerowana')}
           >
             <ListOrdered size={16} />
           </ToolbarButton>
@@ -233,10 +233,10 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
 
         {/* Insert */}
         <div className="flex items-center gap-0.5 border-r border-gray-200 dark:border-gray-700 pr-2 mr-1">
-          <ToolbarButton onClick={setLink} active={editor.isActive('link')} title="Wstaw link">
+          <ToolbarButton onClick={setLink} active={editor.isActive('link')} title={tr('Wstaw link')}>
             <LinkIcon size={16} />
           </ToolbarButton>
-          <ToolbarButton onClick={handleImageUpload} title="Wstaw obraz">
+          <ToolbarButton onClick={handleImageUpload} title={tr('Wstaw obraz')}>
             <ImageIcon size={16} />
           </ToolbarButton>
         </div>
@@ -248,9 +248,9 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
               type="color"
               onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
               className="w-8 h-8 p-0 border-0 rounded cursor-pointer opacity-0 absolute inset-0"
-              title="Kolor tekstu"
+              title={tr('Kolor tekstu')}
             />
-            <ToolbarButton title="Kolor tekstu">
+            <ToolbarButton title={tr('Kolor tekstu')}>
               <Palette size={16} />
             </ToolbarButton>
           </div>
@@ -269,7 +269,7 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
                 onClick={() => insertVariable(variable.key)}
                 className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <span>{variable.label}</span>
+                <span>{tr(variable.label)}</span>
                 <code className="text-xs text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-2 py-0.5 rounded">
                   {variable.key}
                 </code>
@@ -284,7 +284,7 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
 
       {/* Character count */}
       <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
-        {editor.storage.characterCount?.characters?.() || 0} znaków
+        {tr('{n} znaków', { n: editor.storage.characterCount?.characters?.() || 0 })}
       </div>
     </div>
   );

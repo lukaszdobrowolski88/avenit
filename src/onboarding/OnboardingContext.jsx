@@ -34,9 +34,13 @@ const OnboardingContext = createContext(DEFAULT_CTX);
 
 export function OnboardingProvider({ user, children }) {
   const email = user?.email || null;
-  const { logoUrl, subject } = usePermissions();
+  const { logoUrl, subject, can, ready } = usePermissions();
   const { userRole } = useUserRole();
-  const isAdmin = subject?.isAdmin ?? (userRole === 'superadmin' || userRole === 'rada_starszych');
+  // Ścieżka admina (kreator, kroki konfiguracji) dla każdego, kto może zarządzać Ustawieniami —
+  // nie tylko dla ról z flagą is_admin (np. „Rada Starszych” z pełnym dostępem, UXE-19).
+  // Do czasu wczytania grantów can() jest permisywne, więc wtedy patrzymy tylko na flagę/rolę.
+  const legacyAdmin = subject?.isAdmin ?? (userRole === 'superadmin' || userRole === 'rada_starszych');
+  const isAdmin = !!legacyAdmin || (ready && !!subject && typeof can === 'function' && can('module:settings'));
 
   // Sesja z /me lub /login niesie już `onboarding` (patrz publicUser w API).
   // 'onboarding' in user === true => wartość autorytatywna (nawet puste {}).

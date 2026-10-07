@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
+import { preloadI18n } from './i18n'
 import './index.css'
 import './styles/brand-avenit.css'; // warstwa motywu „Avenit” (tylko przy palecie avenit)
 
@@ -26,8 +26,12 @@ if ('serviceWorker' in navigator) {
     .catch(() => {})
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+// Słowniki EN/UK ładują się leniwie (polski ich nie potrzebuje). Dla innego języka najpierw
+// słownik, potem aplikacja — żeby etykiety liczone przy imporcie modułów były już przetłumaczone.
+preloadI18n().then(() => import('./App.jsx')).then(({ default: App }) => {
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  )
+})

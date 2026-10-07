@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Users, Receipt, Printer, Download, Search, ArrowLeft, TrendingUp, Calendar } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { formatMoney, formatDate, memberName, methodLabel, statusLabel } from '../lib/givingApi';
+import { formatMoney, formatDate, memberName, methodLabel, statusLabel, defaultStatementYear } from '../lib/givingApi';
+import { buildStatementHtml, readSavedOrgName, loadOrgNameFromSettings } from '../lib/pitStatement';
 import { toast } from '../../../lib/toast';
+import { tr } from '../../../i18n';
+import CustomSelect from '../../../components/CustomSelect';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
@@ -14,7 +17,9 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedKey, setSelectedKey] = useState(null);
-  const [orgName, setOrgName] = useState('');
+  const [orgName, setOrgName] = useState(readSavedOrgName);
+  // Rok karty i zestawienia PIT (w styczniu–kwietniu domyślnie poprzedni).
+  const [cardYear, setCardYear] = useState(defaultStatementYear());
 
   const fundsById = useMemo(() => {
     const m = {}; (funds || []).forEach(f => { m[f.id] = f; }); return m;
@@ -41,14 +46,9 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    // Spróbuj pobrać nazwę organizacji z ustawień (do wydruku PIT)
-    (async () => {
-      try {
-        const { data } = await supabase.from('app_settings').select('key, value').in('key', ['church_name', 'organization_name', 'app_name']);
-        const found = (data || []).find(r => r.value);
-        if (found) setOrgName(found.value);
-      } catch { /* pomiń */ }
-    })();
+    // Nazwa organizacji do wydruku PIT: zapamiętana w „Zestawieniach PIT” albo z ustawień.
+    if (readSavedOrgName()) return;
+    loadOrgNameFromSettings(supabase).then((v) => { if (v) setOrgName((cur) => cur || v); });
   }, []);
 
   // Zgrupuj wg darczyńcy: m:<member_id> lub n:<lower(donor_name)>
@@ -60,29 +60,25 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
         const m = d.member_id ? membersById?.[d.member_id] : null;
         map[key] = {
           key,
-          name: m ? memberName(m) : (d.donor_name || 'Darczyńca nieznany'),
+          name: m ? memberName(m) : (d.donor_name || tr('Darczyńca nieznany')),
           isMember: !!d.member_id,
           address: d.donor_address || m?.address || '',
           email: d.donor_email || m?.email || '',
           items: [],
           count: 0,
+          pendingCount: 0,
           totalAll: 0,
-          totalYear: 0,
           lastDate: null,
         };
       }
       const g = map[key];
       g.items.push(d);
-      g.count += 1;
+      if (d.status === 'completed') g.count += 1; else g.pendingCount += 1;
       if (!g.address && d.donor_address) g.address = d.donor_address;
       if (!g.email && d.donor_email) g.email = d.donor_email;
       if (!g.lastDate || d.donation_date > g.lastDate) g.lastDate = d.donation_date;
       // Sumy liczymy tylko z zaksięgowanych (completed)
-      if (d.status === 'completed') {
-        const amt = Number(d.amount) || 0;
-        g.totalAll += amt;
-        if ((d.donation_date || '').slice(0, 4) === String(currentYear)) g.totalYear += amt;
-      }
+      if (d.status === 'completed') g.totalAll += Number(d.amount) || 0;
     });
     return Object.values(map).sort((a, b) => b.totalAll - a.totalAll);
   }, [donations, membersById]);
@@ -94,64 +90,22 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
   }, [donors, search]);
 
   const selected = useMemo(() => donors.find(d => d.key === selectedKey) || null, [donors, selectedKey]);
+  const selectedYearTotal = useMemo(() => (selected?.items || [])
+    .filter((d) => d.status === 'completed' && String(d.donation_date || '').slice(0, 4) === String(cardYear))
+    .reduce((s2, d) => s2 + (Number(d.amount) || 0), 0), [selected, cardYear]);
+  const cardYearOptions = useMemo(() => { const arr = []; for (let y = currentYear; y >= currentYear - 6; y--) arr.push({ value: y, label: String(y) }); return arr; }, []);
 
   const printStatement = (donor) => {
-    // Do zestawienia PIT: bieżący rok, tylko zaksięgowane i fundusze uprawniające do odpisu
-    const items = donor.items.filter(d => {
-      if (d.status !== 'completed') return false;
-      if ((d.donation_date || '').slice(0, 4) !== String(currentYear)) return false;
-      const fund = fundsById[d.fund_id];
-      return !d.fund_id || fund?.is_tax_deductible !== false;
-    }).sort((a, b) => (a.donation_date || '').localeCompare(b.donation_date || ''));
-
-    if (items.length === 0) {
-      toast.error(`Brak darowizn uprawniających do odpisu PIT dla tej osoby w roku ${currentYear}.`);
+    // Zestawienie za wybrany rok: zaksięgowane, bez funduszy nieodliczalnych; gotówka osobno.
+    const items = donor.items.filter((d) => String(d.donation_date || '').slice(0, 4) === String(cardYear));
+    const { html } = buildStatementHtml({ orgName, year: cardYear, donor, items, fundsById });
+    if (!html) {
+      toast.error(tr('Brak darowizn uprawniających do odpisu PIT dla tej osoby w roku {year}.', { year: cardYear }));
       return;
     }
-    const total = items.reduce((s, d) => s + (Number(d.amount) || 0), 0);
-
-    const rows = items.map(d => `
-      <tr>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${formatDate(d.donation_date)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${fundsById[d.fund_id]?.name || 'Darowizna'}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${(d.method || '').toUpperCase()}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">${formatMoney(d.amount, d.currency)}</td>
-      </tr>`).join('');
-    const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><title>Zestawienie darowizn ${currentYear} — ${donor.name}</title>
-      <style>
-        body{font-family:'Segoe UI',Arial,sans-serif;color:#1f2937;max-width:720px;margin:32px auto;padding:0 24px;line-height:1.5}
-        h1{font-size:20px;margin:0 0 4px} .muted{color:#6b7280;font-size:13px}
-        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #10b981;padding-bottom:14px;margin-bottom:20px}
-        table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
-        th{text-align:left;padding:6px 10px;border-bottom:2px solid #d1d5db;font-size:12px;text-transform:uppercase;color:#6b7280}
-        .total{margin-top:16px;text-align:right;font-size:18px;font-weight:700}
-        .box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin:16px 0}
-        .foot{margin-top:28px;font-size:12px;color:#6b7280;border-top:1px solid #eee;padding-top:12px}
-        @media print{body{margin:0}}
-      </style></head><body>
-      <div class="head">
-        <div><h1>${orgName || 'Zestawienie darowizn'}</h1><div class="muted">Roczne zestawienie darowizn za rok ${currentYear}</div></div>
-        <div class="muted" style="text-align:right">Data wystawienia:<br>${new Date().toLocaleDateString('pl-PL')}</div>
-      </div>
-      <div class="box">
-        <strong>Darczyńca:</strong> ${donor.name}<br>
-        ${donor.address ? `<span class="muted">Adres: ${donor.address}</span><br>` : ''}
-        ${donor.email ? `<span class="muted">E-mail: ${donor.email}</span>` : ''}
-      </div>
-      <table>
-        <thead><tr><th>Data</th><th>Cel</th><th>Forma</th><th style="text-align:right">Kwota</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="total">Razem: ${formatMoney(total)}</div>
-      <div class="foot">
-        Niniejsze zestawienie potwierdza darowizny przekazane na rzecz ${orgName || 'organizacji'} w roku ${currentYear}.
-        Darowizny na cele kultu religijnego / działalności pożytku publicznego mogą podlegać odliczeniu od podstawy opodatkowania
-        zgodnie z obowiązującymi przepisami (ustawa o PIT). Dokument wygenerowany automatycznie.
-      </div>
-      <script>window.onload=function(){window.print();}</script>
-      </body></html>`;
     const w = window.open('', '_blank');
-    if (!w) { toast.info('Zezwól na wyskakujące okna, aby wydrukować zestawienie.'); return; }
+    if (!w) { toast.info(tr('Zezwól na wyskakujące okna, aby wydrukować zestawienie.')); return; }
+    w.opener = null;
     w.document.write(html); w.document.close();
   };
 
@@ -180,9 +134,9 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
   return (
     <div className="space-y-4">
       {/* Podsumowanie u góry */}
-      <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">Darczyńców: <b className="text-gray-900 dark:text-white">{donors.length}</b></span>
-        <span className="text-gray-500 dark:text-gray-400">Suma darowizn: <b className="text-accent-primary dark:text-accent-primary-light">{formatMoney(grandTotal)}</b></span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <span className="text-gray-600 dark:text-gray-300">{tr('Darczyńców:')} <b className="text-gray-900 dark:text-white">{donors.length}</b></span>
+        <span className="text-gray-600 dark:text-gray-300">{tr('Zaksięgowano łącznie:')} <b className="text-gray-900 dark:text-white tabular-nums">{formatMoney(grandTotal)}</b></span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
@@ -195,7 +149,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Szukaj darczyńcy..."
+                  placeholder={tr('Szukaj darczyńcy...')}
                   className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
                 />
               </div>
@@ -204,7 +158,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
               {loading ? (
                 <Spinner center />
               ) : filtered.length === 0 ? (
-                <EmptyState compact icon={Users} title="Brak darczyńców." />
+                <EmptyState compact icon={Users} title={tr('Brak darczyńców.')} />
               ) : (
                 filtered.map(d => {
                   const isActive = d.key === selectedKey;
@@ -218,8 +172,8 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                     >
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{d.name}</div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                          {d.count} {d.count === 1 ? 'darowizna' : 'darowizn'}{d.lastDate ? ` · ost. ${formatDate(d.lastDate)}` : ''}
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {tr('Zaksięgowane: {n}', { n: d.count })}{d.pendingCount ? ` · ${tr('oczekuje: {n}', { n: d.pendingCount })}` : ''}{d.lastDate ? ` · ${tr('ost. {date}', { date: formatDate(d.lastDate) })}` : ''}
                         </div>
                       </div>
                       <span className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums shrink-0">{formatMoney(d.totalAll)}</span>
@@ -235,21 +189,21 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
         <div className={`${selected ? 'block' : 'hidden lg:block'}`}>
           {!selected ? (
             <div className="h-full min-h-[300px] flex items-center justify-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-              <EmptyState icon={Users} title="Wybierz darczyńcę z listy, aby zobaczyć jego kartę i historię darowizn." />
+              <EmptyState icon={Users} title={tr('Wybierz darczyńcę z listy, aby zobaczyć jego kartę i historię darowizn.')} />
             </div>
           ) : (
             <div className="space-y-4">
               {/* Karta darczyńcy */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-start gap-3">
-                  <button onClick={() => setSelectedKey(null)} className="lg:hidden p-2 -ml-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0"><ArrowLeft size={20} /></button>
+                  <button onClick={() => setSelectedKey(null)} aria-label={tr('Wróć do listy darczyńców')} className="lg:hidden p-2 -ml-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0"><ArrowLeft size={20} /></button>
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-white shrink-0">
                     <Users size={22} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{selected.name}</h2>
-                      {selected.isMember && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-accent-primary-lightest text-accent-primary dark:bg-accent-primary-darkest/40 dark:text-accent-primary-light">członek</span>}
+                      {selected.isMember && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-accent-primary-lightest text-accent-primary dark:bg-accent-primary-darkest/40 dark:text-accent-primary-light">{tr('członek')}</span>}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {selected.email && <span className="truncate">{selected.email}</span>}
@@ -259,28 +213,29 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                 </div>
 
                 {/* Karty podsumowania */}
-                <div className="grid grid-cols-3 gap-3 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
                   <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"><Calendar size={13} /> Suma {currentYear}</div>
-                    <div className="mt-1 text-base font-bold text-gray-900 dark:text-white tabular-nums">{formatMoney(selected.totalYear)}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"><Calendar size={13} /> {tr('Suma {year}', { year: cardYear })}</div>
+                    <div className="mt-1 text-base font-bold text-gray-900 dark:text-white tabular-nums">{formatMoney(selectedYearTotal)}</div>
                   </div>
                   <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"><TrendingUp size={13} /> Suma łącznie</div>
-                    <div className="mt-1 text-base font-bold text-accent-primary dark:text-accent-primary-light tabular-nums">{formatMoney(selected.totalAll)}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"><TrendingUp size={13} /> {tr('Suma łącznie')}</div>
+                    <div className="mt-1 text-base font-bold text-gray-900 dark:text-white tabular-nums">{formatMoney(selected.totalAll)}</div>
                   </div>
                   <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"><Receipt size={13} /> Darowizn</div>
-                    <div className="mt-1 text-base font-bold text-gray-900 dark:text-white tabular-nums">{selected.count}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"><Receipt size={13} /> {tr('Liczba darowizn')}</div>
+                    <div className="mt-1 text-base font-bold text-gray-900 dark:text-white tabular-nums">{selected.count}{selected.pendingCount ? <span className="text-xs font-normal text-gray-500 dark:text-gray-400"> {tr('(+{n} oczekuje)', { n: selected.pendingCount })}</span> : null}</div>
                   </div>
                 </div>
 
                 {/* Akcje */}
-                <div className="flex flex-wrap items-center gap-3 mt-4">
+                <div className="flex flex-wrap items-end gap-3 mt-4">
+                  <div className="w-28"><CustomSelect label={tr('Rok')} value={cardYear} onChange={(v) => setCardYear(parseInt(v))} options={cardYearOptions} compact /></div>
                   <button onClick={() => printStatement(selected)} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
-                    <Printer size={16} /> Zestawienie PIT
+                    <Printer size={16} /> {tr('Zestawienie PIT {year}', { year: cardYear })}
                   </button>
                   <button onClick={() => exportCsv(selected)} className="px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-sm">
-                    <Download size={16} /> Eksport CSV
+                    <Download size={16} /> {tr('Eksport CSV')}
                   </button>
                 </div>
               </div>
@@ -288,15 +243,15 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
               {/* Historia darowizn */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {selected.items.length === 0 ? (
-                  <EmptyState icon={Receipt} title="Brak darowizn." />
+                  <EmptyState icon={Receipt} title={tr('Brak darowizn.')} />
                 ) : (
                   <DataTable flush>
                     <THead>
                       <tr>
-                        <TH>Data</TH>
-                        <TH>Fundusz</TH>
-                        <TH align="right">Kwota</TH>
-                        <TH>Metoda</TH>
+                        <TH>{tr('Data')}</TH>
+                        <TH>{tr('Fundusz')}</TH>
+                        <TH align="right">{tr('Kwota')}</TH>
+                        <TH>{tr('Metoda')}</TH>
                       </tr>
                     </THead>
                     <tbody>
@@ -316,8 +271,8 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
                             </TD>
                             <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatMoney(d.amount, d.currency)}</TD>
                             <TD muted>
-                              <span>{methodLabel(d.method)}</span>
-                              {d.status === 'pending' && <StatusPill color={STATUS_COLORS.warning} className="ml-2">{statusLabel(d.status)}</StatusPill>}
+                              <span>{tr(methodLabel(d.method))}</span>
+                              {d.status === 'pending' && <StatusPill color={STATUS_COLORS.warning} className="ml-2">{tr(statusLabel(d.status))}</StatusPill>}
                             </TD>
                           </TR>
                         ))}

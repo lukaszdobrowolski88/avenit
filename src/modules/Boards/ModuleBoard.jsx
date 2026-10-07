@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import Spinner from '../../components/Spinner';
 import BoardView from './BoardView';
 import { importLegacyTasks } from './lib/legacyImport';
+import { tr } from '../../i18n';
 
 // Zabezpieczenie przed równoległym importem tego samego źródła.
 const inflight = new Map();
@@ -22,7 +23,7 @@ function memberTableFor(moduleKey) {
 // Karta jak pozostałe zakładki modułów (Grafik, Liderzy…): biała sekcja z tytułem zakładki.
 const CARD = 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300';
 
-export default function ModuleBoard({ sourceKind, moduleKey = null, title, heading = 'Zadania', card = true }) {
+export default function ModuleBoard({ sourceKind, moduleKey = null, title, heading = tr('Zadania'), card = true }) {
   const [user, setUser] = useState({ email: '', name: '' });
   const [boardId, setBoardId] = useState(null);
   const [scopeEmails, setScopeEmails] = useState(null); // null = brak zawężenia (pełna lista)
@@ -74,9 +75,9 @@ export default function ModuleBoard({ sourceKind, moduleKey = null, title, headi
     <Wrap className={card ? CARD : undefined}>
       {card && heading && <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">{heading}</h2>}
       {phase === 'resolving' || phase === 'importing' ? (
-        <Spinner center size={28} label={phase === 'importing' ? 'Przenoszę zadania do nowej tablicy…' : 'Ładowanie tablicy…'} />
+        <Spinner center size={28} label={phase === 'importing' ? tr('Przenoszę zadania do nowej tablicy…') : tr('Ładowanie tablicy…')} />
       ) : phase === 'error' ? (
-        <div className="text-center py-12 text-red-500 text-sm">Nie udało się otworzyć tablicy: {err}</div>
+        <div className="text-center py-12 text-red-500 text-sm">{tr('Nie udało się otworzyć tablicy:')} {err}</div>
       ) : (
         <BoardView boardId={boardId} userEmail={user.email} userName={user.name} scopeEmails={scopeEmails} embedded />
       )}

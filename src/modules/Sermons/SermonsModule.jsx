@@ -6,6 +6,8 @@ import { useCampusQuery } from '../../hooks/useCampusQuery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import SermonsTab from './tabs/SermonsTab';
 import PlayerTab from './tabs/PlayerTab';
+import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 const TABS = [
   { id: 'list', label: 'Kazania', icon: List },
@@ -13,12 +15,15 @@ const TABS = [
 ];
 
 // embedded=true → renderowany jako zakładka w innym module (np. Nauczanie): bez nagłówka i wrappera.
-export default function SermonsModule({ embedded = false }) {
+// createPreset = { series, nonce } → od razu otwórz „Nowe kazanie” z wybraną serią („Dodaj kazanie do serii”).
+// onChanged → powiadom rodzica (np. Nauczanie przelicza liczbę kazań w seriach).
+export default function SermonsModule({ embedded = false, createPreset = null, onChanged = null }) {
   const [activeTab, setActiveTab] = useState('list');
   const { withCampusFilter, campusIdForInsert, selectedCampusId } = useCampusQuery();
 
   const [sermons, setSermons] = useState([]);
   const [teachingSeries, setTeachingSeries] = useState([]);
+  const [speakers, setSpeakers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadSermons = useCallback(async () => {
@@ -30,7 +35,7 @@ export default function SermonsModule({ embedded = false }) {
       if (error) throw error;
       setSermons(data || []);
     } catch (err) {
-      console.error('Sermons load error:', err);
+      toast.error(err, { fallback: tr('Nie udało się wczytać kazań. Odśwież stronę.') });
       setSermons([]);
     } finally {
       setLoading(false);
@@ -46,20 +51,31 @@ export default function SermonsModule({ embedded = false }) {
     } catch { setTeachingSeries([]); }
   }, []);
 
-  useEffect(() => { loadSermons(); }, [loadSermons, selectedCampusId]);
-  useEffect(() => { loadSeries(); }, [loadSeries]);
+  // Mówcy z zakładki „Mówcy” — podpowiedzi w polu „Mówca” (wpis dowolny dalej możliwy).
+  const loadSpeakers = useCallback(async () => {
+    try {
+      const { data } = await supabase.from('teaching_speakers').select('id, name').order('name');
+      setSpeakers(data || []);
+    } catch { setSpeakers([]); }
+  }, []);
 
-  const shared = { sermons, loading, campusIdForInsert, withCampusFilter, refresh: loadSermons, teachingSeries };
+  useEffect(() => { loadSermons(); }, [loadSermons, selectedCampusId]);
+  useEffect(() => { loadSeries(); loadSpeakers(); }, [loadSeries, loadSpeakers]);
+  // „Dodaj kazanie do serii” — przełącz na listę, formularz otworzy SermonsTab.
+  useEffect(() => { if (createPreset?.nonce) setActiveTab('list'); }, [createPreset?.nonce]);
+
+  const refresh = useCallback(async () => { await loadSermons(); onChanged?.(); }, [loadSermons, onChanged]);
+  const shared = { sermons, loading, campusIdForInsert, withCampusFilter, refresh, teachingSeries, speakers, createPreset };
 
   return (
     <div className="space-y-6">
       {/* Nagłówek (pomijany przy osadzeniu) */}
       {!embedded && (
-        <PageHeader moduleKey="sermons" icon={Podcast} title="Kazania" subtitle="Publiczne archiwum kazań — audio, wideo i odnośniki biblijne" />
+        <PageHeader moduleKey="sermons" icon={Podcast} title={tr('Kazania')} subtitle={tr('Publiczne archiwum kazań — audio, wideo i odnośniki biblijne')} />
       )}
 
       {/* Zakładki */}
-      <ResponsiveTabs moduleKey="sermons" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="sermons" tabs={TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

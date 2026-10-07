@@ -111,11 +111,11 @@ export default function PushCampaignsModule() {
               <h3 className="font-semibold text-gray-900 dark:text-white truncate">{c.name}</h3>
               <p className="text-sm text-gray-500 truncate">{c.title}</p>
               <div className="flex gap-3 mt-2 text-xs text-gray-500">
-                <span>{c.recipient_count || 0} odbiorców</span>
+                <span>{tr('{n} odbiorców', { n: c.recipient_count || 0 })}</span>
                 <span>·</span>
-                <span>{c.opened_count || 0} otwarć</span>
+                <span>{tr('{n} otwarć', { n: c.opened_count || 0 })}</span>
                 <span>·</span>
-                <span>{c.action_clicked_count || 0} akcji</span>
+                <span>{tr('{n} akcji', { n: c.action_clicked_count || 0 })}</span>
               </div>
             </button>
           ))}

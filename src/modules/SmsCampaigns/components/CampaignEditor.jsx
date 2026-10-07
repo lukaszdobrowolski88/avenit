@@ -19,7 +19,7 @@ import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 
 const SECTIONS = [
-  { id: 'compose', label: tr('Treść') },
+  { id: 'compose', label: 'Treść' },
   { id: 'recipients', label: 'Odbiorcy' },
   { id: 'schedule', label: 'Harmonogram' },
 ];
@@ -79,7 +79,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
   const validate = () => {
     if (!form.name.trim()) return tr('Podaj nazwę kampanii');
     if (!form.sender.trim()) return tr('Podaj nadawcę');
-    if (form.sender.length > SENDER_MAX) return `Nadawca: max ${SENDER_MAX} znaków`;
+    if (form.sender.length > SENDER_MAX) return tr('Nadawca: max {n} znaków', { n: SENDER_MAX });
     if (!form.body.trim()) return tr('Podaj treść SMS-a');
     if (form.send_mode === 'scheduled' && !form.scheduled_at) return tr('Wybierz datę wysyłki');
     return null;
@@ -106,7 +106,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       }
       onClose?.();
     } catch (e) {
-      toast.error(`Błąd zapisu: ${e.message}`);
+      toast.error(tr('Błąd zapisu: {msg}', { msg: e.message }));
     } finally {
       setSaving(false);
     }
@@ -128,7 +128,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       }
       onClose?.();
     } catch (e) {
-      toast.error(`Błąd: ${e.message}`);
+      toast.error(tr('Błąd: {msg}', { msg: e.message }));
     } finally {
       setSaving(false);
     }
@@ -138,7 +138,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
     const err = validate();
     if (err) { toast.error(err); return; }
     if (recipientCount === 0) { toast.error(tr('Brak odbiorców z numerem')); return; }
-    if (!await confirmDialog(`Wysłać SMS do ${recipientCount} odbiorców? Szacunkowy koszt: ${formatPLN(estimatedCost)}.`)) return;
+    if (!await confirmDialog(tr('Wysłać SMS do {n} odbiorców? Szacunkowy koszt: {cost}.', { n: recipientCount, cost: formatPLN(estimatedCost) }))) return;
 
     setSending(true);
     try {
@@ -152,7 +152,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       await dispatchSmsCampaign(id);
       onClose?.();
     } catch (e) {
-      toast.error(`Błąd wysyłki: ${e.message}`);
+      toast.error(tr('Błąd wysyłki: {msg}', { msg: e.message }));
     } finally {
       setSending(false);
     }
@@ -170,7 +170,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       return;
     }
     const phone = normalizePhone(testPhone);
-    if (!phone) { toast.error('Niepoprawny numer telefonu'); return; }
+    if (!phone) { toast.error(tr('Niepoprawny numer telefonu')); return; }
 
     setSending(true);
     try {
@@ -180,13 +180,13 @@ export default function CampaignEditor({ campaign, template, onClose }) {
         sender: form.sender,
       });
       if (result?.sent === 1) {
-        toast.success(`Test wysłany na +${phone}\nID: ${result.smsapi_id}\nKoszt: ${result.points} pkt`);
+        toast.success(tr('Test wysłany na +{phone}\nID: {id}\nKoszt: {points} pkt', { phone, id: result.smsapi_id, points: result.points }));
       } else {
-        toast.error(`Błąd: ${result?.error || 'nieznany'}`);
+        toast.error(tr('Błąd: {msg}', { msg: result?.error || tr('nieznany') }));
       }
       setShowTestSend(false);
     } catch (e) {
-      toast.error(`Błąd: ${e.message}`);
+      toast.error(tr('Błąd: {msg}', { msg: e.message }));
     } finally {
       setSending(false);
     }
@@ -202,11 +202,11 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           </button>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {campaign?.id ? tr('Edytuj kampanię SMS') : 'Nowa kampania SMS'}
+              {campaign?.id ? tr('Edytuj kampanię SMS') : tr('Nowa kampania SMS')}
             </h2>
             <p className="text-xs text-gray-500">
               {recipientCount > 0 ? (
-                <>Wyśle do {recipientCount} osób · ~{formatPLN(estimatedCost)}</>
+                <>{tr('Wyśle do {n} osób', { n: recipientCount })} · ~{formatPLN(estimatedCost)}</>
               ) : tr('Brak odbiorców z numerem')}
             </p>
           </div>
@@ -216,7 +216,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
             onClick={() => setShowTestSend(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-            <TestTube size={14} /> Test
+            <TestTube size={14} /> {tr('Test')}
           </button>
           <button
             onClick={handleSaveDraft}
@@ -224,7 +224,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
             className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Zapisz szkic
+            {tr('Zapisz szkic')}
           </button>
           {canSend && (form.send_mode === 'now' ? (
             <button
@@ -234,7 +234,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
               className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg shadow hover:shadow-lg disabled:opacity-50"
             >
               {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-              Wyślij teraz
+              {tr('Wyślij teraz')}
             </button>
           ) : (
             <button
@@ -243,7 +243,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
               className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg shadow hover:shadow-lg disabled:opacity-50"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-              Zaplanuj
+              {tr('Zaplanuj')}
             </button>
           ))}
         </div>
@@ -288,7 +288,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
-                {s.label}
+                {tr(s.label)}
               </button>
             ))}
           </div>
@@ -301,20 +301,20 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     data-tour="sms-name"
                     value={form.name}
                     onChange={e => updateForm({ name: e.target.value })}
-                    placeholder="Np. Niedziela 12.05 — przypomnienie"
+                    placeholder={tr('Np. Niedziela 12.05 — przypomnienie')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                   />
                 </Field>
 
                 <Field
-                  label="Nadawca (Sender ID)"
+                  label={tr('Nadawca (Sender ID)')}
                   hint={`${form.sender.length}/${SENDER_MAX}`}
                 >
                   <input
                     maxLength={SENDER_MAX}
                     value={form.sender}
                     onChange={e => updateForm({ sender: e.target.value })}
-                    placeholder="np. Avenit"
+                    placeholder={tr('np. Avenit')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -329,7 +329,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                       <span className={analysis.encoding === 'unicode' ? 'text-amber-600' : 'text-emerald-600'}>
                         {analysis.encoding === 'unicode' ? 'Unicode' : 'GSM-7'}
                       </span>
-                      <span>· {analysis.charCount} zn.</span>
+                      <span>· {analysis.charCount} {tr('zn.')}</span>
                       <span>· {analysis.parts || 1} {(analysis.parts || 1) === 1 ? tr('część') : tr('części')}</span>
                     </span>
                   }
@@ -346,12 +346,12 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                   {analysis.parts > 3 && (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
                       <AlertTriangle size={12} />
-                      Wiadomość zostanie wysłana jako {analysis.parts} oddzielnych SMS-ów (każdy płatny).
+                      {tr('Wiadomość zostanie wysłana jako {n} oddzielnych SMS-ów (każdy płatny).', { n: analysis.parts })}
                     </p>
                   )}
                   {analysis.encoding === 'unicode' && (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                      Polskie znaki diakrytyczne wymuszają kodowanie Unicode (70 znaków na część zamiast 160).
+                      {tr('Polskie znaki diakrytyczne wymuszają kodowanie Unicode (70 znaków na część zamiast 160).')}
                     </p>
                   )}
                 </Field>
@@ -359,10 +359,10 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                 {recipientCount > 0 && (
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-sm flex items-center justify-between">
                     <span className="text-blue-700 dark:text-blue-400">
-                      Szacunkowy koszt: <strong>{formatPLN(estimatedCost)}</strong>
+                      {tr('Szacunkowy koszt:')} <strong>{formatPLN(estimatedCost)}</strong>
                     </span>
                     <span className="text-xs text-blue-600 dark:text-blue-400">
-                      {recipientCount} × {analysis.parts || 1} cz. × ~0,16 PLN
+                      {recipientCount} × {analysis.parts || 1} {tr('cz.')} × ~0,16 PLN
                     </span>
                   </div>
                 )}
@@ -399,7 +399,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
         {/* Prawa kolumna: preview */}
         <div className="lg:sticky lg:top-4 self-start">
           <div className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
-            <Eye size={12} /> Live preview
+            <Eye size={12} /> {tr('Live preview')}
           </div>
           <SmsPreview sender={form.sender} body={form.body} />
         </div>

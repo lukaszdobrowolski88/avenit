@@ -26,6 +26,7 @@ export default function MailingModule() {
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [statsCampaignId, setStatsCampaignId] = useState(null);
 
   const { campaigns, loading, fetchCampaigns } = useCampaigns();
   const { fetchTemplates } = useTemplates();
@@ -50,7 +51,13 @@ export default function MailingModule() {
   };
 
   const handleViewStats = (campaign) => {
+    setStatsCampaignId(campaign?.id || null);
     setActiveTab('stats');
+  };
+
+  const handleTabChange = (tabId) => {
+    if (tabId !== 'stats') setStatsCampaignId(null);
+    setActiveTab(tabId);
   };
 
   // Funkcje dla szablonów
@@ -94,7 +101,8 @@ export default function MailingModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader moduleKey="mailing" icon={Mail} title="Mailing"
+      <PageHeader moduleKey="mailing" icon={Mail} title={tr('Mailing')}
+        subtitle={tr('Newslettery i ogłoszenia e-mail do członków kościoła')}
         actions={
           <button
             data-tour="mail-new"
@@ -102,7 +110,7 @@ export default function MailingModule() {
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-xl transition-all font-medium shadow-md hover:shadow-lg"
           >
             <Plus size={18} />
-            <span className="hidden sm:inline">Nowy mail</span>
+            <span className="hidden sm:inline">{tr('Nowy mail')}</span>
           </button>
         } />
 
@@ -110,7 +118,7 @@ export default function MailingModule() {
       <ResponsiveTabs moduleKey="mailing"
         tabs={TABS.map((x) => ({ ...x, label: t(x.label) }))}
         activeTab={activeTab}
-        onChange={setActiveTab}
+        onChange={handleTabChange}
       />
 
       {/* Zawartość - identyczny styl jak inne moduły */}
@@ -128,6 +136,7 @@ export default function MailingModule() {
                 onEdit={handleEditCampaign}
                 onRefresh={fetchCampaigns}
                 onViewStats={handleViewStats}
+                onCreate={() => handleNewCampaign()}
               />
             )}
 
@@ -140,7 +149,11 @@ export default function MailingModule() {
             )}
 
             {activeTab === 'stats' && (
-              <CampaignStats campaigns={campaigns} />
+              <CampaignStats
+                key={statsCampaignId || 'all'}
+                campaigns={campaigns}
+                initialCampaignId={statsCampaignId}
+              />
             )}
           </>
         )}

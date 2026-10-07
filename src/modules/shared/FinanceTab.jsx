@@ -9,6 +9,7 @@ import EmptyState from '../../components/EmptyState';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
 import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
+import { num, isCountedExpense, matchesBudgetItem, fmtMoney, fmtPct, fmtDate } from '../finance/money';
 
 export default function FinanceTab({ ministry, budgetItems = [], expenses = [], onAddExpense, onRefresh }) {
   const t = useT();
@@ -29,7 +30,10 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
   };
   useEffect(() => { if (ministry) fetchMyProposals(); /* eslint-disable-next-line */ }, [ministry]);
   const submitProposal = async () => {
-    if (!prop.description.trim() || !prop.amount) { toast.error(tr('Podaj opis i kwotę')); return; }
+    if (!prop.description.trim() || !prop.amount) {
+      toast.error(tr('Uzupełnij: {fields}', { fields: [!prop.description.trim() && tr('opis'), !prop.amount && tr('kwotę')].filter(Boolean).join(', ') }));
+      return;
+    }
     setSavingProp(true);
     try {
       const { data, error } = await supabase.from('budget_proposals').insert([{
@@ -42,7 +46,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
       supabase.functions.invoke('budget-proposal-notify', { body: { proposalId: data?.[0]?.id, event: 'submitted' } }).catch(() => {});
       toast.success(tr('Propozycja wysłana do zatwierdzenia'));
       setShowProposal(false); setProp(emptyProp); fetchMyProposals();
-    } catch (e) { toast.error(tr('Błąd: ') + e.message); }
+    } catch (e) { toast.error(tr('Nie udało się wysłać propozycji: {msg}', { msg: e.message || e })); }
     finally { setSavingProp(false); }
   };
   const PROP_STATUS = { pending: { l: tr('Oczekuje'), c: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' }, approved: { l: tr('Zaakceptowana'), c: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' }, rejected: { l: tr('Odrzucona'), c: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' } };
@@ -56,11 +60,10 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
     }));
   };
 
-  const calculateSpent = (category, description) => {
-    return expenses
-      .filter(e => e.category === category && e.description === description)
-      .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-  };
+  // Wykorzystanie = zatwierdzone/opłacone wydatki tej pozycji (wnioski czekające i odrzucone nie).
+  const calculateSpent = (category, description) => expenses
+    .filter((e) => isCountedExpense(e) && matchesBudgetItem(e, { category, description }))
+    .reduce((sum, e) => sum + num(e.amount), 0);
 
   const getProgressBarColor = (percentage) => {
     if (percentage < 80) return 'from-green-500 to-green-600';
@@ -69,7 +72,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
   };
 
   // Oblicz sumy
-  const totalPlanned = planItems.reduce((sum, item) => sum + parseFloat(item.planned_amount || 0), 0);
+  const totalPlanned = planItems.reduce((sum, item) => sum + num(item.planned_amount), 0);
   const totalSpent = planItems.reduce((sum, item) => {
     const spent = calculateSpent(item.category, item.description);
     return sum + spent;
@@ -104,7 +107,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
         title={tr('Propozycja do budżetu')}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setShowProposal(false)}>{tr('Anuluj')}</Button>
+          <Button variant="secondary" disabled={savingProp} onClick={() => setShowProposal(false)}>{tr('Anuluj')}</Button>
           <Button onClick={submitProposal} loading={savingProp}>{tr('Zgłoś')}</Button>
         </>}
       >
@@ -118,8 +121,8 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                 ))}
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Budżet na rok')}</label>
-                <select value={prop.year} onChange={(e) => setProp({ ...prop, year: parseInt(e.target.value) })}
+                <label htmlFor="fin-prop-year" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Budżet na rok')}</label>
+                <select id="fin-prop-year" value={prop.year} onChange={(e) => setProp({ ...prop, year: parseInt(e.target.value) })}
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
                   {[nowYear, nowYear + 1, nowYear + 2].map((y) => (
                     <option key={y} value={y}>{y === nowYear ? `${y} (${tr('bieżący')})` : y === nowYear + 1 ? `${y} (${tr('przyszły')})` : y}</option>
@@ -131,8 +134,8 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                 <input value={prop.description} onChange={(e) => setProp({ ...prop, description: e.target.value })} placeholder={tr('np. Nowy mikrofon')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
-                <input type="number" value={prop.amount} onChange={(e) => setProp({ ...prop, amount: e.target.value })} placeholder="0.00" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (zł)')}</label>
+                <input type="number" step="0.01" min="0" inputMode="decimal" value={prop.amount} onChange={(e) => setProp({ ...prop, amount: e.target.value })} placeholder="0,00" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Uzasadnienie (opcjonalnie)')}</label>
@@ -150,28 +153,26 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
               <THead>
                 <tr>
                   <TH>{t('Opis kosztu')}</TH>
-                  <TH align="right">Plan (PLN)</TH>
-                  <TH align="right">Wykorzystano (PLN)</TH>
-                  <TH align="center">% Realizacji</TH>
+                  <TH align="right">{tr('Plan (zł)')}</TH>
+                  <TH align="right">{tr('Wykorzystano (zł)')}</TH>
+                  <TH align="center">{tr('% Realizacji')}</TH>
                   <TH align="right">{t('Pozostało')}</TH>
                 </tr>
               </THead>
               <tbody>
                 {planItems.map(item => {
-                  const planned = Number(item.planned_amount || 0);
+                  const planned = num(item.planned_amount);
                   const spent = calculateSpent(item.category, item.description);
                   const remaining = planned - spent;
                   const percentage = planned > 0 ? (spent / planned) * 100 : 0;
-                  const relatedExpenses = expenses.filter(
-                    e => e.category === item.category && e.description === item.description
-                  );
+                  const relatedExpenses = expenses.filter((e) => matchesBudgetItem(e, item));
 
                   return (
                     <React.Fragment key={item.id}>
                       <TR>
                         <TD className="text-gray-900 dark:text-white">{item.description}</TD>
                         <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                          {planned.toLocaleString('pl-PL')} zł
+                          {fmtMoney(planned)}
                         </TD>
                         <TD
                           align="right"
@@ -179,7 +180,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                           className="font-medium text-gray-900 dark:text-white whitespace-nowrap cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
                           onClick={() => toggleExpand(item.id)}
                         >
-                          {spent.toLocaleString('pl-PL')} zł
+                          {fmtMoney(spent)}
                           {expandedItems[item.id] ? (
                             <ChevronUp size={16} className="inline ml-1" />
                           ) : (
@@ -189,7 +190,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                         <TD>
                           <div className="space-y-2">
                             <div className="text-center font-semibold tabular-nums text-gray-900 dark:text-white">
-                              {percentage.toFixed(1)}%
+                              {fmtPct(percentage)}
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                               <div
@@ -199,8 +200,8 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                             </div>
                           </div>
                         </TD>
-                        <TD align="right" numeric className={`font-semibold whitespace-nowrap ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {remaining.toLocaleString('pl-PL')} zł
+                        <TD align="right" numeric className={`font-semibold whitespace-nowrap ${remaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                          {fmtMoney(remaining)}
                         </TD>
                       </TR>
 
@@ -211,7 +212,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                             {relatedExpenses.length > 0 ? (
                               <div className="space-y-2">
                                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                  Wydatki: {item.description}
+                                  {tr('Wydatki:')} {item.description}
                                 </p>
                                 <div className="space-y-1">
                                   {relatedExpenses.map((expense) => (
@@ -222,7 +223,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                                       <div className="flex flex-col">
                                         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Data')}</span>
                                         <span className="text-gray-900 dark:text-white">
-                                          {new Date(expense.payment_date).toLocaleDateString('pl-PL')}
+                                          {fmtDate(expense.payment_date)}
                                         </span>
                                       </div>
                                       <div className="flex flex-col">
@@ -232,8 +233,9 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                                       <div className="flex flex-col">
                                         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kwota')}</span>
                                         <span className="font-bold text-gray-900 dark:text-white">
-                                          {Number(expense.amount || 0).toLocaleString('pl-PL')} zł
+                                          {fmtMoney(expense.amount)}
                                         </span>
+                                        {!isCountedExpense(expense) && <span className="text-[11px] text-gray-500 dark:text-gray-400">{expense.status === 'rejected' ? tr('odrzucony') : tr('czeka na akceptację')}</span>}
                                       </div>
                                       <div className="flex flex-col">
                                         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Szczegółowy opis')}</span>
@@ -250,7 +252,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                                 </div>
                                 <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
                                   <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                    Suma: {relatedExpenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0).toLocaleString('pl-PL')} zł
+                                    {tr('Suma:')} {fmtMoney(relatedExpenses.filter(isCountedExpense).reduce((sum, exp) => sum + num(exp.amount), 0))}
                                   </span>
                                 </div>
                               </div>
@@ -270,29 +272,29 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
 
           {/* Summary */}
           <div className="mt-6 p-4 bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 rounded-xl">
-            <div className="grid grid-cols-4 gap-4 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('Plan całkowity')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-white">
-                  {totalPlanned.toLocaleString('pl-PL')} zł
+                  {fmtMoney(totalPlanned)}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Wykorzystano</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{tr('Wykorzystano')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-white">
-                  {totalSpent.toLocaleString('pl-PL')} zł
+                  {fmtMoney(totalSpent)}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">% Realizacji</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{tr('% Realizacji')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-white">
-                  {totalPercentage.toFixed(1)}%
+                  {fmtPct(totalPercentage)}
                 </div>
               </div>
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('Pozostało')}</div>
-                <div className={`text-xl font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {totalRemaining.toLocaleString('pl-PL')} zł
+                <div className={`text-xl font-bold ${totalRemaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                  {fmtMoney(totalRemaining)}
                 </div>
               </div>
             </div>
@@ -314,7 +316,7 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                     <div className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{p.description}</div>
                     <div className="text-xs text-gray-400">{p.kind === 'income' ? tr('Przychód') : tr('Wydatek')} · {tr('budżet')} {p.year}{p.note ? ` · ${p.note}` : ''}</div>
                   </div>
-                  <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0">{Number(p.amount || 0).toLocaleString('pl-PL')} zł</div>
+                  <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0 tabular-nums">{fmtMoney(p.amount)}</div>
                 </div>
               );
             })}

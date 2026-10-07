@@ -10,6 +10,7 @@ import PrayerCard from './PrayerCard';
 import EventCard from './EventCard';
 import { tr } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
+import { toast } from '../../../lib/toast';
 
 // Podświetl @wzmianki w tekście
 function renderTextWithMentions(text) {
@@ -62,6 +63,7 @@ export default function MessageBubble({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [copied, setCopied] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
   const menuRef = useRef(null);
   const reactionRef = useRef(null);
@@ -83,21 +85,40 @@ export default function MessageBubble({
   const isRich = messageType === 'poll' || messageType === 'prayer' || messageType === 'event';
   const mentionedMe = currentUserEmail && Array.isArray(message.mentions) && message.mentions.includes(currentUserEmail);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(message.content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
     setShowMenu(false);
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error(tr('Nie udało się skopiować tekstu.'));
+    }
   };
-  const handleSaveEdit = () => {
-    if (editContent.trim() && editContent !== message.content) onEdit?.(message.id, editContent.trim());
-    setIsEditing(false);
+  // Edycja zamyka się dopiero po udanym zapisie (błąd pokazuje wątek, tekst zostaje w polu).
+  const handleSaveEdit = async () => {
+    const next = editContent.trim();
     setShowMenu(false);
+    if (!next || next === message.content) { setIsEditing(false); return; }
+    setSavingEdit(true);
+    try {
+      await onEdit?.(message.id, next);
+      setIsEditing(false);
+    } catch { /* komunikat już pokazany */ } finally {
+      setSavingEdit(false);
+    }
   };
   const handleCancelEdit = () => { setEditContent(message.content); setIsEditing(false); };
   const handleDelete = async () => {
-    if (await confirmDialog(tr('Czy na pewno chcesz usunąć tę wiadomość?'))) onDelete?.(message.id);
     setShowMenu(false);
+    const ok = await confirmDialog({
+      title: tr('Usunąć wiadomość?'),
+      message: tr('Wiadomość zniknie z rozmowy u wszystkich uczestników.'),
+      confirmLabel: tr('Usuń wiadomość'),
+      danger: true,
+    });
+    if (!ok) return;
+    try { await onDelete?.(message.id); } catch { /* komunikat już pokazany */ }
   };
   const handleReply = () => { onReply?.(message); setShowMenu(false); };
   const handleForward = () => { onForward?.(message); setShowMenu(false); };
@@ -193,11 +214,12 @@ export default function MessageBubble({
         <div className="relative">
           {isEditing ? (
             <div className="flex flex-col gap-2">
-              <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)}
+              <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} aria-label={tr('Treść wiadomości')}
+                onKeyDown={(e) => { if (e.key === 'Escape') handleCancelEdit(); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); } }}
                 className="w-full min-w-[200px] px-4 py-3 rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 resize-none shadow-lg" rows={2} autoFocus />
               <div className="flex gap-1.5 justify-end">
-                <button onClick={handleCancelEdit} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"><X size={16} /></button>
-                <button onClick={handleSaveEdit} className="p-2 rounded-xl bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg"><Check size={16} /></button>
+                <button type="button" onClick={handleCancelEdit} disabled={savingEdit} aria-label={tr('Anuluj edycję')} title={tr('Anuluj edycję')} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"><X size={16} /></button>
+                <button type="button" onClick={handleSaveEdit} disabled={savingEdit} aria-label={tr('Zapisz zmiany')} title={tr('Zapisz zmiany')} className="p-2 rounded-xl bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg disabled:opacity-60"><Check size={16} /></button>
               </div>
             </div>
           ) : isRich ? (
@@ -213,7 +235,7 @@ export default function MessageBubble({
                 isOwn
                   ? 'bg-gradient-to-br from-accent-primary-light to-accent-primary text-white rounded-br-md shadow-lg shadow-accent-primary-light/20'
                   : 'bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-900 dark:text-gray-100 rounded-bl-md shadow-md border border-gray-100/50 dark:border-gray-700/50'
-                } ${isPinned ? 'ring-2 ring-yellow-400/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-900' : ''} ${mentionedMe && !isOwn ? 'border-l-4 border-l-accent-primary' : ''}`}>
+                } ${isPinned ? 'ring-2 ring-yellow-400/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-900' : ''} ${mentionedMe && !isOwn ? 'ring-2 ring-accent-primary-light/50' : ''}`}>
                 {message.forwarded_from && (
                   <div className={`flex items-center gap-1.5 mb-2 text-xs ${isOwn ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
                     <Forward size={12} className="opacity-70" />
@@ -223,7 +245,7 @@ export default function MessageBubble({
 
                 {replyToMessage && (
                   <div onClick={() => onScrollToMessage?.(replyToMessage.id)}
-                    className={`mb-2.5 p-2.5 rounded-xl cursor-pointer border-l-3 transition-all duration-200 ${isOwn ? 'bg-white/10 border-white/50 hover:bg-white/15' : 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-accent-primary-light'}`}>
+                    className={`mb-2.5 p-2.5 rounded-xl cursor-pointer transition-all duration-200 ${isOwn ? 'bg-white/10 hover:bg-white/15' : 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20'}`}>
                     <p className={`text-xs font-semibold mb-0.5 ${isOwn ? 'text-white/90' : 'text-accent-primary dark:text-accent-primary-light'}`}>
                       <Reply size={10} className="inline mr-1" />
                       {replyToMessage.sender?.full_name || replyToMessage.sender_email}
@@ -250,8 +272,9 @@ export default function MessageBubble({
           {/* Menu i reakcje – tylko poza edycją */}
           {!isEditing && (
             <>
-              <button onClick={() => setShowMenu(!showMenu)}
-                className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-all duration-200 shadow-sm ${isOwn ? '-left-9' : '-right-9'}`}>
+              <button type="button" onClick={() => setShowMenu(!showMenu)}
+                aria-label={tr('Więcej działań')} title={tr('Więcej działań')} aria-expanded={showMenu}
+                className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-all duration-200 shadow-sm ${isOwn ? '-left-9' : '-right-9'}`}>
                 <MoreVertical size={14} />
               </button>
 
@@ -265,19 +288,23 @@ export default function MessageBubble({
                       <Pin size={14} className={isPinned ? 'fill-current text-yellow-500' : 'text-gray-400'} />{isPinned ? tr('Odepnij') : tr('Przypnij')}
                     </button>
                   )}
-                  {isOwn && <div className="my-1 border-t border-gray-200/50 dark:border-gray-700/50" />}
-                  {isOwn && !isRich && message.content && (
+                  {onToggleReaction && (
+                    <button onClick={() => { setShowMenu(false); setShowReactionPicker(true); setShowFullEmoji(false); }} className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 transition"><Smile size={14} className="text-gray-400" />{tr('Zareaguj')}</button>
+                  )}
+                  {isOwn && (onEdit || onDelete) && <div className="my-1 border-t border-gray-200/50 dark:border-gray-700/50" />}
+                  {isOwn && onEdit && !isRich && message.content && (
                     <button onClick={() => { setIsEditing(true); setShowMenu(false); }} className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 transition"><Edit2 size={14} className="text-gray-400" />{tr('Edytuj')}</button>
                   )}
-                  {isOwn && (
+                  {isOwn && onDelete && (
                     <button onClick={handleDelete} className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition"><Trash2 size={14} />{tr('Usuń')}</button>
                   )}
                 </div>
               )}
 
               {/* Przycisk reakcji */}
-              <button onClick={() => { setShowReactionPicker(!showReactionPicker); setShowFullEmoji(false); }}
-                className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-accent-primary-light transition-all duration-200 shadow-sm ${isOwn ? '-left-[4.5rem]' : '-right-[4.5rem]'}`}>
+              <button type="button" onClick={() => { setShowReactionPicker(!showReactionPicker); setShowFullEmoji(false); }}
+                aria-label={tr('Dodaj reakcję')} title={tr('Dodaj reakcję')}
+                className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-accent-primary-light transition-all duration-200 shadow-sm ${isOwn ? '-left-[4.5rem]' : '-right-[4.5rem]'}`}>
                 <Smile size={14} />
               </button>
 
@@ -288,10 +315,10 @@ export default function MessageBubble({
                   ) : (
                     <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-2xl shadow-xl px-2 py-2 flex gap-0.5 items-center">
                       {quickReactions.map(emoji => (
-                        <button key={emoji} onClick={() => { onToggleReaction?.(message.id, emoji); setShowReactionPicker(false); }}
+                        <button key={emoji} type="button" aria-label={tr('Reakcja {emoji}', { emoji })} onClick={() => { onToggleReaction?.(message.id, emoji); setShowReactionPicker(false); }}
                           className="text-xl hover:scale-125 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200 p-1.5">{emoji}</button>
                       ))}
-                      <button onClick={() => setShowFullEmoji(true)} title={tr('Więcej')}
+                      <button type="button" onClick={() => setShowFullEmoji(true)} title={tr('Więcej')} aria-label={tr('Więcej emoji')}
                         className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-all"><Plus size={16} /></button>
                     </div>
                   )}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Share2, Users, Baby, Loader2 } from 'lucide-react';
 import { callAi } from '../lib/aiApi';
 import ResultPanel from '../components/ResultPanel';
+import { tr } from '../../../i18n';
 
 // Warianty generowania z tekstu kazania.
 const ACTIONS = [
@@ -20,7 +21,7 @@ export default function SermonAssistantTab() {
 
   const run = async (action) => {
     if (!sermon.trim()) {
-      setError('Wklej najpierw tekst lub notatki kazania.');
+      setError(tr('Wklej najpierw tekst lub notatki kazania.'));
       setResult('');
       return;
     }
@@ -32,7 +33,7 @@ export default function SermonAssistantTab() {
       const text = await callAi(action.task, sermon);
       setResult(text);
     } catch (err) {
-      setError(err.message || 'Wystąpił błąd.');
+      setError(err.message || tr('Wystąpił błąd.'));
     } finally {
       setLoadingTask(null);
     }
@@ -45,13 +46,13 @@ export default function SermonAssistantTab() {
       <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 space-y-4">
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">
-            Tekst lub notatki kazania
+            {tr('Tekst lub notatki kazania')}
           </label>
           <textarea
             value={sermon}
             onChange={(e) => setSermon(e.target.value)}
             rows={10}
-            placeholder="Wklej tutaj tekst kazania albo swoje notatki, a asystent przygotuje z nich materiały…"
+            placeholder={tr('Wklej tutaj tekst kazania albo swoje notatki, a asystent przygotuje z nich materiały…')}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-y focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
           />
         </div>
@@ -66,7 +67,7 @@ export default function SermonAssistantTab() {
                 className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium flex items-center gap-2 text-sm transition disabled:opacity-60"
               >
                 {loadingTask === a.task ? <Loader2 size={16} className="animate-spin" /> : <Icon size={16} />}
-                {loadingTask === a.task ? 'Generowanie…' : a.label}
+                {loadingTask === a.task ? tr('Generowanie…') : tr(a.label)}
               </button>
             );
           })}
@@ -77,8 +78,8 @@ export default function SermonAssistantTab() {
         loading={busy}
         error={error}
         result={result}
-        title={resultTitle}
-        emptyHint="Wklej kazanie i wybierz, co przygotować."
+        title={tr(resultTitle)}
+        emptyHint={tr('Wklej kazanie i wybierz, co przygotować.')}
       />
     </div>
   );

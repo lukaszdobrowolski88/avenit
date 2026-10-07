@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Phone, MapPin, ThumbsUp, Play, Pause, ExternalLink } from 'lucide-react';
 import { formatDuration } from '../../lib/columnTypes';
+import { appLocale } from '../../../../i18n';
+import { tr } from '../../../../i18n';
 
 // ── E-mail ───────────────────────────────────────────────────────────
 export function EmailCell({ value, onChange, readOnly }) {
@@ -30,7 +32,7 @@ export function LocationCell({ value, onChange, readOnly }) {
   return (
     <div className="w-full h-full flex items-center">
       <input value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== (value ?? '') && onChange(v)}
-        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} placeholder="Adres..."
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} placeholder={tr('Adres...')}
         className="flex-1 h-full bg-transparent px-2 text-sm text-gray-700 dark:text-gray-200 outline-none" />
       {value && <a href={`https://maps.google.com/?q=${encodeURIComponent(value)}`} target="_blank" rel="noreferrer" className="pr-2 text-gray-400 hover:text-accent-primary"><ExternalLink size={12} /></a>}
     </div>
@@ -79,7 +81,7 @@ export function TimeTrackingCell({ value, onChange, readOnly }) {
 }
 
 // ── Metadane (item_id / created_log / last_updated) — tylko odczyt ────
-function fmtDate(iso) { try { return new Date(iso).toLocaleString('pl-PL', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } }
+function fmtDate(iso) { try { return new Date(iso).toLocaleString(appLocale(), { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } }
 export function MetaCell({ column, item }) {
   let text = '';
   if (column.type === 'item_id') text = item?.id ? `#${String(item.id).slice(0, 8)}` : '';

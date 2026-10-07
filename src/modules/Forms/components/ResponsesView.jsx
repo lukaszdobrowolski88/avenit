@@ -28,7 +28,7 @@ import { useFormResponses } from '../hooks/useFormResponses';
 import { exportToCSV, exportToJSON, formatAnswerForExport } from '../utils/exportUtils';
 import { formatPrice } from '../utils/fieldTypes';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { DateInput } from '../../../components/pickers';
@@ -177,7 +177,7 @@ export default function ResponsesView({ form }) {
         result.push({
           id: response.id,
           responseId: response.id,
-          name: contact.name || response.respondent_name || 'Anonim',
+          name: contact.name || response.respondent_name || tr('Anonim'),
           email: contact.email || response.respondent_email || '',
           phone: contact.phone,
           answers,
@@ -294,7 +294,7 @@ export default function ResponsesView({ form }) {
   const handleExportCSV = () => { exportToCSV(form, responses); setShowExportMenu(false); };
   const handleExportJSON = () => { exportToJSON(form, responses); setShowExportMenu(false); };
 
-  const formatDate = (dateString) => new Date(dateString).toLocaleString('pl-PL', {
+  const formatDate = (dateString) => new Date(dateString).toLocaleString(appLocale(), {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 
@@ -303,7 +303,7 @@ export default function ResponsesView({ form }) {
       case 'paid':
         return (<StatusPill color={STATUS_COLORS.success}>{tr('Opłacone')}</StatusPill>);
       case 'partial':
-        return (<StatusPill color="#ea580c">Częściowo{paidAmt > 0 && dueAmt > 0 && <span className="text-[10px] font-normal tabular-nums">({formatPrice(paidAmt, 'PLN')}/{formatPrice(dueAmt, 'PLN')})</span>}</StatusPill>);
+        return (<StatusPill color="#ea580c">{tr('Częściowo')}{paidAmt > 0 && dueAmt > 0 && <span className="text-[10px] font-normal tabular-nums">({formatPrice(paidAmt, 'PLN')}/{formatPrice(dueAmt, 'PLN')})</span>}</StatusPill>);
       case 'pending':
         return (<StatusPill color={STATUS_COLORS.warning}>{tr('Oczekuje')}</StatusPill>);
       default:
@@ -321,7 +321,7 @@ export default function ResponsesView({ form }) {
     return (
       <EmptyState
         icon={FileText}
-        title="Brak odpowiedzi"
+        title={tr('Brak odpowiedzi')}
         subtitle={tr('Ten formularz nie otrzymał jeszcze żadnych odpowiedzi')}
       />
     );
@@ -384,7 +384,7 @@ export default function ResponsesView({ form }) {
         <div className="flex items-center gap-2">
           <button onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <Filter size={16} />Filtry
+            <Filter size={16} />{tr('Filtry')}
           </button>
           <button onClick={() => fetchResponses(pagination.page)} disabled={loading}
             className="p-2.5 text-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -393,7 +393,7 @@ export default function ResponsesView({ form }) {
           <div className="relative">
             <button onClick={() => setShowExportMenu(!showExportMenu)}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-accent-primary-light rounded-xl hover:bg-accent-primary transition-colors">
-              <Download size={16} />Eksportuj
+              <Download size={16} />{tr('Eksportuj')}
             </button>
             {showExportMenu && (
               <>
@@ -426,7 +426,7 @@ export default function ResponsesView({ form }) {
           ))}
           <button onClick={handleDeleteAll}
             className="ml-auto px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 transition-colors">
-            <Trash2 size={12} className="inline mr-1" />Usuń wszystkie
+            <Trash2 size={12} className="inline mr-1" />{tr('Usuń wszystkie')}
           </button>
         </div>
       )}
@@ -435,8 +435,8 @@ export default function ResponsesView({ form }) {
         <DataTable flush>
           <THead>
             <tr>
-              <TH>Uczestnik</TH>
-              <TH>Kontakt</TH>
+              <TH>{tr('Uczestnik')}</TH>
+              <TH>{tr('Kontakt')}</TH>
               <TH>{tr('Data')}</TH>
               <TH>{tr('Kwota')}</TH>
               <TH>{tr('Status')}</TH>
@@ -455,10 +455,10 @@ export default function ResponsesView({ form }) {
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{p.name}</p>
                       {p.isGroupContact && (
-                        <p className="text-[10px] text-blue-500">Osoba zgłaszająca · Grupa {p.groupSize} os.</p>
+                        <p className="text-[10px] text-blue-500">{tr('Osoba zgłaszająca · Grupa {n} os.', { n: p.groupSize })}</p>
                       )}
                       {p.isGroupMember && (
-                        <p className="text-[10px] text-gray-400">Rejestracja grupowa</p>
+                        <p className="text-[10px] text-gray-400">{tr('Rejestracja grupowa')}</p>
                       )}
                     </div>
                   </div>
@@ -480,7 +480,7 @@ export default function ResponsesView({ form }) {
                         <div className="text-[10px] text-purple-500 mt-0.5">{p.addonLabels.join(', ')}</div>
                       )}
                       {p.isGroupContact && p.groupTotalAmount > 0 && (
-                        <div className="text-[10px] text-gray-400 mt-0.5">Grupa: {formatPrice(p.groupTotalAmount, p.currency)}</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">{tr('Grupa:')} {formatPrice(p.groupTotalAmount, p.currency)}</div>
                       )}
                     </div>
                   ) : null}
@@ -513,7 +513,7 @@ export default function ResponsesView({ form }) {
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Strona {pagination.page} z {totalPages}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{tr('Strona {page} z {total}', { page: pagination.page, total: totalPages })}</p>
             <div className="flex items-center gap-2">
               <button onClick={() => fetchResponses(pagination.page - 1)} disabled={pagination.page <= 1}
                 className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
@@ -555,9 +555,9 @@ export default function ResponsesView({ form }) {
               className="mr-auto"
               onClick={() => { handleDeleteResponse(sp.responseId); setSelectedParticipant(null); }}
             >
-              Usuń rejestrację
+              {tr('Usuń rejestrację')}
             </Button>
-            <Button variant="secondary" onClick={() => setSelectedParticipant(null)}>Zamknij</Button>
+            <Button variant="secondary" onClick={() => setSelectedParticipant(null)}>{tr('Zamknij')}</Button>
           </>}
         >
           {/* Nagłówek */}
@@ -569,8 +569,8 @@ export default function ResponsesView({ form }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   <span className="flex items-center gap-1"><Calendar size={12} />{formatDate(sp.submittedAt)}</span>
-                  {sp.isGroupContact && <span className="text-blue-500 font-medium">Zgłaszający · {sp.groupSize} os.</span>}
-                  {sp.isGroupMember && <span className="text-gray-400">Rejestracja grupowa</span>}
+                  {sp.isGroupContact && <span className="text-blue-500 font-medium">{tr('Zgłaszający · {n} os.', { n: sp.groupSize })}</span>}
+                  {sp.isGroupMember && <span className="text-gray-400">{tr('Rejestracja grupowa')}</span>}
                 </div>
               </div>
             </div>
@@ -605,7 +605,7 @@ export default function ResponsesView({ form }) {
             {sp.addonLabels?.length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex items-start gap-3">
-                  <span className="text-xs font-medium text-gray-400 w-28 flex-shrink-0 pt-0.5 text-right">Dodatki</span>
+                  <span className="text-xs font-medium text-gray-400 w-28 flex-shrink-0 pt-0.5 text-right">{tr('Dodatki')}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {sp.addonLabels.map((label, i) => (
                       <span key={i} className="px-2.5 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-medium">{label}</span>
@@ -631,15 +631,15 @@ export default function ResponsesView({ form }) {
                       {sp.paidAmount > 0 && sp.status !== 'paid' && (
                         <>
                           <p className="text-sm text-gray-500 mt-0.5">
-                            Wpłacono: <span className="font-medium text-green-600">{formatPrice(sp.paidAmount, sp.currency)}</span>
+                            {tr('Wpłacono:')} <span className="font-medium text-green-600">{formatPrice(sp.paidAmount, sp.currency)}</span>
                           </p>
                           <p className="text-sm text-gray-500">
-                            Pozostało: <span className="font-medium text-orange-600">{formatPrice(sp.totalAmount - sp.paidAmount, sp.currency)}</span>
+                            {tr('Pozostało:')} <span className="font-medium text-orange-600">{formatPrice(sp.totalAmount - sp.paidAmount, sp.currency)}</span>
                           </p>
                         </>
                       )}
                       {sp.isGroupContact && sp.groupTotalAmount > 0 && (
-                        <p className="text-xs text-gray-400 mt-1">Łącznie za grupę: {formatPrice(sp.groupTotalAmount, sp.currency)}</p>
+                        <p className="text-xs text-gray-400 mt-1">{tr('Łącznie za grupę:')} {formatPrice(sp.groupTotalAmount, sp.currency)}</p>
                       )}
                     </div>
                     {(sp.status === 'pending' || sp.status === 'partial') && (
@@ -680,11 +680,11 @@ export default function ResponsesView({ form }) {
         {paymentModal && (
           <div className="p-6 space-y-4">
             <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-              <p className="text-sm text-gray-500">Uczestnik</p>
+              <p className="text-sm text-gray-500">{tr('Uczestnik')}</p>
               <p className="font-medium text-gray-900 dark:text-white">{paymentModal.name}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Kwota ({paymentModal.currency})</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('Kwota')} ({paymentModal.currency})</label>
               <input type="number" min="0" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}
                 className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
             </div>

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPLN } from '../utils/smsEncoding';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
@@ -79,21 +79,21 @@ export default function CampaignStats({ campaign, onClose }) {
           </button>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">{campaign?.name}</h2>
-            <p className="text-xs text-gray-500">Od: <span className="font-mono">{campaign?.sender}</span></p>
+            <p className="text-xs text-gray-500">{tr('Od:')} <span className="font-mono">{campaign?.sender}</span></p>
           </div>
         </div>
         <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
-          <Download size={14} /> Eksport CSV
+          <Download size={14} /> {tr('Eksport CSV')}
         </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <Stat icon={Users} label="Odbiorcy" value={total} color="gray" />
+        <Stat icon={Users} label={tr('Odbiorcy')} value={total} color="gray" />
         <Stat icon={Send} label={tr('Wysłane')} value={sent} percent={pct(sent, total)} color="blue" />
-        <Stat icon={CheckCircle} label="Dostarczone" value={delivered} percent={pct(delivered, total)} color="emerald" />
-        <Stat icon={CornerDownLeft} label="Odpowiedzi" value={replied} percent={pct(replied, total)} color="violet" />
+        <Stat icon={CheckCircle} label={tr('Dostarczone')} value={delivered} percent={pct(delivered, total)} color="emerald" />
+        <Stat icon={CornerDownLeft} label={tr('Odpowiedzi')} value={replied} percent={pct(replied, total)} color="violet" />
         <Stat icon={XCircle} label={tr('Błędy')} value={failed} percent={pct(failed, total)} color="red" />
-        <Stat icon={DollarSign} label="Koszt" value={formatPLN(costPLN)} subtitle={`~${formatPLN(avgCost)}/SMS`} color="amber" />
+        <Stat icon={DollarSign} label={tr('Koszt')} value={formatPLN(costPLN)} subtitle={`~${formatPLN(avgCost)}/SMS`} color="amber" />
       </div>
 
       {/* Lista odpowiedzi (jeśli są) */}
@@ -101,7 +101,7 @@ export default function CampaignStats({ campaign, onClose }) {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
             <CornerDownLeft size={16} className="text-violet-600" />
-            <h3 className="font-semibold text-gray-900 dark:text-white">Odpowiedzi ({responses.length})</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{tr('Odpowiedzi')} ({responses.length})</h3>
           </div>
           <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-80 overflow-auto">
             {responses.map(r => (
@@ -111,7 +111,7 @@ export default function CampaignStats({ campaign, onClose }) {
                   r.response_value === 'no' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
                   'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                 }`}>
-                  {r.response_type === 'rsvp' ? r.response_value.toUpperCase() : 'TEKST'}
+                  {r.response_type === 'rsvp' ? r.response_value.toUpperCase() : tr('TEKST')}
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -132,7 +132,7 @@ export default function CampaignStats({ campaign, onClose }) {
       {failed > 0 && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg p-3 mb-4 flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
           <XCircle size={16} />
-          <span>{failed} wysyłek zakończyło się błędem ({pct(failed, total)}%)</span>
+          <span>{tr('{n} wysyłek zakończyło się błędem ({pct}%)', { n: failed, pct: pct(failed, total) })}</span>
         </div>
       )}
 
@@ -146,7 +146,7 @@ export default function CampaignStats({ campaign, onClose }) {
                 statusFilter === s ? 'bg-accent-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
               }`}
             >
-              {s === 'all' ? 'Wszystkie' : s} ({recipients.filter(r => s === 'all' || r.status === s).length})
+              {s === 'all' ? tr('Wszystkie') : s} ({recipients.filter(r => s === 'all' || r.status === s).length})
             </button>
           ))}
         </div>
@@ -162,10 +162,10 @@ export default function CampaignStats({ campaign, onClose }) {
                 <TH>{tr('Telefon')}</TH>
                 <TH>{tr('Email')}</TH>
                 <TH>{tr('Status')}</TH>
-                <TH>Wariant</TH>
-                <TH>Dostarczone</TH>
+                <TH>{tr('Wariant')}</TH>
+                <TH>{tr('Dostarczone')}</TH>
                 <TH>{tr('Odpowiedź')}</TH>
-                <TH>Pkt</TH>
+                <TH>{tr('Pkt')}</TH>
                 <TH>{tr('Błąd')}</TH>
               </tr>
             </THead>
@@ -220,5 +220,5 @@ function RecipientStatus({ status }) {
   return <StatusPill color={c.color}>{c.label}</StatusPill>;
 }
 
-function fmt(s) { return s ? new Date(s).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''; }
+function fmt(s) { return s ? new Date(s).toLocaleString(appLocale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''; }
 function pct(v, total) { return total > 0 ? Math.round(v / total * 100) : 0; }

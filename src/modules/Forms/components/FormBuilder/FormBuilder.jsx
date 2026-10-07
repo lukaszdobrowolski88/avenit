@@ -24,7 +24,7 @@ import FieldEditor from './FieldEditor';
 import FormPreview from '../FormPreview';
 import FormSettings from '../FormSettings';
 import { createField, FIELD_TYPES } from '../../utils/fieldTypes';
-import { tr } from '../../../../i18n';
+import { tr, appLocale } from '../../../../i18n';
 
 export default function FormBuilder({
   form,
@@ -182,10 +182,10 @@ export default function FormBuilder({
           </div>
           <div>
             <p className="font-medium text-sm text-gray-800 dark:text-gray-200">
-              {fieldType.label}
+              {tr(fieldType.label)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {fieldType.description}
+              {tr(fieldType.description)}
             </p>
           </div>
         </div>
@@ -259,13 +259,13 @@ export default function FormBuilder({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="text-lg font-semibold bg-transparent border-none focus:outline-none focus:ring-0 text-gray-900 dark:text-white w-full"
-                placeholder="Nazwa formularza"
+                placeholder={tr('Nazwa formularza')}
               />
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                 {form?.status === 'published' ? (
                   <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
                     <Globe size={12} />
-                    Opublikowany
+                    {tr('Opublikowany')}
                   </span>
                 ) : form?.status === 'closed' ? (
                   <span className="text-gray-500">{tr('Zamknięty')}</span>
@@ -274,7 +274,7 @@ export default function FormBuilder({
                 )}
                 {lastSaved && (
                   <span className="ml-2">
-                    Zapisano {lastSaved.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+                    {tr('Zapisano')} {lastSaved.toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 )}
               </div>
@@ -288,7 +288,7 @@ export default function FormBuilder({
                 className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 {copied ? <Check size={16} className="text-green-500" /> : <LinkIcon size={16} />}
-                {copied ? 'Skopiowano!' : 'Kopiuj link'}
+                {copied ? tr('Skopiowano!') : tr('Kopiuj link')}
               </button>
             )}
 
@@ -315,7 +315,7 @@ export default function FormBuilder({
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
             >
               <Save size={16} />
-              <span className="hidden sm:inline">{isSaving ? 'Zapisywanie...' : 'Zapisz'}</span>
+              <span className="hidden sm:inline">{isSaving ? tr('Zapisywanie...') : tr('Zapisz')}</span>
             </button>
 
             {form?.status === 'published' ? (
@@ -324,7 +324,7 @@ export default function FormBuilder({
                 className="flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors"
               >
                 <Lock size={16} />
-                <span className="hidden sm:inline">Cofnij</span>
+                <span className="hidden sm:inline">{tr('Cofnij')}</span>
               </button>
             ) : (
               <button
@@ -336,7 +336,7 @@ export default function FormBuilder({
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
               >
                 <Globe size={16} />
-                <span className="hidden sm:inline">Opublikuj</span>
+                <span className="hidden sm:inline">{tr('Opublikuj')}</span>
               </button>
             )}
           </div>
@@ -352,7 +352,7 @@ export default function FormBuilder({
         <div className="flex-1 flex overflow-hidden">
           <div data-tour="fb-palette" className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto p-4">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-              Dodaj pola
+              {tr('Dodaj pola')}
             </h2>
             <FieldPalette />
           </div>
@@ -372,7 +372,7 @@ export default function FormBuilder({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-gray-600 dark:text-gray-400 resize-none"
-                  placeholder="Opis formularza (opcjonalny)"
+                  placeholder={tr('Opis formularza (opcjonalny)')}
                   rows={2}
                 />
               </div>
@@ -389,7 +389,7 @@ export default function FormBuilder({
 
           <div className="w-72 flex-shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto overflow-x-hidden p-3">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-              Ustawienia pola
+              {tr('Ustawienia pola')}
             </h2>
             <FieldEditor
               field={selectedField}

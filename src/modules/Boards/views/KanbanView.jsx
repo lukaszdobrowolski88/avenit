@@ -38,7 +38,7 @@ function KanbanColumn({ col, columns, onOpen, onAdd, updatesCountByItem, subCoun
         ))}
         {onAdd && (
           <button onClick={() => onAdd(col)} className="w-full flex items-center gap-1.5 px-2 py-2 text-sm text-gray-400 hover:text-accent-primary">
-            <Plus size={15} /> Dodaj
+            <Plus size={15} /> {tr('Dodaj')}
           </button>
         )}
       </div>
@@ -63,7 +63,7 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
   }, [data.items]);
 
   if (!groupCol) {
-    return <div className="text-center py-16 text-gray-400 text-sm">Dodaj kolumnę typu Status, Priorytet, Lista lub Osoby, aby użyć widoku Kanban.</div>;
+    return <div className="text-center py-16 text-gray-400 text-sm">{tr('Dodaj kolumnę typu Status, Priorytet, Lista lub Osoby, aby użyć widoku Kanban.')}</div>;
   }
 
   const dragDisabled = groupCol.type === 'people';

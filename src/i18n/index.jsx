@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { TRANSLATIONS, LANGUAGES } from './translations';
+import { LANGUAGES } from './languages';
 
 const STORAGE_KEY = 'avenit_lang';
 const SUPPORTED = LANGUAGES.map((l) => l.code);
@@ -15,9 +15,23 @@ function readInitialLang() {
 
 const I18nContext = createContext({ lang: DEFAULT_LANG, setLang: () => {}, t: (k) => k });
 
+// Słowniki EN/UK (~700 KB) ładowane leniwie — polscy użytkownicy (polski = klucze) ich nie pobierają.
+let DICTS = {};
+let dictsPromise = null;
+function loadDicts() {
+  if (!dictsPromise) dictsPromise = import('./translations').then((m) => { DICTS = m.TRANSLATIONS; });
+  return dictsPromise;
+}
+
+// Wywoływane w main.jsx PRZED załadowaniem aplikacji: gdy zapisany język nie jest polski,
+// słownik jest gotowy, zanim moduły policzą swoje etykiety (tr() na poziomie modułu).
+export function preloadI18n() {
+  return readInitialLang() === 'pl' ? Promise.resolve() : loadDicts().catch(() => {});
+}
+
 // Rdzeń tłumaczenia — wspólny dla hooka t() i globalnej funkcji tr().
 function translate(lang, key, vars) {
-  const dict = TRANSLATIONS[lang] || {};
+  const dict = DICTS[lang] || {};
   let out = (lang === 'pl' ? key : (dict[key] ?? key));
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
@@ -38,25 +52,50 @@ export function tr(key, vars) {
   return translate(_lang, key, vars);
 }
 
+// Locale do formatowania dat, liczb i kwot (toLocaleDateString / Intl) w bieżącym języku —
+// zamiast sztywnego 'pl-PL' (po angielsku nazwy miesięcy i dni zostawały polskie).
+const LOCALES = { pl: 'pl-PL', en: 'en-GB', uk: 'uk-UA' };
+export function appLocale() {
+  return LOCALES[_lang] || 'pl-PL';
+}
+
 export function I18nProvider({ children }) {
   const [lang, setLangState] = useState(readInitialLang);
+  // Słownik gotowy? Polski nie potrzebuje słownika (klucze są polskie).
+  const [ready, setReady] = useState(() => lang === 'pl' || !!DICTS[lang]);
   _lang = lang; // synchronizuj zmienną modułową dla tr()
 
   useEffect(() => {
     try { document.documentElement.lang = lang; } catch { /* ignore */ }
   }, [lang]);
 
+  // Start w języku innym niż polski: dociągnij słownik przed pierwszym renderem aplikacji
+  // (krótka pusta chwila zamiast mignięcia polskich tekstów).
+  useEffect(() => {
+    if (ready) return undefined;
+    let alive = true;
+    loadDicts().then(() => { if (alive) setReady(true); }, () => { if (alive) setReady(true); });
+    return () => { alive = false; };
+  }, [ready]);
+
+  // Zmiana języka czeka na słownik, potem przełącza całe drzewo naraz.
   const setLang = useCallback((code) => {
     if (!SUPPORTED.includes(code)) return;
-    setLangState(code);
-    try { localStorage.setItem(STORAGE_KEY, code); } catch { /* ignore */ }
+    const apply = () => {
+      setLangState(code);
+      setReady(true);
+      try { localStorage.setItem(STORAGE_KEY, code); } catch { /* ignore */ }
+    };
+    if (code === 'pl') apply();
+    else loadDicts().then(apply, apply);
   }, []);
 
   // t(key, vars?) — zwraca tłumaczenie lub polski klucz (fallback). Obsługuje {zmienne}.
-  const t = useCallback((key, vars) => translate(lang, key, vars), [lang]);
+  const t = useCallback((key, vars) => translate(lang, key, vars), [lang, ready]);
 
   const value = useMemo(() => ({ lang, setLang, t, languages: LANGUAGES }), [lang, setLang, t]);
 
+  if (!ready) return null;
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 

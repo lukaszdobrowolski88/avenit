@@ -27,7 +27,7 @@ import BirthdaysWidget from './widgets/BirthdaysWidget';
 import RsvpSummaryWidget from './widgets/RsvpSummaryWidget';
 import GivingMonthWidget from './widgets/GivingMonthWidget';
 import AttendanceWidget from './widgets/AttendanceWidget';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import Button from '../../components/Button';
@@ -174,7 +174,7 @@ export default function PersonalDashboard({ user }) {
             // z tym, co dziś najważniejsze, i kropka w kurkumie.
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8A6606] dark:text-[#FFBE0B]">
-                {new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                {new Date().toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
               <h1 className="mt-1 text-[28px] md:text-[34px] leading-[1.12] tracking-[-0.035em] text-gray-900 dark:text-white">
                 <span className="font-extrabold">{getGreeting()}, {firstName}!</span>{' '}

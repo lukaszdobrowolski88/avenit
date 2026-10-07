@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, MapPin, ExternalLink } from 'lucide-react';
 import EventRSVP from '../../../components/EventRSVP';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 // Karta udostępnionego wydarzenia z osadzonym panelem zapisów (RSVP).
 export default function EventCard({ message }) {
@@ -15,9 +15,9 @@ export default function EventCard({ message }) {
   try {
     if (date) {
       const d = new Date(`${date}T${time || '00:00'}`);
-      dateLabel = d.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
-      dayNum = d.toLocaleDateString('pl-PL', { day: 'numeric' });
-      monthShort = d.toLocaleDateString('pl-PL', { month: 'short' });
+      dateLabel = d.toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
+      dayNum = d.toLocaleDateString(appLocale(), { day: 'numeric' });
+      monthShort = d.toLocaleDateString(appLocale(), { month: 'short' });
     }
   } catch { /* zostaw surowe */ }
 

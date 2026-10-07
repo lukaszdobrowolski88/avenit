@@ -10,14 +10,14 @@ import { tr } from '../../../i18n';
 const COMPONENT_TYPES = [
   { key: 'empty', label: tr('Pusta zakładka'), icon: Layers, description: tr('Pusta strona do przyszłej rozbudowy') },
   { key: 'events', label: tr('Wydarzenia'), icon: Calendar, description: tr('Lista wydarzeń z kalendarzem') },
-  { key: 'tasks', label: tr('Zadania'), icon: CheckSquare, description: 'Tablica kanban z zadaniami' },
+  { key: 'tasks', label: tr('Zadania'), icon: CheckSquare, description: tr('Tablica kanban z zadaniami') },
   { key: 'board', label: tr('Tablica projektowa'), icon: LayoutGrid, description: tr('Tablice Monday: kolumny, widoki, automatyzacje') },
-  { key: 'finance', label: tr('Finanse'), icon: DollarSign, description: 'Przychody i wydatki' },
+  { key: 'finance', label: tr('Finanse'), icon: DollarSign, description: tr('Przychody i wydatki') },
   { key: 'members', label: tr('Członkowie'), icon: Users, description: tr('Lista członków zespołu') },
-  { key: 'wall', label: tr('Tablica'), icon: MessageSquare, description: 'Tablica z wpisami i komentarzami' },
+  { key: 'wall', label: tr('Tablica'), icon: MessageSquare, description: tr('Tablica z wpisami i komentarzami') },
   { key: 'schedule', label: tr('Grafik'), icon: CalendarDays, description: tr('Harmonogram służb na wydarzenia') },
   { key: 'duty', label: tr('Służby'), icon: UserCog, description: tr('Zarządzanie służbami i przypisaniami') },
-  { key: 'materials', label: tr('Materiały'), icon: FolderOpen, description: 'Pliki i dokumenty do pobrania' },
+  { key: 'materials', label: tr('Materiały'), icon: FolderOpen, description: tr('Pliki i dokumenty do pobrania') },
   { key: 'equipment', label: tr('Wyposażenie'), icon: Package, description: tr('Inwentarz sprzętu: stan, lokalizacja, wartość') },
   { key: 'gallery', label: tr('Galeria zdjęć'), icon: GalleryThumbnails, description: tr('Zdjęcia z podglądem — upload i siatka miniatur') },
   { key: 'links', label: tr('Szybkie linki'), icon: Link2, description: tr('Konfigurowalne przyciski do formularzy i narzędzi') },
@@ -96,13 +96,13 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
     if (!form.key.trim()) {
       newErrors.key = tr('Klucz zakładki jest wymagany');
     } else if (!/^[a-z0-9_]+$/.test(form.key)) {
-      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i podkreślniki');
+      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i znak podkreślenia (_)');
     } else if (!isEditing && existingKeys.includes(form.key)) {
       newErrors.key = tr('Zakładka z takim kluczem już istnieje');
     }
 
     if (!form.icon) {
-      newErrors.icon = 'Ikona jest wymagana';
+      newErrors.icon = tr('Ikona jest wymagana');
     }
 
     setErrors(newErrors);
@@ -136,8 +136,8 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
       zIndex={160}
       title={isEditing ? tr('Edytuj zakładkę') : tr('Nowa zakładka')}
       footer={<>
-        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
-        <Button icon={Save} onClick={handleSubmit} loading={saving}>Zapisz</Button>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button icon={Save} onClick={handleSubmit} loading={saving}>{tr('Zapisz')}</Button>
       </>}
     >
       <div className="p-6 space-y-5">
@@ -190,7 +190,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
             type="text"
             value={form.label}
             onChange={(e) => setForm({ ...form, label: e.target.value })}
-            placeholder="np. Finanse"
+            placeholder={tr('np. Finanse')}
             className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
               ${errors.label
                 ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
@@ -205,13 +205,13 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
         {/* Klucz zakładki */}
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-            Klucz (slug)
+            {tr('Klucz (slug)')}
           </label>
           <input
             type="text"
             value={form.key}
             onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase() })}
-            placeholder="np. finanse"
+            placeholder={tr('np. finanse')}
             disabled={isEditing && tab?.is_system}
             className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
               ${isEditing && tab?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
@@ -231,7 +231,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
         {/* Ikona */}
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-            Ikona
+            {tr('Ikona')}
           </label>
           <IconPicker
             value={form.icon}

@@ -8,11 +8,11 @@ import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 
 const SEGMENT_GROUPS = [
-  { id: 'all', label: tr('Wszyscy'), icon: Users },
+  { id: 'all', label: 'Wszyscy', icon: Users },
   { id: 'campus', label: 'Campus', icon: MapPin },
-  { id: 'ministry', label: tr('Służba'), icon: Sparkles },
+  { id: 'ministry', label: 'Służba', icon: Sparkles },
   { id: 'home_group', label: 'Grupa domowa', icon: Home },
-  { id: 'role', label: tr('Rola'), icon: Shield },
+  { id: 'role', label: 'Rola', icon: Shield },
   { id: 'custom_email', label: 'Wybrane osoby', icon: UserCheck },
   { id: 'custom_phone', label: 'Numery', icon: Phone },
 ];
@@ -76,7 +76,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
       if (norm) valid.push(norm); else invalid.push(raw);
     });
     if (!valid.length) {
-      toast.error(`Brak poprawnych numerów. Niepoprawne: ${invalid.join(', ')}`);
+      toast.error(tr('Brak poprawnych numerów. Niepoprawne: {list}', { list: invalid.join(', ') }));
       return;
     }
     const set = new Set(customPhones);
@@ -85,7 +85,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
     next.push({ type: 'custom_phone', id: 'custom_phone', name: 'Numery telefonów', phones: Array.from(set), exclude: false });
     onChange(next);
     setPhonesInput('');
-    if (invalid.length) toast.error(`Pominięto niepoprawne: ${invalid.join(', ')}`);
+    if (invalid.length) toast.error(tr('Pominięto niepoprawne: {list}', { list: invalid.join(', ') }));
   };
 
   const removeCustomPhone = (phone) => {
@@ -112,13 +112,13 @@ export default function RecipientSelector({ segments = [], onChange }) {
         {withoutPhone.length > 0 && (
           <div className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
             <AlertTriangle size={12} />
-            {withoutPhone.length} bez numeru — zostaną pominięci
+            {tr('{n} bez numeru — zostaną pominięci', { n: withoutPhone.length })}
           </div>
         )}
         {unsubscribed.length > 0 && (
           <div className="text-xs text-gray-500 flex items-center gap-1.5">
             <AlertTriangle size={12} className="text-amber-500" />
-            {unsubscribed.length} z opt-outem SMS
+            {tr('{n} z opt-outem SMS', { n: unsubscribed.length })}
           </div>
         )}
       </div>
@@ -136,7 +136,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
             }`}
           >
             <g.icon size={14} />
-            {g.label}
+            {tr(g.label)}
           </button>
         ))}
       </div>
@@ -146,7 +146,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
           <SegmentRow
             checked={isSelected('all', null)}
             onClick={() => toggleSegment('all', null, 'Wszyscy aktywni')}
-            label={`Wszyscy aktywni użytkownicy (${totalActive})`}
+            label={`${tr('Wszyscy aktywni użytkownicy')} (${totalActive})`}
             description={tr('Każdy użytkownik z włączonym SMS i zgodą marketingową.')}
           />
         )}
@@ -187,7 +187,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
 
         {activeGroup === 'home_group' && (
           <div className="space-y-1">
-            {homeGroups.length === 0 && <Empty>Brak grup domowych.</Empty>}
+            {homeGroups.length === 0 && <Empty>{tr('Brak grup domowych.')}</Empty>}
             {homeGroups.map(g => (
               <SegmentRow
                 key={g.id}
@@ -211,7 +211,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
                 excluded={isSelected('role', r.id, true)}
                 onClick={() => toggleSegment('role', r.id, r.name)}
                 onExcludeClick={() => toggleSegment('role', r.id, r.name, true)}
-                label={r.name}
+                label={tr(r.name)}
                 count={allUsers.filter(u => u.role === r.id).length}
               />
             ))}
@@ -225,7 +225,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Szukaj po imieniu lub emailu..."
+                placeholder={tr('Szukaj po imieniu lub emailu...')}
                 className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
               />
             </div>
@@ -243,7 +243,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
                       <div className="text-xs text-gray-500">
                         {u.email}
                         {u.phone && <span className="ml-2 text-emerald-600">· {u.phone}</span>}
-                        {!u.phone && <span className="ml-2 text-amber-600">· brak numeru</span>}
+                        {!u.phone && <span className="ml-2 text-amber-600">· {tr('brak numeru')}</span>}
                       </div>
                     </div>
                     <Plus size={16} className="text-accent-primary" />
@@ -269,7 +269,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
-                Wklej numery (po przecinku, średniku lub w nowych liniach)
+                {tr('Wklej numery (po przecinku, średniku lub w nowych liniach)')}
               </label>
               <textarea
                 value={phonesInput}
@@ -284,13 +284,13 @@ export default function RecipientSelector({ segments = [], onChange }) {
                 disabled={!phonesInput.trim()}
                 className="mt-2 px-3 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50"
               >
-                Dodaj numery
+                {tr('Dodaj numery')}
               </button>
             </div>
 
             {customPhones.length > 0 && (
               <div>
-                <div className="text-xs font-medium text-gray-500 mb-1.5">Dodane ({customPhones.length}):</div>
+                <div className="text-xs font-medium text-gray-500 mb-1.5">{tr('Dodane')} ({customPhones.length}):</div>
                 <div className="flex flex-wrap gap-1.5 max-h-40 overflow-auto">
                   {customPhones.map(phone => (
                     <span key={phone} className="inline-flex items-center gap-1.5 px-2 py-1 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-md text-xs font-mono">

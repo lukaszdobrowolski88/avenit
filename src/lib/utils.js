@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 import { twMerge } from "tailwind-merge";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { appLocale } from '../i18n';
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -11,7 +12,7 @@ export function cn(...inputs) {
 const formatDateFull = (dateString) => {
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   const date = new Date(dateString);
-  const formatted = date.toLocaleDateString('pl-PL', options);
+  const formatted = date.toLocaleDateString(appLocale(), options);
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 };
 

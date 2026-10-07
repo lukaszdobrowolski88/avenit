@@ -3,6 +3,7 @@ import { Check, Plus, X } from 'lucide-react';
 import Popover from '../Popover';
 import { resolveOptions } from '../../lib/columnTypes';
 import { STATUS_COLORS, uid } from '../../lib/constants';
+import { tr } from '../../../../i18n';
 
 // Komórka Lista wyboru (dropdown) — multi-tagi z zarządzaniem opcjami.
 export default function TagsCell({ column, value = [], onChange, onUpdateColumn, readOnly }) {
@@ -53,11 +54,11 @@ export default function TagsCell({ column, value = [], onChange, onUpdateColumn,
                   className="p-1 text-gray-400 hover:text-red-500"><X size={13} /></button>
               </div>
             ))}
-            {options.length === 0 && <div className="text-xs text-gray-400 text-center py-2">Brak opcji</div>}
+            {options.length === 0 && <div className="text-xs text-gray-400 text-center py-2">{tr('Brak opcji')}</div>}
           </div>
           <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
             <input value={adding} onChange={(e) => setAdding(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addOption()} placeholder="Nowa opcja..."
+              onKeyDown={(e) => e.key === 'Enter' && addOption()} placeholder={tr('Nowa opcja...')}
               className="flex-1 text-xs bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1.5 outline-none text-gray-700 dark:text-gray-200" />
             <button onClick={addOption} className="p-1.5 text-accent-primary hover:bg-accent-primary/10 rounded"><Plus size={16} /></button>
           </div>

@@ -14,6 +14,7 @@ import {
 } from '../lib/roomsApi';
 import { DateTimeInput } from '../../../components/pickers';
 import { choiceDialog, confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 function defaultTimes() {
   const start = new Date();
@@ -80,7 +81,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
   }, [bookings, search, resourceById]);
 
   const resourceFilterOptions = useMemo(() => [
-    { value: '', label: 'Wszystkie zasoby' },
+    { value: '', label: tr('Wszystkie zasoby') },
     ...(resources || []).map(r => ({ value: r.id, label: r.name })),
   ], [resources]);
 
@@ -141,12 +142,12 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
 
   // mode: 'auto' (blokuj przy kolizji), 'skip' (pomiń kolidujące), 'force' (zapisz mimo kolizji)
   const doSave = async (mode = 'auto') => {
-    if (!form.resource_id) { toast.info('Wybierz zasób.'); return; }
-    if (!form.title.trim()) { toast.error('Podaj tytuł rezerwacji.'); return; }
+    if (!form.resource_id) { toast.info(tr('Wybierz zasób.')); return; }
+    if (!form.title.trim()) { toast.error(tr('Podaj tytuł rezerwacji.')); return; }
     const startIso = localInputToIso(form.start_at);
     const endIso = localInputToIso(form.end_at);
-    if (!startIso || !endIso) { toast.error('Podaj poprawny początek i koniec.'); return; }
-    if (new Date(endIso) <= new Date(startIso)) { toast.error('Koniec musi być późniejszy niż początek.'); return; }
+    if (!startIso || !endIso) { toast.error(tr('Podaj poprawny początek i koniec.')); return; }
+    if (new Date(endIso) <= new Date(startIso)) { toast.error(tr('Koniec musi być późniejszy niż początek.')); return; }
 
     setSaving(true);
     try {
@@ -165,7 +166,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
 
       const toInsert = mode === 'skip' ? free : occ;
       if (toInsert.length === 0) {
-        toast.success('Wszystkie terminy kolidują z istniejącymi rezerwacjami — nie zapisano nic.');
+        toast.success(tr('Wszystkie terminy kolidują z istniejącymi rezerwacjami — nie zapisano nic.'));
         setSaving(false);
         return;
       }
@@ -204,11 +205,11 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
       closeModal();
       load();
       if (skipped > 0) {
-        toast.success(`Zapisano ${toInsert.length} rezerwacji. Pominięto ${skipped} z powodu kolizji.`);
+        toast.success(tr('Zapisano {n} rezerwacji. Pominięto {skipped} z powodu kolizji.', { n: toInsert.length, skipped }));
       }
     } catch (err) {
       console.error('Save booking error:', err);
-      toast.error('Nie udało się zapisać rezerwacji: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać rezerwacji: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
@@ -218,10 +219,10 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
     try {
       if (b.recurrence_group) {
         const scope = await choiceDialog({
-          title: 'Usunąć rezerwację z serii?',
-          message: 'Ta rezerwacja jest częścią serii cyklicznej.',
+          title: tr('Usunąć rezerwację z serii?'),
+          message: tr('Ta rezerwacja jest częścią serii cyklicznej.'),
           danger: true,
-          choices: [{ value: 'one', label: 'Tylko tę' }, { value: 'all', label: 'Całą serię', danger: true }],
+          choices: [{ value: 'one', label: tr('Tylko tę') }, { value: 'all', label: tr('Całą serię'), danger: true }],
         });
         if (!scope) return;
         if (scope === 'all') {
@@ -232,13 +233,13 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
           if (error) throw error;
         }
       } else {
-        if (!await confirmDialog('Usunąć tę rezerwację?')) return;
+        if (!await confirmDialog(tr('Usunąć tę rezerwację?'))) return;
         const { error } = await supabase.from('resource_bookings').delete().eq('id', b.id);
         if (error) throw error;
       }
       load();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
@@ -252,24 +253,24 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Szukaj tytułu, zasobu, osoby..."
+            placeholder={tr('Szukaj tytułu, zasobu, osoby...')}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
           />
         </div>
         <div className="w-52"><CustomSelect value={resourceFilter} onChange={setResourceFilter} options={resourceFilterOptions} compact /></div>
         <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer px-2">
           <input type="checkbox" checked={showPast} onChange={e => setShowPast(e.target.checked)} className="rounded accent-emerald-500" />
-          Pokaż też przeszłe
+          {tr('Pokaż też przeszłe')}
         </label>
-        <button data-tour="rooms-booking-new" onClick={openCreate} disabled={noResources} title={noResources ? 'Najpierw dodaj zasób' : ''} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition disabled:opacity-50">
-          <Plus size={16} /> Nowa rezerwacja
+        <button data-tour="rooms-booking-new" onClick={openCreate} disabled={noResources} title={noResources ? tr('Najpierw dodaj zasób') : ''} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition disabled:opacity-50">
+          <Plus size={16} /> {tr('Nowa rezerwacja')}
         </button>
       </div>
 
       {noResources && (
         <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
           <AlertTriangle size={16} className="shrink-0" />
-          Brak zasobów. Dodaj salę lub sprzęt w zakładce „Zasoby", aby móc tworzyć rezerwacje.
+          {tr('Brak zasobów. Dodaj salę lub sprzęt w zakładce „Zasoby", aby móc tworzyć rezerwacje.')}
         </div>
       )}
 
@@ -278,17 +279,17 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
         {loading ? (
           <Spinner center />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={CalendarClock} title="Brak rezerwacji dla wybranych filtrów." />
+          <EmptyState icon={CalendarClock} title={tr('Brak rezerwacji dla wybranych filtrów.')} />
         ) : (
           <DataTable flush>
             <THead>
               <tr>
-                <TH>Zasób</TH>
-                <TH>Tytuł</TH>
-                <TH>Początek</TH>
-                <TH>Koniec</TH>
-                <TH>Zarezerwował</TH>
-                <TH align="right"><span className="sr-only">Akcje</span></TH>
+                <TH>{tr('Zasób')}</TH>
+                <TH>{tr('Tytuł')}</TH>
+                <TH>{tr('Początek')}</TH>
+                <TH>{tr('Koniec')}</TH>
+                <TH>{tr('Zarezerwował')}</TH>
+                <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
               </tr>
             </THead>
             <tbody>
@@ -299,15 +300,15 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
                     <TD>
                       <span className="inline-flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: r?.color || '#94a3b8' }} />
-                        {r?.name || <span className="text-gray-400">— usunięty —</span>}
+                        {r?.name || <span className="text-gray-400">— {tr('usunięty')} —</span>}
                       </span>
                     </TD>
                     <TD>
                       <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                        {b.title || <span className="text-gray-400">bez tytułu</span>}
+                        {b.title || <span className="text-gray-400">{tr('bez tytułu')}</span>}
                         {b.recurrence_group && (
                           <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-accent-primary-lightest text-accent-primary dark:bg-accent-primary-darkest/30 dark:text-accent-primary-light">
-                            <Repeat size={10} /> cykl
+                            <Repeat size={10} /> {tr('cykl')}
                           </span>
                         )}
                       </div>
@@ -337,56 +338,56 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
       <Modal
         isOpen={modalOpen}
         onClose={() => !saving && closeModal()}
-        title={editing ? 'Edytuj rezerwację' : 'Nowa rezerwacja'}
+        title={editing ? tr('Edytuj rezerwację') : tr('Nowa rezerwacja')}
         size="md"
         footer={<>
-          <Button variant="secondary" onClick={closeModal} disabled={saving}>Anuluj</Button>
+          <Button variant="secondary" onClick={closeModal} disabled={saving}>{tr('Anuluj')}</Button>
           {conflictReport ? (
             <>
               {conflictReport.free.length > 0 && (
                 <Button variant="outline" onClick={() => doSave('skip')} disabled={saving}>
-                  Pomiń kolidujące ({conflictReport.free.length})
+                  {tr('Pomiń kolidujące')} ({conflictReport.free.length})
                 </Button>
               )}
               <Button variant="danger" onClick={() => doSave('force')} loading={saving}>
-                Zapisz mimo kolizji
+                {tr('Zapisz mimo kolizji')}
               </Button>
             </>
           ) : (
-            <Button data-tour="rooms-booking-save" onClick={() => doSave('auto')} loading={saving}>Zapisz</Button>
+            <Button data-tour="rooms-booking-save" onClick={() => doSave('auto')} loading={saving}>{tr('Zapisz')}</Button>
           )}
         </>}
       >
         <div className="p-6 space-y-4">
           <CustomSelect
-            label="Zasób" value={form.resource_id}
+            label={tr('Zasób')} value={form.resource_id}
             onChange={v => { setForm(f => ({ ...f, resource_id: v })); setConflictReport(null); }}
-            options={resourceFormOptions} placeholder="Wybierz salę lub sprzęt..."
+            options={resourceFormOptions} placeholder={tr('Wybierz salę lub sprzęt...')}
           />
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
-            <input data-tour="rooms-booking-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Próba zespołu, Spotkanie grupy" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł')}</label>
+            <input data-tour="rooms-booking-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={tr('np. Próba zespołu, Spotkanie grupy')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Początek</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Początek')}</label>
               <DateTimeInput value={form.start_at} onChange={e => { setForm(f => ({ ...f, start_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Koniec</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Koniec')}</label>
               <DateTimeInput value={form.end_at} onChange={e => { setForm(f => ({ ...f, end_at: e.target.value })); setConflictReport(null); }} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Zarezerwował (opcjonalnie)</label>
-              <input value={form.booked_by} onChange={e => setForm(f => ({ ...f, booked_by: e.target.value }))} placeholder="Domyślnie: Twój e-mail" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Zarezerwował (opcjonalnie)')}</label>
+              <input value={form.booked_by} onChange={e => setForm(f => ({ ...f, booked_by: e.target.value }))} placeholder={tr('Domyślnie: Twój e-mail')} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatka</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatka')}</label>
               <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
             </div>
           </div>
@@ -396,13 +397,13 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
             <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 space-y-3">
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
                 <input type="checkbox" checked={form.recurring} onChange={e => { setForm(f => ({ ...f, recurring: e.target.checked })); setConflictReport(null); }} className="rounded accent-emerald-500" />
-                <Repeat size={15} /> Powtarzaj co tydzień
+                <Repeat size={15} /> {tr('Powtarzaj co tydzień')}
               </label>
               {form.recurring && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 pl-6">
-                  przez
+                  {tr('przez')}
                   <input type="number" min="1" max="52" value={form.weeks} onChange={e => { setForm(f => ({ ...f, weeks: e.target.value })); setConflictReport(null); }} className="w-20 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
-                  tygodni (łącznie {Math.max(1, Math.min(52, Number(form.weeks) || 1))} terminów)
+                  {tr('tygodni (łącznie {n} terminów)', { n: Math.max(1, Math.min(52, Number(form.weeks) || 1)) })}
                 </div>
               )}
             </div>
@@ -412,20 +413,20 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
           {conflictReport && (
             <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 space-y-2">
               <div className="flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-300">
-                <AlertTriangle size={16} /> Wykryto kolizje ({conflictReport.conflicting.length} z {conflictReport.occ.length} terminów)
+                <AlertTriangle size={16} /> {tr('Wykryto kolizje ({a} z {b} terminów)', { a: conflictReport.conflicting.length, b: conflictReport.occ.length })}
               </div>
               <ul className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
                 {conflictReport.conflicting.map((o, idx) => (
                   <li key={idx} className="text-xs text-red-700 dark:text-red-300">
                     <span className="font-medium">{formatDateTime(o.start_at)} – {formatTime(o.end_at)}</span>
-                    <span className="text-red-500 dark:text-red-400"> koliduje z: </span>
-                    {o.conflicts.map(c => `${c.title || 'rezerwacja'} (${formatTime(c.start_at)}–${formatTime(c.end_at)})`).join(', ')}
+                    <span className="text-red-500 dark:text-red-400"> {tr('koliduje z:')} </span>
+                    {o.conflicts.map(c => `${c.title || tr('rezerwacja')} (${formatTime(c.start_at)}–${formatTime(c.end_at)})`).join(', ')}
                   </li>
                 ))}
               </ul>
               {conflictReport.free.length > 0 && (
                 <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 size={14} /> {conflictReport.free.length} termin(ów) bez kolizji.
+                  <CheckCircle2 size={14} /> {tr('{n} termin(ów) bez kolizji.', { n: conflictReport.free.length })}
                 </div>
               )}
             </div>

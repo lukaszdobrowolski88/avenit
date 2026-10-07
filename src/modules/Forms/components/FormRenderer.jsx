@@ -7,7 +7,7 @@ import ParticipantForm from './ParticipantForm';
 import AddonSelector from './AddonSelector';
 import PriceBreakdown from './PriceBreakdown';
 import { calculateTotalPrice, calculatePriceBreakdown, formatPrice, checkSeatAvailability, evaluateVisibility } from '../utils/fieldTypes';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 export default function FormRenderer({
   title,
@@ -176,7 +176,7 @@ export default function FormRenderer({
   const validateField = useCallback((field, value) => {
     if (field.required) {
       if (value === null || value === undefined || value === '') {
-        return 'To pole jest wymagane';
+        return tr('To pole jest wymagane');
       }
       if (Array.isArray(value) && value.length === 0) {
         return tr('Wybierz przynajmniej jedną opcję');
@@ -185,16 +185,16 @@ export default function FormRenderer({
 
     if (value && field.validation) {
       if (field.validation.minLength && String(value).length < field.validation.minLength) {
-        return `Minimalna długość to ${field.validation.minLength} znaków`;
+        return tr('Minimalna długość to {n} znaków', { n: field.validation.minLength });
       }
       if (field.validation.maxLength && String(value).length > field.validation.maxLength) {
-        return `Maksymalna długość to ${field.validation.maxLength} znaków`;
+        return tr('Maksymalna długość to {n} znaków', { n: field.validation.maxLength });
       }
       if (field.validation.min !== undefined && Number(value) < field.validation.min) {
-        return `Minimalna wartość to ${field.validation.min}`;
+        return tr('Minimalna wartość to {n}', { n: field.validation.min });
       }
       if (field.validation.max !== undefined && Number(value) > field.validation.max) {
-        return `Maksymalna wartość to ${field.validation.max}`;
+        return tr('Maksymalna wartość to {n}', { n: field.validation.max });
       }
       if (field.validation.pattern) {
         const regex = new RegExp(field.validation.pattern);
@@ -446,7 +446,7 @@ export default function FormRenderer({
             }`}>
               <img
                 src={branding.logoImage}
-                alt="Logo"
+                alt={tr('Logo')}
                 className="h-12 object-contain"
               />
             </div>
@@ -536,7 +536,7 @@ export default function FormRenderer({
                 }`}>
                   <img
                     src={branding.logoImage}
-                    alt="Logo"
+                    alt={tr('Logo')}
                     className="h-12 object-contain inline-block"
                   />
                 </div>
@@ -563,11 +563,11 @@ export default function FormRenderer({
                   {(eventInfo.dateStart || eventInfo.dateEnd) && (
                     <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
                       <Calendar size={16} className={isDarkBg ? 'text-white/80' : 'text-accent-primary-light'} />
-                      {eventInfo.dateStart && new Date(eventInfo.dateStart).toLocaleDateString('pl-PL', {
+                      {eventInfo.dateStart && new Date(eventInfo.dateStart).toLocaleDateString(appLocale(), {
                         day: 'numeric', month: 'long', year: 'numeric'
                       })}
                       {eventInfo.dateEnd && eventInfo.dateStart !== eventInfo.dateEnd && (
-                        <> - {new Date(eventInfo.dateEnd).toLocaleDateString('pl-PL', {
+                        <> - {new Date(eventInfo.dateEnd).toLocaleDateString(appLocale(), {
                           day: 'numeric', month: 'long', year: 'numeric'
                         })}</>
                       )}
@@ -584,7 +584,7 @@ export default function FormRenderer({
                     <div className={`flex items-center gap-2 text-sm font-semibold ${isDarkBg ? 'text-green-300' : 'text-green-600 dark:text-green-400'}`}>
                       <DollarSign size={16} />
                       {formatPrice(eventInfo.price, eventInfo.priceCurrency)}
-                      {eventInfo.priceType === 'per_person' && <span className={`font-normal ${isDarkBg ? 'text-white/60' : 'text-gray-500'}`}>/ os.</span>}
+                      {eventInfo.priceType === 'per_person' && <span className={`font-normal ${isDarkBg ? 'text-white/60' : 'text-gray-500'}`}>{tr('/ os.')}</span>}
                       {eventInfo.dateTierLabel && (
                         <span className={`text-xs font-normal px-2 py-0.5 rounded-full ${isDarkBg ? 'bg-white/20 text-white/80' : 'bg-blue-100 text-blue-700'}`}>
                           {eventInfo.dateTierLabel}
@@ -596,16 +596,16 @@ export default function FormRenderer({
                     <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
                       <Users size={16} className={isDarkBg ? 'text-blue-300' : 'text-blue-500'} />
                       {seatAvailability.remaining > 0 ? (
-                        <>Pozostało <span className={`font-semibold ${isDarkBg ? 'text-blue-300' : 'text-blue-600'}`}>{seatAvailability.remaining}</span> miejsc</>
+                        <>{tr('Pozostało')} <span className={`font-semibold ${isDarkBg ? 'text-blue-300' : 'text-blue-600'}`}>{seatAvailability.remaining}</span> {tr('miejsc')}</>
                       ) : isWaitlistMode ? (
                         <span className={`font-semibold ${isDarkBg ? 'text-orange-300' : 'text-orange-600 dark:text-orange-400'}`}>
-                          Lista rezerwowa
+                          {tr('Lista rezerwowa')}
                           {seatAvailability.waitlistRemaining !== null && (
-                            <> — pozostało {seatAvailability.waitlistRemaining} miejsc</>
+                            <> — {tr('pozostało {n} miejsc', { n: seatAvailability.waitlistRemaining })}</>
                           )}
                         </span>
                       ) : (
-                        <span className="text-red-500 font-semibold">Brak wolnych miejsc</span>
+                        <span className="text-red-500 font-semibold">{tr('Brak wolnych miejsc')}</span>
                       )}
                     </div>
                   )}
@@ -625,7 +625,7 @@ export default function FormRenderer({
             </div>
             <div>
               <h3 className="text-sm font-semibold text-orange-800 dark:text-orange-300 mb-1">
-                Lista rezerwowa
+                {tr('Lista rezerwowa')}
               </h3>
               <p className="text-sm text-orange-700 dark:text-orange-400">
                 {seatAvailability.waitlistMessage}
@@ -639,7 +639,7 @@ export default function FormRenderer({
       {isGroupEnabled && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
           <label className="block text-base font-medium text-gray-900 dark:text-white mb-3">
-            Rodzaj rejestracji <span className="text-red-500">*</span>
+            {tr('Rodzaj rejestracji')} <span className="text-red-500">*</span>
           </label>
           <div className="flex gap-2">
             <button
@@ -651,7 +651,7 @@ export default function FormRenderer({
                   : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-300'
               }`}
             >
-              Indywidualna
+              {tr('Indywidualna')}
             </button>
             <button
               type="button"
@@ -662,7 +662,7 @@ export default function FormRenderer({
                   : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-300'
               }`}
             >
-              Grupowa
+              {tr('Grupowa')}
             </button>
           </div>
         </div>
@@ -750,7 +750,7 @@ export default function FormRenderer({
       {addonsConfig.enabled && perPersonAddons.length > 0 && !isGroupMode && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
-            Opcje dodatkowe
+            {tr('Opcje dodatkowe')}
           </h3>
           <AddonSelector
             addons={perPersonAddons}
@@ -765,7 +765,7 @@ export default function FormRenderer({
       {addonsConfig.enabled && perRegistrationAddons.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
-            Opcje dodatkowe
+            {tr('Opcje dodatkowe')}
           </h3>
           <AddonSelector
             addons={perRegistrationAddons}
@@ -801,7 +801,7 @@ export default function FormRenderer({
           {!isWaitlistMode && pricing.paymentMethods && pricing.paymentMethods.length > 0 && pricing.paymentRequired && (
             <div className="mt-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Wybierz metodę płatności:
+                {tr('Wybierz metodę płatności:')}
               </p>
               <div className="space-y-2">
                 {pricing.paymentMethods.includes('paypal') && (
@@ -835,7 +835,7 @@ export default function FormRenderer({
                     }`}
                   >
                     <CreditCard size={20} className="text-accent-primary" />
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Przelew bankowy</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{tr('Przelew bankowy')}</span>
                   </button>
                 )}
 
@@ -882,7 +882,7 @@ export default function FormRenderer({
                     clientId={pricing.paypal.clientId}
                     amount={totalPrice}
                     currency={pricing.currency || 'PLN'}
-                    description={pricing.paypal.description || `Płatność za: ${title}`}
+                    description={pricing.paypal.description || tr('Płatność za: {title}', { title })}
                     sandbox={pricing.paypal.sandbox !== false}
                     onSuccess={handlePayPalSuccess}
                     onError={(err) => console.error('PayPal error:', err)}
@@ -900,7 +900,7 @@ export default function FormRenderer({
                     apiKey={pricing.przelewy24.apiKey}
                     amount={totalPrice}
                     currency={pricing.currency || 'PLN'}
-                    description={pricing.przelewy24.description || `Płatność za: ${title}`}
+                    description={pricing.przelewy24.description || tr('Płatność za: {title}', { title })}
                     sandbox={pricing.przelewy24.sandbox !== false}
                     formId={settings?.formId}
                     email={contactAnswers[contactFields.find(f => f.type === 'email')?.id] || answers[fields.find(f => f.type === 'email')?.id] || ''}
@@ -917,7 +917,7 @@ export default function FormRenderer({
               {selectedPaymentMethod === 'transfer' && pricing.bankAccount && (
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-1">Numer konta do przelewu:</p>
+                    <p className="text-xs text-gray-500 mb-1">{tr('Numer konta do przelewu:')}</p>
                     <p className="font-mono text-sm text-gray-900 dark:text-white">
                       {pricing.bankAccount}
                     </p>
@@ -947,7 +947,7 @@ export default function FormRenderer({
           <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800">
             <p className="text-sm text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
               <AlertCircle size={16} />
-              Dokonaj płatności {selectedPaymentMethod === 'paypal' ? 'PayPal' : 'Przelewy24'} przed wysłaniem formularza.
+              {tr('Dokonaj płatności {method} przed wysłaniem formularza.', { method: selectedPaymentMethod === 'paypal' ? 'PayPal' : 'Przelewy24' })}
             </p>
           </div>
         )}

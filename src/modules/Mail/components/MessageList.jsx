@@ -4,7 +4,7 @@ import {
   FolderInput, CheckSquare, Square, RefreshCw, Search,
   ChevronDown, Mail, MailOpen
 } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 export default function MessageList({
   messages,
@@ -109,13 +109,13 @@ export default function MessageList({
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
-      return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' });
     } else if (diffDays === 1) {
       return 'wczoraj';
     } else if (diffDays < 7) {
-      return date.toLocaleDateString('pl-PL', { weekday: 'short' });
+      return date.toLocaleDateString(appLocale(), { weekday: 'short' });
     } else {
-      return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+      return date.toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' });
     }
   };
 
@@ -126,11 +126,13 @@ export default function MessageList({
         <div className="flex items-center gap-3 mb-3">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white">{folderName}</h2>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            ({messages.length} wiadomości)
+            ({tr('{n} wiadomości', { n: messages.length })})
           </span>
           <button
             onClick={onRefresh}
             disabled={loading}
+            aria-label={tr('Odśwież')}
+            title={tr('Odśwież')}
             className="ml-auto p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
@@ -154,6 +156,7 @@ export default function MessageList({
       <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         <button
           onClick={selectAll}
+          aria-label={tr('Zaznacz wszystkie')}
           className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
         >
           {selectedIds.size === messages.length && messages.length > 0 ? (
@@ -166,21 +169,21 @@ export default function MessageList({
         {selectedIds.size > 0 && (
           <>
             <span className="text-xs text-gray-500 dark:text-gray-400">
-              {selectedIds.size} zaznaczonych
+              {tr('{n} zaznaczonych', { n: selectedIds.size })}
             </span>
 
             <div className="flex items-center gap-1 ml-2">
               <button
                 onClick={() => handleBulkAction('read')}
                 className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-                title="Oznacz jako przeczytane"
+                title={tr('Oznacz jako przeczytane')} aria-label={tr('Oznacz jako przeczytane')}
               >
                 <MailOpen size={16} />
               </button>
               <button
                 onClick={() => handleBulkAction('unread')}
                 className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-                title="Oznacz jako nieprzeczytane"
+                title={tr('Oznacz jako nieprzeczytane')} aria-label={tr('Oznacz jako nieprzeczytane')}
               >
                 <Mail size={16} />
               </button>
@@ -190,7 +193,7 @@ export default function MessageList({
                 <button
                   onClick={() => setShowMoveMenu(!showMoveMenu)}
                   className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-                  title={tr('Przenieś')}
+                  title={tr('Przenieś')} aria-label={tr('Przenieś')}
                 >
                   <FolderInput size={16} />
                 </button>
@@ -217,7 +220,7 @@ export default function MessageList({
                 <button
                   onClick={() => setShowLabelMenu(!showLabelMenu)}
                   className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-                  title="Etykiety"
+                  title={tr('Etykiety')} aria-label={tr('Etykiety')}
                 >
                   <Tag size={16} />
                 </button>
@@ -243,7 +246,7 @@ export default function MessageList({
               <button
                 onClick={() => handleBulkAction('delete')}
                 className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                title={tr('Usuń')}
+                title={tr('Usuń')} aria-label={tr('Usuń')}
               >
                 <Trash2 size={16} />
               </button>
@@ -285,6 +288,8 @@ export default function MessageList({
                 {/* Checkbox */}
                 <button
                   onClick={(e) => toggleSelect(e, message.id)}
+                  aria-label={tr('Zaznacz wiadomość')}
+                  aria-pressed={isChecked}
                   className="flex-shrink-0 p-0.5 mt-1"
                 >
                   {isChecked ? (
@@ -300,6 +305,7 @@ export default function MessageList({
                     e.stopPropagation();
                     onToggleStar(message.id);
                   }}
+                  aria-label={message.is_starred ? tr('Usuń gwiazdkę') : tr('Oznacz gwiazdką')}
                   className="flex-shrink-0 p-0.5 mt-1"
                 >
                   <Star

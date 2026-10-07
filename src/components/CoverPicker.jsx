@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useCan } from './Can';
 import { invalidateModuleLabels, useModuleCover } from '../hooks/useModuleLabel';
 import { toast } from '../lib/toast';
+import { tr } from '../i18n';
 
 // Zmiana okładki modułu (jak „Zmień okładkę" w Monday). Zapis do app_settings 'module_covers'
 // ({ key: {type,value} }) — bez migracji. Widoczne TYLKO dla admina.
@@ -55,8 +56,8 @@ export default function CoverPicker({ moduleKey }) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('Wybierz plik graficzny'); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Maksymalny rozmiar to 5 MB'); return; }
+    if (!file.type.startsWith('image/')) { toast.error(tr('Wybierz plik graficzny')); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(tr('Maksymalny rozmiar to 5 MB')); return; }
     setBusy(true);
     try {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
@@ -66,7 +67,7 @@ export default function CoverPicker({ moduleKey }) {
       const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
       await save({ type: 'image', value: data.publicUrl });
     } catch {
-      toast.error('Nie udało się wgrać pliku');
+      toast.error(tr('Nie udało się wgrać pliku'));
       setBusy(false);
     }
   };
@@ -86,9 +87,9 @@ export default function CoverPicker({ moduleKey }) {
       if (error) throw error;
       invalidateModuleLabels();
       setOpen(false);
-      toast.success('Okładka zapisana');
+      toast.success(tr('Okładka zapisana'));
     } catch {
-      toast.error('Nie udało się zapisać okładki');
+      toast.error(tr('Nie udało się zapisać okładki'));
     } finally { setBusy(false); }
   };
 
@@ -106,28 +107,28 @@ export default function CoverPicker({ moduleKey }) {
       invalidateModuleLabels();
       toast.success(msg);
     } catch {
-      toast.error('Nie udało się zapisać');
+      toast.error(tr('Nie udało się zapisać'));
     } finally { setBusy(false); }
   };
-  const saveStyle = (style) => savePatch({ style }, 'Zapisano styl nagłówka');
-  const saveHeight = (height) => savePatch({ height }, 'Zapisano wysokość banera');
+  const saveStyle = (style) => savePatch({ style }, tr('Zapisano styl nagłówka'));
+  const saveHeight = (height) => savePatch({ height }, tr('Zapisano wysokość banera'));
 
   return (
     <div className="relative">
       <input ref={fileRef} type="file" accept="image/*" onChange={uploadFile} className="hidden" />
       <button onClick={() => setOpen((o) => !o)} disabled={busy}
         className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white/90 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 shadow-sm hover:bg-white dark:hover:bg-gray-900 backdrop-blur-sm disabled:opacity-70">
-        {busy ? <Loader2 size={13} className="animate-spin" /> : <ImageIcon size={13} />} Zmień okładkę
+        {busy ? <Loader2 size={13} className="animate-spin" /> : <ImageIcon size={13} />} {tr('Zmień okładkę')}
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-2 z-[100] w-72 max-h-[70vh] overflow-y-auto custom-scrollbar bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-3">
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Styl nagłówka</div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Styl nagłówka')}</div>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {[
-                { key: 'gradient', label: 'Gradient', hint: 'przyciemnienie u dołu' },
-                { key: 'glass', label: 'Matowy pasek', hint: 'rozmyty pasek' },
+                { key: 'gradient', label: tr('Gradient'), hint: tr('przyciemnienie u dołu') },
+                { key: 'glass', label: tr('Matowy pasek'), hint: tr('rozmyty pasek') },
               ].map((s) => (
                 <button key={s.key} onClick={() => saveStyle(s.key)}
                   className={`text-left rounded-lg px-2.5 py-2 border transition ${curStyle === s.key ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5' : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'}`}>
@@ -136,13 +137,13 @@ export default function CoverPicker({ moduleKey }) {
                 </button>
               ))}
             </div>
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Wysokość banera</div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Wysokość banera')}</div>
             <div className="grid grid-cols-4 gap-1.5 mb-3">
               {[
-                { key: 'off', label: 'Bez' },
-                { key: 'sm', label: 'Niski' },
-                { key: 'md', label: 'Średni' },
-                { key: 'lg', label: 'Wysoki' },
+                { key: 'off', label: tr('Bez') },
+                { key: 'sm', label: tr('Niski') },
+                { key: 'md', label: tr('Średni') },
+                { key: 'lg', label: tr('Wysoki') },
               ].map((h) => (
                 <button key={h.key} onClick={() => saveHeight(h.key)}
                   className={`text-xs py-1.5 rounded-lg border transition ${curHeight === h.key ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100 font-semibold' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary/50'}`}>
@@ -150,48 +151,48 @@ export default function CoverPicker({ moduleKey }) {
                 </button>
               ))}
             </div>
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Gradient</div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Gradient')}</div>
             <div className="grid grid-cols-5 gap-2 mb-3">
               {GRADIENTS.map((g) => (
                 <button key={g} onClick={() => save({ type: 'gradient', value: g })} className="h-9 rounded-lg ring-1 ring-black/5 hover:scale-105 transition" style={{ background: g }} />
               ))}
             </div>
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Pastele (delikatne)</div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Pastele (delikatne)')}</div>
             <div className="grid grid-cols-5 gap-2 mb-3">
               {PASTELS.map((g) => (
                 <button key={g} onClick={() => save({ type: 'gradient', value: g })} className="h-9 rounded-lg ring-1 ring-black/10 hover:scale-105 transition" style={{ background: g }} />
               ))}
             </div>
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Kolor</div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Kolor')}</div>
             <div className="grid grid-cols-5 gap-2 mb-3">
               {COLORS.map((c) => (
                 <button key={c} onClick={() => save({ type: 'color', value: c })} className="h-9 rounded-lg ring-1 ring-black/5 hover:scale-105 transition" style={{ background: c }} />
               ))}
             </div>
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Własny kolor</div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Własny kolor')}</div>
             <div className="flex gap-1.5 items-center mb-3">
               <input type="color" value={isHex(custom) ? custom : '#6366f1'} onChange={(e) => setCustom(e.target.value)}
-                className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer shrink-0 p-0.5" title="Wybierz kolor" />
+                className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer shrink-0 p-0.5" title={tr('Wybierz kolor')} />
               <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="#RRGGBB"
                 onKeyDown={(e) => { if (e.key === 'Enter' && isHex(custom)) save({ type: 'color', value: custom.trim() }); }}
                 className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none text-gray-800 dark:text-gray-100" />
               <button onClick={() => isHex(custom) && save({ type: 'color', value: custom.trim() })} disabled={!isHex(custom)}
                 className="px-3 rounded-lg bg-accent-primary text-white text-sm shrink-0 disabled:opacity-40">OK</button>
             </div>
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Obraz</div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Obraz')}</div>
             <button onClick={() => fileRef.current?.click()} disabled={busy}
               className="w-full flex items-center justify-center gap-2 py-2 mb-1.5 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 hover:border-accent-primary/50 hover:text-accent-primary disabled:opacity-50">
-              <Upload size={14} /> Prześlij plik
+              <Upload size={14} /> {tr('Prześlij plik')}
             </button>
             <div className="flex gap-1.5">
-              <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="…lub wklej URL"
+              <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={tr('…lub wklej URL')}
                 onKeyDown={(e) => { if (e.key === 'Enter' && url.trim()) save({ type: 'image', value: url.trim() }); }}
                 className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none text-gray-800 dark:text-gray-100" />
               <button onClick={() => url.trim() && save({ type: 'image', value: url.trim() })}
                 className="px-3 rounded-lg bg-accent-primary text-white text-sm shrink-0">OK</button>
             </div>
             <button onClick={() => save(null)} className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs text-gray-400 hover:text-accent-primary">
-              <RotateCcw size={12} /> Przywróć domyślną
+              <RotateCcw size={12} /> {tr('Przywróć domyślną')}
             </button>
           </div>
         </>

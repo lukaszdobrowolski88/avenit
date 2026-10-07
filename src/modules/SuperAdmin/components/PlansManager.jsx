@@ -43,16 +43,16 @@ export default function PlansManager() {
     { key: 'calendar', label: tr('Kalendarz') },
     { key: 'members', label: tr('Zarządzanie członkami') },
     { key: 'groups', label: tr('Grupy domowe') },
-    { key: 'kids_checkin', label: 'Check-in dzieci' },
+    { key: 'kids_checkin', label: tr('Check-in dzieci') },
     { key: 'events', label: tr('Wydarzenia') },
     { key: 'email', label: tr('Wysyłka emaili') },
     { key: 'finance', label: tr('Moduł finansowy') },
     { key: 'forms', label: tr('Formularze') },
-    { key: 'basic_reports', label: 'Podstawowe raporty' },
-    { key: 'advanced_reports', label: 'Zaawansowane raporty' },
+    { key: 'basic_reports', label: tr('Podstawowe raporty') },
+    { key: 'advanced_reports', label: tr('Zaawansowane raporty') },
     { key: 'api', label: tr('Dostęp do API') },
-    { key: 'white_label', label: 'White label' },
-    { key: 'priority_support', label: 'Priorytetowe wsparcie' },
+    { key: 'white_label', label: tr('White label') },
+    { key: 'priority_support', label: tr('Priorytetowe wsparcie') },
     { key: 'custom_domain', label: tr('Własna domena') }
   ];
 
@@ -133,7 +133,7 @@ export default function PlansManager() {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            {editingPlan ? 'Edycja planu' : 'Nowy plan'}
+            {editingPlan ? tr('Edycja planu') : tr('Nowy plan')}
           </h2>
           <button
             onClick={() => setShowForm(false)}
@@ -147,11 +147,11 @@ export default function PlansManager() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Basic info */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Informacje podstawowe</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{tr('Informacje podstawowe')}</h3>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nazwa planu
+                  {tr('Nazwa planu')}
                 </label>
                 <input
                   type="text"
@@ -163,7 +163,7 @@ export default function PlansManager() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Slug (URL)
+                  {tr('Slug (URL)')}
                 </label>
                 <input
                   type="text"
@@ -175,7 +175,7 @@ export default function PlansManager() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Opis
+                  {tr('Opis')}
                 </label>
                 <textarea
                   value={formData.description}
@@ -188,7 +188,7 @@ export default function PlansManager() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Cena miesięczna (grosze)
+                    {tr('Cena miesięczna (grosze)')}
                   </label>
                   <input
                     type="number"
@@ -201,7 +201,7 @@ export default function PlansManager() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Cena roczna (grosze)
+                    {tr('Cena roczna (grosze)')}
                   </label>
                   <input
                     type="number"
@@ -216,16 +216,16 @@ export default function PlansManager() {
 
             {/* Limits */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Limity (-1 = bez limitu)</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{tr('Limity (-1 = bez limitu)')}</h3>
 
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { key: 'max_members', label: tr('Członkowie') },
                   { key: 'max_users', label: tr('Użytkownicy') },
                   { key: 'max_groups', label: tr('Grupy') },
-                  { key: 'max_kids', label: 'Dzieci' },
+                  { key: 'max_kids', label: tr('Dzieci') },
                   { key: 'max_events', label: tr('Wydarzenia') },
-                  { key: 'max_storage_mb', label: 'Storage (MB)' }
+                  { key: 'max_storage_mb', label: tr('Storage (MB)') }
                 ].map(({ key, label }) => (
                   <div key={key}>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -243,7 +243,7 @@ export default function PlansManager() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Dni trialu
+                  {tr('Dni trialu')}
                 </label>
                 <input
                   type="number"
@@ -261,7 +261,7 @@ export default function PlansManager() {
                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                     className="rounded border-gray-300"
                   />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Aktywny</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{tr('Aktywny')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -270,7 +270,7 @@ export default function PlansManager() {
                     onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
                     className="rounded border-gray-300"
                   />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Publiczny</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{tr('Publiczny')}</span>
                 </label>
               </div>
             </div>
@@ -278,7 +278,7 @@ export default function PlansManager() {
 
           {/* Features */}
           <div className="mt-6">
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Funkcje</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">{tr('Funkcje')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {featuresList.map(({ key, label }) => (
                 <label
@@ -309,7 +309,7 @@ export default function PlansManager() {
               onClick={() => setShowForm(false)}
               className="px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
             >
-              Anuluj
+              {tr('Anuluj')}
             </button>
             <button
               onClick={handleSave}
@@ -317,7 +317,7 @@ export default function PlansManager() {
               className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-accent-primary text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50"
             >
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              Zapisz
+              {tr('Zapisz')}
             </button>
           </div>
         </div>
@@ -330,7 +330,7 @@ export default function PlansManager() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Plany subskrypcji
+            {tr('Plany subskrypcji')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             {tr('Zarządzaj dostępnymi planami')}
@@ -341,7 +341,7 @@ export default function PlansManager() {
           className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-accent-primary text-white rounded-xl font-medium hover:shadow-lg transition"
         >
           <Plus size={18} />
-          Nowy plan
+          {tr('Nowy plan')}
         </button>
       </div>
 
@@ -376,7 +376,7 @@ export default function PlansManager() {
 
             <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
               {formatPrice(plan.price_monthly)}
-              <span className="text-sm font-normal text-gray-500">/mies.</span>
+              <span className="text-sm font-normal text-gray-500">{tr('/mies.')}</span>
             </div>
 
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
@@ -386,12 +386,12 @@ export default function PlansManager() {
             <div className="flex flex-wrap gap-1">
               {!plan.is_active && (
                 <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded text-xs">
-                  Nieaktywny
+                  {tr('Nieaktywny')}
                 </span>
               )}
               {!plan.is_public && (
                 <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded text-xs">
-                  Ukryty
+                  {tr('Ukryty')}
                 </span>
               )}
             </div>

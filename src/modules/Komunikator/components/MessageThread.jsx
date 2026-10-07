@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { Loader, MessageSquare, Upload, ChevronDown, Megaphone } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
@@ -22,7 +22,16 @@ import useMediaGallery from '../hooks/useMediaGallery';
 import useMessageSearch from '../hooks/useMessageSearch';
 import { usePresence } from '../../../hooks/usePresence';
 import { groupMessagesByDate } from '../utils/messageHelpers';
+import { canPostIn, sameEmail } from '../utils/chatLogic';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
+
+// Błąd już pokazany użytkownikowi (żeby wywołujący nie pokazywał drugiego komunikatu).
+const handled = (err) => {
+  const e = err && typeof err === 'object' ? err : new Error(String(err));
+  try { e.handled = true; } catch { /* zamrożony obiekt */ }
+  return e;
+};
 
 export default function MessageThread({
   conversation,
@@ -30,8 +39,10 @@ export default function MessageThread({
   onBack,
   onOpenSettings,
   onMarkAsRead,
+  onToggleMute,
   onDeleteConversation,
-  allConversations = []
+  allConversations = [],
+  perms = {}
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -50,23 +61,27 @@ export default function MessageThread({
   const [initialLastRead, setInitialLastRead] = useState(null);
 
   const {
-    messages, loading, hasMore,
-    sendMessage, editMessage, deleteMessage, loadMore, addMessage, forwardMessage
+    messages, loading, loadingMore, hasMore,
+    sendMessage, editMessage, deleteMessage, loadMore, addMessage, applyRemoteUpdate, removeMessageLocal, forwardMessage
   } = useMessages(conversation?.id, userEmail);
 
-  const { typingUsers, startTyping, stopTyping } = useTypingStatus(conversation?.id, userEmail);
-  const { isMessageRead, getReadBy, getDeliveryStatus, markMessagesAsRead } = useReadReceipts(conversation?.id, userEmail);
+  const { typingUsers, startTyping, stopTyping } = useTypingStatus(conversation?.id, userEmail, { canWrite: perms.typing !== false });
+  const { isMessageRead, getReadBy, getDeliveryStatus, markMessagesAsRead, fetchReadReceipts } = useReadReceipts(conversation?.id, userEmail);
   const { fetchReactions, toggleReaction, getReactionsForMessage } = useReactions(conversation?.id, userEmail);
   const { fetchVotes, castVote, getResults } = usePolls(conversation?.id, userEmail);
   const { fetchResponses, togglePraying, getForMessage } = usePrayer(conversation?.id, userEmail);
   const { pinnedMessages, togglePin, isMessagePinned } = usePinnedMessages(conversation?.id, userEmail);
-  const { images, files, loading: mediaLoading } = useMediaGallery(conversation?.id);
+  const { images, files, loading: mediaLoading } = useMediaGallery(conversation?.id, showMediaGallery);
   const { results: searchResults, loading: searchLoading, search } = useMessageSearch(conversation?.id);
 
   const isAdmin = conversation?.myRole === 'admin';
   const postingPolicy = conversation?.posting_policy || 'everyone';
   const isAnnouncement = conversation?.type === 'announcement' || postingPolicy === 'admins';
-  const canPost = postingPolicy !== 'admins' || isAdmin;
+  const canPost = canPostIn(conversation);
+  const canEditOwn = perms.editMessages !== false;
+  const canPin = isAdmin && perms.pin !== false;
+  // Do przekazania: tylko rozmowy, w których mogę pisać (kanał ogłoszeń — gdy jestem administratorem).
+  const forwardTargets = useMemo(() => allConversations.filter(canPostIn), [allConversations]);
 
   // Zapamiętaj last_read_at przy wejściu (do separatora nieprzeczytanych)
   useEffect(() => {
@@ -77,7 +92,7 @@ export default function MessageThread({
   const firstUnreadId = useMemo(() => {
     const boundary = initialLastRead ? new Date(initialLastRead) : null;
     const firstOther = messages.find(m =>
-      m.sender_email !== userEmail && (!boundary || new Date(m.created_at) > boundary)
+      !sameEmail(m.sender_email, userEmail) && (!boundary || new Date(m.created_at) > boundary)
     );
     // Nie pokazuj separatora, jeśli to pierwsza wiadomość całej rozmowy
     if (firstOther && messages[0] && firstOther.id === messages[0].id && !boundary) return null;
@@ -86,7 +101,7 @@ export default function MessageThread({
 
   const senderEmails = useMemo(() => {
     const emails = new Set();
-    messages.forEach(msg => { if (msg.sender_email && msg.sender_email !== userEmail) emails.add(msg.sender_email); });
+    messages.forEach(msg => { if (msg.sender_email && !sameEmail(msg.sender_email, userEmail)) emails.add(msg.sender_email); });
     return Array.from(emails);
   }, [messages, userEmail]);
   const { getStatus } = usePresence(senderEmails);
@@ -100,14 +115,15 @@ export default function MessageThread({
   }, [typingUsers, conversation?.participants]);
 
   const handleNewMessage = useCallback(async (newMessage) => {
-    if (newMessage.sender_email !== userEmail) {
+    if (!sameEmail(newMessage.sender_email, userEmail)) {
       await addMessage(newMessage);
       onMarkAsRead?.(conversation?.id);
     }
   }, [addMessage, userEmail, onMarkAsRead, conversation?.id]);
 
-  const handleMessageUpdate = useCallback(() => {}, []);
-  const handleMessageDelete = useCallback(() => {}, []);
+  // Edycja i usunięcie (soft delete) przychodzą z realtime jako UPDATE.
+  const handleMessageUpdate = useCallback((row) => applyRemoteUpdate(row), [applyRemoteUpdate]);
+  const handleMessageDelete = useCallback((id) => removeMessageLocal(id), [removeMessageLocal]);
 
   useRealtimeMessages(conversation?.id, handleNewMessage, handleMessageUpdate, handleMessageDelete);
 
@@ -115,21 +131,51 @@ export default function MessageThread({
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   }, []);
 
+  // Przewiń na dół, gdy przyszła NOWA wiadomość na końcu (doczytanie starszych nie przewija).
+  const lastMessage = messages[messages.length - 1];
+  const didInitialScrollRef = useRef(false);
   useEffect(() => {
-    if (messages.length > 0 && !showScrollBtn) scrollToBottom();
+    if (!lastMessage) return;
+    if (!didInitialScrollRef.current) {
+      didInitialScrollRef.current = true;
+      scrollToBottom(false);
+      return;
+    }
+    if (!showScrollBtn || sameEmail(lastMessage.sender_email, userEmail)) scrollToBottom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages.length]);
+  }, [lastMessage?.id]);
+
+  // Po doczytaniu starszych wiadomości zachowaj miejsce, które użytkownik czytał.
+  const restoreScrollRef = useRef(null);
+  useLayoutEffect(() => {
+    const r = restoreScrollRef.current;
+    const container = messagesContainerRef.current;
+    if (!r || !container || messages[0]?.id === r.firstId) return;
+    container.scrollTop = container.scrollHeight - r.height + r.top;
+    restoreScrollRef.current = null;
+  }, [messages]);
+
+  const handleLoadMore = useCallback(async () => {
+    const container = messagesContainerRef.current;
+    if (container) restoreScrollRef.current = { height: container.scrollHeight, top: container.scrollTop, firstId: messages[0]?.id };
+    try {
+      await loadMore();
+    } catch (err) {
+      restoreScrollRef.current = null;
+      toast.error(err, { fallback: tr('Nie udało się wczytać starszych wiadomości.') });
+    }
+  }, [loadMore, messages]);
 
   useEffect(() => {
     if (conversation?.id && conversation.unreadCount > 0) onMarkAsRead?.(conversation.id);
   }, [conversation?.id, conversation?.unreadCount, onMarkAsRead]);
 
+  // Potwierdzenia: pobierz dla wczytanych wiadomości i oznacz cudze jako przeczytane (każdą raz).
   useEffect(() => {
-    if (messages.length > 0 && userEmail) {
-      const unreadMessageIds = messages.filter(m => m.sender_email !== userEmail).map(m => m.id);
-      if (unreadMessageIds.length > 0) markMessagesAsRead(unreadMessageIds);
-    }
-  }, [messages, userEmail, markMessagesAsRead]);
+    if (messages.length === 0 || !userEmail) return;
+    fetchReadReceipts(messages.map(m => m.id));
+    markMessagesAsRead(messages);
+  }, [messages, userEmail, markMessagesAsRead, fetchReadReceipts]);
 
   // Pobierz reakcje / głosy / modlitwy dla wiadomości
   useEffect(() => {
@@ -145,33 +191,78 @@ export default function MessageThread({
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
-    if (!loading && hasMore && container.scrollTop < 100) loadMore();
+    if (!loading && !loadingMore && hasMore && container.scrollTop < 100) handleLoadMore();
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     setShowScrollBtn(distanceFromBottom > 300);
-  }, [loading, hasMore, loadMore]);
+  }, [loading, loadingMore, hasMore, handleLoadMore]);
 
+  // Wysyłka: błąd (np. „W tym kanale piszą tylko administratorzy”, brak sieci) pokazujemy od razu,
+  // a wpisany tekst i załączniki zostają w polu (MessageInput czyści je dopiero po sukcesie).
   const handleSendMessage = async (content, attachments, replyToId = null, extra = {}) => {
     stopTyping();
-    await sendMessage(content, attachments, replyToId, extra);
+    try {
+      await sendMessage(content, attachments, replyToId, extra);
+    } catch (err) {
+      console.error('Error sending message:', err);
+      toast.error(err, { fallback: tr('Nie udało się wysłać wiadomości. Spróbuj ponownie.') });
+      throw handled(err);
+    }
     setReplyingTo(null);
     scrollToBottom();
   };
 
   const handleCreatePoll = async (pollMeta) => {
-    await sendMessage(pollMeta.question, [], null, { messageType: 'poll', metadata: pollMeta });
-    scrollToBottom();
+    await handleSendMessage(pollMeta.question, [], null, { messageType: 'poll', metadata: pollMeta });
   };
 
   const handleShareEvent = async (eventMeta) => {
-    await sendMessage(eventMeta.title || tr('Wydarzenie'), [], null, { messageType: 'event', metadata: eventMeta });
-    scrollToBottom();
+    await handleSendMessage(eventMeta.title || tr('Wydarzenie'), [], null, { messageType: 'event', metadata: eventMeta });
   };
+
+  const handleEditMessage = useCallback(async (messageId, content) => {
+    try {
+      await editMessage(messageId, content);
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się zapisać zmian w wiadomości.') });
+      throw handled(err);
+    }
+  }, [editMessage]);
+
+  const handleDeleteMessage = useCallback(async (messageId) => {
+    try {
+      await deleteMessage(messageId);
+      toast.success(tr('Wiadomość usunięta'));
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się usunąć wiadomości.') });
+      throw handled(err);
+    }
+  }, [deleteMessage]);
+
+  const handleTogglePin = useCallback(async (messageId) => {
+    try {
+      await togglePin(messageId);
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się zmienić przypięcia wiadomości.') });
+    }
+  }, [togglePin]);
 
   const handleReply = useCallback((message) => setReplyingTo(message), []);
   const handleCancelReply = useCallback(() => setReplyingTo(null), []);
   const handleForward = useCallback((message) => setForwardingMessage(message), []);
+  // Przekazanie: każda rozmowa osobno; modal zamyka się tylko, gdy coś się udało.
   const handleForwardSubmit = useCallback(async (message, targetConversationIds) => {
-    await forwardMessage(message, targetConversationIds);
+    const results = await forwardMessage(message, targetConversationIds);
+    const failed = results.filter(r => !r.success);
+    const okCount = results.length - failed.length;
+    if (failed.length === 0) {
+      toast.success(okCount === 1 ? tr('Wiadomość przekazana') : tr('Wiadomość przekazana do {n} rozmów', { n: okCount }));
+      return;
+    }
+    if (okCount === 0) {
+      toast.error(failed[0].error, { fallback: tr('Nie udało się przekazać wiadomości.') });
+      throw handled(failed[0].error);
+    }
+    toast.error(tr('Przekazano do {ok} z {total} rozmów. Do pozostałych nie udało się wysłać.', { ok: okCount, total: results.length }));
   }, [forwardMessage]);
 
   const scrollToMessage = useCallback((messageId) => {
@@ -184,7 +275,7 @@ export default function MessageThread({
   }, []);
 
   const handleTyping = useCallback(() => startTyping(), [startTyping]);
-  const handleToggleMute = async () => {};
+  const handleToggleMute = onToggleMute && conversation?.id ? () => onToggleMute(conversation.id) : undefined;
 
   const handleDragEnter = useCallback((e) => {
     e.preventDefault(); e.stopPropagation(); dragCounter.current++;
@@ -224,7 +315,7 @@ export default function MessageThread({
       onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}
     >
       {isDragging && (
-        <div className="absolute inset-0 z-50 bg-gradient-to-br from-accent-primary-light/20 to-accent-secondary-light/20 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-accent-primary-light rounded-xl m-2 pointer-events-none animate-pulse">
+        <div className="absolute inset-0 z-50 bg-gradient-to-br from-accent-primary-light/20 to-accent-secondary-light/20 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-accent-primary-light rounded-xl m-2 pointer-events-none motion-safe:animate-pulse">
           <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 border border-accent-primary-lighter/50 dark:border-accent-primary-dark/50">
             <div className="w-20 h-20 bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 rounded-2xl flex items-center justify-center shadow-lg shadow-accent-primary-light/20">
               <Upload size={36} className="text-accent-primary" />
@@ -240,7 +331,7 @@ export default function MessageThread({
         onBack={onBack}
         onOpenSettings={onOpenSettings}
         onToggleMute={handleToggleMute}
-        onDelete={onDeleteConversation}
+        onDelete={conversation.type === 'direct' && isAdmin ? onDeleteConversation : undefined}
         onOpenMediaGallery={() => setShowMediaGallery(true)}
         onOpenSearch={() => setShowSearch(true)}
         showBackButton={true}
@@ -259,11 +350,11 @@ export default function MessageThread({
         isExpanded={showPinnedPanel}
         onToggleExpand={() => setShowPinnedPanel(!showPinnedPanel)}
         onScrollToMessage={scrollToMessage}
-        onUnpin={togglePin}
-        canUnpin={isAdmin}
+        onUnpin={handleTogglePin}
+        canUnpin={canPin}
       />
 
-      <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 custom-scrollbar [overflow-anchor:none]">
         {loading && messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center">
@@ -283,9 +374,9 @@ export default function MessageThread({
           <>
             {hasMore && (
               <div className="flex justify-center py-3 mb-4">
-                <button onClick={loadMore} disabled={loading}
+                <button onClick={handleLoadMore} disabled={loadingMore}
                   className="px-4 py-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-accent-primary-lighter/50 dark:border-accent-primary-dark/50 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50">
-                  {loading ? <span className="flex items-center gap-2"><Loader size={14} className="animate-spin" />{tr('Ładowanie...')}</span> : tr('Załaduj starsze wiadomości')}
+                  {loadingMore ? <span className="flex items-center gap-2"><Loader size={14} className="animate-spin" />{tr('Ładowanie...')}</span> : tr('Załaduj starsze wiadomości')}
                 </button>
               </div>
             )}
@@ -302,7 +393,7 @@ export default function MessageThread({
 
                 <div className="space-y-3">
                   {msgs.map((message, idx) => {
-                    const isOwn = message.sender_email === userEmail;
+                    const isOwn = sameEmail(message.sender_email, userEmail);
                     const prevMessage = msgs[idx - 1];
                     const showAvatar = !prevMessage ||
                       prevMessage.sender_email !== message.sender_email ||
@@ -325,13 +416,13 @@ export default function MessageThread({
                             isOwn={isOwn}
                             showAvatar={showAvatar}
                             senderStatus={!isOwn ? getStatus(message.sender_email) : null}
-                            onEdit={isOwn ? editMessage : undefined}
-                            onDelete={isOwn ? deleteMessage : undefined}
+                            onEdit={isOwn && canEditOwn ? handleEditMessage : undefined}
+                            onDelete={isOwn && canEditOwn ? handleDeleteMessage : undefined}
                             onReply={handleReply}
                             onForward={handleForward}
-                            onTogglePin={togglePin}
+                            onTogglePin={handleTogglePin}
                             isPinned={isMessagePinned(message.id)}
-                            canPin={isAdmin}
+                            canPin={canPin}
                             onScrollToMessage={scrollToMessage}
                             onToggleReaction={toggleReaction}
                             reactions={getReactionsForMessage(message.id)}
@@ -367,6 +458,7 @@ export default function MessageThread({
           onClick={() => { scrollToBottom(); setShowScrollBtn(false); }}
           className="absolute right-4 bottom-24 z-20 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/70 rounded-full shadow-lg hover:scale-105 transition-all text-gray-600 dark:text-gray-300"
           title={tr('Przewiń na dół')}
+          aria-label={tr('Przewiń na dół')}
         >
           <ChevronDown size={20} />
         </button>
@@ -390,7 +482,7 @@ export default function MessageThread({
         isOpen={!!forwardingMessage}
         onClose={() => setForwardingMessage(null)}
         message={forwardingMessage}
-        conversations={allConversations}
+        conversations={forwardTargets}
         currentUserEmail={userEmail}
         onForward={handleForwardSubmit}
       />

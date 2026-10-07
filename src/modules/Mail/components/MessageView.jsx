@@ -4,7 +4,7 @@ import {
   Archive, FolderInput, Tag, MoreVertical, Paperclip,
   Download, ExternalLink, ChevronDown, ChevronUp, Mail
 } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 
@@ -167,7 +167,7 @@ export default function MessageView({
   // Format daty
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
-    return new Date(dateStr).toLocaleString('pl-PL', {
+    return new Date(dateStr).toLocaleString(appLocale(), {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -220,6 +220,7 @@ export default function MessageView({
         {onBack && (
           <button
             onClick={onBack}
+            aria-label={tr('Wstecz')}
             className="lg:hidden p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} />
@@ -231,7 +232,7 @@ export default function MessageView({
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <Reply size={16} />
-          <span className="hidden sm:inline">Odpowiedz</span>
+          <span className="hidden sm:inline">{tr('Odpowiedz')}</span>
         </button>
 
         <button
@@ -239,7 +240,7 @@ export default function MessageView({
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <ReplyAll size={16} />
-          <span className="hidden sm:inline">Odpowiedz wszystkim</span>
+          <span className="hidden sm:inline">{tr('Odpowiedz wszystkim')}</span>
         </button>
 
         <button
@@ -254,6 +255,7 @@ export default function MessageView({
 
         <button
           onClick={() => onToggleStar(message.id)}
+          aria-label={message.is_starred ? tr('Usuń gwiazdkę') : tr('Oznacz gwiazdką')}
           className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <Star
@@ -270,7 +272,7 @@ export default function MessageView({
               setShowMoveMenu(!showMoveMenu);
             }}
             className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title={tr('Przenieś')}
+            title={tr('Przenieś')} aria-label={tr('Przenieś')}
           >
             <FolderInput size={18} />
           </button>
@@ -300,7 +302,7 @@ export default function MessageView({
               setShowLabelMenu(!showLabelMenu);
             }}
             className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Etykiety"
+            title={tr('Etykiety')} aria-label={tr('Etykiety')}
           >
             <Tag size={18} />
           </button>
@@ -332,7 +334,7 @@ export default function MessageView({
         <button
           onClick={() => onDelete(message.id)}
           className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-          title={tr('Usuń')}
+          title={tr('Usuń')} aria-label={tr('Usuń')}
         >
           <Trash2 size={18} />
         </button>
@@ -343,7 +345,7 @@ export default function MessageView({
         {/* Nagłówek */}
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            {message.subject || '(brak tematu)'}
+            {message.subject || tr('(brak tematu)')}
           </h1>
 
           <div className="flex items-start gap-4">
@@ -363,7 +365,7 @@ export default function MessageView({
               </div>
 
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                <span>do: {message.to_emails?.join(', ') || '—'}</span>
+                <span>{tr('do:')} {message.to_emails?.join(', ') || '—'}</span>
                 {message.cc_emails?.length > 0 && (
                   <span className="ml-2">CC: {message.cc_emails.join(', ')}</span>
                 )}
@@ -400,7 +402,7 @@ export default function MessageView({
             <div className="flex items-center gap-2 mb-3">
               <Paperclip size={16} className="text-gray-500" />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Załączniki ({message.attachments.length})
+                {tr('Załączniki')} ({message.attachments.length})
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -421,7 +423,7 @@ export default function MessageView({
                   <button
                     onClick={() => onDownloadAttachment(attachment)}
                     className="p-2 text-gray-500 hover:text-accent-primary-light hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                    title="Pobierz"
+                    title={tr('Pobierz')} aria-label={tr('Pobierz')}
                   >
                     <Download size={16} />
                   </button>

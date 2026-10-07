@@ -14,6 +14,7 @@ import { Avatar } from './cells/PeopleCell';
 import { getColumnType } from '../lib/columnTypes';
 import { useItemUpdates } from '../hooks/useItemUpdates';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr, appLocale } from '../../../i18n';
 
 const ACTION_LABEL = {
   created: 'utworzył(a) element',
@@ -24,12 +25,12 @@ const ACTION_LABEL = {
 };
 
 function timeAgo(iso) {
-  try { return new Date(iso).toLocaleString('pl-PL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+  try { return new Date(iso).toLocaleString(appLocale(), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); }
   catch { return ''; }
 }
 
 // Kompozytor aktualizacji z prostymi @wzmiankami (przycisk @ → wybór osoby).
-function Composer({ people, onSend, parentId, onCancel, placeholder = 'Napisz aktualizację...' }) {
+function Composer({ people, onSend, parentId, onCancel, placeholder = tr('Napisz aktualizację...') }) {
   const [text, setText] = useState('');
   const [mentions, setMentions] = useState([]); // [{email,name}]
   const addMention = (p) => { setText(t => `${t}${t && !t.endsWith(' ') ? ' ' : ''}@${p.name} `); setMentions(m => m.find(x => x.email === p.email) ? m : [...m, p]); };
@@ -52,8 +53,8 @@ function Composer({ people, onSend, parentId, onCancel, placeholder = 'Napisz ak
           )}
         </Popover>
         <div className="flex items-center gap-1">
-          {onCancel && <Button variant="ghost" size="sm" onClick={onCancel}>Anuluj</Button>}
-          <Button size="sm" icon={Send} onClick={submit} disabled={!text.trim()}>Wyślij</Button>
+          {onCancel && <Button variant="ghost" size="sm" onClick={onCancel}>{tr('Anuluj')}</Button>}
+          <Button size="sm" icon={Send} onClick={submit} disabled={!text.trim()}>{tr('Wyślij')}</Button>
         </div>
       </div>
     </div>
@@ -80,7 +81,7 @@ function UpdateItem({ u, replies, people, userEmail, onLike, onDelete, onReply }
               <Heart size={13} className={liked ? 'fill-red-500' : ''} /> {likes.length || ''}
             </button>
             <button onClick={() => setReplying(r => !r)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-accent-primary">
-              <CornerDownRight size={13} /> Odpowiedz
+              <CornerDownRight size={13} /> {tr('Odpowiedz')}
             </button>
             {u.author_email === userEmail && (
               <button onClick={() => onDelete(u.id)} className="text-xs text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>
@@ -101,7 +102,7 @@ function UpdateItem({ u, replies, people, userEmail, onLike, onDelete, onReply }
           )}
           {replying && (
             <div className="mt-2">
-              <Composer people={people} parentId={u.id} onSend={(t, m) => onReply(t, m, u.id)} onCancel={() => setReplying(false)} placeholder="Odpowiedz..." />
+              <Composer people={people} parentId={u.id} onSend={(t, m) => onReply(t, m, u.id)} onCancel={() => setReplying(false)} placeholder={tr('Odpowiedz...')} />
             </div>
           )}
         </div>
@@ -118,7 +119,7 @@ function SubitemRow({ sub, statusCol, subCount, onRename, onCell, onUpdateColumn
   return (
     <div className="flex items-center gap-2 py-1.5 group/sub">
       <CornerDownRight size={13} className="text-gray-300 dark:text-gray-600 shrink-0" />
-      <input value={name} placeholder="Podzadanie"
+      <input value={name} placeholder={tr('Podzadanie')}
         onChange={(e) => setName(e.target.value)}
         onBlur={() => { if (name !== sub.name) onRename(sub.id, name); }}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
@@ -130,8 +131,8 @@ function SubitemRow({ sub, statusCol, subCount, onRename, onCell, onUpdateColumn
             onChange={(v) => onCell(sub.id, statusCol.id, v)} onUpdateColumn={onUpdateColumn} />
         </div>
       )}
-      <button onClick={() => onOpen(sub)} className="opacity-0 group-hover/sub:opacity-100 text-gray-400 hover:text-accent-primary shrink-0 p-0.5" title="Otwórz podzadanie"><Maximize2 size={13} /></button>
-      <button onClick={() => onDelete(sub.id)} className="opacity-0 group-hover/sub:opacity-100 text-gray-300 hover:text-red-500 shrink-0 p-0.5" title="Usuń podzadanie"><Trash2 size={13} /></button>
+      <button onClick={() => onOpen(sub)} className="opacity-0 group-hover/sub:opacity-100 text-gray-400 hover:text-accent-primary shrink-0 p-0.5" title={tr('Otwórz podzadanie')}><Maximize2 size={13} /></button>
+      <button onClick={() => onDelete(sub.id)} className="opacity-0 group-hover/sub:opacity-100 text-gray-300 hover:text-red-500 shrink-0 p-0.5" title={tr('Usuń podzadanie')}><Trash2 size={13} /></button>
     </div>
   );
 }
@@ -157,8 +158,8 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
   useEffect(() => { setDescLocal(current.description || ''); }, [current.description]);
 
   const TABS = [
-    { id: 'updates', label: 'Aktualizacje', icon: MessageSquare, count: roots.length },
-    { id: 'activity', label: 'Aktywność', icon: Activity },
+    { id: 'updates', label: tr('Aktualizacje'), icon: MessageSquare, count: roots.length },
+    { id: 'activity', label: tr('Aktywność'), icon: Activity },
   ];
 
   const group = data.groups?.find(g => g.id === current.group_id);
@@ -178,15 +179,15 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
   const duplicate = async () => {
     let copy;
     if (current.parent_item_id) {
-      copy = await data.addSubitem({ id: current.parent_item_id, group_id: current.group_id }, `${current.name || 'Podzadanie'} (kopia)`);
+      copy = await data.addSubitem({ id: current.parent_item_id, group_id: current.group_id }, tr('{name} (kopia)', { name: current.name || tr('Podzadanie') }));
       if (copy) data.updateItem(copy.id, { cells: { ...(current.cells || {}) }, description: current.description || null });
     } else {
-      copy = await data.addItem(current.group_id, `${current.name || 'Element'} (kopia)`, { ...(current.cells || {}) });
+      copy = await data.addItem(current.group_id, tr('{name} (kopia)', { name: current.name || tr('Element') }), { ...(current.cells || {}) });
       if (copy && current.description) data.updateItem(copy.id, { description: current.description });
     }
     if (trail.length) goBack(); else onClose();
   };
-  const remove = async () => { if (await confirmDialog('Usunąć ten element?')) { data.deleteItem(current.id); if (trail.length) goBack(); else onClose(); } };
+  const remove = async () => { if (await confirmDialog(tr('Usunąć ten element?'))) { data.deleteItem(current.id); if (trail.length) goBack(); else onClose(); } };
 
   return (
     <Modal isOpen onClose={onClose} size="lg" className="!p-0 !overflow-hidden !max-h-[85vh] flex flex-col animate-modal-pop">
@@ -194,30 +195,30 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
       <div className="shrink-0 px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-start gap-2">
           {trail.length > 0 && (
-            <button onClick={goBack} title="Wróć do elementu nadrzędnego"
+            <button onClick={goBack} title={tr('Wróć do elementu nadrzędnego')}
               className="p-1.5 -ml-1 mt-0.5 shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"><ArrowLeft size={18} /></button>
           )}
-          <input value={nameLocal} placeholder="Nazwa elementu"
+          <input value={nameLocal} placeholder={tr('Nazwa elementu')}
             onChange={(e) => setNameLocal(e.target.value)}
             onBlur={() => { if (nameLocal !== current.name) data.updateItem(current.id, { name: nameLocal }); }}
             onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             className="flex-1 min-w-0 text-xl font-bold bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400" />
           <Popover align="right" width={180} triggerClassName="shrink-0" trigger={
-            <button className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition" title="Więcej"><MoreHorizontal size={18} /></button>
+            <button className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition" title={tr('Więcej')}><MoreHorizontal size={18} /></button>
           }>
             {({ close }) => (
               <div className="p-1.5">
-                <button onClick={() => { duplicate(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> Duplikuj</button>
-                <button onClick={() => { close(); remove(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> Usuń element</button>
+                <button onClick={() => { duplicate(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> {tr('Duplikuj')}</button>
+                <button onClick={() => { close(); remove(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń element')}</button>
               </div>
             )}
           </Popover>
-          <button onClick={onClose} aria-label="Zamknij"
+          <button onClick={onClose} aria-label={tr('Zamknij')}
             className="p-1.5 -mr-1 shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"><X size={18} /></button>
         </div>
         <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-400 min-w-0">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: groupColor }} />
-          <span className="truncate">{data.board?.name}{group ? ` › ${group.name}` : ''}{parent ? ` › ${parent.name || 'element'}` : ''}</span>
+          <span className="truncate">{data.board?.name}{group ? ` › ${group.name}` : ''}{parent ? ` › ${parent.name || tr('element')}` : ''}</span>
         </div>
       </div>
 
@@ -225,8 +226,8 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
         {/* Właściwości (lista etykieta → wartość) */}
         <section className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5">Właściwości</div>
-          {data.columns.length === 0 && <div className="text-sm text-gray-400 mb-2">Brak pól — dodaj poniżej.</div>}
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5">{tr('Właściwości')}</div>
+          {data.columns.length === 0 && <div className="text-sm text-gray-400 mb-2">{tr('Brak pól — dodaj poniżej.')}</div>}
           <div className="space-y-1">
             {data.columns.map(col => {
               const t = getColumnType(col.type);
@@ -250,7 +251,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
             <AddColumnMenu onAdd={data.addColumn} align="left" triggerClassName="inline-block mt-2"
               trigger={
                 <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-accent-primary px-1 py-1">
-                  <Plus size={15} /> Dodaj pole (status, priorytet, tagi, pliki…)
+                  <Plus size={15} /> {tr('Dodaj pole (status, priorytet, tagi, pliki…)')}
                 </button>
               } />
           )}
@@ -258,17 +259,17 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
 
         {/* Opis */}
         <section className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-1.5"><AlignLeft size={13} /> Opis</div>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-1.5"><AlignLeft size={13} /> {tr('Opis')}</div>
           <textarea value={descLocal} onChange={(e) => setDescLocal(e.target.value)}
             onBlur={() => { if (descLocal !== (current.description || '')) data.updateItem(current.id, { description: descLocal || null }); }}
-            placeholder="Dodaj opis, kontekst, linki…" rows={2}
+            placeholder={tr('Dodaj opis, kontekst, linki…')} rows={2}
             className="w-full text-sm rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-transparent focus:border-accent-primary/40 focus:bg-white dark:focus:bg-gray-800 p-3 outline-none resize-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400 transition" />
         </section>
 
         {/* Podzadania */}
         <section className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-1">
-            <CornerDownRight size={13} /> Podzadania {subitems.length > 0 && <span className="text-gray-400">({subitems.length})</span>}
+            <CornerDownRight size={13} /> {tr('Podzadania')} {subitems.length > 0 && <span className="text-gray-400">({subitems.length})</span>}
           </div>
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {subitems.map(sub => (
@@ -282,9 +283,9 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
             <Plus size={14} className="text-gray-400 shrink-0" />
             <input value={newSub} onChange={(e) => setNewSub(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') addSub(); }}
-              placeholder="Dodaj podzadanie…"
+              placeholder={tr('Dodaj podzadanie…')}
               className="flex-1 min-w-0 text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400 py-1" />
-            {newSub.trim() && <button onClick={addSub} className="text-xs font-medium text-accent-primary shrink-0">Dodaj</button>}
+            {newSub.trim() && <button onClick={addSub} className="text-xs font-medium text-accent-primary shrink-0">{tr('Dodaj')}</button>}
           </div>
         </section>
 
@@ -303,7 +304,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
             <div>
               <Composer people={data.people} onSend={(t, m) => addUpdate(t, m)} />
               <div className="mt-2">
-                {roots.length === 0 && <EmptyState compact icon={MessageSquare} title="Brak aktualizacji." subtitle="Napisz pierwszą!" />}
+                {roots.length === 0 && <EmptyState compact icon={MessageSquare} title={tr('Brak aktualizacji.')} subtitle={tr('Napisz pierwszą!')} />}
                 {roots.map(u => (
                   <UpdateItem key={u.id} u={u} replies={repliesOf(u.id)} people={data.people} userEmail={userEmail}
                     onLike={toggleLike} onDelete={deleteUpdate} onReply={(t, m, pid) => addUpdate(t, m, pid)} />
@@ -313,13 +314,13 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
           )}
           {tab === 'activity' && (
             <div className="space-y-3">
-              {activity.length === 0 && <EmptyState compact icon={Activity} title="Brak historii aktywności" />}
+              {activity.length === 0 && <EmptyState compact icon={Activity} title={tr('Brak historii aktywności')} />}
               {activity.map(a => (
                 <div key={a.id} className="flex items-start gap-2 text-sm">
                   <Avatar person={{ email: a.actor_email, name: a.actor_name || a.actor_email || '?' }} size={24} />
                   <div>
-                    <span className="text-gray-700 dark:text-gray-200">{a.actor_name || a.actor_email || 'System'}</span>{' '}
-                    <span className="text-gray-500">{ACTION_LABEL[a.action] || a.action}</span>
+                    <span className="text-gray-700 dark:text-gray-200">{a.actor_name || a.actor_email || tr('System')}</span>{' '}
+                    <span className="text-gray-500">{ACTION_LABEL[a.action] ? tr(ACTION_LABEL[a.action]) : a.action}</span>
                     <div className="text-[11px] text-gray-400">{timeAgo(a.created_at)}</div>
                   </div>
                 </div>

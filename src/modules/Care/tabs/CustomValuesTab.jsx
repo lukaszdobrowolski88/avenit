@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import { DateInput } from '../../../components/pickers';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
+import { tr } from '../../../i18n';
 
 export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
   const [values, setValues] = useState({}); // field_key -> value
@@ -52,7 +53,7 @@ export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
       setDirty(false);
       load();
     } catch (err) {
-      toast.error('Nie udało się zapisać pól własnych: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać pól własnych: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
@@ -62,7 +63,7 @@ export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
     const val = values[f.field_key] ?? '';
     if (f.field_type === 'select') {
       const opts = [
-        { value: '', label: '— wybierz —' },
+        { value: '', label: tr('— wybierz —') },
         ...(Array.isArray(f.options) ? f.options : []).map(o => ({ value: String(o), label: String(o) })),
       ];
       return <CustomSelect value={val} onChange={v => setValue(f.field_key, v)} options={opts} />;
@@ -85,10 +86,10 @@ export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
     return (
       <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
         <SlidersHorizontal size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-        <p className="text-gray-500 dark:text-gray-400 mb-4">Nie zdefiniowano żadnych pól własnych.</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">{tr('Nie zdefiniowano żadnych pól własnych.')}</p>
         {onGoToDefinitions && (
           <button onClick={onGoToDefinitions} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium inline-flex items-center gap-2 text-sm shadow-md">
-            <Settings2 size={16} /> Przejdź do definicji pól
+            <Settings2 size={16} /> {tr('Przejdź do definicji pól')}
           </button>
         )}
       </div>
@@ -107,7 +108,7 @@ export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
       </div>
       <div className="flex justify-end">
         <button onClick={save} disabled={saving || !dirty} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60">
-          <Save size={16} /> {saving ? 'Zapisywanie...' : 'Zapisz pola'}
+          <Save size={16} /> {saving ? tr('Zapisywanie...') : tr('Zapisz pola')}
         </button>
       </div>
     </div>

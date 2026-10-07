@@ -1,5 +1,24 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { refreshAppModules } from './useAppModules';
+
+// Stare domyślne nazwy modułów z angielskim szykiem lub mylące (COPY-18, UXE-12). Podmieniamy
+// TYLKO dokładnie te domyślne napisy — nazwa nadana przez kościół zostaje bez zmian.
+const LEGACY_LABELS = {
+  'Push Kampanie': 'Kampanie push',
+  'SMS Kampanie': 'Kampanie SMS',
+  'Mailing': 'Kampanie e-mail',
+  'Poczta': 'Skrzynka pocztowa',
+  'Obecność (RSVP)': 'Zapisy (RSVP)',
+  'Służba': 'Dostępność i CCLI',
+  'Centrum Modlitwy': 'Ściana modlitwy',
+  'Opieka i CRM': 'Opieka duszpasterska',
+};
+
+export function normalizeModuleLabel(label) {
+  if (typeof label !== 'string') return label;
+  return LEGACY_LABELS[label.trim()] || label;
+}
 
 // Dynamiczna etykieta + kolor modułu — żeby zmiana nazwy/koloru modułu w Ustawieniach
 // była widoczna także w NAGŁÓWKU wewnątrz modułu, nie tylko w menu. Współdzielony cache
@@ -23,7 +42,7 @@ async function loadAll() {
         supabase.from('app_settings').select('key, value').in('key', ['module_colors', 'module_covers', 'module_tabs', 'module_calendar']),
       ]);
       const lab = {};
-      (mods.data || []).forEach((m) => { if (m.key) lab[m.key] = m.label; });
+      (mods.data || []).forEach((m) => { if (m.key) lab[m.key] = normalizeModuleLabel(m.label); });
       _labels = lab;
       const sMap = {};
       (settings.data || []).forEach((s) => { sMap[s.key] = s.value; });
@@ -44,6 +63,8 @@ async function loadAll() {
 export function invalidateModuleLabels() {
   _labels = null; _colors = null; _covers = null; _tabs = null; _calendar = null;
   loadAll();
+  // Menu, trasy i ⌘K czytają listę modułów ze wspólnego magazynu — odśwież go razem z etykietami.
+  refreshAppModules();
 }
 
 // Kalendarz modułu: { types: [{value,label,color}] } lub null (wtedy użyj domyślnych typów).

@@ -1,3 +1,4 @@
+import { appLocale } from '../../../i18n';
 // Helpery modułu Opieka i CRM (Care)
 
 export const CARE_TYPES = [
@@ -52,7 +53,7 @@ export function memberInitials(m) {
 export function formatDate(dateStr) {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleDateString('pl-PL');
+    return new Date(dateStr).toLocaleDateString(appLocale());
   } catch {
     return dateStr;
   }
@@ -61,7 +62,7 @@ export function formatDate(dateStr) {
 export function formatDateTime(dateStr) {
   if (!dateStr) return '—';
   try {
-    return new Date(dateStr).toLocaleString('pl-PL', {
+    return new Date(dateStr).toLocaleString(appLocale(), {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   } catch {

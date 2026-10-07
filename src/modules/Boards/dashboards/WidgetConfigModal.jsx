@@ -28,7 +28,8 @@ export default function WidgetConfigModal({ initial, boards, onSave, onClose }) 
   const selectedCol = cols.find(c => c.id === w.columnId);
 
   const save = () => {
-    const title = w.title || TYPES.find(t => t.type === w.type)?.label;
+    const typeLabel = TYPES.find(t => t.type === w.type)?.label;
+    const title = w.title || (typeLabel ? tr(typeLabel) : typeLabel);
     onSave({ id: w.id || `w_${Math.random().toString(36).slice(2, 9)}`, ...w, title });
   };
 
@@ -43,18 +44,18 @@ export default function WidgetConfigModal({ initial, boards, onSave, onClose }) 
 
         <div className="space-y-3">
           <label className="block">
-            <span className="text-xs text-gray-500">Tytuł</span>
-            <input value={w.title} onChange={(e) => set({ title: e.target.value })} placeholder="np. Zadania wg statusu"
+            <span className="text-xs text-gray-500">{tr('Tytuł')}</span>
+            <input value={w.title} onChange={(e) => set({ title: e.target.value })} placeholder={tr('np. Zadania wg statusu')}
               className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 outline-none" />
           </label>
 
           <div>
-            <span className="text-xs text-gray-500">Typ widżetu</span>
+            <span className="text-xs text-gray-500">{tr('Typ widżetu')}</span>
             <div className="grid grid-cols-4 gap-2 mt-1">
               {TYPES.map(t => (
                 <button key={t.type} onClick={() => set({ type: t.type })}
                   className={`flex flex-col items-center gap-1 py-2 rounded-lg border text-xs ${w.type === t.type ? 'border-accent-primary bg-accent-primary/10 text-accent-primary' : 'border-gray-200 dark:border-gray-600 text-gray-500'}`}>
-                  <t.icon size={18} /> {t.label}
+                  <t.icon size={18} /> {tr(t.label)}
                 </button>
               ))}
             </div>
@@ -81,9 +82,9 @@ export default function WidgetConfigModal({ initial, boards, onSave, onClose }) 
 
           {w.type === 'chart' && (
             <div>
-              <span className="text-xs text-gray-500">Rodzaj wykresu</span>
+              <span className="text-xs text-gray-500">{tr('Rodzaj wykresu')}</span>
               <div className="flex gap-2 mt-1">
-                {[{ k: 'bar', label: 'Słupkowy', icon: BarChart3 }, { k: 'pie', label: 'Kołowy', icon: PieChart }].map(o => (
+                {[{ k: 'bar', label: tr('Słupkowy'), icon: BarChart3 }, { k: 'pie', label: tr('Kołowy'), icon: PieChart }].map(o => (
                   <button key={o.k} onClick={() => set({ chartType: o.k })}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border text-sm ${w.chartType === o.k ? 'border-accent-primary bg-accent-primary/10 text-accent-primary' : 'border-gray-200 dark:border-gray-600 text-gray-500'}`}>
                     <o.icon size={15} /> {o.label}

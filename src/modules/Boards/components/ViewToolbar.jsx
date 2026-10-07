@@ -72,19 +72,19 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
 
   return (
     <div className="flex items-center gap-2 mb-4 flex-wrap">
-      <Button icon={Plus} onClick={onAddItem}>Nowy element</Button>
+      <Button icon={Plus} onClick={onAddItem}>{tr('Nowy element')}</Button>
 
       {/* Wyszukiwarka jak w pozostałych modułach (ikona w polu, ta sama wysokość co przyciski). */}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={search || ''} onChange={(e) => onSearch(e.target.value)} placeholder="Szukaj..."
+        <input value={search || ''} onChange={(e) => onSearch(e.target.value)} placeholder={tr('Szukaj...')}
           className="w-56 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none" />
       </div>
 
       {/* Filtry */}
       <Popover width={340} triggerClassName="inline-flex" trigger={
         <button className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2.5 rounded-xl border transition-colors ${filters.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
-          <SlidersHorizontal size={14} /> Filtruj {filters.length ? `(${filters.length})` : ''}
+          <SlidersHorizontal size={14} /> {tr('Filtruj')} {filters.length ? `(${filters.length})` : ''}
         </button>
       }>
         {() => (
@@ -108,7 +108,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
                 </div>
               );
             })}
-            <Popover width={200} trigger={<button className="flex items-center gap-1 text-sm text-accent-primary mt-1"><Plus size={14} /> Dodaj filtr</button>}>
+            <Popover width={200} trigger={<button className="flex items-center gap-1 text-sm text-accent-primary mt-1"><Plus size={14} /> {tr('Dodaj filtr')}</button>}>
               {({ close }) => (
                 <div className="p-1 max-h-56 overflow-y-auto custom-scrollbar">
                   {filterableCols.map(c => {
@@ -129,7 +129,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
       {/* Sortowanie */}
       <Popover width={220} triggerClassName="inline-flex" trigger={
         <button className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2.5 rounded-xl border transition-colors ${sorts.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
-          <ArrowUpDown size={14} /> Sortuj
+          <ArrowUpDown size={14} /> {tr('Sortuj')}
         </button>
       }>
         {({ close }) => (
@@ -138,7 +138,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
               <div className="flex items-center justify-between px-2 py-1 mb-1">
                 <span className="text-xs text-gray-500">{columns.find(c => c.id === sorts[0].columnId)?.name}</span>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => onUpdateConfig({ sorts: [{ ...sorts[0], dir: sorts[0].dir === 'asc' ? 'desc' : 'asc' }] })} className="text-xs text-accent-primary">{sorts[0].dir === 'asc' ? '↑ rosnąco' : '↓ malejąco'}</button>
+                  <button onClick={() => onUpdateConfig({ sorts: [{ ...sorts[0], dir: sorts[0].dir === 'asc' ? 'desc' : 'asc' }] })} className="text-xs text-accent-primary">{sorts[0].dir === 'asc' ? `↑ ${tr('rosnąco')}` : `↓ ${tr('malejąco')}`}</button>
                   <button onClick={clearSort} className="text-gray-400 hover:text-red-500"><X size={13} /></button>
                 </div>
               </div>
@@ -164,8 +164,8 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
       }>
         {({ close }) => (
           <div className="p-1.5">
-            <button onClick={() => { onExport?.(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Download size={14} /> Eksportuj CSV</button>
-            <button onClick={() => { fileRef.current?.click(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Upload size={14} /> Importuj CSV</button>
+            <button onClick={() => { onExport?.(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Download size={14} /> {tr('Eksportuj CSV')}</button>
+            <button onClick={() => { fileRef.current?.click(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Upload size={14} /> {tr('Importuj CSV')}</button>
           </div>
         )}
       </Popover>

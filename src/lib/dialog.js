@@ -4,7 +4,8 @@
 //   if (!(await confirmDialog(tr('Czy na pewno chcesz usunąć…?')))) return;
 //   const name = await promptDialog(tr('Nazwa folderu'), ''); // null = anulowano
 //   const scope = await choiceDialog({ title, choices: [{ value: 'one', label: 'Tylko tę' }, …] });
-// Opcje (zamiast tekstu): { title, message, confirmLabel, cancelLabel, danger, defaultValue, placeholder }.
+// Opcje (zamiast tekstu): { title, message, confirmLabel, cancelLabel, danger, isDelete, defaultValue, placeholder }.
+// Przy operacji niebezpiecznej domyślny fokus jest na „Anuluj” (odruchowy Enter niczego nie usunie).
 let _id = 0;
 const listeners = new Set();
 let _queue = []; // okna zgłoszone zanim <DialogHost/> się zasubskrybuje
@@ -18,14 +19,23 @@ function open(kind, msg, extra) {
   });
 }
 
-// Usuwanie/kasowanie → czerwony przycisk „Usuń”; operacje nieodwracalne → czerwony „Potwierdź”.
-const DELETE_RE = /usu[nń]|usunię|skasow/i;
-const DANGER_RE = /usu[nń]|usunię|skasow|nieodwracal|trwale|bezpowrotn/i;
+// Usuwanie/kasowanie → czerwony przycisk „Usuń”; inne operacje nieodwracalne → czerwony
+// „Tak, kontynuuj”. Tekst trafia tu już PRZETŁUMACZONY (tr), więc rozpoznajemy PL, EN i UK.
+// Pewniej jest podać to jawnie: confirmDialog({ title, message, danger: true, confirmLabel: tr('Usuń osobę') })
+// (danger: true — operacja niebezpieczna; isDelete: true/false — czy to usuwanie; danger: false wyłącza oba).
+const DELETE_RE = /usu[nń]|usunię|skasow|wykasow|\bdelet|\bremov|\berase|видал|вилуч|стерти|стерт/i;
+const DANGER_RE = new RegExp(`${DELETE_RE.source}|nieodwracal|trwale|bezpowrotn|cannot be undone|can't be undone|can not be undone|irreversib|permanent|незворот|назавжди|остаточно`, 'i');
+
+export function dialogFlags(msg) {
+  const text = typeof msg === 'string' ? msg : `${msg?.title || ''} ${msg?.message || ''}`;
+  const o = msg && typeof msg === 'object' ? msg : {};
+  const danger = o.danger != null ? Boolean(o.danger) : DANGER_RE.test(text);
+  const isDelete = o.isDelete != null ? Boolean(o.isDelete) : (danger && DELETE_RE.test(text));
+  return { danger: danger || isDelete, isDelete };
+}
 
 export function confirmDialog(msg) {
-  const text = typeof msg === 'string' ? msg : `${msg?.title || ''} ${msg?.message || ''}`;
-  const danger = typeof msg === 'object' && msg?.danger != null ? msg.danger : DANGER_RE.test(text);
-  return open('confirm', msg, { danger, isDelete: DELETE_RE.test(text) });
+  return open('confirm', msg, dialogFlags(msg));
 }
 
 export function promptDialog(msg, defaultValue = '') {

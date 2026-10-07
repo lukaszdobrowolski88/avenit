@@ -6,8 +6,8 @@ import { tr } from '../../../i18n';
 const ACTION_TYPE_LABELS = {
   deep_link: 'Deep link (ekran w aplikacji)',
   inline_rsvp: 'Akcja inline (bez otwierania)',
-  open_form: tr('Otwórz formularz'),
-  external_url: tr('Zewnętrzny link'),
+  open_form: 'Otwórz formularz',
+  external_url: 'Zewnętrzny link',
 };
 
 export default function ActionButtonsBuilder({ categoryId, actions = [], onChange }) {
@@ -49,9 +49,9 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Icon size={16} className={active ? 'text-accent-primary' : 'text-gray-500'} />
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{c.label}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{tr(c.label)}</span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{c.description}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{tr(c.description)}</p>
               </button>
             );
           })}
@@ -71,20 +71,20 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
               <div key={idx} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Przycisk {idx + 1}
+                    {tr('Przycisk {n}', { n: idx + 1 })}
                   </span>
                   <span className="text-xs text-gray-400">·</span>
-                  <span className="text-xs text-gray-500">{ACTION_TYPE_LABELS[catAction.type]}</span>
+                  <span className="text-xs text-gray-500">{ACTION_TYPE_LABELS[catAction.type] ? tr(ACTION_TYPE_LABELS[catAction.type]) : null}</span>
                   {action.destructive && (
                     <span className="text-xs text-red-500 flex items-center gap-1 ml-auto">
-                      <AlertTriangle size={11} /> destruktywny
+                      <AlertTriangle size={11} /> {tr('destruktywny')}
                     </span>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Etykieta (web)</label>
+                    <label className="text-xs text-gray-500 mb-1 block">{tr('Etykieta (web)')}</label>
                     <input
                       maxLength={ACTION_LABEL_MAX}
                       value={action.label || catAction.defaultLabel}
@@ -96,7 +96,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">
                         {catAction.type === 'deep_link' && tr('Ścieżka (np. /events/123)')}
-                        {catAction.type === 'open_form' && 'ID formularza'}
+                        {catAction.type === 'open_form' && tr('ID formularza')}
                         {catAction.type === 'external_url' && 'URL'}
                       </label>
                       <input
@@ -128,8 +128,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
           })}
 
           <p className="text-xs text-gray-500 italic">
-            Uwaga: na mobile etykiety pochodzą ze sztywnej rejestracji kategorii w aplikacji
-            (zmiana wymaga deploya). Web stosuje labelki z tego edytora od razu.
+            {tr('Uwaga: na mobile etykiety pochodzą ze sztywnej rejestracji kategorii w aplikacji (zmiana wymaga deploya). Web stosuje labelki z tego edytora od razu.')}
           </p>
         </div>
       )}

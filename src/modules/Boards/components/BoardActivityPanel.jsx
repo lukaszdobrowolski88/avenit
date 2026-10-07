@@ -5,6 +5,7 @@ import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { supabase } from '../../../lib/supabase';
 import { Avatar } from './cells/PeopleCell';
+import { tr, appLocale } from '../../../i18n';
 
 const ACTION_LABEL = {
   created: 'utworzył(a) element',
@@ -14,7 +15,7 @@ const ACTION_LABEL = {
   moved: 'przeniósł(przeniosła) element',
   deleted: 'usunął(usunęła) element',
 };
-function timeAgo(iso) { try { return new Date(iso).toLocaleString('pl-PL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } }
+function timeAgo(iso) { try { return new Date(iso).toLocaleString(appLocale(), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } }
 
 // Dziennik aktywności całej tablicy (agregacja board_item_activity).
 export default function BoardActivityPanel({ boardId, items, onClose, onOpenItem }) {
@@ -33,19 +34,19 @@ export default function BoardActivityPanel({ boardId, items, onClose, onOpenItem
       <div className="relative w-full max-w-[440px] h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
           <Activity size={18} className="text-accent-primary" />
-          <h2 className="flex-1 font-semibold text-gray-800 dark:text-gray-100">Aktywność tablicy</h2>
+          <h2 className="flex-1 font-semibold text-gray-800 dark:text-gray-100">{tr('Aktywność tablicy')}</h2>
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
           {rows === null && <Spinner center />}
-          {rows && rows.length === 0 && <EmptyState compact icon={Activity} title="Brak zarejestrowanej aktywności." />}
+          {rows && rows.length === 0 && <EmptyState compact icon={Activity} title={tr('Brak zarejestrowanej aktywności.')} />}
           <div className="space-y-3">
             {rows && rows.map(a => (
               <div key={a.id} className="flex items-start gap-2 text-sm">
                 <Avatar person={{ email: a.actor_email, name: a.actor_name || a.actor_email || '?' }} size={26} />
                 <div className="min-w-0">
-                  <span className="text-gray-700 dark:text-gray-200">{a.actor_name || a.actor_email || 'System'}</span>{' '}
-                  <span className="text-gray-500">{ACTION_LABEL[a.action] || a.action}</span>{' '}
+                  <span className="text-gray-700 dark:text-gray-200">{a.actor_name || a.actor_email || tr('System')}</span>{' '}
+                  <span className="text-gray-500">{ACTION_LABEL[a.action] ? tr(ACTION_LABEL[a.action]) : a.action}</span>{' '}
                   {nameById[a.item_id] && (
                     <button onClick={() => onOpenItem?.(items.find(i => i.id === a.item_id))} className="text-accent-primary hover:underline truncate">„{nameById[a.item_id]}"</button>
                   )}

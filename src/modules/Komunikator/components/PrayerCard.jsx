@@ -1,6 +1,15 @@
 import React from 'react';
 import { tr } from '../../../i18n';
 
+// Liczba modlących się w poprawnej formie (1 osoba / 2–4 osoby / 5+ osób).
+function prayingLabel(n) {
+  if (n === 1) return tr('1 osoba się modli');
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return tr('{n} osoby się modlą', { n });
+  return tr('{n} osób się modli', { n });
+}
+
 // Karta prośby o modlitwę. Przycisk "🙏 Modlę się" z licznikiem.
 export default function PrayerCard({ message, prayer, onTogglePraying }) {
   const meta = message.metadata || {};
@@ -24,11 +33,12 @@ export default function PrayerCard({ message, prayer, onTogglePraying }) {
 
       <div className="px-4 pb-3 pt-1 flex items-center justify-between gap-2">
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {count === 0 ? tr('Bądź pierwszy') : tr('{n} osób się modli', { n: count })}
+          {count === 0 ? tr('Nikt się jeszcze nie modli') : prayingLabel(count)}
         </span>
         <button
           type="button"
           onClick={() => onTogglePraying?.(message.id)}
+          aria-pressed={hasPrayed}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
             hasPrayed
               ? 'bg-accent-primary text-white shadow-md shadow-accent-primary/30'
@@ -36,7 +46,7 @@ export default function PrayerCard({ message, prayer, onTogglePraying }) {
           }`}
         >
           <span>🙏</span>
-          {hasPrayed ? tr('Modlę się') : tr('Modlę się')}
+          {tr('Modlę się')}
         </button>
       </div>
     </div>

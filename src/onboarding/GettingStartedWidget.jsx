@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Rocket, X, Check, ChevronRight, ChevronDown, PartyPopper } from 'lucide-react';
 import { useOnboarding } from './OnboardingContext';
 import { getChecklist } from './config';
@@ -9,9 +9,14 @@ import { useT } from '../i18n';
 // Pływająca checklista „Pierwsze kroki" w rogu ekranu — pasek postępu, auto-detekcja
 // ukończenia i szybkie akcje (samouczek / kreator / przejście do modułu).
 
+// Pełnoekranowe moduły z polem pisania przy dolnej krawędzi — tam pływający przycisk
+// zasłaniałby „Wyślij” (UXE-19). Lista jest wtedy dostępna z menu Pomoc → Pierwsze kroki.
+const NO_FAB_PATHS = ['/komunikator', '/mail'];
+
 export default function GettingStartedWidget() {
   const t = useT();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const {
     loaded, state, isAdmin, checklistOpen, openChecklist, closeChecklist,
     completeStep, uncompleteStep, isStepDone, startTour, openWizard, openTutorials, dismissChecklist,
@@ -62,9 +67,12 @@ export default function GettingStartedWidget() {
 
   // ── Zwinięty przycisk (FAB) ──
   if (!checklistOpen) {
+    if (NO_FAB_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
     return (
       <button
+        type="button"
         data-tour="getting-started"
+        aria-label={t('Pierwsze kroki: {done} z {total} gotowe', { done: doneCount, total })}
         onClick={openChecklist}
         className="fixed bottom-4 right-4 z-[60] group flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-full bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 hover:shadow-accent-primary-light/20 hover:-translate-y-0.5 transition-all"
         title={t('Pierwsze kroki')}
@@ -87,24 +95,26 @@ export default function GettingStartedWidget() {
     <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-[360px] z-[60] animate-in slide-in-from-bottom-2 fade-in duration-200">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {/* Nagłówek */}
-        <div className="p-4 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white">
+        {/* Ciemny nagłówek (słód) z paskiem kurkumy — biały tekst na jasnej kurkumie był
+            nieczytelny w motywie Avenit (UXE-19). */}
+        <div className="p-4 bg-gray-900 text-white">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
-              <Rocket size={18} />
+              <Rocket size={18} className="text-accent-primary-light" aria-hidden="true" />
               <h3 className="font-bold text-sm">{t('Pierwsze kroki')}</h3>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={closeChecklist} className="p-1 rounded-lg hover:bg-white/20 transition" title={t('Zwiń')}>
-                <ChevronDown size={18} />
+              <button type="button" onClick={closeChecklist} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/15 transition" title={t('Zwiń')} aria-label={t('Zwiń')}>
+                <ChevronDown size={18} aria-hidden="true" />
               </button>
-              <button onClick={dismissChecklist} className="p-1 rounded-lg hover:bg-white/20 transition" title={t('Ukryj checklistę')}>
-                <X size={18} />
+              <button type="button" onClick={dismissChecklist} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/15 transition" title={t('Ukryj checklistę')} aria-label={t('Ukryj checklistę')}>
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
           </div>
-          <p className="text-xs text-white/90 mt-1">{t('{done} z {total} kroków ukończonych', { done: doneCount, total })}</p>
-          <div className="mt-2 h-1.5 rounded-full bg-white/25 overflow-hidden">
-            <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+          <p className="text-xs text-white/85 mt-1">{t('{done} z {total} kroków ukończonych', { done: doneCount, total })}</p>
+          <div className="mt-2 h-1.5 rounded-full bg-white/20 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={doneCount} aria-label={t('Postęp pierwszych kroków')}>
+            <div className="h-full bg-accent-primary rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
         </div>
 

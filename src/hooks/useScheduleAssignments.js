@@ -1,5 +1,33 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { chunkOps, reassignFields } from '../lib/scheduleBridge';
+import { tr } from '../i18n';
+
+const newToken = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : null);
+
+/**
+ * Atomowa zmiana pól grafiku na wydarzeniu (events.assignments) przez fn event-assignments-patch.
+ * ops: [{ team, key, value }] — value null usuwa pole, key null dotyczy całej sekcji służby.
+ * Zwraca { assignments, event, error } — assignments to ŚWIEŻY stan z serwera (z cudzymi zmianami).
+ */
+export async function patchEventAssignments(eventId, ops) {
+  const list = (ops || []).filter(Boolean);
+  if (!list.length) return { assignments: null, event: null, error: null };
+  let last = null;
+  for (const part of chunkOps(list)) {
+    const { data, error } = await supabase.functions.invoke('event-assignments-patch', { body: { event_id: eventId, ops: part } });
+    if (error) return { assignments: last?.assignments ?? null, event: last?.event ?? null, error };
+    last = data;
+  }
+  return { assignments: last?.assignments || {}, event: last?.event || null, error: null };
+}
+
+// Ludzki komunikat błędu zapisu grafiku (bez surowego HTTP/SQL).
+export function scheduleSaveErrorMessage(error) {
+  if (error?.status === 403) return tr('Nie masz uprawnień do edycji grafiku tego wydarzenia.');
+  if (error?.status === 404) return tr('Nie znaleziono wydarzenia — mogło zostać usunięte.');
+  return tr('Nie udało się zapisać grafiku. Sprawdź połączenie i spróbuj ponownie.');
+}
 
 /**
  * Hook do zarządzania przypisaniami do służby z systemem akceptacji
@@ -132,10 +160,17 @@ export function useScheduleAssignments() {
       if (eventId) {
         // Grafik/służby na WYDARZENIU. Ręczny upsert (częściowy unikat event_id → PostgREST
         // nie wnioskuje predykatu z onConflict): sprawdź istniejący wiersz, potem update/insert.
-        const { data: existing } = await supabase.from('schedule_assignments').select('id')
+        const { data: existing, error: findError } = await supabase.from('schedule_assignments').select('id, status, assigned_email')
           .eq('event_id', eventId).eq('team_type', teamType).eq('role_key', roleKey).eq('assigned_name', assignedName).maybeSingle();
+        if (findError) throw findError;
         if (existing) {
-          ({ data, error } = await supabase.from('schedule_assignments').update(base).eq('id', existing.id).select().single());
+          // Ponowne przypisanie (np. po odrzuceniu): status/token/stempel wysyłki ustala
+          // reassignFields — odrzucona osoba wraca do „Wyślij”, zaakceptowana nie dostaje maila drugi raz.
+          const patch = { ...base };
+          delete patch.status;
+          delete patch.responded_at;
+          Object.assign(patch, reassignFields(existing, { assignedEmail, isSelfAssignment, newToken: newToken() }));
+          ({ data, error } = await supabase.from('schedule_assignments').update(patch).eq('id', existing.id).select().single());
         } else {
           ({ data, error } = await supabase.from('schedule_assignments').insert({ event_id: eventId, ...base }).select().single());
         }
@@ -351,62 +386,6 @@ export function useScheduleAssignments() {
   }, []);
 
   /**
-   * Wyślij email z powiadomieniem o przypisaniu
-   */
-  const sendAssignmentEmail = async (assignment) => {
-    try {
-      const baseUrl = window.location.origin;
-      const acceptUrl = `${baseUrl}/assignment-response?token=${assignment.token}&action=accept`;
-      const rejectUrl = `${baseUrl}/assignment-response?token=${assignment.token}&action=reject`;
-
-      // Mapowanie kluczy ról na czytelne nazwy
-      const roleNames = {
-        lider: 'Lider Uwielbienia',
-        piano: 'Piano',
-        wokale: 'Wokal',
-        gitara_akustyczna: 'Gitara Akustyczna',
-        gitara_elektryczna: 'Gitara Elektryczna',
-        bas: 'Gitara Basowa',
-        cajon: 'Cajon/Perkusja',
-        naglospienie: 'Nagłośnienie',
-        projekcja: 'Projekcja',
-        transmisja: 'Transmisja',
-        foto: 'Fotograf',
-        video: 'Wideo'
-      };
-
-      const roleName = roleNames[assignment.role_key] || assignment.role_key;
-
-      // Wyślij email przez edge function - program_id przekazujemy do funkcji
-      // która pobierze dane z service role key
-      const { error } = await supabase.functions.invoke('send-assignment-email', {
-        body: {
-          to: assignment.assigned_email,
-          assignedName: assignment.assigned_name,
-          assignedByName: assignment.assigned_by_name,
-          roleName: roleName,
-          programId: assignment.program_id,
-          acceptUrl: acceptUrl,
-          rejectUrl: rejectUrl
-        }
-      });
-
-      if (error) {
-        console.error('Error sending email via function:', error);
-        // Fallback - zapisz że email nie został wysłany
-      } else {
-        // Oznacz że email został wysłany
-        await supabase
-          .from('schedule_assignments')
-          .update({ email_sent_at: new Date().toISOString() })
-          .eq('id', assignment.id);
-      }
-    } catch (err) {
-      console.error('Error sending assignment email:', err);
-    }
-  };
-
-  /**
    * Pobierz status przypisania dla konkretnej osoby w programie
    */
   const getAssignmentStatus = useCallback((programId, teamType, roleKey, assignedName) => {
@@ -456,7 +435,11 @@ export function useScheduleAssignments() {
       const { data, error } = await supabase.functions.invoke('send-assignment-invites', {
         body: { eventId, teamType, baseUrl: window.location.origin },
       });
-      if (error || data?.error) return { success: false, error: data?.error || error?.message };
+      if (error) return { success: false, error: error.message, status: error.status };
+      // Brak konfiguracji poczty: serwer zwraca success:false + emailReady:false — przekaż flagę,
+      // żeby UI pokazał zrozumiały komunikat zamiast technicznego.
+      if (data?.emailReady === false) return { success: false, emailReady: false, error: data?.error };
+      if (data?.error) return { success: false, error: data.error };
       return { success: true, ...data };
     } catch (err) {
       return { success: false, error: err.message };

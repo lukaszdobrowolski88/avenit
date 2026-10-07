@@ -173,15 +173,25 @@ export const splitGrafik = (events: GrafikEvent[]) => {
   };
 };
 
-// Zapis jednego pola służby na wydarzeniu: czytamy świeże assignments (ktoś mógł w tym
-// czasie edytować inną służbę na webie) i podmieniamy tylko [team][field].
+// Zapis jednego pola służby na wydarzeniu — ATOMOWO na serwerze (fn event-assignments-patch,
+// ten sam kontrakt co web). Wysyłamy tylko zmienioną ścieżkę [team][field]; serwer nakłada ją
+// na aktualny stan w transakcji z blokadą wiersza, więc równoległa edycja innej służby (np. na
+// webie) nie znika. Dawniej: odczyt + zapis CAŁEGO events.assignments (ostatni zapis wygrywał).
 async function writeTeamField(eventId: string, team: string, field: string, value: string) {
-  const { data, error } = await supabase.from('events').select('assignments').eq('id', eventId).maybeSingle();
-  if (error) throw error;
-  const all = { ...((parse((data as any)?.assignments) as Record<string, any>) ?? {}) };
-  all[team] = { ...(all[team] ?? {}), [field]: value };
-  const { error: upErr } = await (supabase.from('events') as any).update({ assignments: all }).eq('id', eventId);
-  if (upErr) throw upErr;
+  const { data, error } = await supabase.functions.invoke('event-assignments-patch', {
+    body: { event_id: eventId, ops: [{ team, key: field, value }] },
+  });
+  if (error) {
+    const status = (error as any)?.status;
+    throw new Error(
+      status === 403
+        ? 'Nie masz uprawnień do edycji grafiku tego wydarzenia.'
+        : status === 404
+          ? 'Nie znaleziono wydarzenia — mogło zostać usunięte.'
+          : 'Nie udało się zapisać grafiku. Sprawdź połączenie i spróbuj ponownie.',
+    );
+  }
+  return ((data as any)?.assignments ?? null) as Record<string, any> | null;
 }
 
 const patchCache = (qc: ReturnType<typeof useQueryClient>, team: string, eventId: string, field: string, value: string) =>
@@ -207,8 +217,12 @@ export const useSetRolePeople = (team: string) => {
       const removed = before.filter((n) => !names.includes(n));
       await writeTeamField(event.id, team, role.key, names.join(', '));
 
+      // Synchronizacja z silnikiem zaproszeń. Gdy się nie uda — cofamy zmianę w siatce, żeby
+      // grafik i „Wyślij” mówiły to samo (inaczej zaproszenie poszłoby do zdjętej osoby).
+      const failedAdd: string[] = [];
+      const failedRemove: string[] = [];
       const byName = new Map(members.map((m) => [m.name, m]));
-      for (const name of added) {
+      const syncAdded = async (name: string) => {
         const email = byName.get(name)?.email ?? null;
         const self = !!(me.email && email && me.email.toLowerCase() === email.toLowerCase());
         const base = {
@@ -223,18 +237,40 @@ export const useSetRolePeople = (team: string) => {
           responded_at: self ? new Date().toISOString() : null,
         };
         // Ręczny upsert (częściowy unikat po event_id) — jak createAssignment na webie.
-        const { data: existing } = await supabase
+        const { data: existing, error: findErr } = await supabase
           .from('schedule_assignments')
-          .select('id')
+          .select('id, status, assigned_email')
           .eq('event_id', event.id)
           .eq('team_type', team)
           .eq('role_key', role.key)
           .eq('assigned_name', name)
           .maybeSingle();
-        const res = existing
-          ? await (supabase.from('schedule_assignments') as any).update(base).eq('id', (existing as any).id)
-          : await (supabase.from('schedule_assignments') as any).insert({ event_id: Number(event.id), ...base });
+        if (findErr) throw findErr;
+        let res;
+        if (existing) {
+          // Ponowne przypisanie (jak reassignFields na webie): po odrzuceniu albo zmianie e-maila
+          // zaproszenie trzeba wysłać od nowa (email_sent_at = null); zaakceptowane / oczekujące
+          // pod tym samym adresem zostają bez zmian (bez drugiego maila).
+          const ex = existing as any;
+          const sameEmail = String(ex.assigned_email || '').toLowerCase() === String(email || '').toLowerCase();
+          const keep = !self && sameEmail && (ex.status === 'accepted' || ex.status === 'pending');
+          const patch: Record<string, unknown> = keep ? { ...base } : { ...base, email_sent_at: null };
+          if (keep) {
+            delete patch.status;
+            delete patch.responded_at;
+          }
+          res = await (supabase.from('schedule_assignments') as any).update(patch).eq('id', ex.id);
+        } else {
+          res = await (supabase.from('schedule_assignments') as any).insert({ event_id: Number(event.id), ...base });
+        }
         if (res.error) throw res.error;
+      };
+      for (const name of added) {
+        try {
+          await syncAdded(name);
+        } catch {
+          failedAdd.push(name);
+        }
       }
       for (const name of removed) {
         const { error } = await supabase
@@ -244,8 +280,16 @@ export const useSetRolePeople = (team: string) => {
           .eq('team_type', team)
           .eq('role_key', role.key)
           .eq('assigned_name', name);
-        if (error) throw error;
+        if (error) failedRemove.push(name);
       }
+      if (failedAdd.length || failedRemove.length) {
+        const corrected = [...names.filter((n) => !failedAdd.includes(n)), ...failedRemove];
+        await writeTeamField(event.id, team, role.key, corrected.join(', ')).catch(() => null);
+        throw new Error(
+          `Nie udało się zmienić przydziału: ${[...failedAdd, ...failedRemove].join(', ')}. Sprawdź, czy masz uprawnienia do edycji grafiku.`,
+        );
+      }
+
     },
     onMutate: ({ event, role, names }) => patchCache(qc, team, event.id, role.key, names.join(', ')),
     onSettled: () => {
@@ -292,15 +336,25 @@ export const useSendInvites = (team: string) => {
   });
 };
 
-// Odpowiedź na własne zaproszenie prosto z grafiku.
+// Odpowiedź na własne zaproszenie prosto z grafiku — przez serwer (/api/assignment/:id/respond),
+// ta sama semantyka co link z maila i web: odrzucenie zdejmuje imię z grafiku w jednej transakcji
+// (członek nie ma prawa edytować wydarzenia, więc nie da się tego zrobić z telefonu wprost).
 export const useAnswerAssignment = (team: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'accepted' | 'rejected' }) => {
-      const { error } = await (supabase.from('schedule_assignments') as any)
-        .update({ status, responded_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
+      const res: Response = await (supabase as any)._request(`/api/assignment/${encodeURIComponent(id)}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: status === 'accepted' ? 'accept' : 'reject' }),
+      });
+      if (!res.ok) {
+        throw new Error(
+          res.status === 404
+            ? 'Nie znaleziono tego przydziału — mógł zostać zmieniony przez lidera.'
+            : 'Nie udało się zapisać odpowiedzi. Spróbuj ponownie.',
+        );
+      }
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: KEY(team) });

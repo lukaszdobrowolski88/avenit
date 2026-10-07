@@ -19,7 +19,7 @@ export default function TemplateGallery({ onUseTemplate }) {
   const handleEdit = (t) => { setEditing(t); setShowEditor(true); };
   const handleDelete = async (t) => {
     if (t.is_system) { toast.error(tr('Nie można usunąć szablonu systemowego.')); return; }
-    if (!await confirmDialog(`Usunąć szablon "${t.name}"?`)) return;
+    if (!await confirmDialog(tr('Usunąć szablon "{name}"?', { name: t.name }))) return;
     try { await deleteTemplate(t.id); } catch (e) { toast.error(e.message); }
   };
 
@@ -29,7 +29,7 @@ export default function TemplateGallery({ onUseTemplate }) {
     <div>
       <div className="flex justify-end mb-4">
         <button onClick={handleNew} className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm rounded-lg shadow">
-          <Plus size={16} /> Nowy szablon
+          <Plus size={16} /> {tr('Nowy szablon')}
         </button>
       </div>
 
@@ -44,7 +44,7 @@ export default function TemplateGallery({ onUseTemplate }) {
                 </div>
                 {t.is_system ? (
                   <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                    <Sparkles size={10} /> Systemowy
+                    <Sparkles size={10} /> {tr('Systemowy')}
                   </span>
                 ) : (
                   <div className="flex gap-1">
@@ -59,11 +59,11 @@ export default function TemplateGallery({ onUseTemplate }) {
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{t.name}</h3>
               {t.default_sender && (
-                <p className="text-xs text-gray-500 mb-1">Nadawca: <span className="font-mono">{t.default_sender}</span></p>
+                <p className="text-xs text-gray-500 mb-1">{tr('Nadawca:')} <span className="font-mono">{t.default_sender}</span></p>
               )}
               <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 mt-1">{t.body}</p>
               <p className="text-xs text-gray-400 mt-2">
-                {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
+                {tr('{n} znaków', { n: a.charCount })} · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
               </p>
 
               <button
@@ -114,18 +114,18 @@ function TemplateEditor({ template, onClose, onSave }) {
       isOpen
       onClose={onClose}
       closeOnBackdrop={false}
-      title={template ? 'Edytuj szablon' : 'Nowy szablon SMS'}
+      title={template ? tr('Edytuj szablon') : tr('Nowy szablon SMS')}
       size="md"
       footer={<>
         <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
-        <Button icon={Save} onClick={handleSave} loading={saving}>Zapisz</Button>
+        <Button icon={Save} onClick={handleSave} loading={saving}>{tr('Zapisz')}</Button>
       </>}
     >
       <div className="p-6 space-y-3">
         <input
           value={form.name}
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-          placeholder="Nazwa szablonu"
+          placeholder={tr('Nazwa szablonu')}
           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
         />
         <input
@@ -144,7 +144,7 @@ function TemplateEditor({ template, onClose, onSave }) {
           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
         />
         <p className="text-xs text-gray-500">
-          {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
+          {tr('{n} znaków', { n: a.charCount })} · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
         </p>
       </div>
     </Modal>

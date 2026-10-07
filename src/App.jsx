@@ -1,6 +1,9 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import Spinner from './components/Spinner';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import NotFound from './components/NotFound';
+import { useAppModules, refreshAppModules } from './hooks/useAppModules';
+import { MERGED_MODULE_TARGETS } from './components/navConfig';
 import { supabase } from './lib/supabase';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import { CampusProvider } from './contexts/CampusContext';
@@ -13,6 +16,7 @@ import DialogHost from './components/DialogHost';
 import Sidebar, { SidebarProvider } from './components/Sidebar';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import KioskGuard from './modules/Kids/checkin/KioskGuard';
 import InstallPrompt from './components/InstallPrompt';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import CommandPalette from './components/CommandPalette';
@@ -98,7 +102,11 @@ function ToastNotifications() {
   return <ToastContainer toasts={toasts} onClose={closeToast} onClick={handleToastClick} />;
 }
 
-// Error Boundary - zapobiega crashowi całej aplikacji
+// Błąd ładowania fragmentu kodu po wdrożeniu nowej wersji (stary chunk zniknął z serwera).
+const isChunkLoadError = (err) => /dynamically imported module|Importing a module script failed|Loading chunk|ChunkLoadError/i.test(String(err?.message || err || ''));
+
+// Error Boundary - zapobiega crashowi całej aplikacji. resetKey (ścieżka) czyści błąd przy
+// przejściu na inną stronę, żeby jeden zepsuty widok nie blokował całej nawigacji (UXE-22).
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -110,18 +118,84 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, info) {
     console.error('ErrorBoundary caught:', error, info);
   }
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
   render() {
     if (this.state.hasError) {
+      const chunk = isChunkLoadError(this.state.error);
       return (
-        <div className="p-10 text-center">
-          <div className="text-red-500 dark:text-red-400 mb-4 text-lg font-bold">{tr('Wystąpił błąd')}</div>
-          <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">{this.state.error?.message || tr('Nieznany błąd')}</p>
-          <button onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }} className="px-4 py-2 bg-accent-primary text-white rounded-xl">{tr('Odśwież stronę')}</button>
+        <div className="max-w-lg mx-auto p-10 text-center" role="alert">
+          <h1 className="text-gray-900 dark:text-white mb-2 text-xl font-bold">
+            {chunk ? tr('Jest nowa wersja aplikacji') : tr('Nie udało się wyświetlić tej strony')}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm leading-relaxed">
+            {chunk
+              ? tr('Odśwież stronę, aby wczytać najnowszą wersję. Twoje zapisane dane są bezpieczne.')
+              : tr('Coś poszło nie tak po naszej stronie. Odśwież stronę albo wróć na pulpit. Jeśli problem się powtarza, napisz do administratora.')}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <button type="button" onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }} className="min-h-[44px] px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl text-sm font-medium">{tr('Odśwież stronę')}</button>
+            {!chunk && (
+              <a href="/" className="min-h-[44px] inline-flex items-center justify-center px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium">{tr('Wróć do pulpitu')}</a>
+            )}
+          </div>
+          {!chunk && this.state.error?.message && (
+            <details className="mt-6 text-left text-xs text-gray-500 dark:text-gray-400">
+              <summary className="cursor-pointer select-none">{tr('Szczegóły techniczne')}</summary>
+              <pre className="mt-2 whitespace-pre-wrap break-words">{String(this.state.error.message)}</pre>
+            </details>
+          )}
         </div>
       );
     }
     return this.props.children;
   }
+}
+
+// Granica błędu zależna od ścieżki — reset po zmianie strony.
+function RouteErrorBoundary({ children }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>;
+}
+
+// Trasa „*”: dopóki lista modułów (także tych z kreatora) się nie wczyta, pokazujemy spinner
+// zamiast przekierowania — odświeżenie /faceci nie wyrzuca już na Pulpit (UXE-02).
+function CatchAllRoute({ modulesLoaded }) {
+  return modulesLoaded ? <NotFound /> : <PageLoader />;
+}
+
+// Przy zmianie strony przenieś fokus do treści (czytnik ekranu ogłasza nową stronę), ale tylko
+// gdy fokus był w menu albo nigdzie — nie zabieramy go polom z autofocusem (A11Y-14).
+function FocusMainOnRouteChange() {
+  const { pathname } = useLocation();
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) { first.current = false; return; }
+    const main = document.getElementById('tresc');
+    if (!main) return;
+    const ae = document.activeElement;
+    const inNav = !ae || ae === document.body || ae.closest?.('[data-tour="sidebar"], .app-topbar, .app-sidebar-panel');
+    if (inNav) {
+      try { main.focus({ preventScroll: true }); } catch { /* ignore */ }
+    }
+  }, [pathname]);
+  return null;
+}
+
+// Link „Przejdź do treści” — pierwszy element strony dla klawiatury (A11Y-14).
+function SkipToContent() {
+  return (
+    <a
+      href="#tresc"
+      onClick={(e) => { e.preventDefault(); const m = document.getElementById('tresc'); if (m) m.focus(); }}
+      className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100100] focus:px-4 focus:py-3 focus:rounded-xl focus:bg-white focus:text-gray-900 focus:shadow-xl focus:ring-2 focus:ring-accent-primary dark:focus:bg-gray-800 dark:focus:text-white"
+    >
+      {tr('Przejdź do treści')}
+    </a>
+  );
 }
 
 // Komponent baneru offline
@@ -151,8 +225,11 @@ function AppInner() {
   const { lang } = useI18n(); // język do remountu powłoki przy zmianie (globalne tr())
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [customModules, setCustomModules] = useState([]);
   const [requires2FASetup, setRequires2FASetup] = useState(false);
+  // Moduły z bazy (wspólny magazyn z menu i ⌘K). Trasy modułów z kreatora startują z cache,
+  // a trasa „*” czeka na pierwsze pobranie (modulesLoaded), zamiast przekierowywać (UXE-02).
+  const { modules: appModules, loaded: modulesLoaded } = useAppModules({ autoLoad: false });
+  const customModules = appModules.filter((m) => m && m.is_enabled && m.path && !SYSTEM_MODULE_KEYS.includes(m.key));
 
   // Stan dla trybu ciemnego (domyślnie false)
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
@@ -170,40 +247,12 @@ function AppInner() {
 
   const toggleTheme = () => setDarkMode(!darkMode);
 
-  // Pobierz niestandardowe moduły z bazy danych
+  // Pobierz moduły (także niestandardowe) dopiero, gdy jest sesja — wcześniej API odpowie 401,
+  // a po zalogowaniu bez przeładowania strony trasy modułów z kreatora by się nie pojawiły.
+  const sessionEmail = session?.user?.email || null;
   useEffect(() => {
-    const fetchCustomModules = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('app_modules')
-          .select('*')
-          .eq('is_enabled', true)
-          .order('display_order', { ascending: true });
-
-        if (!error && data) {
-          // Filtruj tylko moduły niestandardowe (nie systemowe)
-          const custom = data.filter(m => !SYSTEM_MODULE_KEYS.includes(m.key));
-          setCustomModules(custom);
-        }
-      } catch (err) {
-        console.log('Błąd pobierania niestandardowych modułów:', err);
-      }
-    };
-
-    fetchCustomModules();
-
-    // Subskrybuj zmiany w modułach
-    const channel = supabase
-      .channel('app-modules-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_modules' }, () => {
-        fetchCustomModules();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    if (sessionEmail && !requires2FASetup) refreshAppModules();
+  }, [sessionEmail, requires2FASetup]);
 
   // Sprawdź czy użytkownik ma wymagane 2FA - z timeout i bez blokowania
   const check2FARequirement = async (userEmail) => {
@@ -464,12 +513,16 @@ function AppInner() {
     <BrowserRouter>
       {/* Analityka: odsłony przy zmianie trasy + otwarcia modułów */}
       <PageTracker />
+      {/* Tryb kiosku meldowania dzieci: każda trasa poza /kids wraca do kiosku */}
+      <KioskGuard />
       <PermissionsProvider>
         <OnboardingProvider user={session.user}>
         <CampusProvider>
           <NotificationProvider userEmail={session.user?.email}>
             <UnsavedChangesProvider>
             <SidebarProvider>
+              <SkipToContent />
+              <FocusMainOnRouteChange />
               <div key={lang} className="flex h-screen app-shell-bg transition-colors duration-300">
                 <Sidebar />
               <div className="flex-1 flex flex-col overflow-hidden">
@@ -486,8 +539,8 @@ function AppInner() {
               <OfflineBanner />
               {/* Ogłoszenia systemowe z platformy */}
               <AnnouncementBanner />
-              <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
-              <ErrorBoundary>
+              <main id="tresc" tabIndex={-1} className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar outline-none focus:outline-none">
+              <RouteErrorBoundary>
               <Suspense fallback={<PageLoader />}>
               <ModuleContainer>
               <Routes>
@@ -540,10 +593,10 @@ function AppInner() {
                 <Route path="/ai" element={
                   <ProtectedRoute resource="module:ai"><AiAssistantModule /></ProtectedRoute>
                 } />
-                {/* Kazania wtopione w Nauczanie — /sermons przekierowuje (brak osobnego modułu) */}
-                <Route path="/sermons" element={<Navigate to="/teaching" replace />} />
-                {/* Opieka/CRM scalona z Członkami (opieka per-członek w profilu, pola własne w zakładce Opieka). */}
-                <Route path="/care" element={<Navigate to="/members" replace />} />
+                {/* Kazania wtopione w Nauczanie — /sermons prowadzi prosto na zakładkę „Kazania” */}
+                <Route path="/sermons" element={<Navigate to={MERGED_MODULE_TARGETS.sermons} replace />} />
+                {/* Opieka/CRM scalona z Członkami — /care prowadzi prosto na zakładkę „Opieka” */}
+                <Route path="/care" element={<Navigate to={MERGED_MODULE_TARGETS.care} replace />} />
                 <Route path="/rooms" element={
                   <ProtectedRoute resource="module:rooms"><RoomsModule /></ProtectedRoute>
                 } />
@@ -607,11 +660,11 @@ function AppInner() {
                 {/* Trasa generyczna dla modułów z parametrem (fallback) */}
                 <Route path="/module/:moduleKey" element={<CustomModule />} />
 
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<CatchAllRoute modulesLoaded={modulesLoaded} />} />
               </Routes>
               </ModuleContainer>
               </Suspense>
-              </ErrorBoundary>
+              </RouteErrorBoundary>
               </main>
             </div>
           </div>

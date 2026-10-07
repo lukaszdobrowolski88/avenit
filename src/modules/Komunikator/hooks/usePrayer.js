@@ -1,9 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { toast } from '../../../lib/toast';
+import { tr } from '../../../i18n';
+import { sameEmail } from '../utils/chatLogic';
 
 // Odpowiedzi "🙏 Modlę się": messageId -> [{ id, user_email }]
 export default function usePrayer(conversationId, userEmail) {
   const [responses, setResponses] = useState({});
+  const pendingRef = useRef(new Set()); // strażnik podwójnego kliknięcia
 
   const fetchResponses = useCallback(async (messageIds) => {
     if (!messageIds || messageIds.length === 0) return;
@@ -29,13 +33,19 @@ export default function usePrayer(conversationId, userEmail) {
   }, []);
 
   const togglePraying = useCallback(async (messageId) => {
-    if (!messageId || !userEmail) return;
+    if (!messageId || !userEmail || pendingRef.current.has(messageId)) return;
+    pendingRef.current.add(messageId);
     const current = responses[messageId] || [];
-    const mine = current.find(r => r.user_email === userEmail);
+    const mine = current.find(r => sameEmail(r.user_email, userEmail));
 
     try {
       if (mine) {
-        await supabase.from('prayer_responses').delete().eq('id', mine.id);
+        const { error } = await supabase
+          .from('prayer_responses')
+          .delete()
+          .eq('id', mine.id)
+          .select('id, message_id');
+        if (error) throw error;
         setResponses(prev => ({
           ...prev,
           [messageId]: (prev[messageId] || []).filter(r => r.id !== mine.id)
@@ -54,6 +64,9 @@ export default function usePrayer(conversationId, userEmail) {
       }
     } catch (err) {
       console.error('Error toggling prayer:', err);
+      toast.error(err, { fallback: tr('Nie udało się zapisać. Spróbuj ponownie.') });
+    } finally {
+      pendingRef.current.delete(messageId);
     }
   }, [responses, userEmail]);
 
@@ -62,7 +75,7 @@ export default function usePrayer(conversationId, userEmail) {
     return {
       count: list.length,
       voters: list.map(r => r.user_email),
-      hasPrayed: list.some(r => r.user_email === userEmail)
+      hasPrayed: list.some(r => sameEmail(r.user_email, userEmail))
     };
   }, [responses, userEmail]);
 
@@ -71,14 +84,14 @@ export default function usePrayer(conversationId, userEmail) {
     const channel = supabase
       .channel(`prayer-responses-${conversationId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'prayer_responses' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
+        if (payload?.eventType === 'INSERT' && payload.new?.message_id) {
           const r = payload.new;
           setResponses(prev => {
             const existing = prev[r.message_id] || [];
             if (existing.some(x => x.id === r.id)) return prev;
             return { ...prev, [r.message_id]: [...existing, r] };
           });
-        } else if (payload.eventType === 'DELETE') {
+        } else if (payload?.eventType === 'DELETE' && payload.old?.message_id) {
           const r = payload.old;
           setResponses(prev => ({
             ...prev,

@@ -5,7 +5,7 @@ import Button from '../../components/Button';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { DateInput } from '../../components/pickers';
 import { confirmDialog } from '../../lib/dialog';
@@ -102,7 +102,7 @@ export default function AnnouncementsTab({ moduleKey, moduleId, tabId, canEdit =
                       {d.pinned && <Pin size={13} className="text-accent-primary shrink-0" />}
                       <h3 className="font-semibold text-gray-800 dark:text-gray-100 truncate">{d.title}</h3>
                     </div>
-                    {d.date && <p className="text-xs text-gray-400 mt-0.5">{new Date(d.date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}</p>}
+                    {d.date && <p className="text-xs text-gray-400 mt-0.5">{new Date(d.date).toLocaleDateString(appLocale(), { day: 'numeric', month: 'long', year: 'numeric' })}</p>}
                     {d.body && <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 whitespace-pre-wrap">{d.body}</p>}
                   </div>
                   {canEdit && (

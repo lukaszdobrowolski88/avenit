@@ -5,6 +5,7 @@ import ResponsiveTabs from '../../components/ResponsiveTabs';
 import SermonAssistantTab from './tabs/SermonAssistantTab';
 import CommunicationTab from './tabs/CommunicationTab';
 import AskDataTab from './tabs/AskDataTab';
+import { tr } from '../../i18n';
 
 const TABS = [
   { id: 'sermon', label: 'Asystent kazań', icon: BookOpen },
@@ -17,10 +18,10 @@ export default function AiAssistantModule() {
 
   return (
     <div className="space-y-6">
-      <PageHeader moduleKey="ai" icon={Sparkles} title="Asystent AI" subtitle="Materiały z kazań, pomoc w komunikacji i odpowiedzi na pytania — oparte na Claude" />
+      <PageHeader moduleKey="ai" icon={Sparkles} title={tr('Asystent AI')} subtitle={tr('Materiały z kazań, pomoc w komunikacji i odpowiedzi na pytania — oparte na Claude')} />
 
       {/* Zakładki */}
-      <ResponsiveTabs moduleKey="ai" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="ai" tabs={TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

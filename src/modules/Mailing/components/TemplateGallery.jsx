@@ -29,9 +29,9 @@ const CATEGORY_ICONS = {
 const EXTENDED_CATEGORIES = {
   ...TEMPLATE_CATEGORIES,
   welcome: { label: 'Powitalne', description: tr('Szablony powitalne dla nowych członków') },
-  holiday: { label: tr('Świąteczne'), description: tr('Szablony na święta i okazje specjalne') },
+  holiday: { label: 'Świąteczne', description: tr('Szablony na święta i okazje specjalne') },
   invitation: { label: 'Zaproszenia', description: 'Zaproszenia na wydarzenia' },
-  ministry: { label: tr('Służby'), description: tr('Komunikacja służb kościelnych') },
+  ministry: { label: 'Służby', description: tr('Komunikacja służb kościelnych') },
   worship: { label: 'Uwielbienie', description: tr('Materiały zespołu uwielbienia') },
   study: { label: 'Studium', description: tr('Materiały do studium biblijnego') }
 };
@@ -85,7 +85,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
       toast.error(tr('Nie można usunąć szablonu systemowego'));
       return;
     }
-    if (!await confirmDialog(`Czy na pewno chcesz usunąć szablon "${template.name}"?`)) return;
+    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć szablon "{name}"?', { name: template.name }))) return;
 
     try {
       await deleteTemplate(template.id);
@@ -168,7 +168,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
           }`}
         >
           <Star size={16} className={showFavoritesOnly ? 'fill-amber-500' : ''} />
-          <span className="hidden sm:inline">Ulubione</span>
+          <span className="hidden sm:inline">{tr('Ulubione')}</span>
           {favorites.length > 0 && (
             <span className={`px-1.5 py-0.5 rounded-full text-xs ${
               showFavoritesOnly ? 'bg-amber-200 dark:bg-amber-800' : 'bg-gray-100 dark:bg-gray-700'
@@ -187,7 +187,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
           icon={FileText}
           count={templates.length}
         >
-          Wszystkie
+          {tr('Wszystkie')}
         </CategoryButton>
         {Object.entries(EXTENDED_CATEGORIES).map(([key, { label }]) => {
           const Icon = CATEGORY_ICONS[key] || FileText;
@@ -202,7 +202,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
               icon={Icon}
               count={count}
             >
-              {label}
+              {tr(label)}
             </CategoryButton>
           );
         })}
@@ -219,7 +219,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
             <div className="w-14 h-14 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-accent-primary-light/30">
               <FileText className="w-7 h-7 text-white" />
             </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Nowy szablon</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{tr('Nowy szablon')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Stwórz własny szablon')}</p>
           </button>
         )}
@@ -251,14 +251,14 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                     <button
                       onClick={(e) => { e.stopPropagation(); setPreviewTemplate(template); }}
                       className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title={tr('Podgląd')}
+                      title={tr('Podgląd')} aria-label={tr('Podgląd')}
                     >
                       <Eye size={18} className="text-gray-700 dark:text-gray-300" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onSelectTemplate(template.id); }}
                       className="p-2 bg-accent-primary-light rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title={tr('Użyj szablonu')}
+                      title={tr('Użyj szablonu')} aria-label={tr('Użyj szablonu')}
                     >
                       <Edit size={18} className="text-white" />
                     </button>
@@ -281,7 +281,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                 {template.is_system && (
                   <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-blue-500/90 text-white text-xs rounded-lg">
                     <Sparkles size={12} />
-                    Systemowy
+                    {tr('Systemowy')}
                   </div>
                 )}
               </div>
@@ -296,7 +296,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <CategoryIcon size={12} />
-                        {EXTENDED_CATEGORIES[template.category]?.label || tr('Ogólne')}
+                        {tr(EXTENDED_CATEGORIES[template.category]?.label || 'Ogólne')}
                       </span>
                       {template.subject && (
                         <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[120px]" title={template.subject}>
@@ -346,7 +346,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
                               <Edit size={14} />
-                              {template.is_system ? 'Zobacz szablon' : 'Edytuj szablon'}
+                              {template.is_system ? tr('Zobacz szablon') : tr('Edytuj szablon')}
                             </button>
                           )}
                           <button
@@ -354,14 +354,14 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Star size={14} className={isFavorite ? 'fill-amber-500 text-amber-500' : ''} />
-                            {isFavorite ? tr('Usuń z ulubionych') : 'Dodaj do ulubionych'}
+                            {isFavorite ? tr('Usuń z ulubionych') : tr('Dodaj do ulubionych')}
                           </button>
                           <button
                             onClick={() => handleDuplicate(template)}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Copy size={14} />
-                            Duplikuj
+                            {tr('Duplikuj')}
                           </button>
                           {!template.is_system && (
                             <>
@@ -394,7 +394,8 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
         })}
       </div>
 
-      {filteredTemplates.length === 0 && (
+      {/* Gdy kategoria jest pusta, a obok stoi kafelek „Nowy szablon”, nie dublujemy komunikatu. */}
+      {filteredTemplates.length === 0 && (searchQuery || showFavoritesOnly || !onCreateTemplate) && (
         <EmptyState
           icon={FileText}
           title={showFavoritesOnly ? tr('Brak ulubionych szablonów') : tr('Brak szablonów w tej kategorii')}
@@ -445,11 +446,11 @@ function TemplatePreviewModal({
       title={template.name}
       subtitle={
         <span className="inline-flex items-center gap-2">
-          {EXTENDED_CATEGORIES[template.category]?.label || tr('Ogólne')}
+          {tr(EXTENDED_CATEGORIES[template.category]?.label || 'Ogólne')}
           {template.is_system && (
             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full">
               <Sparkles size={10} />
-              Systemowy
+              {tr('Systemowy')}
             </span>
           )}
         </span>
@@ -460,11 +461,11 @@ function TemplatePreviewModal({
         <div className="mr-auto text-sm text-gray-500 dark:text-gray-400 min-w-0">
           {template.subject && (
             <span className="flex items-center gap-2">
-              <span className="font-medium">Temat:</span> {template.subject}
+              <span className="font-medium">{tr('Temat:')}</span> {template.subject}
             </span>
           )}
         </div>
-        <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
         <Button icon={Edit} onClick={onUseTemplate}>{tr('Użyj szablonu')}</Button>
       </>}
     >
@@ -479,10 +480,10 @@ function TemplatePreviewModal({
                 ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
-            title="Widok desktop"
+            title={tr('Widok na komputerze')}
           >
             <Monitor size={16} />
-            <span className="text-xs font-medium hidden sm:inline">Desktop</span>
+            <span className="text-xs font-medium hidden sm:inline">{tr('Komputer')}</span>
           </button>
           <button
             onClick={() => onDeviceChange('mobile')}
@@ -491,10 +492,10 @@ function TemplatePreviewModal({
                 ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
-            title="Widok mobile"
+            title={tr('Widok na telefonie')}
           >
             <Smartphone size={16} />
-            <span className="text-xs font-medium hidden sm:inline">Mobile</span>
+            <span className="text-xs font-medium hidden sm:inline">{tr('Telefon')}</span>
           </button>
         </div>
 
@@ -506,7 +507,7 @@ function TemplatePreviewModal({
               ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500'
               : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-amber-500'
           }`}
-          title={isFavorite ? tr('Usuń z ulubionych') : 'Dodaj do ulubionych'}
+          title={isFavorite ? tr('Usuń z ulubionych') : tr('Dodaj do ulubionych')} aria-label={isFavorite ? tr('Usuń z ulubionych') : tr('Dodaj do ulubionych')}
         >
           <Star size={18} className={isFavorite ? 'fill-amber-500' : ''} />
         </button>

@@ -78,10 +78,10 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
   };
 
   const embedOptions = [
-    { id: 'iframe', label: 'Iframe', icon: Code, description: 'Prosty kod do osadzenia' },
-    { id: 'js', label: 'JavaScript', icon: Code, description: 'Dynamiczne osadzenie z auto-resize' },
-    { id: 'wordpress', label: 'WordPress', icon: Code, description: 'Shortcode dla WordPress' },
-    { id: 'link', label: 'Link', icon: ExternalLink, description: tr('Bezpośredni link do formularza') }
+    { id: 'iframe', label: 'Iframe', icon: Code, description: tr('Prosty kod do osadzenia') },
+    { id: 'js', label: 'JavaScript', icon: Code, description: tr('Dynamiczne osadzenie z auto-resize') },
+    { id: 'wordpress', label: 'WordPress', icon: Code, description: tr('Shortcode dla WordPress') },
+    { id: 'link', label: tr('Link'), icon: ExternalLink, description: tr('Bezpośredni link do formularza') }
   ];
 
   const getCurrentCode = () => {
@@ -100,13 +100,13 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
       onClose={onClose}
       closeOnBackdrop={false}
       title={tr('Osadź formularz na stronie')}
-      subtitle={formTitle || 'Formularz'}
+      subtitle={formTitle || tr('Formularz')}
       size="xl"
       footer={<>
         <p className="mr-auto text-xs text-gray-500 dark:text-gray-400">
           {tr('Formularz będzie działał na każdej stronie obsługującej iframe')}
         </p>
-        <Button variant="secondary" onClick={onClose}>Zamknij</Button>
+        <Button variant="secondary" onClick={onClose}>{tr('Zamknij')}</Button>
       </>}
     >
       <div className="p-6">
@@ -116,7 +116,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
             {/* Embed type selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Typ osadzenia
+                {tr('Typ osadzenia')}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {embedOptions.map((option) => (
@@ -149,7 +149,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
             {(embedType === 'iframe' || embedType === 'js') && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Rozmiar
+                  {tr('Rozmiar')}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -160,13 +160,13 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                       type="text"
                       value={iframeWidth}
                       onChange={(e) => setIframeWidth(e.target.value)}
-                      placeholder="np. 100% lub 600px"
+                      placeholder={tr('np. 100% lub 600px')}
                       className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      Wysokość (px)
+                      {tr('Wysokość (px)')}
                     </label>
                     <input
                       type="number"
@@ -203,7 +203,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Kod do skopiowania
+                  {tr('Kod do skopiowania')}
                 </label>
                 <button
                   onClick={() => copyToClipboard(getCurrentCode(), 'code')}
@@ -216,12 +216,12 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                   {copied === 'code' ? (
                     <>
                       <Check size={16} />
-                      Skopiowano!
+                      {tr('Skopiowano!')}
                     </>
                   ) : (
                     <>
                       <Copy size={16} />
-                      Kopiuj kod
+                      {tr('Kopiuj kod')}
                     </>
                   )}
                 </button>
@@ -289,7 +289,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                         ? 'bg-white dark:bg-gray-600 text-accent-primary-light shadow-sm'
                         : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                     }`}
-                    title={device.label}
+                    title={tr(device.label)}
                   >
                     <device.icon size={16} />
                   </button>
@@ -318,11 +318,11 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
             {embedType === 'wordpress' && (
               <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
                 <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-2">
-                  Instrukcje dla WordPress
+                  {tr('Instrukcje dla WordPress')}
                 </h4>
                 <ol className="text-sm text-blue-600 dark:text-blue-300 space-y-1 list-decimal list-inside">
-                  <li>Pobierz i zainstaluj plugin Avenit Forms</li>
-                  <li>Aktywuj plugin w panelu WordPress</li>
+                  <li>{tr('Pobierz i zainstaluj plugin Avenit Forms')}</li>
+                  <li>{tr('Aktywuj plugin w panelu WordPress')}</li>
                   <li>{tr('Wklej shortcode na dowolnej stronie lub w poście')}</li>
                   <li>{tr('Formularz pojawi się automatycznie')}</li>
                 </ol>

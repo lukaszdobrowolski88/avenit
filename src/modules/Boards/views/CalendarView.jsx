@@ -75,7 +75,7 @@ export default function CalendarView({ data, config, onUpdateConfig, onOpenItem 
   };
 
   if (!dateCol) {
-    return <div className="text-center py-16 text-gray-400 text-sm">Dodaj kolumnę typu Data lub Oś czasu, aby użyć widoku Kalendarz.</div>;
+    return <div className="text-center py-16 text-gray-400 text-sm">{tr('Dodaj kolumnę typu Data lub Oś czasu, aby użyć widoku Kalendarz.')}</div>;
   }
 
   return (
@@ -85,7 +85,7 @@ export default function CalendarView({ data, config, onUpdateConfig, onOpenItem 
           <button onClick={() => setCursor(addMonths(cursor, -1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronLeft size={18} /></button>
           <span className="text-lg font-semibold text-gray-800 dark:text-gray-100 capitalize min-w-[160px] text-center">{format(cursor, 'LLLL yyyy', { locale: pl })}</span>
           <button onClick={() => setCursor(addMonths(cursor, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronRight size={18} /></button>
-          <button onClick={() => setCursor(new Date())} className="ml-2 text-sm text-accent-primary">Dziś</button>
+          <button onClick={() => setCursor(new Date())} className="ml-2 text-sm text-accent-primary">{tr('Dziś')}</button>
         </div>
         {dateCols.length > 1 && (
           <div className="w-44">
@@ -96,7 +96,7 @@ export default function CalendarView({ data, config, onUpdateConfig, onOpenItem 
       </div>
 
       <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-        {WEEKDAYS.map(d => <div key={d} className="bg-gray-50 dark:bg-gray-800 text-center text-xs font-semibold text-gray-500 py-2">{d}</div>)}
+        {WEEKDAYS.map(d => <div key={d} className="bg-gray-50 dark:bg-gray-800 text-center text-xs font-semibold text-gray-500 py-2">{tr(d)}</div>)}
         {days.map(day => {
           const key = format(day, 'yyyy-MM-dd');
           const dayItems = itemsByDay[key] || [];
@@ -110,7 +110,7 @@ export default function CalendarView({ data, config, onUpdateConfig, onOpenItem 
               <div className="flex items-center justify-between mb-1">
                 <div className={`text-xs ${today ? 'bg-accent-primary text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-gray-400'}`}>{format(day, 'd')}</div>
                 {canCreate && (
-                  <button onClick={() => createOnDay(key)} title="Dodaj na ten dzień"
+                  <button onClick={() => createOnDay(key)} title={tr('Dodaj na ten dzień')}
                     className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-accent-primary"><Plus size={13} /></button>
                 )}
               </div>
@@ -125,11 +125,11 @@ export default function CalendarView({ data, config, onUpdateConfig, onOpenItem 
                       onClick={() => onOpenItem(it)}
                       className="w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate text-white cursor-pointer"
                       style={{ backgroundColor: l ? l.color : '#579bfc' }}>
-                      {it.name || 'Bez nazwy'}
+                      {it.name || tr('Bez nazwy')}
                     </button>
                   );
                 })}
-                {dayItems.length > 3 && <div className="text-[10px] text-gray-400 pl-1">+{dayItems.length - 3} więcej</div>}
+                {dayItems.length > 3 && <div className="text-[10px] text-gray-400 pl-1">+{dayItems.length - 3} {tr('więcej')}</div>}
               </div>
             </div>
           );

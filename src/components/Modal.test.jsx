@@ -64,4 +64,35 @@ describe('Modal', () => {
     expect(inner).toHaveBeenCalledTimes(1);
     expect(outer).not.toHaveBeenCalled();
   });
+
+  it('fokus: przy otwarciu trafia do okna, po zamknięciu wraca na przycisk-wywołujący', () => {
+    const opener = document.createElement('button');
+    opener.textContent = 'Dodaj osobę';
+    document.body.appendChild(opener);
+    opener.focus();
+    const { rerender } = render(<Modal isOpen onClose={() => {}} title="Nowa osoba"><input aria-label="Imię" /></Modal>);
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(dialog.getAttribute('aria-labelledby')).toBeTruthy();
+    expect(document.getElementById(dialog.getAttribute('aria-labelledby')).textContent).toBe('Nowa osoba');
+    rerender(<Modal isOpen={false} onClose={() => {}} title="Nowa osoba"><input aria-label="Imię" /></Modal>);
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+  });
+
+  it('pole z autoFocus zachowuje fokus startowy', () => {
+    render(<Modal isOpen onClose={() => {}} title="T"><input aria-label="A" /><input aria-label="B" autoFocus /></Modal>);
+    expect(document.activeElement.getAttribute('aria-label')).toBe('B');
+  });
+
+  it('pułapka Tab: z ostatniego elementu na pierwszy, Shift+Tab z pierwszego na ostatni', () => {
+    render(<Modal isOpen onClose={() => {}} title="T" footer={<button>Zapisz</button>}><input aria-label="Imię" /></Modal>);
+    const close = document.querySelector('button[aria-label="Zamknij"]');
+    const save = Array.from(document.querySelectorAll('button')).find((b) => b.textContent === 'Zapisz');
+    save.focus();
+    fireEvent.keyDown(save, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(save);
+  });
 });

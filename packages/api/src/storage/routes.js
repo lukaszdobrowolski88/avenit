@@ -1,11 +1,17 @@
 // Storage: pliki na dysku VPS — STORAGE_DIR/<tenant>/<bucket>/<ścieżka>.
 // Odpowiednik supabase.storage: upload / remove / getPublicUrl / list.
 // Buckety są publiczne do odczytu (tak jak dotąd w Supabase) — zapis wymaga logowania.
+// WYJĄTKI (audyt 2026-10): buckety z danymi wrażliwymi — listowanie i usuwanie tylko z
+// uprawnieniem modułu; deklaracje członkowskie (dane szczególnej kategorii) czytane wyłącznie
+// przez podpisany, krótko ważny link (POST /api/storage/<bucket>/sign).
 import path from 'node:path';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
+import crypto from 'node:crypto';
 import { config } from '../config.js';
+import { loadGrants } from '../dataapi/registry.js';
+import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 
 const BUCKET_RE = /^[a-z0-9-]+$/;
 
@@ -45,7 +51,38 @@ const BUCKETS = new Set([
   'membership-declarations',
   'mail-attachments',
   'messenger-attachments',
+  'form-uploads', // pola „plik/zdjęcie” i grafiki formularzy (brakowało → każdy upload 404)
 ]);
+
+// Buckety wrażliwe: kto może listować/usuwać/podpisywać (dowolna z capability; admin zawsze).
+const SENSITIVE = {
+  'membership-declarations': ['module:members'],
+  finance: ['module:finance'],
+  'mail-attachments': ['module:mail'],
+  'messenger-attachments': ['module:komunikator'],
+};
+// Odczyt bez podpisu zablokowany (tylko podpisany link albo pobranie z tokenem i uprawnieniem).
+const SIGNED_READ = new Set(['membership-declarations']);
+
+async function canUseBucket(req, bucket) {
+  const caps = SENSITIVE[bucket];
+  if (!caps) return true;
+  try {
+    const { rows } = await req.db.query(`SELECT is_super_admin, role FROM app_users WHERE id = $1`, [req.user.id]);
+    const role = rows[0]?.role ?? req.user.role;
+    if (rows[0]?.is_super_admin) return true;
+    const { grants, adminRoles } = await loadGrants(req.db, req.tenant.db_name);
+    if (adminRoles.has(role)) return true;
+    if (grants === null) return true; // tryb legacy (przed migracją uprawnień) — jak reszta API
+    const resolver = makeResolver(grants, { role, userId: req.user.id, isAdmin: false });
+    return caps.some((c) => resolver.can(c));
+  } catch {
+    return false;
+  }
+}
+
+const signFor = (tenant, bucket, filePath, exp) =>
+  crypto.createHmac('sha256', config.JWT_SECRET).update(`${tenant}|${bucket}|${filePath}|${exp}`).digest('hex');
 
 function safeJoin(...parts) {
   const base = path.resolve(config.STORAGE_DIR);
@@ -97,6 +134,7 @@ export default async function storageRoutes(app) {
   app.delete('/api/storage/:bucket', { preHandler: app.requireUser }, async (req, reply) => {
     const { bucket } = req.params;
     assertBucket(bucket);
+    if (!(await canUseBucket(req, bucket))) return reply.code(403).send({ error: 'Brak uprawnień do usuwania tych plików' });
     const paths = req.body?.paths || [];
     const removed = [];
     for (const p of paths) {
@@ -115,6 +153,7 @@ export default async function storageRoutes(app) {
   app.post('/api/storage/:bucket/list', { preHandler: app.requireUser }, async (req, reply) => {
     const { bucket } = req.params;
     assertBucket(bucket);
+    if (!(await canUseBucket(req, bucket))) return reply.code(403).send({ error: 'Brak uprawnień do przeglądania tych plików' });
     const prefix = String(req.body?.prefix || '');
     const dir = safeJoin(req.tenant.slug, bucket, prefix);
     try {
@@ -135,6 +174,19 @@ export default async function storageRoutes(app) {
     }
   });
 
+  // Podpisany link do pliku z bucketu wrażliwego (ważny domyślnie 5 min).
+  app.post('/api/storage/:bucket/sign', { preHandler: app.requireUser }, async (req, reply) => {
+    const { bucket } = req.params;
+    assertBucket(bucket);
+    const filePath = String(req.body?.path || '').replace(/^\//, '');
+    if (!filePath) return reply.code(400).send({ error: 'Brak ścieżki pliku' });
+    if (!(await canUseBucket(req, bucket))) return reply.code(403).send({ error: 'Brak uprawnień do tego pliku' });
+    const ttl = Math.min(Math.max(Number(req.body?.expiresIn) || 300, 30), 3600);
+    const exp = Math.floor(Date.now() / 1000) + ttl;
+    const sig = signFor(req.tenant.slug, bucket, filePath, exp);
+    return reply.send({ signedPath: `/storage/${bucket}/${filePath}?exp=${exp}&sig=${sig}` });
+  });
+
   // Publiczny odczyt: GET /storage/<bucket>/<ścieżka> na subdomenie tenanta.
   // (Caddy może to serwować bezpośrednio z dysku — ta trasa to fallback/dev.)
   app.get('/storage/:bucket/*', async (req, reply) => {
@@ -146,6 +198,14 @@ export default async function storageRoutes(app) {
       return reply.code(err.status || 404).send({ error: err.message });
     }
     if (!req.tenant) return reply.code(404).send({ error: 'Nieznany tenant' });
+    if (SIGNED_READ.has(bucket)) {
+      const exp = Number(req.query?.exp);
+      const sig = String(req.query?.sig || '');
+      const expected = Number.isFinite(exp) ? signFor(req.tenant.slug, bucket, filePath, exp) : '';
+      const valid = expected && sig.length === expected.length
+        && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) && exp >= Date.now() / 1000;
+      if (!valid) return reply.code(403).send({ error: 'Link do pliku wygasł albo jest nieprawidłowy' });
+    }
     const target = safeJoin(req.tenant.slug, bucket, filePath);
     if (!fs.existsSync(target) || !fs.statSync(target).isFile()) {
       return reply.code(404).send({ error: 'Nie znaleziono pliku' });

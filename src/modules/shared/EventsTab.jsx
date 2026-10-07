@@ -16,9 +16,45 @@ import EmptyState from '../../components/EmptyState';
 import HomeGroupVisibilityPicker, { buildHgSegments, segmentsToVisKeys } from '../Events/HomeGroupVisibilityPicker';
 import { useCan } from '../../components/Can';
 import { useT } from '../../i18n';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
 import { confirmDialog } from '../../lib/dialog';
+import { eventIncludesTeam } from '../../lib/scheduleBridge';
+
+const pad2 = (n) => String(n).padStart(2, '0');
+const localYmd = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const parseRules = (v) => {
+  try {
+    const r = v ? (typeof v === 'string' ? JSON.parse(v) : v) : [];
+    return Array.isArray(r) ? r : [];
+  } catch { return []; }
+};
+
+// Podział wydarzeń dla zakładki „Wydarzenia” modułu: własne (module_key = moduł) i „Służymy na” —
+// wydarzenia innych kalendarzy, w których ta służba służy (ten sam predykat co Grafik).
+export function splitModuleEvents(all, teamType, rules = []) {
+  const own = [];
+  const serving = [];
+  (all || []).forEach((ev) => {
+    if ((ev.module_key || '') === teamType) own.push(ev);
+    else if (eventIncludesTeam(ev, teamType, rules)) serving.push(ev);
+  });
+  return { own, serving };
+}
+
+// Usunięcie wydarzenia: najpierw sam rekord (ze sprawdzeniem błędu — przy 403 nic nie ruszamy),
+// potem sprzątanie tabel bez klucza obcego: przydziały do służby (inaczej wiszą w „Moich służbach”,
+// a „Wyślij” zaprasza na nieistniejące wydarzenie) i podpięte materiały.
+// Zwraca { error } (nie usunięto) albo { cleanupError } (usunięto, ale coś zostało).
+export async function deleteEventWithCleanup(id) {
+  const { error } = await supabase.from('events').delete().eq('id', id);
+  if (error) return { error };
+  const [sa, em] = await Promise.all([
+    supabase.from('schedule_assignments').delete().eq('event_id', id),
+    supabase.from('event_materials').delete().eq('event_id', id),
+  ]);
+  return { error: null, cleanupError: sa?.error || em?.error || null };
+}
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -83,7 +119,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
     setIsOpen(false);
   };
 
-  const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+  const monthName = viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
   const startDay = (new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay() + 6) % 7;
 
@@ -100,7 +136,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
+            {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -162,9 +198,9 @@ const MINISTRY_CONFIG = {
     defaultType: 'proba',
     types: [
       { value: 'proba', label: tr('Próba') },
-      { value: 'koncert', label: 'Koncert' },
+      { value: 'koncert', label: tr('Koncert') },
       { value: 'nabozesnstwo', label: tr('Nabożeństwo') },
-      { value: 'warsztat', label: 'Warsztat' },
+      { value: 'warsztat', label: tr('Warsztat') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'purple'
@@ -175,9 +211,9 @@ const MINISTRY_CONFIG = {
     title: 'Media Team',
     defaultType: 'produkcja',
     types: [
-      { value: 'produkcja', label: 'Produkcja' },
-      { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'streaming', label: 'Streaming' },
+      { value: 'produkcja', label: tr('Produkcja') },
+      { value: 'szkolenie', label: tr('Szkolenie') },
+      { value: 'streaming', label: tr('Streaming') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'orange'
@@ -189,7 +225,7 @@ const MINISTRY_CONFIG = {
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: tr('Spotkanie') },
-      { value: 'szkolenie', label: 'Szkolenie' },
+      { value: 'szkolenie', label: tr('Szkolenie') },
       { value: 'integracja', label: tr('Integracja') },
       { value: 'inne', label: tr('Inne') }
     ],
@@ -202,9 +238,9 @@ const MINISTRY_CONFIG = {
     defaultType: 'zajecia',
     types: [
       { value: 'zajecia', label: tr('Zajęcia') },
-      { value: 'wycieczka', label: 'Wycieczka' },
-      { value: 'warsztat', label: 'Warsztat' },
-      { value: 'przedstawienie', label: 'Przedstawienie' },
+      { value: 'wycieczka', label: tr('Wycieczka') },
+      { value: 'warsztat', label: tr('Warsztat') },
+      { value: 'przedstawienie', label: tr('Przedstawienie') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'yellow'
@@ -212,12 +248,12 @@ const MINISTRY_CONFIG = {
   mlodziezowka: {
     tableName: 'events', teamType: 'mlodziezowka',
     icon: '🔥',
-    title: 'Młodzieżówka',
+    title: tr('Młodzieżówka'),
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: tr('Spotkanie') },
       { value: 'wyjazd', label: tr('Wyjazd') },
-      { value: 'warsztat', label: 'Warsztat' },
+      { value: 'warsztat', label: tr('Warsztat') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'pink'
@@ -225,12 +261,12 @@ const MINISTRY_CONFIG = {
   homegroups: {
     tableName: 'module_events', teamType: 'homegroups',
     icon: '🏠',
-    title: 'Grupy Domowe',
+    title: tr('Grupy Domowe'),
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: tr('Spotkanie') },
       { value: 'integracja', label: tr('Integracja') },
-      { value: 'szkolenie', label: 'Szkolenie' },
+      { value: 'szkolenie', label: tr('Szkolenie') },
       { value: 'inne', label: tr('Inne') }
     ],
     color: 'blue'
@@ -249,12 +285,12 @@ function getModuleConfig(ministry) {
   return {
     tableName: 'module_events', teamType: ministry,
     icon: '📅',
-    title: 'Wydarzenia',
+    title: tr('Wydarzenia'),
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: t('Spotkanie') },
-      { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'warsztat', label: 'Warsztat' },
+      { value: 'szkolenie', label: tr('Szkolenie') },
+      { value: 'warsztat', label: tr('Warsztat') },
       { value: 'wydarzenie', label: t('Wydarzenie') },
       { value: 'inne', label: t('Inne') }
     ],
@@ -289,6 +325,14 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
       toast.error(tr('Tytuł wydarzenia jest wymagany'));
       return;
     }
+    if (!form.start_date) {
+      toast.error(tr('Wybierz datę — bez niej wydarzenie nie trafi do kalendarza.'));
+      return;
+    }
+    if (form.start_time && form.end_time && String(form.end_time).slice(0, 5) <= String(form.start_time).slice(0, 5)) {
+      toast.error(tr('Koniec musi być później niż początek.'));
+      return;
+    }
 
     const eventData = {
       title: form.title.trim(),
@@ -310,7 +354,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
     const leadGroups = form.visKeys.filter((k) => k.startsWith('lead:')).map((k) => k.slice(5));
     eventData.home_group_id = memGroups[0] || leadGroups[0] || null;
 
-    onSave(form.id, eventData);
+    return onSave(form.id, eventData);
   };
 
   return (
@@ -321,10 +365,10 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
       title={form.id ? tr('Edytuj wydarzenie') : tr('Nowe wydarzenie')}
       footer={<>
         {form.id && onDelete && (
-          <Button variant="danger" icon={Trash2} onClick={() => onDelete(form.id)} className="mr-auto">Usuń</Button>
+          <Button variant="danger" icon={Trash2} onClick={() => onDelete(form.id)} className="mr-auto">{tr('Usuń')}</Button>
         )}
         <Button variant="secondary" onClick={onClose}>{t('Anuluj')}</Button>
-        <Button icon={Save} onClick={handleSubmit}>Zapisz</Button>
+        <Button icon={Save} onClick={handleSubmit}>{tr('Zapisz')}</Button>
       </>}
     >
       <div className="p-6 space-y-4">
@@ -364,7 +408,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
               <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={form.max_participants || ''} onChange={e => setForm({...form, max_participants: e.target.value})} />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Typ wydarzenia</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Typ wydarzenia')}</label>
               <CustomSelect
                 value={form.event_type}
                 onChange={val => setForm({...form, event_type: val})}
@@ -440,11 +484,11 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     const segs = Array.isArray(ev.visibility_segments) ? ev.visibility_segments : [];
     const parts = [];
     segs.forEach((s) => {
-      if (s?.type === 'home_group_member') parts.push('Wszyscy członkowie');
-      else if (s?.type === 'home_group_coordinator') parts.push('Koordynatorzy');
+      if (s?.type === 'home_group_member') parts.push(tr('Wszyscy członkowie'));
+      else if (s?.type === 'home_group_coordinator') parts.push(tr('Koordynatorzy'));
       else if (s?.type === 'home_group_leader') {
-        if (Array.isArray(s.values) && s.values.length) parts.push('Liderzy: ' + s.values.map(homeGroupName).filter(Boolean).join(', '));
-        else parts.push('Wszyscy liderzy');
+        if (Array.isArray(s.values) && s.values.length) parts.push(tr('Liderzy: {names}', { names: s.values.map(homeGroupName).filter(Boolean).join(', ') }));
+        else parts.push(tr('Wszyscy liderzy'));
       } else if (s?.type === 'home_group' && Array.isArray(s.values)) parts.push(s.values.map(homeGroupName).filter(Boolean).join(', '));
     });
     if (!parts.length && ev.home_group_id) return homeGroupName(ev.home_group_id);
@@ -452,6 +496,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   };
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [events, setEvents] = useState([]);
+  const [servingEvents, setServingEvents] = useState([]); // wydarzenia innych kalendarzy, w których służymy
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null);
   const [searchFilter, setSearchFilter] = useState('');
@@ -501,40 +546,41 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   const toggleRsvp = async (ev) => {
     if (!userEmail) { toast.error(tr('Zaloguj się, aby potwierdzić obecność')); return; }
     const mine = rsvpMap[ev.id]?.mine;
-    try {
-      if (mine) await supabase.from('event_registrations').delete().eq('event_id', ev.id).eq('user_email', userEmail);
-      else await supabase.from('event_registrations').insert([{ event_id: ev.id, user_email: userEmail, full_name: userEmail.split('@')[0], status: 'going' }]);
-      fetchRsvp(events);
-    } catch (e) { toast.error(e.message); }
+    const { error } = mine
+      ? await supabase.from('event_registrations').delete().eq('event_id', ev.id).eq('user_email', userEmail)
+      : await supabase.from('event_registrations').insert([{ event_id: ev.id, user_email: userEmail, full_name: userEmail.split('@')[0], status: 'going' }]);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się zapisać potwierdzenia obecności.') }); return; }
+    fetchRsvp(events);
   };
 
   const fetchEvents = async () => {
     setLoading(true);
-    // Jeden model: wydarzenia modułu = wspólna tabela `events` filtrowana po module_key.
+    // Jeden model: wspólna tabela `events`. Własne wydarzenia modułu (module_key) + „Służymy na”:
+    // wydarzenia innych kalendarzy, w których ta służba służy — ten sam zbiór co Grafik
+    // (dawniej Grafik miał nabożeństwa, a tu „Brak wydarzeń” zachęcało do tworzenia duplikatu).
     // Ładujemy WSZYSTKIE (bez filtra daty) — podział na nadchodzące/archiwalne robimy w UI.
     try {
-      const { data, error } = await withCampusFilter(supabase
-        .from('events')
-        .select('*'))
-        .eq('module_key', config.teamType)
-        .order('date', { ascending: true })
-        .order('time', { ascending: true });
-
-      if (error) {
-        console.error('Błąd pobierania wydarzeń:', error);
-        setEvents([]);
-      } else {
-        setTableExists(true);
-        // Normalizacja: reszta komponentu operuje na `start_date` (jak dawne module_events),
-        // więc mapujemy date+time → start_date (wall-clock jako UTC, spójnie z modalem).
-        setEvents((data || []).map((r) => ({
-          ...r,
-          start_date: r.date ? `${String(r.date).slice(0, 10)}T${(r.time || '00:00')}:00.000Z` : null,
-        })));
-      }
+      const [evRes, rulesRes] = await Promise.all([
+        withCampusFilter(supabase.from('events').select('*'))
+          .order('date', { ascending: true })
+          .order('time', { ascending: true }),
+        supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle(),
+      ]);
+      if (evRes.error) throw evRes.error;
+      setTableExists(true);
+      // Normalizacja: reszta komponentu operuje na `start_date` (jak dawne module_events),
+      // więc mapujemy date+time → start_date (wall-clock jako UTC, spójnie z modalem).
+      const all = (evRes.data || []).map((r) => ({
+        ...r,
+        start_date: r.date ? `${String(r.date).slice(0, 10)}T${(r.time || '00:00')}:00.000Z` : null,
+      }));
+      const { own, serving } = splitModuleEvents(all, config.teamType, parseRules(rulesRes?.data?.value));
+      setEvents(own);
+      setServingEvents(serving);
     } catch (err) {
-      console.error('Błąd pobierania wydarzeń:', err);
+      toast.error(err, { fallback: tr('Nie udało się wczytać wydarzeń. Odśwież stronę.') });
       setEvents([]);
+      setServingEvents([]);
     }
     setLoading(false);
   };
@@ -572,25 +618,42 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     }
 
     if (error) {
-      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
-    } else {
-      setShowModal(null);
-      fetchEvents();
+      toast.error(error, { fallback: tr('Nie udało się zapisać wydarzenia. Spróbuj ponownie.') });
+      return false;
     }
+    toast.success(id ? tr('Zapisano wydarzenie') : tr('Dodano wydarzenie'));
+    setShowModal(null);
+    fetchEvents();
+    return true;
   };
 
   const handleDelete = async (id) => {
-    if (await confirmDialog(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('events').delete().eq('id', id);
-      setShowModal(null);
-      fetchEvents();
-    }
+    const ev = events.find((e) => e.id === id);
+    const ok = await confirmDialog({
+      title: tr('Usunąć wydarzenie?'),
+      message: tr('Wydarzenie „{name}” zniknie z kalendarza i grafików, a zaproszenia do służby na nie zostaną anulowane. Tej operacji nie można cofnąć.', { name: ev?.title || '' }),
+      isDelete: true,
+    });
+    if (!ok) return;
+    const { error, cleanupError } = await deleteEventWithCleanup(id);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się usunąć wydarzenia.') }); return; }
+    if (cleanupError) toast.info(tr('Usunięto wydarzenie, ale część przydziałów do służby nie została wyczyszczona — administrator może je usunąć później.'));
+    else toast.success(tr('Usunięto wydarzenie'));
+    setShowModal(null);
+    fetchEvents();
   };
 
   const toggleArchive = async (ev, val) => {
     const { error } = await supabase.from('events').update({ is_archived: val }).eq('id', ev.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success(val ? tr('Przeniesiono do archiwum') : tr('Przywrócono'));
+    if (error) { toast.error(error, { fallback: tr('Nie udało się zmienić wydarzenia.') }); return; }
+    if (val) {
+      toast.success({
+        message: tr('Przeniesiono „{title}” do archiwum.', { title: ev.title || tr('wydarzenie') }),
+        action: { label: tr('Cofnij'), onClick: () => toggleArchive(ev, false) },
+      });
+    } else {
+      toast.success(tr('Przywrócono „{title}”.', { title: ev.title || tr('wydarzenie') }));
+    }
     fetchEvents();
   };
 
@@ -605,11 +668,17 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   });
 
   // Podział: nadchodzące vs archiwalne (przeszłe LUB ręcznie zarchiwizowane).
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = localYmd();
   const isArchivedEvent = (ev) => ev.is_archived || (ev.start_date && String(ev.start_date).slice(0, 10) < todayStr);
   const upcomingEvents = filteredEvents.filter((ev) => !isArchivedEvent(ev));
   const archiveEvents = filteredEvents.filter((ev) => isArchivedEvent(ev));
   const scopedEvents = eventScope === 'archive' ? archiveEvents : upcomingEvents;
+  // „Służymy na” — tylko nadchodzące, z tym samym wyszukiwaniem (typ/grupa dotyczą własnych wydarzeń).
+  const servingUpcoming = servingEvents
+    .filter((ev) => !isArchivedEvent(ev) && ev.start_date)
+    .filter((ev) => !searchFilter || `${ev.title || ''} ${ev.description || ''}`.toLowerCase().includes(searchFilter.toLowerCase()));
+  const hasFilters = !!(searchFilter || typeFilter || groupFilter);
+  const clearFilters = () => { setSearchFilter(''); setTypeFilter(''); setGroupFilter(''); };
 
   // Grupowanie po miesiącach (archiwum: od najnowszych).
   const eventsByMonth = scopedEvents.reduce((acc, ev) => {
@@ -670,7 +739,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       <div className="p-8 text-center">
         <div className="max-w-2xl mx-auto bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-2">
-            Tabela nie istnieje
+            {tr('Tabela nie istnieje')}
           </h3>
           <p className="text-yellow-700 dark:text-yellow-300 mb-4">
             {tr('Ta funkcja wymaga tabeli, której nie ma jeszcze w bazie danych. Skontaktuj się z administratorem.')}
@@ -684,11 +753,11 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           <button
             onClick={() => {
               navigator.clipboard.writeText(sqlScript);
-              toast.success('Skopiowano do schowka!');
+              toast.success(tr('Skopiowano do schowka!'));
             }}
             className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition"
           >
-            Skopiuj SQL
+            {tr('Skopiuj SQL')}
           </button>
           <button
             onClick={fetchEvents}
@@ -733,7 +802,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
           >
-            <option value="">Wszystkie typy</option>
+            <option value="">{tr('Wszystkie typy')}</option>
             {eventTypes.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
@@ -758,7 +827,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
 
       {/* Przełącznik: nadchodzące / archiwalne */}
       <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-fit">
-        {[['upcoming', t('Nadchodzące'), upcomingEvents.length], ['archive', t('Archiwalne'), archiveEvents.length]].map(([id, label, n]) => (
+        {[['upcoming', t('Nadchodzące'), upcomingEvents.length + servingUpcoming.length], ['archive', t('Archiwalne'), archiveEvents.length]].map(([id, label, n]) => (
           <button key={id} onClick={() => setEventScope(id)}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${eventScope === id ? 'bg-white dark:bg-gray-900 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
             {label} <span className="opacity-60">({n})</span>
@@ -770,17 +839,26 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       {loading ? (
         <Spinner center />
       ) : scopedEvents.length === 0 ? (
-        <EmptyState
-          icon={Calendar}
-          title={eventScope === 'archive' ? t('Brak archiwalnych wydarzeń') : t('Brak wydarzeń')}
-          subtitle={eventScope !== 'archive' ? t('Kliknij "Dodaj wydarzenie" aby utworzyć pierwsze') : undefined}
-        />
+        eventScope === 'archive' ? (
+          <EmptyState icon={Calendar} title={t('Brak archiwalnych wydarzeń')} />
+        ) : hasFilters ? (
+          <EmptyState icon={Filter} title={t('Brak wyników dla tych filtrów')}
+            action={<Button variant="outline" size="sm" icon={X} onClick={clearFilters}>{t('Wyczyść filtry')}</Button>} />
+        ) : servingUpcoming.length ? null : (
+          // Nabożeństwa i wspólne wydarzenia tworzy się w Wydarzeniach — tu nie zachęcamy do duplikatu.
+          <EmptyState
+            icon={Calendar}
+            title={t('Brak nadchodzących wydarzeń')}
+            subtitle={t('Nabożeństwa i wspólne wydarzenia dodajesz w module Wydarzenia — pojawią się tutaj, gdy ta służba będzie w nich służyć.')}
+            action={<Button variant="outline" size="sm" icon={Calendar} onClick={() => navigate('/wydarzenia')}>{t('Przejdź do wydarzeń')}</Button>}
+          />
+        )
       ) : (
         <div className="space-y-8">
           {monthKeys.map((monthKey) => {
             const monthEvents = eventsByMonth[monthKey];
             const [year, month] = monthKey.split('-');
-            const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+            const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' });
 
             return (
               <div key={monthKey}>
@@ -801,7 +879,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                         <div className="flex items-start justify-between gap-2 mb-3">
                           <div className={`bg-gradient-to-br ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white rounded-xl px-3 py-2 text-center min-w-[56px]`}>
                             <div className="text-xl font-bold leading-none">{date.getDate()}</div>
-                            <div className="text-[10px] uppercase opacity-90 mt-0.5">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
+                            <div className="text-[10px] uppercase opacity-90 mt-0.5">{date.toLocaleDateString(appLocale(), { weekday: 'short' })}</div>
                           </div>
                           <span className={`px-2 py-1 text-[11px] rounded-full font-medium bg-gradient-to-r ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white shrink-0`}>
                             {getTypeLabel(ev.event_type)}
@@ -814,7 +892,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-xs text-gray-500 dark:text-gray-400">
                           {timeStr && <span className="flex items-center gap-1"><Clock size={13} /> {timeStr}{ev.end_time ? ` - ${ev.end_time}` : ''}</span>}
                           {ev.location && <span className="flex items-center gap-1"><MapPin size={13} /> {ev.location}</span>}
-                          {ev.max_participants && <span className="flex items-center gap-1"><Users size={13} /> max. {ev.max_participants}</span>}
+                          {ev.max_participants && <span className="flex items-center gap-1"><Users size={13} /> {tr('max.')} {ev.max_participants}</span>}
                           {isHomeGroups && visBadge(ev) && <span className="flex items-center gap-1 text-accent-primary"><Home size={13} /> {visBadge(ev)}</span>}
                         </div>
 
@@ -828,11 +906,11 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                             <Users size={14} /> {rsvpMap[ev.id]?.mine ? tr('Będę') : tr('Potwierdź')}{rsvpMap[ev.id]?.count ? ` · ${rsvpMap[ev.id].count}` : ''}
                           </button>
                           {eventScope === 'upcoming' ? (
-                            <button onClick={(e) => { e.stopPropagation(); toggleArchive(ev, true); }} title={tr('Archiwizuj')}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition"><Archive size={15} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); toggleArchive(ev, true); }} title={tr('Archiwizuj')} aria-label={tr('Archiwizuj: {name}', { name: ev.title || '' })}
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition"><Archive size={15} aria-hidden="true" /></button>
                           ) : ev.is_archived ? (
-                            <button onClick={(e) => { e.stopPropagation(); toggleArchive(ev, false); }} title={tr('Przywróć')}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition"><RotateCcw size={15} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); toggleArchive(ev, false); }} title={tr('Przywróć')} aria-label={tr('Przywróć: {name}', { name: ev.title || '' })}
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition"><RotateCcw size={15} aria-hidden="true" /></button>
                           ) : null}
                         </div>
                       </div>
@@ -843,6 +921,43 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             );
           })}
         </div>
+      )}
+
+      {/* Służymy na — wydarzenia innych kalendarzy z tą służbą (te same co w Grafiku) */}
+      {!loading && eventScope === 'upcoming' && servingUpcoming.length > 0 && (
+        <section aria-labelledby={`serving-${config.teamType}`} className="space-y-3">
+          <div>
+            <h3 id={`serving-${config.teamType}`} className="text-sm font-bold text-gray-700 dark:text-gray-200">{t('Służymy na')}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('Wydarzenia z innych kalendarzy, w których służy ta służba — te same co w Grafiku.')}</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {servingUpcoming.map((ev) => {
+              const [y, m, d] = String(ev.start_date).slice(0, 10).split('-').map(Number);
+              const day = new Date(y, m - 1, d);
+              const timeStr = ev.time ? String(ev.time).slice(0, 5) : '';
+              return (
+                <button
+                  type="button"
+                  key={`serving_${ev.id}`}
+                  onClick={() => navigate(`/wydarzenie/${ev.id}`)}
+                  className="text-left bg-white dark:bg-gray-800/70 rounded-2xl border border-gray-200 dark:border-gray-700 p-3 flex items-start gap-3 hover:shadow-md hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
+                >
+                  <div className="rounded-xl bg-gray-100 dark:bg-gray-700 px-2.5 py-1.5 text-center min-w-[48px]">
+                    <div className="text-lg font-bold leading-none text-gray-800 dark:text-gray-100">{day.getDate()}</div>
+                    <div className="text-[11px] uppercase text-gray-500 dark:text-gray-400 mt-0.5">{day.toLocaleDateString(appLocale(), { month: 'short' })}</div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm text-gray-800 dark:text-gray-100 truncate">{ev.title || tr('Bez tytułu')}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {day.toLocaleDateString(appLocale(), { weekday: 'long' })}{timeStr ? `, ${timeStr}` : ''}
+                    </div>
+                    {ev.location && <div className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1 mt-0.5"><MapPin size={12} aria-hidden="true" /> {ev.location}</div>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* Modal */}

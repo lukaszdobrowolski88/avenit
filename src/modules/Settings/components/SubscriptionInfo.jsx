@@ -3,16 +3,16 @@ import { CreditCard, CheckCircle2, Sparkles } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, UsageBar } from './SettingsUI';
 import { useT } from '../../../i18n';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 
 // Sekcja Subskrypcja — read-only. Plan i limity pobiera z /api/tenant/info
 // (baza platform), zużycie liczy z bazy tenanta przez Data API.
 const STATUS_LABEL = {
   trial: { text: tr('Okres próbny'), cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   trialing: { text: tr('Okres próbny'), cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  active: { text: 'Aktywna', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  active: { text: tr('Aktywna'), cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   past_due: { text: tr('Zaległa płatność'), cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  suspended: { text: 'Zawieszona', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  suspended: { text: tr('Zawieszona'), cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 };
 
 export default function SubscriptionInfo() {
@@ -62,10 +62,10 @@ export default function SubscriptionInfo() {
     .filter(([, v]) => v === true)
     .map(([k]) => k);
   const featureLabels = {
-    calendar: 'Kalendarz', members: tr('Członkowie'), groups: 'Grupy', kids_checkin: 'Check-in dzieci',
-    events: 'Wydarzenia', email: 'E-maile', finance: 'Finanse', forms: 'Formularze',
-    advanced_reports: 'Raporty zaawansowane', api: 'API', white_label: 'White-label',
-    priority_support: 'Wsparcie priorytetowe', custom_domain: tr('Własna domena'),
+    calendar: tr('Kalendarz'), members: tr('Członkowie'), groups: tr('Grupy'), kids_checkin: tr('Check-in dzieci'),
+    events: tr('Wydarzenia'), email: tr('E-maile'), finance: tr('Finanse'), forms: tr('Formularze'),
+    advanced_reports: tr('Raporty zaawansowane'), api: 'API', white_label: 'White-label',
+    priority_support: tr('Wsparcie priorytetowe'), custom_domain: tr('Własna domena'),
   };
 
   return (
@@ -77,32 +77,32 @@ export default function SubscriptionInfo() {
               <span className="text-2xl font-bold text-gray-800 dark:text-white">{sub?.planName || '—'}</span>
               <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.cls}`}>{status.text}</span>
             </div>
-            {price && <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{price} zł / miesiąc</div>}
+            {price && <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tr('{price} zł / miesiąc', { price })}</div>}
           </div>
           {sub?.currentPeriodEnd && (
             <div className="text-right text-sm">
-              <div className="text-gray-400">Okres do</div>
-              <div className="font-medium text-gray-700 dark:text-gray-200">{new Date(sub.currentPeriodEnd).toLocaleDateString('pl-PL')}</div>
+              <div className="text-gray-400">{tr('Okres do')}</div>
+              <div className="font-medium text-gray-700 dark:text-gray-200">{new Date(sub.currentPeriodEnd).toLocaleDateString(appLocale())}</div>
             </div>
           )}
           {(tenant?.status === 'trial') && tenant?.trialEndsAt && (
             <div className="text-right text-sm">
-              <div className="text-gray-400">Trial do</div>
-              <div className="font-medium text-amber-600 dark:text-amber-400">{new Date(tenant.trialEndsAt).toLocaleDateString('pl-PL')}</div>
+              <div className="text-gray-400">{tr('Trial do')}</div>
+              <div className="font-medium text-amber-600 dark:text-amber-400">{new Date(tenant.trialEndsAt).toLocaleDateString(appLocale())}</div>
             </div>
           )}
         </div>
       </SettingsCard>
 
-      <SettingsCard icon={Sparkles} title="Wykorzystanie" description={tr('Zużycie limitów Twojego planu.')}>
+      <SettingsCard icon={Sparkles} title={tr('Wykorzystanie')} description={tr('Zużycie limitów Twojego planu.')}>
         <UsageBar label={tr('Członkowie')} used={usage.members} max={limits.members} />
         <UsageBar label={tr('Użytkownicy')} used={usage.users} max={limits.users} />
-        <UsageBar label="Grupy" used={usage.groups} max={limits.groups} />
-        <UsageBar label="Dzieci" used={usage.kids} max={limits.kids} />
+        <UsageBar label={tr('Grupy')} used={usage.groups} max={limits.groups} />
+        <UsageBar label={tr('Dzieci')} used={usage.kids} max={limits.kids} />
       </SettingsCard>
 
       {enabledFeatures.length > 0 && (
-        <SettingsCard icon={CheckCircle2} title="Funkcje w planie">
+        <SettingsCard icon={CheckCircle2} title={tr('Funkcje w planie')}>
           <div className="flex flex-wrap gap-2">
             {enabledFeatures.map((f) => (
               <span key={f} className="text-sm px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 flex items-center gap-1.5">

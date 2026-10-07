@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Check, Search, X, Link2, GitBranch, AlertTriangle } from 'lucide-react';
 import Popover from '../Popover';
 import { supabase } from '../../../../lib/supabase';
+import { tr } from '../../../../i18n';
 
 // Prosty cache elementów per-tablica (nazwy do pickera relacji).
 const itemsCache = new Map();
@@ -40,7 +41,7 @@ export default function ItemLinkCell({ column, value = [], onChange, currentItem
   const isLinked = (id) => linked.some(l => l.id === id);
   const toggle = (o) => {
     if (isLinked(o.id)) onChange(linked.filter(l => l.id !== o.id));
-    else onChange([...linked, { id: o.id, name: o.name || 'Element' }]);
+    else onChange([...linked, { id: o.id, name: o.name || tr('Element') }]);
   };
 
   const Chips = (
@@ -60,7 +61,7 @@ export default function ItemLinkCell({ column, value = [], onChange, currentItem
   if (mode === 'connect' && !sourceBoardId) {
     return (
       <div className="w-full h-full flex items-center px-2 text-[11px] text-amber-500 gap-1">
-        <AlertTriangle size={12} /> wskaż tablicę
+        <AlertTriangle size={12} /> {tr('wskaż tablicę')}
       </div>
     );
   }
@@ -71,7 +72,7 @@ export default function ItemLinkCell({ column, value = [], onChange, currentItem
         <div className="p-2">
           <div className="flex items-center gap-2 px-2 py-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg mb-2">
             <Search size={14} className="text-gray-400" />
-            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Szukaj elementu..."
+            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Szukaj elementu...')}
               className="bg-transparent text-sm outline-none w-full text-gray-700 dark:text-gray-200" />
           </div>
           {linked.length > 0 && (
@@ -84,15 +85,15 @@ export default function ItemLinkCell({ column, value = [], onChange, currentItem
             </div>
           )}
           <div className="max-h-56 overflow-y-auto custom-scrollbar">
-            {!loaded && <div className="text-xs text-gray-400 text-center py-3">Ładowanie…</div>}
+            {!loaded && <div className="text-xs text-gray-400 text-center py-3">{tr('Ładowanie…')}</div>}
             {loaded && filtered.map(o => (
               <button key={o.id} onClick={() => toggle(o)}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-left">
-                <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-200 truncate">{o.name || 'Bez nazwy'}</span>
+                <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-200 truncate">{o.name || tr('Bez nazwy')}</span>
                 {isLinked(o.id) && <Check size={15} className="text-accent-primary" />}
               </button>
             ))}
-            {loaded && filtered.length === 0 && <div className="text-xs text-gray-400 text-center py-3">Brak elementów</div>}
+            {loaded && filtered.length === 0 && <div className="text-xs text-gray-400 text-center py-3">{tr('Brak elementów')}</div>}
           </div>
         </div>
       )}

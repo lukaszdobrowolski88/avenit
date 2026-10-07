@@ -63,3 +63,18 @@ describe('PageHeader', () => {
     expect(container.querySelector('.h-20')).toBeTruthy();
   });
 });
+
+describe('PageHeader — tytuł karty przeglądarki', () => {
+  it('ustawia document.title = „<tytuł> · Avenit” i przywraca „Avenit” po odmontowaniu', () => {
+    const { unmount } = render(<PageHeader icon={Gift} title="Członkowie" />);
+    expect(document.title).toBe('Członkowie · Avenit');
+    unmount();
+    expect(document.title).toBe('Avenit');
+  });
+
+  it('osadzony drugi nagłówek nie nadpisuje tytułu strony', () => {
+    const { unmount } = render(<><PageHeader icon={Gift} title="Finanse" /><PageHeader icon={Gift} title="Budżet" cover={false} /></>);
+    expect(document.title).toBe('Finanse · Avenit');
+    unmount();
+  });
+});

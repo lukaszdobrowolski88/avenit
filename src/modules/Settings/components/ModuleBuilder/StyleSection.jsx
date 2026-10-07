@@ -19,7 +19,7 @@ const lbl = 'block text-[11px] font-bold text-gray-400 dark:text-gray-500 upperc
 function Sel({ label, value, onChange, options }) {
   return (
     <div>
-      <label className={lbl}>{tr(label)}</label>
+      <label className={lbl}>{label}</label>
       <select className={inputCls} value={value ?? ''} onChange={(e) => onChange(e.target.value || undefined)}>
         {options.map((o) => <option key={o.value} value={o.value}>{tr(o.label)}</option>)}
       </select>
@@ -30,7 +30,7 @@ function Sel({ label, value, onChange, options }) {
 function Color({ label, value, onChange }) {
   return (
     <div>
-      <label className={lbl}>{tr(label)}</label>
+      <label className={lbl}>{label}</label>
       <div className="flex items-center gap-2">
         <input type="color" value={value || '#ffffff'} onChange={(e) => onChange(e.target.value)} className="w-9 h-8 rounded border border-gray-200 dark:border-gray-700 bg-transparent" />
         {value ? <button onClick={() => onChange(undefined)} className="text-xs text-gray-400 hover:underline">{tr('wyczyść')}</button> : <span className="text-xs text-gray-400">{tr('brak')}</span>}
@@ -44,7 +44,7 @@ function Group({ title, icon: Icon, children, defaultOpen = false }) {
   return (
     <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
       <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between mb-2">
-        <span className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"><Icon size={13} /> {tr(title)}</span>
+        <span className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"><Icon size={13} /> {title}</span>
         {open ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
       </button>
       {open && <div className="space-y-2.5">{children}</div>}
@@ -68,52 +68,52 @@ export default function StyleSection({ element, update }) {
 
   return (
     <div className="space-y-3">
-      <Group title="Styl" icon={Palette}>
-        <Color label="Tło" value={style.bg} onChange={(v) => setStyle('bg', v)} />
+      <Group title={tr('Styl')} icon={Palette}>
+        <Color label={tr('Tło')} value={style.bg} onChange={(v) => setStyle('bg', v)} />
         <label className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
           {tr('Gradient tła')}
           <input type="checkbox" checked={!!style.gradient} onChange={(e) => setStyle('gradient', e.target.checked ? { from: style.bg || '#c7ab71', to: '#ffffff', dir: 'to right' } : undefined)} />
         </label>
         {style.gradient && (
           <div className="grid grid-cols-2 gap-2">
-            <Color label="Od" value={style.gradient.from} onChange={(v) => setStyle('gradient', { ...style.gradient, from: v })} />
-            <Color label="Do" value={style.gradient.to} onChange={(v) => setStyle('gradient', { ...style.gradient, to: v })} />
-            <div className="col-span-2"><Sel label="Kierunek" value={style.gradient.dir} onChange={(v) => setStyle('gradient', { ...style.gradient, dir: v })} options={GRADIENT_DIR_OPTIONS} /></div>
+            <Color label={tr('Od')} value={style.gradient.from} onChange={(v) => setStyle('gradient', { ...style.gradient, from: v })} />
+            <Color label={tr('Do')} value={style.gradient.to} onChange={(v) => setStyle('gradient', { ...style.gradient, to: v })} />
+            <div className="col-span-2"><Sel label={tr('Kierunek')} value={style.gradient.dir} onChange={(v) => setStyle('gradient', { ...style.gradient, dir: v })} options={GRADIENT_DIR_OPTIONS} /></div>
           </div>
         )}
-        <Color label="Kolor tekstu" value={style.color} onChange={(v) => setStyle('color', v)} />
-        <Sel label="Padding" value={style.padding} onChange={(v) => setStyle('padding', v)} options={SPACE_OPTIONS} />
+        <Color label={tr('Kolor tekstu')} value={style.color} onChange={(v) => setStyle('color', v)} />
+        <Sel label={tr('Padding')} value={style.padding} onChange={(v) => setStyle('padding', v)} options={SPACE_OPTIONS} />
         <div className="grid grid-cols-2 gap-2">
-          <Sel label="Margines góra" value={style.marginTop} onChange={(v) => setStyle('marginTop', v)} options={SPACE_OPTIONS} />
-          <Sel label="Margines dół" value={style.marginBottom} onChange={(v) => setStyle('marginBottom', v)} options={SPACE_OPTIONS} />
+          <Sel label={tr('Margines góra')} value={style.marginTop} onChange={(v) => setStyle('marginTop', v)} options={SPACE_OPTIONS} />
+          <Sel label={tr('Margines dół')} value={style.marginBottom} onChange={(v) => setStyle('marginBottom', v)} options={SPACE_OPTIONS} />
         </div>
-        <Sel label="Zaokrąglenie" value={style.radius} onChange={(v) => setStyle('radius', v)} options={RADIUS_OPTIONS} />
-        <Sel label="Cień" value={style.shadow} onChange={(v) => setStyle('shadow', v)} options={SHADOW_OPTIONS} />
+        <Sel label={tr('Zaokrąglenie')} value={style.radius} onChange={(v) => setStyle('radius', v)} options={RADIUS_OPTIONS} />
+        <Sel label={tr('Cień')} value={style.shadow} onChange={(v) => setStyle('shadow', v)} options={SHADOW_OPTIONS} />
         <label className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
           {tr('Obramowanie')}
           <input type="checkbox" checked={!!style.border} onChange={(e) => setStyle('border', e.target.checked || undefined)} />
         </label>
-        <Sel label="Efekt hover" value={style.hover} onChange={(v) => setStyle('hover', v)} options={HOVER_OPTIONS} />
+        <Sel label={tr('Efekt hover')} value={style.hover} onChange={(v) => setStyle('hover', v)} options={HOVER_OPTIONS} />
       </Group>
 
-      <Group title="Typografia" icon={Type}>
-        <Sel label="Wielkość tekstu" value={style.fontSize ? String(style.fontSize) : ''} onChange={(v) => setStyle('fontSize', v ? Number(v) : undefined)} options={FONT_SIZE_OPTIONS} />
-        <Sel label="Grubość" value={style.fontWeight} onChange={(v) => setStyle('fontWeight', v)} options={WEIGHT_OPTIONS} />
-        <Sel label="Odstęp liter" value={style.letterSpacing} onChange={(v) => setStyle('letterSpacing', v)} options={LETTER_OPTIONS} />
-        <Sel label="Wielkość liter" value={style.textTransform} onChange={(v) => setStyle('textTransform', v)} options={TRANSFORM_OPTIONS} />
+      <Group title={tr('Typografia')} icon={Type}>
+        <Sel label={tr('Wielkość tekstu')} value={style.fontSize ? String(style.fontSize) : ''} onChange={(v) => setStyle('fontSize', v ? Number(v) : undefined)} options={FONT_SIZE_OPTIONS} />
+        <Sel label={tr('Grubość')} value={style.fontWeight} onChange={(v) => setStyle('fontWeight', v)} options={WEIGHT_OPTIONS} />
+        <Sel label={tr('Odstęp liter')} value={style.letterSpacing} onChange={(v) => setStyle('letterSpacing', v)} options={LETTER_OPTIONS} />
+        <Sel label={tr('Wielkość liter')} value={style.textTransform} onChange={(v) => setStyle('textTransform', v)} options={TRANSFORM_OPTIONS} />
       </Group>
 
-      <Group title="Widoczność (rola)" icon={Eye}>
+      <Group title={tr('Widoczność (rola)')} icon={Eye}>
         <p className="text-xs text-gray-400">{roles.length ? tr('Widoczne tylko dla zaznaczonych ról (administratorzy zawsze).') : tr('Widoczne dla wszystkich.')}</p>
         {BUILTIN_ROLES.filter((r) => !r.is_admin).map((r) => (
           <label key={r.key} className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
-            {r.label}
+            {tr(r.label)}
             <input type="checkbox" checked={roles.includes(r.key)} onChange={() => toggleRole(r.key)} />
           </label>
         ))}
       </Group>
 
-      <Group title="Responsywność" icon={Smartphone}>
+      <Group title={tr('Responsywność')} icon={Smartphone}>
         <label className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
           {tr('Ukryj na telefonie')}
           <input type="checkbox" checked={!!responsive.hiddenMobile} onChange={(e) => setResp('hiddenMobile', e.target.checked || undefined)} />

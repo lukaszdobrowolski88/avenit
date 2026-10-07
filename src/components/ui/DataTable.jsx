@@ -41,7 +41,7 @@ export function THead({ children, sticky = false, className = '' }) {
 export function TH({ children, align, className = '', ...props }) {
   return (
     <th
-      className={`h-10 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 whitespace-nowrap ${alignClass(align)} ${className}`}
+      className={`h-10 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 whitespace-nowrap ${alignClass(align)} ${className}`}
       {...props}
     >
       {children}
@@ -49,11 +49,20 @@ export function TH({ children, align, className = '', ...props }) {
   );
 }
 
-export function TR({ children, className = '', onClick, selected = false, ...props }) {
+// Klikalny wiersz (onClick) jest też osiągalny Tabem i otwiera się Enterem/Spacją — tylko gdy
+// fokus jest na samym wierszu (przyciski i pola w komórkach obsługują klawisze same).
+export function TR({ children, className = '', onClick, selected = false, onKeyDown, ...props }) {
+  const handleKeyDown = onClick ? (e) => {
+    onKeyDown?.(e);
+    if (e.defaultPrevented || e.target !== e.currentTarget) return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(e); }
+  } : onKeyDown;
   return (
     <tr
       onClick={onClick}
-      className={`group/row border-b border-gray-100 dark:border-gray-700/60 last:border-b-0 transition-colors hover:bg-gray-50/70 dark:hover:bg-gray-700/30 ${selected ? 'bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/20' : ''} ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      onKeyDown={handleKeyDown}
+      tabIndex={onClick ? 0 : undefined}
+      className={`group/row border-b border-gray-100 dark:border-gray-700/60 last:border-b-0 transition-colors hover:bg-gray-50/70 dark:hover:bg-gray-700/30 ${selected ? 'bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/20' : ''} ${onClick ? 'cursor-pointer focus-visible:bg-gray-50 dark:focus-visible:bg-gray-700/40 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-primary' : ''} ${className}`}
       {...props}
     >
       {children}
@@ -90,14 +99,38 @@ export function EmptyRow({ colSpan, children }) {
   );
 }
 
+// Czytelny tekst pigułki (WCAG 4,5:1): kolor statusu przyciemniony (jasny motyw) albo
+// rozjaśniony (ciemny) aż do kontrastu ≥ 4,6 wobec tła pigułki. Kropka i tło bez zmian.
+const parseHex = (hex) => {
+  const h = String(hex || '').replace('#', '');
+  const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.slice(0, 6);
+  if (!/^[0-9a-f]{6}$/i.test(n)) return null;
+  return [0, 2, 4].map((i) => parseInt(n.slice(i, i + 2), 16));
+};
+const lin = (c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const toHex = (rgb) => `#${rgb.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+export function readablePillText(color, dark = false) {
+  const c = parseHex(color);
+  if (!c) return color;
+  const base = dark ? [31, 30, 29] : [255, 255, 255];
+  const bg = mix(base, c, 0x22 / 255);
+  const target = dark ? [255, 255, 255] : [0, 0, 0];
+  let out = c;
+  for (let t = 0; t <= 1 && ratio(out, bg) < 4.6; t += 0.05) out = mix(c, target, t);
+  return toHex(out);
+}
+
 // Status jako miękka pigułka: kropka + tekst na tle koloru (22% krycia). Kolor w hex.
 export function StatusPill({ color = '#6b7280', children, className = '' }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${className}`}
-      style={{ backgroundColor: `${color}22`, color }}
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap text-[color:var(--pill-fg)] dark:text-[color:var(--pill-fg-dark)] ${className}`}
+      style={{ backgroundColor: `${color}22`, '--pill-fg': readablePillText(color, false), '--pill-fg-dark': readablePillText(color, true) }}
     >
-      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} aria-hidden="true" />
       {children}
     </span>
   );

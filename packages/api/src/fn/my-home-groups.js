@@ -43,21 +43,39 @@ export default async function handler(req, reply) {
 
     // 2) Wszystkie grupy (meta).
     const { rows: groups } = await req.db.query(
-      `SELECT id, name, description, meeting_day, meeting_time, location, address, phone, email, campus_id
+      `SELECT id, name, description, meeting_day, meeting_time, location, address, phone, email, campus_id, leader_id
          FROM home_groups ORDER BY name ASC`
     );
 
-    // 3) Lider per grupa (primary najpierw).
+    // 3) Lider per grupa. Model docelowy (web od audytu 2026-10): lider = członek grupy z rolą
+    //    „leader” w home_group_members. Starsze dane: katalog home_group_leaders (po group_id)
+    //    albo home_groups.leader_id → home_group_leaders.id.
     const leaderByGroup = new Map();
+    try {
+      const { rows: hgLeaders } = await req.db.query(
+        `SELECT id, group_id, full_name, email, phone
+           FROM home_group_members
+          WHERE group_id IS NOT NULL AND (role = 'leader' OR is_leader = true)
+          ORDER BY created_at ASC NULLS LAST`
+      );
+      for (const r of hgLeaders) {
+        if (!leaderByGroup.has(String(r.group_id))) leaderByGroup.set(String(r.group_id), r);
+      }
+    } catch { /* starszy schemat bez kolumny role — pomiń */ }
     try {
       const { rows: leaders } = await req.db.query(
         `SELECT id, group_id, full_name, email, phone, is_primary
            FROM home_group_leaders ORDER BY is_primary DESC NULLS LAST`
       );
+      const byId = new Map(leaders.map((r) => [String(r.id), r]));
       for (const r of leaders) {
         if (r.group_id && !leaderByGroup.has(String(r.group_id))) {
           leaderByGroup.set(String(r.group_id), r);
         }
+      }
+      for (const g of groups) {
+        const l = g.leader_id != null ? byId.get(String(g.leader_id)) : null;
+        if (l && !leaderByGroup.has(String(g.id))) leaderByGroup.set(String(g.id), l);
       }
     } catch { /* pomiń */ }
 

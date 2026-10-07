@@ -10,7 +10,7 @@ import {
   Loader2,
   ExternalLink
 } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { toast } from '../../../lib/toast';
@@ -73,7 +73,7 @@ export default function InvoicesList() {
 
     return (
       <StatusPill color={statusColors[color] || STATUS_COLORS.neutral}>
-        {label}
+        {tr(label)}
       </StatusPill>
     );
   };
@@ -91,7 +91,7 @@ export default function InvoicesList() {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
         <EmptyState
           icon={FileText}
-          title="Brak faktur"
+          title={tr('Brak faktur')}
           subtitle={tr('Tutaj pojawią się Twoje faktury po dokonaniu pierwszej płatności.')}
         />
       </div>
@@ -103,15 +103,15 @@ export default function InvoicesList() {
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <FileText size={20} />
-          Historia faktur
+          {tr('Historia faktur')}
         </h3>
       </div>
 
       <DataTable flush>
           <THead>
             <tr>
-              <TH>Numer</TH>
-              <TH>Data wystawienia</TH>
+              <TH>{tr('Numer')}</TH>
+              <TH>{tr('Data wystawienia')}</TH>
               <TH>{tr('Termin płatności')}</TH>
               <TH>{tr('Kwota')}</TH>
               <TH>{tr('Status')}</TH>
@@ -127,11 +127,11 @@ export default function InvoicesList() {
                 <TD muted numeric className="whitespace-nowrap">
                   <div className="flex items-center gap-1.5">
                     <Calendar size={14} />
-                    {new Date(invoice.issue_date).toLocaleDateString('pl-PL')}
+                    {new Date(invoice.issue_date).toLocaleDateString(appLocale())}
                   </div>
                 </TD>
                 <TD muted numeric className="whitespace-nowrap">
-                  {new Date(invoice.due_date).toLocaleDateString('pl-PL')}
+                  {new Date(invoice.due_date).toLocaleDateString(appLocale())}
                 </TD>
                 <TD numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
                   {formatPrice(invoice.total)}
@@ -152,7 +152,7 @@ export default function InvoicesList() {
                         ) : (
                           <CreditCard size={14} />
                         )}
-                        Zapłać
+                        {tr('Zapłać')}
                       </button>
                     )}
                     <button

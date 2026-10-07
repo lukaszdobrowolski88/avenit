@@ -9,13 +9,13 @@ import {
   DollarSign, Hash, Upload, AlertTriangle
 } from 'lucide-react';
 import { useT } from '../../i18n';
-import { tr } from '../../i18n';
+import { tr, appLocale } from '../../i18n';
 import TabHeader from '../../components/TabHeader';
 import { toast } from '../../lib/toast';
 import { confirmDialog } from '../../lib/dialog';
 
 const CONDITIONS = [
-  { value: 'nowy', label: tr('Nowy'), color: 'green' },
+  { value: 'nowy', label: 'Nowy', color: 'green' },
   { value: 'dobry', label: 'Dobry', color: 'blue' },
   { value: 'uszkodzony', label: 'Uszkodzony', color: 'yellow' },
   { value: 'do_naprawy', label: 'Do naprawy', color: 'red' }
@@ -205,7 +205,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       {/* Header */}
       <TabHeader
         title={tr('Wyposażenie')}
-        subtitle={`${tr('Łącznie')}: ${equipment.length} ${tr('przedmiotów')} | ${tr('Wartość')}: ${totalValue.toLocaleString('pl-PL')} zł`}
+        subtitle={`${tr('Łącznie')}: ${equipment.length} ${tr('przedmiotów')} | ${tr('Wartość')}: ${totalValue.toLocaleString(appLocale())} zł`}
         actions={<>
           <div className="relative flex-1 sm:flex-none">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -231,7 +231,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
       {/* Equipment Grid */}
       {filteredEquipment.length === 0 ? (
-        <EmptyState icon={Package} title={t('Brak wyposażenia')} subtitle="Dodaj pierwszy przedmiot do listy" />
+        <EmptyState icon={Package} title={t('Brak wyposażenia')} subtitle={tr('Dodaj pierwszy przedmiot do listy')} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredEquipment.map(item => (
@@ -255,7 +255,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
                 {/* Condition badge */}
                 <span className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${getConditionStyle(item.condition)}`}>
-                  {CONDITIONS.find(c => c.value === item.condition)?.label || 'Dobry'}
+                  {tr(CONDITIONS.find(c => c.value === item.condition)?.label || 'Dobry')}
                 </span>
               </div>
 
@@ -265,11 +265,11 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
               <div className="mt-2 space-y-1 text-sm">
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <Hash size={14} />
-                  <span>Ilość: {item.quantity}</span>
+                  <span>{tr('Ilość:')} {item.quantity}</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <DollarSign size={14} />
-                  <span>Wartość: {((item.unit_value || 0) * (item.quantity || 1)).toLocaleString('pl-PL')} zł</span>
+                  <span>{tr('Wartość:')} {((item.unit_value || 0) * (item.quantity || 1)).toLocaleString(appLocale())} zł</span>
                 </div>
                 {item.responsible_person && (
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
@@ -287,7 +287,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                     className="flex-1 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition flex items-center justify-center gap-1"
                   >
                     <Edit2 size={14} />
-                    Edytuj
+                    {tr('Edytuj')}
                   </button>
                   <button
                     onClick={() => handleDelete(item.id)}
@@ -310,8 +310,8 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
         title={editingItem ? tr('Edytuj wyposażenie') : tr('Dodaj wyposażenie')}
         zIndex={9999}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
-          <Button onClick={handleSave}>{editingItem ? 'Zapisz zmiany' : 'Dodaj'}</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={handleSave}>{editingItem ? tr('Zapisz zmiany') : tr('Dodaj')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
@@ -362,7 +362,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                   value={form.name}
                   onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light text-gray-700 dark:text-gray-200"
-                  placeholder="np. Mikrofon Shure SM58"
+                  placeholder={tr('np. Mikrofon Shure SM58')}
                 />
               </div>
 
@@ -374,7 +374,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                   onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                   rows={2}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none text-gray-700 dark:text-gray-200"
-                  placeholder="Dodatkowy opis..."
+                  placeholder={tr('Dodatkowy opis...')}
                 />
               </div>
 
@@ -417,7 +417,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
               {/* Condition */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Stan</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{tr('Stan')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {CONDITIONS.map(cond => (
                     <button
@@ -430,7 +430,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                           : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
                       }`}
                     >
-                      {cond.label}
+                      {tr(cond.label)}
                     </button>
                   ))}
                 </div>
@@ -438,13 +438,13 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Notatki</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Notatki')}</label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
                   rows={2}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none text-gray-700 dark:text-gray-200"
-                  placeholder="Dodatkowe notatki..."
+                  placeholder={tr('Dodatkowe notatki...')}
                 />
               </div>
             </div>

@@ -3,6 +3,7 @@ import { Sparkles, Plus, Mail, MessageSquare, Bell, ClipboardList, Tag, Clock, A
 import { supabase } from '../../../lib/supabase';
 import { TEMPLATES, triggerLabel, actionLabel } from '../lib/automationApi';
 import { toast } from '../../../lib/toast';
+import { tr } from '../../../i18n';
 
 const ACTION_ICONS = {
   send_email: Mail,
@@ -48,7 +49,7 @@ export default function TemplatesTab({ campusIdForInsert, onNavigate }) {
       if (onNavigate) onNavigate('workflows');
     } catch (err) {
       console.error('Create from template error:', err);
-      toast.error('Nie udało się utworzyć automatyzacji z szablonu: ' + (err.message || err));
+      toast.error(tr('Nie udało się utworzyć automatyzacji z szablonu: {msg}', { msg: err.message || err }));
     } finally {
       setCreatingKey(null);
     }
@@ -56,7 +57,7 @@ export default function TemplatesTab({ campusIdForInsert, onNavigate }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-500 dark:text-gray-400">Gotowe ścieżki — kliknij „Utwórz z szablonu", aby dodać automatyzację wraz z krokami. Możesz ją potem dowolnie edytować.</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Gotowe ścieżki — kliknij „Utwórz z szablonu", aby dodać automatyzację wraz z krokami. Możesz ją potem dowolnie edytować.')}</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {TEMPLATES.map(tpl => (
@@ -66,11 +67,11 @@ export default function TemplatesTab({ campusIdForInsert, onNavigate }) {
                 <Sparkles className="text-white" size={16} />
               </div>
               <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-accent-primary-lightest text-accent-primary dark:bg-accent-primary-darkest/30 dark:text-accent-primary-light">
-                {triggerLabel(tpl.trigger_type)}
+                {tr(triggerLabel(tpl.trigger_type))}
               </span>
             </div>
-            <h3 className="font-bold text-gray-900 dark:text-white mt-1">{tpl.name}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex-1">{tpl.description}</p>
+            <h3 className="font-bold text-gray-900 dark:text-white mt-1">{tr(tpl.name)}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex-1">{tr(tpl.description)}</p>
 
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
               {tpl.steps.map((s, i) => {
@@ -78,8 +79,8 @@ export default function TemplatesTab({ campusIdForInsert, onNavigate }) {
                 return (
                   <div key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                     <Icon size={15} className="text-accent-primary dark:text-accent-primary-light shrink-0" />
-                    <span className="truncate">{actionLabel(s.action_type)}</span>
-                    {s.delay_days > 0 && <span className="text-xs text-gray-400 whitespace-nowrap ml-auto">+{s.delay_days} dni</span>}
+                    <span className="truncate">{tr(actionLabel(s.action_type))}</span>
+                    {s.delay_days > 0 && <span className="text-xs text-gray-400 whitespace-nowrap ml-auto">+{tr('{n} dni', { n: s.delay_days })}</span>}
                   </div>
                 );
               })}
@@ -90,7 +91,7 @@ export default function TemplatesTab({ campusIdForInsert, onNavigate }) {
               disabled={creatingKey === tpl.key}
               className="mt-4 px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg transition disabled:opacity-60"
             >
-              {creatingKey === tpl.key ? 'Tworzenie...' : (<><Plus size={16} /> Utwórz z szablonu <ArrowRight size={14} /></>)}
+              {creatingKey === tpl.key ? tr('Tworzenie...') : (<><Plus size={16} /> {tr('Utwórz z szablonu')} <ArrowRight size={14} /></>)}
             </button>
           </div>
         ))}

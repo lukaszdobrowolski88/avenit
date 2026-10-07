@@ -4,15 +4,20 @@
 // wybrać osoby z tabeli służby ALBO dopisać osobę ręcznie (spoza tabeli). Wybór zapisywany
 // w events.assignments[sectionKey][roleKey] (CSV imion); wysyłka/statusy przez silnik
 // schedule_assignments po event_id (osoby dopisane ręcznie bez e-maila nie dostają zaproszeń).
-import React, { useState, useEffect, useCallback } from 'react';
-import { Send, Check, Clock, X as XIcon, Plus, Users, Settings2, Trash2 } from 'lucide-react';
+// Zapis assignments WYŁĄCZNIE atomowo (fn event-assignments-patch): wysyłamy tylko zmienione
+// ścieżki [sekcja, rola], więc równoległa praca innego lidera (np. grafik Mediów) nie znika.
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Check, Clock, X as XIcon, Plus, Users, Settings2, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
 import { getCachedUser } from '../../lib/supabase';
-import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
+import { useScheduleAssignments, patchEventAssignments, scheduleSaveErrorMessage } from '../../hooks/useScheduleAssignments';
+import { diffAssignmentOps, eventInviteSummary } from '../../lib/scheduleBridge';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
+import Button from '../../components/Button';
 import { confirmDialog } from '../../lib/dialog';
+import { tr } from '../../i18n';
 
 const TEAM_MEMBER_TABLE = {
   worship: 'worship_team', media: 'media_team', atmosfera: 'atmosfera_members',
@@ -29,15 +34,20 @@ const SYSTEM_TEAM_OPTIONS = [
   { value: 'atmosfera', label: 'Atmosfera Team' }, { value: 'kids', label: 'Małe Avenit' },
   { value: 'mc', label: 'Scena / MC' },
 ];
-const teamLabel = (t, moduleLabelMap) => moduleLabelMap?.[t] || TEAM_LABELS[t] || t;
+// Nazwa służby: najpierw nazwa modułu nadana przez kościół (app_modules), potem domyślna.
+const teamLabel = (t, moduleLabelMap) => moduleLabelMap?.[t] || (TEAM_LABELS[t] ? tr(TEAM_LABELS[t]) : t);
 const csvNames = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
 const uid = (p) => `${p}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 const normLayout = (l) => (l && typeof l === 'object' ? { sections: Array.isArray(l.sections) ? l.sections : [], roles: l.roles && typeof l.roles === 'object' ? l.roles : {} } : { sections: [], roles: {} });
 
-export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canManage, onSaveAssignments, onSaveTeams, onSaveLayout, moduleLabelMap }) {
-  const { createAssignment, removeEventAssignment, fetchAssignmentsForEvents, getEventAssignmentStatus, sendInvitesForEvent } = useScheduleAssignments();
+export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canManage, onAssignmentsChange, onSaveTeams, onSaveLayout, moduleLabelMap: moduleLabelMapProp }) {
+  const { assignments: schedRows, createAssignment, removeEventAssignment, fetchAssignmentsForEvents, getEventAssignmentStatus, sendInvitesForEvent } = useScheduleAssignments();
   const [teamData, setTeamData] = useState(null); // { [teamType]: { roles, members, eligible } }
   const [assign, setAssign] = useState(event.assignments && typeof event.assignments === 'object' ? event.assignments : {});
+  const assignRef = useRef(assign); // aktualny stan (do liczenia różnic przy szybkich kliknięciach)
+  const saveSeq = useRef(0);
+  const [dbLabels, setDbLabels] = useState({}); // nazwy modułów nadane przez kościół
+  const moduleLabelMap = moduleLabelMapProp || dbLabels;
   const [layout, setLayout] = useState(normLayout(event.team_layout));
   const [openRole, setOpenRole] = useState(null); // `${sectionKey}:${roleKey}`
   const [sending, setSending] = useState(null);
@@ -54,12 +64,16 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
     let alive = true;
     (async () => {
       try {
-        const { data } = await supabase.from('app_modules').select('module_key, label, is_system');
-        const custom = (data || []).filter((m) => m?.module_key && m.is_system === false)
-          .map((m) => ({ value: m.module_key, label: m.label || m.module_key }));
+        // Kolumna klucza modułu to `key` (nie module_key).
+        const { data } = await supabase.from('app_modules').select('key, label, is_system');
+        const labels = {};
+        (data || []).forEach((m) => { if (m?.key && m.label) labels[m.key] = m.label; });
+        const custom = (data || []).filter((m) => m?.key && m.is_system === false)
+          .map((m) => ({ value: m.key, label: m.label || m.key }));
         const seen = new Set();
-        const merged = [...SYSTEM_TEAM_OPTIONS, ...custom].filter((o) => (seen.has(o.value) ? false : seen.add(o.value)));
-        if (alive) setTeamOptions(merged);
+        const merged = [...SYSTEM_TEAM_OPTIONS, ...custom].filter((o) => (seen.has(o.value) ? false : seen.add(o.value)))
+          .map((o) => ({ ...o, label: labels[o.value] || o.label }));
+        if (alive) { setTeamOptions(merged); setDbLabels(labels); }
       } catch { /* zostają systemowe */ }
     })();
     return () => { alive = false; };
@@ -114,8 +128,42 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
     return () => document.removeEventListener('mousedown', onDown);
   }, [openRole]);
 
-  const persist = useCallback((next) => { setAssign(next); onSaveAssignments(next); }, [onSaveAssignments]);
-  const persistLayout = useCallback((next) => { setLayout(next); onSaveLayout?.(next); }, [onSaveLayout]);
+  const setAssignBoth = (next) => { assignRef.current = next; setAssign(next); };
+
+  // Atomowy zapis: różnica względem bieżącego stanu → ops → fn event-assignments-patch.
+  // Optymistycznie w UI; po odpowiedzi świeży stan z serwera (z cudzymi zmianami);
+  // przy błędzie przywrócenie poprzedniego stanu i komunikat. Zwraca true/false.
+  const persist = async (next) => {
+    const prev = assignRef.current;
+    const ops = diffAssignmentOps(prev, next);
+    if (!ops.length) return true;
+    const seq = ++saveSeq.current;
+    setAssignBoth(next);
+    const { assignments, error } = await patchEventAssignments(event.id, ops);
+    const latest = saveSeq.current === seq;
+    if (error) {
+      if (latest) setAssignBoth(prev);
+      toast.error(scheduleSaveErrorMessage(error));
+      return false;
+    }
+    if (latest && assignments) {
+      setAssignBoth(assignments);
+      onAssignmentsChange?.(assignments);
+    }
+    return true;
+  };
+  const persistLayout = async (next) => {
+    const prev = layout;
+    setLayout(next);
+    const ok = onSaveLayout ? await onSaveLayout(next) : true;
+    if (ok === false) setLayout(prev);
+    return ok !== false;
+  };
+  const withRole = (base, sectionKey, roleKey, names) => ({
+    ...(base || {}), [sectionKey]: { ...(base?.[sectionKey] || {}), [roleKey]: names.join(', ') },
+  });
+  const refreshStatuses = async () => { await fetchAssignmentsForEvents([event.id]); force((n) => n + 1); };
+  const whoAmI = async () => { try { return await getCachedUser(); } catch { return null; } };
 
   // --- Sekcje (służby + własne) ---
   const sections = [
@@ -139,50 +187,53 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
   };
 
   // --- Przypisania ---
-  const addPicked = async (sectionKey, role, member) => {
-    const cur = csvNames(assign?.[sectionKey]?.[role.key]);
-    if (cur.includes(member.full_name)) return;
-    const next = { ...(assign || {}), [sectionKey]: { ...(assign?.[sectionKey] || {}), [role.key]: [...cur, member.full_name].join(', ') } };
-    persist(next);
-    try {
-      const me = await getCachedUser();
-      await createAssignment({
-        eventId: event.id, teamType: sectionKey, roleKey: role.key, roleLabel: role.name,
-        assignedName: member.full_name, assignedEmail: member.email || null,
-        assignedByEmail: me?.email || null, assignedByName: me?.email?.split('@')[0] || null,
-        isSelfAssignment: !!(me?.email && member.email && me.email.toLowerCase() === member.email.toLowerCase()),
-      });
-      await fetchAssignmentsForEvents([event.id]); force((n) => n + 1);
-    } catch (e) { toast.error(e.message || 'Błąd zapisu przypisania'); }
+  // Dodanie osoby: najpierw siatka (atomowo), potem wiersz zaproszenia. Gdy zaproszenia nie da się
+  // zapisać — cofamy wpis w siatce, żeby grafik i „Wyślij" mówiły to samo.
+  const addAssigned = async (sectionKey, role, name, email) => {
+    const cur = csvNames(assignRef.current?.[sectionKey]?.[role.key]);
+    if (cur.includes(name)) return;
+    if (!await persist(withRole(assignRef.current, sectionKey, role.key, [...cur, name]))) return;
+    if (!email && !(teamData?.[sectionKey]?.members || []).some((m) => m.full_name === name)) return; // wpis ręczny spoza służby
+    const me = await whoAmI();
+    const res = await createAssignment({
+      eventId: event.id, teamType: sectionKey, roleKey: role.key, roleLabel: role.name,
+      assignedName: name, assignedEmail: email || null,
+      assignedByEmail: me?.email || null, assignedByName: me?.email?.split('@')[0] || null,
+      isSelfAssignment: !!(me?.email && email && me.email.toLowerCase() === email.toLowerCase()),
+    });
+    if (!res?.success) {
+      const now = csvNames(assignRef.current?.[sectionKey]?.[role.key]).filter((n) => n !== name);
+      await persist(withRole(assignRef.current, sectionKey, role.key, now));
+      toast.error(tr('Nie udało się przypisać: {name}. Sprawdź, czy masz uprawnienia do edycji grafiku.', { name }));
+    }
+    await refreshStatuses();
   };
+
+  const addPicked = (sectionKey, role, member) => addAssigned(sectionKey, role, member.full_name, member.email || null);
 
   const addManual = async (sectionKey, role) => {
     const key = `${sectionKey}:${role.key}`;
     const name = String(manualText[key] || '').trim();
     if (!name) return;
-    const cur = csvNames(assign?.[sectionKey]?.[role.key]);
-    if (!cur.includes(name)) {
-      const next = { ...(assign || {}), [sectionKey]: { ...(assign?.[sectionKey] || {}), [role.key]: [...cur, name].join(', ') } };
-      persist(next);
-      // Jeśli dopisana osoba pasuje do kogoś z tabeli służby (po imieniu) — utwórz przypisanie
-      // z e-mailem, żeby mogła dostać zaproszenie. W innym wypadku wpis pozostaje ręczny.
-      const member = (teamData?.[sectionKey]?.members || []).find((m) => m.full_name === name && m.email);
-      if (member) {
-        try {
-          const me = await getCachedUser();
-          await createAssignment({ eventId: event.id, teamType: sectionKey, roleKey: role.key, roleLabel: role.name, assignedName: name, assignedEmail: member.email, assignedByEmail: me?.email || null, assignedByName: me?.email?.split('@')[0] || null, isSelfAssignment: false });
-          await fetchAssignmentsForEvents([event.id]); force((n) => n + 1);
-        } catch { /* ignore */ }
-      }
-    }
+    // Jeśli dopisana osoba pasuje do kogoś z tabeli służby (po imieniu) — przypisanie z e-mailem,
+    // żeby mogła dostać zaproszenie. W innym wypadku wpis pozostaje ręczny (bez zaproszenia).
+    const member = (teamData?.[sectionKey]?.members || []).find((m) => m.full_name === name);
     setManualText((m) => ({ ...m, [key]: '' }));
+    await addAssigned(sectionKey, role, name, member?.email || null);
   };
 
+  // Usunięcie osoby: siatka, potem wiersz zaproszenia. Jeśli wiersza nie da się usunąć, osoba
+  // wraca do siatki — inaczej „Wyślij" zaprosiłby kogoś, kogo nie ma w grafiku.
   const removeName = async (sectionKey, role, name) => {
-    const cur = csvNames(assign?.[sectionKey]?.[role.key]);
-    const next = { ...(assign || {}), [sectionKey]: { ...(assign?.[sectionKey] || {}), [role.key]: cur.filter((n) => n !== name).join(', ') } };
-    persist(next);
-    try { await removeEventAssignment(event.id, sectionKey, role.key, name); await fetchAssignmentsForEvents([event.id]); force((n) => n + 1); } catch { /* ignore */ }
+    const cur = csvNames(assignRef.current?.[sectionKey]?.[role.key]);
+    if (!await persist(withRole(assignRef.current, sectionKey, role.key, cur.filter((n) => n !== name)))) return;
+    const res = await removeEventAssignment(event.id, sectionKey, role.key, name);
+    if (!res?.success) {
+      const now = csvNames(assignRef.current?.[sectionKey]?.[role.key]);
+      if (!now.includes(name)) await persist(withRole(assignRef.current, sectionKey, role.key, [...now, name]));
+      toast.error(tr('Nie udało się usunąć z grafiku: {name}. Sprawdź, czy masz uprawnienia do edycji grafiku.', { name }));
+    }
+    await refreshStatuses();
   };
 
   const isSelected = (sectionKey, role, name) => csvNames(assign?.[sectionKey]?.[role.key]).includes(name);
@@ -201,15 +252,33 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
     persistLayout({ ...layout, sections: [...(layout.sections || []), { key: uid('sec'), label }] });
     setNewSection('');
   };
-  const delSection = async (sectionKey) => {
-    if (!await confirmDialog('Usunąć tę sekcję wraz z przypisaniami?')) return;
-    // wyczyść przypisania sekcji z silnika
-    for (const role of rolesForSection({ key: sectionKey, isCustom: true })) {
-      for (const n of csvNames(assign?.[sectionKey]?.[role.key])) { try { await removeEventAssignment(event.id, sectionKey, role.key, n); } catch { /* ignore */ } }
+  // Usuwa wiersze zaproszeń wszystkich osób z podanych ról; zwraca imiona, których nie udało się usunąć.
+  const removeRoleRows = async (sectionKey, roleKeys) => {
+    const failed = [];
+    for (const rk of roleKeys) {
+      for (const n of csvNames(assignRef.current?.[sectionKey]?.[rk])) {
+        const res = await removeEventAssignment(event.id, sectionKey, rk, n);
+        if (!res?.success) failed.push(n);
+      }
     }
+    return failed;
+  };
+
+  const delSection = async (sectionKey) => {
+    const label = (layout.sections || []).find((s) => s.key === sectionKey)?.label || '';
+    if (!await confirmDialog(tr('Usunąć sekcję „{name}” razem z przypisanymi osobami? Tej operacji nie można cofnąć.', { name: label }))) return;
+    // Najpierw zaproszenia (żeby nie zostały „duchy”), potem siatka i układ.
+    const failed = await removeRoleRows(sectionKey, rolesForSection({ key: sectionKey, isCustom: true }).map((r) => r.key));
+    if (failed.length) {
+      toast.error(tr('Nie udało się usunąć przydziałów: {names}. Sekcja nie została usunięta.', { names: failed.join(', ') }));
+      await refreshStatuses();
+      return;
+    }
+    const na = { ...(assignRef.current || {}) }; delete na[sectionKey];
+    if (!await persist(na)) return;
     const nextRoles = { ...(layout.roles || {}) }; delete nextRoles[sectionKey];
-    persistLayout({ sections: (layout.sections || []).filter((s) => s.key !== sectionKey), roles: nextRoles });
-    const na = { ...(assign || {}) }; delete na[sectionKey]; persist(na);
+    await persistLayout({ sections: (layout.sections || []).filter((s) => s.key !== sectionKey), roles: nextRoles });
+    await refreshStatuses();
   };
 
   const addRole = (sectionKey) => {
@@ -220,32 +289,44 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
     persistLayout({ ...layout, roles });
     setNewRole(''); setAddingRoleFor(null);
   };
-  const delRole = async (sectionKey, roleKey) => {
-    for (const n of csvNames(assign?.[sectionKey]?.[roleKey])) { try { await removeEventAssignment(event.id, sectionKey, roleKey, n); } catch { /* ignore */ } }
-    const roles = { ...(layout.roles || {}) };
-    roles[sectionKey] = (roles[sectionKey] || []).filter((r) => r.key !== roleKey);
-    persistLayout({ ...layout, roles });
-    if (assign?.[sectionKey]?.[roleKey] != null) {
-      const na = { ...assign, [sectionKey]: { ...assign[sectionKey] } }; delete na[sectionKey][roleKey]; persist(na);
+  const delRole = async (sectionKey, role) => {
+    const assigned = csvNames(assignRef.current?.[sectionKey]?.[role.key]);
+    if (assigned.length && !await confirmDialog(tr('Usunąć rolę „{name}” razem z przypisanymi osobami ({n})?', { name: role.name, n: assigned.length }))) return;
+    const failed = await removeRoleRows(sectionKey, [role.key]);
+    if (failed.length) {
+      toast.error(tr('Nie udało się usunąć przydziałów: {names}. Rola nie została usunięta.', { names: failed.join(', ') }));
+      await refreshStatuses();
+      return;
     }
+    if (assignRef.current?.[sectionKey]?.[role.key] != null) {
+      const cur = assignRef.current;
+      const na = { ...cur, [sectionKey]: { ...cur[sectionKey] } }; delete na[sectionKey][role.key];
+      if (!await persist(na)) return;
+    }
+    const roles = { ...(layout.roles || {}) };
+    roles[sectionKey] = (roles[sectionKey] || []).filter((r) => r.key !== role.key);
+    await persistLayout({ ...layout, roles });
+    await refreshStatuses();
   };
 
   const sendInvites = async (sectionKey) => {
     setSending(sectionKey);
     try {
       const res = await sendInvitesForEvent(event.id, sectionKey);
-      if (!res.success) { toast.error('Nie udało się wysłać: ' + (res.error || '')); return; }
-      if (res.emailReady === false) { toast.error(res.error || 'Brak konfiguracji e-mail.'); return; }
-      toast.success(res.sent ? `Wysłano zaproszenia (${res.sent})${res.failed ? `, niepowodzeń: ${res.failed}` : ''}.` : 'Brak nowych osób do zaproszenia.');
-      await fetchAssignmentsForEvents([event.id]); force((n) => n + 1);
+      if (res.emailReady === false) { toast.error(tr('Wysyłka e-maili nie jest skonfigurowana. Skontaktuj się z administratorem.')); return; }
+      if (!res.success) { toast.error(tr('Nie udało się wysłać zaproszeń. Spróbuj ponownie.')); return; }
+      if (res.sent) toast.success(tr('Wysłano zaproszenia ({n})', { n: res.sent }) + (res.failed ? tr(', niepowodzeń: {n}', { n: res.failed }) : '') + '.');
+      else if (res.failed) toast.error(tr('Nie udało się wysłać zaproszeń. Spróbuj ponownie.'));
+      else toast.info(tr('Brak nowych osób do zaproszenia.'));
+      await refreshStatuses();
     } finally { setSending(null); }
   };
 
   const statusDot = (sectionKey, roleKey, name) => {
     const s = getEventAssignmentStatus(event.id, sectionKey, roleKey, name);
-    if (s === 'accepted') return <Check size={12} className="text-green-500" title="Potwierdził" />;
-    if (s === 'rejected') return <XIcon size={12} className="text-red-500" title="Odmówił" />;
-    if (s === 'pending') return <Clock size={12} className="text-amber-500" title="Oczekuje" />;
+    if (s === 'accepted') return <Check size={12} className="text-green-500" title={tr('Potwierdził')} />;
+    if (s === 'rejected') return <XIcon size={12} className="text-red-500" title={tr('Odmówił')} />;
+    if (s === 'pending') return <Clock size={12} className="text-amber-500" title={tr('Oczekuje')} />;
     return null;
   };
 
@@ -260,13 +341,13 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <p className="text-xs text-gray-400">
             {teamTypes.length
-              ? <>Służby na tym wydarzeniu: <span className="text-gray-500 dark:text-gray-300">{teamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ')}</span></>
-              : 'Brak wybranych służb dla tego wydarzenia.'}
+              ? <>{tr('Służby na tym wydarzeniu:')} <span className="text-gray-500 dark:text-gray-300">{teamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ')}</span></>
+              : tr('Brak wybranych służb dla tego wydarzenia.')}
           </p>
           <div className="flex items-center gap-2">
-            {isOverridden && <button onClick={resetTeams} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Przywróć domyślne</button>}
+            {isOverridden && <button onClick={resetTeams} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">{tr('Przywróć domyślne')}</button>}
             <button onClick={() => setShowPicker((v) => !v)} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
-              <Settings2 size={14} /> Zarządzaj służbami
+              <Settings2 size={14} /> {tr('Zarządzaj służbami')}
             </button>
           </div>
         </div>
@@ -274,23 +355,23 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
       {managing && showPicker && (
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-3">
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Zaznacz służby dla tego wydarzenia (pojawią się w grafiku i w zakładce „Służby"):</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{tr('Zaznacz służby dla tego wydarzenia (pojawią się w grafiku i w zakładce „Służby"):')}</p>
             <div className="flex flex-wrap gap-1.5">
               {teamOptions.map((o) => (
                 <button key={o.value} type="button" onClick={() => toggleTeamType(o.value)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${teamTypes.includes(o.value) ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                  {o.label}
+                  {dbLabels[o.value] || (TEAM_LABELS[o.value] ? tr(TEAM_LABELS[o.value]) : o.label)}
                 </button>
               ))}
             </div>
-            {defaultTeamTypes?.length ? <p className="text-[11px] text-gray-400 mt-2">Domyślnie (z typu/modułu): {defaultTeamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ')}.</p> : null}
+            {defaultTeamTypes?.length ? <p className="text-[11px] text-gray-400 mt-2">{tr('Domyślnie (z typu/modułu): {list}.', { list: defaultTeamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ') })}</p> : null}
           </div>
           <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Dodaj własną sekcję (poza służbami modułów), np. „Kuchnia", „Porządkowi":</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{tr('Dodaj własną sekcję (poza służbami modułów), np. „Kuchnia", „Porządkowi":')}</p>
             <div className="flex items-center gap-2">
               <input value={newSection} onChange={(e) => setNewSection(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addSection(); }}
-                placeholder="Nazwa sekcji…" className="flex-1 max-w-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
-              <button onClick={addSection} className="text-sm px-3 py-1.5 rounded-lg bg-accent-primary text-white flex items-center gap-1.5"><Plus size={14} /> Dodaj sekcję</button>
+                placeholder={tr('Nazwa sekcji…')} className="flex-1 max-w-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
+              <button onClick={addSection} className="text-sm px-3 py-1.5 rounded-lg bg-accent-primary text-white flex items-center gap-1.5"><Plus size={14} /> {tr('Dodaj sekcję')}</button>
             </div>
           </div>
         </div>
@@ -299,38 +380,45 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
       {!hasAnySection ? (
         <EmptyState
           icon={Users}
-          title="Brak służb na tym wydarzeniu."
-          subtitle={managing ? 'Kliknij „Zarządzaj służbami", aby dodać służby lub własną sekcję.' : 'Służby nie zostały skonfigurowane.'}
+          title={tr('Brak służb na tym wydarzeniu.')}
+          subtitle={managing ? tr('Kliknij „Zarządzaj służbami", aby dodać służby lub własną sekcję.') : tr('Służby nie zostały skonfigurowane.')}
           compact
         />
       ) : (effectiveTeamTypes.length > 0 && teamData === null) ? <Spinner center size={24} /> : (
         <div className="space-y-5">
           {sections.map((section) => {
             const roles = rolesForSection(section);
-            const pendingCount = roles.reduce((acc, role) => acc + csvNames(assign?.[section.key]?.[role.key])
-              .filter((n) => getEventAssignmentStatus(event.id, section.key, role.key, n) === 'pending').length, 0);
+            // Liczymy tylko osoby, do których zaproszenie jeszcze NIE wyszło (z e-mailem).
+            const inv = eventInviteSummary(schedRows, event.id, section.key);
             return (
               <section key={section.key} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
-                <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                   <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                    <Users size={16} className="text-accent-primary" /> {section.label}
-                    {section.isCustom && <span className="text-[10px] uppercase tracking-wide text-gray-400 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">własna</span>}
+                    <Users size={16} className="text-accent-primary" aria-hidden="true" /> {section.label}
+                    {section.isCustom && <span className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">{tr('własna')}</span>}
                   </h3>
                   <div className="flex items-center gap-2">
                     {canManage && !section.isCustom && (
-                      <button onClick={() => sendInvites(section.key)} disabled={sending === section.key}
-                        className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5 disabled:opacity-60">
-                        <Send size={14} /> {sending === section.key ? 'Wysyłanie…' : `Wyślij zaproszenia${pendingCount ? ` (${pendingCount})` : ''}`}
-                      </button>
+                      <Button size="sm" icon={Send} variant={inv.toSend ? 'primary' : 'outline'} loading={sending === section.key}
+                        onClick={() => sendInvites(section.key)}
+                        title={tr('Wyślij osobom z tej służby prośbę o potwierdzenie (e-mail i powiadomienie w aplikacji). Wybór osoby sam niczego nie wysyła.')}>
+                        {inv.toSend ? tr('Poproś o potwierdzenie ({n})', { n: inv.toSend }) : tr('Poproś o potwierdzenie')}
+                      </Button>
                     )}
                     {canManage && section.isCustom && (
-                      <button onClick={() => delSection(section.key)} title="Usuń sekcję" className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                      <button onClick={() => delSection(section.key)} title={tr('Usuń sekcję')} aria-label={tr('Usuń sekcję')} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
                     )}
                   </div>
                 </div>
+                {canManage && inv.noEmail.length > 0 && (
+                  <p className="mb-3 inline-flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                    <AlertTriangle size={13} className="shrink-0 mt-px" aria-hidden="true" />
+                    {tr('Bez e-maila — nie dostaną powiadomienia: {names}', { names: inv.noEmail.join(', ') })}
+                  </p>
+                )}
 
                 {roles.length === 0 ? (
-                  <p className="text-sm text-gray-400">{section.isCustom ? 'Dodaj role do tej sekcji.' : 'Brak zdefiniowanych ról dla tej służby — dodaj własną rolę poniżej lub zdefiniuj w module.'}</p>
+                  <p className="text-sm text-gray-400">{section.isCustom ? tr('Dodaj role do tej sekcji.') : tr('Brak zdefiniowanych ról dla tej służby — dodaj własną rolę poniżej lub zdefiniuj w module.')}</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {roles.map((role) => {
@@ -341,7 +429,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                         <div key={key} className="rounded-xl border border-gray-100 dark:border-gray-800 p-3">
                           <div className="flex items-center justify-between gap-2 mb-1.5">
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{role.name}</span>
-                            {canManage && role.isCustom && <button onClick={() => delRole(section.key, role.key)} title="Usuń rolę" className="p-1 text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>}
+                            {canManage && role.isCustom && <button onClick={() => delRole(section.key, role)} title={tr('Usuń rolę')} aria-label={tr('Usuń rolę')} className="p-1 text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>}
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {selected.length === 0 && <span className="text-xs text-gray-400">—</span>}
@@ -349,13 +437,13 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                               <span key={n} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                                 {statusDot(section.key, role.key, n)}
                                 {n}
-                                {canManage && <button onClick={() => removeName(section.key, role, n)} className="text-gray-400 hover:text-red-500"><XIcon size={12} /></button>}
+                                {canManage && <button onClick={() => removeName(section.key, role, n)} aria-label={tr('Usuń {name} z tej roli', { name: n })} title={tr('Usuń {name} z tej roli', { name: n })} className="text-gray-400 hover:text-red-500"><XIcon size={12} /></button>}
                               </span>
                             ))}
                             {canManage && (
                               <button data-role-toggle={key} onClick={() => setOpenRole(openRole === key ? null : key)}
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs border border-dashed border-gray-300 dark:border-gray-600 text-accent-primary hover:bg-accent-primary/5">
-                                <Plus size={12} /> Dodaj
+                                <Plus size={12} /> {tr('Dodaj')}
                               </button>
                             )}
                           </div>
@@ -370,7 +458,8 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                                         className="w-4 h-4 rounded accent-accent-primary" />
                                       <span className={teamData?.[section.key]?.unavailable?.has(m.full_name) ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-200'}>
                                         {m.full_name}
-                                        {teamData?.[section.key]?.unavailable?.has(m.full_name) && <span className="ml-1 text-[11px] opacity-80">(zgłoszona nieobecność)</span>}
+                                        {teamData?.[section.key]?.unavailable?.has(m.full_name) && <span className="ml-1 text-xs opacity-80">{tr('(zgłoszona nieobecność)')}</span>}
+                                        {!m.email && <span className="ml-1 text-xs text-amber-700 dark:text-amber-400" title={tr('Brak e-maila — ta osoba nie dostanie powiadomienia')}>⚠</span>}
                                       </span>
                                     </label>
                                   ))}
@@ -380,8 +469,8 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                               <div className="flex items-center gap-2 p-2 border-t border-gray-100 dark:border-gray-800">
                                 <input value={manualText[key] || ''} onChange={(e) => setManualText((mm) => ({ ...mm, [key]: e.target.value }))}
                                   onKeyDown={(e) => { if (e.key === 'Enter') addManual(section.key, role); }}
-                                  placeholder="Dopisz osobę ręcznie…" className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
-                                <button onClick={() => addManual(section.key, role)} className="text-xs px-2.5 py-1.5 rounded-lg bg-accent-primary text-white whitespace-nowrap">Dopisz</button>
+                                  placeholder={tr('Dopisz osobę ręcznie…')} className="flex-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
+                                <button onClick={() => addManual(section.key, role)} className="text-xs px-2.5 py-1.5 rounded-lg bg-accent-primary text-white whitespace-nowrap">{tr('Dopisz')}</button>
                               </div>
                             </div>
                           )}
@@ -397,13 +486,13 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                     <div className="mt-3 flex items-center gap-2">
                       <input value={newRole} onChange={(e) => setNewRole(e.target.value)} autoFocus
                         onKeyDown={(e) => { if (e.key === 'Enter') addRole(section.key); if (e.key === 'Escape') { setAddingRoleFor(null); setNewRole(''); } }}
-                        placeholder="Nazwa roli…" className="flex-1 max-w-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
-                      <button onClick={() => addRole(section.key)} className="text-sm px-3 py-1.5 rounded-lg bg-accent-primary text-white">Dodaj</button>
-                      <button onClick={() => { setAddingRoleFor(null); setNewRole(''); }} className="text-sm px-2 py-1.5 text-gray-400 hover:text-gray-600">Anuluj</button>
+                        placeholder={tr('Nazwa roli…')} className="flex-1 max-w-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-accent-primary" />
+                      <button onClick={() => addRole(section.key)} className="text-sm px-3 py-1.5 rounded-lg bg-accent-primary text-white">{tr('Dodaj')}</button>
+                      <button onClick={() => { setAddingRoleFor(null); setNewRole(''); }} className="text-sm px-2 py-1.5 text-gray-400 hover:text-gray-600">{tr('Anuluj')}</button>
                     </div>
                   ) : (
                     <button onClick={() => { setAddingRoleFor(section.key); setNewRole(''); }} className="mt-3 inline-flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary">
-                      <Plus size={15} /> Dodaj rolę
+                      <Plus size={15} /> {tr('Dodaj rolę')}
                     </button>
                   )
                 )}

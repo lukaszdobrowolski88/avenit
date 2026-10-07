@@ -81,7 +81,7 @@ export default function DiscountSettings({ settings, onChange }) {
                 <div className="flex items-center gap-2">
                   <Percent size={16} className="text-orange-500" />
                   <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    Reguła {index + 1}
+                    {tr('Reguła {n}', { n: index + 1 })}
                   </span>
                 </div>
                 <button
@@ -95,7 +95,7 @@ export default function DiscountSettings({ settings, onChange }) {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Od (osób)
+                    {tr('Od (osób)')}
                   </label>
                   <input
                     type="number"
@@ -107,21 +107,21 @@ export default function DiscountSettings({ settings, onChange }) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Typ rabatu
+                    {tr('Typ rabatu')}
                   </label>
                   <select
                     value={rule.discountType}
                     onChange={(e) => updateRule(index, 'discountType', e.target.value)}
                     className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                   >
-                    <option value="percentage">Procentowo</option>
-                    <option value="fixed_per_person">Kwota/os.</option>
+                    <option value="percentage">{tr('Procentowo')}</option>
+                    <option value="fixed_per_person">{tr('Kwota/os.')}</option>
                     <option value="fixed_total">{tr('Kwota łącznie')}</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Wartość {rule.discountType === 'percentage' ? '(%)' : `(${currency})`}
+                    {tr('Wartość')} {rule.discountType === 'percentage' ? '(%)' : `(${currency})`}
                   </label>
                   <input
                     type="number"
@@ -136,13 +136,13 @@ export default function DiscountSettings({ settings, onChange }) {
 
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Etykieta (wyświetlana użytkownikowi)
+                  {tr('Etykieta (wyświetlana użytkownikowi)')}
                 </label>
                 <input
                   type="text"
                   value={rule.label}
                   onChange={(e) => updateRule(index, 'label', e.target.value)}
-                  placeholder={`np. ${rule.value}${rule.discountType === 'percentage' ? '%' : ' ' + currency} rabatu dla ${rule.minQuantity}+ osób`}
+                  placeholder={tr('np. {value} rabatu dla {min}+ osób', { value: `${rule.value}${rule.discountType === 'percentage' ? '%' : ' ' + currency}`, min: rule.minQuantity })}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
               </div>
@@ -176,7 +176,7 @@ export default function DiscountSettings({ settings, onChange }) {
                         : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
                     }`}
                   >
-                    {mode.label}
+                    {tr(mode.label)}
                   </button>
                 ))}
               </div>

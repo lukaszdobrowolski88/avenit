@@ -11,10 +11,8 @@ export function useTemplates() {
       setLoading(true);
       const { data, error: fetchError } = await supabase
         .from('email_templates')
-        .select(`
-          *,
-          creator:app_users!email_templates_created_by_fkey(full_name)
-        `)
+        // Bez osadzenia autora: created_by to e-mail (migracja 082), relacja w rejestrze łączy po id.
+        .select('*')
         .order('is_system', { ascending: false })
         .order('created_at', { ascending: false });
 

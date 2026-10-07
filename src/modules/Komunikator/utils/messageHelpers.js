@@ -1,3 +1,4 @@
+import { appLocale } from '../../../i18n';
 // Formatowanie daty wiadomości
 export const formatMessageDate = (dateString) => {
   const date = new Date(dateString);
@@ -8,20 +9,20 @@ export const formatMessageDate = (dateString) => {
   const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
   if (messageDate.getTime() === today.getTime()) {
-    return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' });
   } else if (messageDate.getTime() === yesterday.getTime()) {
     return 'Wczoraj';
   } else if (now.getTime() - date.getTime() < 7 * 24 * 60 * 60 * 1000) {
-    return date.toLocaleDateString('pl-PL', { weekday: 'long' });
+    return date.toLocaleDateString(appLocale(), { weekday: 'long' });
   } else {
-    return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+    return date.toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' });
   }
 };
 
 // Formatowanie czasu wiadomości
 export const formatMessageTime = (dateString) => {
   const date = new Date(dateString);
-  return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' });
 };
 
 // Grupowanie wiadomości po dacie
@@ -30,7 +31,7 @@ export const groupMessagesByDate = (messages) => {
 
   messages.forEach(message => {
     const date = new Date(message.created_at);
-    const dateKey = date.toLocaleDateString('pl-PL', {
+    const dateKey = date.toLocaleDateString(appLocale(), {
       day: 'numeric',
       month: 'long',
       year: 'numeric'

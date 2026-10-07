@@ -5,6 +5,7 @@ import { TAG_COLORS } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
+import { tr } from '../../../i18n';
 
 export default function TagsTab({ member, campusIdForInsert, withCampusFilter }) {
   const [tags, setTags] = useState([]);
@@ -34,8 +35,8 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
 
   const add = async () => {
     const t = tag.trim();
-    if (!t) { toast.error('Wpisz nazwę tagu.'); return; }
-    if (tags.some(x => (x.tag || '').toLowerCase() === t.toLowerCase())) { toast.error('Ten tag już istnieje.'); return; }
+    if (!t) { toast.error(tr('Wpisz nazwę tagu.')); return; }
+    if (tags.some(x => (x.tag || '').toLowerCase() === t.toLowerCase())) { toast.error(tr('Ten tag już istnieje.')); return; }
     setSaving(true);
     try {
       const { error } = await supabase.from('member_tags').insert({
@@ -48,7 +49,7 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
       setTag('');
       load();
     } catch (err) {
-      toast.error('Nie udało się dodać tagu: ' + (err.message || err));
+      toast.error(tr('Nie udało się dodać tagu: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
@@ -60,7 +61,7 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
       if (error) throw error;
       load();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
@@ -77,15 +78,15 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
             value={tag}
             onChange={e => setTag(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Nazwa tagu (np. Nowy, Wolontariusz, Do kontaktu)..."
+            placeholder={tr('Nazwa tagu (np. Nowy, Wolontariusz, Do kontaktu)...')}
             className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary-light/30 focus:border-accent-primary-light outline-none"
           />
           <button onClick={add} disabled={saving} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60 shrink-0">
-            <Plus size={16} /> Dodaj
+            <Plus size={16} /> {tr('Dodaj')}
           </button>
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Kolor</label>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">{tr('Kolor')}</label>
           <div className="flex gap-2 flex-wrap">
             {TAG_COLORS.map(c => (
               <button key={c} onClick={() => setColor(c)} className={`w-8 h-8 rounded-full transition ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-800' : ''}`} style={{ background: c }} />
@@ -98,7 +99,7 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
       {loading ? (
         <Spinner center />
       ) : tags.length === 0 ? (
-        <EmptyState icon={TagIcon} title="Brak tagów." subtitle="Dodaj pierwszy." className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
+        <EmptyState icon={TagIcon} title={tr('Brak tagów.')} subtitle={tr('Dodaj pierwszy.')} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
       ) : (
         <div className="flex flex-wrap gap-2">
           {tags.map(item => (

@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { isImageFile } from '../utils/messageHelpers';
 
-export default function useMediaGallery(conversationId) {
+// enabled=false → nie pobieraj (galeria zamknięta); pobranie przy otwarciu.
+export default function useMediaGallery(conversationId, enabled = true) {
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -60,10 +61,10 @@ export default function useMediaGallery(conversationId) {
     return media.filter(m => !isImageFile(m.type));
   }, [media]);
 
-  // Pobierz przy zmianie konwersacji
+  // Pobierz przy otwarciu galerii / zmianie konwersacji
   useEffect(() => {
-    fetchMedia();
-  }, [fetchMedia]);
+    if (enabled) fetchMedia();
+  }, [fetchMedia, enabled]);
 
   return {
     media,

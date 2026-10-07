@@ -15,9 +15,9 @@ import { formatPLN } from './utils/smsEncoding';
 import { tr } from '../../i18n';
 
 const TABS = [
-  { id: 'campaigns', label: tr('Kampanie'), icon: MessageSquare },
-  { id: 'templates', label: tr('Szablony'), icon: FileText },
-  { id: 'stats', label: tr('Statystyki'), icon: BarChart3 },
+  { id: 'campaigns', label: 'Kampanie', icon: MessageSquare },
+  { id: 'templates', label: 'Szablony', icon: FileText },
+  { id: 'stats', label: 'Statystyki', icon: BarChart3 },
 ];
 
 export default function SmsCampaignsModule() {
@@ -110,13 +110,13 @@ export default function SmsCampaignsModule() {
               className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-left hover:shadow-lg transition-all"
             >
               <h3 className="font-semibold text-gray-900 dark:text-white truncate">{c.name}</h3>
-              <p className="text-sm text-gray-500 truncate">Od: <span className="font-mono">{c.sender}</span></p>
+              <p className="text-sm text-gray-500 truncate">{tr('Od:')} <span className="font-mono">{c.sender}</span></p>
               <div className="flex gap-3 mt-2 text-xs text-gray-500 flex-wrap">
-                <span>{c.recipient_count || 0} odbiorców</span>
+                <span>{tr('{n} odbiorców', { n: c.recipient_count || 0 })}</span>
                 <span>·</span>
-                <span>{c.delivered_count || 0} dostarcz.</span>
+                <span>{tr('{n} dostarcz.', { n: c.delivered_count || 0 })}</span>
                 <span>·</span>
-                <span>{c.replied_count || 0} odp.</span>
+                <span>{tr('{n} odp.', { n: c.replied_count || 0 })}</span>
                 <span>·</span>
                 <span>{formatPLN((c.total_cost || 0) * 0.16)}</span>
               </div>

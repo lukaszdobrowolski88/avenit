@@ -37,7 +37,7 @@ export default function FolderModal({
 
     // Walidacja nazwy
     if (trimmedName.includes('/') || trimmedName.includes('\\')) {
-      setError('Nazwa folderu nie może zawierać znaków / lub \\');
+      setError(tr('Nazwa folderu nie może zawierać znaków / lub \\'));
       return;
     }
 
@@ -65,22 +65,22 @@ export default function FolderModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={mode === 'create' ? 'Nowy folder' : tr('Zmień nazwę folderu')}
-      subtitle={parentFolderName && mode === 'create' ? `w folderze: ${parentFolderName}` : undefined}
+      title={mode === 'create' ? tr('Nowy folder') : tr('Zmień nazwę folderu')}
+      subtitle={parentFolderName && mode === 'create' ? tr('w folderze: {name}', { name: parentFolderName }) : undefined}
       icon={mode === 'create' ? FolderPlus : Folder}
       size="sm"
       closeOnBackdrop={false}
       footer={<>
-        <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>Anuluj</Button>
+        <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>{tr('Anuluj')}</Button>
         <Button type="submit" form="materials-folder-form" loading={loading} disabled={!name.trim()}>
-          {mode === 'create' ? tr('Utwórz folder') : 'Zapisz'}
+          {mode === 'create' ? tr('Utwórz folder') : tr('Zapisz')}
         </Button>
       </>}
     >
       {/* Form */}
       <form id="materials-folder-form" onSubmit={handleSubmit} className="p-6">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Nazwa folderu
+          {tr('Nazwa folderu')}
         </label>
         <input
           ref={inputRef}

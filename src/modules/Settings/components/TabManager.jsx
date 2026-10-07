@@ -219,7 +219,7 @@ export default function TabManager({
         icon={ModuleIcon}
         title={tr('Zakładki modułu')}
         subtitle={module.label}
-        footer={<Button onClick={onClose}>Gotowe</Button>}
+        footer={<Button onClick={onClose}>{tr('Gotowe')}</Button>}
       >
         <div className="p-6">
           {/* Add Button */}
@@ -301,13 +301,13 @@ export default function TabManager({
         size="sm"
         title={tr('Usunąć zakładkę?')}
         footer={<>
-          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Anuluj</Button>
+          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>{tr('Anuluj')}</Button>
           <Button variant="danger" onClick={confirmDelete}>{tr('Usuń')}</Button>
         </>}
       >
         <div className="p-6">
           <p className="text-gray-600 dark:text-gray-400">
-            Czy na pewno chcesz usunąć zakładkę "{deleteConfirm?.label}"? Tej operacji nie można cofnąć.
+            {tr('Czy na pewno chcesz usunąć zakładkę "{name}"? Tej operacji nie można cofnąć.', { name: deleteConfirm?.label || '' })}
           </p>
         </div>
       </Modal>

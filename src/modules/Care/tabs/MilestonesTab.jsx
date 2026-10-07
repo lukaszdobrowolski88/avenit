@@ -8,6 +8,7 @@ import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const MILESTONE_ICONS = {
   'nawrócenie': Flag,
@@ -67,20 +68,20 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
       setForm(emptyForm());
       load();
     } catch (err) {
-      toast.error('Nie udało się zapisać kamienia milowego: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać kamienia milowego: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (item) => {
-    if (!await confirmDialog('Usunąć ten kamień milowy?')) return;
+    if (!await confirmDialog(tr('Usunąć ten kamień milowy?'))) return;
     try {
       const { error } = await supabase.from('member_milestones').delete().eq('id', item.id);
       if (error) throw error;
       load();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
@@ -89,9 +90,9 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
       {/* Dodawanie */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <CustomSelect label="Typ" value={form.milestone_type} onChange={v => setForm(f => ({ ...f, milestone_type: v }))} options={MILESTONE_TYPES} />
+          <CustomSelect label={tr('Typ')} value={form.milestone_type} onChange={v => setForm(f => ({ ...f, milestone_type: v }))} options={MILESTONE_TYPES.map((o) => ({ ...o, label: tr(o.label) }))} />
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Data')}</label>
             <DateInput value={form.milestone_date} onChange={e => setForm(f => ({ ...f, milestone_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
         </div>
@@ -99,12 +100,12 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
           value={form.note}
           onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
           rows={2}
-          placeholder="Opis / okoliczności (opcjonalnie)..."
+          placeholder={tr('Opis / okoliczności (opcjonalnie)...')}
           className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none"
         />
         <div className="flex justify-end">
           <button onClick={add} disabled={saving} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60">
-            <Plus size={16} /> {saving ? 'Zapisywanie...' : 'Dodaj kamień milowy'}
+            <Plus size={16} /> {saving ? tr('Zapisywanie...') : tr('Dodaj kamień milowy')}
           </button>
         </div>
       </div>
@@ -113,7 +114,7 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
       {loading ? (
         <Spinner center />
       ) : items.length === 0 ? (
-        <EmptyState icon={Award} title="Brak kamieni milowych." className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
+        <EmptyState icon={Award} title={tr('Brak kamieni milowych.')} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
       ) : (
         <div className="space-y-3">
           {items.map(item => {
@@ -126,7 +127,7 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-gray-900 dark:text-white text-sm">{milestoneTypeLabel(item.milestone_type)}</span>
+                    <span className="font-semibold text-gray-900 dark:text-white text-sm">{tr(milestoneTypeLabel(item.milestone_type))}</span>
                     <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(item.milestone_date)}</span>
                   </div>
                   {item.note && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">{item.note}</p>}

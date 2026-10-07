@@ -11,6 +11,7 @@ import Spinner from '../../../components/Spinner';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import { pluralForm } from '../checkin/utils/kiosk';
 
 export default function HouseholdManager() {
   const [households, setHouseholds] = useState([]);
@@ -114,7 +115,7 @@ export default function HouseholdManager() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast.error('Nazwa rodziny jest wymagana');
+      toast.error(tr('Nazwa rodziny jest wymagana'));
       return;
     }
 
@@ -202,7 +203,13 @@ export default function HouseholdManager() {
   };
 
   const handleDelete = async (householdId) => {
-    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć tę rodzinę? Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną.'))) return;
+    const name = households.find(h => h.id === householdId)?.name || '';
+    if (!await confirmDialog({
+      title: tr('Usunąć rodzinę „{name}”?', { name }),
+      message: tr('Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną, a opiekunowie zostaną usunięci. Tej operacji nie można cofnąć.'),
+      confirmLabel: tr('Usuń rodzinę'),
+      danger: true,
+    })) return;
 
     try {
       // First, unlink students
@@ -344,7 +351,7 @@ export default function HouseholdManager() {
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Szukaj po nazwie, telefonie, rodzicu lub dziecku..."
+            placeholder={tr('Szukaj po nazwie, telefonie, rodzicu lub dziecku...')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
@@ -353,12 +360,18 @@ export default function HouseholdManager() {
         <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
           <span className="flex items-center gap-1.5">
             <Home size={16} />
-            {households.length} rodzin
+            {pluralForm(households.length,
+              tr('{n} rodzina', { n: households.length }),
+              tr('{n} rodziny', { n: households.length }),
+              tr('{n} rodzin', { n: households.length }))}
           </span>
           {unassignedStudents.length > 0 && (
             <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
               <User size={16} />
-              {unassignedStudents.length} nieprzypisanych uczniów
+              {pluralForm(unassignedStudents.length,
+                tr('{n} uczeń bez rodziny', { n: unassignedStudents.length }),
+                tr('{n} uczniów bez rodziny', { n: unassignedStudents.length }),
+                tr('{n} uczniów bez rodziny', { n: unassignedStudents.length }))}
             </span>
           )}
         </div>
@@ -373,10 +386,10 @@ export default function HouseholdManager() {
         title={editingHousehold ? tr('Edytuj rodzinę') : tr('Dodaj rodzinę')}
         footer={<>
           <Button variant="secondary" onClick={resetForm}>
-            Anuluj
+            {tr('Anuluj')}
           </Button>
           <Button onClick={handleSave}>
-            {editingHousehold ? 'Zapisz zmiany' : tr('Dodaj rodzinę')}
+            {editingHousehold ? tr('Zapisz zmiany') : tr('Dodaj rodzinę')}
           </Button>
         </>}
       >
@@ -385,25 +398,25 @@ export default function HouseholdManager() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Nazwa rodziny *
+                    {tr('Nazwa rodziny')} *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="np. Kowalscy"
+                    placeholder={tr('np. Kowalscy')}
                     className={inputClasses}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Główny telefon (do check-in)
+                    {tr('Główny telefon (do check-in)')}
                   </label>
                   <input
                     type="tel"
                     value={formData.phone_full}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone_full: e.target.value }))}
-                    placeholder="np. +48 123 456 789"
+                    placeholder={tr('np. {example}', { example: '+48 123 456 789' })}
                     className={inputClasses}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -412,7 +425,7 @@ export default function HouseholdManager() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Adres
+                    {tr('Adres')}
                   </label>
                   <input
                     type="text"
@@ -436,7 +449,7 @@ export default function HouseholdManager() {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition"
                   >
                     <Plus size={16} />
-                    Dodaj kontakt
+                    {tr('Dodaj kontakt')}
                   </button>
                 </div>
 
@@ -448,7 +461,7 @@ export default function HouseholdManager() {
                     >
                       <div className="flex justify-between items-center mb-3">
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                          Kontakt {index + 1}
+                          {tr('Kontakt')} {index + 1}
                         </span>
                         <div className="flex items-center gap-2">
                           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -531,20 +544,20 @@ export default function HouseholdManager() {
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                Relacja
+                                {tr('Relacja')}
                               </label>
                               <select
                                 value={contact.relationship}
                                 onChange={(e) => handleContactChange(index, 'relationship', e.target.value)}
                                 className={inputClasses}
                               >
-                                <option value="Rodzic">Rodzic</option>
-                                <option value="Mama">Mama</option>
-                                <option value="Tata">Tata</option>
-                                <option value="Dziadek">Dziadek</option>
-                                <option value="Babcia">Babcia</option>
-                                <option value="Opiekun">Opiekun</option>
-                                <option value="Inny">Inny</option>
+                                <option value="Rodzic">{tr('Rodzic')}</option>
+                                <option value="Mama">{tr('Mama')}</option>
+                                <option value="Tata">{tr('Tata')}</option>
+                                <option value="Dziadek">{tr('Dziadek')}</option>
+                                <option value="Babcia">{tr('Babcia')}</option>
+                                <option value="Opiekun">{tr('Opiekun')}</option>
+                                <option value="Inny">{tr('Inny')}</option>
                               </select>
                             </div>
                             {contact.phone && (
@@ -582,12 +595,12 @@ export default function HouseholdManager() {
               {/* Notes */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                  Uwagi
+                  {tr('Uwagi')}
                 </label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Dodatkowe informacje o rodzinie..."
+                  placeholder={tr('Dodatkowe informacje o rodzinie...')}
                   rows={2}
                   className={inputClasses}
                 />
@@ -601,7 +614,7 @@ export default function HouseholdManager() {
         onClose={() => setAssignStudentModal(null)}
         closeOnBackdrop={false}
         size="sm"
-        title="Przypisz ucznia do rodziny"
+        title={tr('Przypisz ucznia do rodziny')}
       >
             <div className="p-6">
               {unassignedStudents.length === 0 ? (
@@ -620,7 +633,7 @@ export default function HouseholdManager() {
                         </span>
                         {student.birth_year && (
                           <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                            ({new Date().getFullYear() - student.birth_year} lat)
+                            ({new Date().getFullYear() - student.birth_year} {tr('lat')})
                           </span>
                         )}
                       </div>
@@ -680,7 +693,7 @@ export default function HouseholdManager() {
                       )}
                       <span className="flex items-center gap-1">
                         <Users size={14} />
-                        {household.kids_students?.length || 0} dzieci
+                        {household.kids_students?.length || 0} {tr('dzieci')}
                       </span>
                     </div>
                   </div>
@@ -715,7 +728,7 @@ export default function HouseholdManager() {
                     {household.parent_contacts?.length > 0 && (
                       <div>
                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Kontakty
+                          {tr('Kontakty')}
                         </h4>
                         <div className="grid gap-2">
                           {household.parent_contacts.map(contact => (
@@ -733,10 +746,10 @@ export default function HouseholdManager() {
                                       {contact.full_name}
                                     </span>
                                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {contact.relationship}
+                                      {contact.relationship ? tr(contact.relationship) : contact.relationship}
                                     </span>
                                     {contact.is_primary && (
-                                      <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded text-xs">
+                                      <span className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-gray-800 dark:text-gray-100 px-1.5 py-0.5 rounded text-xs">
                                         {tr('Główny')}
                                       </span>
                                     )}
@@ -758,7 +771,7 @@ export default function HouseholdManager() {
                                 </div>
                               </div>
                               {contact.can_pickup && (
-                                <span className="text-xs text-green-600 dark:text-green-400">
+                                <span className="text-xs text-gray-600 dark:text-gray-300">
                                   {tr('Może odbierać')}
                                 </span>
                               )}
@@ -772,14 +785,14 @@ export default function HouseholdManager() {
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                          Dzieci
+                          {tr('Dzieci')}
                         </h4>
                         <button
                           onClick={() => setAssignStudentModal(household.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition"
                         >
                           <Plus size={16} />
-                          Przypisz ucznia
+                          {tr('Przypisz ucznia')}
                         </button>
                       </div>
 
@@ -800,7 +813,7 @@ export default function HouseholdManager() {
                                   </span>
                                   {student.birth_year && (
                                     <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                                      ({new Date().getFullYear() - student.birth_year} lat)
+                                      ({new Date().getFullYear() - student.birth_year} {tr('lat')})
                                     </span>
                                   )}
                                 </div>
@@ -816,7 +829,7 @@ export default function HouseholdManager() {
                           ))}
                         </div>
                       ) : (
-                        <EmptyState compact icon={Users} title="Brak przypisanych dzieci" />
+                        <EmptyState compact icon={Users} title={tr('Brak przypisanych dzieci')} />
                       )}
                     </div>
 
@@ -830,11 +843,11 @@ export default function HouseholdManager() {
                           {household.members.map(member => (
                             <div
                               key={member.id}
-                              className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl"
+                              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl"
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center">
-                                  <User size={14} className="text-blue-600 dark:text-blue-400" />
+                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                                  <User size={14} className="text-gray-600 dark:text-gray-400" />
                                 </div>
                                 <div>
                                   <span className="font-medium text-gray-900 dark:text-white">
@@ -866,7 +879,7 @@ export default function HouseholdManager() {
                     {household.notes && (
                       <div>
                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                          Uwagi
+                          {tr('Uwagi')}
                         </h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {household.notes}

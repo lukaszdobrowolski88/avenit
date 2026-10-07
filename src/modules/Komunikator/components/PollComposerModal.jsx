@@ -14,6 +14,7 @@ export default function PollComposerModal({ isOpen, onClose, onSubmit }) {
     { id: 'o2', text: '' }
   ]);
   const [multiple, setMultiple] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -42,19 +43,27 @@ export default function PollComposerModal({ isOpen, onClose, onSubmit }) {
   const validOptions = options.filter(o => o.text.trim());
   const canSubmit = question.trim() && validOptions.length >= 2;
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    onSubmit?.({
-      question: question.trim(),
-      options: validOptions.map(o => ({ id: o.id, text: o.text.trim() })),
-      multiple,
-      closes_at: null
-    });
-    reset();
-    onClose();
+  // Zamknij dopiero po udanym wysłaniu; błąd pokazuje wątek (MessageThread), ankieta zostaje w oknie.
+  const handleSubmit = async () => {
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit?.({
+        question: question.trim(),
+        options: validOptions.map(o => ({ id: o.id, text: o.text.trim() })),
+        multiple,
+        closes_at: null
+      });
+      reset();
+      onClose();
+    } catch {
+      /* komunikat już pokazany */
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleClose = () => { reset(); onClose(); };
+  const handleClose = () => { if (submitting) return; reset(); onClose(); };
 
   return (
     <Modal
@@ -65,8 +74,8 @@ export default function PollComposerModal({ isOpen, onClose, onSubmit }) {
       icon={BarChart3}
       size="sm"
       footer={<>
-        <Button variant="secondary" onClick={handleClose}>Anuluj</Button>
-        <Button icon={BarChart3} onClick={handleSubmit} disabled={!canSubmit}>
+        <Button variant="secondary" onClick={handleClose}>{tr('Anuluj')}</Button>
+        <Button icon={BarChart3} onClick={handleSubmit} disabled={!canSubmit} loading={submitting}>
           {tr('Utwórz ankietę')}
         </Button>
       </>}
@@ -95,7 +104,7 @@ export default function PollComposerModal({ isOpen, onClose, onSubmit }) {
                   className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
                 />
                 {options.length > 2 && (
-                  <button onClick={() => removeOption(opt.id)} className="p-2 text-gray-400 hover:text-red-500 transition">
+                  <button type="button" onClick={() => removeOption(opt.id)} className="p-2 text-gray-400 hover:text-red-500 transition" aria-label={tr('Usuń opcję {n}', { n: idx + 1 })} title={tr('Usuń opcję')}>
                     <Trash2 size={16} />
                   </button>
                 )}

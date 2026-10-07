@@ -14,7 +14,7 @@ import {
   Eye,
   Edit
 } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { confirmDialog, promptDialog } from '../../../lib/dialog';
 import Spinner from '../../../components/Spinner';
@@ -71,10 +71,10 @@ export default function TenantsList({ onSelectTenant }) {
     };
 
     const statusLabels = {
-      trial: 'Trial',
-      active: 'Aktywny',
-      suspended: 'Zawieszony',
-      cancelled: 'Anulowany'
+      trial: tr('Trial'),
+      active: tr('Aktywny'),
+      suspended: tr('Zawieszony'),
+      cancelled: tr('Anulowany')
     };
 
     return (
@@ -99,7 +99,7 @@ export default function TenantsList({ onSelectTenant }) {
     return {
       plan: plan?.name || '',
       price: price ? formatPrice(price) : '',
-      cycle: subscription.billing_cycle === 'yearly' ? '/rok' : '/mies.'
+      cycle: subscription.billing_cycle === 'yearly' ? tr('/rok') : tr('/mies.')
     };
   };
 
@@ -109,7 +109,7 @@ export default function TenantsList({ onSelectTenant }) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Klienci
+            {tr('Klienci')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             {tr('Zarządzaj klientami i ich subskrypcjami')}
@@ -123,7 +123,7 @@ export default function TenantsList({ onSelectTenant }) {
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Szukaj po nazwie lub emailu..."
+            placeholder={tr('Szukaj po nazwie lub emailu...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
@@ -135,9 +135,9 @@ export default function TenantsList({ onSelectTenant }) {
           className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light"
         >
           <option value="">{tr('Wszystkie statusy')}</option>
-          <option value="trial">Trial</option>
-          <option value="active">Aktywny</option>
-          <option value="suspended">Zawieszony</option>
+          <option value="trial">{tr('Trial')}</option>
+          <option value="active">{tr('Aktywny')}</option>
+          <option value="suspended">{tr('Zawieszony')}</option>
           <option value="cancelled">{tr('Anulowany')}</option>
         </select>
       </div>
@@ -152,11 +152,11 @@ export default function TenantsList({ onSelectTenant }) {
           <DataTable flush>
             <THead>
               <tr>
-                <TH>Klient</TH>
+                <TH>{tr('Klient')}</TH>
                 <TH>{tr('Status')}</TH>
-                <TH>Plan</TH>
-                <TH>Cena</TH>
-                <TH>Data rejestracji</TH>
+                <TH>{tr('Plan')}</TH>
+                <TH>{tr('Cena')}</TH>
+                <TH>{tr('Data rejestracji')}</TH>
                 <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
               </tr>
             </THead>
@@ -195,7 +195,7 @@ export default function TenantsList({ onSelectTenant }) {
                     <TD muted numeric>
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
-                        {new Date(tenant.created_at).toLocaleDateString('pl-PL')}
+                        {new Date(tenant.created_at).toLocaleDateString(appLocale())}
                       </div>
                     </TD>
                     <TD align="right">

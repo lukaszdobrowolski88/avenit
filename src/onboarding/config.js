@@ -15,37 +15,43 @@ import {
 
 // ── Product tour (spotlight / coach-marks) ──────────────────────────────────
 // Krok: { selector, title, body, route?, placement?, sidebar? }
-//  - selector       — CSS selektor elementu do podświetlenia (data-tour="…")
-//  - route          — jeśli podany, tour najpierw przechodzi na tę trasę
+//  - selector       — CSS selektor elementu do podświetlenia (data-tour="…"); pozycje menu
+//                     wskazujemy po KLUCZU modułu: [data-nav-key="calendar"] (ścieżki bywają różne)
+//  - match          — zapasowe wyszukanie, gdy w module brak data-tour:
+//                     { selector, text?, placeholder? } — pierwszy widoczny element pasujący do
+//                     selektora, którego tekst (lub placeholder) zawiera podany napis (po tr())
+//  - route          — jeśli podany, tour najpierw przechodzi na tę trasę (może mieć ?tab=)
 //  - placement      — preferowana strona dymka: 'top'|'bottom'|'left'|'right'
 //  - sidebar        — krok wskazuje element w menu bocznym (na mobile otwórz drawer)
-//  - optional       — jeśli true i elementu brak (np. moduł wyłączony), krok jest pomijany
+//  - optional       — jeśli true i elementu brak (np. moduł wyłączony), krok jest pomijany szybciej
+// Test src/onboarding/config.test.js pilnuje, by każdy selektor data-tour istniał w kodzie.
 export const TOURS = {
   welcome: [
     {
       selector: '[data-tour="sidebar"]',
       title: 'Menu główne',
-      body: 'Stąd przechodzisz do wszystkich modułów kościoła — członków, kalendarza, finansów i więcej. Widoczne są tylko te, do których masz dostęp.',
+      body: 'Stąd przechodzisz do modułów kościoła. Są pogrupowane (np. Ludzie, Służby, Komunikacja) — kliknij nagłówek grupy, aby ją zwinąć lub rozwinąć. Widzisz tylko moduły, do których masz dostęp.',
       placement: 'right',
       sidebar: true,
       route: '/',
     },
     {
-      selector: '[data-tour="nav-/"]',
+      selector: '[data-nav-key="dashboard"]',
       title: 'Pulpit',
       body: 'Twój ekran startowy — skróty, nadchodzące wydarzenia i najważniejsze informacje w jednym miejscu.',
       placement: 'right',
       sidebar: true,
     },
     {
-      selector: '[data-tour="nav-/calendar"]',
-      title: 'Kalendarz',
+      selector: '[data-nav-key="calendar"]',
+      title: 'Wydarzenia',
       body: 'Planuj nabożeństwa, spotkania i wydarzenia. Członkowie mogą zapisywać się (RSVP) i widzieć je w aplikacji.',
       placement: 'right',
       sidebar: true,
+      optional: true,
     },
     {
-      selector: '[data-tour="nav-/members"]',
+      selector: '[data-nav-key="members"]',
       title: 'Członkowie',
       body: 'Baza osób w Twoim kościele — dane kontaktowe, grupy, obecność i notatki duszpasterskie.',
       placement: 'right',
@@ -57,6 +63,7 @@ export const TOURS = {
       title: 'Szybkie wyszukiwanie',
       body: 'Naciśnij ⌘K (lub Ctrl+K), aby błyskawicznie znaleźć osobę, pieśń, grupę lub wydarzenie i przejść wprost do niej.',
       placement: 'bottom',
+      optional: true,
     },
     {
       selector: '[data-tour="language"]',
@@ -132,16 +139,18 @@ export const TOURS = {
       title: 'Zapisz', body: 'Zapisz — osoba trafi do bazy członków i będzie dostępna w innych modułach.' },
   ],
 
-  // ── Proces: jak dodać wydarzenie do kalendarza ──
+  // ── Proces: jak dodać wydarzenie (moduł Wydarzenia) ──
+  // Moduł Wydarzenia nie ma jeszcze atrybutów data-tour — cele szukamy po tekście (match).
   'calendar-event': [
-    { selector: '[data-tour="cal-add"]', route: '/calendar', placement: 'right', interactive: true, advanceOn: 'click',
-      title: 'Dodaj do kalendarza', body: 'Kliknij „Dodaj", aby utworzyć nowy wpis w kalendarzu.' },
-    { selector: '[data-tour="cal-type-event"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000,
-      title: 'Wybierz „Wydarzenie"', body: 'Wybierz „Wydarzenie". Następnie wskażesz kalendarz (np. ogólny lub konkretnej służby).' },
-    { selector: '[data-tour="cal-event-title"]', placement: 'bottom', interactive: true, waitMs: 12000, optional: true,
-      title: 'Szczegóły wydarzenia', body: 'Nadaj wydarzeniu nazwę, ustaw datę oraz godziny rozpoczęcia i zakończenia.' },
-    { selector: '[data-tour="cal-event-save"]', placement: 'top', interactive: true, optional: true,
-      title: 'Zapisz wydarzenie', body: 'Zapisz — wydarzenie pojawi się w kalendarzu, a jeśli włączysz zapisy (RSVP), członkowie będą mogli się zgłaszać.' },
+    { selector: '[data-tour="events-new"]', match: { selector: 'main button', text: 'Nowe wydarzenie' },
+      route: '/wydarzenia', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Nowe wydarzenie', body: 'Kliknij „Nowe wydarzenie”, aby otworzyć szybki formularz.' },
+    { selector: '[data-tour="events-title"]', match: { selector: '[role="dialog"] input', placeholder: 'Nazwa wydarzenia' },
+      placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Szczegóły wydarzenia', body: 'Nadaj wydarzeniu nazwę i wybierz kalendarz (ogólny lub konkretnej służby). Niżej ustawisz datę, godziny i miejsce.' },
+    { selector: '[data-tour="events-create"]', match: { selector: '[role="dialog"] button', text: 'Utwórz i otwórz' },
+      placement: 'top', interactive: true, optional: true,
+      title: 'Utwórz wydarzenie', body: 'Kliknij „Utwórz i otwórz”. Na stronie wydarzenia ustawisz resztę: opis, służby, zapisy (RSVP) i widoczność.' },
   ],
 
   // ── Proces: jak zaksięgować wpływ (kolekta / darowizna) ──
@@ -230,7 +239,7 @@ export const TOURS = {
       title: 'Opublikuj', body: 'Gdy skończysz — opublikuj formularz i udostępnij link do wypełnienia.' },
   ],
 
-  // ── Proces: jak dodać grupę i dziecko (Małe Avenit) ──
+  // ── Proces: jak dodać grupę i dziecko (moduł dzieci) ──
   'kids-add-child': [
     { selector: '[data-tour="kids-tab-groups"]', route: '/kids', placement: 'bottom', interactive: true, advanceOn: 'click',
       title: 'Zakładka Grupy', body: 'Zacznij od grup wiekowych. Kliknij zakładkę „Grupy".' },
@@ -293,9 +302,9 @@ export const TOURS = {
   // ── Proces: jak założyć zbiórkę (darowizny) ──
   'giving-campaign': [
     { selector: '[data-tour="giving-campaigns-tab"]', route: '/giving', placement: 'bottom', interactive: true, advanceOn: 'click',
-      title: 'Zakładka Kampanie', body: 'Zbiórki z celem kwotowym zakładasz w zakładce „Kampanie". Kliknij ją.' },
+      title: 'Zakładka Zbiórki', body: 'Zbiórki z celem kwotowym zakładasz w zakładce „Zbiórki”. Kliknij ją.' },
     { selector: '[data-tour="giving-campaign-new"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000,
-      title: 'Nowa zbiórka', body: 'Kliknij „Nowa kampania", aby utworzyć zbiórkę z celem.' },
+      title: 'Nowa zbiórka', body: 'Kliknij „Nowa zbiórka”, aby utworzyć zbiórkę z celem.' },
     { selector: '[data-tour="giving-campaign-name"]', placement: 'bottom', interactive: true, waitMs: 10000,
       title: 'Nazwa zbiórki', body: 'Nadaj zbiórce nazwę (np. „Remont dachu").' },
     { selector: '[data-tour="giving-campaign-goal"]', placement: 'bottom', interactive: true,
@@ -305,15 +314,17 @@ export const TOURS = {
   ],
 
   // ── Proces: jak dodać wydarzenie młodzieżowe ──
+  // Młodzieżówka używa wspólnej zakładki Wydarzenia (shared/EventsTab) — cele po tekście (match).
   'mlodziezowka-event': [
-    { selector: '[data-tour="mlodz-event-add"]', route: '/mlodziezowka', placement: 'bottom', interactive: true, advanceOn: 'click',
+    { selector: '[data-tour="events-tab-add"]', match: { selector: 'main button', text: 'Dodaj wydarzenie' },
+      route: '/mlodziezowka?tab=events', placement: 'bottom', interactive: true, advanceOn: 'click',
       title: 'Dodaj wydarzenie', body: 'Kliknij „Dodaj wydarzenie", aby zaplanować spotkanie młodzieżowe.' },
-    { selector: '[data-tour="mlodz-event-title"]', placement: 'bottom', interactive: true, waitMs: 10000,
-      title: 'Tytuł', body: 'Nadaj wydarzeniu nazwę (np. „Wieczór uwielbienia").' },
-    { selector: '[data-tour="mlodz-event-date"]', placement: 'bottom', interactive: true,
-      title: 'Data', body: 'Ustaw datę wydarzenia. Możesz dodać godzinę, miejsce i limit uczestników.' },
-    { selector: '[data-tour="mlodz-event-save"]', placement: 'top', interactive: true, advanceOn: 'click',
-      title: 'Zapisz', body: 'Zapisz — wydarzenie pojawi się na liście młodzieżówki.' },
+    { selector: '[data-tour="events-tab-title"]', match: { selector: '[role="dialog"] input', placeholder: 'Nazwa wydarzenia' },
+      placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Tytuł i termin', body: 'Nadaj wydarzeniu nazwę (np. „Wieczór uwielbienia”) i ustaw datę. Możesz dodać godzinę, miejsce i limit uczestników.' },
+    { selector: '[data-tour="events-tab-save"]', match: { selector: '[role="dialog"] button', text: 'Zapisz' },
+      placement: 'top', interactive: true, advanceOn: 'click', optional: true,
+      title: 'Zapisz', body: 'Zapisz — wydarzenie pojawi się na liście młodzieżówki i w module Wydarzenia.' },
   ],
 
   // ── Proces: jak utworzyć zapisy (RSVP) na wydarzenie ──
@@ -327,9 +338,10 @@ export const TOURS = {
   ],
 
   // ── Proces: jak zanotować kontakt duszpasterski (Care) ──
+  // Opieka żyje w Członkach (zakładka „Opieka”) — trasa z ?tab=care otwiera ją od razu.
   'care-log': [
-    { selector: '[data-tour="care-search"]', route: '/care', placement: 'right', interactive: true, waitMs: 10000,
-      title: 'Wybierz osobę', body: 'Znajdź i kliknij osobę na liście po lewej, aby otworzyć jej kartę opieki.' },
+    { selector: '[data-tour="care-search"]', route: '/members?tab=care', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Wybierz osobę', body: 'Wpisz imię lub nazwisko, a potem kliknij osobę na liście, aby otworzyć jej kartę opieki. Następnie kliknij „Dalej”.' },
     { selector: '[data-tour="care-tab"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 15000,
       title: 'Zakładka Opieka', body: 'Kliknij zakładkę „Opieka", aby zobaczyć historię kontaktów duszpasterskich.' },
     { selector: '[data-tour="care-add"]', placement: 'top', interactive: true, waitMs: 10000,
@@ -351,30 +363,44 @@ export const TOURS = {
 
 // ── Katalog przewodników (biblioteka „Samouczki") ───────────────────────────
 // Każdy wpis odpala tour z TOURS (pole id = klucz w TOURS). category grupuje w UI.
+// module — klucz modułu: biblioteka pokazuje przewodnik tylko, gdy moduł jest włączony
+// i użytkownik ma uprawnienie module:<module> (resource nadpisuje, gdy inne).
 export const TUTORIALS = [
   { id: 'welcome', title: 'Szybkie wprowadzenie', desc: 'Przegląd całego panelu w minutę.', icon: Compass, category: 'Podstawy' },
-  { id: 'program-build', title: 'Jak zbudować program', desc: 'Zaplanuj nabożeństwo krok po kroku.', icon: FileText, category: 'Planowanie' },
-  { id: 'grafik-fill', title: 'Jak uzupełnić grafik', desc: 'Przypisz osoby do służb.', icon: CalendarClock, category: 'Planowanie' },
-  { id: 'calendar-event', title: 'Jak dodać wydarzenie', desc: 'Utwórz wpis w kalendarzu.', icon: CalendarPlus, category: 'Planowanie' },
-  { id: 'media-schedule', title: 'Jak ułożyć grafik mediów', desc: 'Przypisz zespół medialny do nabożeństw.', icon: Video, category: 'Planowanie' },
-  { id: 'attendance-mark', title: 'Jak zaznaczyć obecność', desc: 'Notuj obecność i nieobecność.', icon: ClipboardCheck, category: 'Ludzie' },
-  { id: 'member-add', title: 'Jak dodać członka', desc: 'Dopisz nową osobę do bazy.', icon: UserPlus, category: 'Ludzie' },
-  { id: 'homegroup-create', title: 'Jak założyć grupę domową', desc: 'Utwórz grupę i dodaj osoby.', icon: Home, category: 'Ludzie' },
-  { id: 'finance-income', title: 'Jak zaksięgować wpływ', desc: 'Zapisz kolektę lub darowiznę.', icon: Coins, category: 'Finanse' },
-  { id: 'mailing-send', title: 'Jak wysłać mailing', desc: 'Stwórz i wyślij wiadomość e-mail.', icon: Send, category: 'Komunikacja' },
-  { id: 'push-send', title: 'Jak wysłać powiadomienie push', desc: 'Stwórz i wyślij kampanię push.', icon: Bell, category: 'Komunikacja' },
-  { id: 'komunikator-message', title: 'Jak napisać wiadomość', desc: 'Rozpocznij rozmowę w komunikatorze.', icon: MessageCircle, category: 'Komunikacja' },
-  { id: 'forms-build', title: 'Jak stworzyć formularz', desc: 'Zbuduj i opublikuj formularz.', icon: ClipboardList, category: 'Komunikacja' },
-  { id: 'teaching-plan', title: 'Jak zaplanować kazanie', desc: 'Przypisz mówcę i temat do nabożeństwa.', icon: BookOpen, category: 'Planowanie' },
-  { id: 'prayer-request', title: 'Jak dodać intencję modlitewną', desc: 'Dodaj prośbę na ścianę modlitwy.', icon: Heart, category: 'Ludzie' },
-  { id: 'kids-add-child', title: 'Jak dodać dziecko (Małe Avenit)', desc: 'Utwórz grupę i dopisz dziecko.', icon: Baby, category: 'Ludzie' },
-  { id: 'sms-send', title: 'Jak wysłać SMS', desc: 'Stwórz i wyślij kampanię SMS.', icon: MessageSquare, category: 'Komunikacja' },
-  { id: 'giving-campaign', title: 'Jak założyć zbiórkę', desc: 'Kampania z celem i termometrem.', icon: Target, category: 'Finanse' },
-  { id: 'mlodziezowka-event', title: 'Jak dodać wydarzenie młodzieżowe', desc: 'Zaplanuj spotkanie młodzieżówki.', icon: Sparkles, category: 'Ludzie' },
-  { id: 'rsvp-campaign', title: 'Jak uruchomić zapisy (RSVP)', desc: 'Zbieraj potwierdzenia obecności.', icon: CalendarCheck, category: 'Planowanie' },
-  { id: 'care-log', title: 'Jak zanotować opiekę', desc: 'Zapisz kontakt duszpasterski.', icon: HeartHandshake, category: 'Ludzie' },
-  { id: 'rooms-booking', title: 'Jak zarezerwować salę', desc: 'Rezerwacja z wykrywaniem konfliktów.', icon: CalendarClock, category: 'Planowanie' },
+  { id: 'program-build', module: 'programs', title: 'Jak zbudować program', desc: 'Zaplanuj nabożeństwo krok po kroku.', icon: FileText, category: 'Planowanie' },
+  { id: 'grafik-fill', module: 'worship', title: 'Jak uzupełnić grafik', desc: 'Przypisz osoby do służb.', icon: CalendarClock, category: 'Planowanie' },
+  { id: 'calendar-event', module: 'calendar', title: 'Jak dodać wydarzenie', desc: 'Utwórz nowe wydarzenie.', icon: CalendarPlus, category: 'Planowanie' },
+  { id: 'media-schedule', module: 'media', title: 'Jak ułożyć grafik mediów', desc: 'Przypisz zespół medialny do nabożeństw.', icon: Video, category: 'Planowanie' },
+  { id: 'attendance-mark', module: 'attendance', title: 'Jak zaznaczyć obecność', desc: 'Notuj obecność i nieobecność.', icon: ClipboardCheck, category: 'Ludzie' },
+  { id: 'member-add', module: 'members', title: 'Jak dodać członka', desc: 'Dopisz nową osobę do bazy.', icon: UserPlus, category: 'Ludzie' },
+  { id: 'homegroup-create', module: 'homegroups', title: 'Jak założyć grupę domową', desc: 'Utwórz grupę i dodaj osoby.', icon: Home, category: 'Ludzie' },
+  { id: 'finance-income', module: 'finance', title: 'Jak zaksięgować wpływ', desc: 'Zapisz kolektę lub darowiznę.', icon: Coins, category: 'Finanse' },
+  { id: 'mailing-send', module: 'mailing', title: 'Jak wysłać mailing', desc: 'Stwórz i wyślij wiadomość e-mail.', icon: Send, category: 'Komunikacja' },
+  { id: 'push-send', module: 'push_campaigns', title: 'Jak wysłać powiadomienie push', desc: 'Stwórz i wyślij kampanię push.', icon: Bell, category: 'Komunikacja' },
+  { id: 'komunikator-message', module: 'komunikator', title: 'Jak napisać wiadomość', desc: 'Rozpocznij rozmowę w komunikatorze.', icon: MessageCircle, category: 'Komunikacja' },
+  { id: 'forms-build', module: 'forms', title: 'Jak stworzyć formularz', desc: 'Zbuduj i opublikuj formularz.', icon: ClipboardList, category: 'Komunikacja' },
+  { id: 'teaching-plan', module: 'teaching', title: 'Jak zaplanować kazanie', desc: 'Przypisz mówcę i temat do nabożeństwa.', icon: BookOpen, category: 'Planowanie' },
+  { id: 'prayer-request', module: 'prayer', title: 'Jak dodać intencję modlitewną', desc: 'Dodaj prośbę na ścianę modlitwy.', icon: Heart, category: 'Ludzie' },
+  { id: 'kids-add-child', module: 'kids', title: 'Jak dodać dziecko', desc: 'Utwórz grupę wiekową i dopisz dziecko.', icon: Baby, category: 'Ludzie' },
+  { id: 'sms-send', module: 'sms_campaigns', title: 'Jak wysłać SMS', desc: 'Stwórz i wyślij kampanię SMS.', icon: MessageSquare, category: 'Komunikacja' },
+  { id: 'giving-campaign', module: 'giving', title: 'Jak założyć zbiórkę', desc: 'Zbiórka z celem i termometrem postępu.', icon: Target, category: 'Finanse' },
+  { id: 'mlodziezowka-event', module: 'mlodziezowka', title: 'Jak dodać wydarzenie młodzieżowe', desc: 'Zaplanuj spotkanie młodzieżówki.', icon: Sparkles, category: 'Ludzie' },
+  { id: 'rsvp-campaign', module: 'rsvp', title: 'Jak uruchomić zapisy (RSVP)', desc: 'Zbieraj potwierdzenia obecności.', icon: CalendarCheck, category: 'Planowanie' },
+  { id: 'care-log', module: 'members', resource: 'module:care', title: 'Jak zanotować opiekę', desc: 'Zapisz kontakt duszpasterski.', icon: HeartHandshake, category: 'Ludzie' },
+  { id: 'rooms-booking', module: 'rooms', title: 'Jak zarezerwować salę', desc: 'Rezerwacja z wykrywaniem konfliktów.', icon: CalendarClock, category: 'Planowanie' },
 ];
+
+// Czy przewodnik jest dostępny: moduł włączony (gdy znamy listę modułów) i jest uprawnienie.
+export function isTutorialAvailable(tut, { can, modules } = {}) {
+  if (!tut.module) return true;
+  const resource = tut.resource || `module:${tut.module}`;
+  if (typeof can === 'function' && !can(resource)) return false;
+  if (Array.isArray(modules) && modules.length && !['programs', 'dashboard'].includes(tut.module)) {
+    const m = modules.find((x) => x.key === tut.module);
+    if (m && m.is_enabled === false) return false;
+  }
+  return true;
+}
 
 // Kolejność kategorii w bibliotece.
 export const TUTORIAL_CATEGORIES = ['Podstawy', 'Planowanie', 'Ludzie', 'Finanse', 'Komunikacja'];
@@ -410,10 +436,10 @@ const COMMON_STEPS = [
   },
   {
     id: 'calendar',
-    title: 'Zobacz kalendarz wydarzeń',
+    title: 'Zobacz nadchodzące wydarzenia',
     desc: 'Sprawdź, jak planowane są nabożeństwa i spotkania.',
     icon: Calendar,
-    action: { type: 'navigate', to: '/calendar' },
+    action: { type: 'navigate', to: '/wydarzenia' },
   },
 ];
 
@@ -432,7 +458,7 @@ const ADMIN_STEPS = [
     title: 'Włącz moduły, których używacie',
     desc: 'Finanse, grupy domowe, uwielbienie, media i inne.',
     icon: Boxes,
-    action: { type: 'navigate', to: '/settings' },
+    action: { type: 'navigate', to: '/settings?tab=modules' },
     adminOnly: true,
   },
   {
@@ -458,7 +484,7 @@ const ADMIN_STEPS = [
     title: 'Zaproś współpracowników',
     desc: 'Dodaj liderów i koordynatorów do panelu.',
     icon: UserPlus,
-    action: { type: 'navigate', to: '/settings' },
+    action: { type: 'navigate', to: '/settings?tab=users' },
     adminOnly: true,
   },
 ];
@@ -504,10 +530,10 @@ export const WIZARD_STEPS = [
 export const WIZARD_MODULES = [
   { key: 'members', label: 'Członkowie' },
   { key: 'worship', label: 'Grupa Uwielbienia' },
-  { key: 'kids', label: 'Małe Avenit (dzieci)' },
+  { key: 'kids', label: 'Dzieci' },
   { key: 'groups', label: 'Grupy domowe' },
   { key: 'finance', label: 'Finanse' },
-  { key: 'prayer', label: 'Centrum Modlitwy' },
+  { key: 'prayer', label: 'Ściana modlitwy' },
   { key: 'media', label: 'MediaTeam' },
   { key: 'komunikator', label: 'Komunikator' },
 ];

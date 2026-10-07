@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Cake, Gift } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 
@@ -65,7 +65,7 @@ export default function BirthdaysWidget() {
   const whenLabel = (days, next) => {
     if (days === 0) return tr('Dziś! 🎉');
     if (days === 1) return 'Jutro';
-    return `za ${days} dni · ${next.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}`;
+    return `za ${days} dni · ${next.toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' })}`;
   };
 
   return (

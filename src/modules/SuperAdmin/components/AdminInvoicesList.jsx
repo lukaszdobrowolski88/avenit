@@ -11,7 +11,7 @@ import {
   Calendar,
   Building2
 } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { confirmDialog } from '../../../lib/dialog';
 import Spinner from '../../../components/Spinner';
@@ -57,7 +57,7 @@ export default function AdminInvoicesList() {
       pending: { label: tr('Do zapłaty'), color: STATUS_COLORS.warning },
       paid: { label: tr('Opłacona'), color: STATUS_COLORS.success },
       overdue: { label: tr('Zaległa'), color: STATUS_COLORS.danger },
-      cancelled: { label: 'Anulowana', color: STATUS_COLORS.neutral },
+      cancelled: { label: tr('Anulowana'), color: STATUS_COLORS.neutral },
       refunded: { label: tr('Zwrócona'), color: STATUS_COLORS.info }
     };
 
@@ -84,10 +84,10 @@ export default function AdminInvoicesList() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Faktury
+            {tr('Faktury')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Wszystkie faktury w systemie
+            {tr('Wszystkie faktury w systemie')}
           </p>
         </div>
       </div>
@@ -98,7 +98,7 @@ export default function AdminInvoicesList() {
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Szukaj po numerze lub kliencie..."
+            placeholder={tr('Szukaj po numerze lub kliencie...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -113,7 +113,7 @@ export default function AdminInvoicesList() {
           <option value="pending">{tr('Do zapłaty')}</option>
           <option value="paid">{tr('Opłacone')}</option>
           <option value="overdue">{tr('Zaległe')}</option>
-          <option value="cancelled">Anulowane</option>
+          <option value="cancelled">{tr('Anulowane')}</option>
         </select>
       </div>
 
@@ -127,8 +127,8 @@ export default function AdminInvoicesList() {
           <DataTable flush>
               <THead>
                 <tr>
-                  <TH>Numer</TH>
-                  <TH>Klient</TH>
+                  <TH>{tr('Numer')}</TH>
+                  <TH>{tr('Klient')}</TH>
                   <TH>{tr('Data')}</TH>
                   <TH>{tr('Termin')}</TH>
                   <TH>{tr('Kwota')}</TH>
@@ -156,10 +156,10 @@ export default function AdminInvoicesList() {
                       </div>
                     </TD>
                     <TD muted numeric className="whitespace-nowrap">
-                      {new Date(invoice.issue_date).toLocaleDateString('pl-PL')}
+                      {new Date(invoice.issue_date).toLocaleDateString(appLocale())}
                     </TD>
                     <TD muted numeric className="whitespace-nowrap">
-                      {new Date(invoice.due_date).toLocaleDateString('pl-PL')}
+                      {new Date(invoice.due_date).toLocaleDateString(appLocale())}
                     </TD>
                     <TD numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
                       {formatPrice(invoice.total)}
@@ -193,7 +193,7 @@ export default function AdminInvoicesList() {
                               className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                             >
                               <Download size={16} />
-                              Pobierz PDF
+                              {tr('Pobierz PDF')}
                             </button>
 
                             {invoice.status !== 'cancelled' && invoice.status !== 'paid' && (

@@ -1,7 +1,101 @@
 // Publiczne (bez logowania) trasy. Tenant rozpoznawany po hoście przez contextPlugin
 // (req.db/req.tenant). Dostęp do przypisań do służby autoryzuje SAM TOKEN (losowy UUID
 // z linku w mailu) — zaproszony jest niezalogowany, więc nie może iść przez /api/db.
+// Wyjątek: /api/assignment/:id/respond — ta sama odpowiedź z aplikacji (zalogowany, własny wiersz).
+import { applyOps } from '../fn/event-assignments-patch.js';
+import { emitChange } from '../realtime/hub.js';
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ID_RE = /^[0-9A-Za-z-]{1,64}$/;
+const csvNames = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
+
+// Odrzucenie: zmiany grafiku wydarzenia (events.assignments) zdejmujące osobę z jej ról.
+// Zwraca ops dla applyOps — tylko pola, w których ta osoba faktycznie jest.
+export function rejectOps(assignments, rows) {
+  const cur = new Map();
+  for (const r of rows || []) {
+    const section = assignments?.[r.team_type];
+    if (!section || typeof section !== 'object' || Array.isArray(section)) continue;
+    const k = `${r.team_type}\u0000${r.role_key}`;
+    const names = cur.has(k) ? cur.get(k).names : csvNames(section[r.role_key]);
+    if (!names.includes(r.assigned_name)) continue;
+    cur.set(k, { team: r.team_type, key: r.role_key, names: names.filter((n) => n !== r.assigned_name) });
+  }
+  return [...cur.values()].map(({ team, key, names }) => ({ team, key, value: names.join(', ') }));
+}
+
+const groupBy = (rows, col) => {
+  const m = new Map();
+  for (const r of rows) { const k = String(r[col]); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }
+  return m;
+};
+
+// Jedna semantyka odpowiedzi dla maila i aplikacji: zmiana statusu (tylko z 'pending',
+// UPDATE … RETURNING) i — przy odrzuceniu — zdjęcie osoby z grafiku w TEJ SAMEJ transakcji,
+// z blokadą wiersza wydarzenia (FOR UPDATE) i zmianą tylko jej pól (applyOps). Grafik zmienia
+// się wyłącznie, gdy status faktycznie się zmienił (wyścig „Akceptuję” + „Odrzucam” nie wymaże
+// osoby, która zdążyła zaakceptować).
+// whereSql: warunek wyboru wierszy, parametry od $2 (params). Zwraca { updated, status, events }.
+export async function respondToAssignments(db, { action, whereSql, params }) {
+  const newStatus = action === 'accept' ? 'accepted' : 'rejected';
+  const client = await db.connect();
+  const changedEvents = [];
+  let updated = [];
+  try {
+    await client.query('BEGIN');
+    ({ rows: updated } = await client.query(
+      `UPDATE schedule_assignments SET status = $1, responded_at = now()
+        WHERE ${whereSql} AND status = 'pending'
+        RETURNING id, program_id, event_id, team_type, role_key, assigned_name`,
+      [newStatus, ...params]
+    ));
+    if (!updated.length) {
+      await client.query('ROLLBACK');
+      return { updated: 0, status: null, events: [] };
+    }
+    if (action === 'reject') {
+      // Grafik na WYDARZENIU: events.assignments[team_type][role_key] (CSV imion).
+      for (const [eventId, rows] of groupBy(updated.filter((r) => r.event_id != null), 'event_id')) {
+        const { rows: ev } = await client.query('SELECT id, assignments FROM events WHERE id::text = $1 FOR UPDATE', [eventId]);
+        if (!ev[0]) continue;
+        const ops = rejectOps(ev[0].assignments, rows);
+        if (!ops.length) continue;
+        const next = applyOps(ev[0].assignments, ops);
+        const { rows: upd } = await client.query(
+          'UPDATE events SET assignments = $2::jsonb WHERE id = $1 RETURNING *', [ev[0].id, JSON.stringify(next)]
+        );
+        if (upd[0]) changedEvents.push(upd[0]);
+      }
+      // Grafik na PROGRAMIE (stary): programs.zespol[role_key].
+      for (const [programId, rows] of groupBy(updated.filter((r) => r.event_id == null && r.program_id != null), 'program_id')) {
+        const { rows: pr } = await client.query('SELECT id, zespol FROM programs WHERE id::text = $1 FOR UPDATE', [programId]);
+        const zespol = pr[0]?.zespol;
+        if (!zespol || typeof zespol !== 'object') continue;
+        const next = { ...zespol };
+        let changed = false;
+        for (const r of rows) {
+          const names = csvNames(next[r.role_key]);
+          if (!names.includes(r.assigned_name)) continue;
+          next[r.role_key] = names.filter((n) => n !== r.assigned_name).join(', ');
+          changed = true;
+        }
+        if (changed) await client.query('UPDATE programs SET zespol = $2::jsonb WHERE id = $1', [pr[0].id, JSON.stringify(next)]);
+      }
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+  return { updated: updated.length, status: newStatus, events: changedEvents };
+}
+
+const emitEvents = (req, events) => {
+  if (!events?.length) return;
+  try { emitChange(req.tenant.slug, 'events', 'update', events); } catch { /* realtime nieobowiązkowy */ }
+};
 
 export default async function publicPageRoutes(app) {
   // Odczyt przypisań po tokenie (wspólny token = wszystkie służby osoby na tę datę).
@@ -12,7 +106,7 @@ export default async function publicPageRoutes(app) {
     if (!UUID_RE.test(token)) return reply.code(404).send({ error: 'Nieprawidłowy token' });
     try {
       const { rows } = await req.db.query(
-        `SELECT program_id, event_id, role_key, assigned_name, assigned_by_name, status
+        `SELECT program_id, event_id, role_key, role_label, assigned_name, assigned_by_name, status
            FROM schedule_assignments WHERE token = $1`,
         [token]
       );
@@ -30,6 +124,7 @@ export default async function publicPageRoutes(app) {
       return reply.send({
         assignments: rows.map((r) => ({
           role_key: r.role_key,
+          role_label: r.role_label || null,
           assigned_name: r.assigned_name,
           assigned_by_name: r.assigned_by_name,
           status: r.status,
@@ -51,55 +146,47 @@ export default async function publicPageRoutes(app) {
     const action = String(req.body?.action || '');
     if (action !== 'accept' && action !== 'reject') return reply.code(400).send({ error: 'Nieprawidłowa akcja' });
     try {
-      const { rows } = await req.db.query(
-        `SELECT program_id, event_id, team_type, role_key, assigned_name, status FROM schedule_assignments WHERE token = $1`,
-        [token]
-      );
-      if (!rows.length) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
-      // Idempotencja: jeśli już odpowiedziano, zwróć bieżący status (strona pokaże „już odpowiedziano").
-      if (rows[0].status !== 'pending') {
+      const result = await respondToAssignments(req.db, { action, whereSql: 'token = $2', params: [token] });
+      if (!result.updated) {
+        // Nic się nie zmieniło: brak tokenu albo już odpowiedziano (idempotencja — strona pokaże „już odpowiedziano").
+        const { rows } = await req.db.query('SELECT status FROM schedule_assignments WHERE token = $1 LIMIT 1', [token]);
+        if (!rows.length) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
         return reply.send({ ok: true, status: rows[0].status, already: true });
       }
-      const newStatus = action === 'accept' ? 'accepted' : 'rejected';
-      await req.db.query(
-        `UPDATE schedule_assignments SET status = $1, responded_at = now()
-          WHERE token = $2 AND status = 'pending'`,
-        [newStatus, token]
-      );
-      // Odrzucenie: usuń osobę ze WSZYSTKICH jej ról w grafiku.
-      if (action === 'reject') {
-        if (rows[0].event_id) {
-          // Grafik na WYDARZENIU: events.assignments[team_type][role_key] (CSV imion).
-          const { rows: evRows } = await req.db.query(`SELECT assignments FROM events WHERE id = $1`, [rows[0].event_id]);
-          const asg = evRows[0]?.assignments;
-          if (asg && typeof asg === 'object') {
-            const updated = { ...asg };
-            for (const r of rows) {
-              const team = updated[r.team_type] && typeof updated[r.team_type] === 'object' ? { ...updated[r.team_type] } : null;
-              if (!team) continue;
-              const names = String(team[r.role_key] || '').split(',').map((s) => s.trim()).filter(Boolean);
-              team[r.role_key] = names.filter((n) => n !== r.assigned_name).join(', ');
-              updated[r.team_type] = team;
-            }
-            await req.db.query(`UPDATE events SET assignments = $1::jsonb WHERE id = $2`, [JSON.stringify(updated), rows[0].event_id]);
-          }
-        } else {
-          // Grafik na PROGRAMIE (istniejący): programs.zespol.
-          const { rows: progRows } = await req.db.query(`SELECT zespol FROM programs WHERE id = $1`, [rows[0].program_id]);
-          const zespol = progRows[0]?.zespol;
-          if (zespol && typeof zespol === 'object') {
-            const updated = { ...zespol };
-            for (const r of rows) {
-              const names = String(updated[r.role_key] || '').split(',').map((s) => s.trim()).filter(Boolean);
-              updated[r.role_key] = names.filter((n) => n !== r.assigned_name).join(', ');
-            }
-            await req.db.query(`UPDATE programs SET zespol = $1::jsonb WHERE id = $2`, [JSON.stringify(updated), rows[0].program_id]);
-          }
-        }
-      }
-      return reply.send({ ok: true, status: newStatus });
+      emitEvents(req, result.events);
+      return reply.send({ ok: true, status: result.status });
     } catch (err) {
       req.log?.error?.({ err }, 'public assignment respond failed');
+      return reply.code(500).send({ error: 'Błąd serwera' });
+    }
+  });
+
+  // Ta sama odpowiedź z APLIKACJI (Pulpit → Moja służba): zalogowany, tylko własny wiersz
+  // (assigned_email = e-mail sesji). Odrzucenie zdejmuje z grafiku tak samo jak link z maila —
+  // członek nie ma prawa edytować wydarzenia, więc robi to serwer, nie klient.
+  app.post('/api/assignment/:id/respond', { preHandler: [app.requireUser, app.block2FAPending] }, async (req, reply) => {
+    if (reply.sent) return;
+    const id = String(req.params.id || '');
+    if (!ID_RE.test(id)) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
+    const action = String(req.body?.action || '');
+    if (action !== 'accept' && action !== 'reject') return reply.code(400).send({ error: 'Nieprawidłowa akcja' });
+    const email = String(req.user?.email || '');
+    if (!email) return reply.code(403).send({ error: 'Brak e-maila w sesji' });
+    try {
+      const result = await respondToAssignments(req.db, {
+        action, whereSql: 'id::text = $2 AND lower(assigned_email) = lower($3)', params: [id, email],
+      });
+      if (!result.updated) {
+        const { rows } = await req.db.query(
+          'SELECT status FROM schedule_assignments WHERE id::text = $1 AND lower(assigned_email) = lower($2)', [id, email]
+        );
+        if (!rows.length) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
+        return reply.send({ ok: true, status: rows[0].status, already: true });
+      }
+      emitEvents(req, result.events);
+      return reply.send({ ok: true, status: result.status });
+    } catch (err) {
+      req.log?.error?.({ err }, 'assignment self respond failed');
       return reply.code(500).send({ error: 'Błąd serwera' });
     }
   });

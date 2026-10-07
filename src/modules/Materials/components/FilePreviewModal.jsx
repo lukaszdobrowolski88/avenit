@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Download, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
 
 // Formatowanie rozmiaru pliku
@@ -16,7 +16,7 @@ function formatFileSize(bytes) {
 function formatDate(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
-  return date.toLocaleDateString('pl-PL', {
+  return date.toLocaleDateString(appLocale(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -73,7 +73,7 @@ export default function FilePreviewModal({
   };
 
   const handleDelete = async () => {
-    if (await confirmDialog(`Czy na pewno chcesz usunąć plik "${file.name}"?`)) {
+    if (await confirmDialog(tr('Czy na pewno chcesz usunąć plik "{name}"?', { name: file.name }))) {
       onDelete?.(file.id, file.storage_path);
       onClose();
     }
@@ -141,7 +141,7 @@ export default function FilePreviewModal({
               {file.uploaded_by && (
                 <>
                   <span>•</span>
-                  <span>Dodane przez: {file.uploaded_by.split('@')[0]}</span>
+                  <span>{tr('Dodane przez:')} {file.uploaded_by.split('@')[0]}</span>
                 </>
               )}
             </div>
@@ -154,7 +154,7 @@ export default function FilePreviewModal({
               className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-white transition-all duration-200"
             >
               <Download size={18} />
-              Pobierz
+              {tr('Pobierz')}
             </button>
             {canDelete && (
               <button

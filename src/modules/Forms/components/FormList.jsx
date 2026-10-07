@@ -21,7 +21,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useT } from '../../../i18n';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
 
 export default function FormList({
@@ -112,7 +112,7 @@ export default function FormList({
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('pl-PL', {
+    return new Date(dateString).toLocaleDateString(appLocale(), {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
@@ -288,7 +288,7 @@ export default function FormList({
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                               >
                                 <Edit size={16} />
-                                Edytuj
+                                {tr('Edytuj')}
                               </button>
 
                               <button
@@ -299,7 +299,7 @@ export default function FormList({
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                               >
                                 <BarChart3 size={16} />
-                                Odpowiedzi ({form.response_count || 0})
+                                {tr('Odpowiedzi')} ({form.response_count || 0})
                               </button>
 
                               {form.status === 'published' && (
@@ -312,7 +312,7 @@ export default function FormList({
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
                                     <LinkIcon size={16} />
-                                    {copiedId === form.id ? 'Skopiowano!' : 'Kopiuj link'}
+                                    {copiedId === form.id ? tr('Skopiowano!') : tr('Kopiuj link')}
                                   </button>
                                   <button
                                     onClick={() => {
@@ -338,7 +338,7 @@ export default function FormList({
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
                                   <Globe size={16} />
-                                  Opublikuj
+                                  {tr('Opublikuj')}
                                 </button>
                               )}
 
@@ -362,7 +362,7 @@ export default function FormList({
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
                                     <XCircle size={16} />
-                                    Zamknij formularz
+                                    {tr('Zamknij formularz')}
                                   </button>
                                 </>
                               )}
@@ -390,7 +390,7 @@ export default function FormList({
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                               >
                                 <Copy size={16} />
-                                Duplikuj
+                                {tr('Duplikuj')}
                               </button>
 
                               <button
@@ -401,7 +401,7 @@ export default function FormList({
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                               >
                                 <LayoutTemplate size={16} />
-                                Zapisz jako szablon
+                                {tr('Zapisz jako szablon')}
                               </button>
 
                               <hr className="my-1 border-gray-200 dark:border-gray-700" />
@@ -444,7 +444,7 @@ export default function FormList({
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                               >
                                 <BarChart3 size={16} />
-                                Odpowiedzi ({form.response_count || 0})
+                                {tr('Odpowiedzi')} ({form.response_count || 0})
                               </button>
 
                               <hr className="my-1 border-gray-200 dark:border-gray-700" />
@@ -503,7 +503,7 @@ export default function FormList({
                       className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-accent-primary dark:hover:text-accent-primary-light transition-colors"
                     >
                       <Edit size={16} />
-                      Edytuj
+                      {tr('Edytuj')}
                     </button>
                     <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
                     <button
@@ -511,7 +511,7 @@ export default function FormList({
                       className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-accent-primary dark:hover:text-accent-primary-light transition-colors"
                     >
                       <BarChart3 size={16} />
-                      Odpowiedzi
+                      {tr('Odpowiedzi')}
                     </button>
                   </>
                 ) : (
@@ -529,7 +529,7 @@ export default function FormList({
                       className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-accent-primary dark:hover:text-accent-primary-light transition-colors"
                     >
                       <BarChart3 size={16} />
-                      Odpowiedzi
+                      {tr('Odpowiedzi')}
                     </button>
                   </>
                 )}

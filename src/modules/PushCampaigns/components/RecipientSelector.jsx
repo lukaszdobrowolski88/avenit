@@ -7,11 +7,11 @@ import { useRecipientsSource, ROLE_OPTIONS } from '../../shared/recipients';
 import { tr } from '../../../i18n';
 
 const SEGMENT_GROUPS = [
-  { id: 'all', label: tr('Wszyscy'), icon: Users },
+  { id: 'all', label: 'Wszyscy', icon: Users },
   { id: 'campus', label: 'Campus', icon: MapPin },
-  { id: 'ministry', label: tr('Służba'), icon: Sparkles },
+  { id: 'ministry', label: 'Służba', icon: Sparkles },
   { id: 'home_group', label: 'Grupa domowa', icon: Home },
-  { id: 'role', label: tr('Rola'), icon: Shield },
+  { id: 'role', label: 'Rola', icon: Shield },
   { id: 'custom_email', label: 'Wybrane', icon: UserCheck },
 ];
 
@@ -79,7 +79,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
         {unsubscribed.length > 0 && (
           <div className="text-xs text-gray-500 flex items-center gap-1.5">
             <AlertTriangle size={12} className="text-amber-500" />
-            {unsubscribed.length} użytkowników z wyłączonymi pushami
+            {tr('{n} użytkowników z wyłączonymi pushami', { n: unsubscribed.length })}
           </div>
         )}
       </div>
@@ -97,7 +97,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
             }`}
           >
             <g.icon size={14} />
-            {g.label}
+            {tr(g.label)}
           </button>
         ))}
       </div>
@@ -108,7 +108,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
           <SegmentRow
             checked={isSelected('all', null)}
             onClick={() => toggleSegment('all', null, 'Wszyscy aktywni')}
-            label={`Wszyscy aktywni użytkownicy (${totalActive})`}
+            label={tr('Wszyscy aktywni użytkownicy ({n})', { n: totalActive })}
             description={tr('Każdy użytkownik z włączonymi powiadomieniami push.')}
           />
         )}
@@ -149,7 +149,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
 
         {activeGroup === 'home_group' && (
           <div className="space-y-1">
-            {homeGroups.length === 0 && <Empty>Brak grup domowych.</Empty>}
+            {homeGroups.length === 0 && <Empty>{tr('Brak grup domowych.')}</Empty>}
             {homeGroups.map(g => (
               <SegmentRow
                 key={g.id}
@@ -173,7 +173,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
                 excluded={isSelected('role', r.id, true)}
                 onClick={() => toggleSegment('role', r.id, r.name)}
                 onExcludeClick={() => toggleSegment('role', r.id, r.name, true)}
-                label={r.name}
+                label={tr(r.name)}
                 count={allUsers.filter(u => u.role === r.id).length}
               />
             ))}
@@ -187,7 +187,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Szukaj po imieniu lub emailu..."
+                placeholder={tr('Szukaj po imieniu lub emailu...')}
                 className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
               />
             </div>

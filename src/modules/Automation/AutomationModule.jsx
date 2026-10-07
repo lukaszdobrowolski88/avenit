@@ -7,6 +7,7 @@ import ResponsiveTabs from '../../components/ResponsiveTabs';
 import WorkflowsTab from './tabs/WorkflowsTab';
 import TemplatesTab from './tabs/TemplatesTab';
 import RunsTab from './tabs/RunsTab';
+import { tr } from '../../i18n';
 
 const TABS = [
   { id: 'workflows', label: 'Automatyzacje', icon: Zap },
@@ -49,20 +50,20 @@ export default function AutomationModule() {
 
   return (
     <div className="space-y-6">
-      <PageHeader moduleKey="automation" icon={Workflow} title="Automatyzacje" subtitle="Silnik automatyzacji i ścieżki asymilacji nowych gości" />
+      <PageHeader moduleKey="automation" icon={Workflow} title={tr('Automatyzacje')} subtitle={tr('Silnik automatyzacji i ścieżki asymilacji nowych gości')} />
 
       {/* Notka o workerze */}
       <div className="flex items-start gap-2 p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-sm text-amber-700 dark:text-amber-300">
         <Zap size={16} className="shrink-0 mt-0.5" />
         <span>
-          Definiujesz automatyzacje i przeglądasz dziennik uruchomień. Wykonanie kroków (e-mail, SMS, push, zadania, opóźnienia)
-          realizuje w tle worker <b>co ~5 minut</b> — nowi członkowie/goście zapisywani są automatycznie wg wyzwalacza,
-          a dowolną osobę możesz też dodać ręcznie przyciskiem „Zapisz osobę do ścieżki".
+          {tr('Definiujesz automatyzacje i przeglądasz dziennik uruchomień. Wykonanie kroków (e-mail, SMS, push, zadania, opóźnienia) realizuje w tle worker')}{' '}
+          <b>{tr('co ~5 minut')}</b>{' '}
+          {tr('— nowi członkowie/goście zapisywani są automatycznie wg wyzwalacza, a dowolną osobę możesz też dodać ręcznie przyciskiem „Zapisz osobę do ścieżki".')}
         </span>
       </div>
 
       {/* Zakładki */}
-      <ResponsiveTabs moduleKey="automation" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="automation" tabs={TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

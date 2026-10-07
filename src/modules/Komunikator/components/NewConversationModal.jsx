@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Search, User, Users, Check, Megaphone } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
+import { getMinistryName } from '../utils/messageHelpers';
+import { normEmail } from '../utils/chatLogic';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
@@ -9,6 +11,15 @@ import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
+
+// Źródła „całej służby” (te same tabele co kanały służb).
+const MINISTRY_SOURCES = [
+  { key: 'worship_team', table: 'worship_team' },
+  { key: 'media_team', table: 'media_team' },
+  { key: 'atmosfera_team', table: 'atmosfera_members' },
+  { key: 'kids_ministry', table: 'kids_teachers' },
+  { key: 'home_groups', table: 'home_group_leaders' },
+];
 
 export default function NewConversationModal({
   isOpen,
@@ -26,6 +37,8 @@ export default function NewConversationModal({
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [groupName, setGroupName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [homeGroups, setHomeGroups] = useState([]);
+  const [segmentLoading, setSegmentLoading] = useState(false);
 
   // Pobierz listę użytkowników
   useEffect(() => {
@@ -51,6 +64,68 @@ export default function NewConversationModal({
 
     fetchUsers();
   }, [isOpen, currentUserEmail]);
+
+  // Grupy domowe do szybkiego dodania całego składu (grupa / kanał ogłoszeń)
+  useEffect(() => {
+    if (!isOpen || mode === 'direct' || homeGroups.length) return;
+    supabase
+      .from('home_groups')
+      .select('id, name')
+      .order('name')
+      .then(({ data }) => setHomeGroups(data || []), () => {});
+  }, [isOpen, mode, homeGroups.length]);
+
+  // Dodaj do wybranych wszystkie osoby (z kontem w aplikacji) z grupy domowej albo służby
+  const addSegment = async (value) => {
+    if (!value) return;
+    setSegmentLoading(true);
+    try {
+      let emails = [];
+      let label = '';
+      if (value.startsWith('hg:')) {
+        const gid = value.slice(3);
+        label = homeGroups.find(h => String(h.id) === gid)?.name || tr('Grupa domowa');
+        // Skład grupy jest w dwóch miejscach (home_group_members i members.home_group_id) + liderzy
+        const results = await Promise.all([
+          supabase.from('home_group_members').select('email').eq('group_id', gid),
+          supabase.from('home_group_leaders').select('email').eq('group_id', gid),
+          supabase.from('members').select('email').eq('home_group_id', gid),
+        ]);
+        if (results.every(r => r.error)) throw results[0].error;
+        emails = results.flatMap(r => r.data || []).map(r => r.email);
+      } else {
+        const src = MINISTRY_SOURCES.find(m => m.key === value);
+        if (!src) return;
+        label = getMinistryName(value);
+        const { data, error } = await supabase.from(src.table).select('email');
+        if (error) throw error;
+        emails = (data || []).map(r => r.email);
+      }
+
+      const keys = new Set(emails.filter(Boolean).map(normEmail));
+      keys.delete(normEmail(currentUserEmail));
+      const matched = users.filter(u => keys.has(normEmail(u.email)));
+      const skipped = keys.size - matched.length;
+      setSelectedUsers(prev => {
+        const have = new Set(prev.map(u => normEmail(u.email)));
+        return [...prev, ...matched.filter(u => !have.has(normEmail(u.email)))];
+      });
+      if (!groupName.trim()) setGroupName(label);
+
+      if (matched.length === 0) {
+        toast.info(t('Nikt z „{group}” nie ma jeszcze konta w aplikacji.', { group: label }));
+      } else if (skipped > 0) {
+        toast.success(t('Dodano osoby z „{group}”: {n}. Bez konta w aplikacji (pominięte): {m}.', { group: label, n: matched.length, m: skipped }));
+      } else {
+        toast.success(t('Dodano osoby z „{group}”: {n}.', { group: label, n: matched.length }));
+      }
+    } catch (err) {
+      console.error('Error loading group members:', err);
+      toast.error(err, { fallback: t('Nie udało się pobrać składu. Spróbuj ponownie.') });
+    } finally {
+      setSegmentLoading(false);
+    }
+  };
 
   // Reset przy zamknięciu
   useEffect(() => {
@@ -97,7 +172,7 @@ export default function NewConversationModal({
       onClose();
     } catch (err) {
       console.error('Error creating conversation:', err);
-      toast.error(t('Nie udało się utworzyć rozmowy'));
+      toast.error(err, { fallback: t('Nie udało się utworzyć rozmowy. Spróbuj ponownie.') });
     } finally {
       setCreating(false);
     }
@@ -118,7 +193,7 @@ export default function NewConversationModal({
       onClose();
     } catch (err) {
       console.error('Error creating group:', err);
-      toast.error(mode === 'announcement' ? t('Nie udało się utworzyć kanału') : t('Nie udało się utworzyć grupy'));
+      toast.error(err, { fallback: mode === 'announcement' ? t('Nie udało się utworzyć kanału. Spróbuj ponownie.') : t('Nie udało się utworzyć grupy. Spróbuj ponownie.') });
     } finally {
       setCreating(false);
     }
@@ -131,12 +206,12 @@ export default function NewConversationModal({
       isOpen={isOpen}
       onClose={onClose}
       closeOnBackdrop={false}
-      title="Nowa rozmowa"
+      title={tr('Nowa rozmowa')}
       size="sm"
       footer={mode !== 'direct' ? (
         /* Stopka - dla grupy i kanału ogłoszeń */
         <>
-          <Button variant="secondary" onClick={onClose}>Anuluj</Button>
+          <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
           <Button
             icon={mode === 'announcement' ? Megaphone : Users}
             onClick={handleCreateGroup}
@@ -160,7 +235,7 @@ export default function NewConversationModal({
           `}
         >
           <User size={18} />
-          Prywatna
+          {tr('Prywatna')}
         </button>
         <button
           onClick={() => setMode('group')}
@@ -202,8 +277,35 @@ export default function NewConversationModal({
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
             placeholder={mode === 'announcement' ? t('Nazwa kanału ogłoszeń...') : t('Nazwa grupy...')}
+            aria-label={mode === 'announcement' ? t('Nazwa kanału ogłoszeń') : t('Nazwa grupy')}
             className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
           />
+
+          {/* Cała grupa domowa / służba jednym wyborem */}
+          <div className="mt-3 flex items-center gap-2">
+            <select
+              value=""
+              onChange={(e) => addSegment(e.target.value)}
+              disabled={segmentLoading || loading}
+              aria-label={t('Dodaj całą grupę lub służbę')}
+              className="flex-1 min-w-0 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-700 dark:text-gray-200 disabled:opacity-60"
+            >
+              <option value="">{t('Dodaj całą grupę lub służbę…')}</option>
+              <optgroup label={t('Służby')}>
+                {MINISTRY_SOURCES.map(m => (
+                  <option key={m.key} value={m.key}>{getMinistryName(m.key)}</option>
+                ))}
+              </optgroup>
+              {homeGroups.length > 0 && (
+                <optgroup label={t('Grupy domowe')}>
+                  {homeGroups.map(h => (
+                    <option key={h.id} value={`hg:${h.id}`}>{h.name}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+            {segmentLoading && <Spinner size={16} />}
+          </div>
 
           {/* Wybrani użytkownicy */}
           {selectedUsers.length > 0 && (
@@ -215,7 +317,9 @@ export default function NewConversationModal({
                 >
                   <span>{user.full_name || user.email}</span>
                   <button
+                    type="button"
                     onClick={() => handleUserSelect(user)}
+                    aria-label={t('Usuń z wybranych: {name}', { name: user.full_name || user.email })}
                     className="p-0.5 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark rounded-full"
                   >
                     <X size={12} />
@@ -237,6 +341,7 @@ export default function NewConversationModal({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('Szukaj użytkowników...')}
+            aria-label={t('Szukaj osób')}
             className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
           />
         </div>

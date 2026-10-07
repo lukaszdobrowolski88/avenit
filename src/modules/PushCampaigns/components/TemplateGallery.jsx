@@ -18,7 +18,7 @@ export default function TemplateGallery({ onUseTemplate }) {
   const handleEdit = (t) => { setEditing(t); setShowEditor(true); };
   const handleDelete = async (t) => {
     if (t.is_system) { toast.error(tr('Nie można usunąć szablonu systemowego.')); return; }
-    if (!await confirmDialog(`Usunąć szablon "${t.name}"?`)) return;
+    if (!await confirmDialog(tr('Usunąć szablon "{name}"?', { name: t.name }))) return;
     try { await deleteTemplate(t.id); } catch (e) { toast.error(e.message); }
   };
 
@@ -28,7 +28,7 @@ export default function TemplateGallery({ onUseTemplate }) {
     <div>
       <div className="flex justify-end mb-4">
         <button onClick={handleNew} className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm rounded-lg shadow">
-          <Plus size={16} /> Nowy szablon
+          <Plus size={16} /> {tr('Nowy szablon')}
         </button>
       </div>
 
@@ -44,7 +44,7 @@ export default function TemplateGallery({ onUseTemplate }) {
                 </div>
                 {t.is_system ? (
                   <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                    <Sparkles size={10} /> Systemowy
+                    <Sparkles size={10} /> {tr('Systemowy')}
                   </span>
                 ) : (
                   <div className="flex gap-1">
@@ -110,18 +110,18 @@ function TemplateEditor({ template, onClose, onSave }) {
       isOpen
       onClose={onClose}
       closeOnBackdrop={false}
-      title={template ? 'Edytuj szablon' : 'Nowy szablon'}
+      title={template ? tr('Edytuj szablon') : tr('Nowy szablon')}
       size="md"
       footer={<>
         <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
-        <Button icon={Save} onClick={handleSave} loading={saving}>Zapisz</Button>
+        <Button icon={Save} onClick={handleSave} loading={saving}>{tr('Zapisz')}</Button>
       </>}
     >
       <div className="p-6 space-y-3">
         <input
           value={form.name}
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-          placeholder="Nazwa szablonu"
+          placeholder={tr('Nazwa szablonu')}
           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
         />
         <input
@@ -142,7 +142,7 @@ function TemplateEditor({ template, onClose, onSave }) {
           onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}
           className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
         >
-          {PUSH_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+          {PUSH_CATEGORIES.map(c => <option key={c.id} value={c.id}>{tr(c.label)}</option>)}
         </select>
       </div>
     </Modal>

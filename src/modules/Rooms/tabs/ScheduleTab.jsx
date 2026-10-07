@@ -6,6 +6,7 @@ import Spinner from '../../../components/Spinner';
 import {
   formatTime, formatDuration, startOfDay, startOfWeek, addDays, rangesOverlap,
 } from '../lib/roomsApi';
+import { tr, appLocale } from '../../../i18n';
 
 const VIEW_OPTIONS = [
   { value: 'day', label: 'Dzień' },
@@ -71,14 +72,14 @@ export default function ScheduleTab({ resources, withCampusFilter }) {
 
   const rangeLabel = useMemo(() => {
     if (view === 'day') {
-      return rangeStart.toLocaleDateString('pl-PL', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+      return rangeStart.toLocaleDateString(appLocale(), { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
     }
     const last = addDays(rangeStart, 6);
-    return `${rangeStart.toLocaleDateString('pl-PL', { day: '2-digit', month: 'short' })} – ${last.toLocaleDateString('pl-PL', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+    return `${rangeStart.toLocaleDateString(appLocale(), { day: '2-digit', month: 'short' })} – ${last.toLocaleDateString(appLocale(), { day: '2-digit', month: 'short', year: 'numeric' })}`;
   }, [view, rangeStart]);
 
   const resourceFilterOptions = useMemo(() => [
-    { value: '', label: 'Wszystkie zasoby' },
+    { value: '', label: tr('Wszystkie zasoby') },
     ...(resources || []).map(r => ({ value: r.id, label: r.name })),
   ], [resources]);
 
@@ -90,11 +91,11 @@ export default function ScheduleTab({ resources, withCampusFilter }) {
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1">
           <button onClick={goPrev} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronLeft size={16} /></button>
-          <button onClick={goToday} className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Dziś</button>
+          <button onClick={goToday} className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Dziś')}</button>
           <button onClick={goNext} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronRight size={16} /></button>
         </div>
         <div className="text-sm font-semibold text-gray-900 dark:text-white capitalize flex-1 min-w-[160px]">{rangeLabel}</div>
-        <div className="w-32"><CustomSelect value={view} onChange={setView} options={VIEW_OPTIONS} compact /></div>
+        <div className="w-32"><CustomSelect value={view} onChange={setView} options={VIEW_OPTIONS.map((o) => ({ ...o, label: tr(o.label) }))} compact /></div>
         <div className="w-52"><CustomSelect value={resourceFilter} onChange={setResourceFilter} options={resourceFilterOptions} compact /></div>
       </div>
 
@@ -109,7 +110,7 @@ export default function ScheduleTab({ resources, withCampusFilter }) {
               <div key={i} className={`bg-white dark:bg-gray-800 rounded-2xl border p-3 min-h-[120px] ${today ? 'border-accent-primary-light dark:border-accent-primary ring-1 ring-accent-primary-light/30' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-baseline justify-between mb-2">
                   <span className={`text-xs font-bold uppercase ${today ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-400 dark:text-gray-500'}`}>
-                    {view === 'week' ? WEEKDAYS[(day.getDay() + 6) % 7] : day.toLocaleDateString('pl-PL', { weekday: 'long' })}
+                    {view === 'week' ? tr(WEEKDAYS[(day.getDay() + 6) % 7]) : day.toLocaleDateString(appLocale(), { weekday: 'long' })}
                   </span>
                   <span className={`text-sm font-semibold ${today ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-700 dark:text-gray-200'}`}>
                     {day.getDate()}.{String(day.getMonth() + 1).padStart(2, '0')}
@@ -124,7 +125,7 @@ export default function ScheduleTab({ resources, withCampusFilter }) {
                     const color = r?.color || '#94a3b8';
                     return (
                       <div key={b.id} className="rounded-lg px-2.5 py-1.5 text-xs border-l-[3px]" style={{ borderColor: color, background: color + '14' }}>
-                        <div className="font-semibold text-gray-800 dark:text-gray-100 truncate">{b.title || 'Rezerwacja'}</div>
+                        <div className="font-semibold text-gray-800 dark:text-gray-100 truncate">{b.title || tr('Rezerwacja')}</div>
                         <div className="text-gray-500 dark:text-gray-400">{formatTime(b.start_at)}–{formatTime(b.end_at)} · {formatDuration(b.start_at, b.end_at)}</div>
                         {!resourceFilter && <div className="text-gray-500 dark:text-gray-400 truncate flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />{r?.name || '—'}</div>}
                       </div>
@@ -140,7 +141,7 @@ export default function ScheduleTab({ resources, withCampusFilter }) {
       {(resources || []).length === 0 && (
         <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
           <CalendarDays size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Dodaj zasoby i rezerwacje, aby zobaczyć harmonogram.</p>
+          <p className="text-gray-500 dark:text-gray-400">{tr('Dodaj zasoby i rezerwacje, aby zobaczyć harmonogram.')}</p>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CalendarX, Plus, X, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
@@ -19,7 +19,7 @@ const todayYmd = () => {
 
 const fmt = (ymd) => {
   const [y, m, d] = String(ymd).slice(0, 10).split('-').map(Number);
-  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString(appLocale(), { day: 'numeric', month: 'long' });
 };
 
 const rangeLabel = (b) =>

@@ -8,6 +8,7 @@ import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const CARE_ICONS = {
   wizyta: Home,
@@ -54,7 +55,7 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
   useEffect(() => { load(); }, [load]);
 
   const add = async () => {
-    if (!form.care_date) { toast.error('Podaj datę kontaktu.'); return; }
+    if (!form.care_date) { toast.error(tr('Podaj datę kontaktu.')); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -70,20 +71,20 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
       setForm(emptyForm());
       load();
     } catch (err) {
-      toast.error('Nie udało się zapisać kontaktu: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać kontaktu: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (item) => {
-    if (!await confirmDialog('Usunąć ten wpis?')) return;
+    if (!await confirmDialog(tr('Usunąć ten wpis?'))) return;
     try {
       const { error } = await supabase.from('member_care_log').delete().eq('id', item.id);
       if (error) throw error;
       load();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
@@ -92,9 +93,9 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
       {/* Dodawanie */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <CustomSelect label="Typ kontaktu" value={form.care_type} onChange={v => setForm(f => ({ ...f, care_type: v }))} options={CARE_TYPES} />
+          <CustomSelect label={tr('Typ kontaktu')} value={form.care_type} onChange={v => setForm(f => ({ ...f, care_type: v }))} options={CARE_TYPES.map((o) => ({ ...o, label: tr(o.label) }))} />
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Data')}</label>
             <DateInput value={form.care_date} onChange={e => setForm(f => ({ ...f, care_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
           </div>
         </div>
@@ -102,12 +103,12 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
           value={form.note}
           onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
           rows={2}
-          placeholder="Opis kontaktu (opcjonalnie)..."
+          placeholder={tr('Opis kontaktu (opcjonalnie)...')}
           className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none"
         />
         <div className="flex justify-end">
           <button data-tour="care-add" onClick={add} disabled={saving} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60">
-            <Plus size={16} /> {saving ? 'Zapisywanie...' : 'Dodaj kontakt'}
+            <Plus size={16} /> {saving ? tr('Zapisywanie...') : tr('Dodaj kontakt')}
           </button>
         </div>
       </div>
@@ -116,7 +117,7 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
       {loading ? (
         <Spinner center />
       ) : log.length === 0 ? (
-        <EmptyState icon={HeartHandshake} title="Brak zarejestrowanych kontaktów." className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
+        <EmptyState icon={HeartHandshake} title={tr('Brak zarejestrowanych kontaktów.')} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
       ) : (
         <div className="space-y-3">
           {log.map(item => {
@@ -129,11 +130,11 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-gray-900 dark:text-white text-sm">{careTypeLabel(item.care_type)}</span>
+                    <span className="font-semibold text-gray-900 dark:text-white text-sm">{tr(careTypeLabel(item.care_type))}</span>
                     <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(item.care_date)}</span>
                   </div>
                   {item.note && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">{item.note}</p>}
-                  {item.created_by && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">przez {item.created_by}</p>}
+                  {item.created_by && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{tr('przez {name}', { name: item.created_by })}</p>}
                 </div>
                 <button onClick={() => remove(item)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0"><Trash2 size={15} /></button>
               </div>

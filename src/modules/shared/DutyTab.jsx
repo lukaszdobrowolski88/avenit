@@ -82,7 +82,7 @@ const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
         className="w-full min-h-[42px] px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer flex flex-wrap gap-1.5 items-center hover:border-accent-primary-light dark:hover:border-accent-primary transition"
       >
         {selectedMembers.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-sm">Przypisz osoby...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-sm">{tr('Przypisz osoby...')}</span>
         ) : (
           selectedMembers.map(member => (
             <span
@@ -325,7 +325,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
           }}
           className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
         >
-          <Plus size={18} /> Dodaj służbę
+          <Plus size={18} /> {tr('Dodaj służbę')}
         </button>
       </div>
 
@@ -410,8 +410,8 @@ export default function DutyTab({ moduleKey, moduleName }) {
         title={roleForm.id ? tr('Edytuj służbę') : tr('Nowa służba')}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setShowRoleModal(false)}>Anuluj</Button>
-          <Button onClick={saveRole}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowRoleModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveRole}>{tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
@@ -428,11 +428,11 @@ export default function DutyTab({ moduleKey, moduleName }) {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Klucz pola (opcjonalnie)
+                  {tr('Klucz pola (opcjonalnie)')}
                 </label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-mono text-sm"
-                  placeholder="np. piano, naglosnienie"
+                  placeholder={tr('np. {example}', { example: 'piano, naglosnienie' })}
                   value={roleForm.field_key}
                   onChange={e => setRoleForm({ ...roleForm, field_key: e.target.value })}
                 />
@@ -442,7 +442,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Opis (opcjonalnie)
+                  {tr('Opis (opcjonalnie)')}
                 </label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none"

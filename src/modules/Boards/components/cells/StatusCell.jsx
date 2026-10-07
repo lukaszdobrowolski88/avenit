@@ -3,6 +3,7 @@ import { Check, Plus, X, Pencil } from 'lucide-react';
 import Popover from '../Popover';
 import { findLabel } from '../../lib/columnTypes';
 import { STATUS_COLORS, uid } from '../../lib/constants';
+import { tr } from '../../../../i18n';
 
 // Komórka Status/Priorytet — kolorowa PIGUŁKA wyśrodkowana w komórce (kanon: chip,
 // nie pełny nasycony blok), picker etykiet z edycją.
@@ -16,7 +17,7 @@ export default function StatusCell({ column, value, onChange, onUpdateColumn, re
   const addLabel = () => {
     const used = labels.map(l => l.color);
     const color = STATUS_COLORS.find(c => !used.includes(c)) || STATUS_COLORS[labels.length % STATUS_COLORS.length];
-    setLabels([...labels, { id: uid('lbl'), title: 'Nowa etykieta', color }]);
+    setLabels([...labels, { id: uid('lbl'), title: tr('Nowa etykieta'), color }]);
   };
 
   const pill = label
@@ -87,16 +88,16 @@ export default function StatusCell({ column, value, onChange, onUpdateColumn, re
 
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
             <button onClick={addLabel} className="flex items-center gap-1 text-xs text-gray-500 hover:text-accent-primary px-2 py-1">
-              <Plus size={14} /> Dodaj etykietę
+              <Plus size={14} /> {tr('Dodaj etykietę')}
             </button>
             <button onClick={() => setEditing(e => !e)}
               className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${editing ? 'text-accent-primary' : 'text-gray-500 hover:text-accent-primary'}`}>
-              <Pencil size={13} /> {editing ? 'Gotowe' : 'Edytuj'}
+              <Pencil size={13} /> {editing ? tr('Gotowe') : tr('Edytuj')}
             </button>
           </div>
           {value && !editing && (
             <button onClick={() => { onChange(null); close(); }}
-              className="w-full mt-1 text-xs text-gray-400 hover:text-red-500 py-1">Wyczyść</button>
+              className="w-full mt-1 text-xs text-gray-400 hover:text-red-500 py-1">{tr('Wyczyść')}</button>
           )}
         </div>
       )}

@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Music, Video, Users, BookOpen, Mic, History, Clock, Save, ChevronDown, GripVertical, Trash2, Search, Check, Inbox, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { toast } from '../../../lib/toast';
+import { confirmDialog } from '../../../lib/dialog';
 import { useScheduleAssignments } from '../../../hooks/useScheduleAssignments';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { tr } from '../../../i18n';
+import { tr, appLocale } from '../../../i18n';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import Spinner from '../../../components/Spinner';
@@ -36,22 +38,25 @@ const ROLE_LABELS = {
   bas: 'Bas',
   wokale: 'Wokale',
   cajon: 'Cajon',
-  naglosnienie: tr('Nagłośnienie'),
+  naglosnienie: 'Nagłośnienie',
   propresenter: 'ProPresenter',
   social: 'Social Media',
   host: 'Host',
   przygotowanie: 'Przygotowanie',
   witanie: 'Witanie',
-  mlodsza: tr('Grupa młodsza'),
-  srednia: tr('Grupa średnia'),
+  mlodsza: 'Grupa młodsza',
+  srednia: 'Grupa średnia',
   starsza: 'Grupa starsza',
   prowadzenie: 'Prowadzenie',
   czytanie: 'Czytanie',
   kazanie: 'Kazanie',
   modlitwa: 'Modlitwa',
   wieczerza: 'Wieczerza',
-  ogloszenia: tr('Ogłoszenia'),
+  ogloszenia: 'Ogłoszenia',
 };
+
+// Etykieta roli tłumaczona przy wyświetlaniu (klucz roli bez etykiety — bez zmian).
+const roleLabel = (k) => (ROLE_LABELS[k] ? tr(ROLE_LABELS[k]) : k);
 
 const PROGRAM_ELEMENTS = ['Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie', 'Wieczerza', 'Uwielbienie / Kolekta', 'Ogłoszenia', 'Zakończenie'];
 const MUSICAL_KEYS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
@@ -70,7 +75,7 @@ const CustomSelect = ({ value, onChange, options, compact = false }) => {
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:border-accent-primary-light transition ${compact ? 'px-2 py-1' : 'px-3 py-2'}`}
       >
-        <span className="truncate">{options.find(o => o.value === value)?.label || value || 'Wybierz...'}</span>
+        <span className="truncate">{options.find(o => o.value === value)?.label || value || tr('Wybierz...')}</span>
         <ChevronDown size={14} className="text-gray-400 ml-1" />
       </button>
       {isOpen && (
@@ -124,9 +129,9 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
       closeOnBackdrop={false}
       icon={Music}
       title={tr('Program nabożeństwa')}
-      subtitle={program ? new Date(program.date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : undefined}
+      subtitle={program ? new Date(program.date).toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : undefined}
       size="xl"
-      footer={<Button variant="secondary" onClick={onClose}>Zamknij</Button>}
+      footer={<Button variant="secondary" onClick={onClose}>{tr('Zamknij')}</Button>}
     >
         <div className="p-6">
           {loading ? (
@@ -147,7 +152,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                           {idx + 1}
                         </span>
                         <div className="flex-1">
-                          <p className="font-medium text-gray-800 dark:text-white">{item.element}</p>
+                          <p className="font-medium text-gray-800 dark:text-white">{tr(item.element)}</p>
                           {item.person && <p className="text-sm text-gray-500 dark:text-gray-400">{item.person}</p>}
                         </div>
                         {item.details && (
@@ -173,7 +178,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                         if (!value || key === 'notatki' || key === 'absencja') return null;
                         return (
                           <div key={key} className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">{ROLE_LABELS[key] || key}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{roleLabel(key)}</span>
                             <span className="font-medium text-gray-800 dark:text-white">{value}</span>
                           </div>
                         );
@@ -187,14 +192,14 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
                     <h4 className="font-bold text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2">
                       <Video size={18} />
-                      Produkcja
+                      {tr('Produkcja')}
                     </h4>
                     <div className="space-y-2">
                       {Object.entries(program.produkcja).map(([key, value]) => {
                         if (!value) return null;
                         return (
                           <div key={key} className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">{ROLE_LABELS[key] || key}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{roleLabel(key)}</span>
                             <span className="font-medium text-gray-800 dark:text-white">{value}</span>
                           </div>
                         );
@@ -208,14 +213,14 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4">
                     <h4 className="font-bold text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
                       <Users size={18} />
-                      Atmosfera Team
+                      {tr('Atmosfera Team')}
                     </h4>
                     <div className="space-y-2">
                       {Object.entries(program.atmosfera_team).map(([key, value]) => {
                         if (!value) return null;
                         return (
                           <div key={key} className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">{ROLE_LABELS[key] || key}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{roleLabel(key)}</span>
                             <span className="font-medium text-gray-800 dark:text-white">{value}</span>
                           </div>
                         );
@@ -229,14 +234,14 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                   <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 rounded-xl p-4">
                     <h4 className="font-bold text-accent-primary dark:text-accent-primary-light mb-3 flex items-center gap-2">
                       <Mic size={18} />
-                      Scena
+                      {tr('Scena')}
                     </h4>
                     <div className="space-y-2">
                       {Object.entries(program.scena).map(([key, value]) => {
                         if (!value) return null;
                         return (
                           <div key={key} className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">{ROLE_LABELS[key] || key}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{roleLabel(key)}</span>
                             <span className="font-medium text-gray-800 dark:text-white">{value}</span>
                           </div>
                         );
@@ -257,7 +262,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                         if (!value) return null;
                         return (
                           <div key={key} className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">{ROLE_LABELS[key] || key}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{roleLabel(key)}</span>
                             <span className="font-medium text-gray-800 dark:text-white">{value}</span>
                           </div>
                         );
@@ -287,7 +292,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [processingId, setProcessingId] = useState(null);
 
-  const { fetchPendingAssignments, acceptAssignment, rejectAssignment } = useScheduleAssignments();
+  const { fetchPendingAssignments } = useScheduleAssignments();
 
   // Pobierz oczekujące przypisania
   useEffect(() => {
@@ -319,53 +324,52 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
     };
   }, [userEmail, fetchPendingAssignments]);
 
-  // Obsługa akceptacji przypisania
-  const handleAccept = async (assignmentId) => {
-    setProcessingId(assignmentId);
-    const result = await acceptAssignment(assignmentId);
-    if (result.success) {
-      setPendingAssignments(prev => prev.filter(a => a.id !== assignmentId));
+  // Odpowiedź na przydział przez serwer (/api/assignment/:id/respond) — ta sama semantyka co
+  // link z maila: odrzucenie zdejmuje imię z grafiku (wydarzenia lub starego programu)
+  // atomowo po stronie serwera. Członek nie ma prawa edytować wydarzenia/programu, więc
+  // dawny zapis z przeglądarki kończył się cichym 403.
+  const respond = async (assignment, action) => {
+    setProcessingId(assignment.id);
+    try {
+      const res = await supabase._request(`/api/assignment/${encodeURIComponent(assignment.id)}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(res.status === 404
+          ? tr('Nie znaleziono tego przydziału — mógł zostać zmieniony przez lidera.')
+          : tr('Nie udało się zapisać odpowiedzi. Spróbuj ponownie.'));
+        return;
+      }
+      setPendingAssignments((prev) => prev.filter((a) => a.id !== assignment.id));
+      if (payload.already) toast.info(tr('Na ten przydział odpowiedziano już wcześniej.'));
+      else if (action === 'accept') toast.success(tr('Dziękujemy! Twój dyżur jest potwierdzony.'));
+      else toast.success(tr('Dziękujemy za informację. Usunęliśmy Cię z grafiku.'));
+    } catch {
+      toast.error(tr('Nie udało się zapisać odpowiedzi. Spróbuj ponownie.'));
+    } finally {
+      setProcessingId(null);
     }
-    setProcessingId(null);
   };
 
-  // Obsługa odrzucenia przypisania
+  const handleAccept = (assignment) => respond(assignment, 'accept');
+
   const handleReject = async (assignment) => {
-    setProcessingId(assignment.id);
-    const result = await rejectAssignment(assignment.id);
-
-    if (result.success && assignment.program_id) {
-      // Stary grafik programu (sprzed przeniesienia na wydarzenia) — usuń imię z JSON-a.
-      // Na wydarzeniu imię zostaje, a lider widzi odmowę w grafiku.
-      const { data: programData } = await supabase
-        .from('programs')
-        .select('zespol')
-        .eq('id', assignment.program_id)
-        .single();
-
-      if (programData?.zespol) {
-        const zespol = { ...programData.zespol };
-        const roleKey = assignment.role_key;
-        const currentValue = zespol[roleKey] || '';
-        const names = currentValue.split(',').map(s => s.trim()).filter(Boolean);
-        const newNames = names.filter(n => n !== assignment.assigned_name);
-        zespol[roleKey] = newNames.join(', ');
-
-        await supabase
-          .from('programs')
-          .update({ zespol })
-          .eq('id', assignment.program_id);
-      }
-
-    }
-    if (result.success) setPendingAssignments(prev => prev.filter(a => a.id !== assignment.id));
-    setProcessingId(null);
+    const ok = await confirmDialog({
+      title: tr('Odrzucić przydział?'),
+      message: tr('Twoje imię zniknie z grafiku na ten dzień, a lider zobaczy odmowę.'),
+      confirmLabel: tr('Odrzuć'),
+      danger: true,
+    });
+    if (ok) await respond(assignment, 'reject');
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
-    return date.toLocaleDateString('pl-PL', options);
+    return date.toLocaleDateString(appLocale(), options);
   };
 
   const isToday = (dateString) => {
@@ -434,10 +438,10 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
                   {formatDate(ministry.date)}
                   {ministry.time ? `, ${ministry.time}` : ''}
                   {!isPast && isToday(ministry.date) && (
-                    <span className="ml-2 text-accent-primary-light font-medium">• Dzisiaj</span>
+                    <span className="ml-2 text-accent-primary-light font-medium">• {tr('Dzisiaj')}</span>
                   )}
                   {!isPast && isTomorrow(ministry.date) && (
-                    <span className="ml-2 text-accent-secondary-light font-medium">• Jutro</span>
+                    <span className="ml-2 text-accent-secondary-light font-medium">• {tr('Jutro')}</span>
                   )}
                 </p>
               </div>
@@ -456,7 +460,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${colorClass} ${role.status === 'rejected' ? 'line-through opacity-60' : ''}`}
                   >
                     <IconComponent size={12} />
-                    <span>{ROLE_LABELS[role.role] || role.role}</span>
+                    <span>{roleLabel(role.role)}</span>
                     {role.status === 'accepted' && <Check size={12} />}
                     {role.status === 'pending' && <Clock size={12} />}
                   </div>
@@ -481,7 +485,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
 
         {list.length > 5 && (
           <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-            + {list.length - 5} więcej
+            + {tr('{n} więcej', { n: list.length - 5 })}
           </p>
         )}
       </div>
@@ -519,7 +523,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-gray-800 dark:text-white truncate">
-                    {assignment.role_label || ROLE_LABELS[assignment.role_key] || assignment.role_key}
+                    {assignment.role_label || roleLabel(assignment.role_key)}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {(() => {
@@ -538,7 +542,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
 
             <div className="flex gap-2">
               <button
-                onClick={() => handleAccept(assignment.id)}
+                onClick={() => handleAccept(assignment)}
                 disabled={processingId === assignment.id}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
               >
@@ -547,7 +551,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
                 ) : (
                   <CheckCircle size={16} />
                 )}
-                Akceptuję
+                {tr('Akceptuję')}
               </button>
               <button
                 onClick={() => handleReject(assignment)}
@@ -559,7 +563,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
                 ) : (
                   <XCircle size={16} />
                 )}
-                Odrzucam
+                {tr('Odrzucam')}
               </button>
             </div>
           </div>
@@ -582,7 +586,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
         >
           <Clock size={14} />
           <span className="hidden sm:inline">{tr('Nadchodzące')}</span>
-          <span className="sm:hidden">Nowe</span>
+          <span className="sm:hidden">{tr('Nowe')}</span>
           {upcomingMinistry?.length > 0 && (
             <span className="px-1.5 py-0.5 text-xs rounded-full bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">
               {upcomingMinistry.length}
@@ -598,7 +602,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
           }`}
         >
           <Inbox size={14} />
-          Sugestie
+          {tr('Sugestie')}
           {pendingAssignments?.length > 0 && (
             <span className="px-1.5 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
               {pendingAssignments.length}
@@ -614,7 +618,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
           }`}
         >
           <History size={14} />
-          Historia
+          {tr('Historia')}
         </button>
       </div>
 

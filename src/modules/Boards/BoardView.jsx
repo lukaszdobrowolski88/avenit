@@ -28,6 +28,7 @@ import Button from '../../components/Button';
 import { useCan } from '../../components/Can';
 import { exportBoardCsv, buildCellsFromRecord } from './lib/csv';
 import { confirmDialog } from '../../lib/dialog';
+import { tr } from '../../i18n';
 
 const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails, workload: Gauge, doc: FileText, map: MapPin };
 const VIEW_TYPES = [
@@ -111,7 +112,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
     const g = [...data.groups].sort((a, b) => a.display_order - b.display_order)[0];
     if (!g || !records?.length) return;
     for (const rec of records) {
-      const name = rec['Element'] || rec[Object.keys(rec)[0]] || 'Element';
+      const name = rec['Element'] || rec[Object.keys(rec)[0]] || tr('Element');
       await data.addItem(g.id, name, buildCellsFromRecord(rec, data.columns));
     }
   };
@@ -120,7 +121,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
     return <Spinner center size={28} />;
   }
   if (!data.board) {
-    return <EmptyState icon={Table2} title="Nie znaleziono tablicy" subtitle="Mogła zostać usunięta lub nie masz do niej dostępu." />;
+    return <EmptyState icon={Table2} title={tr('Nie znaleziono tablicy')} subtitle={tr('Mogła zostać usunięta lub nie masz do niej dostępu.')} />;
   }
 
   const renderView = () => {
@@ -163,19 +164,19 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
           {data.views.map(v => (
             <ViewTab key={v.id} view={v} active={activeViewId === v.id} onSelect={setActiveViewId} data={data}
               canManage={canManageViews} canDelete={data.views.length > 1}
-              onDelete={async () => { if (!await confirmDialog(`Usunąć widok „${v.name}"?`)) return; data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
+              onDelete={async () => { if (!await confirmDialog(tr('Usunąć widok „{name}"?', { name: v.name }))) return; data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
               onDuplicated={(nv) => nv && setActiveViewId(nv.id)} />
           ))}
           {canManageViews && <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />}
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
-          <Button size="sm" variant="secondary" icon={Sparkles} onClick={() => setShowSidekick(true)}>AI Sidekick</Button>
+          <Button size="sm" variant="secondary" icon={Sparkles} onClick={() => setShowSidekick(true)}>{tr('AI Sidekick')}</Button>
           {canManageAutomations && (
             <Button size="sm" variant="outline" icon={Zap} onClick={() => setShowAutomations(true)}>
-              Automatyzacje{automations.automations.length > 0 && <span className="text-xs text-gray-400 ml-1">{automations.automations.length}</span>}
+              {tr('Automatyzacje')}{automations.automations.length > 0 && <span className="text-xs text-gray-400 ml-1">{automations.automations.length}</span>}
             </Button>
           )}
-          <Button size="sm" variant="outline" icon={Activity} onClick={() => setShowActivity(true)} title="Aktywność tablicy" className="!px-2" />
+          <Button size="sm" variant="outline" icon={Activity} onClick={() => setShowActivity(true)} title={tr('Aktywność tablicy')} className="!px-2" />
         </div>
       </div>
 
@@ -225,10 +226,10 @@ function ViewTab({ view, active, onSelect, data, canManage, canDelete, onDelete,
         <Popover align="left" width={185} triggerClassName="inline-flex" trigger={<button className="px-1 py-2 text-white/75 hover:text-white"><MoreHorizontal size={15} /></button>}>
           {({ close }) => (
             <div className="p-1.5 text-sm">
-              <button onClick={() => { setRenaming(true); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Pencil size={14} /> Zmień nazwę</button>
-              <button onClick={() => { data.duplicateView(view).then(onDuplicated); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Copy size={14} /> Duplikuj</button>
-              <button onClick={() => { data.setDefaultView(view.id); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Star size={14} /> Ustaw domyślny</button>
-              {canDelete && <button onClick={() => { onDelete(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600"><Trash2 size={14} /> Usuń widok</button>}
+              <button onClick={() => { setRenaming(true); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Pencil size={14} /> {tr('Zmień nazwę')}</button>
+              <button onClick={() => { data.duplicateView(view).then(onDuplicated); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Copy size={14} /> {tr('Duplikuj')}</button>
+              <button onClick={() => { data.setDefaultView(view.id); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Star size={14} /> {tr('Ustaw domyślny')}</button>
+              {canDelete && <button onClick={() => { onDelete(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600"><Trash2 size={14} /> {tr('Usuń widok')}</button>}
             </div>
           )}
         </Popover>
@@ -247,9 +248,9 @@ function AddViewButton({ onAdd }) {
       {({ close }) => (
         <div className="p-1.5">
           {VIEW_TYPES.map(v => (
-            <button key={v.type} onClick={() => { onAdd(v.type, v.label); close(); }}
+            <button key={v.type} onClick={() => { onAdd(v.type, tr(v.label)); close(); }}
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200">
-              <v.icon size={15} className="text-gray-400" /> {v.label}
+              <v.icon size={15} className="text-gray-400" /> {tr(v.label)}
             </button>
           ))}
         </div>

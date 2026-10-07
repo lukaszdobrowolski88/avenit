@@ -11,26 +11,24 @@ import useMessages from './hooks/useMessages';
 import useCompose from './hooks/useCompose';
 import useRealtimeMail from './hooks/useRealtimeMail';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
-
-// Cache userEmail
-const USER_EMAIL_CACHE_KEY = 'user_email_cache';
+import EmptyState from '../../components/EmptyState';
+import Button from '../../components/Button';
+import { Mail as MailIcon, RefreshCw } from 'lucide-react';
 
 export default function MailModule() {
-  // User email
-  const [userEmail, setUserEmail] = useState(() => {
-    return localStorage.getItem(USER_EMAIL_CACHE_KEY) || null;
-  });
+  // Adres zalogowanej osoby (z sesji — bez cache w localStorage, który mógł należeć do kogoś innego).
+  const [userEmail, setUserEmail] = useState(null);
+  const [userChecked, setUserChecked] = useState(false);
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setUserEmail(user.email);
-        localStorage.setItem(USER_EMAIL_CACHE_KEY, user.email);
-      }
-    };
-    getUser();
+    let alive = true;
+    supabase.auth.getUser()
+      .then(({ data }) => { if (alive) setUserEmail(data?.user?.email || null); })
+      .catch(() => {})
+      .finally(() => { if (alive) setUserChecked(true); });
+    return () => { alive = false; };
   }, []);
 
   // Hooki
@@ -38,6 +36,8 @@ export default function MailModule() {
     accounts,
     defaultAccount,
     loading: accountsLoading,
+    error: accountsError,
+    retry: retryAccounts,
     ensureInternalAccount,
     createExternalAccount,
     updateAccount,
@@ -170,12 +170,13 @@ export default function MailModule() {
     fetchLabels();
   }, [activeAccount?.id]);
 
-  // Utwórz konto wewnętrzne jeśli nie istnieje
+  // Utwórz konto wewnętrzne jeśli nie istnieje — tylko gdy odczyt się udał (bez błędu),
+  // a hook i tak pozwala na jedną próbę (koniec pętli zapisów przy błędzie schematu).
   useEffect(() => {
-    if (userEmail && accounts.length === 0 && !accountsLoading) {
+    if (userEmail && accounts.length === 0 && !accountsLoading && !accountsError) {
       ensureInternalAccount();
     }
-  }, [userEmail, accounts, accountsLoading, ensureInternalAccount]);
+  }, [userEmail, accounts, accountsLoading, accountsError, ensureInternalAccount]);
 
   // Wybierz folder
   const handleSelectFolder = (folderId) => {
@@ -258,6 +259,7 @@ export default function MailModule() {
   const handleSend = async () => {
     const success = await sendMessage();
     if (success) {
+      toast.success(tr('Wiadomość wysłana.'));
       setShowCompose(false);
       refetchMessages();
       recalculateCounts();
@@ -338,8 +340,35 @@ export default function MailModule() {
   // Pobierz nazwę aktualnego folderu
   const currentFolderName = folders.find(f => f.id === selectedFolderId)?.name || 'Poczta';
 
+  // Brak adresu e-mail w koncie — poczta nie ma do czego się podpiąć.
+  if (userChecked && !userEmail) {
+    return (
+      <div className="h-[calc(100vh-3.5rem)] lg:h-[calc(100vh-7rem)] -m-4 lg:-m-6 flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+        <EmptyState
+          icon={MailIcon}
+          title={tr('Twoje konto nie ma adresu e-mail')}
+          subtitle={tr('Poczta działa dla kont z adresem e-mail. Poproś administratora o jego uzupełnienie.')}
+        />
+      </div>
+    );
+  }
+
+  // Błąd odczytu lub założenia skrzynki — komunikat i ponowienie zamiast wiecznego „Ładowania”.
+  if (accountsError && accounts.length === 0 && !accountsLoading) {
+    return (
+      <div className="h-[calc(100vh-3.5rem)] lg:h-[calc(100vh-7rem)] -m-4 lg:-m-6 flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+        <EmptyState
+          icon={MailIcon}
+          title={tr('Nie udało się otworzyć poczty')}
+          subtitle={tr('Spróbuj ponownie za chwilę. Jeśli problem wróci, daj znać administratorowi.')}
+          action={<Button icon={RefreshCw} onClick={retryAccounts}>{tr('Spróbuj ponownie')}</Button>}
+        />
+      </div>
+    );
+  }
+
   // Loading
-  if (accountsLoading && !defaultAccount) {
+  if (!userChecked || (accountsLoading && !defaultAccount) || (accounts.length === 0 && !accountsError)) {
     return (
       <div className="h-[calc(100vh-3.5rem)] lg:h-[calc(100vh-7rem)] -m-4 lg:-m-6 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <Spinner label={tr('Ładowanie poczty...')} />

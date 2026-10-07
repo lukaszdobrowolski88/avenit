@@ -252,7 +252,7 @@ GRANT ALL ON ${tableName} TO anon;`;
       <div className="p-8 text-center">
         <div className="max-w-2xl mx-auto bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-2">
-            Tabela nie istnieje
+            {tr('Tabela nie istnieje')}
           </h3>
           <p className="text-yellow-700 dark:text-yellow-300 mb-4">
             {tr('Aby korzystać z członków w tym module, utwórz tabelę w Supabase.')}
@@ -266,11 +266,11 @@ GRANT ALL ON ${tableName} TO anon;`;
           <button
             onClick={() => {
               navigator.clipboard.writeText(sqlScript);
-              toast.success('Skopiowano do schowka!');
+              toast.success(tr('Skopiowano do schowka!'));
             }}
             className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition"
           >
-            Skopiuj SQL
+            {tr('Skopiuj SQL')}
           </button>
           <button
             onClick={fetchMembers}
@@ -288,7 +288,7 @@ GRANT ALL ON ${tableName} TO anon;`;
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Członkowie ({filteredMembers.length})
+          {tr('Członkowie')} ({filteredMembers.length})
         </h2>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -394,8 +394,8 @@ GRANT ALL ON ${tableName} TO anon;`;
         size="md"
         closeOnBackdrop={false}
         footer={<>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Anuluj</Button>
-          <Button onClick={handleSave}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={handleSave}>{tr('Zapisz')}</Button>
         </>}
       >
         <div className="p-6 space-y-4">
@@ -457,7 +457,7 @@ GRANT ALL ON ${tableName} TO anon;`;
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                Telefon
+                {tr('Telefon')}
               </label>
               <input
                 type="tel"
@@ -469,7 +469,7 @@ GRANT ALL ON ${tableName} TO anon;`;
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                Email
+                {tr('Email')}
               </label>
               <input
                 type="email"

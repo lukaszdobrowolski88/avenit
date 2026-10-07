@@ -11,10 +11,11 @@ export function useCampaigns() {
       setLoading(true);
       const { data, error: fetchError } = await supabase
         .from('email_campaigns')
+        // Bez osadzenia autora: created_by to e-mail (migracja 082), a relacja w rejestrze
+        // łączy po id — osadzenie wywracałoby całą listę.
         .select(`
           *,
-          template:email_templates(id, name),
-          creator:app_users!email_campaigns_created_by_fkey(full_name, avatar_url)
+          template:email_templates(id, name)
         `)
         .order('created_at', { ascending: false });
 
@@ -97,15 +98,21 @@ export function useCampaigns() {
         .from('email_campaigns')
         .select(`
           *,
-          template:email_templates(id, name, html_content),
-          creator:app_users!email_campaigns_created_by_fkey(full_name, avatar_url),
-          segments:email_recipient_segments(*)
+          template:email_templates(id, name, html_content)
         `)
         .eq('id', id)
         .single();
 
       if (fetchError) throw fetchError;
-      return data;
+
+      // Segmenty osobno (relacja nie jest osadzana przez API); brak segmentów nie blokuje edycji.
+      const { data: segments, error: segError } = await supabase
+        .from('email_recipient_segments')
+        .select('*')
+        .eq('campaign_id', id);
+      if (segError) console.warn('Error fetching campaign segments:', segError);
+
+      return { ...data, segments: segments || [] };
     } catch (err) {
       console.error('Error fetching campaign:', err);
       throw err;
@@ -126,7 +133,7 @@ export function useCampaigns() {
         json_design: original.json_design,
         template_id: original.template_id,
         status: 'draft',
-        created_by: user.email
+        created_by: user?.email || null
       };
 
       return await createCampaign(newCampaign);
@@ -213,19 +220,20 @@ export function useCampaignRecipients(campaignId) {
     if (!campaignId) return;
 
     try {
-      const recipientsToInsert = recipientsList.map(r => ({
-        campaign_id: campaignId,
-        email: r.email,
-        full_name: r.full_name || r.name,
-        status: 'pending'
-      }));
+      const existing = new Set(recipients.map(r => String(r.email || '').toLowerCase()));
+      const recipientsToInsert = recipientsList
+        .filter(r => r.email && !existing.has(String(r.email).toLowerCase()))
+        .map(r => ({
+          campaign_id: campaignId,
+          email: r.email,
+          name: r.full_name || r.name || null,
+          status: 'pending'
+        }));
+      if (recipientsToInsert.length === 0) return [];
 
       const { data, error: insertError } = await supabase
         .from('email_campaign_recipients')
-        .upsert(recipientsToInsert, {
-          onConflict: 'campaign_id,email',
-          ignoreDuplicates: true
-        })
+        .insert(recipientsToInsert)
         .select();
 
       if (insertError) throw insertError;

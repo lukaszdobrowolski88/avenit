@@ -6,6 +6,7 @@ import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import { tr } from '../../../i18n';
 
 const PRESET_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#64748b'];
 const emptyForm = { name: '', description: '', color: '#10b981', is_tax_deductible: true, is_active: true };
@@ -24,7 +25,7 @@ export default function FundsTab({ funds, campusIdForInsert, refreshShared }) {
   };
 
   const save = async () => {
-    if (!form.name.trim()) { toast.error('Podaj nazwę funduszu.'); return; }
+    if (!form.name.trim()) { toast.error(tr('Podaj nazwę funduszu.')); return; }
     setSaving(true);
     try {
       const payload = {
@@ -43,33 +44,33 @@ export default function FundsTab({ funds, campusIdForInsert, refreshShared }) {
       setModalOpen(false);
       refreshShared();
     } catch (err) {
-      toast.error('Nie udało się zapisać funduszu: ' + (err.message || err));
+      toast.error(tr('Nie udało się zapisać funduszu: {msg}', { msg: err.message || err }));
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (f) => {
-    if (!await confirmDialog(`Usunąć fundusz „${f.name}"? Darowizny z tego funduszu pozostaną, ale bez przypisania.`)) return;
+    if (!await confirmDialog(tr('Usunąć fundusz „{name}"? Darowizny z tego funduszu pozostaną, ale bez przypisania.', { name: f.name }))) return;
     try {
       const { error } = await supabase.from('giving_funds').delete().eq('id', f.id);
       if (error) throw error;
       refreshShared();
     } catch (err) {
-      toast.error('Nie udało się usunąć: ' + (err.message || err));
+      toast.error(tr('Nie udało się usunąć: {msg}', { msg: err.message || err }));
     }
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">Cele, na które zbierane są darowizny. Zaznacz „odpis PIT" dla funduszy uprawniających do odliczenia.</p>
-        <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md"><Plus size={16} /> Dodaj fundusz</button>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Cele, na które zbierane są darowizny. Zaznacz „odpis PIT" dla funduszy uprawniających do odliczenia.')}</p>
+        <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md"><Plus size={16} /> {tr('Dodaj fundusz')}</button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {(funds || []).length === 0 && (
-          <EmptyState icon={FolderOpen} title="Brak funduszy." subtitle="Dodaj pierwszy cel." className="col-span-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
+          <EmptyState icon={FolderOpen} title={tr('Brak funduszy.')} subtitle={tr('Dodaj pierwszy cel.')} className="col-span-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700" />
         )}
         {(funds || []).map(f => (
           <div key={f.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 flex items-start justify-between gap-3">
@@ -79,8 +80,8 @@ export default function FundsTab({ funds, campusIdForInsert, refreshShared }) {
                 <div className="font-semibold text-gray-900 dark:text-white truncate">{f.name}</div>
                 {f.description && <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{f.description}</div>}
                 <div className="flex gap-2 mt-2">
-                  {f.is_tax_deductible && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">odpis PIT</span>}
-                  {f.is_active === false && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">nieaktywny</span>}
+                  {f.is_tax_deductible && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">{tr('odpis PIT')}</span>}
+                  {f.is_active === false && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">{tr('nieaktywny')}</span>}
                 </div>
               </div>
             </div>
@@ -95,24 +96,24 @@ export default function FundsTab({ funds, campusIdForInsert, refreshShared }) {
       <Modal
         isOpen={modalOpen}
         onClose={() => !saving && setModalOpen(false)}
-        title={editing ? 'Edytuj fundusz' : 'Nowy fundusz'}
+        title={editing ? tr('Edytuj fundusz') : tr('Nowy fundusz')}
         size="sm"
         footer={<>
-          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>Anuluj</Button>
-          <Button onClick={save} loading={saving}>Zapisz</Button>
+          <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={saving}>{tr('Anuluj')}</Button>
+          <Button onClick={save} loading={saving}>{tr('Zapisz')}</Button>
         </>}
       >
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwa</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nazwa')}</label>
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Opis')}</label>
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Kolor</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">{tr('Kolor')}</label>
                 <div className="flex gap-2 flex-wrap">
                   {PRESET_COLORS.map(c => (
                     <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))} className={`w-8 h-8 rounded-full transition ${form.color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-800' : ''}`} style={{ background: c }} />
@@ -121,11 +122,11 @@ export default function FundsTab({ funds, campusIdForInsert, refreshShared }) {
               </div>
               <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
                 <input type="checkbox" checked={form.is_tax_deductible} onChange={e => setForm(f => ({ ...f, is_tax_deductible: e.target.checked }))} className="rounded accent-emerald-500" />
-                Uprawnia do odpisu podatkowego (PIT)
+                {tr('Uprawnia do odpisu podatkowego (PIT)')}
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
                 <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} className="rounded accent-emerald-500" />
-                Aktywny
+                {tr('Aktywny')}
               </label>
             </div>
       </Modal>

@@ -19,7 +19,7 @@ const inputCls =
 function Text({ label, value, onChange, type = 'text' }) {
   return (
     <div>
-      <Label>{tr(label)}</Label>
+      <Label>{label}</Label>
       <input type={type} value={value ?? ''} onChange={(e) => onChange(type === 'number' ? Number(e.target.value) : e.target.value)} className={inputCls} />
     </div>
   );
@@ -27,7 +27,7 @@ function Text({ label, value, onChange, type = 'text' }) {
 function Area({ label, value, onChange, rows = 4 }) {
   return (
     <div>
-      <Label>{tr(label)}</Label>
+      <Label>{label}</Label>
       <textarea rows={rows} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={inputCls} />
     </div>
   );
@@ -35,7 +35,7 @@ function Area({ label, value, onChange, rows = 4 }) {
 function Select({ label, value, onChange, options }) {
   return (
     <div>
-      <Label>{tr(label)}</Label>
+      <Label>{label}</Label>
       <select value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={inputCls}>
         {options.map((o) => <option key={o.value} value={o.value}>{tr(o.label)}</option>)}
       </select>
@@ -80,10 +80,10 @@ export default function Inspector() {
 
       {selected.type === 'heading' && (
         <>
-          <Text label="Tekst" value={p.text} onChange={(v) => setProp('text', v)} />
-          <Select label="Poziom" value={String(p.level)} onChange={(v) => setProp('level', Number(v))}
+          <Text label={tr('Tekst')} value={p.text} onChange={(v) => setProp('text', v)} />
+          <Select label={tr('Poziom')} value={String(p.level)} onChange={(v) => setProp('level', Number(v))}
             options={[1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: `H${n}` }))} />
-          <Select label="Wyrównanie" value={p.align} onChange={(v) => setProp('align', v)} options={ALIGN_OPTS} />
+          <Select label={tr('Wyrównanie')} value={p.align} onChange={(v) => setProp('align', v)} options={ALIGN_OPTS} />
         </>
       )}
 
@@ -96,42 +96,42 @@ export default function Inspector() {
 
       {selected.type === 'image' && (
         <>
-          <Text label="Adres URL obrazu" value={p.src} onChange={(v) => setProp('src', v)} />
-          <Text label="Opis alternatywny" value={p.alt} onChange={(v) => setProp('alt', v)} />
-          <Select label="Zaokrąglenie" value={p.rounded} onChange={(v) => setProp('rounded', v)}
+          <Text label={tr('Adres URL obrazu')} value={p.src} onChange={(v) => setProp('src', v)} />
+          <Text label={tr('Opis alternatywny')} value={p.alt} onChange={(v) => setProp('alt', v)} />
+          <Select label={tr('Zaokrąglenie')} value={p.rounded} onChange={(v) => setProp('rounded', v)}
             options={[{ value: 'none', label: 'Brak' }, { value: 'lg', label: 'Średnie' }, { value: 'xl', label: 'Duże' }, { value: '2xl', label: 'Bardzo duże' }]} />
         </>
       )}
 
       {selected.type === 'button' && (
         <>
-          <Text label="Etykieta" value={p.label} onChange={(v) => setProp('label', v)} />
-          <Text label="Adres (URL)" value={p.href} onChange={(v) => setProp('href', v)} />
-          <Select label="Styl" value={p.variant} onChange={(v) => setProp('variant', v)}
+          <Text label={tr('Etykieta')} value={p.label} onChange={(v) => setProp('label', v)} />
+          <Text label={tr('Adres (URL)')} value={p.href} onChange={(v) => setProp('href', v)} />
+          <Select label={tr('Styl')} value={p.variant} onChange={(v) => setProp('variant', v)}
             options={[{ value: 'primary', label: 'Główny' }, { value: 'secondary', label: 'Drugorzędny' }, { value: 'outline', label: 'Obrys' }]} />
-          <Select label="Wyrównanie" value={p.align} onChange={(v) => setProp('align', v)} options={ALIGN_OPTS} />
+          <Select label={tr('Wyrównanie')} value={p.align} onChange={(v) => setProp('align', v)} options={ALIGN_OPTS} />
         </>
       )}
 
       {selected.type === 'list' && (
         <>
-          <Area label="Punkty (jeden na linię)" rows={6} value={(p.items || []).join('\n')} onChange={(v) => setProp('items', v.split('\n'))} />
-          <Select label="Styl listy" value={p.style} onChange={(v) => setProp('style', v)}
+          <Area label={tr('Punkty (jeden na linię)')} rows={6} value={(p.items || []).join('\n')} onChange={(v) => setProp('items', v.split('\n'))} />
+          <Select label={tr('Styl listy')} value={p.style} onChange={(v) => setProp('style', v)}
             options={[{ value: 'disc', label: 'Punktowana' }, { value: 'decimal', label: 'Numerowana' }, { value: 'none', label: 'Bez znaczników' }]} />
         </>
       )}
 
       {selected.type === 'quote' && (
         <>
-          <Area label="Treść cytatu" value={p.text} onChange={(v) => setProp('text', v)} />
-          <Text label="Autor" value={p.author} onChange={(v) => setProp('author', v)} />
+          <Area label={tr('Treść cytatu')} value={p.text} onChange={(v) => setProp('text', v)} />
+          <Text label={tr('Autor')} value={p.author} onChange={(v) => setProp('author', v)} />
         </>
       )}
 
       {selected.type === 'alert' && (
         <>
-          <Text label="Treść" value={p.text} onChange={(v) => setProp('text', v)} />
-          <Select label="Rodzaj" value={p.variant} onChange={(v) => setProp('variant', v)}
+          <Text label={tr('Treść')} value={p.text} onChange={(v) => setProp('text', v)} />
+          <Select label={tr('Rodzaj')} value={p.variant} onChange={(v) => setProp('variant', v)}
             options={[{ value: 'info', label: 'Informacja' }, { value: 'success', label: 'Sukces' }, { value: 'warning', label: 'Ostrzeżenie' }, { value: 'error', label: 'Błąd' }]} />
         </>
       )}
@@ -142,28 +142,28 @@ export default function Inspector() {
             <Label>{tr('Ikona')}</Label>
             <IconPicker value={p.name} onChange={(v) => setProp('name', v)} />
           </div>
-          <Text label="Rozmiar (px)" type="number" value={p.size} onChange={(v) => setProp('size', v)} />
+          <Text label={tr('Rozmiar (px)')} type="number" value={p.size} onChange={(v) => setProp('size', v)} />
         </>
       )}
 
       {selected.type === 'video' && (
-        <Text label="Link do wideo (YouTube/Vimeo/mp4)" value={p.url} onChange={(v) => setProp('url', v)} />
+        <Text label={tr('Link do wideo (YouTube/Vimeo/mp4)')} value={p.url} onChange={(v) => setProp('url', v)} />
       )}
 
       {selected.type === 'map' && (
-        <Text label="Adres / miejsce" value={p.query} onChange={(v) => setProp('query', v)} />
+        <Text label={tr('Adres / miejsce')} value={p.query} onChange={(v) => setProp('query', v)} />
       )}
 
       {selected.type === 'embed' && (
         <>
-          <Text label="Adres URL (iframe)" value={p.url} onChange={(v) => setProp('url', v)} />
-          <Text label="Wysokość (px)" type="number" value={p.height} onChange={(v) => setProp('height', v)} />
+          <Text label={tr('Adres URL (iframe)')} value={p.url} onChange={(v) => setProp('url', v)} />
+          <Text label={tr('Wysokość (px)')} type="number" value={p.height} onChange={(v) => setProp('height', v)} />
         </>
       )}
 
       {selected.type === 'countdown' && (
         <>
-          <Text label="Etykieta" value={p.label} onChange={(v) => setProp('label', v)} />
+          <Text label={tr('Etykieta')} value={p.label} onChange={(v) => setProp('label', v)} />
           <div>
             <Label>{tr('Data i godzina')}</Label>
             <DateTimeInput value={p.target || ''} onChange={(e) => setProp('target', e.target.value)} className={inputCls} />
@@ -173,62 +173,62 @@ export default function Inspector() {
 
       {selected.type === 'gallery' && (
         <>
-          <Area label="Adresy zdjęć (jeden na linię)" rows={5} value={(p.images || []).join('\n')} onChange={(v) => setProp('images', v.split('\n'))} />
-          <Text label="Kolumny" type="number" value={p.columns} onChange={(v) => setProp('columns', Math.min(Math.max(v || 1, 1), 6))} />
+          <Area label={tr('Adresy zdjęć (jeden na linię)')} rows={5} value={(p.images || []).join('\n')} onChange={(v) => setProp('images', v.split('\n'))} />
+          <Text label={tr('Kolumny')} type="number" value={p.columns} onChange={(v) => setProp('columns', Math.min(Math.max(v || 1, 1), 6))} />
         </>
       )}
 
       {(selected.type === 'tabs' || selected.type === 'accordion') && (
         <>
-          <Area label="Etykiety paneli (jedna na linię, wg kolejności elementów)" rows={5} value={(p.labels || []).join('\n')} onChange={(v) => setProp('labels', v.split('\n'))} />
+          <Area label={tr('Etykiety paneli (jedna na linię, wg kolejności elementów)')} rows={5} value={(p.labels || []).join('\n')} onChange={(v) => setProp('labels', v.split('\n'))} />
           <p className="text-xs text-gray-400">{tr('Przeciągnij elementy do wnętrza — każdy element = osobny panel.')}</p>
         </>
       )}
 
       {selected.type === 'verse' && (
         <>
-          <Area label="Treść wersetu" value={p.text} onChange={(v) => setProp('text', v)} />
-          <Text label="Odniesienie (np. Ef 1,7)" value={p.reference} onChange={(v) => setProp('reference', v)} />
+          <Area label={tr('Treść wersetu')} value={p.text} onChange={(v) => setProp('text', v)} />
+          <Text label={tr('Odniesienie (np. Ef 1,7)')} value={p.reference} onChange={(v) => setProp('reference', v)} />
         </>
       )}
 
       {selected.type === 'giving' && (
         <>
-          <Text label="Etykieta przycisku" value={p.label} onChange={(v) => setProp('label', v)} />
-          <Text label="Link (P24 / PayPal / strona)" value={p.url} onChange={(v) => setProp('url', v)} />
-          <Text label="Krótki tekst (opcjonalnie)" value={p.note} onChange={(v) => setProp('note', v)} />
+          <Text label={tr('Etykieta przycisku')} value={p.label} onChange={(v) => setProp('label', v)} />
+          <Text label={tr('Link (P24 / PayPal / strona)')} value={p.url} onChange={(v) => setProp('url', v)} />
+          <Text label={tr('Krótki tekst (opcjonalnie)')} value={p.note} onChange={(v) => setProp('note', v)} />
         </>
       )}
 
       {selected.type === 'songlist' && (
         <>
-          <Text label="Tytuł" value={p.title} onChange={(v) => setProp('title', v)} />
-          <Area label="Pieśni (jedna na linię)" rows={6} value={(p.songs || []).join('\n')} onChange={(v) => setProp('songs', v.split('\n'))} />
+          <Text label={tr('Tytuł')} value={p.title} onChange={(v) => setProp('title', v)} />
+          <Area label={tr('Pieśni (jedna na linię)')} rows={6} value={(p.songs || []).join('\n')} onChange={(v) => setProp('songs', v.split('\n'))} />
         </>
       )}
 
       {selected.type === 'divider' && (
-        <Select label="Styl linii" value={p.lineStyle} onChange={(v) => setProp('lineStyle', v)}
+        <Select label={tr('Styl linii')} value={p.lineStyle} onChange={(v) => setProp('lineStyle', v)}
           options={[{ value: 'solid', label: 'Ciągła' }, { value: 'dashed', label: 'Przerywana' }, { value: 'dotted', label: 'Kropkowana' }]} />
       )}
 
       {selected.type === 'spacer' && (
-        <Select label="Wysokość" value={p.size} onChange={(v) => setProp('size', v)} options={SIZE_OPTS} />
+        <Select label={tr('Wysokość')} value={p.size} onChange={(v) => setProp('size', v)} options={SIZE_OPTS} />
       )}
 
       {(selected.type === 'columns' || selected.type === 'grid') && (
         <>
-          <Text label="Liczba kolumn" type="number" value={p.columns} onChange={(v) => setProp('columns', Math.min(Math.max(v || 1, 1), 6))} />
-          <Select label="Odstęp" value={p.gap} onChange={(v) => setProp('gap', v)} options={GAP_OPTS} />
+          <Text label={tr('Liczba kolumn')} type="number" value={p.columns} onChange={(v) => setProp('columns', Math.min(Math.max(v || 1, 1), 6))} />
+          <Select label={tr('Odstęp')} value={p.gap} onChange={(v) => setProp('gap', v)} options={GAP_OPTS} />
         </>
       )}
 
       {selected.type === 'card' && (
-        <Text label="Tytuł karty (opcjonalnie)" value={p.title} onChange={(v) => setProp('title', v)} />
+        <Text label={tr('Tytuł karty (opcjonalnie)')} value={p.title} onChange={(v) => setProp('title', v)} />
       )}
 
       {selected.type === 'widget' && (
-        <Select label="Rodzaj widgetu" value={p.widgetType} onChange={(v) => setProp('widgetType', v)}
+        <Select label={tr('Rodzaj widgetu')} value={p.widgetType} onChange={(v) => setProp('widgetType', v)}
           options={Object.entries(WIDGET_META).map(([k, m]) => ({ value: k, label: m.label }))} />
       )}
 
@@ -241,15 +241,15 @@ export default function Inspector() {
         const chosen = cols.find((c) => c.collectionKey === p.collectionKey);
         return (
           <>
-            <Select label="Kolekcja danych" value={p.collectionKey} onChange={(v) => setProp('collectionKey', v)}
+            <Select label={tr('Kolekcja danych')} value={p.collectionKey} onChange={(v) => setProp('collectionKey', v)}
               options={[{ value: '', label: '— wybierz —' }, ...cols.map((c) => ({ value: c.collectionKey, label: c.title }))]} />
-            {selected.type === 'stat' && <Text label="Etykieta" value={p.label} onChange={(v) => setProp('label', v)} />}
+            {selected.type === 'stat' && <Text label={tr('Etykieta')} value={p.label} onChange={(v) => setProp('label', v)} />}
             {selected.type === 'chart' && (
               <>
-                <Select label="Pole (grupowanie)" value={p.field} onChange={(v) => setProp('field', v)}
+                <Select label={tr('Pole (grupowanie)')} value={p.field} onChange={(v) => setProp('field', v)}
                   options={[{ value: '', label: '— wybierz —' }, ...(chosen?.fields || []).map((f) => ({ value: f.key, label: f.label }))]} />
-                <Select label="Typ wykresu" value={p.chartType} onChange={(v) => setProp('chartType', v)} options={[{ value: 'bar', label: 'Słupkowy' }, { value: 'pie', label: 'Kołowy' }]} />
-                <Text label="Tytuł" value={p.title} onChange={(v) => setProp('title', v)} />
+                <Select label={tr('Typ wykresu')} value={p.chartType} onChange={(v) => setProp('chartType', v)} options={[{ value: 'bar', label: 'Słupkowy' }, { value: 'pie', label: 'Kołowy' }]} />
+                <Text label={tr('Tytuł')} value={p.title} onChange={(v) => setProp('title', v)} />
               </>
             )}
             {cols.length === 0 && <p className="text-xs text-amber-500">{tr('Najpierw dodaj element „Kolekcja danych" na tej zakładce.')}</p>}

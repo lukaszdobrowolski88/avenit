@@ -4,6 +4,7 @@ import EmptyState from '../../../components/EmptyState';
 import { Avatar } from '../components/cells/PeopleCell';
 import { applyView } from '../lib/viewData';
 import { findLabel } from '../lib/columnTypes';
+import { tr } from '../../../i18n';
 
 // Widok Obciążenie — ile elementów przypada na osobę (z rozbiciem na statusy).
 export default function WorkloadView({ data, config, onOpenItem }) {
@@ -31,7 +32,7 @@ export default function WorkloadView({ data, config, onOpenItem }) {
   }, [items, peopleCols, statusCol]);
 
   if (peopleCols.length === 0) {
-    return <EmptyState icon={Users} title={'Dodaj kolumnę typu „Osoby", aby zobaczyć obciążenie zespołu.'} />;
+    return <EmptyState icon={Users} title={tr('Dodaj kolumnę typu „Osoby", aby zobaczyć obciążenie zespołu.')} />;
   }
 
   const statusBreakdown = (list) => {
@@ -54,7 +55,7 @@ export default function WorkloadView({ data, config, onOpenItem }) {
             <Avatar person={person} size={32} />
             <div className="w-40 shrink-0 min-w-0">
               <div className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{person.name || person.email}</div>
-              <div className="text-[11px] text-gray-400">{list.length} elementów</div>
+              <div className="text-[11px] text-gray-400">{list.length} {tr('elementów')}</div>
             </div>
             <div className="flex-1">
               <div className="h-6 rounded-full overflow-hidden flex bg-gray-100 dark:bg-gray-700/50" style={{ width: `${(list.length / max) * 100}%`, minWidth: 40 }}>
@@ -69,12 +70,12 @@ export default function WorkloadView({ data, config, onOpenItem }) {
       {unassigned > 0 && (
         <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-3">
           <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 text-xs">?</div>
-          <div className="w-40 text-sm text-gray-500 dark:text-gray-400">Nieprzypisane</div>
+          <div className="w-40 text-sm text-gray-500 dark:text-gray-400">{tr('Nieprzypisane')}</div>
           <div className="flex-1"><div className="h-6 rounded-full bg-gray-200 dark:bg-gray-600" style={{ width: `${(unassigned / max) * 100}%`, minWidth: 40 }} /></div>
           <span className="text-xs text-gray-400">{unassigned}</span>
         </div>
       )}
-      {rows.length === 0 && unassigned === 0 && <EmptyState icon={Inbox} title="Brak elementów." />}
+      {rows.length === 0 && unassigned === 0 && <EmptyState icon={Inbox} title={tr('Brak elementów.')} />}
     </div>
   );
 }
