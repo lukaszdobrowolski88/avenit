@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import {
   ArrowUpRight,
+  Building2,
   Bell,
   BellRing,
   Send,
@@ -38,7 +39,7 @@ import { useCampus } from '../../../../src/contexts/CampusContext';
 import { supabase, tenantWebBase } from '../../../../src/lib/supabase';
 import { showError } from '../../../../src/lib/errors';
 import { useMyProfile, use2FAStatus } from '../../../../src/features/account/api';
-import { openOnWeb } from '../../../../src/features/modules/useModules';
+import { openModule, openOnWeb, useModules } from '../../../../src/features/modules/useModules';
 import { useT, useLang } from '../../../../src/i18n';
 
 // Strony prawne i usuwanie konta (wymóg App Store / Play) — host tenanta, z fallbackiem na apex.
@@ -58,6 +59,8 @@ export default function AccountScreen() {
   const twoFa = use2FAStatus();
   const t = useT();
   const { lang, setLang, languages } = useLang();
+  // Ustawienia kościoła (dla osób z dostępem) — przeniesione z zakładki Moduły.
+  const { settings: settingsModule } = useModules();
   const insets = useSafeAreaInsets();
 
   const [biometricSupported, setBiometricSupported] = useState(false);
@@ -347,6 +350,16 @@ export default function AccountScreen() {
           rightElement={<ArrowUpRight size={17} color={B.ink4} strokeWidth={2} />}
           onPress={() => openOnWeb('/profile')}
         />
+        {settingsModule ? (
+          <SettingsRow
+            variant="nav"
+            Icon={Building2}
+            title={t('Ustawienia kościoła')}
+            description={t('Moduły, użytkownicy, wygląd — w przeglądarce')}
+            rightElement={<ArrowUpRight size={17} color={B.ink4} strokeWidth={2} />}
+            onPress={() => openModule(settingsModule, router)}
+          />
+        ) : null}
       </SettingsGroup>
 
       <SettingsGroup title={t('Prywatność')}>
