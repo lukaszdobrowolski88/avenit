@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X, MessageSquare, AtSign, CheckSquare, Calendar, Trash2, CheckCheck } from 'lucide-react';
 import { useNotificationContext } from '../contexts/NotificationContext';
@@ -32,8 +32,23 @@ export default function NotificationCenter() {
     clearAll
   } = useNotificationContext();
 
-  // Filtruj tylko nieprzeczytane powiadomienia
-  const unreadNotifications = notifications.filter(n => !n.read);
+  // Filtruj tylko nieprzeczytane powiadomienia. Wiadomości z jednej rozmowy łączymy w JEDNĄ
+  // pozycję (ostatnia wiadomość + liczba) — wcześniej kilkanaście osobnych wpisów od jednej osoby.
+  const unreadNotifications = useMemo(() => {
+    const out = [];
+    const byKey = new Map();
+    for (const n of notifications) {
+      if (n.read) continue;
+      const conv = n.data?.conversation_id;
+      const key = (n.type === 'message' || n.type === 'mention') && (conv || n.link) ? `msg:${conv || n.link}` : null;
+      const g = key ? byKey.get(key) : null;
+      if (g) { g.ids.push(n.id); g.count += 1; continue; }
+      const item = { ...n, ids: [n.id], count: 1 };
+      out.push(item);
+      if (key) byKey.set(key, item);
+    }
+    return out;
+  }, [notifications]);
 
   // Zamknij dropdown przy kliknięciu poza nim
   useEffect(() => {
@@ -119,7 +134,7 @@ export default function NotificationCenter() {
 
                   return (
                     <div
-                      key={notification.id}
+                      key={notification.ids.join(',')}
                       className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition cursor-pointer bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/10"
                       onClick={() => handleNotificationClick(notification)}
                     >
@@ -133,12 +148,15 @@ export default function NotificationCenter() {
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-medium text-gray-900 dark:text-white">
                             {notification.title}
+                            {notification.count > 1 && (
+                              <span className="font-normal text-gray-500 dark:text-gray-400"> · {t('{n} wiadomości', { n: notification.count })}</span>
+                            )}
                           </p>
                           <span className="w-2 h-2 bg-accent-primary-light rounded-full flex-shrink-0 mt-1.5" />
                         </div>
-                        {notification.body && (
+                        {(notification.body || notification.type === 'message') && (
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                            {notification.body}
+                            {notification.body || t('📎 Załącznik')}
                           </p>
                         )}
                         <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
@@ -150,7 +168,7 @@ export default function NotificationCenter() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteNotification(notification.id);
+                          notification.ids.forEach((id) => deleteNotification(id));
                         }}
                         className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-gray-400 hover:text-red-500 flex-shrink-0"
                         title={t('Usuń')}

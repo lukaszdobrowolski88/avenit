@@ -18,7 +18,7 @@ import {
   AtSign,
   CloudOff,
 } from 'lucide-react-native';
-import { formatRelative } from '../../../src/lib/domain';
+import { formatRelative, plural } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B, Monogram } from '../../../src/components/ui/brand';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -30,6 +30,8 @@ import {
   TYPE_META,
   type NotificationType,
   type NotificationRow,
+  type NotificationItem,
+  groupNotifications,
 } from '../../../src/features/notifications/api';
 import { useAuthSession } from '../../../src/lib/auth';
 import { navigateFromDeepLink } from '../../../src/lib/deep-links';
@@ -52,6 +54,7 @@ export default function NotificationsScreen() {
   const markOne = useMarkRead();
 
   const unreadCount = (data ?? []).filter((n: NotificationRow) => !n.read).length;
+  const items: NotificationItem[] = groupNotifications(data ?? []);
 
   return (
     <>
@@ -108,7 +111,7 @@ export default function NotificationsScreen() {
         ) : (
           <FlatList
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 }}
-            data={data ?? []}
+            data={items}
             keyExtractor={(item) => item.id}
             refreshControl={
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
@@ -129,13 +132,13 @@ export default function NotificationsScreen() {
             renderItem={({ item, index }) => {
               // Serwer może przysłać typ spoza znanych enumów — fallback na 'system'.
               const Icon = ICONS[item.type as NotificationType] ?? Bell;
-              const total = (data ?? []).length;
+              const total = items.length;
               const first = index === 0;
               const last = index === total - 1;
               return (
                 <Pressable
                   onPress={() => {
-                    if (!item.read) markOne.mutate(item.id);
+                    for (const id of item.unreadIds) markOne.mutate(id);
                     if (item.link) navigateFromDeepLink(router, item.link);
                   }}
                   accessibilityRole={item.link ? 'link' : 'button'}
@@ -182,13 +185,18 @@ export default function NotificationsScreen() {
                         style={{ flex: 1, fontSize: 15, color: B.ink, letterSpacing: -0.2, fontFamily: item.read ? 'Manrope_600SemiBold' : 'Manrope_700Bold' }}
                       >
                         {item.title}
+                        {item.count > 1 ? (
+                          <Text style={{ fontSize: 13, color: B.ink4, fontFamily: 'Manrope_600SemiBold' }}>
+                            {`  · ${item.count} ${plural(item.count, 'wiadomość', 'wiadomości', 'wiadomości')}`}
+                          </Text>
+                        ) : null}
                       </Text>
                       <Text style={{ fontSize: 11, color: B.ink4, fontFamily: 'Manrope_500Medium' }}>{formatRelative(item.created_at)}</Text>
                       {!item.read ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: B.kurkuma }} /> : null}
                     </View>
-                    {item.body ? (
+                    {item.body || item.type === 'message' ? (
                       <Text numberOfLines={2} style={{ fontSize: 13, lineHeight: 18, color: B.ink3, marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
-                        {item.body}
+                        {item.body || '📎 Załącznik'}
                       </Text>
                     ) : null}
                   </View>

@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { getActiveConversation, playReceiveSound } from './sounds';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
@@ -15,14 +16,21 @@ async function callFn(name: string, body: Record<string, unknown>) {
   return data;
 }
 
+// Powiadomienie przy OTWARTEJ aplikacji: własny dźwięk przyjścia zamiast systemowego; w otwartej
+// właśnie rozmowie bez banera (wiadomość i tak pojawia się w wątku).
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
+  handleNotification: async (notification) => {
+    const data = notification.request.content.data as { conversation_id?: string } | null;
+    const inThisThread = !!data?.conversation_id && data.conversation_id === getActiveConversation();
+    playReceiveSound();
+    return {
+      shouldPlaySound: false,
+      shouldSetBadge: true,
+      shouldShowAlert: !inThisThread,
+      shouldShowBanner: !inThisThread,
+      shouldShowList: true,
+    };
+  },
 });
 
 export const ASSIGNMENT_CATEGORY = 'assignment_invite';

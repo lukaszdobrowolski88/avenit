@@ -2,7 +2,8 @@ import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../../lib/supabase";
 import type { MessageAttachment } from "./api";
 
-const BUCKET = "messenger_attachments";
+// Ta sama nazwa co web i serwer (storage/routes.js BUCKETS) — z podkreśleniem serwer odrzucał zdjęcia.
+const BUCKET = "messenger-attachments";
 
 const guessExt = (uri: string, fallback = "jpg"): string => {
   const m = uri.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);

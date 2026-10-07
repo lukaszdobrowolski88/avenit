@@ -99,7 +99,17 @@ function assertBucket(bucket) {
   }
 }
 
+// Stare nazwy bucketów z aplikacji mobilnej (do 2026-10 mobilka wysyłała zdjęcia czatu do
+// „messenger_attachments” — serwer odrzucał je jako nieznany bucket). Starsze wersje apki
+// bez aktualizacji OTA dalej tak wysyłają, więc mapujemy nazwę na właściwą.
+const BUCKET_ALIASES = { messenger_attachments: 'messenger-attachments' };
+
 export default async function storageRoutes(app) {
+  app.addHook('preHandler', async (req) => {
+    const b = req.params?.bucket;
+    if (b && BUCKET_ALIASES[b]) req.params.bucket = BUCKET_ALIASES[b];
+  });
+
   // Upload: multipart (pole "file") lub surowe body. Ścieżka w wildcard.
   app.post(
     '/api/storage/:bucket/*',
