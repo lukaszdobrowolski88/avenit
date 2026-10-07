@@ -15,6 +15,7 @@ import {
   Fingerprint,
   KeyRound,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   MoonStar,
   Shield,
@@ -22,6 +23,8 @@ import {
   Smartphone,
   Trash2,
   UserCog,
+  UserX,
+  ScrollText,
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import { useAuthSession, signOut } from '../../../../src/lib/auth';
@@ -43,6 +46,7 @@ import { useMyProfile, use2FAStatus } from '../../../../src/features/account/api
 import { openModule, openOnWeb, useModules } from '../../../../src/features/modules/useModules';
 import { useT, useLang } from '../../../../src/i18n';
 import { usePermissions } from '../../../../src/lib/permissions';
+import { SUPPORT_EMAIL } from '../../../../src/features/account/terms';
 import { useQuietHours } from '../../../../src/features/messenger/plus';
 import { ChatQuietHoursSheet, quietHoursSummary } from '../../../../src/features/messenger/components/ChatQuietHoursSheet';
 
@@ -399,13 +403,41 @@ export default function AccountScreen() {
         />
         <SettingsRow
           variant="nav"
+          Icon={ScrollText}
+          title={t('Zasady społeczności')}
+          description={t('Jak dbamy o bezpieczne rozmowy i modlitwy')}
+          onPress={() => router.push('/(app)/account/terms')}
+        />
+        <SettingsRow
+          variant="nav"
+          Icon={UserX}
+          title={t('Zablokowane osoby')}
+          description={t('Osoby, których wiadomości i prośb nie widzisz')}
+          onPress={() => router.push('/(app)/account/blocked')}
+        />
+        <SettingsRow
+          variant="nav"
           Icon={Trash2}
           iconTint={B.danger}
           iconBg={B.dangerBg}
           title={t('Usuń konto')}
-          description={t('Trwałe usunięcie konta i Twoich danych — w przeglądarce')}
+          description={t('Trwałe usunięcie konta i Twoich danych')}
+          onPress={() => router.push('/(app)/account/delete')}
+        />
+      </SettingsGroup>
+
+      <SettingsGroup title={t('Pomoc')}>
+        <SettingsRow
+          variant="nav"
+          Icon={LifeBuoy}
+          title={t('Napisz do nas')}
+          description={SUPPORT_EMAIL}
           rightElement={<ArrowUpRight size={17} color={B.ink4} strokeWidth={2} />}
-          onPress={() => openLegal('/usun-konto')}
+          onPress={() =>
+            Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Avenit — pomoc')}`).catch((e) =>
+              showError('Nie udało się otworzyć poczty', e),
+            )
+          }
         />
       </SettingsGroup>
 

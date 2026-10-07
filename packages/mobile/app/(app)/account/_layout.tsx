@@ -9,6 +9,9 @@ export default function AccountLayout() {
       <Stack.Screen name="sessions" />
       <Stack.Screen name="dashboard" />
       <Stack.Screen name="dashboard-items" />
+      <Stack.Screen name="terms" />
+      <Stack.Screen name="blocked" />
+      <Stack.Screen name="delete" />
     </Stack>
   );
 }

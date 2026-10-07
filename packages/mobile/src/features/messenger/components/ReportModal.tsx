@@ -8,17 +8,22 @@ import type { MessageRow } from "../api";
 
 // K10 — „Zgłoś wiadomość”: powód (lista + opcjonalny opis). Zgłoszenie trafia do osób, które
 // rozpatrują zgłoszenia w Komunikatorze na webie. Okno zamyka się dopiero po udanym zapisie.
+// Używane też dla innych treści (ściana modlitwy) — wtedy title/preview/note zamiast wiadomości.
 interface Props {
   visible: boolean;
   message: MessageRow | null;
   senderName: string;
+  title?: string;
+  /** Cytat zgłaszanej treści (gdy to nie wiadomość). */
+  preview?: string | null;
+  note?: string;
   busy: boolean;
   onClose: () => void;
   /** false = błąd (pokazany przez rodzica), okno zostaje. */
   onSubmit: (reason: string) => Promise<boolean>;
 }
 
-export const ReportModal = ({ visible, message, senderName, busy, onClose, onSubmit }: Props) => {
+export const ReportModal = ({ visible, message, senderName, title, preview, note, busy, onClose, onSubmit }: Props) => {
   const insets = useSafeAreaInsets();
   const [reason, setReason] = useState<string>("");
   const [details, setDetails] = useState("");
@@ -28,7 +33,7 @@ export const ReportModal = ({ visible, message, senderName, busy, onClose, onSub
       setReason("");
       setDetails("");
     }
-  }, [visible, message?.id]);
+  }, [visible, message?.id, preview]);
 
   const label = REPORT_REASONS.find((r) => r.key === reason)?.label ?? "";
   const canSend = !!reason && (reason !== "other" || details.trim().length > 2) && !busy;
@@ -58,18 +63,18 @@ export const ReportModal = ({ visible, message, senderName, busy, onClose, onSub
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <Text style={{ fontSize: 18, color: "#2A2312", fontFamily: "Manrope_700Bold" }}>Zgłoś wiadomość</Text>
+            <Text style={{ fontSize: 18, color: "#2A2312", fontFamily: "Manrope_700Bold" }}>{title ?? "Zgłoś wiadomość"}</Text>
             <Pressable onPress={onClose} disabled={busy} hitSlop={10} accessibilityRole="button" accessibilityLabel="Zamknij">
               <X size={20} color="#6B6557" />
             </Pressable>
           </View>
-          {message ? (
+          {message || preview ? (
             <Text numberOfLines={2} style={{ marginTop: 6, fontSize: 13, color: "#6B6557", fontFamily: "Manrope_500Medium", lineHeight: 18 }}>
-              {senderName}: „{previewText(message) || "Wiadomość"}”
+              {senderName}: „{preview ?? ((message ? previewText(message) : "") || "Wiadomość")}”
             </Text>
           ) : null}
           <Text style={{ marginTop: 10, fontSize: 13, color: "#4A463E", fontFamily: "Manrope_500Medium", lineHeight: 18 }}>
-            Zgłoszenie zobaczą osoby odpowiedzialne za Komunikator. Autor nie dowie się, kto zgłosił.
+            {note ?? "Zgłoszenie zobaczą osoby odpowiedzialne za Komunikator. Autor nie dowie się, kto zgłosił."}
           </Text>
 
           <ScrollView keyboardShouldPersistTaps="handled" style={{ marginTop: 10 }}>

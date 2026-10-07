@@ -2,6 +2,7 @@ import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuthSession } from '../../src/lib/auth';
 import { FloatingTabBar } from '../../src/components/navigation/FloatingTabBar';
+import { TermsGate } from '../../src/components/TermsGate';
 
 // Nawigacja: pięć zakładek w (tabs), a wszystkie pozostałe ekrany na JEDNYM wspólnym stosie
 // nad nimi. Każde wejście dokłada ekran do tej samej historii, więc „wstecz” zawsze wraca
@@ -31,6 +32,7 @@ export default function AppLayout() {
         <Stack.Screen name="(tabs)" />
       </Stack>
       <FloatingTabBar />
+      <TermsGate />
     </View>
   );
 }

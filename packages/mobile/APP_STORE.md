@@ -33,19 +33,22 @@ dotyczą sekcje 4–7 poniżej.
    - Umowa na darmowe aplikacje jest aktywna domyślnie, umowa płatna nie jest potrzebna.
 2. **Push dla produkcji**: `eas credentials -p ios` → profil *production* → Push Notifications →
    *Use an existing push key* → klucz **93333W3XV8** (ten sam co dla preview).
-3. **Rekord apki**: przy pierwszym `eas submit` EAS sam zaproponuje założenie apki w App Store Connect
+3. **Serwer przed buildem**: po merge PR deploy (migracja **089**: zgłoszenia próśb, akceptacja zasad) i skrypt
+   kościoła demo (§6). Apka z tej wersji woła nowe funkcje serwera (`community-terms`, `content-report`,
+   `delete-my-account`), więc serwer musi być pierwszy.
+4. **Rekord apki**: przy pierwszym `eas submit` EAS sam zaproponuje założenie apki w App Store Connect
    (bundle `pl.avenit.app`, język główny: **polski**, SKU np. `avenit-ios`). Potem dopisz `ascAppId` (Apple ID apki,
    10 cyfr, widoczne w App Information) do `eas.json`, wtedy kolejne wysyłki nie wymagają pytań.
-4. **Build**: z czystej kopii `main` z prawdziwymi `node_modules`:
+5. **Build**: z czystej kopii `main` z prawdziwymi `node_modules`:
    `eas build -p ios --profile production` (wymaga interaktywnego logowania Apple). To build natywny, bo zmieniły się
    Info.plist, lokalizacje i manifest.
-5. **TestFlight**: `eas submit -p ios --profile production --latest` → przetestuj na swoim iPhonie (logowanie,
+6. **TestFlight**: `eas submit -p ios --profile production --latest` → przetestuj na swoim iPhonie (logowanie,
    push, aparat, zdjęcia, nagranie głosowe, kalendarz, ofiary).
-6. **Metadane**: `eas metadata:push` z `packages/mobile` (teksty, kategorie, ocena wieku). Albo wklej ręcznie z
+7. **Metadane**: `eas metadata:push` z `packages/mobile` (teksty, kategorie, ocena wieku). Albo wklej ręcznie z
    `store.config.json`.
-7. **Ręcznie w App Store Connect**: zrzuty (§4), App Privacy (§3), pytanie „Social Media” w ocenie wieku (§5),
+8. **Ręcznie w App Store Connect**: zrzuty (§4), App Privacy (§3), pytanie „Social Media” w ocenie wieku (§5),
    dane recenzji + konto demo (§6), cena „Darmowa”, dostępność krajów, Content Rights (§5).
-8. **Wyślij do recenzji**. `automaticRelease: false` → po akceptacji publikujesz ręcznie przyciskiem.
+9. **Wyślij do recenzji**. `automaticRelease: false` → po akceptacji publikujesz ręcznie przyciskiem.
 
 ## 3. App Privacy („Etykieta prywatności”) — odpowiedzi
 
@@ -111,14 +114,22 @@ hazard, loot boxy, tematy zdrowotne: **Nie**.
 
 ## 6. Recenzja Apple — konto demo i notatki
 
-Recenzent musi się zalogować, a apka nie ma rejestracji. **Potrzebny jest osobny kościół demo z fikcyjnymi danymi**
-(np. tenant `demo`). Nie dawaj konta na schwro, bo recenzent zobaczyłby dane prawdziwych osób. Wymagania dla konta:
+Recenzent musi się zalogować, a apka nie ma rejestracji. Do tego służy **kościół demo `demo.avenit.pl`** z samymi
+fikcyjnymi danymi (nie schwro — tam recenzent zobaczyłby prawdziwe osoby). Zakłada go i wypełnia skrypt
+[`packages/api/scripts/demo-tenant.mjs`](../api/scripts/demo-tenant.mjs) (na VPS, z `/opt/avenit`):
 
-- e-mail tylko w tenancie demo (logowanie globalne nie pokaże wtedy wyboru kościoła), **bez 2FA**;
-- rola z dostępem do większości modułów (np. lider), wypełnione: wydarzenia na najbliższe tygodnie, grafik z zaproszeniem
-  „pending”, kilka pieśni z akordami, kazania, 2–3 rozmowy w Komunikatorze, prośby na ścianie modlitwy, grupa domowa
-  z adresem;
-- hasło ważne przez cały czas recenzji (i kolejnych aktualizacji).
+```
+docker compose exec -e DEMO_REVIEW_PASSWORD='<hasło dla recenzenta>' api node scripts/demo-tenant.mjs
+```
+
+- Konto recenzenta: **`recenzja@demo.avenit.pl`**, rola lider, bez 2FA, e-mail tylko w tym kościele (logowanie
+  globalne nie pokazuje wyboru kościoła). Zasady społeczności nie są zaakceptowane — recenzent zobaczy bramkę zasad.
+- Dane: 6 wydarzeń od najbliższej niedzieli, zaproszenie do służby „pending” + potwierdzone, program nabożeństwa,
+  6 pieśni z domeny publicznej z akordami, 4 kazania (cykl „List do Filipian”), 5 próśb na ścianie modlitwy (w tym
+  anonimowa i wysłuchana), 3 grupy domowe we Wrocławiu (mapa), rozmowa zespołu i rozmowa prywatna.
+- Skrypt jest powtarzalny: czyści dane demo i wstawia je z datami od dziś. **Uruchom go przed każdą recenzją**
+  (także aktualizacji), żeby wydarzenia nie były przeszłe.
+- Przetestowany na czystej bazie (szablon + migracje do 089) razem z testem end-to-end nowych funkcji.
 
 Kontakt dla recenzenta: Łukasz Dobrowolski, lukasz@avenit.pl, +48 607 693 996 (dane z polityki prywatności).
 
@@ -130,55 +141,45 @@ creates member accounts in the web panel, so the app has no sign-up screen. Plea
 account provided; it belongs to a demo church that contains only fictional data.
 
 Sign in: enter the e-mail and password on the first screen and tap "Zaloguj" (Sign in).
-Two-factor authentication is disabled for this demo account.
+Two-factor authentication is disabled for this demo account. On first launch the app asks you to
+accept the Community Guidelines ("Akceptuję zasady").
 
 The interface is in Polish. Main areas: Pulpit (Home), Kalendarz (Calendar), Komunikator (Messenger),
 Moduły (Modules: songs with chords, sermons, prayer wall, home groups, serving schedule), Konto (Account).
 
-Giving: donations go to the user's own church (a religious non-profit organization). The app shows
-the church's giving options and the payment is completed outside the app, in Safari, on the payment
-operator's page. The app sells no digital goods or services.
+User-generated content (Guideline 1.2):
+- Users must accept Community Guidelines with zero tolerance for objectionable content before using the app.
+- Profanity is automatically masked in messages and prayer requests.
+- Report: long-press a message in Komunikator > "Zgłoś"; on the prayer wall tap "..." on a request > "Zgłoś prośbę".
+- Block: long-press a message > "Zablokuj", or "..." on a prayer request > "Zablokuj autora". Blocked users'
+  messages and prayer requests are hidden; the list is in Konto > Prywatność > Zablokowane osoby.
+- Every report notifies the church moderators by e-mail and push. They review reports in the web panel and can
+  remove the content or block the author's account; reports are handled within 24 hours.
+- Contact: Konto > Pomoc > Napisz do nas (lukasz@avenit.pl).
 
-Messenger and prayer wall are private to the members of a single church. Members can report content
-and block users; church administrators moderate it. [<- keep this paragraph only once reporting and
-blocking are implemented, see risk 1]
+Account deletion: Konto (Account) > Prywatność (Privacy) > Usuń konto (Delete account). The account is deleted
+immediately after password confirmation.
 
-Account deletion: Konto (Account) tab > Prywatność (Privacy) > Usuń konto (Delete account).
+Giving: donations go to the user's own church (a religious non-profit organization) and the payment is completed
+outside the app, in Safari, on the payment operator's page. The app sells no digital goods or services.
 ```
 
-## 7. Ryzyka odrzucenia — do decyzji przed wysyłką
+## 7. Wymagania Apple — co jest zrobione
 
-1. **Treści użytkowników bez zgłaszania i blokowania (wytyczna 1.2) — ryzyko wysokie.** Komunikator i ściana modlitwy
-   to UGC, a apka nie ma przycisku „Zgłoś” ani „Zablokuj użytkownika”. Apple wymaga dla UGC: filtrowania, zgłaszania
-   treści, blokowania użytkowników i publicznego kontaktu. Zalecenie przed wysyłką: „Zgłoś” na wiadomości i prośbie
-   modlitewnej (trafia do administratora kościoła), „Zablokuj” w profilu rozmówcy (ukrywa jego wiadomości) oraz
-   akceptacja regulaminu z zakazem treści obraźliwych.
-2. **Usuwanie konta (5.1.1(v)) — ryzyko średnie.** Apka linkuje do `avenit.pl/usun-konto`. To formularz prośby
-   przekazywanej administratorowi kościoła, a Apple preferuje usunięcie zainicjowane w apce i realizowane bez
-   kontaktu z obsługą. Argument dla recenzenta: apka nie zakłada kont (zakłada je kościół). Do poprawy na stronie:
-   tekst mówi tylko o Google Play („Ta strona dotyczy aplikacji Avenit (Google Play…)”), trzeba dopisać App Store.
-   Lepiej: przycisk „Usuń konto” w apce wysyłający żądanie przez API i od razu dezaktywujący konto.
-3. **Ofiary (3.2.2) — ryzyko niskie/średnie.** Płatność otwiera się w Safari (`Linking.openURL`), co jest zgodne z
-   wytyczną. Jeśli recenzent zakwestionuje formularz kwoty w apce, rozwiązaniem jest otwieranie całej strony ofiar
-   w Safari.
-4. **Polityka prywatności nie opisuje apki mobilnej.** Brakuje: tokenów push, dostępu do aparatu, zdjęć i mikrofonu,
-   lokalnego Face ID, operatora płatności i usuwania konta z apki. Apple sprawdza, czy polityka obejmuje dane
-   z etykiety (§3). Projekt sekcji do dopisania na `avenit.pl/polityka-prywatnosci` jest poniżej.
-5. **Język.** Interfejs mobilki jest w większości po polsku (`t()` obejmuje ~80 tekstów, ~60 plików ma polski
-   na sztywno), dlatego opis EN mówi to wprost, a lokalizacje systemowe to tylko PL i EN. Ukraiński dodaj do
-   `locales` po przetłumaczeniu apki.
+| Wytyczna | Stan |
+|---|---|
+| 1.2 Treści użytkowników | Zasady społeczności do akceptacji przy pierwszym uruchomieniu (`TermsGate`, fn `community-terms`), maskowanie wulgaryzmów przy zapisie (`lib/moderation.js`: wiadomości, modlitwy, tablice), zgłaszanie wiadomości (Komunikator+) i próśb (fn `content-report`), blokowanie osób + lista „Zablokowane osoby” w Koncie, e-mail i push do moderatorów przy każdym zgłoszeniu (+ alert do operatora `MODERATION_ALERT_EMAIL`), panel „Zgłoszenia” w webowym Komunikatorze z akcjami „Usuń treść” i „Zablokuj autora” (fn `moderate-content`), kontakt w Koncie → Pomoc |
+| 5.1.1(v) Usuwanie konta | W apce: Konto → Prywatność → Usuń konto, potwierdzenie hasłem, usunięcie natychmiast (fn `delete-my-account`); administratorzy kościoła dostają e-mail o kartotece. Strona `avenit.pl/usun-konto` mówi o App Store i o ścieżce w apce |
+| 5.1.1 Polityka prywatności | Nowy punkt 5 „Aplikacja mobilna” na `avenit.pl/polityka-prywatnosci` (push przez Expo/APNs/FCM, uprawnienia, Face ID lokalnie, płatności, brak śledzenia, moderacja, usuwanie konta) |
+| 2.1 Konto demo | Kościół `demo` + skrypt (§6) |
+| 3.2.2 Ofiary | Płatność w Safari (`Linking.openURL`); rola lider w demo nie ma modułu ofiar |
 
-### Projekt sekcji polityki prywatności (do dopisania jako nowy punkt)
+Do sprawdzenia przez Ciebie: zdanie o standardowych klauzulach umownych dla Expo w polityce prywatności (umowa
+powierzenia z Expo) — to deklaracja prawna, potwierdź ją przed publikacją.
 
-> **Aplikacja mobilna Avenit (iOS i Android).** Aplikacja służy członkom wspólnot korzystających z platformy Avenit.
-> Przetwarza dane konta (imię i nazwisko, e-mail, telefon, adres, zdjęcie profilowe) oraz treści, które dodajesz:
-> wiadomości tekstowe i głosowe, zdjęcia i pliki, prośby o modlitwę, zapisy, nieobecności i zadania. Aby wysyłać
-> powiadomienia, zapisujemy token powiadomień urządzenia (dostarczany przez Apple/Google za pośrednictwem usługi Expo).
-> Z aparatu, biblioteki zdjęć, mikrofonu i kalendarza aplikacja korzysta tylko po Twojej zgodzie i tylko w chwili, gdy
-> sam wybierasz tę funkcję. Odblokowanie Face ID / odciskiem palca odbywa się wyłącznie na urządzeniu, a dane
-> biometryczne nie są nam przekazywane. Płatności (ofiary) realizuje operator płatności na swojej stronie, a aplikacja
-> nie przetwarza danych kart. Aplikacja nie zawiera reklam ani narzędzi śledzących. Usunięcie konta możesz zlecić
-> w aplikacji (Konto → Prywatność → Usuń konto) lub na stronie avenit.pl/usun-konto.
+Język: interfejs mobilki jest w większości po polsku (`t()` obejmuje ~80 tekstów, ~60 plików ma polski na sztywno),
+dlatego opis EN mówi to wprost, a lokalizacje systemowe to tylko PL i EN. Ukraiński dodaj do `locales` po
+przetłumaczeniu apki.
 
 ## 8. Przy kolejnych wersjach
 
