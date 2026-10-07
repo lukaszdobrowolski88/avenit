@@ -3,7 +3,7 @@
 // (poprzednio klient czytał totp_secret z bazy — luka bezpieczeństwa).
 import { z } from 'zod';
 import { verifyPassword, hashPassword } from './passwords.js';
-import { verifyTOTP, consumeBackupCode, generateSecret } from './totp.js';
+import { verifyTOTP, consumeBackupCode, generateSecret, normalizeBackupCodes, backupCodesParam } from './totp.js';
 import {
   signAccessToken,
   newRefreshToken,
@@ -162,7 +162,7 @@ export default async function authRoutes(app) {
             ok = true;
             await req.db.query(
               `UPDATE app_users SET totp_backup_codes = $1 WHERE id = $2`,
-              [JSON.stringify(backup.updated), user.id]
+              [await backupCodesParam(req.db, backup.updated), user.id]
             );
           }
         }
@@ -643,7 +643,7 @@ export default async function authRoutes(app) {
       `UPDATE app_users SET totp_secret = $1, totp_enabled = true, totp_verified_at = now(),
               totp_backup_codes = $2
         WHERE id = $3`,
-      [String(secret), JSON.stringify(codes), req.user.id]
+      [String(secret), await backupCodesParam(req.db, codes), req.user.id]
     );
     return reply.send({ ok: true });
   });
@@ -662,7 +662,7 @@ export default async function authRoutes(app) {
     }
     await req.db.query(
       `UPDATE app_users SET totp_secret = NULL, totp_enabled = false, totp_verified_at = NULL,
-              totp_backup_codes = '[]'::jsonb
+              totp_backup_codes = NULL
         WHERE id = $1`,
       [req.user.id]
     );
@@ -675,7 +675,7 @@ export default async function authRoutes(app) {
       `SELECT totp_backup_codes FROM app_users WHERE id = $1`,
       [req.user.id]
     );
-    return reply.send({ codes: rows[0]?.totp_backup_codes || [] });
+    return reply.send({ codes: normalizeBackupCodes(rows[0]?.totp_backup_codes) });
   });
 
   // Kody zapasowe: regeneracja (wymaga poprawnego kodu TOTP).
@@ -693,7 +693,7 @@ export default async function authRoutes(app) {
       used: false,
     }));
     await req.db.query(`UPDATE app_users SET totp_backup_codes = $1 WHERE id = $2`, [
-      JSON.stringify(newCodes),
+      await backupCodesParam(req.db, newCodes),
       req.user.id,
     ]);
     return reply.send({ codes: newCodes.map((c) => c.code) });

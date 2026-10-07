@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 import { platformPool, getTenantPool } from '../db.js';
 import { verifyPassword } from './passwords.js';
-import { verifyTOTP, consumeBackupCode } from './totp.js';
+import { verifyTOTP, consumeBackupCode, backupCodesParam } from './totp.js';
 import { config } from '../config.js';
 
 const schema = z.object({
@@ -84,9 +84,10 @@ export default async function appLoginRoutes(app) {
           const backup = consumeBackupCode(match.user.totp_backup_codes, totpCode);
           if (backup.ok) {
             ok = true;
-            await getTenantPool(match.tenant.db_name).query(
+            const pool = getTenantPool(match.tenant.db_name);
+            await pool.query(
               `UPDATE app_users SET totp_backup_codes = $1 WHERE id = $2`,
-              [JSON.stringify(backup.updated), match.user.id]
+              [await backupCodesParam(pool, backup.updated), match.user.id]
             );
           }
         }
