@@ -3,7 +3,7 @@ import { X, Search, User, Users, Check, Megaphone } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
-import { normEmail } from '../utils/chatLogic';
+import { normEmail, sameEmail } from '../utils/chatLogic';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
@@ -49,14 +49,16 @@ export default function NewConversationModal({
       try {
         const { data, error } = await supabase
           .from('app_users')
-          .select('email, full_name, avatar_url')
-          .neq('email', currentUserEmail)
+          .select('email, full_name, avatar_url, status, is_active')
           .order('full_name');
 
         if (error) throw error;
-        setUsers(data || []);
+        // Jak w aplikacji: tylko aktywne konta (bez oczekujących i wyłączonych), bez mnie.
+        setUsers((data || []).filter(u => u.email && !sameEmail(u.email, currentUserEmail) &&
+          u.is_active !== false && (u.status ?? 'active') === 'active'));
       } catch (err) {
         console.error('Error fetching users:', err);
+        toast.error(err, { fallback: tr('Nie udało się wczytać listy osób. Spróbuj ponownie.') });
       } finally {
         setLoading(false);
       }

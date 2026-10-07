@@ -2,19 +2,54 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
 import { tr } from '../../../i18n';
-import { sortConversations, buildParticipantRows, findDirectConversation, sameEmail, emailPattern } from '../utils/chatLogic';
+import {
+  sortConversations, buildParticipantRows, findDirectConversation, sameEmail, normEmail,
+  emailPattern, summarizeMessages, conversationsMissingLast, readSince, readMarkTimestamp, applyIncomingMessage,
+} from '../utils/chatLogic';
+import { openOrCreateDirect } from '../utils/directConversation';
 
-// Cache konwersacji na poziomie modułu
-const CACHE_KEY = 'komunikator_conversations_cache';
+// Cache konwersacji na poziomie modułu (v2: liczniki i podglądy z nowej logiki)
+const CACHE_KEY = 'komunikator_conversations_cache_v2';
+
+// Ostatnie wiadomości listy: jedna paczka najnowszych (lekkie kolumny). Gdy paczka jest pełna,
+// rozmowom bez wiadomości w paczce dociągamy ostatnią osobno (zwykle zero zapytań).
+const RECENT_LIMIT = 800;
+const LAST_MSG_COLS = 'id, conversation_id, content, sender_email, created_at, message_type, attachments';
+
+async function fetchRecentMessages(ids) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select(LAST_MSG_COLS)
+    .in('conversation_id', ids)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(RECENT_LIMIT);
+  if (error) throw error;
+  const rows = data || [];
+  const missing = conversationsMissingLast(rows, ids, RECENT_LIMIT);
+  if (!missing.length) return rows;
+  const extra = await Promise.all(missing.map(id => supabase
+    .from('messages')
+    .select(LAST_MSG_COLS)
+    .eq('conversation_id', id)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(1)));
+  return rows.concat(...extra.map(r => r.data || []));
+}
 
 // Kolejność zapisu nowej rozmowy jest wymuszona przez serwer (komunikator.js):
 //  1) rozmowa (created_by = zalogowany), 2) skład — twórca jako 'admin' (pierwszy skład wolno dodać
 //  tylko do pustej rozmowy albo jako jej twórca), 3) dopiero potem wiadomości (pisze tylko uczestnik).
+// Rozmowa 1:1 z osobą, z którą już jest rozmowa, nie powstaje drugi raz (serwer: 409 DIRECT_EXISTS).
 
 export default function useConversations(userEmail, opts = {}) {
   // Uprawnienia z roli: zmiana własnego wiersza uczestnika (przeczytane, gwiazdka, przypięcie,
   // archiwum, wyciszenie). Bez nich nie wysyłamy zapisów, które i tak skończyłyby się 403.
   const canManageOwn = opts.canManageOwn !== false;
+  // Otwarta rozmowa — nowa wiadomość w niej nie podbija licznika nieprzeczytanych.
+  const openIdRef = useRef(opts.openConversationId ?? null);
+  openIdRef.current = opts.openConversationId ?? null;
 
   // Inicjalizuj z cache
   const [conversations, setConversations] = useState(() => {
@@ -48,7 +83,7 @@ export default function useConversations(userEmail, opts = {}) {
       // Pobierz konwersacje użytkownika z uczestnikami i ostatnią wiadomością
       const { data: participantData, error: participantError } = await supabase
         .from('conversation_participants')
-        .select('conversation_id, last_read_at, muted, role, starred, archived, pinned')
+        .select('conversation_id, last_read_at, joined_at, muted, role, starred, archived, pinned')
         .ilike('user_email', emailPattern(userEmail));
 
       if (participantError) throw participantError;
@@ -92,8 +127,9 @@ export default function useConversations(userEmail, opts = {}) {
         participantsByConv[p.conversation_id].push(p);
       });
 
-      // Pobierz dane użytkowników (imiona)
-      const allEmails = [...new Set((allParticipants || []).map(p => p.user_email))];
+      // Pobierz dane użytkowników (imiona, zdjęcia) — dopasowanie bez względu na wielkość liter
+      // (wiersz uczestnika bywa zapisany inaczej niż konto).
+      const allEmails = [...new Set((allParticipants || []).flatMap(p => [p.user_email, normEmail(p.user_email)]).filter(Boolean))];
       const { data: usersData } = allEmails.length
         ? await supabase
           .from('app_users')
@@ -103,31 +139,24 @@ export default function useConversations(userEmail, opts = {}) {
 
       const usersMap = {};
       (usersData || []).forEach(u => {
-        usersMap[u.email] = u;
+        usersMap[normEmail(u.email)] = u;
       });
+      const userOf = (email) => usersMap[normEmail(email)];
 
-      // Ostatnie wiadomości dla wszystkich rozmów jednym zapytaniem (tylko potrzebne kolumny)
-      const { data: allLastMessages } = await supabase
-        .from('messages')
-        .select('conversation_id, content, sender_email, created_at, message_type')
-        .in('conversation_id', conversationIds)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
+      // Ostatnie wiadomości i liczniki nieprzeczytanych: jedna paczka najnowszych wiadomości.
+      // Licznik = cudze wiadomości nowsze niż moje „przeczytane” (last_read_at) — tak samo w aplikacji.
+      const allLastMessages = await fetchRecentMessages(conversationIds);
 
       if (seq !== fetchSeqRef.current) return conversationsRef.current;
 
-      // Grupuj ostatnie wiadomości po konwersacji (bierzemy tylko pierwszą = najnowszą)
-      const lastMessageByConv = {};
-      (allLastMessages || []).forEach(msg => {
-        if (!lastMessageByConv[msg.conversation_id]) {
-          lastMessageByConv[msg.conversation_id] = msg;
-        }
-      });
+      const sinceByConv = {};
+      participantData.forEach(p => { sinceByConv[String(p.conversation_id)] = readSince(p); });
+      const { last: lastMessageByConv, unread: unreadByConv } = summarizeMessages(allLastMessages, userEmail, sinceByConv);
 
       // Mapuj konwersacje z danymi
       const conversationsWithMessages = (convData || []).map(conv => {
         const myParticipation = participantMap[conv.id];
-        const lastMsg = lastMessageByConv[conv.id];
+        const lastMsg = lastMessageByConv[String(conv.id)] || null;
         const participants = participantsByConv[conv.id] || [];
 
         // Nazwa konwersacji (dla direct - imię drugiej osoby)
@@ -137,19 +166,9 @@ export default function useConversations(userEmail, opts = {}) {
         if (conv.type === 'direct') {
           const otherParticipant = participants.find(p => !sameEmail(p.user_email, userEmail));
           if (otherParticipant) {
-            const otherUser = usersMap[otherParticipant.user_email];
+            const otherUser = userOf(otherParticipant.user_email);
             displayName = otherUser?.full_name || otherParticipant.user_email;
             displayAvatar = otherUser?.avatar_url;
-          }
-        }
-
-        // Znacznik nieprzeczytanych: ostatnia cudza wiadomość nowsza niż moje „przeczytane”.
-        let hasUnread = false;
-        if (lastMsg && !sameEmail(lastMsg.sender_email, userEmail)) {
-          if (!myParticipation?.last_read_at) {
-            hasUnread = true;
-          } else {
-            hasUnread = new Date(lastMsg.created_at) > new Date(myParticipation.last_read_at);
           }
         }
 
@@ -159,10 +178,11 @@ export default function useConversations(userEmail, opts = {}) {
           displayAvatar,
           participants: participants.map(p => ({
             ...p,
-            ...usersMap[p.user_email]
+            ...(userOf(p.user_email) || {}),
+            user_email: p.user_email,
           })),
           lastMessage: lastMsg,
-          unreadCount: hasUnread ? 1 : 0, // Uproszczone - pokazuje czy są nieprzeczytane
+          unreadCount: unreadByConv[String(conv.id)] || 0,
           muted: myParticipation?.muted || false,
           starred: myParticipation?.starred || false,
           archived: myParticipation?.archived || false,
@@ -196,23 +216,29 @@ export default function useConversations(userEmail, opts = {}) {
       .single();
     if (convError) throw convError;
 
-    // .select() — żeby serwer rozesłał zmianę (realtime) do zaproszonych osób.
+    // .select() — żeby serwer rozesłał zmianę (realtime) do zaproszonych osób. .silent(): błąd
+    // (np. 409 „rozmowa już istnieje”) obsługuje wywołujący — bez drugiego, ogólnego komunikatu.
     const { error: partError } = await supabase
       .from('conversation_participants')
       .insert(buildParticipantRows(conv.id, userEmail, memberEmails, participantOpts))
-      .select('conversation_id, user_email');
+      .select('conversation_id, user_email')
+      .silent();
     if (partError) throw partError;
 
     await fetchConversations();
     return conv.id;
   };
 
-  // Tworzenie konwersacji direct. Zwraca { id, created } (created=false → rozmowa już istniała).
+  // Tworzenie konwersacji direct (albo otwarcie istniejącej — także z archiwum). Zwraca { id, created }.
+  // Wspólna logika z pulpitem i aplikacją: utils/directConversation.js.
   const createDirectConversation = async (otherUserEmail) => {
-    const existing = findDirectConversation(conversationsRef.current, userEmail, otherUserEmail);
-    if (existing) return { id: existing.id, created: false };
-    const id = await insertConversation({ type: 'direct' }, [otherUserEmail], { allAdmins: true });
-    return { id, created: true };
+    const local = findDirectConversation(conversationsRef.current, userEmail, otherUserEmail);
+    const result = await openOrCreateDirect(userEmail, otherUserEmail, { canManageOwn, knownId: local?.id || null });
+    if (!result.created) {
+      setConversations(prev => prev.map(c => (c.id === result.id ? { ...c, archived: false } : c)));
+    }
+    if (result.created || !conversationsRef.current.some(c => c.id === result.id)) await fetchConversations();
+    return result;
   };
 
   // Tworzenie konwersacji grupowej.
@@ -258,16 +284,19 @@ export default function useConversations(userEmail, opts = {}) {
     return true;
   };
 
-  // Oznacz konwersację jako przeczytaną (zapis w tle — bez komunikatów)
-  const markAsRead = useCallback(async (conversationId) => {
+  // Oznacz konwersację jako przeczytaną (zapis w tle — bez komunikatów). latestCreatedAt — data
+  // ostatniej wiadomości w wątku: „przeczytane” nie może być wcześniejsze (spóźniony zegar komputera).
+  const markAsRead = useCallback(async (conversationId, latestCreatedAt = null) => {
     if (!conversationId || !userEmail) return;
+    const conv = conversationsRef.current.find(c => c.id === conversationId);
+    const readAt = readMarkTimestamp(latestCreatedAt || conv?.lastMessage?.created_at);
     setConversations(prev =>
-      prev.map(c => (c.id === conversationId ? { ...c, unreadCount: 0 } : c))
+      prev.map(c => (c.id === conversationId ? { ...c, unreadCount: 0, lastReadAt: readAt } : c))
     );
     if (!canManageOwn) return;
     const { error: readError } = await supabase
       .from('conversation_participants')
-      .update({ last_read_at: new Date().toISOString() })
+      .update({ last_read_at: readAt })
       .eq('conversation_id', conversationId)
       .ilike('user_email', emailPattern(userEmail))
       .silent();
@@ -379,9 +408,23 @@ export default function useConversations(userEmail, opts = {}) {
             .silent()
             .then(() => {}, () => {});
         }
-        // Odśwież konwersacje przy nowej wiadomości (z debounce)
+        // Od razu: rozmowa na górę, nowy podgląd, licznik, wyjście z archiwum (jak serwer).
+        // Potem pełne odświeżenie (z debounce) — m.in. dla rozmów, których jeszcze nie ma na liście.
+        if (msg?.conversation_id) {
+          setConversations(prev => {
+            const next = applyIncomingMessage(prev, msg, userEmail, { openId: openIdRef.current });
+            if (next !== prev) saveCache(next);
+            return next;
+          });
+        }
         debouncedRefresh();
       })
+      // Edycja / usunięcie wiadomości — podgląd ostatniej wiadomości na liście może się zmienić.
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages'
+      }, () => debouncedRefresh())
       // Dodanie do rozmowy / usunięcie ze składu / zmiana roli → odśwież listę.
       .on('postgres_changes', {
         event: '*',
@@ -402,7 +445,7 @@ export default function useConversations(userEmail, opts = {}) {
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [userEmail, debouncedRefresh]);
+  }, [userEmail, debouncedRefresh, saveCache]);
 
   useEffect(() => {
     fetchConversations();

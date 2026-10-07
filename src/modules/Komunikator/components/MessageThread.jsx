@@ -21,7 +21,7 @@ import usePinnedMessages from '../hooks/usePinnedMessages';
 import useMediaGallery from '../hooks/useMediaGallery';
 import useMessageSearch from '../hooks/useMessageSearch';
 import { usePresence } from '../../../hooks/usePresence';
-import { groupMessagesByDate } from '../utils/messageHelpers';
+import { groupMessagesByDate, formatDateSeparator } from '../utils/messageHelpers';
 import { canPostIn, sameEmail } from '../utils/chatLogic';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
@@ -99,17 +99,22 @@ export default function MessageThread({
     return firstOther?.id || null;
   }, [messages, initialLastRead, userEmail]);
 
+  // Druga osoba rozmowy 1:1 (status w nagłówku) + nadawcy wiadomości (status przy awatarze).
+  const peerEmail = conversation?.type === 'direct'
+    ? conversation.participants?.find(p => !sameEmail(p.user_email, userEmail))?.user_email || null
+    : null;
   const senderEmails = useMemo(() => {
     const emails = new Set();
     messages.forEach(msg => { if (msg.sender_email && !sameEmail(msg.sender_email, userEmail)) emails.add(msg.sender_email); });
+    if (peerEmail) emails.add(peerEmail);
     return Array.from(emails);
-  }, [messages, userEmail]);
+  }, [messages, userEmail, peerEmail]);
   const { getStatus } = usePresence(senderEmails);
 
   const typingUserNames = useMemo(() => {
     if (!typingUsers.length || !conversation?.participants) return [];
     return typingUsers.map(email => {
-      const participant = conversation.participants.find(p => p.user_email === email);
+      const participant = conversation.participants.find(p => sameEmail(p.user_email, email));
       return participant?.full_name || email.split('@')[0];
     });
   }, [typingUsers, conversation?.participants]);
@@ -117,7 +122,7 @@ export default function MessageThread({
   const handleNewMessage = useCallback(async (newMessage) => {
     if (!sameEmail(newMessage.sender_email, userEmail)) {
       await addMessage(newMessage);
-      onMarkAsRead?.(conversation?.id);
+      onMarkAsRead?.(conversation?.id, newMessage.created_at);
     }
   }, [addMessage, userEmail, onMarkAsRead, conversation?.id]);
 
@@ -166,8 +171,11 @@ export default function MessageThread({
     }
   }, [loadMore, messages]);
 
+  // Wejście w rozmowę = przeczytane (znacznik nie wcześniejszy niż ostatnia wiadomość w wątku).
+  const newestCreatedAt = messages[messages.length - 1]?.created_at || null;
   useEffect(() => {
-    if (conversation?.id && conversation.unreadCount > 0) onMarkAsRead?.(conversation.id);
+    if (conversation?.id && conversation.unreadCount > 0) onMarkAsRead?.(conversation.id, newestCreatedAt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation?.id, conversation?.unreadCount, onMarkAsRead]);
 
   // Potwierdzenia: pobierz dla wczytanych wiadomości i oznacz cudze jako przeczytane (każdą raz).
@@ -335,6 +343,7 @@ export default function MessageThread({
         onOpenMediaGallery={() => setShowMediaGallery(true)}
         onOpenSearch={() => setShowSearch(true)}
         showBackButton={true}
+        peerStatus={peerEmail ? getStatus(peerEmail) : null}
       />
 
       {/* Baner kanału ogłoszeń */}
@@ -386,7 +395,7 @@ export default function MessageThread({
                 <div className="flex items-center justify-center my-6">
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent" />
                   <div className="mx-4 px-4 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{date}</span>
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{formatDateSeparator(msgs[0]?.created_at) || date}</span>
                   </div>
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent" />
                 </div>
@@ -396,7 +405,7 @@ export default function MessageThread({
                     const isOwn = sameEmail(message.sender_email, userEmail);
                     const prevMessage = msgs[idx - 1];
                     const showAvatar = !prevMessage ||
-                      prevMessage.sender_email !== message.sender_email ||
+                      !sameEmail(prevMessage.sender_email, message.sender_email) ||
                       new Date(message.created_at) - new Date(prevMessage.created_at) > 5 * 60 * 1000;
 
                     return (

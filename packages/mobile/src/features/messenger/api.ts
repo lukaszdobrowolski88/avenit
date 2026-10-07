@@ -4,6 +4,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { friendlyError } from "../../lib/errors";
 import { toast } from "../../lib/toast";
+import {
+  normEmail,
+  sameEmail,
+  emailPattern,
+  summarizeMessages,
+  conversationsMissingLast,
+  readSince,
+  readMarkTimestamp,
+  sortConversations,
+  applyIncomingMessage,
+  type ConversationFilter,
+} from "./logic";
 
 // Kolejność zapisu wymuszona przez serwer (packages/api/src/dataapi/komunikator.js), jak web:
 //  1) rozmowa (created_by = zalogowany), 2) skład — twórca jako 'admin', cały w JEDNYM zapisie
@@ -11,12 +23,9 @@ import { toast } from "../../lib/toast";
 //  tylko uczestnik; w kanale „tylko administratorzy” — administrator rozmowy).
 // Zapisy, które mają dotrzeć do innych przez realtime, idą z `.select()`.
 
-// Porównanie e-maili bez względu na wielkość liter (serwer porównuje lower()).
-export const normEmail = (e: string | null | undefined) => String(e ?? "").trim().toLowerCase();
-export const sameEmail = (a: string | null | undefined, b: string | null | undefined) =>
-  !!a && !!b && normEmail(a) === normEmail(b);
-// Wzorzec do .ilike() dla dokładnego e-maila bez względu na wielkość liter (% i _ dosłownie).
-export const emailPattern = (e: string) => String(e ?? "").replace(/[\\%_]/g, "\\$&");
+// Porównanie e-maili i wzorzec ILIKE — wspólne z webem (logic.ts ↔ chatLogic.js).
+export { normEmail, sameEmail, emailPattern };
+export type { ConversationFilter };
 
 // Czy mogę pisać w rozmowie (kanał „tylko administratorzy”: tylko administratorzy rozmowy).
 export const canPostIn = (
@@ -36,7 +45,10 @@ export interface ConversationListItem {
   name: string | null;
   ministry_key: string | null;
   avatar_url: string | null;
+  created_by?: string | null;
+  created_at?: string | null;
   updated_at: string;
+  last_message_at?: string | null;
   last_read_at: string | null;
   starred?: boolean;
   archived?: boolean;
@@ -51,9 +63,13 @@ export interface ConversationListItem {
   /** Dla type='direct' — email drugiego uczestnika (nie mój). */
   peer_email?: string | null;
   last_message?: {
+    id?: string;
+    conversation_id?: string;
     content: string | null;
     created_at: string;
     sender_email: string;
+    message_type?: string | null;
+    attachments?: MessageAttachment[] | null;
   } | null;
 }
 
@@ -103,80 +119,57 @@ export const memberPhotoUrl = (
 ): string | null => safeGet(emails, email)?.photoUrl ?? null;
 
 /**
- * Pobiera członków po ich emailach. Wynik jako Record email → MemberLite,
- * żeby był serializowalny przez AsyncStorage persister.
+ * Imiona i zdjęcia osób po e-mailach. Wynik jako Record email → MemberLite (serializowalny przez
+ * AsyncStorage persister). Zdjęcie — jak w webie — z konta (app_users.avatar_url; tabela members
+ * zdjęć nie ma). Imię: kartoteka członków (gdy rola ją widzi), inaczej pełna nazwa z konta.
+ * Dopasowanie bez względu na wielkość liter (wiersze uczestników bywają zapisane inaczej niż konto).
  */
 export const useMembersByEmails = (emails: string[]) => {
   const uniqEmails = Array.from(new Set(emails.filter(Boolean)));
   return useQuery({
-    // v2 — bump po dodaniu fallbacku do app_users (wymusza refetch przy persistowanym cache).
-    queryKey: ["membersByEmails", "v2", uniqEmails.slice().sort().join(",")],
+    // v3 — zdjęcia z app_users dla wszystkich (wymusza refetch przy persistowanym cache).
+    queryKey: ["membersByEmails", "v3", uniqEmails.slice().sort().join(",")],
     queryFn: async (): Promise<MemberMap> => {
       if (uniqEmails.length === 0) return {};
-      // Retry dla "pustych" wpisów (firstName=null, lastName=null) — może w międzyczasie pojawiły
-      // się dane w app_users.
-      const missing = uniqEmails.filter((e) => {
-        const cached = memberCache.get(e);
-        if (!cached) return true;
-        return !cached.firstName && !cached.lastName;
-      });
+      const missing = uniqEmails.filter((e) => !memberCache.has(normEmail(e)));
       if (missing.length > 0) {
-        // Najpierw members (mają photo_url + first_name/last_name). Zwykły członek
-        // nie ma dostępu do `members` (403) — NIE przerywaj, spadnij na app_users
-        // (dozwolone dla każdego zalogowanego), inaczej czat pokazuje same e-maile.
-        const { data: membersRows } = await supabase
-          .from("members")
-          .select("id, email, first_name, last_name")
-          .in("email", missing);
-        for (const row of (membersRows ?? []) as any[]) {
-          if (row.email) {
-            memberCache.set(row.email, {
-              email: row.email,
-              firstName: row.first_name ?? null,
-              lastName: row.last_name ?? null,
-              photoUrl: row.photo_url ?? null,
-              memberId: row.id ?? null,
-            });
-          }
+        const variants = Array.from(new Set(missing.flatMap((e) => [e, normEmail(e)])));
+        // Zwykły członek nie ma dostępu do `members` (403) — wtedy same dane z kont.
+        const [membersRes, usersRes] = await Promise.all([
+          supabase.from("members").select("id, email, first_name, last_name").in("email", variants),
+          supabase.from("app_users").select("email, full_name, avatar_url").in("email", variants),
+        ]);
+        const membersBy = new Map<string, any>();
+        for (const row of (((membersRes as any).data ?? []) as any[])) {
+          if (row.email && !membersBy.has(normEmail(row.email))) membersBy.set(normEmail(row.email), row);
         }
-        // Dla brakujących — fallback na app_users (full_name → split na first/last).
-        const stillMissing = missing.filter((e) => !memberCache.has(e));
-        if (stillMissing.length > 0) {
-          const { data: usersRows } = await supabase
-            .from("app_users")
-            .select("email, full_name, avatar_url")
-            .in("email", stillMissing);
-          for (const row of (usersRows ?? []) as any[]) {
-            if (!row.email) continue;
-            const full = (row.full_name ?? "").trim();
-            const parts = full.split(/\s+/).filter(Boolean);
-            const firstName = parts[0] ?? null;
-            const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
-            memberCache.set(row.email, {
-              email: row.email,
-              firstName,
-              lastName,
-              photoUrl: row.avatar_url ?? null,
-              memberId: null,
-            });
-          }
+        const usersBy = new Map<string, any>();
+        for (const row of (((usersRes as any).data ?? []) as any[])) {
+          if (row.email && !usersBy.has(normEmail(row.email))) usersBy.set(normEmail(row.email), row);
         }
-        // Cache miss-and-not-found jako null entries (zapobiega ponownym requestom).
         for (const e of missing) {
-          if (!memberCache.has(e)) {
-            memberCache.set(e, {
-              email: e,
-              firstName: null,
-              lastName: null,
-              photoUrl: null,
-              memberId: null,
-            });
+          const k = normEmail(e);
+          const m = membersBy.get(k);
+          const u = usersBy.get(k);
+          let firstName: string | null = m?.first_name ?? null;
+          let lastName: string | null = m?.last_name ?? null;
+          if (!firstName && !lastName && u?.full_name) {
+            const parts = String(u.full_name).trim().split(/\s+/).filter(Boolean);
+            firstName = parts[0] ?? null;
+            lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
           }
+          memberCache.set(k, {
+            email: e,
+            firstName,
+            lastName,
+            photoUrl: u?.avatar_url ?? null,
+            memberId: m?.id ?? null,
+          });
         }
       }
       const out: MemberMap = {};
       for (const e of uniqEmails) {
-        const m = memberCache.get(e);
+        const m = memberCache.get(normEmail(e));
         if (m) out[e] = m;
       }
       return out;
@@ -186,30 +179,44 @@ export const useMembersByEmails = (emails: string[]) => {
   });
 };
 
-export type ConversationFilter =
-  | "all"
-  | "ministry"
-  | "direct"
-  | "starred"
-  | "archived";
+// Kanały służb — klucze jak w bazie (conversations.ministry_key) i nazwy jak w webie
+// (messageHelpers.ministryKeyToName). Ikona kanału neutralna (marka: bez tęczy kolorów).
+const MINISTRY_TILE = { tint: "#2A2312", bg: "#ECE8DE" };
+export const MINISTRY_CHANNEL_META: Record<string, { label: string; tint: string; bg: string }> = {
+  worship_team: { label: "Zespół Uwielbienia", ...MINISTRY_TILE },
+  media_team: { label: "Media Team", ...MINISTRY_TILE },
+  atmosfera_team: { label: "Atmosfera Team", ...MINISTRY_TILE },
+  kids_ministry: { label: "Małe Avenit", ...MINISTRY_TILE },
+  home_groups: { label: "Liderzy Grup Domowych", ...MINISTRY_TILE },
+  youth_ministry: { label: "Młodzieżówka", ...MINISTRY_TILE },
+  prayer_team: { label: "Grupa Modlitewna", ...MINISTRY_TILE },
+  welcome_team: { label: "Zespół Powitalny", ...MINISTRY_TILE },
+  small_groups: { label: "Grupy Domowe", ...MINISTRY_TILE },
+  admin_team: { label: "Administracja", ...MINISTRY_TILE },
+};
 
-export const MINISTRY_CHANNEL_META: Record<
-  string,
-  { label: string; tint: string; bg: string }
-> = {
-  worship: { label: "Worship", tint: "#6B6557", bg: "#ECE8DE" },
-  media: { label: "Media", tint: "#FFBE0B", bg: "#FFF1C2" },
-  atmosfera: { label: "Atmosfera", tint: "#6B6557", bg: "#ECE8DE" },
-  kids: { label: "Dzieci", tint: "#FFBE0B", bg: "#FFF1C2" },
-  groups: { label: "Grupy domowe", tint: "#6B6557", bg: "#ECE8DE" },
-  mlodziezowka: { label: "Młodzieżówka", tint: "#6B6557", bg: "#ECE8DE" },
+// Nazwa rozmowy na liście i w nagłówku — jak w webie: kanał służby po nazwie służby,
+// rozmowa 1:1 po drugiej osobie, reszta po nazwie.
+export const conversationTitle = (
+  c: { type?: string | null; name?: string | null; ministry_key?: string | null; peer_email?: string | null },
+  members: MemberMap,
+): string => {
+  if (c.type === "ministry") {
+    return (c.ministry_key ? MINISTRY_CHANNEL_META[c.ministry_key]?.label : null) || c.name || c.ministry_key || "Kanał służby";
+  }
+  if (c.type === "direct") return c.peer_email ? memberDisplayName(members, c.peer_email) : c.name || "Rozmowa";
+  return c.name || (c.type === "announcement" ? "Kanał ogłoszeń" : "Grupa");
 };
 
 export interface MessageAttachment {
   url: string;
   name: string;
   type: string;
+  /** Rozmiar pliku w bajtach (starsze nagrania z telefonu: długość w ms — patrz voiceDurationMs). */
   size?: number;
+  /** Głosówka: długość w sekundach (jak web). */
+  duration?: number;
+  isVoiceMessage?: boolean;
 }
 
 export type MessageType = "text" | "poll" | "prayer" | "event" | "system";
@@ -246,6 +253,8 @@ export interface MessageRow {
   message_type?: MessageType;
   metadata?: Record<string, any> | null;
   mentions?: string[] | null;
+  /** Przekazana wiadomość — id oryginału (jak web). */
+  forwarded_from?: string | null;
 }
 
 // Jak web (MessageBubble): edytować można własną wiadomość tekstową z treścią — bez limitu
@@ -257,142 +266,129 @@ export const canEditMessage = (msg: MessageRow, userEmail: string | null): boole
   return !!msg.content;
 };
 
+// Ostatnie wiadomości listy: jedna paczka najnowszych (lekkie kolumny); gdy paczka jest pełna,
+// rozmowom bez wiadomości w paczce dociągamy ostatnią osobno (zwykle zero zapytań). Jak web.
+const RECENT_LIMIT = 800;
+const LAST_MSG_COLS = "id, conversation_id, content, sender_email, created_at, message_type, attachments";
+
+const fetchRecentMessages = async (ids: string[]): Promise<any[]> => {
+  const { data, error } = await supabase
+    .from("messages")
+    .select(LAST_MSG_COLS)
+    .in("conversation_id", ids)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(RECENT_LIMIT);
+  if (error) throw error;
+  const rows = (data ?? []) as any[];
+  const missing = conversationsMissingLast(rows, ids, RECENT_LIMIT);
+  if (!missing.length) return rows;
+  const extra = await Promise.all(
+    missing.map((id) =>
+      supabase
+        .from("messages")
+        .select(LAST_MSG_COLS)
+        .eq("conversation_id", id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1),
+    ),
+  );
+  return rows.concat(...extra.map((r: any) => (r.data ?? []) as any[]));
+};
+
+export const conversationsKey = (userEmail: string | null) => ["conversations", userEmail] as const;
+
 export const useConversations = (userEmail: string | null) =>
   useQuery({
-    queryKey: ["conversations", userEmail],
+    queryKey: conversationsKey(userEmail),
     queryFn: async (): Promise<ConversationListItem[]> => {
       if (!userEmail) return [];
-      // Konwersacje, w których jestem uczestnikiem (z metadata: starred/archived/muted).
+      // Rozmowy, w których jestem (z moimi ustawieniami: ulubione/archiwum/wyciszenie/przypięcie).
       // ilike — wiersz uczestnika bywa zapisany inną wielkością liter (np. z tabeli zespołu).
       const { data: parts, error: partsErr } = await supabase
         .from("conversation_participants")
-        .select("conversation_id, last_read_at, starred, archived, muted, pinned, role")
+        .select("conversation_id, last_read_at, joined_at, starred, archived, muted, pinned, role")
         .ilike("user_email", emailPattern(userEmail));
       if (partsErr) throw partsErr;
-      const ids = (parts ?? []).map((p: any) => p.conversation_id);
-      const lastReadByConv = new Map<string, string | null>(
-        (parts ?? []).map((p: any) => [p.conversation_id, p.last_read_at ?? null]),
-      );
-      const flagsByConv = new Map<
-        string,
-        { starred: boolean; archived: boolean; muted: boolean; pinned: boolean; role: string | null }
-      >(
-        (parts ?? []).map((p: any) => [
-          p.conversation_id,
-          {
-            starred: !!p.starred,
-            archived: !!p.archived,
-            muted: !!p.muted,
-            pinned: !!p.pinned,
-            role: p.role ?? null,
-          },
-        ]),
-      );
+      const mine = (parts ?? []) as any[];
+      const ids = mine.map((p) => String(p.conversation_id));
       if (ids.length === 0) return [];
+      const myByConv = new Map<string, any>(mine.map((p) => [String(p.conversation_id), p]));
 
       const { data: convs, error: convErr } = await supabase
         .from("conversations")
-        .select("id, type, name, ministry_key, avatar_url, updated_at, description, posting_policy")
-        .in("id", ids)
-        .order("updated_at", { ascending: false });
+        .select("id, type, name, ministry_key, avatar_url, created_by, created_at, updated_at, last_message_at, description, posting_policy")
+        .in("id", ids);
       if (convErr) throw convErr;
 
-      // Ostatnie wiadomości — jeden round-trip per konwersacja byłby za drogi; pobierz wszystkie najnowsze przez RPC byłoby idealne,
-      // ale dla MVP pobieramy je tylko dla widocznych (do 50).
-      const visible = (convs ?? []).slice(0, 50);
-      const visibleIds = visible.map((c: any) => c.id);
-      const { data: messages, error: msgsErr } = await supabase
-        .from("messages")
-        .select("conversation_id, content, created_at, sender_email")
-        .in("conversation_id", visibleIds)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
-      if (msgsErr) throw msgsErr;
+      // Ostatnia wiadomość i licznik nieprzeczytanych — ta sama logika co web (logic.ts):
+      // cudze wiadomości nowsze niż moje „przeczytane” (last_read_at, bez niego — dołączenie).
+      const messages = await fetchRecentMessages(ids);
+      const sinceByConv = new Map<string, unknown>(mine.map((p) => [String(p.conversation_id), readSince(p)]));
+      const { last, unread } = summarizeMessages(messages, userEmail, sinceByConv);
 
-      const lastByConv = new Map<string, any>();
-      const allMessagesByConv = new Map<string, any[]>();
-      for (const m of messages ?? []) {
-        const cid = (m as any).conversation_id;
-        if (!lastByConv.has(cid)) lastByConv.set(cid, m);
-        const arr = allMessagesByConv.get(cid) ?? [];
-        arr.push(m);
-        allMessagesByConv.set(cid, arr);
-      }
-
-      // Unread count = wiadomości nowsze niż last_read_at, NIE od mnie.
-      const unreadByConv = new Map<string, number>();
-      for (const c of visible as any[]) {
-        const cid = c.id;
-        const lastRead = lastReadByConv.get(cid);
-        const lastReadMs = lastRead ? new Date(lastRead).getTime() : 0;
-        const all = allMessagesByConv.get(cid) ?? [];
-        const count = all.filter(
-          (m: any) =>
-            !sameEmail(m.sender_email, userEmail) &&
-            new Date(m.created_at).getTime() > lastReadMs,
-        ).length;
-        unreadByConv.set(cid, count);
-      }
-
-      // Liczba uczestników per konwersacja + dla direct - email drugiego uczestnika.
+      // Liczba uczestników + dla rozmowy 1:1 e-mail drugiej osoby.
       const { data: allParts, error: allPartsErr } = await supabase
         .from("conversation_participants")
         .select("conversation_id, user_email")
-        .in("conversation_id", visibleIds);
+        .in("conversation_id", ids);
       if (allPartsErr) throw allPartsErr;
       const partsCountByConv = new Map<string, number>();
       const peerByConv = new Map<string, string>();
       for (const r of (allParts ?? []) as any[]) {
-        partsCountByConv.set(
-          r.conversation_id,
-          (partsCountByConv.get(r.conversation_id) ?? 0) + 1,
-        );
-        // Pierwszy znaleziony uczestnik różny od mnie — to "peer" dla direct.
-        if (r.user_email && !sameEmail(r.user_email, userEmail) && !peerByConv.has(r.conversation_id)) {
-          peerByConv.set(r.conversation_id, r.user_email);
+        const cid = String(r.conversation_id);
+        partsCountByConv.set(cid, (partsCountByConv.get(cid) ?? 0) + 1);
+        if (r.user_email && !sameEmail(r.user_email, userEmail) && !peerByConv.has(cid)) {
+          peerByConv.set(cid, r.user_email);
         }
       }
 
-      const result: ConversationListItem[] = visible.map((c: any) => {
-        const flags = flagsByConv.get(c.id) ?? {
-          starred: false,
-          archived: false,
-          muted: false,
-          pinned: false,
-          role: null,
-        };
+      const result: ConversationListItem[] = ((convs ?? []) as any[]).map((c) => {
+        const cid = String(c.id);
+        const me = myByConv.get(cid) ?? {};
         return {
-          id: c.id,
+          id: cid,
           type: c.type,
           name: c.name,
           ministry_key: c.ministry_key,
           avatar_url: c.avatar_url,
+          created_by: c.created_by ?? null,
+          created_at: c.created_at ?? null,
           updated_at: c.updated_at,
-          last_read_at: lastReadByConv.get(c.id) ?? null,
-          starred: flags.starred,
-          archived: flags.archived,
-          muted: flags.muted,
-          pinned: flags.pinned,
+          last_message_at: c.last_message_at ?? null,
+          last_read_at: me.last_read_at ?? null,
+          starred: !!me.starred,
+          archived: !!me.archived,
+          muted: !!me.muted,
+          pinned: !!me.pinned,
           posting_policy: (c.posting_policy as "everyone" | "admins") ?? "everyone",
-          my_role: flags.role,
+          my_role: me.role ?? null,
           description: c.description ?? null,
-          unread_count: unreadByConv.get(c.id) ?? 0,
-          participants_count: partsCountByConv.get(c.id) ?? 0,
-          peer_email: c.type === "direct" ? peerByConv.get(c.id) ?? null : null,
-          last_message: lastByConv.get(c.id) ?? null,
+          unread_count: unread[cid] ?? 0,
+          participants_count: partsCountByConv.get(cid) ?? 0,
+          peer_email: c.type === "direct" ? peerByConv.get(cid) ?? null : null,
+          last_message: last[cid] ?? null,
         };
       });
-      // Spec §6: przypięte → ulubione → nieprzeczytane → po dacie.
-      const rank = (x: ConversationListItem) =>
-        (x.pinned ? 8 : 0) + (x.starred ? 4 : 0) + ((x.unread_count ?? 0) > 0 ? 2 : 0);
-      return result.sort((a, b) => {
-        const r = rank(b) - rank(a);
-        if (r !== 0) return r;
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-      });
+      // Jak web: przypięte na górze, potem od najświeższej wiadomości.
+      return result.sort(sortConversations);
     },
     enabled: !!userEmail,
   });
+
+// Nowa wiadomość (wysłana albo z realtime) na liście rozmów od razu — bez czekania na pobranie.
+export const applyMessageToConversations = (
+  qc: ReturnType<typeof useQueryClient>,
+  userEmail: string | null,
+  msg: Partial<MessageRow> | null | undefined,
+  openId: string | null = null,
+) => {
+  if (!userEmail || !msg?.conversation_id) return;
+  qc.setQueryData<ConversationListItem[]>(conversationsKey(userEmail), (prev: ConversationListItem[] | undefined) =>
+    applyIncomingMessage(prev, msg as any, userEmail, { openId }) as ConversationListItem[] | undefined,
+  );
+};
 
 export const useMessages = (conversationId: string) =>
   useQuery({
@@ -464,8 +460,11 @@ export const useSendMessage = (conversationId: string, senderEmail: string | nul
     },
     onSuccess: (row) => {
       playSendSound();
-      if (row?.id) appendToThread(qc, conversationId, row);
-      else qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+      if (row?.id) {
+        appendToThread(qc, conversationId, row);
+        // Lista rozmów od razu: rozmowa na górę z „Ty: …” (pełne odświeżenie poniżej).
+        applyMessageToConversations(qc, senderEmail, row, conversationId);
+      } else qc.invalidateQueries({ queryKey: ["messages", conversationId] });
       qc.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
@@ -519,15 +518,32 @@ export const useDeleteMessage = (conversationId: string) => {
 };
 
 // „Przeczytane” — zapis w tle (bez komunikatów, jak web); błąd tylko w konsoli dewelopera.
+// latestCreatedAt — data ostatniej wiadomości w wątku: znacznik nie może być wcześniejszy (zegar
+// telefonu bywa spóźniony względem serwera — wtedy ostatnia wiadomość wisiała jako nieprzeczytana).
 export const markConversationRead = async (
   conversationId: string,
   userEmail: string,
+  latestCreatedAt?: string | null,
 ): Promise<void> => {
   const { error } = await (supabase.from("conversation_participants") as any)
-    .update({ last_read_at: new Date().toISOString() })
+    .update({ last_read_at: readMarkTimestamp(latestCreatedAt) })
     .eq("conversation_id", conversationId)
     .ilike("user_email", emailPattern(userEmail));
   if (error && __DEV__) console.warn("[messenger] markConversationRead failed:", error.message);
+};
+
+// Licznik nieprzeczytanych tej rozmowy na liście — od razu na zero (zapis idzie w tle).
+export const clearUnreadLocally = (
+  qc: ReturnType<typeof useQueryClient>,
+  userEmail: string | null,
+  conversationId: string,
+) => {
+  if (!userEmail) return;
+  qc.setQueryData<ConversationListItem[]>(conversationsKey(userEmail), (prev: ConversationListItem[] | undefined) =>
+    prev?.map((c: ConversationListItem) =>
+      c.id === conversationId && (c.unread_count ?? 0) > 0 ? { ...c, unread_count: 0 } : c,
+    ),
+  );
 };
 
 // Zmiana MOJEGO wiersza uczestnika (ulubione, archiwum, wyciszenie, przypięcie). Pusty
@@ -595,6 +611,8 @@ export interface ConversationDetails {
   ministry_key: string | null;
   avatar_url: string | null;
   participant_emails: string[];
+  /** Skład z rolami (administrator / członek) — okno „Szczegóły rozmowy”. */
+  participants: { email: string; role: string | null }[];
   my_muted: boolean;
   my_starred: boolean;
   // Kanały ogłoszeń (spec §5): kto może pisać + moja rola w rozmowie.
@@ -638,6 +656,7 @@ export const useConversationDetails = (
         ministry_key: (conv as any).ministry_key,
         avatar_url: (conv as any).avatar_url,
         participant_emails: participants.map((p) => p.user_email),
+        participants: participants.map((p) => ({ email: p.user_email, role: p.role ?? null })),
         my_muted: !!me?.muted,
         my_starred: !!me?.starred,
         posting_policy: ((conv as any).posting_policy as "everyone" | "admins") ?? "everyone",
@@ -761,15 +780,16 @@ export const useToggleReaction = (
       if (fErr && (fErr as any).code !== "PGRST116") throw fErr;
       const existingId = (existing as { id?: string } | null)?.id;
       if (existingId) {
+        // Pełny wiersz w RETURNING — web aktualizuje reakcje z realtime po id/emoji/osobie.
         const { error } = await (supabase.from("message_reactions") as any)
           .delete()
           .eq("id", existingId)
-          .select("id, message_id");
+          .select("id, message_id, emoji, user_email");
         if (error) throw error;
       } else {
         const { error } = await (supabase.from("message_reactions") as any)
           .insert({ message_id: messageId, user_email: userEmail, emoji })
-          .select("id, message_id");
+          .select("id, message_id, emoji, user_email");
         if (error) throw error;
       }
     },
@@ -841,7 +861,7 @@ export const useTogglePollVote = (conversationId: string, userEmail: string | nu
         const { error } = await (supabase.from("poll_votes") as any)
           .delete()
           .eq("id", (existing as any).id)
-          .select("id, message_id");
+          .select("id, message_id, option_id, user_email");
         if (error) throw error;
         return;
       }
@@ -851,12 +871,12 @@ export const useTogglePollVote = (conversationId: string, userEmail: string | nu
           .delete()
           .eq("message_id", messageId)
           .ilike("user_email", mine)
-          .select("id, message_id");
+          .select("id, message_id, option_id, user_email");
         if (error) throw error;
       }
       const { error } = await (supabase.from("poll_votes") as any)
         .insert({ message_id: messageId, option_id: optionId, user_email: userEmail })
-        .select("id, message_id");
+        .select("id, message_id, option_id, user_email");
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pollVotes", conversationId] }),
@@ -906,12 +926,12 @@ export const useTogglePrayerResponse = (conversationId: string, userEmail: strin
           .delete()
           .eq("message_id", messageId)
           .ilike("user_email", emailPattern(userEmail))
-          .select("message_id, user_email");
+          .select("id, message_id, user_email");
         if (error) throw error;
       } else {
         const { error } = await (supabase.from("prayer_responses") as any)
           .insert({ message_id: messageId, user_email: userEmail })
-          .select("message_id, user_email");
+          .select("id, message_id, user_email");
         if (error) throw error;
       }
     },
@@ -1229,10 +1249,13 @@ export const useForwardMessage = (senderEmail: string | null) => {
       conversationIds,
       content,
       attachments,
+      forwardedFrom,
     }: {
       conversationIds: string[];
       content: string;
       attachments?: MessageAttachment[];
+      /** id oryginału — odbiorcy widzą „Przekazana wiadomość” (jak web). */
+      forwardedFrom?: string | null;
     }): Promise<ForwardResult> => {
       if (!senderEmail) throw new Error("Twoja sesja wygasła. Zaloguj się ponownie.");
       if (conversationIds.length === 0) return { sent: 0, total: 0 };
@@ -1242,7 +1265,13 @@ export const useForwardMessage = (senderEmail: string | null) => {
       let sent = 0;
       for (const cid of conversationIds) {
         const { error } = await (supabase.from("messages") as any)
-          .insert({ conversation_id: cid, sender_email: senderEmail, content, attachments: attachments ?? [] })
+          .insert({
+            conversation_id: cid,
+            sender_email: senderEmail,
+            content,
+            attachments: attachments ?? [],
+            forwarded_from: forwardedFrom ?? null,
+          })
           .select("id");
         if (error) firstError = firstError ?? error;
         else sent += 1;
@@ -1252,6 +1281,60 @@ export const useForwardMessage = (senderEmail: string | null) => {
       return { sent, total: conversationIds.length };
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};
+
+// =====================================================================
+// Opuszczenie / usunięcie rozmowy (jak web: GroupSettingsModal / ConversationHeader)
+// =====================================================================
+
+// Opuść rozmowę — usunięcie MOJEGO wiersza uczestnika (serwer: mój wiersz albo administrator).
+export const useLeaveConversation = (userEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      if (!userEmail) throw new Error("Twoja sesja wygasła. Zaloguj się ponownie.");
+      const { data, error } = await (supabase.from("conversation_participants") as any)
+        .delete()
+        .eq("conversation_id", conversationId)
+        .ilike("user_email", emailPattern(userEmail))
+        .select("conversation_id, user_email");
+      if (error) throw error;
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        throw new Error("Nie jesteś już uczestnikiem tej rozmowy.");
+      }
+      return conversationId;
+    },
+    onSuccess: (conversationId) => {
+      qc.setQueryData<ConversationListItem[]>(conversationsKey(userEmail), (prev: ConversationListItem[] | undefined) =>
+        prev?.filter((c: ConversationListItem) => c.id !== conversationId),
+      );
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};
+
+// Usuń rozmowę dla obu stron (rozmowa 1:1; serwer pozwala administratorowi rozmowy).
+export const useDeleteConversation = (userEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      const { data, error } = await (supabase.from("conversations") as any)
+        .delete()
+        .eq("id", conversationId)
+        .select("id");
+      if (error) throw error;
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        throw new Error("Rozmowę może usunąć tylko jej administrator.");
+      }
+      return conversationId;
+    },
+    onSuccess: (conversationId) => {
+      qc.setQueryData<ConversationListItem[]>(conversationsKey(userEmail), (prev: ConversationListItem[] | undefined) =>
+        prev?.filter((c: ConversationListItem) => c.id !== conversationId),
+      );
       qc.invalidateQueries({ queryKey: ["conversations"] });
     },
   });

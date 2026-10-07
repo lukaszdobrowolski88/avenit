@@ -3,7 +3,7 @@ import { format, isToday, isYesterday } from "date-fns";
 import { pl } from "date-fns/locale";
 
 const labelFor = (date: Date): string => {
-  if (isToday(date)) return "Dziś";
+  if (isToday(date)) return "Dzisiaj"; // jak web (formatDateSeparator)
   if (isYesterday(date)) return "Wczoraj";
   return format(date, "EEEE, d MMM yyyy", { locale: pl });
 };

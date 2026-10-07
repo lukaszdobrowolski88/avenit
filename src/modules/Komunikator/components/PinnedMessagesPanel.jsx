@@ -3,6 +3,7 @@ import { Pin, X, ChevronDown, ChevronUp } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageTime, truncateText } from '../utils/messageHelpers';
 import { tr } from '../../../i18n';
+import { previewText } from '../utils/chatLogic';
 
 export default function PinnedMessagesPanel({
   pinnedMessages,
@@ -68,7 +69,7 @@ export default function PinnedMessagesPanel({
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                  {truncateText(pin.message?.content || (pin.message?.attachments?.length > 0 ? tr('📎 Załącznik') : ''), 60)}
+                  {truncateText(previewText(pin.message, tr), 60)}
                 </p>
               </div>
 

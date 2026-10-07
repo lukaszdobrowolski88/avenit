@@ -9,10 +9,12 @@ import {
   Volume2,
   Search,
   Image as ImageIcon,
+  Megaphone,
   MessageCircle,
 } from "lucide-react-native";
 import {
   MINISTRY_CHANNEL_META,
+  conversationTitle,
   memberDisplayName,
   memberInitials,
   memberPhotoUrl,
@@ -22,6 +24,7 @@ import {
 import { PresenceDot } from "./PresenceDot";
 import { PRESENCE_LABELS, type PresenceStatus } from "../../../lib/presence";
 import { goBack } from '../../../lib/navigation';
+import { sameEmail } from "../logic";
 
 interface Props {
   details: ConversationDetails | null;
@@ -34,6 +37,8 @@ interface Props {
   onOpenGallery?: () => void;
   /** Status drugiego uczestnika (tylko dla rozmowy 1:1). */
   peerStatus?: PresenceStatus;
+  /** Dotknięcie nazwy rozmowy — okno „Szczegóły rozmowy” (skład, opuszczenie, usunięcie). */
+  onOpenInfo?: () => void;
 }
 
 // „1 uczestnik”, dalej „2 uczestników” (rodzaj męskoosobowy — dopełniacz przy każdej liczbie).
@@ -48,6 +53,7 @@ export const ConversationHeader = ({
   onSearch,
   onOpenGallery,
   peerStatus,
+  onOpenInfo,
 }: Props) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -69,6 +75,8 @@ export const ConversationHeader = ({
         <Pressable
           onPress={() => goBack(router)}
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Wróć do listy rozmów"
           style={{
             width: 36,
             height: 36,
@@ -104,14 +112,13 @@ export const ConversationHeader = ({
   let avatarBlock: React.ReactNode;
   if (details.type === "direct") {
     const otherEmail =
-      details.participant_emails.find((e) => e !== myEmail) ??
+      details.participant_emails.find((e) => !sameEmail(e, myEmail)) ??
       details.participant_emails[0] ??
       "";
     const photo = memberPhotoUrl(members, otherEmail);
     title = otherEmail ? memberDisplayName(members, otherEmail) : "Rozmowa";
-    subtitle = peerStatus && peerStatus !== "offline"
-      ? PRESENCE_LABELS[peerStatus]
-      : otherEmail || "";
+    // Jak web: status obecności, a gdy ktoś jest poza aplikacją — „Prywatna rozmowa”.
+    subtitle = peerStatus && peerStatus !== "offline" ? PRESENCE_LABELS[peerStatus] : "Prywatna rozmowa";
     const photoView = photo ? (
       <Image
         source={{ uri: photo }}
@@ -146,8 +153,8 @@ export const ConversationHeader = ({
       </View>
     );
   } else if (isMinistry) {
-    title = details.name || ministryMeta?.label || details.ministry_key || "Kanał";
-    subtitle = participantsLabel(details.participant_emails.length);
+    title = conversationTitle(details, members);
+    subtitle = `Kanał służby · ${participantsLabel(details.participant_emails.length)}`;
     avatarBlock = (
       <View
         style={{
@@ -160,6 +167,23 @@ export const ConversationHeader = ({
         }}
       >
         <Hash size={20} color={ministryMeta?.tint ?? "#8A6606"} strokeWidth={2.4} />
+      </View>
+    );
+  } else if (details.type === "announcement") {
+    title = details.name || "Kanał ogłoszeń";
+    subtitle = `Kanał ogłoszeń · ${participantsLabel(details.participant_emails.length)}`;
+    avatarBlock = (
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          backgroundColor: "#ECE8DE",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Megaphone size={18} color="#2A2312" />
       </View>
     );
   } else {
@@ -198,6 +222,8 @@ export const ConversationHeader = ({
       <Pressable
         onPress={() => goBack(router)}
         hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel="Wróć do listy rozmów"
         style={{
           width: 36,
           height: 36,
@@ -208,6 +234,14 @@ export const ConversationHeader = ({
       >
         <ChevronLeft size={22} color="#2A2312" />
       </Pressable>
+      <Pressable
+        onPress={onOpenInfo}
+        disabled={!onOpenInfo}
+        accessibilityRole="button"
+        accessibilityLabel={`${title}. Szczegóły rozmowy`}
+        className="active:opacity-70"
+        style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10 }}
+      >
       {avatarBlock}
       <View style={{ flex: 1 }}>
         <Text
@@ -235,10 +269,13 @@ export const ConversationHeader = ({
           </Text>
         ) : null}
       </View>
+      </Pressable>
       {onSearch ? (
         <Pressable
           onPress={onSearch}
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Szukaj w rozmowie"
           style={{
             width: 36,
             height: 36,
@@ -257,6 +294,8 @@ export const ConversationHeader = ({
         <Pressable
           onPress={onOpenGallery}
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Galeria zdjęć i plików"
           style={{
             width: 36,
             height: 36,

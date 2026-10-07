@@ -1,9 +1,9 @@
 import { Image, Linking, Pressable, Text, View } from "react-native";
-import { Check, CheckCheck, CornerUpLeft, FileText, Pin } from "lucide-react-native";
+import { Check, CheckCheck, CornerUpLeft, FileText, Forward, Pin } from "lucide-react-native";
 import { format } from "date-fns";
 import type { MemberLite, MemberMap, MessageRow, ReactionAggregate } from "../api";
 import { memberDisplayName, memberInitials } from "../api";
-import { isVoiceAttachment } from "../attachments";
+import { isVoiceAttachment, voiceDurationMs, mentionsUser, previewText } from "../logic";
 import { PresenceDot } from "./PresenceDot";
 import { AudioPlayer } from "./AudioPlayer";
 import { type PresenceStatus } from "../../../lib/presence";
@@ -118,10 +118,7 @@ export const MessageBubble = ({
     ? memberDisplayName(members, replyTo.sender_email)
     : null;
   const time = format(new Date(message.created_at), "HH:mm");
-  const mentionsMe =
-    !!currentUserEmail &&
-    Array.isArray(message.mentions) &&
-    message.mentions.includes(currentUserEmail);
+  const mentionsMe = mentionsUser(message, currentUserEmail);
 
   // Wiadomość systemowa — wyśrodkowana pastylka (spec §2).
   if (message.message_type === "system") {
@@ -207,7 +204,8 @@ export const MessageBubble = ({
           borderTopRightRadius: mine && showSender ? 6 : 18,
           borderBottomLeftRadius: !mine ? 6 : 18,
           borderBottomRightRadius: mine ? 6 : 18,
-          backgroundColor: mine ? "#2A2312" : "#ECE8DE",
+          // Jak web: moje — słód z białym tekstem, cudze — biała karta na papierze.
+          backgroundColor: mine ? "#2A2312" : "#FFFFFF",
           shadowColor: "#2A2312",
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: mine ? 0.1 : 0.04,
@@ -226,6 +224,22 @@ export const MessageBubble = ({
           >
             {senderName}
           </Text>
+        ) : null}
+
+        {message.forwarded_from ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 }}>
+            <Forward size={11} color={mine ? "#F3E3B0" : "#6E685A"} />
+            <Text
+              style={{
+                fontSize: 11,
+                fontStyle: "italic",
+                color: mine ? "#F3E3B0" : "#6E685A",
+                fontFamily: "Manrope_500Medium",
+              }}
+            >
+              Przekazana wiadomość
+            </Text>
+          </View>
         ) : null}
 
         {replyTo ? (
@@ -258,14 +272,14 @@ export const MessageBubble = ({
                 fontFamily: "Manrope_400Regular",
               }}
             >
-              {replyTo.deleted_at ? "(usunięto)" : replyTo.content || "(załącznik)"}
+              {replyTo.deleted_at ? "Wiadomość usunięta" : previewText(replyTo) || "Wiadomość"}
             </Text>
           </View>
         ) : null}
 
         {attachments.map((att, i) => {
           if (isVoiceAttachment(att)) {
-            // size jest u nas nośnikiem długości w ms (z uploadVoiceMessage).
+            // Długość: duration (s) jak w webie; starsze nagrania z telefonu — size w ms.
             return (
               <View
                 key={i}
@@ -275,7 +289,7 @@ export const MessageBubble = ({
               >
                 <AudioPlayer
                   uri={att.url}
-                  durationHintMs={typeof att.size === "number" ? att.size : undefined}
+                  durationHintMs={voiceDurationMs(att)}
                   variant={mine ? "light" : "dark"}
                 />
               </View>
@@ -444,7 +458,7 @@ export const MessageBubble = ({
                 borderRadius: 999,
                 backgroundColor: r.hasUserReacted ? "#FFF1C2" : "#F1EEE6",
                 borderWidth: 1,
-                borderColor: r.hasUserReacted ? "#f9a8d4" : "#E6E1D5",
+                borderColor: r.hasUserReacted ? "#F3E3B0" : "#E6E1D5",
               }}
             >
               <Text style={{ fontSize: 12 }}>{r.emoji}</Text>
