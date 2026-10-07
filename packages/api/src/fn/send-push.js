@@ -100,7 +100,8 @@ async function sendExpo(pool, payload, sharedData, accessToken) {
     to: t.expo_token,
     title: payload.title,
     body: payload.body,
-    sound: 'default',
+    // iOS: plik dźwięku z paczki aplikacji (np. 'receive.wav' dla wiadomości); brak pliku = dźwięk systemowy.
+    sound: payload.sound || 'default',
     priority: 'high',
     channelId: 'default',
     categoryId: payload.category_id,

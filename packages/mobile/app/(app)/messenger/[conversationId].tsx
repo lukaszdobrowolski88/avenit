@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Share,
@@ -45,6 +46,7 @@ import {
   type EventMetadata,
 } from "../../../src/features/messenger/api";
 import { usePresence } from "../../../src/lib/presence";
+import { preloadSendSound, setActiveConversation } from "../../../src/lib/sounds";
 import {
   pickImageFromLibrary,
   takePhoto,
@@ -90,7 +92,26 @@ export default function ConversationScreen() {
   const canEditOwn = perms.can("res:messages:update"); // edycja i usuwanie własnych wiadomości
 
   // Composer siedzi nad tabbarem — padding równy jego wysokości z (app)/_layout.tsx.
-  const composerBottomPad = Platform.OS === "ios" ? 88 : 70;
+  // Przy otwartej klawiaturze pasek zakładek się chowa (FloatingTabBar), więc odstęp znika —
+  // inaczej pole pisania wisiało wysoko nad klawiaturą.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvt, () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener(hideEvt, () => setKeyboardOpen(false));
+    preloadSendSound();
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  // Otwarta rozmowa — powiadomienia z niej bez banera (tylko dźwięk przyjścia).
+  useEffect(() => {
+    setActiveConversation(cid);
+    return () => setActiveConversation(null);
+  }, [cid]);
+  const composerBottomPad = keyboardOpen ? 6 : Platform.OS === "ios" ? 88 : 70;
 
   const messagesQuery = useMessages(cid);
   const detailsQuery = useConversationDetails(cid, user?.email ?? null);

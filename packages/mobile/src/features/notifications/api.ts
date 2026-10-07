@@ -90,3 +90,33 @@ export const TYPE_META: Record<
   event: { tint: '#8A6606', bg: '#FFF1C2', label: 'Wydarzenie' },
   system: { tint: '#6B6557', bg: '#E3DDD0', label: 'System' },
 };
+
+// Wiadomości z jednej rozmowy jako JEDNA pozycja listy (jak w komunikatorach): ostatnia
+// wiadomość, liczba wiadomości i nieprzeczytanych. Pozostałe powiadomienia bez zmian.
+export interface NotificationItem extends NotificationRow {
+  ids: string[];        // wszystkie powiadomienia w grupie (do oznaczenia jako przeczytane)
+  unreadIds: string[];
+  count: number;
+}
+
+export const groupNotifications = (rows: NotificationRow[]): NotificationItem[] => {
+  const out: NotificationItem[] = [];
+  const byKey = new Map<string, NotificationItem>();
+  for (const n of rows) {
+    const conv = (n.data as { conversation_id?: string } | null)?.conversation_id;
+    const key = (n.type === 'message' || n.type === 'mention') && (conv || n.link) ? `msg:${conv || n.link}` : null;
+    const g = key ? byKey.get(key) : undefined;
+    if (g) {
+      g.ids.push(n.id);
+      if (!n.read) g.unreadIds.push(n.id);
+      g.count += 1;
+      if (!n.read) g.read = false;
+      continue;
+    }
+    // Lista przychodzi od najnowszych — pierwszy wiersz grupy = ostatnia wiadomość.
+    const item: NotificationItem = { ...n, ids: [n.id], unreadIds: n.read ? [] : [n.id], count: 1 };
+    out.push(item);
+    if (key) byKey.set(key, item);
+  }
+  return out;
+};

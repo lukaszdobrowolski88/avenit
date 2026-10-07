@@ -55,8 +55,9 @@ const config: ExpoConfig = {
       googleMaps: { apiKey: process.env.GOOGLE_MAPS_ANDROID_KEY },
     },
     adaptiveIcon: {
+      // Znak „a” Avenit (słód) na kurkumie — jak awatar marki (grafiki_avenit/avatar).
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#d97706',
+      backgroundColor: '#FFBE0B',
     },
   },
   web: {
@@ -72,7 +73,10 @@ const config: ExpoConfig = {
       'expo-notifications',
       {
         icon: './assets/notification-icon.png',
-        color: '#d97706',
+        color: '#FFBE0B',
+        // Dźwięk przyjścia wiadomości dla powiadomień w tle (iOS: payload sound 'receive.wav').
+        // Działa od najbliższego builda natywnego; starsze buildy grają dźwięk systemowy.
+        sounds: ['./assets/sounds/receive.wav'],
       },
     ],
     'expo-calendar',

@@ -1,4 +1,5 @@
 import { Alert } from "react-native";
+import { playSendSound } from "../../lib/sounds";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { friendlyError } from "../../lib/errors";
@@ -462,6 +463,7 @@ export const useSendMessage = (conversationId: string, senderEmail: string | nul
       return (row as MessageRow) ?? null;
     },
     onSuccess: (row) => {
+      playSendSound();
       if (row?.id) appendToThread(qc, conversationId, row);
       else qc.invalidateQueries({ queryKey: ["messages", conversationId] });
       qc.invalidateQueries({ queryKey: ["conversations"] });

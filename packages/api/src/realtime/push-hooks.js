@@ -57,6 +57,7 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
         body,
         link,
         data: { type: 'mention', conversation_id: conversationId },
+        sound: 'receive.wav',
       });
     } else if (!p.muted) {
       await sendPushCore(pool, {
@@ -65,6 +66,7 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
         body,
         link,
         data: { type: 'message', conversation_id: conversationId },
+        sound: 'receive.wav',
       });
     }
   }
