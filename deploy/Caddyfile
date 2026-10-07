@@ -24,6 +24,12 @@
 	# Bez tego przeglądarka pobiera cały nieskompresowany bundle (wolne ładowanie).
 	encode zstd gzip
 
+	# www.avenit.pl → avenit.pl (301, z zachowaniem ścieżki). Bez tego www wpadało
+	# w fallback tenanta na dole i pokazywało aplikację zamiast strony WWW.
+	# Dyrektywa redir wykonuje się przed wszystkimi blokami handle.
+	@www host www.{$APP_DOMAIN}
+	redir @www https://{$APP_DOMAIN}{uri} permanent
+
 	# Panel administracyjny
 	@admin host admin.{$APP_DOMAIN}
 	handle @admin {
