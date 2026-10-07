@@ -98,3 +98,13 @@ test('zmiana roli uczestnika — zakres zawężony do administratora rozmowy', a
   await enforceConversationWrite(own, req(fakeDb([])));
   assert.match(own.__ownerScope.update('t', () => 1), /lower\(t\."user_email"\)/);
 });
+
+test('stara rozmowa (rola uczestnika NULL) — wiadomość przechodzi', async () => {
+  const db = fakeDb([
+    ['FROM conversations c', () => [{ id: 'c9', type: 'direct', posting_policy: 'everyone', n: 2 }]],
+    ['FROM conversation_participants WHERE conversation_id', () => [{ role: null }]],
+  ]);
+  const q = { table: 'messages', op: 'insert', values: { conversation_id: 'c9', content: 'hej' } };
+  await enforceConversationWrite(q, req(db));
+  assert.equal(q.values.sender_email, 'Jan@Kosciol.pl');
+});

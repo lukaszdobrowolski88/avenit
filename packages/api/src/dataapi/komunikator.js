@@ -85,12 +85,14 @@ export function conversationScope(table, user) {
   return { select: member, update: own, delete: own, upsertGuard: own };
 }
 
+// Uczestnik rozmowy → { role } albo null. Starsze rozmowy (sprzed ról) mają role = NULL —
+// to nadal uczestnik („member”); bez tego wysyłka w starych rozmowach była odrzucana.
 async function isMember(db, convId, email) {
   const { rows } = await db.query(
     `SELECT role FROM conversation_participants WHERE conversation_id::text = $1 AND lower(user_email) = $2 LIMIT 1`,
     [String(convId), email]
   );
-  return rows[0] || null;
+  return rows[0] ? { role: rows[0].role || 'member' } : null;
 }
 
 async function conversationOf(db, convId) {
