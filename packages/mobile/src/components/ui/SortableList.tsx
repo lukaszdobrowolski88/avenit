@@ -14,7 +14,7 @@ export const SortableList = <T,>({
   onReorder,
   setScrollEnabled,
   rowStyle,
-  handleColor = '#857F70',
+  handleColor = '#6E685A',
   activeBackground = '#FFF1C2',
 }: {
   items: T[];

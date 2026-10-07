@@ -15,6 +15,7 @@ import {
   type DashboardLayout,
   type SectionId,
 } from '../../../src/features/dashboard/layout';
+import { showError } from '../../../src/lib/errors';
 
 // Konto → Pulpit: które sekcje są na pulpicie, w jakiej kolejności; „Dla Ciebie”
 // i „Twoje moduły” mają własne ustawienia elementów. Każdy ustawia pod siebie,
@@ -58,7 +59,7 @@ export default function DashboardSettingsScreen() {
   const meta = (id: SectionId) => SECTIONS.find((s) => s.id === id)!;
 
   const persist = (next: DashboardLayout) =>
-    save.mutate(next, { onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') });
+    save.mutate(next, { onError: (e) => showError('Nie udało się zapisać układu pulpitu', e) });
 
   // Kolejność liczona na liście widocznych w ustawieniach — przekładamy na pełną listę.
   const reorder = (from: number, to: number) => {
@@ -103,9 +104,9 @@ export default function DashboardSettingsScreen() {
                       <Switch
                         value={s.visible}
                         onValueChange={(v) => toggle(s.id, v)}
-                        trackColor={{ true: B.kurkuma, false: '#E3DDD0' }}
+                        trackColor={{ true: B.kurkuma, false: B.fieldBorder }}
                         thumbColor="#ffffff"
-                        ios_backgroundColor="#E3DDD0"
+                        ios_backgroundColor={B.fieldBorder}
                         style={{ transform: [{ scale: 0.85 }] }}
                       />
                     </View>

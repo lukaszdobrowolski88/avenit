@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import type { Program, ProgramScheduleItem } from '../../lib/domain';
+import { respondToAssignment } from '../../lib/assignments';
 
 export interface ProgramListItem {
   id: number;
@@ -106,18 +107,18 @@ export const useMyAssignments = (programId: string | number, email: string | nul
     enabled: !!email && programId != null && programId !== '',
   });
 
+// Odpowiedź na własne zaproszenie — przez serwer (/api/assignment/:id/respond), jak mail i web:
+// odrzucenie od razu zdejmuje osobę z grafiku wydarzenia (dawny update samego statusu zostawiał
+// imię w grafiku mimo odmowy, a członek bez prawa edycji grafiku dostawał 403).
 export const useUpdateAssignmentStatus = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: 'accepted' | 'rejected' }) => {
-      const { error } = await (supabase.from('schedule_assignments') as any)
-        .update({ status, responded_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
+    mutationFn: async ({ id, status }: { id: string; status: 'accepted' | 'rejected' }) => respondToAssignment(id, status),
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['assignments'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['event-detail'] });
+      qc.invalidateQueries({ queryKey: ['team'] });
       // Zakładka „Zespół" (useProgramTeam) też pokazuje status — odśwież ją.
       qc.invalidateQueries({ queryKey: ['programs', 'team'] });
     },
@@ -153,6 +154,12 @@ export const useProgramTeam = (programId: string | number) =>
 const asSchedule = (raw: unknown): ProgramScheduleItem[] => {
   const v = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
   return Array.isArray(v) ? (v as ProgramScheduleItem[]) : [];
+};
+
+// Zapis sprawdzany: zakres kampusu/właściciela może dać 0 zmienionych wierszy bez błędu —
+// wtedy mówimy to wprost zamiast udawać, że się zapisało.
+const ensureRows = (data: unknown, message: string) => {
+  if (Array.isArray(data) && data.length === 0) throw new Error(message);
 };
 
 const invalidatePrograms = (qc: ReturnType<typeof useQueryClient>) => {
@@ -268,11 +275,12 @@ export interface ProgramHeaderInput {
   typeId: number | null;
 }
 
-// Nowy program (pusty plan) + opcjonalne podpięcie do wydarzenia. Zwraca id.
+// Nowy program (pusty plan) + opcjonalne podpięcie do wydarzenia. Zwraca id i informację,
+// czy podpięcie się udało (program już istnieje — ponowne „Utwórz” zrobiłoby duplikat).
 export const useCreateProgram = (userEmail: string | null, campusIdForInsert: number | null) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: ProgramHeaderInput & { eventId?: number | null }): Promise<number> => {
+    mutationFn: async (input: ProgramHeaderInput & { eventId?: number | null }): Promise<{ id: number; linkFailed: boolean }> => {
       const { data, error } = await (supabase.from('programs') as any)
         .insert([
           {
@@ -287,13 +295,14 @@ export const useCreateProgram = (userEmail: string | null, campusIdForInsert: nu
         ])
         .select('id')
         .single();
-      if (error) throw new Error(error.message || 'Nie udało się utworzyć programu.');
+      if (error) throw error;
       const id = Number((data as any).id);
+      let linkFailed = false;
       if (input.eventId) {
         const { error: linkErr } = await (supabase.from('events') as any).update({ program_id: id }).eq('id', input.eventId);
-        if (linkErr) throw new Error(`Program utworzony, ale nie udało się podpiąć go do wydarzenia: ${linkErr.message}`);
+        linkFailed = !!linkErr;
       }
-      return id;
+      return { id, linkFailed };
     },
     onSuccess: () => invalidatePrograms(qc),
   });
@@ -303,10 +312,12 @@ export const useUpdateProgramHeader = (programId: number) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: ProgramHeaderInput) => {
-      const { error } = await (supabase.from('programs') as any)
+      const { data, error } = await (supabase.from('programs') as any)
         .update({ title: input.title, date: input.date, type_id: input.typeId })
-        .eq('id', programId);
-      if (error) throw new Error(error.message || 'Nie udało się zapisać programu.');
+        .eq('id', programId)
+        .select('id');
+      if (error) throw error;
+      ensureRows(data, 'Nie udało się zapisać programu — mógł zostać usunięty albo nie masz do niego uprawnień.');
     },
     onSuccess: () => invalidatePrograms(qc),
   });
@@ -319,8 +330,9 @@ export const useSaveSchedule = (programId: number) => {
   const key = ['programs', 'detail', String(programId)];
   return useMutation({
     mutationFn: async (schedule: ProgramScheduleItem[]) => {
-      const { error } = await (supabase.from('programs') as any).update({ schedule }).eq('id', programId);
-      if (error) throw new Error(error.message || 'Nie udało się zapisać planu.');
+      const { data, error } = await (supabase.from('programs') as any).update({ schedule }).eq('id', programId).select('id');
+      if (error) throw error;
+      ensureRows(data, 'Nie udało się zapisać planu — program mógł zostać usunięty albo nie masz do niego uprawnień.');
     },
     onMutate: async (schedule) => {
       await qc.cancelQueries({ queryKey: key });
@@ -339,15 +351,21 @@ export const useSaveSchedule = (programId: number) => {
   });
 };
 
-// Usunięcie programu — events.program_id nie ma klucza obcego, więc najpierw odpinamy
-// program od wydarzeń (inaczej zostałyby martwe odnośniki).
+// Usunięcie programu (jak web): najpierw sam rekord — przy braku uprawnień (403) nic nie ruszamy
+// (dawniej najpierw odpinaliśmy wydarzenia, więc nieudane usunięcie i tak gubiło powiązania).
+// Potem sprzątanie: events.program_id nie ma klucza obcego, więc odpinamy program od wydarzeń.
+// Zwraca { unlinkFailed } — usunięto, ale wydarzenie może jeszcze wskazywać pusty plan.
 export const useDeleteProgram = (programId: number) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      await (supabase.from('events') as any).update({ program_id: null }).eq('program_id', programId);
-      const { error } = await supabase.from('programs').delete().eq('id', programId);
-      if (error) throw new Error(error.message || 'Nie udało się usunąć programu.');
+    mutationFn: async (): Promise<{ unlinkFailed: boolean }> => {
+      const { data, error } = await (supabase.from('programs') as any).delete().eq('id', programId).select('id');
+      if (error) throw error;
+      if (Array.isArray(data) && data.length === 0) {
+        throw new Error('Nie udało się usunąć programu — mógł zostać już usunięty albo nie masz do niego uprawnień.');
+      }
+      const { error: unlinkErr } = await (supabase.from('events') as any).update({ program_id: null }).eq('program_id', programId);
+      return { unlinkFailed: !!unlinkErr };
     },
     onSuccess: () => invalidatePrograms(qc),
   });
@@ -358,8 +376,9 @@ export const useLinkProgram = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ eventId, programId }: { eventId: number; programId: number | null }) => {
-      const { error } = await (supabase.from('events') as any).update({ program_id: programId }).eq('id', eventId);
-      if (error) throw new Error(error.message || 'Nie udało się zmienić programu wydarzenia.');
+      const { data, error } = await (supabase.from('events') as any).update({ program_id: programId }).eq('id', eventId).select('id');
+      if (error) throw error;
+      ensureRows(data, 'Nie udało się zmienić programu wydarzenia — wydarzenie mogło zostać usunięte albo nie masz do niego uprawnień.');
     },
     onSuccess: () => invalidatePrograms(qc),
   });
@@ -388,8 +407,9 @@ export const useUpdateProgramNotes = (programId: number) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (notes: string) => {
-      const { error } = await (supabase.from('programs') as any).update({ notes }).eq('id', programId);
-      if (error) throw new Error(error.message || 'Nie udało się zapisać notatek.');
+      const { data, error } = await (supabase.from('programs') as any).update({ notes }).eq('id', programId).select('id');
+      if (error) throw error;
+      ensureRows(data, 'Nie udało się zapisać notatek — program mógł zostać usunięty albo nie masz do niego uprawnień.');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['programs', 'detail'] }),
   });

@@ -16,6 +16,7 @@ import {
   type KidsGroup,
 } from '../kids';
 import { fold } from '../tabs/ui';
+import { friendlyError } from '../../../lib/errors';
 
 // Grupa dzieci: dane (nazwa, wiek, sala, nauczyciele), dzieci w grupie i materiały
 // (lekcje, kolorowanki… z plikiem). Dzieci i materiały zapisują się od razu.
@@ -96,18 +97,18 @@ export const KidsGroupSheet = ({
     if (!n) return Alert.alert('Podaj nazwę grupy');
     save.mutate(
       { id: group?.id ?? null, name: n, room: room.trim() || null, ageRange: ageRange.trim() || null, teacherIds },
-      { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') },
+      { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')) },
     );
   };
 
   const remove = () =>
     Alert.alert('Usunąć grupę?', `„${group?.name}” zniknie. Dzieci zostaną na liście uczniów, bez grupy.`, [
       { text: 'Anuluj', style: 'cancel' },
-      { text: 'Usuń', style: 'destructive', onPress: () => del.mutate(group!.id, { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? '') }) },
+      { text: 'Usuń', style: 'destructive', onPress: () => del.mutate(group!.id, { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się usunąć', friendlyError(e, 'Spróbuj ponownie.')) }) },
     ]);
 
   const attach = (studentId: string, other: string | null) => {
-    const run = () => setGroup.mutate({ studentId, groupId: group!.id }, { onError: (e: any) => Alert.alert('Nie udało się dodać', e?.message ?? '') });
+    const run = () => setGroup.mutate({ studentId, groupId: group!.id }, { onError: (e: unknown) => Alert.alert('Nie udało się dodać', friendlyError(e, 'Spróbuj ponownie.')) });
     if (other) Alert.alert('Przenieść dziecko?', `Jest teraz w grupie „${other}”.`, [{ text: 'Anuluj', style: 'cancel' }, { text: 'Przenieś', onPress: run }]);
     else run();
   };
@@ -123,7 +124,7 @@ export const KidsGroupSheet = ({
           setMatTitle('');
           setMatFile(null);
         },
-        onError: (e: any) => Alert.alert('Nie udało się dodać', e?.message ?? 'Spróbuj ponownie.'),
+        onError: (e: unknown) => Alert.alert('Nie udało się dodać', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
   };
@@ -194,7 +195,13 @@ export const KidsGroupSheet = ({
                   </View>
                   {canEdit ? (
                     <Pressable
-                      onPress={() => setGroup.mutate({ studentId: k.id, groupId: null })}
+                      onPress={() =>
+                        setGroup.mutate(
+                          { studentId: k.id, groupId: null },
+                          { onError: (e: unknown) => Alert.alert('Nie udało się wypisać z grupy', friendlyError(e, 'Spróbuj ponownie.')) },
+                        )
+                      }
+                      disabled={setGroup.isPending}
                       hitSlop={10}
                       accessibilityLabel={`Wypisz z grupy: ${k.name}`}
                       style={{ padding: 4 }}
@@ -265,12 +272,21 @@ export const KidsGroupSheet = ({
                   {canEdit ? (
                     <Pressable
                       onPress={() =>
-                        Alert.alert('Usunąć materiał?', m.title, [
+                        Alert.alert('Usunąć materiał?', `„${m.title}” zniknie z materiałów grupy ${group.name}.`, [
                           { text: 'Anuluj', style: 'cancel' },
-                          { text: 'Usuń', style: 'destructive', onPress: () => delMat.mutate({ group, materialId: m.id }) },
+                          {
+                            text: 'Usuń',
+                            style: 'destructive',
+                            onPress: () =>
+                              delMat.mutate(
+                                { group, materialId: m.id },
+                                { onError: (e: unknown) => Alert.alert('Nie udało się usunąć materiału', friendlyError(e, 'Spróbuj ponownie.')) },
+                              ),
+                          },
                         ])
                       }
                       hitSlop={10}
+                      accessibilityLabel={`Usuń materiał: ${m.title}`}
                       style={{ padding: 4 }}
                     >
                       <Trash2 size={16} color={B.ink4} />
@@ -300,7 +316,7 @@ export const KidsGroupSheet = ({
                       const f = await pickKidsMaterialFile();
                       if (f) setMatFile(f);
                     } catch (e: any) {
-                      Alert.alert('Nie udało się wybrać pliku', e?.message ?? '');
+                      Alert.alert('Nie udało się wybrać pliku', friendlyError(e, 'Spróbuj ponownie.'));
                     }
                   }}
                   className="active:opacity-70"

@@ -28,6 +28,9 @@ import { PendingAccountsCard } from '../../../../src/features/dashboard/componen
 import { AbsencesWidget } from '../../../../src/features/dashboard/components/AbsencesWidget';
 import { useCampusQuery } from '../../../../src/hooks/useCampusQuery';
 import { D } from '../../../../src/features/dashboard/theme';
+import { EmptyState } from '../../../../src/components/ui/EmptyState';
+import { friendlyError } from '../../../../src/lib/errors';
+import { CloudOff } from 'lucide-react-native';
 import { DEFAULT_LAYOUT, useDashboardLayout, type DashboardLayout, type SectionId } from '../../../../src/features/dashboard/layout';
 
 // Tło strony pulpitu — białe karty odcinają się od niego bez ramek i cieni.
@@ -46,7 +49,7 @@ export default function DashboardScreen() {
   const { user } = useAuthSession();
   const perms = usePermissions();
   const { selectedCampusId, withCampusFilter } = useCampusQuery();
-  const { data, isLoading, refetch, isRefetching } = useDashboard(user?.email ?? null, {
+  const { data, isLoading, isError, error, refetch, isRefetching } = useDashboard(user?.email ?? null, {
     selectedCampusId,
     withCampusFilter,
   });
@@ -98,7 +101,12 @@ export default function DashboardScreen() {
     nextUp: nextEvent ? <NextUpCard event={nextEvent} myRole={nextRole} /> : null,
     forYou: <ForYouStrip config={layout.forYou} />,
     modules: <QuickAccess config={layout.modules} />,
-    events: <UpcomingEventsWidget events={upcoming.slice(1)} />,
+    events: (
+      <UpcomingEventsWidget
+        events={upcoming.slice(1)}
+        showEmpty={events.isSuccess && upcoming.length === 0 && perms.moduleVisible('calendar')}
+      />
+    ),
     ministry: (
       <MinistryWidget ministry={ministry} suggestions={data?.ministrySuggestions ?? []} history={data?.ministryHistory ?? []} />
     ),
@@ -136,6 +144,19 @@ export default function DashboardScreen() {
           pendingInvitations={(data?.pendingInvitations ?? []).length}
           unreadMessages={data?.totalUnreadMessages ?? 0}
         />
+
+        {isError ? (
+          <View style={{ marginHorizontal: 16, marginBottom: 28, borderRadius: D.radius, backgroundColor: D.card }}>
+            <EmptyState
+              compact
+              Icon={CloudOff}
+              title="Nie udało się wczytać części pulpitu"
+              hint={friendlyError(error)}
+              actionLabel="Spróbuj ponownie"
+              onAction={() => refetch()}
+            />
+          </View>
+        ) : null}
 
         {layout.sections.filter((sec) => sec.visible).map((sec) => (
           <View key={sec.id}>{sections[sec.id]}</View>

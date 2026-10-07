@@ -15,6 +15,7 @@ import { CheckCircle2, CircleDot, ListTodo } from 'lucide-react-native';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
+import { friendlyError } from '../../../src/lib/errors';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useMyWork, useSetWorkStatus, type WorkItem } from '../../../src/features/work/api';
 
@@ -69,7 +70,7 @@ const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkIte
           </Text>
         </View>
         {item.due ? (
-          <Text style={{ fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
+          <Text style={{ fontSize: 12, color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>
             · {fmtDue(item.due)}
           </Text>
         ) : null}
@@ -109,7 +110,7 @@ export default function MyWorkScreen() {
     const apply = (id: string) =>
       setStatus.mutate(
         { item, labelId: id },
-        { onError: (e: any) => Alert.alert('Nie udało się zmienić statusu', e?.message ?? '') },
+        { onError: (e: unknown) => Alert.alert('Nie udało się zmienić statusu', friendlyError(e, 'Spróbuj ponownie.')) },
       );
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -189,7 +190,7 @@ export default function MyWorkScreen() {
         ) : isError ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
             <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Manrope_500Medium' }}>
-              {(error as Error)?.message ?? 'Błąd'}
+              {friendlyError(error, 'Nie udało się wczytać zadań.')}
             </Text>
           </View>
         ) : (

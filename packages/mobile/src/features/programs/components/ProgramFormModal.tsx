@@ -23,6 +23,7 @@ import {
   type LinkedEvent,
   type ProgramTypeRow,
 } from '../api';
+import { friendlyError } from '../../../lib/errors';
 
 // Nowy program / edycja nagłówka programu (tytuł, data, typ). Przy nowym — opcjonalne
 // podpięcie do wydarzenia z okolicy daty (jak „Nowy program” na stronie wydarzenia na webie).
@@ -46,6 +47,7 @@ const Chip = ({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 );
 
 const dayLabel = (ymd: string) => ymd.split('-').reverse().slice(0, 2).join('.');
+const fullDate = (ymd: string) => ymd.split('-').reverse().join('.');
 
 export interface ProgramFormInitial {
   id?: number;
@@ -97,38 +99,57 @@ export const ProgramFormModal = ({ visible, initial, userEmail, campusIdForInser
   const sameDay = useMemo(() => (events.data ?? []).filter((e: LinkedEvent & { hasProgram: boolean }) => e.date === date && !e.hasProgram), [events.data, date]);
 
   const save = async () => {
+    if (busy) return;
+    if (!date) {
+      Alert.alert('Wybierz datę', 'Bez daty program nie trafi do planu nabożeństw.');
+      return;
+    }
     const payload = { title: title.trim() || null, date, typeId };
     try {
       if (editing) {
         await update.mutateAsync(payload);
         onClose();
       } else {
-        const id = await create.mutateAsync({ ...payload, eventId });
+        const { id, linkFailed } = await create.mutateAsync({ ...payload, eventId });
         onClose();
         onCreated?.(id);
+        if (linkFailed) {
+          Alert.alert('Utworzono program', 'Nie udało się podpiąć go do wydarzenia — zrobisz to na ekranie programu („Podepnij do wydarzenia”).');
+        }
       }
-    } catch (e: any) {
-      Alert.alert(editing ? 'Nie udało się zapisać' : 'Nie udało się utworzyć', e?.message ?? 'Spróbuj ponownie.');
+    } catch (e: unknown) {
+      Alert.alert(
+        editing ? 'Nie udało się zapisać programu' : 'Nie udało się utworzyć programu',
+        friendlyError(e, 'Zmiany są nadal w oknie — spróbuj ponownie.'),
+      );
     }
   };
 
+  const programName = (initial?.title || '').trim() || 'Nabożeństwo';
   const confirmDelete = () =>
-    Alert.alert('Usunąć program?', 'Plan zniknie, a wydarzenia, do których był podpięty, zostaną bez programu.', [
-      { text: 'Anuluj', style: 'cancel' },
-      {
-        text: 'Usuń',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await remove.mutateAsync();
-            onClose();
-            onDeleted?.();
-          } catch (e: any) {
-            Alert.alert('Nie udało się usunąć', e?.message ?? 'Spróbuj ponownie.');
-          }
+    Alert.alert(
+      'Usunąć program?',
+      `Program „${programName}” z dnia ${fullDate(initial?.date ?? date)} zostanie usunięty razem z planem. Zostanie odpięty od wydarzeń (wydarzenia i ich grafik zostają). Tej operacji nie można cofnąć.`,
+      [
+        { text: 'Anuluj', style: 'cancel' },
+        {
+          text: 'Usuń program',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { unlinkFailed } = await remove.mutateAsync();
+              onClose();
+              onDeleted?.();
+              if (unlinkFailed) {
+                Alert.alert('Usunięto program', 'Wydarzenie może jeszcze pokazywać pusty plan — odepnij go na ekranie wydarzenia.');
+              }
+            } catch (e: unknown) {
+              Alert.alert('Nie udało się usunąć programu', friendlyError(e, 'Spróbuj ponownie.'));
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -154,9 +175,9 @@ export const ProgramFormModal = ({ visible, initial, userEmail, campusIdForInser
 
           {(types.data ?? []).length ? (
             <>
-              <Label>Typ</Label>
+              <Label>Kategoria</Label>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                <Chip label="Bez typu" on={typeId == null} onPress={() => setTypeId(null)} />
+                <Chip label="Bez kategorii" on={typeId == null} onPress={() => setTypeId(null)} />
                 {(types.data ?? []).map((t: ProgramTypeRow) => (
                   <Chip key={t.id} label={t.name} on={typeId === t.id} onPress={() => setTypeId(t.id)} />
                 ))}

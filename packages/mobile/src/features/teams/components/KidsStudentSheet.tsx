@@ -3,6 +3,7 @@ import { Alert, Text, View } from 'react-native';
 import { B } from '../../../components/ui/brand';
 import { Chip, DangerLink, FormInput, FormLabel, PrimaryButton, Sheet } from '../../../components/ui/Sheet';
 import { useDeleteStudent, useSaveStudent, type Household, type KidsData, type KidsStudent } from '../kids';
+import { friendlyError } from '../../../lib/errors';
 
 // Dziecko (kids_students) — jak „Nowy uczeń” na webie + alergie (pokazywane przy check-inie).
 
@@ -65,14 +66,14 @@ export const KidsStudentSheet = ({
           notes: notes.trim() || null,
         },
       },
-      { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') },
+      { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')) },
     );
   };
 
   const remove = () =>
     Alert.alert('Usunąć dziecko z listy?', `${student?.name} zniknie z uczniów i grup.`, [
       { text: 'Anuluj', style: 'cancel' },
-      { text: 'Usuń', style: 'destructive', onPress: () => del.mutate(student!.id, { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? '') }) },
+      { text: 'Usuń', style: 'destructive', onPress: () => del.mutate(student!.id, { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się usunąć', friendlyError(e, 'Spróbuj ponownie.')) }) },
     ]);
 
   return (

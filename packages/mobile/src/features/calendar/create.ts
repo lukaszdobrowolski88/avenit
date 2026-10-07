@@ -50,8 +50,9 @@ export const useCreateCalendarEvent = (userEmail: string | null, campusIdForInse
           created_by: userEmail,
           campus_id: campusIdForInsert,
         },
-      ]);
-      if (error) throw new Error(error.message || 'Nie udało się dodać wydarzenia.');
+      ]).select('id');
+      // Błąd zostaje obiektem z kodem/statusem — ekran pokaże go po ludzku (friendlyError).
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agenda'] });
@@ -83,8 +84,8 @@ export const useUpdateCalendarEvent = (id: number) => {
         location: e.location,
       };
       if (e.description !== undefined) patch.description = e.description;
-      const { error } = await (supabase.from('events') as any).update(patch).eq('id', id);
-      if (error) throw new Error(error.message || 'Nie udało się zapisać zmian.');
+      const { error } = await (supabase.from('events') as any).update(patch).eq('id', id).select('id');
+      if (error) throw error;
     },
     onSuccess: () => invalidateEvents(qc),
   });
@@ -95,7 +96,7 @@ export const useDeleteCalendarEvent = (id: number) => {
   return useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from('events').delete().eq('id', id);
-      if (error) throw new Error(error.message || 'Nie udało się usunąć wydarzenia.');
+      if (error) throw error;
     },
     onSuccess: () => invalidateEvents(qc),
   });

@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { Children, isValidElement, type ReactNode } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { ChevronRight, type LucideIcon } from 'lucide-react-native';
+import { B } from './brand';
 
 interface BaseProps {
   Icon: LucideIcon;
@@ -8,6 +9,8 @@ interface BaseProps {
   iconBg?: string;
   title: string;
   description?: string;
+  // Ustawiane przez SettingsGroup — ostatni wiersz bez kreski.
+  last?: boolean;
 }
 
 interface ToggleProps extends BaseProps {
@@ -33,40 +36,29 @@ type Props = ToggleProps | NavProps | ActionProps;
 
 const Body = ({
   Icon,
-  iconTint = '#8A6606',
-  iconBg = '#FFF8E1',
+  iconTint = B.ink,
+  iconBg = B.paper2,
   title,
   description,
-}: BaseProps) => (
+  titleColor = B.ink,
+}: BaseProps & { titleColor?: string }) => (
   <View className="flex-row items-center gap-3 flex-1">
     <View
       style={{
         width: 36,
         height: 36,
-        borderRadius: 10,
+        borderRadius: 18,
         backgroundColor: iconBg,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Icon size={18} color={iconTint} strokeWidth={2.2} />
+      <Icon size={18} color={iconTint} strokeWidth={2.1} />
     </View>
     <View className="flex-1">
-      <Text
-        className="text-[15px]"
-        style={{
-          color: '#2A2312',
-          letterSpacing: -0.2,
-          fontFamily: 'Manrope_500Medium',
-        }}
-      >
-        {title}
-      </Text>
+      <Text style={{ fontSize: 15, color: titleColor, letterSpacing: -0.2, fontFamily: 'Manrope_600SemiBold' }}>{title}</Text>
       {description ? (
-        <Text
-          className="text-[12px] mt-0.5"
-          style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
-        >
+        <Text style={{ fontSize: 12, lineHeight: 17, marginTop: 2, color: B.ink3, fontFamily: 'Manrope_500Medium' }}>
           {description}
         </Text>
       ) : null}
@@ -74,21 +66,21 @@ const Body = ({
   </View>
 );
 
+const divider = (last?: boolean) => (last ? null : { borderBottomWidth: 1, borderBottomColor: B.line });
+
 export const SettingsRow = (props: Props) => {
   if (props.variant === 'toggle') {
     return (
-      <View
-        className="flex-row items-center px-4 py-3"
-        style={{ borderBottomWidth: 1, borderBottomColor: '#ECE8DE' }}
-      >
+      <View className="flex-row items-center px-4 py-3" style={divider(props.last)}>
         <Body {...props} />
         <Switch
           value={props.value}
           onValueChange={props.onValueChange}
           disabled={props.disabled}
-          trackColor={{ true: '#FFBE0B', false: '#E3DDD0' }}
+          accessibilityLabel={props.title}
+          trackColor={{ true: B.kurkuma, false: B.fieldBorder }}
           thumbColor="#ffffff"
-          ios_backgroundColor="#E3DDD0"
+          ios_backgroundColor={B.fieldBorder}
         />
       </View>
     );
@@ -97,63 +89,76 @@ export const SettingsRow = (props: Props) => {
     return (
       <Pressable
         onPress={props.onPress}
+        accessibilityRole="button"
+        accessibilityLabel={props.description ? `${props.title}. ${props.description}` : props.title}
         className="flex-row items-center px-4 py-3 active:opacity-70"
-        style={{ borderBottomWidth: 1, borderBottomColor: '#ECE8DE' }}
+        style={divider(props.last)}
       >
         <Body {...props} />
-        {props.rightElement ?? <ChevronRight size={18} color="#857F70" />}
+        {props.rightElement ?? <ChevronRight size={18} color={B.ink4} />}
       </Pressable>
     );
   }
   return (
     <Pressable
       onPress={props.onPress}
+      accessibilityRole="button"
+      accessibilityLabel={props.title}
       className="flex-row items-center px-4 py-3 active:opacity-70"
+      style={divider(props.last)}
     >
       <Body
         {...props}
-        iconTint={props.destructive ? '#e11d48' : props.iconTint}
-        iconBg={props.destructive ? '#ffe4e6' : props.iconBg}
+        iconTint={props.destructive ? B.danger : props.iconTint}
+        iconBg={props.destructive ? B.dangerBg : props.iconBg}
+        titleColor={props.destructive ? B.danger : B.ink}
       />
     </Pressable>
   );
 };
 
+// Grupa ustawień: musztardowa etykieta (zdanie, nie Title Case) + biała karta z wierszami.
 export const SettingsGroup = ({
   title,
+  hint,
   children,
 }: {
   title?: string;
+  // Krótkie wyjaśnienie pod kartą.
+  hint?: string;
   children: ReactNode;
-}) => (
-  <View className="mb-4">
-    {title ? (
-      <Text
-        className="text-[11px] uppercase mx-5 mb-2"
-        style={{
-          color: '#8A6606',
-          letterSpacing: 0.6,
-          fontFamily: 'Manrope_700Bold',
-        }}
-      >
-        {title}
-      </Text>
-    ) : null}
-    <View
-      className="mx-4"
-      style={{
-        borderRadius: 20,
-        backgroundColor: '#FFFFFF',
-      }}
-    >
-      <View
-        className="overflow-hidden"
-        style={{
-          borderRadius: 20,
-        }}
-      >
-        {children}
+}) => {
+  const items = Children.toArray(children).filter(isValidElement);
+  return (
+    <View className="mb-5">
+      {title ? (
+        <Text
+          accessibilityRole="header"
+          style={{
+            fontSize: 12,
+            marginHorizontal: 20,
+            marginBottom: 8,
+            color: B.gold,
+            letterSpacing: 1.2,
+            textTransform: 'uppercase',
+            fontFamily: 'Manrope_700Bold',
+          }}
+        >
+          {title}
+        </Text>
+      ) : null}
+      <View className="mx-4" style={{ borderRadius: 20, backgroundColor: B.card, overflow: 'hidden' }}>
+        {items.map((child, i) =>
+          i === items.length - 1 && child.type === SettingsRow
+            ? { ...child, props: { ...(child.props as object), last: true } }
+            : child,
+        )}
       </View>
+      {hint ? (
+        <Text style={{ marginHorizontal: 20, marginTop: 8, fontSize: 12, lineHeight: 17, color: B.ink4, fontFamily: 'Manrope_500Medium' }}>
+          {hint}
+        </Text>
+      ) : null}
     </View>
-  </View>
-);
+  );
+};

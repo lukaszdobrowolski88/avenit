@@ -1,6 +1,6 @@
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import {
-  Copy,
+  Share2,
   CornerUpLeft,
   Forward,
   Pencil,
@@ -16,6 +16,12 @@ interface Props {
   onClose: () => void;
   mine: boolean;
   canEdit: boolean;
+  /** Usunięcie własnej wiadomości (uprawnienie res:messages:update). */
+  canDelete?: boolean;
+  /** Przypinanie wiadomości — jak web: administrator rozmowy. */
+  canPin?: boolean;
+  /** Odpowiedź — tylko gdy mogę pisać w tej rozmowie. */
+  canReply?: boolean;
   isPinned: boolean;
   onPickReaction: (emoji: string) => void;
   onReply: () => void;
@@ -104,7 +110,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   rowLabelDestructive: {
-    color: "#ef4444",
+    color: "#B42318",
   },
 });
 
@@ -113,6 +119,9 @@ export const MessageActionsSheet = ({
   onClose,
   mine,
   canEdit,
+  canDelete,
+  canPin = true,
+  canReply = true,
   isPinned,
   onPickReaction,
   onReply,
@@ -129,20 +138,22 @@ export const MessageActionsSheet = ({
   };
 
   const actions: ActionRow[] = [
-    { key: "reply", label: "Odpowiedz", Icon: CornerUpLeft, onPress: wrap(onReply) },
+    ...(canReply ? [{ key: "reply", label: "Odpowiedz", Icon: CornerUpLeft, onPress: wrap(onReply) }] : []),
     { key: "forward", label: "Przekaż", Icon: Forward, onPress: wrap(onForward) },
-    { key: "copy", label: "Kopiuj", Icon: Copy, onPress: wrap(onCopy) },
-    {
+    { key: "copy", label: "Udostępnij tekst", Icon: Share2, onPress: wrap(onCopy) },
+  ];
+  if (canPin) {
+    actions.push({
       key: "pin",
       label: isPinned ? "Odepnij" : "Przypnij",
       Icon: isPinned ? PinOff : Pin,
       onPress: wrap(onTogglePin),
-    },
-  ];
+    });
+  }
   if (canEdit) {
     actions.push({ key: "edit", label: "Edytuj", Icon: Pencil, onPress: wrap(onEdit) });
   }
-  if (mine) {
+  if (mine && (canDelete ?? true)) {
     actions.push({
       key: "delete",
       label: "Usuń",
@@ -196,7 +207,7 @@ export const MessageActionsSheet = ({
                     <View style={styles.rowIcon}>
                       <Icon
                         size={20}
-                        color={a.destructive ? "#ef4444" : "#2A2312"}
+                        color={a.destructive ? "#B42318" : "#2A2312"}
                         strokeWidth={2}
                       />
                     </View>

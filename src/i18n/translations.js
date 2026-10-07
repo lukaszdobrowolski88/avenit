@@ -6878,6 +6878,8 @@ const en = {
   'Powiadomienia, nowe: {n}': 'Notifications, new: {n}',
   // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
   'Nie udało się otworzyć pliku. Sprawdź, czy masz dostęp.': 'Couldn\'t open the file. Check that you have access.',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Kto z wolontariuszy nie może służyć i kiedy': 'Which volunteers can\'t serve, and when',
 };
 
 const uk = {
@@ -13754,6 +13756,8 @@ const uk = {
   'Powiadomienia, nowe: {n}': 'Сповіщення, нових: {n}',
   // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
   'Nie udało się otworzyć pliku. Sprawdź, czy masz dostęp.': 'Не вдалося відкрити файл. Перевірте, чи маєте доступ.',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Kto z wolontariuszy nie może służyć i kiedy': 'Хто з волонтерів не може служити і коли',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

@@ -3,6 +3,7 @@ import { Alert, Text, View } from 'react-native';
 import { B } from '../../../components/ui/brand';
 import { Chip, DangerLink, FormInput, FormLabel, PrimaryButton, Sheet } from '../../../components/ui/Sheet';
 import { useDeleteRole, useSaveRole, type RosterPerson, type RosterRole } from '../roster';
+import { friendlyError } from '../../../lib/errors';
 
 // Służba w zespole (team_roles) — nazwa, opis i kto ją pełni (team_member_roles).
 // Służby są kolumnami grafiku; nowa służba od razu pojawia się na wydarzeniach.
@@ -57,7 +58,7 @@ export const RoleSheet = ({
         takenKeys: roles.map((r) => r.key),
         nextOrder: roles.reduce((m, r) => Math.max(m, r.order), 0) + 1,
       },
-      { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') },
+      { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')) },
     );
   };
 
@@ -67,7 +68,7 @@ export const RoleSheet = ({
       {
         text: 'Usuń',
         style: 'destructive',
-        onPress: () => del.mutate(role!.id, { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? 'Spróbuj ponownie.') }),
+        onPress: () => del.mutate(role!.id, { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się usunąć', friendlyError(e, 'Spróbuj ponownie.')) }),
       },
     ]);
 

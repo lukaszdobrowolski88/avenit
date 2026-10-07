@@ -93,7 +93,7 @@ export const REGISTRY = {
   resources: T('module:rooms'),
   resource_bookings: T('module:rooms'),
   volunteer_blockouts: T('module:serve'),
-  song_usage: T('module:serve'),
+  song_usage: T('module:analytics'), // raport CCLI — w Analityce (2026-10)
   automation_workflows: T('module:automation'),
   automation_steps: T('module:automation'),
   automation_runs: T('module:automation'),

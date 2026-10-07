@@ -10,6 +10,7 @@ import {
   useTogglePostPin,
   type WallPost,
 } from '../api';
+import { friendlyError } from '../../../lib/errors';
 
 interface Props {
   post: WallPost;
@@ -51,7 +52,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
     if (!myEmail) return;
     toggleLike.mutate(
       { postId: post.id, userEmail: myEmail, currentLikes: post.likes },
-      { onError: (err: any) => Alert.alert('Błąd', err?.message ?? 'Nie udało się zapisać reakcji.') },
+      { onError: (err: unknown) => Alert.alert('Nie udało się zapisać reakcji', friendlyError(err, 'Spróbuj ponownie.')) },
     );
   };
 
@@ -69,7 +70,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
       {
         onSuccess: () => setCommentText(''),
         onError: (err: any) =>
-          Alert.alert('Błąd', err?.message ?? 'Nie udało się dodać komentarza'),
+          Alert.alert('Nie udało się dodać komentarza', friendlyError(err, 'Spróbuj ponownie.')),
       },
     );
   };
@@ -82,7 +83,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
       onPress: () =>
         togglePin.mutate(
           { postId: post.id, pinned: !post.pinned },
-          { onError: (err: any) => Alert.alert('Błąd', err?.message ?? 'Nie udało się zmienić przypięcia.') },
+          { onError: (err: unknown) => Alert.alert('Nie udało się zmienić przypięcia', friendlyError(err, 'Spróbuj ponownie.')) },
         ),
     });
     if (isMine) {
@@ -90,7 +91,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
         text: 'Usuń',
         style: 'destructive',
         onPress: () => {
-          Alert.alert('Usunąć post?', 'Tej operacji nie można cofnąć.', [
+          Alert.alert('Usunąć post?', `${post.title ? `„${post.title}”` : 'Ten post'} zniknie z tablicy razem z komentarzami. Tej operacji nie można cofnąć.`, [
             { text: 'Anuluj', style: 'cancel' },
             {
               text: 'Usuń',
@@ -98,7 +99,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
               onPress: () =>
                 deletePost.mutate(post.id, {
                   onError: (err: any) =>
-                    Alert.alert('Błąd', err?.message ?? 'Nie udało się usunąć posta.'),
+                    Alert.alert('Nie udało się usunąć posta', friendlyError(err, 'Spróbuj ponownie.')),
                 }),
             },
           ]);
@@ -189,7 +190,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
             </Text>
           </View>
           <Pressable onPress={handleMore} hitSlop={8} style={{ padding: 4 }}>
-            <MoreVertical size={18} color="#857F70" />
+            <MoreVertical size={18} color="#6E685A" />
           </Pressable>
         </View>
 
@@ -312,7 +313,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                       <Text
                         style={{
                           fontSize: 10,
-                          color: '#857F70',
+                          color: '#6E685A',
                           fontFamily: 'Manrope_500Medium',
                         }}
                       >
@@ -343,7 +344,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                   value={commentText}
                   onChangeText={setCommentText}
                   placeholder="Napisz komentarz…"
-                  placeholderTextColor="#857F70"
+                  placeholderTextColor="#6E685A"
                   multiline
                   style={{
                     flex: 1,

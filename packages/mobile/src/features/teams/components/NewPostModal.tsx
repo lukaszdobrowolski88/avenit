@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { X } from 'lucide-react-native';
+import { friendlyError } from '../../../lib/errors';
 
 interface Props {
   visible: boolean;
@@ -33,7 +34,7 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
       setTitle('');
       setContent('');
     } catch (e: any) {
-      Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać posta');
+      Alert.alert('Nie udało się zapisać posta', friendlyError(e, 'Spróbuj ponownie.'));
     }
   };
 
@@ -95,7 +96,7 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
             value={title}
             onChangeText={setTitle}
             placeholder="np. Próba w piątek"
-            placeholderTextColor="#857F70"
+            placeholderTextColor="#6E685A"
             style={{
               borderWidth: 1,
               borderColor: '#E6E1D5',
@@ -126,7 +127,7 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
             value={content}
             onChangeText={setContent}
             placeholder="Napisz coś do zespołu…"
-            placeholderTextColor="#857F70"
+            placeholderTextColor="#6E685A"
             multiline
             style={{
               borderWidth: 1,

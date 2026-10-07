@@ -86,7 +86,7 @@ export const Empty = ({ Icon, title, hint }: { Icon: LucideIcon; title: string; 
         marginBottom: 12,
       }}
     >
-      <Icon size={24} color="#857F70" />
+      <Icon size={24} color="#6E685A" />
     </View>
     <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold', textAlign: 'center' }}>{title}</Text>
     {hint ? (
@@ -149,12 +149,12 @@ export const SearchBar = ({
 }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, paddingHorizontal: 14, borderRadius: 23, backgroundColor: '#FFFFFF' }}>
-      <Search size={16} color="#857F70" />
+      <Search size={16} color="#6E685A" />
       <TextInput
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor="#857F70"
+        placeholderTextColor="#6E685A"
         autoCorrect={false}
         style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
       />

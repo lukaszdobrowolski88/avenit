@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,13 +19,15 @@ import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import {
   useMembers,
   useMemberFilters,
+  useGroupMemberships,
   fullName,
-  initials,
   STATUS_META,
   MINISTRY_LABELS,
   type MemberStatus,
   type MemberRow,
 } from '../../../src/features/members/api';
+import { groupLinksLabel, memberGroupLinks, type GroupLink } from '../../../src/features/home-groups/utils';
+import { friendlyError } from '../../../src/lib/errors';
 
 const STATUSES: { key: MemberStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'Wszyscy' },
@@ -44,7 +46,20 @@ export default function MembersScreen() {
     selectedCampusId,
     withCampusFilter,
   });
-  const filtered = useMemberFilters(data, search, statusFilter, ministryFilter);
+  // Grupy osoby z obu źródeł (home_group_members + members.home_group_id), z rolą lidera.
+  const memberships = useGroupMemberships();
+  const linksById = useMemo(() => {
+    const map = new Map<string, GroupLink[]>();
+    const rows = memberships.data?.rows ?? [];
+    const groups = memberships.data?.groups ?? [];
+    for (const m of data ?? []) map.set(String(m.id), memberGroupLinks(m, rows, groups));
+    return map;
+  }, [data, memberships.data]);
+  const groupsText = useCallback(
+    (m: MemberRow) => (linksById.get(String(m.id)) ?? []).map((g) => g.name).join(' '),
+    [linksById],
+  );
+  const filtered = useMemberFilters(data, search, statusFilter, ministryFilter, groupsText);
 
   const counts = {
     all: data?.length ?? 0,
@@ -62,7 +77,7 @@ export default function MembersScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
-          title="Społeczność"
+          title="Członkowie"
           subtitle={`${filtered.length} z ${data?.length ?? 0}`}
           showBack
           Icon={Users}
@@ -77,19 +92,19 @@ export default function MembersScreen() {
               backgroundColor: '#FFFFFF',
             }}
           >
-            <Search size={18} color="#857F70" />
+            <Search size={18} color="#6E685A" />
             <TextInput
               className="flex-1 text-base"
               style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
-              placeholder="Szukaj po imieniu lub email…"
-              placeholderTextColor="#857F70"
+              placeholder="Szukaj: imię, e-mail, telefon, grupa…"
+              placeholderTextColor="#6E685A"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch('')} hitSlop={10}>
-                <X size={16} color="#857F70" />
+                <X size={16} color="#6E685A" />
               </Pressable>
             ) : null}
           </View>
@@ -212,10 +227,17 @@ export default function MembersScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
+              style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
             >
-              {(error as Error)?.message ?? 'Błąd'}
+              {friendlyError(error, 'Nie udało się wczytać listy osób. Pociągnij w dół, aby spróbować ponownie.')}
             </Text>
+            <Pressable
+              onPress={() => refetch()}
+              className="active:opacity-70"
+              style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: B.ink }}
+            >
+              <Text style={{ color: B.onDark, fontFamily: 'Manrope_700Bold', fontSize: 14 }}>Spróbuj ponownie</Text>
+            </Pressable>
           </View>
         ) : (
           <FlatList
@@ -249,13 +271,15 @@ export default function MembersScreen() {
                   className="text-[16px]"
                   style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
-                  Brak osób
+                  {(data ?? []).length ? 'Nikogo nie znaleziono' : 'Brak osób'}
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
                   style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
-                  Spróbuj innego filtru.
+                  {(data ?? []).length
+                    ? 'Zmień wyszukiwanie albo filtr.'
+                    : 'Osoby dodasz w aplikacji webowej (Członkowie).'}
                 </Text>
               </View>
             }
@@ -265,6 +289,7 @@ export default function MembersScreen() {
               const first = index === 0;
               const last = index === filtered.length - 1;
               const isMember = item.status === 'Członek';
+              const groupLine = groupLinksLabel(linksById.get(String(item.id)) ?? []);
               return (
                 <Link push
                   href={{ pathname: '/(app)/members/[id]', params: { id: String(item.id) } }}
@@ -292,13 +317,18 @@ export default function MembersScreen() {
                         {fullName(item)}
                       </Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                        {item.email ? (
+                        {item.email || item.phone ? (
                           <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 13, color: B.ink3, fontFamily: 'Manrope_500Medium' }}>
-                            {item.email}
+                            {item.email || item.phone}
                           </Text>
                         ) : null}
                         {itemCampus ? <CampusBadge campus={itemCampus} /> : null}
                       </View>
+                      {groupLine ? (
+                        <Text numberOfLines={1} style={{ fontSize: 12, color: B.gold, marginTop: 2, fontFamily: 'Manrope_600SemiBold' }}>
+                          {groupLine}
+                        </Text>
+                      ) : null}
                     </View>
                     {meta ? (
                       <View style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, backgroundColor: isMember ? B.kurkumaSoft : B.paper2 }}>

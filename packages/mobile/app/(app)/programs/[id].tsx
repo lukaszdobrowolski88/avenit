@@ -63,6 +63,7 @@ import { useAuthSession } from '../../../src/lib/auth';
 import { usePermissions } from '../../../src/lib/permissions';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { goBack } from '../../../src/lib/navigation';
+import { friendlyError } from '../../../src/lib/errors';
 
 type TabKey = 'schedule' | 'team' | 'notes';
 
@@ -106,67 +107,18 @@ const ProgramTab = ({
   </Pressable>
 );
 
-const TEAM_LABELS: Record<
-  string,
-  { label: string; tint: string; bg: string; gradFrom: string; gradTo: string }
-> = {
-  worship: {
-    label: 'Zespół Uwielbienia',
-    tint: '#8A6606',
-    bg: '#FFF1C2',
-    gradFrom: '#8A6606',
-    gradTo: '#FFBE0B',
-  },
-  media: {
-    label: 'MediaTeam',
-    tint: '#8A6606',
-    bg: '#FFF1C2',
-    gradFrom: '#FFBE0B',
-    gradTo: '#FFBE0B',
-  },
-  produkcja: {
-    label: 'MediaTeam',
-    tint: '#8A6606',
-    bg: '#FFF1C2',
-    gradFrom: '#FFBE0B',
-    gradTo: '#FFBE0B',
-  },
-  atmosfera: {
-    label: 'Atmosfera Team',
-    tint: '#2A2312',
-    bg: '#ECE8DE',
-    gradFrom: '#6B6557',
-    gradTo: '#6B6557',
-  },
-  atmosfera_team: {
-    label: 'Atmosfera Team',
-    tint: '#2A2312',
-    bg: '#ECE8DE',
-    gradFrom: '#6B6557',
-    gradTo: '#6B6557',
-  },
-  scena: {
-    label: 'Scena',
-    tint: '#7c2d12',
-    bg: '#F3E3B0',
-    gradFrom: '#8A6606',
-    gradTo: '#f43f5e',
-  },
-  mc: {
-    label: 'MC',
-    tint: '#9d174d',
-    bg: '#FFF1C2',
-    gradFrom: '#8A6606',
-    gradTo: '#6B6557',
-  },
-  kids: {
-    label: 'Dzieci',
-    tint: '#6B4F05',
-    bg: '#FFF1C2',
-    gradFrom: '#FFBE0B',
-    gradTo: '#FFBE0B',
-  },
+// Nazwy służb w zakładce „Zespół” — jeden spokojny styl marki dla wszystkich (bez tęczy kolorów).
+const TEAM_NAMES: Record<string, string> = {
+  worship: 'Zespół Uwielbienia',
+  media: 'MediaTeam',
+  produkcja: 'MediaTeam',
+  atmosfera: 'Atmosfera Team',
+  atmosfera_team: 'Atmosfera Team',
+  scena: 'Scena',
+  mc: 'MC',
+  kids: 'Dzieci',
 };
+const TEAM_STYLE = { tint: '#2A2312', bg: '#F6F4EE' };
 
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -237,7 +189,7 @@ export default function ProgramDetailScreen() {
         </Pressable>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ textAlign: 'center', color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
-            {programQuery.isError ? (programQuery.error as Error)?.message ?? 'Błąd' : 'Program nie istnieje albo został usunięty.'}
+            {programQuery.isError ? friendlyError(programQuery.error, 'Nie udało się wczytać programu.') : 'Program nie istnieje albo został usunięty.'}
           </Text>
         </View>
       </View>
@@ -263,7 +215,7 @@ export default function ProgramDetailScreen() {
 
   // Menu „⋯” — akcje jak pasek narzędzi edytora programu na webie (bez eksportów).
   const actions: { label: string; run: () => void; destructive?: boolean }[] = [
-    ...(canEdit ? [{ label: 'Edytuj nazwę, datę i typ', run: () => setEditingHeader(true) }] : []),
+    ...(canEdit ? [{ label: 'Edytuj nazwę, datę i kategorię', run: () => setEditingHeader(true) }] : []),
     ...(canEdit && schedule.length > 1 ? [{ label: 'Zmień kolejność planu', run: () => { setTab('schedule'); setReorder(true); } }] : []),
     ...(canCreate ? [{ label: 'Duplikuj program', run: () => setDuplicating(true) }] : []),
     ...(canSaveTemplate && schedule.length ? [{ label: 'Zapisz plan jako szablon', run: () => setSavingTemplate(true) }] : []),
@@ -287,7 +239,7 @@ export default function ProgramDetailScreen() {
   // ── Zmiany planu: zapis od razu (optymistycznie) ──
   const persist = (next: PlanItem[]) =>
     saveSchedule.mutate(next as never, {
-      onError: (e: any) => Alert.alert('Nie udało się zapisać planu', e?.message ?? 'Spróbuj ponownie.'),
+      onError: (e: unknown) => Alert.alert('Nie udało się zapisać planu', friendlyError(e, 'Spróbuj ponownie.')),
     });
   const closeEditor = () => {
     setEditIndex(null);
@@ -335,7 +287,7 @@ export default function ProgramDetailScreen() {
         { eventId: ev.id, programId },
         {
           onSuccess: () => setPickingEvent(false),
-          onError: (e: any) => Alert.alert('Nie udało się podpiąć', e?.message ?? 'Spróbuj ponownie.'),
+          onError: (e: unknown) => Alert.alert('Nie udało się podpiąć', friendlyError(e, 'Spróbuj ponownie.')),
         },
       );
     if (ev.hasOtherProgram) {
@@ -356,7 +308,7 @@ export default function ProgramDetailScreen() {
               onPress: () =>
                 link.mutate(
                   { eventId: ev.id, programId: null },
-                  { onError: (e: any) => Alert.alert('Nie udało się odpiąć', e?.message ?? 'Spróbuj ponownie.') },
+                  { onError: (e: unknown) => Alert.alert('Nie udało się odpiąć', friendlyError(e, 'Spróbuj ponownie.')) },
                 ),
             },
           ]
@@ -530,7 +482,7 @@ export default function ProgramDetailScreen() {
               </View>
             ) : (
               teamGrouped.map(([teamType, members]) => {
-                const meta = TEAM_LABELS[teamType] ?? { label: teamType, tint: '#4A463E', bg: '#ECE8DE', gradFrom: '#A8A59E', gradTo: '#7A7466' };
+                const meta = { label: TEAM_NAMES[teamType] ?? teamType, ...TEAM_STYLE };
                 return (
                   <View key={teamType} className="mb-4" style={{ borderRadius: 20, backgroundColor: '#FFFFFF' }}>
                     <View className="overflow-hidden" style={{ borderRadius: 20 }}>
@@ -581,7 +533,7 @@ export default function ProgramDetailScreen() {
                                   fontFamily: 'Manrope_700Bold',
                                 }}
                               >
-                                {m.status === 'accepted' ? 'Potwierdzone' : m.status === 'rejected' ? 'Odrzucone' : 'Oczekuje'}
+                                {m.status === 'accepted' ? 'Potwierdzone' : m.status === 'rejected' ? 'Odmowa' : 'Czeka na odpowiedź'}
                               </Text>
                             </View>
                           </View>
@@ -698,7 +650,7 @@ const ProgramNotes = ({ programId, initial, editable }: { programId: number; ini
             value={text}
             onChangeText={setText}
             placeholder="Informacje dla wszystkich: próba, ubiór, uwagi techniczne…"
-            placeholderTextColor="#857F70"
+            placeholderTextColor="#6E685A"
             multiline
             style={{ minHeight: 90, fontSize: 15, lineHeight: 21, color: '#2A2312', fontFamily: 'Manrope_500Medium', textAlignVertical: 'top' }}
           />
@@ -707,7 +659,7 @@ const ProgramNotes = ({ programId, initial, editable }: { programId: number; ini
               onPress={() =>
                 save.mutate(text, {
                   onSuccess: () => setLastSaved(text),
-                  onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.'),
+                  onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')),
                 })
               }
               disabled={save.isPending}
@@ -849,7 +801,7 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
                     >
                       {a.name}
                     </Text>
-                    <ExternalLink size={14} color="#857F70" />
+                    <ExternalLink size={14} color="#6E685A" />
                   </Pressable>
                 ))}
               </View>

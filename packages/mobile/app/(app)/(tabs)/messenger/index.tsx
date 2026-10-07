@@ -24,9 +24,14 @@ import {
   Users as UsersIcon,
   VolumeX,
   X,
+  CloudOff,
+  SearchX,
 } from "lucide-react-native";
 import { formatRelative } from "../../../../src/lib/domain";
 import { PageHeader } from "../../../../src/components/ui/PageHeader";
+import { EmptyState } from "../../../../src/components/ui/EmptyState";
+import { usePermissions } from "../../../../src/lib/permissions";
+import { friendlyError } from "../../../../src/lib/errors";
 import {
   useConversations,
   useToggleStarred,
@@ -146,6 +151,12 @@ export default function MessengerScreen() {
   const toggleArchive = useToggleArchived(user?.email ?? null);
   const togglePin = useTogglePinConversation(user?.email ?? null);
   useRealtimeConversations(user?.email ?? null);
+  // Jak serwer: gwiazdka/przypięcie/archiwum to zapis własnego wiersza uczestnika,
+  // nowa rozmowa — utworzenie rozmowy i uczestników. Bez uprawnień nie kusimy przyciskiem.
+  const perms = usePermissions();
+  const canManage = perms.can("res:conversation_participants:update");
+  const canCreate =
+    perms.can("res:conversations:create") && perms.can("res:conversation_participants:create");
 
   // Lookup memberów po peer_email (drugi uczestnik direct) + sender_email z ostatnich wiadomości.
   const lookupEmails = useMemo(() => {
@@ -223,14 +234,14 @@ export default function MessengerScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={{ flex: 1, backgroundColor: "#F6F4EE" }}>
         <PageHeader
-          title="Wiadomości"
-          subtitle={
-            totalUnread > 0 ? `${totalUnread} nieprzeczytanych` : "Komunikator zboru"
-          }
+          title="Komunikator"
+          subtitle={totalUnread > 0 ? `Nieprzeczytane: ${totalUnread}` : "Wiadomości wspólnoty"}
           Icon={MessageCircle}
           right={
+            canCreate ? (
             <Pressable
               onPress={() => router.push("/(app)/messenger/new")}
+              accessibilityRole="button"
               accessibilityLabel="Nowa rozmowa"
               hitSlop={8}
               className="active:opacity-70"
@@ -245,6 +256,7 @@ export default function MessengerScreen() {
             >
               <SquarePen size={18} color="#ffffff" strokeWidth={2.2} />
             </Pressable>
+            ) : null
           }
         />
 
@@ -262,7 +274,7 @@ export default function MessengerScreen() {
               borderColor: "#E6E1D5",
             }}
           >
-            <Search size={16} color="#857F70" />
+            <Search size={16} color="#6E685A" />
             <TextInput
               style={{
                 flex: 1,
@@ -271,14 +283,14 @@ export default function MessengerScreen() {
                 fontFamily: "Manrope_500Medium",
               }}
               placeholder="Szukaj rozmów…"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                <X size={14} color="#857F70" />
+                <X size={14} color="#6E685A" />
               </Pressable>
             ) : null}
           </View>
@@ -330,24 +342,14 @@ export default function MessengerScreen() {
             <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
-          <View
-            style={{
-              flex: 1,
-              alignItems: "center",
-              justifyContent: "center",
-              paddingHorizontal: 24,
-            }}
-          >
-            <Text
-              style={{
-                textAlign: "center",
-                color: "#e11d48",
-                fontFamily: "Manrope_500Medium",
-              }}
-            >
-              {(error as Error)?.message ?? "Błąd"}
-            </Text>
-          </View>
+          <EmptyState
+            Icon={CloudOff}
+            title="Nie udało się wczytać rozmów"
+            hint={friendlyError(error)}
+            actionLabel="Spróbuj ponownie"
+            onAction={() => refetch()}
+            style={{ marginTop: 24 }}
+          />
         ) : (
           <SectionList
             contentContainerStyle={{
@@ -379,16 +381,36 @@ export default function MessengerScreen() {
               </Text>
             )}
             ListEmptyComponent={
-              <Text
-                style={{
-                  textAlign: "center",
-                  marginTop: 48,
-                  color: "#6B6557",
-                  fontFamily: "Manrope_500Medium",
-                }}
-              >
-                {search ? "Brak wyników." : "Brak konwersacji."}
-              </Text>
+              search ? (
+                <EmptyState
+                  Icon={SearchX}
+                  title={`Nic nie znaleziono dla „${search.trim()}”`}
+                  hint="Sprawdź pisownię albo wpisz imię osoby lub nazwę grupy."
+                  style={{ marginTop: 24 }}
+                />
+              ) : filter !== "all" ? (
+                <EmptyState
+                  Icon={MessageCircle}
+                  title="Brak rozmów w tym widoku"
+                  hint="Wybierz inny filtr, aby zobaczyć pozostałe rozmowy."
+                  actionLabel="Pokaż wszystkie"
+                  onAction={() => setFilter("all")}
+                  style={{ marginTop: 24 }}
+                />
+              ) : (
+                <EmptyState
+                  Icon={MessageCircle}
+                  title="Brak rozmów"
+                  hint={
+                    canCreate
+                      ? "Napisz do kogoś ze wspólnoty albo załóż grupę."
+                      : "Gdy ktoś do Ciebie napisze albo doda Cię do grupy, rozmowa pojawi się tutaj."
+                  }
+                  actionLabel={canCreate ? "Nowa rozmowa" : undefined}
+                  onAction={canCreate ? () => router.push("/(app)/messenger/new") : undefined}
+                  style={{ marginTop: 24 }}
+                />
+              )
             }
             renderItem={({ item }) => {
               const isMinistry = item.type === "ministry";
@@ -465,12 +487,12 @@ export default function MessengerScreen() {
                           >
                             {displayTitle}
                           </Text>
-                          {item.muted ? <VolumeX size={12} color="#857F70" /> : null}
+                          {item.muted ? <VolumeX size={12} color="#6E685A" /> : null}
                           {last ? (
                             <Text
                               style={{
                                 fontSize: 11,
-                                color: unread ? "#8A6606" : "#857F70",
+                                color: unread ? "#8A6606" : "#6E685A",
                                 fontFamily: unread
                                   ? "Manrope_700Bold"
                                   : "Manrope_500Medium",
@@ -501,7 +523,7 @@ export default function MessengerScreen() {
                             style={{
                               fontSize: 13,
                               marginTop: 2,
-                              color: "#857F70",
+                              color: "#6E685A",
                               fontStyle: "italic",
                               fontFamily: "Manrope_400Regular",
                             }}
@@ -535,54 +557,66 @@ export default function MessengerScreen() {
                       ) : null}
                     </Pressable>
                   </Link>
-                  <Pressable
-                    hitSlop={10}
-                    onPress={() =>
-                      togglePin.mutate({
-                        conversationId: item.id,
-                        pinned: !item.pinned,
-                      })
-                    }
-                    style={{ marginLeft: 6, padding: 6 }}
-                  >
-                    <Pin
-                      size={18}
-                      color={item.pinned ? "#8A6606" : "#9A9586"}
-                      fill={item.pinned ? "#8A6606" : "none"}
-                    />
-                  </Pressable>
-                  <Pressable
-                    hitSlop={10}
-                    onPress={() =>
-                      toggleStar.mutate({
-                        conversationId: item.id,
-                        starred: !item.starred,
-                      })
-                    }
-                    style={{ marginLeft: 2, padding: 6 }}
-                  >
-                    <Star
-                      size={18}
-                      color={item.starred ? "#FFBE0B" : "#9A9586"}
-                      fill={item.starred ? "#FFBE0B" : "none"}
-                    />
-                  </Pressable>
-                  <Pressable
-                    hitSlop={10}
-                    onPress={() =>
-                      toggleArchive.mutate({
-                        conversationId: item.id,
-                        archived: !item.archived,
-                      })
-                    }
-                    style={{ marginLeft: 2, padding: 6 }}
-                  >
-                    {item.archived ? (
-                      <ArchiveRestore size={18} color="#6B6557" />
-                    ) : (
-                      <Archive size={18} color="#9A9586" />
-                    )}
-                  </Pressable>
+                  {canManage ? (
+                    <>
+                      <Pressable
+                        hitSlop={10}
+                        onPress={() =>
+                          togglePin.mutate({
+                            conversationId: item.id,
+                            pinned: !item.pinned,
+                          })
+                        }
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: !!item.pinned }}
+                        accessibilityLabel={item.pinned ? "Odepnij rozmowę" : "Przypnij rozmowę"}
+                        style={{ marginLeft: 6, padding: 6 }}
+                      >
+                        <Pin
+                          size={18}
+                          color={item.pinned ? "#8A6606" : "#6E685A"}
+                          fill={item.pinned ? "#8A6606" : "none"}
+                        />
+                      </Pressable>
+                      <Pressable
+                        hitSlop={10}
+                        onPress={() =>
+                          toggleStar.mutate({
+                            conversationId: item.id,
+                            starred: !item.starred,
+                          })
+                        }
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: !!item.starred }}
+                        accessibilityLabel={item.starred ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+                        style={{ marginLeft: 2, padding: 6 }}
+                      >
+                        <Star
+                          size={18}
+                          color={item.starred ? "#8A6606" : "#6E685A"}
+                          fill={item.starred ? "#FFBE0B" : "none"}
+                        />
+                      </Pressable>
+                      <Pressable
+                        hitSlop={10}
+                        onPress={() =>
+                          toggleArchive.mutate({
+                            conversationId: item.id,
+                            archived: !item.archived,
+                          })
+                        }
+                        accessibilityRole="button"
+                        accessibilityLabel={item.archived ? "Przywróć z archiwum" : "Przenieś do archiwum"}
+                        style={{ marginLeft: 2, padding: 6 }}
+                      >
+                        {item.archived ? (
+                          <ArchiveRestore size={18} color="#6B6557" />
+                        ) : (
+                          <Archive size={18} color="#6E685A" />
+                        )}
+                      </Pressable>
+                    </>
+                  ) : null}
                 </View>
               );
             }}

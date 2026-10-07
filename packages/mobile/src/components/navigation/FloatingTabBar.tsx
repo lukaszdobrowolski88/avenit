@@ -14,8 +14,9 @@ const KURKUMA = '#FFBE0B';
 
 const TABS: { name: TabName; label: string; Icon?: LucideIcon; module?: string }[] = [
   { name: 'dashboard', label: 'Start', Icon: Home },
-  { name: 'calendar', label: 'Kalendarz', Icon: Calendar, module: 'calendar' },
-  { name: 'messenger', label: 'Czat', Icon: MessageCircle, module: 'komunikator' },
+  // Nazwy jak moduły w menu weba (Wydarzenia, Komunikator) — czytane przez czytnik ekranu.
+  { name: 'calendar', label: 'Wydarzenia', Icon: Calendar, module: 'calendar' },
+  { name: 'messenger', label: 'Komunikator', Icon: MessageCircle, module: 'komunikator' },
   { name: 'modules', label: 'Moduły', Icon: LayoutGrid },
   { name: 'account', label: 'Konto' },
 ];

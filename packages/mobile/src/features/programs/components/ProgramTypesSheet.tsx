@@ -36,6 +36,7 @@ import {
 } from 'lucide-react-native';
 import { B } from '../../../components/ui/brand';
 import { useDeleteProgramType, useProgramTypes, useSaveProgramType, type ProgramTypeRow } from '../api';
+import { friendlyError } from '../../../lib/errors';
 
 // Typy programów (jak okno „Typ programu” na liście programów na webie): nazwa, ikona,
 // kolor. Widoczność sekcji zespołów zostaje na webie (zespoły są na wydarzeniach).
@@ -94,24 +95,24 @@ export const ProgramTypesSheet = ({
     onClose();
   };
   const submit = () => {
-    if (!draft || !draft.name.trim()) return Alert.alert('Podaj nazwę typu');
+    if (!draft || !draft.name.trim()) return Alert.alert('Podaj nazwę kategorii');
     const sortOrder = list.length ? Math.max(...list.map((t) => t.sort_order ?? 0)) + 1 : 0;
     save.mutate(
       { id: draft.id, name: draft.name.trim(), icon: draft.icon, color: draft.color, sortOrder },
-      { onSuccess: () => setDraft(null), onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') },
+      { onSuccess: () => setDraft(null), onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')) },
     );
   };
   const remove = () => {
     if (!draft?.id) return;
-    Alert.alert('Usunąć typ?', 'Programy tego typu zachowają dane, ale stracą przypisanie do typu.', [
+    Alert.alert('Usunąć kategorię?', `Kategoria „${draft.name}” zostanie usunięta. Programy z tej kategorii zachowają dane, ale trafią do „Bez kategorii”.`, [
       { text: 'Anuluj', style: 'cancel' },
       {
-        text: 'Usuń',
+        text: 'Usuń kategorię',
         style: 'destructive',
         onPress: () =>
           del.mutate(draft.id!, {
             onSuccess: () => setDraft(null),
-            onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? 'Spróbuj ponownie.'),
+            onError: (e: unknown) => Alert.alert('Nie udało się usunąć kategorii', friendlyError(e, 'Spróbuj ponownie.')),
           }),
       },
     ]);
@@ -127,7 +128,7 @@ export const ProgramTypesSheet = ({
             </Pressable>
           ) : null}
           <Text style={{ flex: 1, fontSize: 20, color: B.ink, fontFamily: F.bold }}>
-            {draft ? (draft.id ? 'Edytuj typ' : 'Nowy typ') : 'Typy programów'}
+            {draft ? (draft.id ? 'Edytuj kategorię' : 'Nowa kategoria') : 'Kategorie programów'}
           </Text>
           <Pressable onPress={close} hitSlop={10} className="active:opacity-60">
             <X size={22} color={B.ink2} />
@@ -160,7 +161,7 @@ export const ProgramTypesSheet = ({
                 );
               })}
               {!types.isLoading && !list.length ? (
-                <Text style={{ paddingVertical: 16, textAlign: 'center', fontSize: 14, color: B.ink3, fontFamily: F.medium }}>Brak typów programów.</Text>
+                <Text style={{ paddingVertical: 16, textAlign: 'center', fontSize: 14, color: B.ink3, fontFamily: F.medium }}>Brak kategorii programów.</Text>
               ) : null}
               {canCreate ? (
                 <Pressable
@@ -169,7 +170,7 @@ export const ProgramTypesSheet = ({
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 999, backgroundColor: B.kurkuma, marginTop: 6 }}
                 >
                   <Plus size={17} color={B.ink} strokeWidth={2.4} />
-                  <Text style={{ fontSize: 15, color: B.ink, fontFamily: F.bold }}>Nowy typ</Text>
+                  <Text style={{ fontSize: 15, color: B.ink, fontFamily: F.bold }}>Nowa kategoria</Text>
                 </Pressable>
               ) : null}
             </>
@@ -222,7 +223,7 @@ export const ProgramTypesSheet = ({
                 ))}
               </View>
               <Text style={{ marginTop: 6, fontSize: 12, lineHeight: 17, color: B.ink4, fontFamily: F.medium }}>
-                Które sekcje zespołów pokazuje program danego typu, ustawisz na webie.
+                Które sekcje zespołów pokazuje program z tej kategorii, ustawisz na webie.
               </Text>
               <Pressable
                 onPress={submit}
@@ -234,7 +235,7 @@ export const ProgramTypesSheet = ({
               </Pressable>
               {draft.id && canDelete ? (
                 <Pressable onPress={remove} disabled={del.isPending} className="active:opacity-70" style={{ height: 48, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 15, color: '#B42318', fontFamily: F.semibold }}>Usuń typ</Text>
+                  <Text style={{ fontSize: 15, color: '#B42318', fontFamily: F.semibold }}>Usuń kategorię</Text>
                 </Pressable>
               ) : null}
             </>

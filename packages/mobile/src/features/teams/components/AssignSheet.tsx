@@ -98,6 +98,8 @@ export const AssignSheet = ({
         ? 'zgłoszona nieobecność w tym dniu'
       : on && st
         ? STATUS[st].text
+        : !on && st === 'rejected'
+          ? 'odmówił(a) — po zaznaczeniu dostanie nowe zaproszenie'
         : extra?.length
           ? absentMode
             ? `w grafiku: ${extra.join(', ')}`
@@ -128,7 +130,12 @@ export const AssignSheet = ({
           {sub ? (
             <Text
               numberOfLines={1}
-              style={{ fontSize: 12, marginTop: 1, fontFamily: F.medium, color: isReported ? '#B42318' : on && st ? STATUS[st].color : isAbsent ? '#B42318' : B.ink4 }}
+              style={{
+                fontSize: 12,
+                marginTop: 1,
+                fontFamily: F.medium,
+                color: isReported || isAbsent ? '#B42318' : st && (on || st === 'rejected') ? STATUS[st].color : B.ink4,
+              }}
             >
               {sub}
             </Text>

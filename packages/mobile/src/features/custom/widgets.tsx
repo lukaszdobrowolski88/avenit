@@ -18,6 +18,7 @@ import {
 } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
 import { formatDate } from '../../lib/domain';
+import { friendlyError } from '../../lib/errors';
 import { openOnWeb } from '../modules/useModules';
 import { AddButton, Card, Empty, Loading, SegmentChips } from '../teams/tabs/ui';
 import { TasksTab } from '../teams/tabs/TasksTab';
@@ -90,7 +91,8 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
   }, [recs.data]);
 
   const submit = () => {
-    if (!title.trim()) return;
+    if (save.isPending) return;
+    if (!title.trim()) return Alert.alert('Podaj tytuł ogłoszenia');
     save.mutate(
       { data: { title: title.trim(), body: body.trim(), date: new Date().toISOString().slice(0, 10), pinned: false } },
       {
@@ -99,7 +101,7 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
           setBody('');
           setAdding(false);
         },
-        onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? ''),
+        onError: (e: unknown) => Alert.alert('Nie udało się opublikować', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
   };
@@ -109,12 +111,12 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
       {canAdd && !adding ? <AddButton label="Nowe ogłoszenie" onPress={() => setAdding(true)} /> : null}
       {adding ? (
         <Card>
-          <TextInput value={title} onChangeText={setTitle} placeholder="Tytuł" placeholderTextColor="#857F70" style={[inputStyle, { backgroundColor: '#F6F4EE' }]} />
+          <TextInput value={title} onChangeText={setTitle} placeholder="Tytuł" placeholderTextColor="#6E685A" style={[inputStyle, { backgroundColor: '#F6F4EE' }]} />
           <TextInput
             value={body}
             onChangeText={setBody}
             placeholder="Treść"
-            placeholderTextColor="#857F70"
+            placeholderTextColor="#6E685A"
             multiline
             style={[inputStyle, { backgroundColor: '#F6F4EE', height: 90, paddingTop: 12, marginTop: 8, textAlignVertical: 'top' as const }]}
           />
@@ -122,7 +124,12 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
             <Pressable onPress={() => setAdding(false)} className="active:opacity-70" style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#F6F4EE', alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontSize: 14, color: '#3A3427', fontFamily: 'Manrope_600SemiBold' }}>Anuluj</Text>
             </Pressable>
-            <Pressable onPress={submit} className="active:opacity-70" style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#2A2312', alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable
+              onPress={submit}
+              disabled={save.isPending}
+              className="active:opacity-70"
+              style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#2A2312', alignItems: 'center', justifyContent: 'center', opacity: save.isPending ? 0.6 : 1 }}
+            >
               <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Opublikuj</Text>
             </Pressable>
           </View>
@@ -138,15 +145,22 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
             {canDel ? (
               <Pressable
                 onPress={() =>
-                  Alert.alert('Usunąć ogłoszenie?', undefined, [
+                  Alert.alert('Usunąć ogłoszenie?', `„${r.data.title || 'Ogłoszenie'}” zniknie dla wszystkich w module. Tej operacji nie można cofnąć.`, [
                     { text: 'Anuluj', style: 'cancel' },
-                    { text: 'Usuń', style: 'destructive', onPress: () => del.mutate(r.id) },
+                    {
+                      text: 'Usuń',
+                      style: 'destructive',
+                      onPress: () =>
+                        del.mutate(r.id, {
+                          onError: (e: unknown) => Alert.alert('Nie udało się usunąć ogłoszenia', friendlyError(e, 'Spróbuj ponownie.')),
+                        }),
+                    },
                   ])
                 }
                 hitSlop={8}
                 className="active:opacity-60"
               >
-                <Trash2 size={15} color="#857F70" />
+                <Trash2 size={15} color="#6E685A" />
               </Pressable>
             ) : null}
           </View>
@@ -154,7 +168,7 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
             <Text style={{ fontSize: 14, lineHeight: 20, color: '#3A3427', marginTop: 6, fontFamily: 'Manrope_400Regular' }}>{r.data.body}</Text>
           ) : null}
           {r.data.date || r.createdAt ? (
-            <Text style={{ fontSize: 11, color: '#857F70', marginTop: 8, fontFamily: 'Manrope_500Medium' }}>
+            <Text style={{ fontSize: 11, color: '#6E685A', marginTop: 8, fontFamily: 'Manrope_500Medium' }}>
               {formatDate(String(r.data.date || r.createdAt), 'd MMMM yyyy')}
             </Text>
           ) : null}
@@ -184,7 +198,7 @@ export const LinksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
                 <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>{r.data.description}</Text>
               ) : null}
             </View>
-            <ArrowUpRight size={16} color="#857F70" />
+            <ArrowUpRight size={16} color="#6E685A" />
           </View>
         </Card>
       ))}
@@ -243,7 +257,7 @@ export const FaqWidget = ({ ctx }: { ctx: WidgetCtx }) => {
           <Card key={r.id} onPress={() => setOpen(on ? null : r.id)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{r.data.question}</Text>
-              {on ? <ChevronDown size={16} color="#857F70" /> : <ChevronRight size={16} color="#857F70" />}
+              {on ? <ChevronDown size={16} color="#6E685A" /> : <ChevronRight size={16} color="#6E685A" />}
             </View>
             {on && r.data.answer ? (
               <Text style={{ fontSize: 14, lineHeight: 20, color: '#3A3427', marginTop: 8, fontFamily: 'Manrope_400Regular' }}>{r.data.answer}</Text>
@@ -291,7 +305,7 @@ export const PollWidget = ({ ctx }: { ctx: WidgetCtx }) => {
                   onPress={() =>
                     save.mutate(
                       { id: r.id, data: { ...r.data, voters: { ...voters, [ctx.userEmail!]: o.id } } },
-                      { onError: (e: any) => Alert.alert('Nie udało się zagłosować', e?.message ?? '') },
+                      { onError: (e: unknown) => Alert.alert('Nie udało się zagłosować', friendlyError(e, 'Spróbuj ponownie.')) },
                     )
                   }
                   className="active:opacity-70"
@@ -307,7 +321,7 @@ export const PollWidget = ({ ctx }: { ctx: WidgetCtx }) => {
                 </Pressable>
               );
             })}
-            <Text style={{ fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
+            <Text style={{ fontSize: 11, color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>
               {total} {total === 1 ? 'głos' : 'głosów'}
               {r.data.closed ? ' · zamknięta' : mine ? ' · możesz zmienić głos' : ''}
             </Text>
@@ -349,8 +363,14 @@ const LegacyCustomTasks = ({ ctx }: { ctx: WidgetCtx }) => {
           value={draft}
           onChangeText={setDraft}
           placeholder="Nowe zadanie…"
-          placeholderTextColor="#857F70"
-          onSubmitEditing={() => draft.trim() && add.mutate(draft.trim(), { onSuccess: () => setDraft('') })}
+          placeholderTextColor="#6E685A"
+          onSubmitEditing={() => {
+            if (!draft.trim() || add.isPending) return;
+            add.mutate(draft.trim(), {
+              onSuccess: () => setDraft(''),
+              onError: (e: unknown) => Alert.alert('Nie udało się dodać zadania', friendlyError(e, 'Spróbuj ponownie.')),
+            });
+          }}
           style={[inputStyle, { flex: 1 }]}
         />
       </View>
@@ -376,7 +396,14 @@ const LegacyCustomTasks = ({ ctx }: { ctx: WidgetCtx }) => {
               ) : null}
             </View>
             <Pressable
-              onPress={() => setStatus.mutate({ id: t.id, status: next(t.status) })}
+              onPress={() =>
+                setStatus.mutate(
+                  { id: t.id, status: next(t.status) },
+                  { onError: (e: unknown) => Alert.alert('Nie udało się zmienić statusu', friendlyError(e, 'Spróbuj ponownie.')) },
+                )
+              }
+              disabled={setStatus.isPending}
+              accessibilityLabel={`Status: ${t.status}. Zmień na: ${next(t.status)}`}
               className="active:opacity-70"
               style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: '#F6F4EE' }}
             >
@@ -417,7 +444,7 @@ export const ModuleBoardsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: b.color ?? '#A8A59E' }} />
             <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{b.name}</Text>
-            <ChevronRight size={16} color="#857F70" />
+            <ChevronRight size={16} color="#6E685A" />
           </View>
         </Card>
       ))}

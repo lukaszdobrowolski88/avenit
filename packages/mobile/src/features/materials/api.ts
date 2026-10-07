@@ -104,7 +104,7 @@ export const useSharedMaterials = () =>
     queryKey: ['materials', 'shared'],
     queryFn: async (): Promise<SharedFile[]> => {
       const { data, error } = await supabase.functions.invoke('my-shared-materials', { body: {} });
-      if (error) throw new Error(error.message || 'Nie udało się pobrać udostępnionych plików.');
+      if (error) throw error;
       return (((data as any)?.files ?? []) as SharedFile[]);
     },
   });
@@ -162,18 +162,24 @@ export const useUploadMaterial = (
       const { error: upErr } = await supabase.storage
         .from('materials')
         .upload(storagePath, arrayBuffer, { contentType: mime });
-      if (upErr) throw new Error(upErr.message || 'Nie udało się wysłać pliku.');
+      if (upErr) throw upErr;
 
-      const { error: insErr } = await (supabase.from('materials_files') as any).insert({
-        name,
-        storage_path: storagePath,
-        file_size: size,
-        mime_type: mime,
-        folder_id: folderId,
-        team_type: teamType,
-        uploaded_by: userEmail,
-      });
-      if (insErr) throw new Error(insErr.message || 'Nie udało się zapisać pliku.');
+      const { error: insErr } = await (supabase.from('materials_files') as any)
+        .insert({
+          name,
+          storage_path: storagePath,
+          file_size: size,
+          mime_type: mime,
+          folder_id: folderId,
+          team_type: teamType,
+          uploaded_by: userEmail,
+        })
+        .select('id');
+      if (insErr) {
+        // Wpis się nie zapisał — sprzątnij wysłany plik, żeby nie wisiał bez opisu.
+        await supabase.storage.from('materials').remove([storagePath]).catch(() => undefined);
+        throw insErr;
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['materials', 'files', teamType, folderId] }),
   });
@@ -185,10 +191,12 @@ export const useRenameMaterial = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { error } = await (supabase.from('materials_files') as any)
+      const { data, error } = await (supabase.from('materials_files') as any)
         .update({ name, updated_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw new Error(error.message || 'Nie udało się zmienić nazwy.');
+        .eq('id', id)
+        .select('id');
+      if (error) throw error;
+      if (Array.isArray(data) && data.length === 0) throw new Error('Możesz zmieniać nazwy tylko własnych plików.');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['materials', 'files'] }),
   });
@@ -199,8 +207,9 @@ export const useDeleteMaterial = () => {
   return useMutation({
     mutationFn: async (file: Pick<FileRow, 'id' | 'storage_path'>) => {
       // Najpierw wiersz (to jego chroni serwer), dopiero potem plik w storage.
-      const { error } = await supabase.from('materials_files').delete().eq('id', file.id);
-      if (error) throw new Error(error.message || 'Nie udało się usunąć pliku.');
+      const { data, error } = await (supabase.from('materials_files') as any).delete().eq('id', file.id).select('id');
+      if (error) throw error;
+      if (Array.isArray(data) && data.length === 0) throw new Error('Możesz usuwać tylko własne pliki.');
       if (file.storage_path) {
         await supabase.storage.from('materials').remove([file.storage_path]).catch(() => undefined);
       }

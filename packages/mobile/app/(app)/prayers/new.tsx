@@ -24,6 +24,8 @@ import {
 } from '../../../src/features/prayers/api';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { goBack } from '../../../src/lib/navigation';
+import { showError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
 
 const CATEGORIES: PrayerCategory[] = ['zdrowie', 'rodzina', 'finanse', 'duchowe', 'inne'];
 
@@ -81,6 +83,7 @@ export default function NewPrayerScreen() {
   );
 
   const handleSubmit = async () => {
+    if (busy) return;
     if (!content.trim()) {
       Alert.alert('Wpisz intencję', 'Treść intencji nie może być pusta.');
       return;
@@ -105,8 +108,9 @@ export default function NewPrayerScreen() {
         });
       }
       goBack(router);
-    } catch (e: any) {
-      Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać intencji.');
+      toast.success(isEditing ? 'Zapisano zmiany intencji' : 'Dodano intencję');
+    } catch (e) {
+      showError('Nie udało się zapisać', e, 'Nie udało się zapisać intencji. Spróbuj ponownie.');
     }
   };
 
@@ -167,7 +171,7 @@ export default function NewPrayerScreen() {
           <TextInput
             style={[inputStyle, { minHeight: 120, textAlignVertical: 'top' as const }]}
             placeholder="O co chciałabyś/chciałbyś prosić w modlitwie?"
-            placeholderTextColor="#857F70"
+            placeholderTextColor="#6E685A"
             multiline
             value={content}
             onChangeText={setContent}
@@ -213,7 +217,7 @@ export default function NewPrayerScreen() {
           <TextInput
             style={inputStyle}
             placeholder="np. Anna, mama Marka..."
-            placeholderTextColor="#857F70"
+            placeholderTextColor="#6E685A"
             value={requesterName}
             onChangeText={setRequesterName}
             editable={!busy}

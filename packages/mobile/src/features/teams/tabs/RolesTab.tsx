@@ -7,6 +7,7 @@ import { SortableList } from '../../../components/ui/SortableList';
 import { useReorderRoles, useRoster, type RosterPerson, type RosterRole } from '../roster';
 import { RoleSheet } from '../components/RoleSheet';
 import { Empty, Loading } from './ui';
+import { friendlyError } from '../../../lib/errors';
 
 // Służby zespołu (team_roles) — kto co robi. Kolejność służb = kolumny grafiku.
 
@@ -38,7 +39,7 @@ const ReorderSheet = ({ visible, team, table, roles, onClose }: { visible: boole
             changed
               ? reorder.mutate(
                   items.map((r) => r.id),
-                  { onSuccess: onClose, onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? '') },
+                  { onSuccess: onClose, onError: (e: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(e, 'Spróbuj ponownie.')) },
                 )
               : onClose()
           }

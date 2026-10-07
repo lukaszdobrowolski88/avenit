@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { friendlyError } from "../../../lib/errors";
 import { Search, X } from "lucide-react-native";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
@@ -35,7 +36,7 @@ export const SearchModal = ({
 }: Props) => {
   const [query, setQuery] = useState("");
   const trimmed = query.trim();
-  const { data, isFetching } = useSearchMessages(
+  const { data, isFetching, isError, error } = useSearchMessages(
     conversationId,
     trimmed,
     visible,
@@ -83,7 +84,7 @@ export const SearchModal = ({
               borderColor: "#E6E1D5",
             }}
           >
-            <Search size={16} color="#857F70" />
+            <Search size={16} color="#6E685A" />
             <TextInput
               style={{
                 flex: 1,
@@ -92,7 +93,7 @@ export const SearchModal = ({
                 fontFamily: "Manrope_500Medium",
               }}
               placeholder="Szukaj wiadomości…"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               value={query}
               onChangeText={setQuery}
               autoFocus
@@ -100,7 +101,7 @@ export const SearchModal = ({
             />
             {query ? (
               <Pressable onPress={() => setQuery("")} hitSlop={8}>
-                <X size={14} color="#857F70" />
+                <X size={14} color="#6E685A" />
               </Pressable>
             ) : null}
           </View>
@@ -170,7 +171,9 @@ export const SearchModal = ({
                   fontFamily: "Manrope_500Medium",
                 }}
               >
-                Brak wyników.
+                {isError
+                  ? friendlyError(error, "Nie udało się przeszukać rozmowy. Spróbuj ponownie.")
+                  : "Brak wyników."}
               </Text>
             }
             renderItem={({ item }) => {
@@ -206,7 +209,7 @@ export const SearchModal = ({
                     <Text
                       style={{
                         fontSize: 11,
-                        color: "#857F70",
+                        color: "#6E685A",
                         fontFamily: "Manrope_500Medium",
                       }}
                     >

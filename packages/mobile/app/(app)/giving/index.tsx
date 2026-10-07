@@ -9,12 +9,16 @@ import {
 } from 'react-native';
 import { FileText, Gift, Info, Repeat } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
+import { friendlyError } from '../../../src/lib/errors';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { useAuthSession } from '../../../src/lib/auth';
 import {
   METHOD_LABELS,
+  STATUS_LABELS,
+  donationTotals,
   formatMoney,
   useMyGiving,
   useGivingCampaigns,
@@ -35,6 +39,8 @@ const DonationCard = ({
   const methodLabel = donation.method
     ? METHOD_LABELS[donation.method] ?? donation.method
     : null;
+  // Status inny niż zaksięgowana (oczekuje / nieudana / zwrócona) — wprost przy wpłacie.
+  const status = donation.status && donation.status !== 'completed' ? donation.status : null;
   return (
     <View
       className="mb-3"
@@ -86,6 +92,19 @@ const DonationCard = ({
                 </Text>
               </View>
             ) : null}
+            {status ? (
+              <View
+                className="px-2 py-0.5"
+                style={{ borderRadius: 999, backgroundColor: status === 'pending' ? '#FFF1C2' : '#FDE7E4' }}
+              >
+                <Text
+                  className="text-[11px]"
+                  style={{ color: status === 'pending' ? '#6B4F05' : '#B42318', fontFamily: 'Manrope_600SemiBold' }}
+                >
+                  {STATUS_LABELS[status] ?? status}
+                </Text>
+              </View>
+            ) : null}
             {donation.is_recurring ? (
               <View
                 className="flex-row items-center gap-1 px-2 py-0.5"
@@ -130,6 +149,14 @@ export default function GivingScreen() {
     currency: 'PLN',
     year: new Date().getFullYear(),
   };
+  // Oczekujące w tym roku — osobno, poza sumą (jak web: suma = tylko zaksięgowane).
+  const pending = useMemo(
+    () =>
+      donationTotals(
+        (summary.donations ?? []).filter((d: Donation) => String(d.donation_date ?? '').startsWith(String(summary.year))),
+      ),
+    [summary.donations, summary.year],
+  );
 
   return (
     <>
@@ -145,10 +172,17 @@ export default function GivingScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
+              style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
             >
-              {(error as Error)?.message ?? 'Błąd'}
+              {friendlyError(error, 'Nie udało się wczytać Twoich darowizn.')}
             </Text>
+            <Pressable
+              onPress={() => refetch()}
+              className="active:opacity-70"
+              style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: '#2A2312' }}
+            >
+              <Text style={{ color: '#F6F4EE', fontFamily: 'Manrope_700Bold', fontSize: 14 }}>Spróbuj ponownie</Text>
+            </Pressable>
           </View>
         ) : (
           <ScrollView
@@ -172,6 +206,14 @@ export default function GivingScreen() {
               >
                 {formatMoney(summary.yearTotal, summary.currency)}
               </Text>
+              {pending.pendingCount > 0 ? (
+                <Text
+                  className="text-[13px] mt-1"
+                  style={{ color: '#FFBE0B', fontFamily: 'Manrope_600SemiBold' }}
+                >
+                  Oczekuje na zaksięgowanie: {formatMoney(pending.pending, summary.currency)}
+                </Text>
+              ) : null}
               {summary.allTimeTotal > summary.yearTotal ? (
                 <Text
                   className="text-[13px] mt-1"
@@ -195,7 +237,12 @@ export default function GivingScreen() {
               </Pressable>
             </View>
 
-            {/* Zbiórki (aktywne kampanie) */}
+            {/* Zbiórki */}
+            {campaigns.isError ? (
+              <Text className="text-[12px] mb-3 px-1" style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}>
+                {friendlyError(campaigns.error, 'Nie udało się wczytać zbiórek.')}
+              </Text>
+            ) : null}
             {(campaigns.data?.length ?? 0) > 0 ? (
               <View className="mb-4">
                 <Text
@@ -236,7 +283,7 @@ export default function GivingScreen() {
                             <Text className="text-[12px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                               {formatMoney(raised, summary.currency)}
                             </Text>
-                            <Text className="text-[12px]" style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
+                            <Text className="text-[12px]" style={{ color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>
                               z {formatMoney(goal, summary.currency)} · {pct}%
                             </Text>
                           </View>

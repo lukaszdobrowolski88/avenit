@@ -1,6 +1,9 @@
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { Check, X } from 'lucide-react-native';
 import { useUpdateAssignmentStatus, type MyAssignmentRow } from '../api';
+import { friendlyError } from '../../../lib/errors';
+import { toast } from '../../../lib/toast';
+import { respondMessage } from '../../../lib/assignments';
 
 interface Props {
   assignment: MyAssignmentRow;
@@ -12,13 +15,26 @@ const formatRole = (a: MyAssignmentRow): string => {
 };
 
 const STATUS_META = {
-  accepted: { color: '#047857', label: 'Potwierdzone' },
-  rejected: { color: '#be123c', label: 'Odrzucone' },
-  pending: { color: '#8A6606', label: 'Oczekuje na potwierdzenie' },
+  accepted: { color: '#15803d', label: 'Potwierdzone' },
+  rejected: { color: '#B42318', label: 'Odmówiono' },
+  pending: { color: '#8A6606', label: 'Czeka na Twoją odpowiedź' },
 } as const;
 
 export const AssignmentCard = ({ assignment }: Props) => {
   const update = useUpdateAssignmentStatus();
+  const answer = (status: 'accepted' | 'rejected') =>
+    update.mutate(
+      { id: assignment.id, status },
+      {
+        onSuccess: (r) => toast.success(respondMessage(status, r)),
+        onError: (err: unknown) => Alert.alert('Nie udało się zapisać odpowiedzi', friendlyError(err, 'Spróbuj ponownie.')),
+      },
+    );
+  const reject = () =>
+    Alert.alert('Nie możesz służyć?', `${formatRole(assignment)} — Twoje imię zniknie z grafiku, a lider zobaczy odmowę.`, [
+      { text: 'Anuluj', style: 'cancel' },
+      { text: 'Nie mogę', style: 'destructive', onPress: () => answer('rejected') },
+    ]);
   const isPending = assignment.status === 'pending';
   const meta = STATUS_META[assignment.status];
 
@@ -71,15 +87,8 @@ export const AssignmentCard = ({ assignment }: Props) => {
             ) : (
               <>
                 <Pressable
-                  onPress={() =>
-                    update.mutate(
-                      { id: assignment.id, status: 'accepted' },
-                      {
-                        onError: (err: any) =>
-                          Alert.alert('Błąd', err?.message ?? 'Nie udało się zapisać odpowiedzi.'),
-                      },
-                    )
-                  }
+                  onPress={() => answer('accepted')}
+                  accessibilityLabel="Potwierdzam"
                   style={{
                     width: 36,
                     height: 36,
@@ -92,15 +101,8 @@ export const AssignmentCard = ({ assignment }: Props) => {
                   <Check color="#2A2312" size={18} strokeWidth={2.6} />
                 </Pressable>
                 <Pressable
-                  onPress={() =>
-                    update.mutate(
-                      { id: assignment.id, status: 'rejected' },
-                      {
-                        onError: (err: any) =>
-                          Alert.alert('Błąd', err?.message ?? 'Nie udało się zapisać odpowiedzi.'),
-                      },
-                    )
-                  }
+                  onPress={reject}
+                  accessibilityLabel="Nie mogę"
                   style={{
                     width: 36,
                     height: 36,

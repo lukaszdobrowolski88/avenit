@@ -34,6 +34,8 @@ interface Props {
   onSendVoice?: (uri: string, mime: string, durationMs: number) => Promise<void>;
   // Kanał ogłoszeń (spec §5) + kompozytor ankiety (spec §2).
   canPost?: boolean;
+  /** Dlaczego nie można pisać (pusty tekst = jeszcze sprawdzamy — sam pasek bez pola). */
+  readOnlyText?: string;
   onCreatePoll?: () => void;
   onShareEvent?: () => void;
 }
@@ -54,11 +56,17 @@ export const ComposerBar = ({
   members,
   onSendVoice,
   canPost = true,
+  readOnlyText,
   onCreatePoll,
   onShareEvent,
 }: Props) => {
-  // Kanał ogłoszeń: bez prawa pisania — ukryj kompozytor, pokaż info (spec §5).
+  // Hooki ZAWSZE przed warunkowym returnem (prawo pisania zmienia się po wczytaniu rozmowy).
+  const [recording, setRecording] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+
+  // Bez prawa pisania (kanał „tylko administratorzy”, brak członkostwa) — bez pola, z wyjaśnieniem.
   if (!canPost) {
+    const note = readOnlyText ?? "W tym kanale piszą tylko administratorzy.";
     return (
       <View
         style={{
@@ -66,18 +74,20 @@ export const ComposerBar = ({
           borderTopWidth: 1,
           borderTopColor: "#E6E1D5",
           padding: 16,
+          minHeight: 56,
           alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <Text style={{ fontSize: 13, color: "#6B6557", fontFamily: "Manrope_500Medium", textAlign: "center" }}>
-          📢 Tylko administratorzy mogą pisać w tym kanale.
-        </Text>
+        {note ? (
+          <Text style={{ fontSize: 13, color: "#6B6557", fontFamily: "Manrope_500Medium", textAlign: "center" }}>
+            {note}
+          </Text>
+        ) : null}
       </View>
     );
   }
   const canSend = !!text.trim() || !!pendingAttachment;
-  const [recording, setRecording] = useState(false);
-  const [showActions, setShowActions] = useState(false);
 
   // Akcje załączników schowane pod „+" — pole tekstowe dostaje całą szerokość.
   const actions: { key: string; label: string; Icon: typeof ImageIcon; tint: string; bg: string; onPress: () => void }[] = [
@@ -133,9 +143,10 @@ export const ComposerBar = ({
           <View
             style={{
               flex: 1,
-              borderLeftWidth: 3,
-              borderLeftColor: "#FFBE0B",
-              paddingLeft: 8,
+              borderRadius: 12,
+              backgroundColor: "#FFF1C2",
+              paddingHorizontal: 10,
+              paddingVertical: 6,
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -162,7 +173,7 @@ export const ComposerBar = ({
             </Text>
           </View>
           <Pressable onPress={onClearReply} hitSlop={10} style={{ padding: 4 }}>
-            <X size={16} color="#857F70" />
+            <X size={16} color="#6E685A" />
           </Pressable>
         </View>
       ) : null}
@@ -231,7 +242,7 @@ export const ComposerBar = ({
             {pendingAttachment.name}
           </Text>
           <Pressable onPress={onClearAttachment} hitSlop={10} style={{ padding: 4 }}>
-            <X size={16} color="#857F70" />
+            <X size={16} color="#6E685A" />
           </Pressable>
         </View>
       ) : null}
@@ -263,7 +274,7 @@ export const ComposerBar = ({
             }}
           >
             {uploading ? (
-              <ActivityIndicator size="small" color="#857F70" />
+              <ActivityIndicator size="small" color="#6E685A" />
             ) : (
               <Plus size={22} color="#4A463E" strokeWidth={2.2} />
             )}
@@ -285,7 +296,7 @@ export const ComposerBar = ({
             fontFamily: "Manrope_400Regular",
           }}
           placeholder={editing ? "Edytuj…" : uploading ? "Wgrywanie…" : "Napisz wiadomość…"}
-          placeholderTextColor="#857F70"
+          placeholderTextColor="#6E685A"
           value={text}
           onChangeText={onChangeText}
           multiline

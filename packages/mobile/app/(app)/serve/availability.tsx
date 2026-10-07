@@ -6,9 +6,14 @@ import { B } from '../../../src/components/ui/brand';
 import { AbsenceSheet } from '../../../src/features/serve/components/AbsenceSheet';
 import { useDeleteBlockout, useMyBlockouts, type Blockout } from '../../../src/features/serve/api';
 import { daysLabel, rangeLabel, todayIso } from '../../../src/features/serve/format';
+import { friendlyError } from '../../../src/lib/errors';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { toast } from '../../../src/lib/toast';
 
 // „Moje nieobecności” — jedna funkcja zamiast dwóch (dawne „Moje nieobecności” przy
-// programach + „Moja dostępność”). Dane: volunteer_blockouts przez fn my-blockouts.
+// programach + „Moja dostępność”). Dane: volunteer_blockouts przez fn my-blockouts; lider
+// widzi je w module „Dostępność” (na webie — bez Raportu CCLI, który jest w Analityce)
+// i przy układaniu grafiku.
 
 const F = { medium: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' } as const;
 
@@ -27,14 +32,22 @@ export default function AbsencesScreen() {
   }, [blockouts, onlyUpcoming]);
 
   const confirmDelete = (b: Blockout) =>
-    Alert.alert('Usunąć nieobecność?', rangeLabel(b), [
-      { text: 'Anuluj', style: 'cancel' },
-      {
-        text: 'Usuń',
-        style: 'destructive',
-        onPress: () => del.mutate(b.id, { onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? 'Spróbuj ponownie.') }),
-      },
-    ]);
+    Alert.alert(
+      'Usunąć nieobecność?',
+      `${rangeLabel(b)}${b.reason ? ` (${b.reason})` : ''} — lider znów zobaczy Cię w tych dniach jako dostępną osobę.`,
+      [
+        { text: 'Anuluj', style: 'cancel' },
+        {
+          text: 'Usuń',
+          style: 'destructive',
+          onPress: () =>
+            del.mutate(b.id, {
+              onSuccess: () => toast.success('Usunięto nieobecność', rangeLabel(b)),
+              onError: (e: unknown) => Alert.alert('Nie udało się usunąć nieobecności', friendlyError(e, 'Spróbuj ponownie.')),
+            }),
+        },
+      ],
+    );
 
   return (
     <>
@@ -61,7 +74,13 @@ export default function AbsencesScreen() {
         {isLoading ? (
           <ActivityIndicator color={B.ink} style={{ marginTop: 40 }} />
         ) : isError ? (
-          <Text style={{ margin: 24, textAlign: 'center', color: B.ink3, fontFamily: F.medium }}>{(error as Error)?.message ?? 'Błąd'}</Text>
+          <EmptyState
+            Icon={CalendarOff}
+            title="Nie udało się wczytać nieobecności"
+            hint={friendlyError(error, 'Sprawdź połączenie i spróbuj ponownie.')}
+            actionLabel="Spróbuj ponownie"
+            onAction={() => refetch()}
+          />
         ) : (
           <ScrollView
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130, gap: 10 }}
@@ -123,7 +142,13 @@ export default function AbsencesScreen() {
                               {[daysLabel(b), b.reason].filter(Boolean).join(' · ')}
                             </Text>
                           </View>
-                          <Pressable onPress={() => confirmDelete(b)} hitSlop={10} accessibilityLabel="Usuń nieobecność" style={{ padding: 4 }}>
+                          <Pressable
+                            onPress={() => confirmDelete(b)}
+                            disabled={del.isPending}
+                            hitSlop={10}
+                            accessibilityLabel={`Usuń nieobecność: ${rangeLabel(b)}`}
+                            style={{ padding: 4 }}
+                          >
                             <Trash2 size={17} color={B.ink4} />
                           </Pressable>
                         </View>

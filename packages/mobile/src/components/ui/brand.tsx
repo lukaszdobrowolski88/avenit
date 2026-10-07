@@ -13,13 +13,38 @@ export const B = {
   ink: '#2A2312', // słód
   ink2: '#4A463E',
   ink3: '#6B6557',
-  ink4: '#857F70',
+  // Tekst drugorzędny/podpowiedzi: #6E685A = 5,5:1 na bieli i 5,0:1 na papierze (jak web po
+  // audycie; dawny jaśniejszy odcień miał 3,9/3,6:1 — poniżej WCAG 1.4.3).
+  ink4: '#6E685A',
   kurkuma: '#FFBE0B',
   kurkumaSoft: '#FFF1C2',
   gold: '#8A6606',
   goldDeep: '#6B4F05',
   onDark: '#F6F4EE',
   onDarkMuted: '#CFC8B6',
+  // Pola formularzy (jak web): biel + ramka #B5AD99 (2,2:1 — widać, gdzie zaczyna się pole).
+  field: '#FFFFFF',
+  fieldBorder: '#B5AD99',
+  // Statusy: stonowane, tekst ≥ 4,5:1 na swoim tle — bez tęczy.
+  okBg: '#E7F3EA',
+  okFg: '#1E6B34',
+  dangerBg: '#FDE7E4',
+  danger: '#B42318',
+} as const;
+
+// Styl pola tekstowego zgodny z webem — do rozwinięcia w `style` TextInput:
+//   <TextInput style={fieldStyle} placeholderTextColor={B.ink4} … />
+export const fieldStyle = {
+  minHeight: 48,
+  borderRadius: 14,
+  borderWidth: 1,
+  borderColor: B.fieldBorder,
+  backgroundColor: B.field,
+  paddingHorizontal: 14,
+  paddingVertical: 12,
+  fontSize: 15,
+  color: B.ink,
+  fontFamily: 'Manrope_500Medium',
 } as const;
 
 const FONT = {

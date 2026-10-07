@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   Pressable,
   RefreshControl,
@@ -13,6 +14,12 @@ import { formatRelative } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useForms, type FormRow } from '../../../src/features/forms/api';
 import { tenantWebBase } from '../../../src/lib/supabase';
+import { friendlyError } from '../../../src/lib/errors';
+
+const answersLabel = (n: number) => {
+  if (n === 1) return '1 odpowiedź';
+  return `${n} odpowiedzi`;
+};
 
 export default function FormsScreen() {
   const { data, isLoading, isError, error, refetch, isRefetching } = useForms();
@@ -21,7 +28,7 @@ export default function FormsScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
-        <PageHeader title="Formularze" subtitle="Ankiety i zapisy" showBack />
+        <PageHeader title="Formularze" subtitle="Ankiety i zgłoszenia" showBack />
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
@@ -31,10 +38,17 @@ export default function FormsScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
+              style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
             >
-              {(error as Error)?.message ?? 'Błąd'}
+              {friendlyError(error, 'Nie udało się wczytać formularzy.')}
             </Text>
+            <Pressable
+              onPress={() => refetch()}
+              className="active:opacity-70"
+              style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: '#2A2312' }}
+            >
+              <Text style={{ color: '#F6F4EE', fontFamily: 'Manrope_700Bold', fontSize: 14 }}>Spróbuj ponownie</Text>
+            </Pressable>
           </View>
         ) : (data ?? []).length === 0 ? (
           <ScrollView
@@ -89,7 +103,12 @@ export default function FormsScreen() {
               return (
                 <Pressable
                   key={form.id}
-                  onPress={() => Linking.openURL(url)}
+                  onPress={() =>
+                    Linking.openURL(url).catch(() =>
+                      Alert.alert('Nie udało się otworzyć formularza', 'Spróbuj ponownie za chwilę.'),
+                    )
+                  }
+                  accessibilityLabel={closed ? `${form.title} — zamknięty` : `Otwórz formularz ${form.title}`}
                   disabled={closed}
                   className={`mb-3 ${closed ? 'opacity-60' : 'active:opacity-80'}`}
                   style={{
@@ -128,7 +147,7 @@ export default function FormsScreen() {
                       >
                         {form.title}
                       </Text>
-                      {!closed ? <ExternalLink size={14} color="#857F70" /> : null}
+                      {!closed ? <ExternalLink size={14} color="#6E685A" /> : null}
                     </View>
                     {form.description ? (
                       <Text
@@ -168,9 +187,9 @@ export default function FormsScreen() {
                       ) : null}
                       <Text
                         className="text-[11px] ml-auto"
-                        style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}
+                        style={{ color: '#6E685A', fontFamily: 'Manrope_500Medium' }}
                       >
-                        {form.response_count} odpowiedzi
+                        {answersLabel(form.response_count)}
                       </Text>
                     </View>
                   </View>

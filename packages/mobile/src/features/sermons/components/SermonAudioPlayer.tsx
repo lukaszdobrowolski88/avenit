@@ -69,7 +69,7 @@ export const SermonAudioPlayer = ({ uri, dark }: Props) => {
       setSound(s);
       setIsPlaying(true);
     } catch {
-      Alert.alert('Błąd', 'Nie udało się odtworzyć nagrania. Sprawdź połączenie i spróbuj ponownie.');
+      Alert.alert('Nie udało się odtworzyć', 'Nie udało się odtworzyć nagrania. Sprawdź połączenie i spróbuj ponownie.');
     } finally {
       setLoading(false);
     }

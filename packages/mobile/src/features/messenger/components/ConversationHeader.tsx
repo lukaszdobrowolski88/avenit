@@ -27,13 +27,17 @@ interface Props {
   details: ConversationDetails | null;
   members: MemberMap;
   myEmail: string | null;
-  onToggleMute: () => void;
+  /** Brak = bez przycisku (rola nie może zmieniać swoich ustawień rozmowy). */
+  onToggleMute?: () => void;
   muteBusy: boolean;
   onSearch?: () => void;
   onOpenGallery?: () => void;
   /** Status drugiego uczestnika (tylko dla rozmowy 1:1). */
   peerStatus?: PresenceStatus;
 }
+
+// „1 uczestnik”, dalej „2 uczestników” (rodzaj męskoosobowy — dopełniacz przy każdej liczbie).
+const participantsLabel = (n: number) => (n === 1 ? "1 uczestnik" : `${n} uczestników`);
 
 export const ConversationHeader = ({
   details,
@@ -143,7 +147,7 @@ export const ConversationHeader = ({
     );
   } else if (isMinistry) {
     title = details.name || ministryMeta?.label || details.ministry_key || "Kanał";
-    subtitle = `${details.participant_emails.length} uczestników`;
+    subtitle = participantsLabel(details.participant_emails.length);
     avatarBlock = (
       <View
         style={{
@@ -160,7 +164,7 @@ export const ConversationHeader = ({
     );
   } else {
     title = details.name || "Grupa";
-    subtitle = `${details.participant_emails.length} uczestników`;
+    subtitle = participantsLabel(details.participant_emails.length);
     avatarBlock = (
       <View
         style={{
@@ -267,9 +271,11 @@ export const ConversationHeader = ({
           <ImageIcon size={16} color="#4A463E" strokeWidth={2.2} />
         </Pressable>
       ) : null}
+      {onToggleMute ? (
       <Pressable
         onPress={onToggleMute}
         disabled={muteBusy}
+        accessibilityLabel={details.my_muted ? "Włącz powiadomienia z rozmowy" : "Wycisz powiadomienia z rozmowy"}
         hitSlop={10}
         style={{
           width: 36,
@@ -289,6 +295,7 @@ export const ConversationHeader = ({
           <Volume2 size={16} color="#4A463E" strokeWidth={2.2} />
         )}
       </Pressable>
+      ) : null}
     </View>
   );
 };

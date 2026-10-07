@@ -18,6 +18,7 @@ import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B } from '../../../src/components/ui/brand';
 import { useAuthSession } from '../../../src/lib/auth';
 import { supabase, tenantWebBase } from '../../../src/lib/supabase';
+import { showError } from '../../../src/lib/errors';
 import { formatMoney } from '../../../src/features/giving/api';
 import { goBack } from '../../../src/lib/navigation';
 
@@ -93,6 +94,7 @@ export default function DonateScreen() {
   const ready = amt > 0 && !!email.trim();
 
   const submit = async () => {
+    if (submitting) return;
     if (!amt || amt <= 0) {
       Alert.alert('Kwota', 'Wybierz albo wpisz kwotę darowizny.');
       return;
@@ -119,13 +121,12 @@ export default function DonateScreen() {
           frequency: recurring ? 'monthly' : undefined,
         },
       });
-      if (error || !data?.paymentUrl) {
-        throw new Error(error?.message || 'Nie udało się utworzyć płatności');
-      }
+      if (error) throw error;
+      if (!data?.paymentUrl) throw new Error('Nie udało się rozpocząć płatności. Spróbuj ponownie.');
       await Linking.openURL(data.paymentUrl);
       goBack(router);
     } catch (err) {
-      Alert.alert('Błąd płatności', (err as Error)?.message || 'Spróbuj ponownie.');
+      showError('Nie udało się rozpocząć płatności', err, 'Spróbuj ponownie za chwilę.');
     } finally {
       setSubmitting(false);
     }

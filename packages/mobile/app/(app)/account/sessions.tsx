@@ -14,8 +14,12 @@ import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B, IconWell, ListCard, ListRow, SectionLabel } from '../../../src/components/ui/brand';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { useSessions } from '../../../src/features/account/api';
 import { supabase } from '../../../src/lib/supabase';
+import { plural } from '../../../src/lib/domain';
+import { showError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface SessionRow {
@@ -30,10 +34,10 @@ const deviceLabel = (ua: string | null): string => {
   if (!ua) return 'Nieznane urządzenie';
   const s = ua.toLowerCase();
   if (s.includes('okhttp') || s.includes('expo') || s.includes('android')) {
-    if (s.includes('iphone') || s.includes('ios')) return 'Aplikacja mobilna · iPhone';
-    if (s.includes('ipad')) return 'Aplikacja mobilna · iPad';
-    if (s.includes('android')) return 'Aplikacja mobilna · Android';
-    return 'Aplikacja mobilna';
+    if (s.includes('iphone') || s.includes('ios')) return 'Aplikacja Avenit · iPhone';
+    if (s.includes('ipad')) return 'Aplikacja Avenit · iPad';
+    if (s.includes('android')) return 'Aplikacja Avenit · Android';
+    return 'Aplikacja Avenit';
   }
   if (s.includes('iphone')) return 'Safari · iPhone';
   if (s.includes('ipad')) return 'Safari · iPad';
@@ -57,24 +61,28 @@ export default function SessionsScreen() {
   const others = sessions.filter((s) => !s.current).length;
 
   const logoutOthers = () => {
-    if (others === 0) return;
+    if (others === 0 || busy) return;
+    const what = `${others} ${plural(others, 'inne urządzenie', 'inne urządzenia', 'innych urządzeń')}`;
     Alert.alert(
-      'Wylogować inne urządzenia?',
-      `Zakończysz ${others} ${others === 1 ? 'inną sesję' : 'innych sesji'}. To urządzenie pozostanie zalogowane.`,
+      'Wylogować pozostałe urządzenia?',
+      `Wylogujesz ${what}. Zostaniesz zalogowany tylko na tym telefonie.`,
       [
         { text: 'Anuluj', style: 'cancel' },
         {
-          text: 'Wyloguj inne',
+          text: 'Wyloguj pozostałe',
           style: 'destructive',
           onPress: async () => {
             setBusy(true);
-            const { ok } = await supabase.auth.logoutOthers();
-            setBusy(false);
-            if (ok) {
+            try {
+              const { ok } = await supabase.auth.logoutOthers();
+              if (!ok) throw new Error('Nie udało się wylogować pozostałych urządzeń.');
+              toast.success('Wylogowano z pozostałych urządzeń');
               qc.invalidateQueries({ queryKey: ['sessions'] });
               refetch();
-            } else {
-              Alert.alert('Błąd', 'Nie udało się wylogować innych urządzeń.');
+            } catch (e) {
+              showError('Nie udało się wylogować', e, 'Nie udało się wylogować pozostałych urządzeń.');
+            } finally {
+              setBusy(false);
             }
           },
         },
@@ -86,7 +94,7 @@ export default function SessionsScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
-        <PageHeader title="Aktywne sesje" subtitle="Urządzenia zalogowane do konta" showBack />
+        <PageHeader title="Zalogowane urządzenia" subtitle="Bezpieczeństwo i logowanie" showBack />
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -144,10 +152,21 @@ export default function SessionsScreen() {
               </>
             ) : null}
 
-            {others > 0 ? (
+            {sessions.length === 0 ? (
+              <EmptyState
+                Icon={Smartphone}
+                title="Brak aktywnych sesji do wyświetlenia"
+                hint="Pociągnij w dół, aby odświeżyć."
+                actionLabel="Odśwież"
+                onAction={() => refetch()}
+              />
+            ) : others > 0 ? (
               <Pressable
                 onPress={logoutOthers}
                 disabled={busy}
+                accessibilityRole="button"
+                accessibilityState={{ busy }}
+                className="active:opacity-70"
                 style={{
                   marginTop: 16,
                   flexDirection: 'row',
@@ -160,25 +179,25 @@ export default function SessionsScreen() {
                 }}
               >
                 {busy ? (
-                  <ActivityIndicator size="small" color="#dc2626" />
+                  <ActivityIndicator size="small" color={B.danger} />
                 ) : (
-                  <LogOut size={16} color="#dc2626" />
+                  <LogOut size={16} color={B.danger} />
                 )}
-                <Text style={{ fontSize: 14, color: '#dc2626', fontFamily: 'Manrope_700Bold' }}>
-                  Wyloguj inne urządzenia ({others})
+                <Text style={{ fontSize: 14, color: B.danger, fontFamily: 'Manrope_700Bold' }}>
+                  Wyloguj pozostałe urządzenia ({others})
                 </Text>
               </Pressable>
             ) : (
               <Text
                 style={{
                   textAlign: 'center',
-                  marginTop: 8,
+                  marginTop: 14,
                   fontSize: 13,
-                  color: '#857F70',
-                  fontFamily: 'Manrope_400Regular',
+                  color: B.ink4,
+                  fontFamily: 'Manrope_500Medium',
                 }}
               >
-                Jesteś zalogowany/a tylko na tym urządzeniu.
+                Jesteś zalogowany tylko na tym urządzeniu.
               </Text>
             )}
           </ScrollView>

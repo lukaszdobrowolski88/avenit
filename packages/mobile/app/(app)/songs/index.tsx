@@ -14,7 +14,8 @@ import { Link, useRouter } from 'expo-router';
 import { FolderOpen, Music, Plus, Search, Tags, X } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B, InfoBlock } from '../../../src/components/ui/brand';
-import { useSongLibrary, type SongListItem } from '../../../src/features/songs/library';
+import { buildSongTagList, useSongLibrary, useSongTagDictionary, type SongListItem } from '../../../src/features/songs/library';
+import { friendlyError } from '../../../src/lib/errors';
 import { ProgramsManagerModal } from '../../../src/features/songs/components/ProgramsManagerModal';
 import { SongFormModal } from '../../../src/features/songs/components/SongFormModal';
 import { TagsSheet } from '../../../src/features/songs/components/TagsSheet';
@@ -34,6 +35,9 @@ export default function SongsScreen() {
   const [managingTags, setManagingTags] = useState(false);
   const { data, isLoading, isError, error, refetch, isRefetching } = useSongLibrary();
   const allSongs = (data ?? []) as SongListItem[];
+  const dict = useSongTagDictionary();
+  // Do wyboru w formularzu: wspólny słownik tagów w bazie + tagi użyte na pieśniach.
+  const tagChoices = useMemo(() => buildSongTagList(dict.data ?? [], allSongs), [dict.data, allSongs]);
 
   // Tagi wg liczby pieśni (jak dotąd).
   const tags = useMemo(() => {
@@ -60,7 +64,7 @@ export default function SongsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
-          title="Pieśni"
+          title="Baza pieśni"
           subtitle="Repertuar zespołu"
           Icon={Music}
           showBack
@@ -116,19 +120,19 @@ export default function SongsScreen() {
               backgroundColor: '#FFFFFF',
             }}
           >
-            <Search size={18} color="#857F70" />
+            <Search size={18} color="#6E685A" />
             <TextInput
               className="flex-1 text-base"
               style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
               placeholder="Tytuł, autor albo tag…"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch('')} hitSlop={10}>
-                <X size={16} color="#857F70" />
+                <X size={16} color="#6E685A" />
               </Pressable>
             ) : null}
           </View>
@@ -173,7 +177,7 @@ export default function SongsScreen() {
               className="text-center"
               style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
-              {(error as Error)?.message ?? 'Błąd'}
+              {friendlyError(error, 'Nie udało się wczytać pieśni. Pociągnij w dół, żeby spróbować ponownie.')}
             </Text>
           </View>
         ) : (
@@ -291,7 +295,7 @@ export default function SongsScreen() {
         <SongFormModal
           visible={creating}
           song={null}
-          allTags={tags.map((t) => t.tag)}
+          allTags={tagChoices}
           onClose={() => setCreating(false)}
           onSaved={(id) => router.push({ pathname: '/(app)/songs/[id]', params: { id: String(id) } })}
         />

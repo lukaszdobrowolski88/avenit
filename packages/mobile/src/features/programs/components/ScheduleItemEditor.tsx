@@ -19,6 +19,7 @@ import type { Song } from '../../../lib/domain';
 import { KIND_META, MEDIA_TYPES, MUSICAL_KEYS, TIMING, fmtDuration, type PlanItem, type ScheduleKind } from '../schedule';
 import { useWorshipTeamNames } from '../api';
 import { AttachmentTooLarge, pickAndUploadPdf, type PlanAttachment } from '../attachments';
+import { friendlyError } from '../../../lib/errors';
 
 // Arkusz edycji jednego elementu planu (jak panel elementu w edytorze programu na webie):
 // rodzaj, pieśń z biblioteki (najpierw propozycje zespołu) + tonacja, tytuł, osoba,
@@ -128,7 +129,7 @@ export const ScheduleItemEditor = ({
       const att = await pickAndUploadPdf();
       if (att) set({ customAttachments: [...attachments, att] as never });
     } catch (e: any) {
-      Alert.alert(e instanceof AttachmentTooLarge ? 'Za duży plik' : 'Nie udało się dodać pliku', e?.message ?? 'Spróbuj ponownie.');
+      Alert.alert(e instanceof AttachmentTooLarge ? 'Za duży plik' : 'Nie udało się dodać pliku', friendlyError(e, 'Spróbuj ponownie.'));
     } finally {
       setUploading(false);
     }

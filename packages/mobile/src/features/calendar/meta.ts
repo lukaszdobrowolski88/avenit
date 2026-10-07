@@ -2,19 +2,21 @@ import { useCallback } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { usePermissions } from '../../lib/permissions';
+import { normalizeModuleLabel } from '../modules/nav';
 
 // Nazwy kalendarzy (module_key wydarzenia) — jak web: etykieta modułu z ustawień kościoła,
 // a bez niej nazwy systemowe. 'general' = wydarzenia bez modułu.
+// (Zapasowe nazwy = domyślne nazwy modułów; nazwa z bazy zawsze wygrywa.)
 const CALENDAR_LABELS: Record<string, string> = {
   general: 'Ogólne',
-  worship: 'Zespół Uwielbienia',
-  media: 'Media Team',
+  worship: 'Zespół uwielbienia',
+  media: 'MediaTeam',
   atmosfera: 'Atmosfera Team',
-  kids: 'Małe Avenit',
+  kids: 'Dzieci',
   mc: 'Scena / MC',
   homegroups: 'Grupy domowe',
   youth: 'Młodzież',
-  mlodziezowka: 'Młodzież',
+  mlodziezowka: 'Młodzieżówka',
 };
 
 export const useCalendarLabel = () => {
@@ -23,7 +25,7 @@ export const useCalendarLabel = () => {
     (key: string | null | undefined) => {
       const k = key || 'general';
       if (k === 'general') return CALENDAR_LABELS.general;
-      return modules.find((m) => m.key === k)?.label || CALENDAR_LABELS[k] || k;
+      return normalizeModuleLabel(modules.find((m) => m.key === k)?.label) || CALENDAR_LABELS[k] || k;
     },
     [modules],
   );

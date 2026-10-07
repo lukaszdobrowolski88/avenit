@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
+import type { GroupMembershipRow } from '../home-groups/utils';
 
 export type MemberStatus = 'Członek' | 'Sympatyk' | 'Gość';
 
@@ -81,6 +82,34 @@ export const useHousehold = (id: number | string | null) =>
     enabled: id != null,
   });
 
+// Członkostwa w grupach domowych do listy i profilu osoby (jak web Members.jsx): nazwy grup
+// + wiersze home_group_members (wiele grup na osobę, rola per grupa). Pomocnicze — brak
+// dostępu do modułu Grupy domowe nie blokuje listy osób: rows=null → zostaje tylko
+// members.home_group_id.
+export interface GroupMembershipData {
+  groups: { id: string; name: string }[];
+  rows: GroupMembershipRow[] | null;
+}
+
+export const useGroupMemberships = (enabled = true) =>
+  useQuery({
+    queryKey: ['members', 'home-group-memberships'],
+    enabled,
+    staleTime: 60_000,
+    queryFn: async (): Promise<GroupMembershipData> => {
+      const [groupsRes, rowsRes] = await Promise.all([
+        supabase.from('home_groups').select('id, name').order('name', { ascending: true }),
+        supabase.from('home_group_members').select('id, group_id, email, full_name, role, is_leader'),
+      ]);
+      return {
+        groups: groupsRes.error
+          ? []
+          : ((groupsRes.data ?? []) as any[]).map((g) => ({ id: String(g.id), name: String(g.name ?? '') })),
+        rows: rowsRes.error ? null : ((rowsRes.data ?? []) as GroupMembershipRow[]),
+      };
+    },
+  });
+
 export const fullName = (m: { first_name: string | null; last_name: string | null }): string => {
   const parts = [m.first_name, m.last_name].filter((s) => s && s.trim());
   return parts.length > 0 ? parts.join(' ') : '(bez imienia)';
@@ -114,6 +143,8 @@ export const useMemberFilters = (
   search: string,
   status: MemberStatus | 'all',
   ministry: string | null,
+  // Tekst grup osoby (szukanie także po nazwie grupy domowej — jak web).
+  groupsText?: (m: MemberRow) => string,
 ) =>
   useMemo(() => {
     const list = members ?? [];
@@ -121,13 +152,19 @@ export const useMemberFilters = (
     return list.filter((m) => {
       const name = fullName(m).toLowerCase();
       const email = (m.email ?? '').toLowerCase();
-      const matchesSearch = !q || name.includes(q) || email.includes(q);
+      const phone = (m.phone ?? '').replace(/\s+/g, '');
+      const matchesSearch =
+        !q ||
+        name.includes(q) ||
+        email.includes(q) ||
+        (!!phone && phone.includes(q.replace(/\s+/g, ''))) ||
+        (!!groupsText && groupsText(m).toLowerCase().includes(q));
       const matchesStatus = status === 'all' || m.status === status;
       const matchesMinistry =
         !ministry || (Array.isArray(m.ministries) && m.ministries.includes(ministry));
       return matchesSearch && matchesStatus && matchesMinistry;
     });
-  }, [members, search, status, ministry]);
+  }, [members, search, status, ministry, groupsText]);
 
 // ─── Edycja członka (jak web Members.jsx, ale bezpieczniej) ──────────────────
 // Web wysyła cały wiersz, więc zapis pada, gdy admin zabronił edycji jakiegoś pola
@@ -154,8 +191,9 @@ export const useUpdateMember = (fieldWritable: (resource: string, column: string
         if (fieldWritable('members', 'membership_declaration_url')) patch.membership_declaration_url = null;
       }
       if (!Object.keys(patch).length) return;
-      const { error } = await (supabase.from('members') as any).update(patch).eq('id', before.id);
-      if (error) throw new Error(error.message || 'Nie udało się zapisać zmian.');
+      const { data, error } = await (supabase.from('members') as any).update(patch).eq('id', before.id).select('id');
+      if (error) throw error;
+      if (Array.isArray(data) && data.length === 0) throw new Error('Nie masz uprawnień do edycji tej osoby.');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['members'] }),
   });
@@ -194,13 +232,15 @@ export const useAddMemberNote = (memberId: string | number, authorEmail: string 
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: string) => {
-      const { error } = await (supabase.from('member_notes') as any).insert({
-        member_id: memberId,
-        author_email: authorEmail,
-        body,
-        campus_id: campusId,
-      });
-      if (error) throw new Error(error.message || 'Nie udało się dodać notatki.');
+      const { error } = await (supabase.from('member_notes') as any)
+        .insert({
+          member_id: memberId,
+          author_email: authorEmail,
+          body,
+          campus_id: campusId,
+        })
+        .select('id');
+      if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['members', 'notes', memberId] }),
   });

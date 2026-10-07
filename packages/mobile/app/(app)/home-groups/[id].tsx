@@ -45,6 +45,7 @@ import {
   type HomeGroupMember,
 } from '../../../src/features/home-groups/api';
 import { goBack } from '../../../src/lib/navigation';
+import { friendlyError } from '../../../src/lib/errors';
 
 const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolean }) => {
   const initials = member.full_name
@@ -88,7 +89,9 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text
+            numberOfLines={1}
             style={{
+              flexShrink: 1,
               fontSize: 14,
               color: '#2A2312',
               letterSpacing: -0.2,
@@ -97,7 +100,22 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
           >
             {member.full_name}
           </Text>
-          {member.is_leader ? <Crown size={12} color="#8A6606" strokeWidth={2.4} /> : null}
+          {member.is_leader ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 3,
+                paddingHorizontal: 7,
+                paddingVertical: 2,
+                borderRadius: 999,
+                backgroundColor: '#FFF1C2',
+              }}
+            >
+              <Crown size={10} color="#6B4F05" strokeWidth={2.4} />
+              <Text style={{ fontSize: 10, color: '#6B4F05', fontFamily: 'Manrope_700Bold' }}>Lider</Text>
+            </View>
+          ) : null}
         </View>
         {member.email || member.phone ? (
           <Text
@@ -116,6 +134,7 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
       {member.phone ? (
         <Pressable
           onPress={() => Linking.openURL(`tel:${member.phone}`)}
+          accessibilityLabel={`Zadzwoń: ${member.full_name}`}
           hitSlop={6}
           style={{
             width: 32,
@@ -174,7 +193,7 @@ export default function HomeGroupDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading } = useHomeGroupDetail(String(id ?? ''));
+  const { data, isLoading, isError, error, refetch } = useHomeGroupDetail(String(id ?? ''));
 
   if (isLoading) {
     return (
@@ -207,9 +226,20 @@ export default function HomeGroupDetailScreen() {
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
-          Grupa nie istnieje.
+        <Text style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium', textAlign: 'center', lineHeight: 20 }}>
+          {isError
+            ? friendlyError(error, 'Nie udało się wczytać grupy.')
+            : 'Nie znaleziono tej grupy. Mogła zostać usunięta.'}
         </Text>
+        <Pressable
+          onPress={() => (isError ? refetch() : goBack(router))}
+          className="active:opacity-70"
+          style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: '#2A2312' }}
+        >
+          <Text style={{ color: '#F6F4EE', fontFamily: 'Manrope_700Bold', fontSize: 14 }}>
+            {isError ? 'Spróbuj ponownie' : 'Wróć'}
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -485,7 +515,7 @@ export default function HomeGroupDetailScreen() {
               gap: 10,
             }}
           >
-            <Users size={16} color="#857F70" strokeWidth={2.2} />
+            <Users size={16} color="#6E685A" strokeWidth={2.2} />
             <Text
               style={{
                 flex: 1,

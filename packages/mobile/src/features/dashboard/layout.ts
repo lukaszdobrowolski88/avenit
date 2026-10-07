@@ -137,7 +137,7 @@ export const useSaveDashboardLayout = (email: string | null) => {
         { onConflict: 'user_email' },
       );
       // Przed wdrożeniem migracji 075 kolumny nie ma — zostaje kopia w telefonie.
-      if (error && !isMissingColumn(error)) throw new Error(error.message || 'Nie udało się zapisać układu pulpitu.');
+      if (error && !isMissingColumn(error)) throw error;
     },
     onMutate: async (layout) => {
       qc.setQueryData(['dashboard-layout', email], layout);

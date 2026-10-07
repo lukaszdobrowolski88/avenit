@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { MapPin, Navigation } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useHomeGroupsMap, type HomeGroupMapPin } from '../../../src/features/home-groups/mapApi';
+import { friendlyError } from '../../../src/lib/errors';
 
 // react-native-maps to moduł NATYWNY — obecny dopiero w buildzie EAS z tą zależnością.
 // require w try/catch chroni przed crashem, gdyby ten JS trafił (np. OTA) na starszy
@@ -124,8 +125,8 @@ export default function HomeGroupsMapScreen() {
           </View>
         ) : isError ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Manrope_500Medium' }}>
-              {(error as Error)?.message ?? 'Błąd'}
+            <Text style={{ color: '#4A463E', textAlign: 'center', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}>
+              {friendlyError(error, 'Nie udało się wczytać mapy grup. Spróbuj ponownie.')}
             </Text>
           </View>
         ) : mapsAvailable && pinned.length > 0 ? (
@@ -182,7 +183,7 @@ export default function HomeGroupsMapScreen() {
               }}
             >
               <MapPin size={16} color="#2A2312" style={{ marginTop: 1 }} />
-              <Text style={{ flex: 1, fontSize: 13, color: '#1e3a8a', fontFamily: 'Manrope_500Medium', lineHeight: 18 }}>
+              <Text style={{ flex: 1, fontSize: 13, color: '#4A463E', fontFamily: 'Manrope_500Medium', lineHeight: 18 }}>
                 {!mapsAvailable
                   ? 'Mapa pojawi się po aktualizacji aplikacji. Na razie nawiguj do grup z listy poniżej.'
                   : 'Lokalizacje grup są jeszcze ustalane. Nawiguj po adresie z listy poniżej.'}
@@ -194,7 +195,7 @@ export default function HomeGroupsMapScreen() {
             ))}
 
             {groups.length === 0 ? (
-              <Text style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: '#857F70', fontFamily: 'Manrope_400Regular' }}>
+              <Text style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: '#6E685A', fontFamily: 'Manrope_400Regular' }}>
                 Brak grup domowych do pokazania.
               </Text>
             ) : null}

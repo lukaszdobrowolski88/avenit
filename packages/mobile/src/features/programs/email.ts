@@ -108,8 +108,8 @@ export const programEmailHtml = (p: {
       const key = it.songKey || song?.key;
       const meta = [it.person, key ? `tonacja ${key}` : null].filter(Boolean).join(' · ');
       return `<tr>
-        <td style="padding:6px 8px 6px 0;vertical-align:top">${it.type === 'song' ? '🎵 ' : ''}<strong>${esc(title)}</strong>${meta ? `<br><span style="color:#6B6557;font-size:13px">${esc(meta)}</span>` : ''}${it.details ? `<br><span style="color:#857F70;font-size:12px">${esc(it.details)}</span>` : ''}</td>
-        <td style="padding:6px 0;vertical-align:top;color:#857F70;font-size:13px;white-space:nowrap;text-align:right">${esc(fmtDuration(it.duration))}</td>
+        <td style="padding:6px 8px 6px 0;vertical-align:top">${it.type === 'song' ? '🎵 ' : ''}<strong>${esc(title)}</strong>${meta ? `<br><span style="color:#6B6557;font-size:13px">${esc(meta)}</span>` : ''}${it.details ? `<br><span style="color:#6E685A;font-size:12px">${esc(it.details)}</span>` : ''}</td>
+        <td style="padding:6px 0;vertical-align:top;color:#6E685A;font-size:13px;white-space:nowrap;text-align:right">${esc(fmtDuration(it.duration))}</td>
       </tr>`;
     })
     .join('');

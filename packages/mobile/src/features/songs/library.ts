@@ -151,10 +151,12 @@ export const useSaveSong = (id: number | null) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: SongInput): Promise<number> => {
+      if (!input.title.trim()) throw new Error('Podaj tytuł pieśni.');
       const row = {
-        title: input.title,
+        title: input.title.trim(),
         author: input.author,
-        key: input.key || 'C',
+        // Bez wybranej tonacji zostaje pusta — nie udajemy „C”, którego nikt nie ustalił (jak web).
+        key: (input.key || '').trim() || null,
         tempo: input.tempo,
         meter: input.meter,
         tags: input.tags,
@@ -162,11 +164,11 @@ export const useSaveSong = (id: number | null) => {
       };
       if (id != null) {
         const { error } = await (supabase.from('songs') as any).update(row).eq('id', id);
-        if (error) throw new Error(error.message || 'Nie udało się zapisać pieśni.');
+        if (error) throw error;
         return id;
       }
       const { data, error } = await (supabase.from('songs') as any).insert([{ ...row, attachments: [] }]).select('id').single();
-      if (error) throw new Error(error.message || 'Nie udało się dodać pieśni.');
+      if (error) throw error;
       return Number((data as any).id);
     },
     onSuccess: () => invalidateSongs(qc),
@@ -195,8 +197,69 @@ export const useSetSongAttachments = (id: number) => {
   });
 };
 
+// ─── Tagi pieśni ──────────────────────────────────────────────────────────────
+// Wspólny słownik tagów w bazie (app_settings `song_tags`, jak web src/modules/MusicTeam/songTags.js)
+// zamiast tylko tagów użytych na pieśniach. Odczyt wprost z app_settings; ZAPIS przez fn `song-tags`
+// ({ action: 'add' | 'remove' | 'rename' | 'merge', tag?, to?, tags? } → { tags }), bo zapis do
+// app_settings wymaga uprawnień administratora, a tag dodaje lider zespołu uwielbienia.
+
+const parseTagValue = (value: unknown): string[] => {
+  let v = value;
+  for (let i = 0; i < 2 && typeof v === 'string'; i++) {
+    try {
+      v = JSON.parse(v);
+    } catch {
+      return [];
+    }
+  }
+  return Array.isArray(v) ? v.map((x) => String(x ?? '').trim()).filter(Boolean) : [];
+};
+
+// Lista do wyboru: słownik + tagi użyte na pieśniach, bez duplikatów (wielkość liter), po polsku.
+export const buildSongTagList = (dict: string[], songs: SongListItem[] = []) => {
+  const out: string[] = [];
+  const add = (t: string) => {
+    const c = String(t ?? '').trim();
+    if (c && !out.some((x) => x.toLowerCase() === c.toLowerCase())) out.push(c);
+  };
+  dict.forEach(add);
+  songs.forEach((s) => s.tags.forEach(add));
+  return out.sort((a, b) => a.localeCompare(b, 'pl'));
+};
+
+export const useSongTagDictionary = () =>
+  useQuery({
+    queryKey: ['songs', 'tag-dictionary'],
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase.from('app_settings').select('value').eq('key', 'song_tags').maybeSingle();
+      if (error) return [];
+      return parseTagValue((data as any)?.value);
+    },
+  });
+
+export type SongTagOp =
+  | { action: 'add'; tag: string }
+  | { action: 'remove'; tag: string }
+  | { action: 'rename'; tag: string; to: string };
+
+const saveSongTags = async (body: SongTagOp): Promise<string[]> => {
+  const { data, error } = await supabase.functions.invoke('song-tags', { body });
+  if (error) throw error;
+  return Array.isArray((data as any)?.tags) ? ((data as any).tags as string[]) : [];
+};
+
+export const useSongTagOp = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: saveSongTags,
+    onSuccess: (tags) => qc.setQueryData(['songs', 'tag-dictionary'], tags),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['songs', 'tag-dictionary'] }),
+  });
+};
+
 // Tag w całej bazie: zmiana nazwy albo usunięcie (jak „Zarządzaj tagami” na webie —
-// osobny zapis każdej pieśni z tym tagiem).
+// osobny zapis każdej pieśni z tym tagiem, potem słownik w bazie).
 export const useRetagSongs = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -205,10 +268,15 @@ export const useRetagSongs = () => {
       for (const s of affected) {
         const next = Array.from(new Set(s.tags.map((t) => (t === from ? to : t)).filter(Boolean) as string[]));
         const { error } = await (supabase.from('songs') as any).update({ tags: next }).eq('id', s.id);
-        if (error) throw new Error(error.message || `Nie udało się zmienić tagów pieśni „${s.title}”.`);
+        if (error) throw error;
       }
+      // Słownik (także dla tagów jeszcze nieużytych na pieśniach).
+      await saveSongTags(to ? { action: 'rename', tag: from, to } : { action: 'remove', tag: from });
       return affected.length;
     },
-    onSuccess: () => invalidateSongs(qc),
+    onSettled: () => {
+      invalidateSongs(qc);
+      qc.invalidateQueries({ queryKey: ['songs', 'tag-dictionary'] });
+    },
   });
 };

@@ -95,15 +95,18 @@ const soft = <T>(p: PromiseLike<{ data: T | null }>, fallback: T): Promise<T> =>
     () => fallback,
   );
 
+// Zapasowe nazwy służb (= domyślne nazwy modułów); nazwa z ustawień kościoła wygrywa.
 const TEAM_LABELS: Record<string, string> = {
-  worship: 'Zespół Uwielbienia',
-  media: 'Media Team',
+  worship: 'Zespół uwielbienia',
+  media: 'MediaTeam',
   atmosfera: 'Atmosfera Team',
-  kids: 'Małe Avenit',
+  kids: 'Dzieci',
   mc: 'Scena / MC',
 };
 const KNOWN_TEAM_MODULES = ['worship', 'media', 'atmosfera', 'kids'];
 const GENERAL_TYPES: Record<string, string> = {
+  // Web zapisuje typ z polskimi znakami ('nabożeństwo'); starsze wpisy — bez.
+  nabożeństwo: 'Nabożeństwo',
   nabozenstwo: 'Nabożeństwo',
   spotkanie: 'Spotkanie',
   wydarzenie: 'Wydarzenie',

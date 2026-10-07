@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 
-// Moduł „Moje zaproszenia" (member-facing, RSVP) — czyta tabele `rsvp_invitations`
+// Moduł „Zapisy (RSVP)" — ekran zaproszeń członka (member-facing) — czyta tabele `rsvp_invitations`
 // oraz `rsvp_campaigns` filtrując po zalogowanym członku. Powiązanie member↔auth jest
 // luźne: najpierw app_users.member_id (niezawodne), potem members po e-mailu; dodatkowo
 // zaproszenia bywają adresowane bezpośrednio na e-mail (kolumna email), więc łączymy oba.
@@ -54,9 +54,8 @@ export const respondToInvitation = async (params: {
       guests: Math.max(0, params.guests ?? 0),
     },
   });
-  if (error) {
-    throw new Error(error.message || 'Nie udało się zapisać odpowiedzi');
-  }
+  // Obiekt błędu (status/kod) — ekran zamienia go na ludzki komunikat (friendlyError).
+  if (error) throw error;
 };
 
 export const useMyInvitations = (userEmail: string | null) =>
@@ -71,7 +70,8 @@ export const useMyInvitations = (userEmail: string | null) =>
       // nadchodzące, posortowane. Bezpośredni odczyt rsvp_* odsłaniałby cudze
       // zaproszenia (uprawnienia są per-tabela).
       const { data, error } = await supabase.functions.invoke('my-invitations');
-      if (error || !data) return empty;
-      return data as MyInvitationsData;
+      // Błąd pokazujemy — pusty wynik wyglądał jak „brak zaproszeń”.
+      if (error) throw error;
+      return (data as MyInvitationsData) ?? empty;
     },
   });

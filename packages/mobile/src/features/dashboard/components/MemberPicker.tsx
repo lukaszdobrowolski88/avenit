@@ -124,12 +124,12 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                 backgroundColor: '#FFFFFF',
               }}
             >
-              <Search size={16} color="#857F70" />
+              <Search size={16} color="#6E685A" />
               <TextInput
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Szukaj po imieniu lub email…"
-                placeholderTextColor="#857F70"
+                placeholderTextColor="#6E685A"
                 style={{
                   flex: 1,
                   fontSize: 14,

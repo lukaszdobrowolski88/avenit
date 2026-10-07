@@ -41,15 +41,30 @@ export const SectionHeading = ({ title, count, action, actionLabel, onAction }: 
   </View>
 );
 
-// Pusty stan w jednej linii (bez dużej ikony) — pulpit zostaje zwarty.
-export const EmptyRow = ({ text, actionLabel, onAction }: { text: string; actionLabel?: string; onAction?: () => void }) => (
+// Pusty stan w jednej linii (bez dużej ikony) — pulpit zostaje zwarty. `hint` mówi, kiedy
+// coś się tu pojawi (jak podtytuł EmptyState na webie), akcja — pierwszy krok.
+export const EmptyRow = ({
+  text,
+  hint,
+  actionLabel,
+  onAction,
+}: {
+  text: string;
+  hint?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}>
-    <Text style={{ flex: 1, fontSize: 14, color: D.ink2, fontFamily: F.medium }}>{text}</Text>
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontSize: 14, color: D.ink, fontFamily: F.semibold }}>{text}</Text>
+      {hint ? <Text style={{ marginTop: 2, fontSize: 13, lineHeight: 18, color: D.ink2, fontFamily: F.medium }}>{hint}</Text> : null}
+    </View>
     {actionLabel && onAction ? (
       <Pressable
         onPress={onAction}
+        accessibilityRole="button"
         className="active:opacity-70"
-        style={{ paddingHorizontal: 14, height: 34, borderRadius: 17, backgroundColor: D.well, justifyContent: 'center' }}
+        style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, backgroundColor: D.accentSoft, justifyContent: 'center' }}
       >
         <Text style={{ fontSize: 13, color: D.ink, fontFamily: F.semibold }}>{actionLabel}</Text>
       </Pressable>

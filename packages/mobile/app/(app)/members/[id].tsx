@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StatusBar, Text, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Linking, Pressable, ScrollView, StatusBar, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -23,6 +23,7 @@ import {
   MINISTRY_LABELS,
   useAddMemberNote,
   useMemberNotes,
+  useGroupMemberships,
   type MemberNote,
   type MemberStatus,
 } from '../../../src/features/members/api';
@@ -31,6 +32,9 @@ import { usePermissions } from '../../../src/lib/permissions';
 import { useAuthSession } from '../../../src/lib/auth';
 import { Monogram } from '../../../src/components/ui/brand';
 import { goBack } from '../../../src/lib/navigation';
+import { friendlyError, showError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
+import { memberGroupLinks } from '../../../src/features/home-groups/utils';
 
 const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View
@@ -139,7 +143,7 @@ export default function MemberDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { selectedCampusId, campusIdForInsert } = useCampusQuery();
-  const { data: member, isLoading } = useMember(id ?? '', selectedCampusId);
+  const { data: member, isLoading, isError, error, refetch } = useMember(id ?? '', selectedCampusId);
   const { data: household } = useHousehold(member?.household_id ?? null);
   const { user } = useAuthSession();
   const perms = usePermissions();
@@ -150,6 +154,27 @@ export default function MemberDetailScreen() {
   const addNote = useAddMemberNote(id ?? '', user?.email ?? null, campusIdForInsert);
   const [editing, setEditing] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
+  // Grupy domowe osoby z obu źródeł (home_group_members + members.home_group_id), z rolą.
+  const memberships = useGroupMemberships(!!member);
+  const groupLinks = useMemo(
+    () =>
+      member
+        ? memberGroupLinks(member, memberships.data?.rows ?? [], memberships.data?.groups ?? [])
+        : [],
+    [member, memberships.data],
+  );
+
+  const submitNote = () => {
+    const body = noteDraft.trim();
+    if (!body || addNote.isPending) return;
+    addNote.mutate(body, {
+      onSuccess: () => {
+        setNoteDraft('');
+        toast.success('Dodano notatkę');
+      },
+      onError: (e) => showError('Nie udało się dodać notatki', e, 'Spróbuj ponownie.'),
+    });
+  };
 
   if (isLoading) {
     return (
@@ -176,9 +201,20 @@ export default function MemberDetailScreen() {
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
-          Osoba nie istnieje.
+        <Text style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium', textAlign: 'center', lineHeight: 20 }}>
+          {isError
+            ? friendlyError(error, 'Nie udało się wczytać danych osoby.')
+            : 'Nie znaleziono tej osoby. Mogła zostać usunięta.'}
         </Text>
+        <Pressable
+          onPress={() => (isError ? refetch() : goBack(router))}
+          className="active:opacity-70"
+          style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: '#2A2312' }}
+        >
+          <Text style={{ color: '#F6F4EE', fontFamily: 'Manrope_700Bold', fontSize: 14 }}>
+            {isError ? 'Spróbuj ponownie' : 'Wróć'}
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -378,6 +414,53 @@ export default function MemberDetailScreen() {
           </View>
         ) : null}
 
+        {groupLinks.length > 0 ? (
+          <SectionCard title="Grupy domowe">
+            {groupLinks.map((g, i) => (
+              <Pressable
+                key={g.id}
+                onPress={() => router.push({ pathname: '/(app)/home-groups/[id]', params: { id: g.id } })}
+                className="active:opacity-70"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderBottomWidth: i === groupLinks.length - 1 ? 0 : 1,
+                  borderBottomColor: '#ECE8DE',
+                }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#FFF8E1',
+                  }}
+                >
+                  <Home size={16} color="#8A6606" strokeWidth={2.2} />
+                </View>
+                <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{g.name}</Text>
+                <View
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 999,
+                    backgroundColor: g.role === 'leader' ? '#FFF1C2' : '#ECE8DE',
+                  }}
+                >
+                  <Text style={{ fontSize: 11, color: g.role === 'leader' ? '#6B4F05' : '#4A463E', fontFamily: 'Manrope_700Bold' }}>
+                    {g.role === 'leader' ? 'Lider' : 'Członek'}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </SectionCard>
+        ) : null}
+
         {member.membership_date ? (
           <SectionCard title="Członkostwo">
             <InfoRow
@@ -449,7 +532,7 @@ export default function MemberDetailScreen() {
                 value={noteDraft}
                 onChangeText={setNoteDraft}
                 placeholder="Dodaj notatkę (widzą ją osoby z dostępem do Opieki)"
-                placeholderTextColor="#857F70"
+                placeholderTextColor="#6E685A"
                 multiline
                 style={{
                   flex: 1,
@@ -466,14 +549,8 @@ export default function MemberDetailScreen() {
                 }}
               />
               <Pressable
-                onPress={() => {
-                  const body = noteDraft.trim();
-                  if (!body) return;
-                  addNote.mutate(body, {
-                    onSuccess: () => setNoteDraft(''),
-                    onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? ''),
-                  });
-                }}
+                onPress={submitNote}
+                accessibilityLabel="Dodaj notatkę"
                 disabled={!noteDraft.trim() || addNote.isPending}
                 className="active:opacity-70"
                 style={{
@@ -488,10 +565,15 @@ export default function MemberDetailScreen() {
                 <Send size={17} color="#ffffff" />
               </Pressable>
             </View>
+            {notes.isError ? (
+              <Text style={{ fontSize: 13, color: '#4A463E', fontFamily: 'Manrope_500Medium' }}>
+                {friendlyError(notes.error, 'Nie udało się wczytać notatek.')}
+              </Text>
+            ) : null}
             {((notes.data ?? []) as MemberNote[]).map((n) => (
               <View key={n.id} style={{ borderRadius: 14, backgroundColor: '#F6F4EE', padding: 12, gap: 4 }}>
                 <Text style={{ fontSize: 14, lineHeight: 20, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}>{n.body}</Text>
-                <Text style={{ fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
+                <Text style={{ fontSize: 11, color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>
                   {[n.author, n.createdAt ? formatDate(n.createdAt, 'd MMM yyyy, HH:mm') : null].filter(Boolean).join(' · ')}
                 </Text>
               </View>

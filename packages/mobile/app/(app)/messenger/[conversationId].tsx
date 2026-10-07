@@ -36,6 +36,8 @@ import {
   useTogglePrayerResponse,
   deliveryStatusFor,
   extractMentions,
+  canPostIn,
+  sameEmail,
   type MessageAttachment,
   type MessageRow,
   type ReadReceiptRow,
@@ -62,6 +64,16 @@ import { SearchModal } from "../../../src/features/messenger/components/SearchMo
 import { PinnedPanel } from "../../../src/features/messenger/components/PinnedPanel";
 import { MediaGalleryModal } from "../../../src/features/messenger/components/MediaGalleryModal";
 import { useAuthSession } from "../../../src/lib/auth";
+import { usePermissions } from "../../../src/lib/permissions";
+import { friendlyError } from "../../../src/lib/errors";
+import { toast } from "../../../src/lib/toast";
+
+// Krótki cytat wiadomości do potwierdzeń („Usunąć wiadomość „…”?”).
+const excerpt = (text: string | null | undefined, max = 60) => {
+  const t = String(text ?? "").replace(/\s+/g, " ").trim();
+  if (!t) return "";
+  return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+};
 
 type FeedItem =
   | { kind: "msg"; msg: MessageRow; showSender: boolean }
@@ -72,6 +84,10 @@ export default function ConversationScreen() {
   const { user } = useAuthSession();
   const qc = useQueryClient();
   const cid = String(conversationId ?? "");
+  const perms = usePermissions();
+  // Co rola pozwala zapisać — jak web (KomunikatorModule.perms). Serwer i tak pilnuje zakresu.
+  const canManageOwn = perms.can("res:conversation_participants:update"); // przeczytane, wyciszenie
+  const canEditOwn = perms.can("res:messages:update"); // edycja i usuwanie własnych wiadomości
 
   // Composer siedzi nad tabbarem — padding równy jego wysokości z (app)/_layout.tsx.
   const composerBottomPad = Platform.OS === "ios" ? 88 : 70;
@@ -105,7 +121,7 @@ export default function ConversationScreen() {
 
   // Presence dla wszystkich uczestników (pomijając mnie).
   const presenceEmails = useMemo(
-    () => memberEmails.filter((e) => e !== user?.email),
+    () => memberEmails.filter((e) => !sameEmail(e, user?.email)),
     [memberEmails, user?.email],
   );
   const { getStatus } = usePresence(presenceEmails);
@@ -114,7 +130,7 @@ export default function ConversationScreen() {
   const peerEmail = useMemo(() => {
     if (detailsQuery.data?.type !== "direct") return null;
     return (
-      detailsQuery.data.participant_emails.find((e: string) => e !== user?.email) ?? null
+      detailsQuery.data.participant_emails.find((e: string) => !sameEmail(e, user?.email)) ?? null
     );
   }, [detailsQuery.data, user?.email]);
   const peerStatus = peerEmail ? getStatus(peerEmail) : undefined;
@@ -131,6 +147,17 @@ export default function ConversationScreen() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [galleryVisible, setGalleryVisible] = useState(false);
   const listRef = useRef<FlatList<FeedItem>>(null);
+
+  // Inna rozmowa w tym samym ekranie (powiadomienie, link) — szkic, załącznik i odpowiedź
+  // nie mogą „przejść” do innej rozmowy.
+  useEffect(() => {
+    setText("");
+    setPendingAttachment(null);
+    setReplyTo(null);
+    setEditingId(null);
+    setActionTarget(null);
+    setForwardTarget(null);
+  }, [cid]);
 
   const messageById = useMemo(() => {
     const map = new Map<string, MessageRow>();
@@ -169,20 +196,23 @@ export default function ConversationScreen() {
   }, [messagesQuery.data]);
 
   useEffect(() => {
-    if (cid && user?.email) {
-      markConversationRead(cid, user.email)
-        // Po oznaczeniu jako przeczytane odśwież listę rozmów, żeby zniknął badge nieprzeczytanych.
-        .then(() => qc.invalidateQueries({ queryKey: ["conversations"] }))
-        .catch(() => undefined);
+    if (cid && user?.email && detailsQuery.data?.is_participant) {
+      // „Przeczytane” — tylko gdy rola może zmieniać swój wiersz uczestnika (inaczej 403).
+      if (canManageOwn) {
+        markConversationRead(cid, user.email)
+          // Po oznaczeniu jako przeczytane odśwież listę rozmów, żeby zniknął badge nieprzeczytanych.
+          .then(() => qc.invalidateQueries({ queryKey: ["conversations"] }))
+          .catch(() => undefined);
+      }
       // Per-message read receipts — tylko cudze wiadomości.
       const ids = (messagesQuery.data ?? [])
-        .filter((m: MessageRow) => m.sender_email !== user.email)
+        .filter((m: MessageRow) => !sameEmail(m.sender_email, user.email))
         .map((m: MessageRow) => m.id);
       if (ids.length > 0) {
         markMessagesAsRead(ids, user.email).catch(() => undefined);
       }
     }
-  }, [cid, user?.email, messagesQuery.data?.length]);
+  }, [cid, user?.email, messagesQuery.data?.length, detailsQuery.data?.is_participant, canManageOwn]);
 
   useEffect(() => {
     if (feed.length === 0) return;
@@ -198,8 +228,8 @@ export default function ConversationScreen() {
       if (!asset) return;
       const att = await uploadAttachment(cid, asset);
       setPendingAttachment(att);
-    } catch (e: any) {
-      Alert.alert("Błąd uploadu", e?.message ?? "Nie udało się wysłać zdjęcia.");
+    } catch (e) {
+      Alert.alert("Nie udało się dodać zdjęcia", friendlyError(e, "Spróbuj ponownie."));
     } finally {
       setUploading(false);
     }
@@ -214,8 +244,11 @@ export default function ConversationScreen() {
         replyToId: replyTo?.id ?? null,
       });
       setReplyTo(null);
-    } catch (e: any) {
-      Alert.alert("Błąd wysyłki", e?.message ?? "Nie udało się wysłać wiadomości głosowej.");
+    } catch (e) {
+      Alert.alert(
+        "Nie udało się wysłać",
+        friendlyError(e, "Nie udało się wysłać wiadomości głosowej. Spróbuj ponownie."),
+      );
       throw e;
     }
   };
@@ -228,8 +261,8 @@ export default function ConversationScreen() {
       if (!asset) return;
       const att = await uploadAttachment(cid, asset);
       setPendingAttachment(att);
-    } catch (e: any) {
-      Alert.alert("Błąd", e?.message ?? "Nie udało się zrobić zdjęcia.");
+    } catch (e) {
+      Alert.alert("Nie udało się dodać zdjęcia", friendlyError(e, "Spróbuj ponownie."));
     } finally {
       setUploading(false);
     }
@@ -243,63 +276,84 @@ export default function ConversationScreen() {
   };
 
   const details = detailsQuery.data;
-  // Kanał ogłoszeń (spec §5): piszą tylko admini; reszta ma ukryty kompozytor.
-  const canPost =
-    !details || details.posting_policy !== "admins" || details.my_role === "admin";
+  // Prawo pisania: uczestnik rozmowy, a w kanale „tylko administratorzy” — administrator.
+  // Do czasu wczytania rozmowy pole jest schowane (bez mignięcia u nie-adminów).
+  const canPost = !!details && details.is_participant && canPostIn(details);
+  const readOnlyText = !details
+    ? detailsQuery.isError
+      ? friendlyError(detailsQuery.error, "Nie udało się wczytać rozmowy.")
+      : ""
+    : !details.is_participant
+      ? "Nie jesteś uczestnikiem tej rozmowy."
+      : "W tym kanale piszą tylko administratorzy.";
+  const isConvAdmin = details?.my_role === "admin";
+  // Przypinanie wiadomości — jak web: administrator rozmowy z prawem do przypięć.
+  const canPin = isConvAdmin && perms.can("res:pinned_messages:create");
+  const sending = sendMutation.isPending || editMutation.isPending;
 
+  // Ankieta: okno zamyka się dopiero po wysłaniu (przy błędzie treść zostaje).
   const handleCreatePoll = async (question: string, metadata: PollMetadata) => {
-    setPollOpen(false);
+    if (sendMutation.isPending) return false;
     try {
       await sendMutation.mutateAsync({ content: question, messageType: "poll", metadata });
-    } catch (e: any) {
-      Alert.alert("Błąd", e?.message ?? "Nie udało się utworzyć ankiety.");
+      setPollOpen(false);
+      return true;
+    } catch (e) {
+      Alert.alert("Nie udało się utworzyć ankiety", friendlyError(e, "Spróbuj ponownie."));
+      return false;
     }
   };
 
   const handleShareEvent = async (title: string, metadata: EventMetadata) => {
-    setEventShareOpen(false);
+    if (sendMutation.isPending) return;
     try {
       await sendMutation.mutateAsync({ content: title, messageType: "event", metadata });
-    } catch (e: any) {
-      Alert.alert("Błąd", e?.message ?? "Nie udało się udostępnić wydarzenia.");
+      setEventShareOpen(false);
+    } catch (e) {
+      Alert.alert("Nie udało się udostępnić wydarzenia", friendlyError(e, "Spróbuj ponownie."));
     }
   };
 
+  // Wysyłka: tekst i załącznik zostają w polu do potwierdzenia przez serwer — przy błędzie
+  // (np. „W tym kanale piszą tylko administratorzy”, brak sieci) nic nie ginie.
   const handleSend = async () => {
+    if (sending) return;
     if (editingId) {
       const t = text.trim();
       if (!t) return;
       try {
         await editMutation.mutateAsync({ id: editingId, content: t });
         resetComposer();
-      } catch (e: any) {
-        Alert.alert("Błąd edycji", e?.message ?? "Nie udało się edytować.");
+      } catch (e) {
+        Alert.alert(
+          "Nie udało się zapisać zmian",
+          friendlyError(e, "Nie udało się zapisać zmian w wiadomości. Spróbuj ponownie."),
+        );
       }
       return;
     }
 
     const t = text.trim();
     if (!t && !pendingAttachment) return;
-    const snapshot = { text: t, att: pendingAttachment, reply: replyTo };
-    resetComposer();
     try {
       await sendMutation.mutateAsync({
-        content: snapshot.text,
-        attachments: snapshot.att ? [snapshot.att] : undefined,
-        replyToId: snapshot.reply?.id ?? null,
-        mentions: extractMentions(snapshot.text, members),
+        content: t,
+        attachments: pendingAttachment ? [pendingAttachment] : undefined,
+        replyToId: replyTo?.id ?? null,
+        mentions: extractMentions(t, members),
       });
-    } catch (e: any) {
-      setText(snapshot.text);
-      setPendingAttachment(snapshot.att);
-      setReplyTo(snapshot.reply);
-      Alert.alert("Błąd wysyłki", e?.message ?? "Nie udało się wysłać.");
+      resetComposer();
+    } catch (e) {
+      Alert.alert(
+        "Nie udało się wysłać",
+        friendlyError(e, "Nie udało się wysłać wiadomości. Spróbuj ponownie."),
+      );
     }
   };
 
   const handleCopyMessage = async (msg: MessageRow) => {
     if (!msg.content) {
-      Alert.alert("Brak treści", "Ta wiadomość nie zawiera tekstu do skopiowania.");
+      Alert.alert("Brak tekstu", "Ta wiadomość nie zawiera tekstu do udostępnienia.");
       return;
     }
     try {
@@ -310,11 +364,15 @@ export default function ConversationScreen() {
   };
 
   const handleTogglePin = (msg: MessageRow) => {
+    if (pinMutation.isPending) return;
     pinMutation.mutate(
       { messageId: msg.id, pinned: pinnedIds.has(msg.id) },
       {
-        onError: (e: any) =>
-          Alert.alert("Błąd", e?.message ?? "Nie udało się zmienić przypięcia."),
+        onError: (e) =>
+          Alert.alert(
+            "Nie udało się",
+            friendlyError(e, "Nie udało się zmienić przypięcia wiadomości. Spróbuj ponownie."),
+          ),
       },
     );
   };
@@ -323,19 +381,29 @@ export default function ConversationScreen() {
     setForwardTarget(msg);
   };
 
+  // Przekazanie: każda rozmowa osobno; okno zamyka się, gdy choć jedna wysyłka się udała.
   const handleConfirmForward = async (conversationIds: string[]) => {
     const target = forwardTarget;
-    if (!target) return;
+    if (!target) return false;
     try {
-      await forwardMutation.mutateAsync({
+      const { sent, total } = await forwardMutation.mutateAsync({
         conversationIds,
         content: target.content,
         attachments: target.attachments ?? [],
       });
       setForwardTarget(null);
-      Alert.alert("Przekazano", `Wiadomość przekazana do ${conversationIds.length} rozmów.`);
-    } catch (e: any) {
-      Alert.alert("Błąd", e?.message ?? "Nie udało się przekazać wiadomości.");
+      if (sent < total) {
+        Alert.alert(
+          "Przekazano częściowo",
+          `Przekazano do ${sent} z ${total} rozmów. Do pozostałych nie udało się wysłać.`,
+        );
+      } else {
+        toast.success(sent === 1 ? "Wiadomość przekazana" : `Wiadomość przekazana do ${sent} rozmów`);
+      }
+      return true;
+    } catch (e) {
+      Alert.alert("Nie udało się przekazać", friendlyError(e, "Spróbuj ponownie."));
+      return false;
     }
   };
 
@@ -344,20 +412,34 @@ export default function ConversationScreen() {
   };
 
   const handleDeleteMessage = (msg: MessageRow) => {
-    Alert.alert("Usunąć wiadomość?", "Tej operacji nie można cofnąć.", [
-      { text: "Anuluj", style: "cancel" },
-      {
-        text: "Usuń",
-        style: "destructive",
-        onPress: () => {
-          deleteMutation.mutate(msg.id);
+    const quote = excerpt(msg.content);
+    Alert.alert(
+      quote ? `Usunąć wiadomość „${quote}”?` : "Usunąć tę wiadomość?",
+      "Zniknie u wszystkich uczestników rozmowy. Tego nie można cofnąć.",
+      [
+        { text: "Anuluj", style: "cancel" },
+        {
+          text: "Usuń",
+          style: "destructive",
+          onPress: () => {
+            if (deleteMutation.isPending) return;
+            deleteMutation.mutate(msg.id, {
+              onSuccess: () => toast.success("Wiadomość usunięta"),
+              onError: (e) =>
+                Alert.alert(
+                  "Nie udało się usunąć",
+                  friendlyError(e, "Nie udało się usunąć wiadomości. Spróbuj ponownie."),
+                ),
+            });
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
+  // Błędy wyciszenia pokazuje sam hook (useToggleMuted).
   const handleToggleMute = () => {
-    if (!detailsQuery.data) return;
+    if (!detailsQuery.data || muteMutation.isPending) return;
     muteMutation.mutate({
       conversationId: cid,
       muted: !detailsQuery.data.my_muted,
@@ -389,7 +471,7 @@ export default function ConversationScreen() {
           details={detailsQuery.data ?? null}
           members={members}
           myEmail={user?.email ?? null}
-          onToggleMute={handleToggleMute}
+          onToggleMute={canManageOwn && details?.is_participant ? handleToggleMute : undefined}
           muteBusy={muteMutation.isPending}
           onSearch={() => setSearchVisible(true)}
           onOpenGallery={() => setGalleryVisible(true)}
@@ -401,12 +483,18 @@ export default function ConversationScreen() {
           messageById={messageById}
           members={members}
           onJump={handleJumpToMessage}
-          onUnpin={(m) => handleTogglePin(m)}
+          onUnpin={canPin ? (m) => handleTogglePin(m) : undefined}
         />
 
         {messagesQuery.isLoading ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
             <ActivityIndicator color="#2A2312" />
+          </View>
+        ) : messagesQuery.isError && !messagesQuery.data ? (
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+            <Text style={{ fontSize: 14, color: "#6B6557", fontFamily: "Manrope_500Medium", textAlign: "center", lineHeight: 20 }}>
+              {friendlyError(messagesQuery.error, "Nie udało się wczytać wiadomości. Spróbuj ponownie.")}
+            </Text>
           </View>
         ) : (
           <FlatList
@@ -430,17 +518,6 @@ export default function ConversationScreen() {
             }}
             ListEmptyComponent={
               <View style={{ alignItems: "center", paddingVertical: 48 }}>
-                <View
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 18,
-                    backgroundColor: "#FFF8E1",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 12,
-                  }}
-                />
                 <Text
                   style={{
                     fontSize: 14,
@@ -448,7 +525,7 @@ export default function ConversationScreen() {
                     fontFamily: "Manrope_500Medium",
                   }}
                 >
-                  Brak wiadomości. Napisz pierwszą!
+                  {canPost ? "Brak wiadomości. Napisz pierwszą." : "Brak wiadomości."}
                 </Text>
               </View>
             }
@@ -457,10 +534,10 @@ export default function ConversationScreen() {
                 return <DateSeparator date={item.date} />;
               }
               const m = item.msg;
-              const mine = m.sender_email === user?.email;
+              const mine = sameEmail(m.sender_email, user?.email);
               const receipts = readReceiptsQuery.data?.[m.id] ?? [];
               const readByCount = mine
-                ? receipts.filter((r: ReadReceiptRow) => r.user_email !== m.sender_email).length
+                ? receipts.filter((r: ReadReceiptRow) => !sameEmail(r.user_email, m.sender_email)).length
                 : 0;
               const prayer = prayerQuery.data?.[m.id];
               return (
@@ -476,16 +553,21 @@ export default function ConversationScreen() {
                   currentUserEmail={user?.email ?? null}
                   deliveryStatus={mine ? deliveryStatusFor(receipts, m.sender_email) : undefined}
                   pollVotes={pollVotesQuery.data?.[m.id]}
-                  onVote={(optionId) =>
+                  onVote={(optionId) => {
+                    // Blokada podwójnego głosu (błędy pokazuje hook).
+                    if (pollVoteMutation.isPending) return;
                     pollVoteMutation.mutate({
                       messageId: m.id,
                       optionId,
                       multiple: !!(m.metadata as PollMetadata | null)?.multiple,
-                    })
-                  }
+                    });
+                  }}
                   prayerCount={prayer?.count ?? 0}
                   prayerMine={!!prayer?.mine}
-                  onPray={() => prayerMutation.mutate({ messageId: m.id, responding: !!prayer?.mine })}
+                  onPray={() => {
+                    if (prayerMutation.isPending) return;
+                    prayerMutation.mutate({ messageId: m.id, responding: !!prayer?.mine });
+                  }}
                   senderStatus={mine ? undefined : getStatus(m.sender_email)}
                   onLongPress={() => handleLongPress(m)}
                   onToggleReaction={(emoji) => handleToggleReactionFromBubble(m.id, emoji)}
@@ -500,7 +582,7 @@ export default function ConversationScreen() {
             text={text}
             onChangeText={setText}
             onSend={handleSend}
-            sending={sendMutation.isPending || editMutation.isPending}
+            sending={sending}
             pendingAttachment={pendingAttachment}
             onClearAttachment={() => setPendingAttachment(null)}
             onPickImage={handlePickImage}
@@ -512,6 +594,7 @@ export default function ConversationScreen() {
             members={members}
             onSendVoice={handleSendVoice}
             canPost={canPost}
+            readOnlyText={readOnlyText}
             onCreatePoll={() => setPollOpen(true)}
             onShareEvent={() => setEventShareOpen(true)}
           />
@@ -528,13 +611,16 @@ export default function ConversationScreen() {
         visible={eventShareOpen}
         onClose={() => setEventShareOpen(false)}
         onShare={handleShareEvent}
+        busy={sendMutation.isPending}
       />
 
       <MessageActionsSheet
         visible={!!actionTarget}
         onClose={() => setActionTarget(null)}
-        mine={actionTarget?.sender_email === user?.email}
-        canEdit={actionTarget ? canEditMessage(actionTarget, user?.email ?? null) : false}
+        mine={sameEmail(actionTarget?.sender_email, user?.email)}
+        canEdit={canEditOwn && !!actionTarget && canEditMessage(actionTarget, user?.email ?? null)}
+        canDelete={canEditOwn}
+        canPin={canPin}
         isPinned={actionTarget ? pinnedIds.has(actionTarget.id) : false}
         onPickReaction={(emoji) => {
           if (actionTarget) {
@@ -550,6 +636,7 @@ export default function ConversationScreen() {
         onForward={() => {
           if (actionTarget) handleForward(actionTarget);
         }}
+        canReply={canPost}
         onCopy={() => {
           if (actionTarget) handleCopyMessage(actionTarget);
         }}

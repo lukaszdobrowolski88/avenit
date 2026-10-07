@@ -183,11 +183,11 @@ export const MessageBubble = ({
               paddingHorizontal: 4,
             }}
           >
-            <Pin size={10} color="#857F70" />
+            <Pin size={10} color="#6E685A" />
             <Text
               style={{
                 fontSize: 10,
-                color: "#857F70",
+                color: "#6E685A",
                 fontFamily: "Manrope_600SemiBold",
                 letterSpacing: -0.1,
               }}
@@ -231,11 +231,11 @@ export const MessageBubble = ({
         {replyTo ? (
           <View
             style={{
-              borderLeftWidth: 2,
-              borderLeftColor: mine ? "rgba(255,255,255,0.5)" : "#A8A59E",
-              paddingLeft: 8,
+              borderRadius: 10,
+              backgroundColor: mine ? "rgba(255,255,255,0.12)" : "#F1EEE6",
+              paddingHorizontal: 8,
               marginBottom: 4,
-              paddingVertical: 2,
+              paddingVertical: 4,
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -310,7 +310,7 @@ export const MessageBubble = ({
                 marginBottom: 4,
               }}
             >
-              <FileText size={16} color={mine ? "#ffffff" : "#dc2626"} />
+              <FileText size={16} color={mine ? "#ffffff" : "#2A2312"} />
               <Text
                 style={{
                   flex: 1,
@@ -388,7 +388,7 @@ export const MessageBubble = ({
             <Text
               style={{
                 fontSize: 10,
-                color: mine ? "#FFF1C2" : "#857F70",
+                color: mine ? "#FFF1C2" : "#6E685A",
                 fontStyle: "italic",
                 fontFamily: "Manrope_400Regular",
               }}
@@ -399,7 +399,7 @@ export const MessageBubble = ({
           <Text
             style={{
               fontSize: 10,
-              color: mine ? "#FFF1C2" : "#857F70",
+              color: mine ? "#FFF1C2" : "#6E685A",
               fontFamily: "Manrope_500Medium",
             }}
           >

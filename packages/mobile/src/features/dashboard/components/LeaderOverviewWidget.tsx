@@ -98,7 +98,7 @@ export const LeaderOverviewWidget = ({ giving, attendance, rsvp }: Props) => {
   return (
     <WidgetCard title="Przegląd">
       {hasGiving ? (
-        <Block label={`Dawanie · ${monthName}`} onPress={() => router.push('/(app)/giving/admin')} first={isFirst()}>
+        <Block label={`Hojność · ${monthName}`} onPress={() => router.push('/(app)/giving/admin')} first={isFirst()}>
           <Big>{money(giving!.month)}</Big>
           <Sub>
             {giving!.monthCount} wpłat w tym miesiącu · od stycznia {money(giving!.year)}
@@ -134,7 +134,7 @@ export const LeaderOverviewWidget = ({ giving, attendance, rsvp }: Props) => {
       ) : null}
 
       {hasRsvp ? (
-        <Block label="Zaproszenia RSVP" onPress={() => openOnWeb('/rsvp')} first={isFirst()}>
+        <Block label="Zapisy (RSVP)" onPress={() => openOnWeb('/rsvp')} first={isFirst()}>
           {rsvp.map((c) => (
             <View
               key={c.id}

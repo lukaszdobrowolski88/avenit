@@ -16,6 +16,7 @@ import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useSermons, type Sermon } from '../../../src/features/sermons/api';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { B, Monogram } from '../../../src/components/ui/brand';
+import { friendlyError } from '../../../src/lib/errors';
 
 // Karta kazania jak post marki: musztardowa data, duży tytuł, werset, mówca, odtwarzanie w
 // kurkumie. Najnowsze kazanie — wariant ciemny (słód).
@@ -143,7 +144,7 @@ export default function SermonsScreen() {
                   height: 40,
                 }}
               >
-                <Search size={16} color="#857F70" />
+                <Search size={16} color="#6E685A" />
                 <TextInput
                   style={{
                     flex: 1,
@@ -153,14 +154,14 @@ export default function SermonsScreen() {
                     paddingVertical: 0,
                   }}
                   placeholder="Szukaj: tytuł, mówca, werset…"
-                  placeholderTextColor="#857F70"
+                  placeholderTextColor="#6E685A"
                   value={search}
                   onChangeText={setSearch}
                   returnKeyType="search"
                 />
                 {search.length > 0 ? (
                   <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                    <X size={15} color="#857F70" />
+                    <X size={15} color="#6E685A" />
                   </Pressable>
                 ) : null}
               </View>
@@ -190,9 +191,9 @@ export default function SermonsScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
+              style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
             >
-              {(error as Error)?.message ?? 'Błąd'}
+              {friendlyError(error, 'Nie udało się wczytać kazań. Pociągnij w dół, aby spróbować ponownie.')}
             </Text>
           </View>
         ) : (data ?? []).length === 0 ? (

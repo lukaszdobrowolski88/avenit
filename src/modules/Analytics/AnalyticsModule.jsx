@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PageHeader from '../../components/PageHeader';
-import { BarChart3, Users, UserPlus, UserCheck, UserCircle, Gift, CalendarCheck, Filter, TrendingUp } from 'lucide-react';
+import { BarChart3, Users, UserPlus, UserCheck, UserCircle, Gift, CalendarCheck, Filter, TrendingUp, Music } from 'lucide-react';
+import ResponsiveTabs from '../../components/ResponsiveTabs';
+import CcliTab from './CcliTab';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import CustomSelect from '../../components/CustomSelect';
@@ -63,8 +65,39 @@ async function loadAttendance(start, end, withCampusFilter) {
   return { available: false };
 }
 
+// Raport CCLI (ewidencja wykonań pieśni) — przeniesiony z modułu Dostępność do Analityki.
+function CcliPanel({ withCampusFilter, campusIdForInsert }) {
+  const [songs, setSongs] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const [{ data: s }, { data: p }] = await Promise.all([
+        supabase.from('songs').select('id, title, author').order('title', { ascending: true }),
+        withCampusFilter(supabase.from('programs').select('id, title, date').order('date', { ascending: false })),
+      ]);
+      if (!alive) return;
+      setSongs(s || []);
+      setPrograms(p || []);
+    })();
+    return () => { alive = false; };
+  }, [withCampusFilter]);
+  const songsById = useMemo(() => Object.fromEntries(songs.map((x) => [x.id, x])), [songs]);
+  const programsById = useMemo(() => Object.fromEntries(programs.map((x) => [x.id, x])), [programs]);
+  return (
+    <CcliTab songs={songs} songsById={songsById} programs={programs} programsById={programsById}
+      campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />
+  );
+}
+
+const TABS = [
+  { id: 'overview', label: 'Przegląd', icon: BarChart3 },
+  { id: 'ccli', label: 'Raport CCLI', icon: Music },
+];
+
 export default function AnalyticsModule() {
-  const { withCampusFilter, selectedCampusId } = useCampusQuery();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
+  const [tab, setTab] = useState('overview');
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
@@ -173,10 +206,14 @@ export default function AnalyticsModule() {
         icon={BarChart3}
         title={tr('Analityka')}
         subtitle={tr('Strategiczny obraz wzrostu, dawania i zaangażowania')}
-        actions={<div className="w-full sm:w-40"><CustomSelect value={year} onChange={setYear} options={years} icon={Filter} /></div>}
+        actions={tab === 'overview' ? <div className="w-full sm:w-40"><CustomSelect value={year} onChange={setYear} options={years} icon={Filter} /></div> : null}
       />
 
-      {loading ? (
+      <ResponsiveTabs moduleKey="analytics" tabs={TABS.map((t) => ({ ...t, label: tr(t.label) }))} activeTab={tab} onChange={setTab} />
+
+      {tab === 'ccli' ? (
+        <CcliPanel withCampusFilter={withCampusFilter} campusIdForInsert={campusIdForInsert} />
+      ) : loading ? (
         <Spinner center />
       ) : (
         <div className="space-y-5">

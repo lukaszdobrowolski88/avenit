@@ -25,7 +25,7 @@ import { openOnWeb } from '../../../src/features/modules/useModules';
 import { TeamTabsBar } from '../../../src/features/teams/components/TeamTabsBar';
 import { EventsTab } from '../../../src/features/teams/tabs/EventsTab';
 import { PeopleTab } from '../../../src/features/teams/tabs/PeopleTab';
-import { Empty } from '../../../src/features/teams/tabs/ui';
+import { Empty, Loading } from '../../../src/features/teams/tabs/ui';
 import { WallPostCard } from '../../../src/features/teams/components/WallPostCard';
 import { useWallPosts, type WallPost } from '../../../src/features/teams/api';
 import {
@@ -58,6 +58,8 @@ const ICON: Record<string, LucideIcon> = {
 const ModuleWall = ({ moduleKey, email, name }: { moduleKey: string; email: string | null; name: string | null }) => {
   const wall = useWallPosts(moduleKey);
   const posts: WallPost[] = wall.data ?? [];
+  if (wall.isLoading) return <Loading />;
+  if (wall.isError) return <Empty Icon={MessageSquare} title="Nie udało się wczytać wpisów" hint="Pociągnij w dół, żeby spróbować ponownie." />;
   if (!posts.length) return <Empty Icon={MessageSquare} title="Brak postów" />;
   return (
     <View>
@@ -194,6 +196,8 @@ export default function CustomModuleScreen() {
                 await Promise.all([
                   qc.invalidateQueries({ queryKey: ['custom', moduleKey] }),
                   qc.invalidateQueries({ queryKey: ['teams', 'wall', moduleKey] }),
+                  qc.invalidateQueries({ queryKey: ['team', moduleKey] }),
+                  qc.invalidateQueries({ queryKey: ['team', 'board'] }),
                   perms.refetch(),
                 ]);
                 setRefreshing(false);

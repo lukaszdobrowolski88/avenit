@@ -11,6 +11,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { friendlyError } from '../../../lib/errors';
+import { toast } from '../../../lib/toast';
 import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react-native';
 import { format } from 'date-fns';
@@ -22,7 +24,7 @@ import { useAddBlockout } from '../api';
 
 // Zgłoszenie nieobecności — JEDNO miejsce w apce (dawniej osobno „Moje nieobecności”
 // przy programach i „Moja dostępność”). Zapis do volunteer_blockouts (fn my-blockouts),
-// które lider widzi na webie (Służba → Dostępność). Szybki wybór: nadchodzące wydarzenia.
+// które lider widzi na webie (moduł Dostępność). Szybki wybór: nadchodzące wydarzenia.
 
 const F = { medium: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' } as const;
 
@@ -86,12 +88,16 @@ export const AbsenceSheet = ({ visible, onClose }: { visible: boolean; onClose: 
   };
 
   const save = () => {
+    if (add.isPending) return;
     if (end < start) return Alert.alert('Zakres dat', 'Data „do” nie może być wcześniejsza niż „od”.');
     add.mutate(
       { start_date: start, end_date: end, reason: reason.trim() || null },
       {
-        onSuccess: onClose,
-        onError: (e: any) => Alert.alert('Nie udało się zgłosić', e?.message ?? 'Spróbuj ponownie.'),
+        onSuccess: () => {
+          onClose();
+          toast.success('Zgłoszono nieobecność', 'Lider zobaczy ją przy układaniu grafiku.');
+        },
+        onError: (e: unknown) => Alert.alert('Nie udało się zgłosić nieobecności', friendlyError(e, 'Spróbuj ponownie.')),
       },
     );
   };

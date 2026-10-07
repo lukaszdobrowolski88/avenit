@@ -10,7 +10,8 @@ const LEGACY_LABELS = {
   'Mailing': 'Kampanie e-mail',
   'Poczta': 'Skrzynka pocztowa',
   'Obecność (RSVP)': 'Zapisy (RSVP)',
-  'Służba': 'Dostępność i CCLI',
+  'Służba': 'Dostępność',
+  'Dostępność i CCLI': 'Dostępność',
   'Centrum Modlitwy': 'Ściana modlitwy',
   'Opieka i CRM': 'Opieka duszpasterska',
 };

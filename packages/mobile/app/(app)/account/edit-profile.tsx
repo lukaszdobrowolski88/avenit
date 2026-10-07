@@ -17,9 +17,12 @@ import { Camera } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { GradientAvatar } from '../../../src/components/ui/GradientAvatar';
+import { B, fieldStyle } from '../../../src/components/ui/brand';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useMyProfile, useUpdateProfile, pickAvatar, uploadAvatar } from '../../../src/features/account/api';
 import { goBack } from '../../../src/lib/navigation';
+import { showError } from '../../../src/lib/errors';
+import { toast } from '../../../src/lib/toast';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -45,6 +48,7 @@ export default function EditProfileScreen() {
   const initial = (fullName || email || '?').charAt(0).toUpperCase();
 
   const changeAvatar = async () => {
+    if (uploading) return;
     try {
       const asset = await pickAvatar();
       if (!asset) return;
@@ -52,8 +56,9 @@ export default function EditProfileScreen() {
       const url = await uploadAvatar(asset, String(user?.app_user_id ?? email ?? 'me'));
       await update.mutateAsync({ avatar_url: url });
       setAvatarUrl(url);
-    } catch (e: any) {
-      Alert.alert('Błąd', e?.message ?? 'Nie udało się zaktualizować zdjęcia.');
+      toast.success('Zdjęcie profilowe zaktualizowane');
+    } catch (e) {
+      showError('Nie udało się zmienić zdjęcia', e, 'Spróbuj ponownie albo wybierz mniejsze zdjęcie.');
     } finally {
       setUploading(false);
     }
@@ -62,15 +67,16 @@ export default function EditProfileScreen() {
   const save = async () => {
     const name = fullName.trim();
     if (!name) {
-      Alert.alert('Imię i nazwisko', 'Pole nie może być puste.');
+      Alert.alert('Uzupełnij imię i nazwisko', 'To pole nie może być puste.');
       return;
     }
     try {
       // name = zgodność wstecz (część kodu czyta app_users.name).
       await update.mutateAsync({ full_name: name, name });
+      toast.success('Dane zapisane');
       goBack(router);
-    } catch (e: any) {
-      Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać profilu.');
+    } catch (e) {
+      showError('Nie udało się zapisać danych', e);
     }
   };
 
@@ -81,7 +87,7 @@ export default function EditProfileScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1, backgroundColor: '#F6F4EE' }}
       >
-        <PageHeader title="Edytuj profil" subtitle="Imię i zdjęcie profilowe" showBack />
+        <PageHeader title="Dane osobowe" subtitle="Mój profil" showBack />
 
         {profile.isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -90,7 +96,14 @@ export default function EditProfileScreen() {
         ) : (
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
             <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 24 }}>
-              <Pressable onPress={changeAvatar} disabled={uploading} style={{ position: 'relative' }}>
+              <Pressable
+                onPress={changeAvatar}
+                disabled={uploading}
+                accessibilityRole="button"
+                accessibilityLabel="Zmień zdjęcie profilowe"
+                accessibilityState={{ busy: uploading }}
+                style={{ position: 'relative' }}
+              >
                 {avatarUrl ? (
                   <Image
                     source={{ uri: avatarUrl }}
@@ -129,25 +142,30 @@ export default function EditProfileScreen() {
 
             <Text style={styles.label}>Imię i nazwisko</Text>
             <TextInput
-              style={styles.input}
-              placeholder="np. Anna Kowalska"
-              placeholderTextColor="#857F70"
+              style={[fieldStyle, { marginBottom: 16 }]}
+              placeholder="Np. Jan Kowalski"
+              placeholderTextColor={B.ink4}
               value={fullName}
               onChangeText={setFullName}
               editable={!update.isPending}
+              accessibilityLabel="Imię i nazwisko"
+              autoComplete="name"
+              textContentType="name"
             />
 
-            <Text style={styles.label}>E-mail</Text>
-            <View style={[styles.input, { justifyContent: 'center', backgroundColor: '#ECE8DE' }]}>
-              <Text style={{ fontSize: 15, color: '#6B6557', fontFamily: 'Manrope_400Regular' }}>
-                {email ?? '—'}
-              </Text>
+            <Text style={styles.label}>Adres e-mail</Text>
+            <View
+              accessible
+              accessibilityLabel={`Adres e-mail: ${email ?? 'brak'}`}
+              style={[fieldStyle, { justifyContent: 'center', backgroundColor: B.paper2, borderColor: B.paper2 }]}
+            >
+              <Text style={{ fontSize: 15, color: B.ink3, fontFamily: 'Manrope_500Medium' }}>{email ?? '—'}</Text>
             </View>
-            <Text style={{ fontSize: 12, color: '#857F70', marginTop: -8, marginBottom: 16, fontFamily: 'Manrope_400Regular' }}>
-              E-maila nie można zmienić w aplikacji.
+            <Text style={{ fontSize: 12, lineHeight: 17, color: B.ink4, marginTop: 6, marginBottom: 20, marginLeft: 2, fontFamily: 'Manrope_500Medium' }}>
+              Zmiana adresu e-mail wymaga kontaktu z administratorem.
             </Text>
 
-            <GradientButton onPress={save} loading={update.isPending}>
+            <GradientButton onPress={save} loading={update.isPending && !uploading}>
               Zapisz zmiany
             </GradientButton>
           </ScrollView>
@@ -160,23 +178,11 @@ export default function EditProfileScreen() {
 const styles = {
   label: {
     fontSize: 12,
-    color: '#8A6606',
+    color: B.gold,
     marginBottom: 6,
+    marginLeft: 2,
     letterSpacing: 1.2,
     textTransform: 'uppercase' as const,
     fontFamily: 'Manrope_700Bold',
-  } as const,
-  input: {
-    borderWidth: 1,
-    borderColor: '#E6E1D5',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 48,
-    fontSize: 15,
-    color: '#2A2312',
-    backgroundColor: '#FFFFFF',
-    marginBottom: 16,
-    fontFamily: 'Manrope_400Regular',
   } as const,
 };

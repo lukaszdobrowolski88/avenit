@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Check, Hash, Search, Users as UsersIcon, X } from "lucide-react-native";
 import {
+  canPostIn,
   useConversations,
   useMembersByEmails,
   memberDisplayName,
@@ -24,7 +25,8 @@ import {
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onConfirm: (conversationIds: string[]) => Promise<void> | void;
+  // false = nic nie poszło (okno zostaje otwarte, rodzic pokazał błąd).
+  onConfirm: (conversationIds: string[]) => Promise<boolean | void> | boolean | void;
   myEmail: string | null;
   /** ID konwersacji źródłowej, żeby ukryć z listy. */
   sourceConversationId?: string;
@@ -73,7 +75,7 @@ const Avatar = ({
     );
   }
   const lastEmail = conv.last_message?.sender_email ?? null;
-  const otherEmail = lastEmail && lastEmail !== myEmail ? lastEmail : null;
+  const otherEmail = conv.peer_email ?? (lastEmail && lastEmail !== myEmail ? lastEmail : null);
   const photo = otherEmail ? memberPhotoUrl(members, otherEmail) : null;
   const initials = otherEmail
     ? memberInitials(members, otherEmail)
@@ -114,6 +116,7 @@ export const ForwardMessageModal = ({
   const lookupEmails = useMemo(() => {
     const set = new Set<string>();
     for (const c of data ?? []) {
+      if (c.peer_email) set.add(c.peer_email);
       if (c.last_message?.sender_email) set.add(c.last_message.sender_email);
     }
     return Array.from(set);
@@ -122,8 +125,9 @@ export const ForwardMessageModal = ({
   const members = membersQuery.data ?? {};
 
   const filtered = useMemo(() => {
+    // Tylko rozmowy, w których mogę pisać (kanał ogłoszeń — gdy jestem administratorem).
     const list = (data ?? []).filter(
-      (c: ConversationListItem) => !c.archived && c.id !== sourceConversationId,
+      (c: ConversationListItem) => !c.archived && c.id !== sourceConversationId && canPostIn(c),
     );
     if (!search.trim()) return list;
     const q = search.trim().toLowerCase();
@@ -149,12 +153,15 @@ export const ForwardMessageModal = ({
 
   const handleConfirm = async () => {
     if (selected.size === 0) return;
+    if (busy) return;
     setBusy(true);
     try {
-      await onConfirm(Array.from(selected));
-      setSelected(new Set());
-      setSearch("");
-      onClose();
+      const ok = await onConfirm(Array.from(selected));
+      if (ok !== false) {
+        setSelected(new Set());
+        setSearch("");
+        onClose();
+      }
     } finally {
       setBusy(false);
     }
@@ -215,7 +222,7 @@ export const ForwardMessageModal = ({
             <Text
               style={{
                 fontSize: 13,
-                color: selected.size > 0 ? "#ffffff" : "#857F70",
+                color: selected.size > 0 ? "#ffffff" : "#6E685A",
                 fontFamily: "Manrope_700Bold",
               }}
             >
@@ -238,7 +245,7 @@ export const ForwardMessageModal = ({
               borderColor: "#E6E1D5",
             }}
           >
-            <Search size={16} color="#857F70" />
+            <Search size={16} color="#6E685A" />
             <TextInput
               style={{
                 flex: 1,
@@ -247,7 +254,7 @@ export const ForwardMessageModal = ({
                 fontFamily: "Manrope_500Medium",
               }}
               placeholder="Szukaj rozmowy…"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
@@ -276,7 +283,7 @@ export const ForwardMessageModal = ({
                   fontFamily: "Manrope_500Medium",
                 }}
               >
-                Brak rozmów.
+                Brak rozmów, do których możesz przekazać wiadomość.
               </Text>
             }
             renderItem={({ item }) => {
@@ -289,6 +296,9 @@ export const ForwardMessageModal = ({
               const title =
                 item.name ||
                 (isMinistry ? meta?.label ?? item.ministry_key : null) ||
+                (item.type === "direct" && item.peer_email
+                  ? memberDisplayName(members, item.peer_email)
+                  : null) ||
                 (last?.sender_email && last.sender_email !== myEmail
                   ? memberDisplayName(members, last.sender_email)
                   : "Rozmowa");

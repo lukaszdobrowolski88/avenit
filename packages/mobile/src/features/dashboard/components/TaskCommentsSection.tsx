@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'reac
 import { MessageCircle, Send, Trash2 } from 'lucide-react-native';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { showError } from '../../../lib/errors';
 import {
   useAddTaskComment,
   useDeleteTaskComment,
@@ -75,12 +76,12 @@ const CommentItem = ({
           >
             {author}
           </Text>
-          <Text style={{ fontSize: 10, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
+          <Text style={{ fontSize: 10, color: '#6E685A', fontFamily: 'Manrope_500Medium' }}>
             {relTime(comment.created_at)}
           </Text>
           {canDelete ? (
             <Pressable onPress={onDelete} hitSlop={6} style={{ marginLeft: 4 }}>
-              <Trash2 size={12} color="#857F70" />
+              <Trash2 size={12} color="#6E685A" />
             </Pressable>
           ) : null}
         </View>
@@ -140,8 +141,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
       { content: t, authorEmail: myEmail, authorName: myName },
       {
         onSuccess: () => setText(''),
-        onError: (err: any) =>
-          Alert.alert('Błąd', err?.message ?? 'Nie udało się dodać komentarza'),
+        onError: (err) => showError('Nie udało się dodać komentarza', err),
       },
     );
   };
@@ -173,7 +173,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
         <Text
           style={{
             fontSize: 13,
-            color: '#857F70',
+            color: '#6E685A',
             textAlign: 'center',
             paddingVertical: 12,
             fontStyle: 'italic',
@@ -192,12 +192,15 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
               comment={c}
               canDelete={canDelete}
               onDelete={() => {
-                Alert.alert('Usunąć komentarz?', undefined, [
+                Alert.alert('Usunąć komentarz?', 'Komentarz zniknie z zadania u wszystkich. Tej operacji nie można cofnąć.', [
                   { text: 'Anuluj', style: 'cancel' },
                   {
                     text: 'Usuń',
                     style: 'destructive',
-                    onPress: () => deleteComment.mutate(c.id),
+                    onPress: () =>
+                      deleteComment.mutate(c.id, {
+                        onError: (err) => showError('Nie udało się usunąć komentarza', err),
+                      }),
                   },
                 ]);
               }}
@@ -214,7 +217,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
             value={text}
             onChangeText={setText}
             placeholder="Napisz komentarz…"
-            placeholderTextColor="#857F70"
+            placeholderTextColor="#6E685A"
             multiline
             style={{
               flex: 1,

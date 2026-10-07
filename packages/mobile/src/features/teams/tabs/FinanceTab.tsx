@@ -14,9 +14,12 @@ import {
 import { Image } from 'expo-image';
 import { Camera, ImageIcon, Paperclip, Wallet, X } from 'lucide-react-native';
 import type { TeamConfig } from '../config';
-import { useAddTeamExpense, useTeamFinance, type TeamFinance } from '../data';
+import { isCountedExpense, isPendingExpense, useAddTeamExpense, useTeamFinance, type Expense, type TeamFinance } from '../data';
+import { B } from '../../../components/ui/brand';
+import { friendlyError } from '../../../lib/errors';
+import { toast } from '../../../lib/toast';
 import { pickImageForTask, takePhotoForTask, type PickedAsset } from '../../dashboard/task-attachments';
-import { AddButton, Card, Empty, Loading, money } from './ui';
+import { AddButton, Card, Empty, Loading, Pill, money } from './ui';
 import { DateField } from '../../../components/ui/DateField';
 import { ProposalsSection } from '../components/ProposalsSection';
 
@@ -29,8 +32,8 @@ const Bar = ({ value, max }: { value: number; max: number }) => {
   const pct = max > 0 ? Math.min(1, value / max) : 0;
   const over = max > 0 && value > max;
   return (
-    <View style={{ height: 6, borderRadius: 3, backgroundColor: '#E6E1D5', overflow: 'hidden' }}>
-      <View style={{ width: `${Math.round(pct * 100)}%`, height: 6, borderRadius: 3, backgroundColor: over ? '#dc2626' : '#16a34a' }} />
+    <View style={{ height: 6, borderRadius: 3, backgroundColor: B.paper2, overflow: 'hidden' }}>
+      <View style={{ width: `${Math.round(pct * 100)}%`, height: 6, borderRadius: 3, backgroundColor: over ? '#B42318' : B.kurkuma }} />
     </View>
   );
 };
@@ -94,17 +97,20 @@ export const FinanceTab = ({
   };
 
   const save = async () => {
+    if (add.isPending) return;
     const value = Number(amount.replace(',', '.').replace(/\s/g, ''));
-    if (!value || value <= 0) {
-      Alert.alert('Podaj kwotę', 'Kwota wydatku musi być większa od zera.');
-      return;
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      Alert.alert('Błędna data', 'Format: RRRR-MM-DD');
+    const lines = fin.data?.lines ?? [];
+    const missing = [
+      !(value > 0) && 'kwota',
+      lines.length > 0 && !line && 'pozycja budżetu',
+      !contractor.trim() && 'kontrahent',
+    ].filter(Boolean);
+    if (missing.length) {
+      Alert.alert('Uzupełnij formularz', `Brakuje: ${missing.join(', ')}.`);
       return;
     }
     try {
-      await add.mutateAsync({
+      const { status } = await add.mutateAsync({
         amount: value,
         date,
         contractor: contractor.trim(),
@@ -115,9 +121,14 @@ export const FinanceTab = ({
       });
       setOpen(false);
       reset();
-      Alert.alert('Zapisano', 'Wydatek dodany do finansów zespołu.');
-    } catch (e: any) {
-      Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.');
+      if (isPendingExpense({ status })) {
+        toast.success('Wysłano do akceptacji', 'Wydatek wliczy się do budżetu po zatwierdzeniu w Finansach.');
+      } else {
+        toast.success('Zapisano wydatek');
+      }
+    } catch (e: unknown) {
+      // Okno zostaje otwarte z wpisanymi danymi.
+      Alert.alert('Nie udało się zapisać wydatku', friendlyError(e, 'Spróbuj ponownie.'));
     }
   };
 
@@ -142,10 +153,18 @@ export const FinanceTab = ({
                 {money(data.spent)}
               </Text>
               <Text style={{ fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
-                z {money(data.planned)}
+                wykorzystano z {money(data.planned)}
               </Text>
             </View>
             <Bar value={data.spent} max={data.planned} />
+            {data.pendingCount ? (
+              <Text style={{ marginTop: 8, fontSize: 13, color: B.gold, fontFamily: 'Manrope_600SemiBold' }}>
+                Czeka na akceptację: {money(data.pendingSum)} ({data.pendingCount})
+              </Text>
+            ) : null}
+            <Text style={{ marginTop: 6, fontSize: 12, lineHeight: 17, color: B.ink4, fontFamily: 'Manrope_500Medium' }}>
+              Do wykorzystania wliczają się tylko wydatki zatwierdzone i opłacone.
+            </Text>
           </Card>
 
           {data.lines.length ? (
@@ -180,11 +199,11 @@ export const FinanceTab = ({
             Wydatki
           </Text>
           {data.expenses.length === 0 ? (
-            <Text style={{ fontSize: 13, color: '#857F70', fontFamily: 'Manrope_500Medium', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, color: '#6E685A', fontFamily: 'Manrope_500Medium', marginBottom: 12 }}>
               Brak wydatków w tym roku.
             </Text>
           ) : null}
-          {data.expenses.slice(0, 30).map((e) => (
+          {data.expenses.slice(0, 30).map((e: Expense) => (
             <Card key={e.id}>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 <View style={{ flex: 1, gap: 2 }}>
@@ -194,9 +213,27 @@ export const FinanceTab = ({
                   <Text numberOfLines={1} style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                     {[e.date, e.description && e.contractor ? e.description : null].filter(Boolean).join(' · ')}
                   </Text>
+                  {!isCountedExpense(e) ? (
+                    <View style={{ flexDirection: 'row', marginTop: 4 }}>
+                      {e.status === 'rejected' ? (
+                        <Pill text="Odrzucony" tint="#B42318" bg="#FDE7E4" />
+                      ) : (
+                        <Pill text="Czeka na akceptację" tint={B.goldDeep} bg={B.kurkumaSoft} />
+                      )}
+                    </View>
+                  ) : null}
                 </View>
-                {e.hasDocuments ? <Paperclip size={14} color="#857F70" /> : null}
-                <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{money(e.amount)}</Text>
+                {e.hasDocuments ? <Paperclip size={14} color="#6E685A" /> : null}
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: isCountedExpense(e) ? '#2A2312' : B.ink4,
+                    fontFamily: 'Manrope_700Bold',
+                    textDecorationLine: e.status === 'rejected' ? 'line-through' : 'none',
+                  }}
+                >
+                  {money(e.amount)}
+                </Text>
               </View>
             </Card>
           ))}
@@ -214,14 +251,17 @@ export const FinanceTab = ({
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+            <Text style={{ fontSize: 13, lineHeight: 18, color: B.ink3, fontFamily: 'Manrope_500Medium' }}>
+              Wydatek trafia do Finansów. Jeśli nie zatwierdzasz wydatków, zostanie zapisany jako wniosek i wliczy się do budżetu po akceptacji.
+            </Text>
             <Label>Kwota (zł)</Label>
-            <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor="#857F70" style={inputStyle} />
+            <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor="#6E685A" style={inputStyle} />
 
             <Label>Data płatności</Label>
             <DateField value={date} onChange={setDate} />
 
             <Label>Kontrahent</Label>
-            <TextInput value={contractor} onChangeText={setContractor} placeholder="np. Thomann, Media Expert" placeholderTextColor="#857F70" style={inputStyle} />
+            <TextInput value={contractor} onChangeText={setContractor} placeholder="np. Thomann, Media Expert" placeholderTextColor="#6E685A" style={inputStyle} />
 
             {(data?.lines.length ?? 0) > 0 ? (
               <>
@@ -249,7 +289,7 @@ export const FinanceTab = ({
               value={details}
               onChangeText={setDetails}
               placeholder="Na co był wydatek?"
-              placeholderTextColor="#857F70"
+              placeholderTextColor="#6E685A"
               multiline
               style={[inputStyle, { height: 90, paddingTop: 12, textAlignVertical: 'top' as const }]}
             />

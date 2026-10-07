@@ -17,7 +17,7 @@ export const useHomeGroupsMap = () =>
     queryKey: ['home-groups', 'map'],
     queryFn: async (): Promise<HomeGroupMapPin[]> => {
       const { data, error } = await supabase.functions.invoke('home-groups-map', { body: {} });
-      if (error) throw new Error(error.message || 'Nie udało się pobrać mapy grup.');
+      if (error) throw error;
       return (((data as any)?.groups ?? []) as HomeGroupMapPin[]);
     },
     // Geokodowanie uzupełnia pinezki stopniowo — pozwól odświeżać po powrocie.

@@ -125,7 +125,7 @@ const STATIC_MODULES = [
   { key: 'finance', path: '/finance', iconName: 'Wallet', label: 'Finanse', resource: 'module:finance' },
   { key: 'giving', path: '/giving', iconName: 'Gift', label: 'Hojność', resource: 'module:giving' },
   { key: 'attendance', path: '/attendance', iconName: 'ClipboardCheck', label: 'Frekwencja', resource: 'module:attendance' },
-  { key: 'serve', path: '/serve', iconName: 'UserCheck', label: 'Dostępność i CCLI', resource: 'module:serve' },
+  { key: 'serve', path: '/serve', iconName: 'UserCheck', label: 'Dostępność', resource: 'module:serve' },
   { key: 'rsvp', path: '/rsvp', iconName: 'MailCheck', label: 'Zapisy (RSVP)', resource: 'module:rsvp' },
   { key: 'rooms', path: '/rooms', iconName: 'DoorOpen', label: 'Rezerwacje sal', resource: 'module:rooms' },
   { key: 'automation', path: '/automation', iconName: 'Workflow', label: 'Automatyzacje', resource: 'module:automation' },
