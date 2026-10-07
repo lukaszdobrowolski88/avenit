@@ -39,13 +39,17 @@ dotyczą sekcje 4–7 poniżej.
 4. **Rekord apki**: przy pierwszym `eas submit` EAS sam zaproponuje założenie apki w App Store Connect
    (bundle `pl.avenit.app`, język główny: **polski**, SKU np. `avenit-ios`). Potem dopisz `ascAppId` (Apple ID apki,
    10 cyfr, widoczne w App Information) do `eas.json`, wtedy kolejne wysyłki nie wymagają pytań.
-5. **Build**: z czystej kopii `main` z prawdziwymi `node_modules`:
+5. **Build** (od 2026 Apple przyjmuje tylko iOS 26 SDK — profil production ma obraz Xcode 26.2 i plugin
+   `plugins/with-xcode26-fmt.js`, bez nich upload kończy się błędem 90725): z czystej kopii `main` z prawdziwymi `node_modules`:
    `eas build -p ios --profile production` (wymaga interaktywnego logowania Apple). To build natywny, bo zmieniły się
    Info.plist, lokalizacje i manifest.
 6. **TestFlight**: `eas submit -p ios --profile production --latest` → przetestuj na swoim iPhonie (logowanie,
    push, aparat, zdjęcia, nagranie głosowe, kalendarz, ofiary).
-7. **Metadane**: `eas metadata:push` z `packages/mobile` (teksty, kategorie, ocena wieku). Albo wklej ręcznie z
-   `store.config.json`.
+7. **Metadane**: `eas metadata:push` (eas-cli 24.11) wgrywa tylko **kategorie i ocenę wieku**. Wersji i polskiej
+   lokalizacji nie zapisze (błędy API Apple: `versionString`, `appInfoLocalizations`), więc teksty z
+   `store.config.json` wklej ręcznie (App Information + strona wersji), a numer wersji w App Store Connect zmień
+   z `1.0` na **`1.0.0`** (musi się zgadzać z buildem).
+
 8. **Ręcznie w App Store Connect**: zrzuty (§4), App Privacy (§3), pytanie „Social Media” w ocenie wieku (§5),
    dane recenzji + konto demo (§6), cena „Darmowa”, dostępność krajów, Content Rights (§5).
 9. **Wyślij do recenzji**. `automaticRelease: false` → po akceptacji publikujesz ręcznie przyciskiem.

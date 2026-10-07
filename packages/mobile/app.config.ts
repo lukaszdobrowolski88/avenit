@@ -136,6 +136,8 @@ const config: ExpoConfig = {
         microphonePermission: 'Avenit używa mikrofonu do nagrywania wiadomości głosowych w czacie.',
       },
     ],
+    // Xcode 26 + RN 0.76: łatka fmt (consteval) — patrz plugins/with-xcode26-fmt.js.
+    './plugins/with-xcode26-fmt',
     [
       'expo-build-properties',
       {
