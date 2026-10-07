@@ -1,0 +1,378 @@
+/* Ekran logowania w identyfikacji Avenit (papier / słód / kurkuma, Manrope).
+   Własne klasy lg-* zamiast Tailwinda: warstwa brand-avenit.css przemalowuje klasy Tailwinda
+   (bg-white rounded-*, przyciski z akcentem), a przed zalogowaniem ekran ma wyglądać tak samo
+   niezależnie od motywu kościoła. Globalne reguły input[type=…] z index.css bijemy
+   specyficznością (html .lg-root input.lg-input). */
+
+.lg-root {
+  --lg-paper: #F6F4EE;
+  --lg-card: #FFFFFF;
+  --lg-ink: #2A2312;
+  --lg-body: #4A463E;
+  --lg-muted: #6B6557;
+  --lg-placeholder: #7A7466;
+  --lg-mustard: #8A6606;
+  --lg-turmeric: #FFBE0B;
+  --lg-field: #FBFAF6;
+  --lg-field-border: #E2DDD0;
+  --lg-line: #EFEBE2;
+  --lg-divider: #D6D0C2;
+  --lg-chip: #F1EEE6;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-wrap: wrap-reverse; /* na telefonie formularz nad hasłem marki */
+  background: var(--lg-paper);
+  color: var(--lg-ink);
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tryb ciemny = grafit z odrobiną ciepła (nie słód jako tło), kurkuma tylko jako akcent. */
+html.dark .lg-root {
+  --lg-paper: #121211;
+  --lg-card: #1F1E1D;
+  --lg-ink: #F6F4EE;
+  --lg-body: #CFCAC0;
+  --lg-muted: #A39E92;
+  --lg-placeholder: #8C877C;
+  --lg-mustard: #FFBE0B;
+  --lg-field: #171615;
+  --lg-field-border: #3A3835;
+  --lg-line: #2E2C2A;
+  --lg-divider: #3A3835;
+  --lg-chip: #2A2928;
+}
+
+.lg-only-dark { display: none !important; }
+html.dark .lg-only-dark { display: block !important; }
+html.dark .lg-only-light { display: none !important; }
+
+/* ── Hasło marki (lewa kolumna) ─────────────────────────────────────────── */
+.lg-hero {
+  position: relative;
+  flex: 1 1 620px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 56px clamp(24px, 5vw, 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 64px;
+  background-size: cover;
+  background-position: center;
+}
+/* Tło ekranu logowania ustawione przez kościół (obraz / gradient) — tekst jasny na przyciemnieniu. */
+.lg-hero--image { color: #F6F4EE; }
+.lg-hero--image::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(18, 15, 8, 0.35) 0%, rgba(18, 15, 8, 0.72) 100%);
+  pointer-events: none;
+}
+.lg-hero > * { position: relative; }
+
+.lg-brand { display: flex; align-items: center; gap: 16px; }
+.lg-brand img { height: 32px; width: auto; display: block; }
+.lg-brand-sep { width: 1px; height: 22px; background: var(--lg-divider); }
+.lg-brand-claim { font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--lg-muted); }
+.lg-hero--image .lg-brand-sep { background: rgba(246, 244, 238, 0.3); }
+.lg-hero--image .lg-brand-claim { color: rgba(246, 244, 238, 0.75); }
+
+.lg-root .lg-display {
+  margin: 0;
+  font-family: inherit;
+  font-size: clamp(40px, 6.4vw, 96px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  color: inherit;
+}
+.lg-strong { display: block; font-weight: 800; }
+.lg-light { display: block; font-weight: 300; }
+.lg-dot { color: var(--lg-turmeric); font-weight: 800; }
+
+.lg-lead { margin: 32px 0 0; max-width: 520px; font-size: 18px; line-height: 1.55; color: var(--lg-body); }
+.lg-hero--image .lg-lead { color: rgba(246, 244, 238, 0.86); }
+
+.lg-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; font-size: 13px; color: var(--lg-muted); }
+.lg-foot a { color: inherit; text-decoration: none; }
+.lg-foot a:hover { color: var(--lg-ink); text-decoration: underline; text-underline-offset: 3px; }
+.lg-hero--image .lg-foot { color: rgba(246, 244, 238, 0.75); }
+.lg-hero--image .lg-foot a:hover { color: #F6F4EE; }
+
+/* ── Karta logowania (prawa kolumna) ────────────────────────────────────── */
+.lg-side {
+  flex: 1 1 460px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 40px clamp(16px, 4vw, 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.lg-card {
+  width: 100%;
+  max-width: 460px;
+  box-sizing: border-box;
+  background: var(--lg-card);
+  border-radius: 28px;
+  padding: 36px clamp(24px, 4vw, 44px) 32px;
+  box-shadow: 0 1px 2px rgba(42, 35, 18, 0.05), 0 30px 70px -30px rgba(42, 35, 18, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  animation: lg-rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+html.dark .lg-card { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 30px 70px -30px rgba(0, 0, 0, 0.6); }
+@keyframes lg-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+.lg-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lg-mark { width: 44px; height: 44px; display: block; }
+.lg-org-logo { max-height: 44px; max-width: 180px; object-fit: contain; display: block; }
+
+.lg-lang { display: flex; gap: 2px; padding: 3px; background: var(--lg-chip); border-radius: 999px; }
+.lg-root .lg-lang button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: transparent;
+  color: var(--lg-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lg-root .lg-lang button:hover { color: var(--lg-ink); }
+.lg-root .lg-lang button[aria-pressed='true'] { background: var(--lg-ink); color: var(--lg-paper); }
+
+.lg-head { display: flex; flex-direction: column; gap: 10px; }
+.lg-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lg-mustard); }
+.lg-root .lg-title {
+  margin: 0;
+  font-family: inherit;
+  font-size: 36px;
+  line-height: 1.06;
+  letter-spacing: -0.04em;
+  color: var(--lg-ink);
+}
+.lg-sub { margin: 0; font-size: 15px; line-height: 1.5; color: var(--lg-muted); }
+
+/* ── Formularz ──────────────────────────────────────────────────────────── */
+.lg-form { display: flex; flex-direction: column; gap: 18px; }
+.lg-field { display: flex; flex-direction: column; gap: 8px; }
+.lg-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lg-label { font-size: 13px; font-weight: 700; color: var(--lg-ink); }
+
+html .lg-root input.lg-input {
+  width: 100%;
+  height: 52px;
+  box-sizing: border-box;
+  margin: 0;
+  border-radius: 14px;
+  border: 1px solid var(--lg-field-border);
+  background: var(--lg-field);
+  padding: 0 16px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--lg-ink);
+  box-shadow: none;
+  backdrop-filter: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+html .lg-root input.lg-input::placeholder { color: var(--lg-placeholder); opacity: 1; }
+html .lg-root input.lg-input:focus {
+  outline: none;
+  border-color: var(--lg-ink);
+  background: var(--lg-card);
+  box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.35);
+}
+.lg-pass { position: relative; }
+html .lg-root .lg-pass input.lg-input { padding-right: 56px; }
+.lg-root .lg-eye {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--lg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.lg-root .lg-eye:hover { color: var(--lg-ink); background: var(--lg-chip); }
+
+.lg-root .lg-textlink {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lg-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lg-root .lg-textlink:hover { color: var(--lg-ink); }
+.lg-root .lg-strong-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--lg-ink);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lg-root .lg-cta {
+  margin-top: 6px;
+  width: 100%;
+  height: 54px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--lg-turmeric);
+  color: #2A2312;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 12px 26px -12px rgba(214, 150, 0, 0.75);
+  transition: transform 0.15s, background-color 0.15s;
+}
+.lg-root .lg-cta:hover:not(:disabled) { background: #F5B300; transform: translateY(-1px); }
+.lg-root .lg-cta:disabled { opacity: 0.7; cursor: default; }
+.lg-spin {
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 2px solid rgba(42, 35, 18, 0.25);
+  border-top-color: #2A2312;
+}
+
+.lg-root .lg-back {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: none;
+  padding: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lg-ink);
+  cursor: pointer;
+}
+.lg-root .lg-back:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.lg-alt { border-top: 1px solid var(--lg-line); padding-top: 20px; font-size: 14px; color: var(--lg-muted); text-align: center; }
+
+.lg-or { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--lg-muted); }
+.lg-or::before, .lg-or::after { content: ''; flex: 1; height: 1px; background: var(--lg-line); }
+.lg-sso { display: flex; flex-direction: column; gap: 10px; }
+.lg-root .lg-sso a {
+  height: 50px;
+  border-radius: 999px;
+  border: 1px solid var(--lg-field-border);
+  background: var(--lg-card);
+  color: var(--lg-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.lg-root .lg-sso a:hover { background: var(--lg-field); border-color: var(--lg-ink); }
+
+/* Komunikaty: zieleń / czerwień wyłącznie jako status. */
+.lg-msg { margin: 0; padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.45; }
+.lg-msg--error { background: #FBEAE7; color: #8F2A1C; }
+.lg-msg--info { background: #E7F2E9; color: #22603A; }
+html.dark .lg-msg--error { background: rgba(239, 68, 68, 0.12); color: #FCA5A5; }
+html.dark .lg-msg--info { background: rgba(34, 197, 94, 0.12); color: #86EFAC; }
+
+.lg-hint { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--lg-muted); }
+.lg-check { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.45; color: var(--lg-body); cursor: pointer; }
+.lg-check input { margin: 2px 0 0; width: 18px; height: 18px; flex-shrink: 0; accent-color: #2A2312; }
+html.dark .lg-check input { accent-color: #FFBE0B; }
+.lg-check a { color: var(--lg-ink); font-weight: 700; }
+.lg-honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+.lg-secure { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--lg-muted); }
+
+/* ── Kod 2FA: jedno prawdziwe pole (wklejanie, autouzupełnianie SMS/iOS) pod komórkami ── */
+.lg-otp { position: relative; display: flex; align-items: center; gap: 8px; }
+.lg-otp-group { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.lg-otp-cell {
+  height: 64px;
+  border-radius: 14px;
+  border: 1px solid var(--lg-field-border);
+  background: var(--lg-field);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--lg-ink);
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+.lg-otp--long .lg-otp-cell { height: 56px; font-size: 22px; border-radius: 12px; }
+.lg-otp-cell.is-active { border: 2px solid var(--lg-ink); background: var(--lg-card); box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.35); }
+.lg-otp-cell.is-active.is-empty::after {
+  content: '';
+  width: 2px;
+  height: 28px;
+  background: var(--lg-ink);
+  animation: lg-blink 1s steps(1) infinite;
+}
+@keyframes lg-blink { 50% { opacity: 0; } }
+.lg-otp-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--lg-turmeric); flex-shrink: 0; }
+html .lg-root input.lg-otp-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  font-size: 16px;
+  cursor: text;
+}
+
+/* Fokus z klawiatury — wyraźny obrys w kolorze tekstu (kurkuma na papierze jest za jasna). */
+html .lg-root :is(button, a):focus-visible { outline: 3px solid var(--lg-ink); outline-offset: 3px; }
+html .lg-root .lg-hero--image :is(button, a):focus-visible { outline-color: #F6F4EE; }
+
+@media (pointer: coarse) {
+  .lg-root .lg-lang button { padding: 10px 14px; }
+}
+
+@media (max-width: 640px) {
+  .lg-hero { padding: 40px 24px; gap: 48px; }
+  .lg-side { padding: 24px 16px 8px; }
+  .lg-card { border-radius: 24px; padding: 28px 22px 26px; gap: 24px; }
+  .lg-root .lg-title { font-size: 32px; }
+  .lg-lead { font-size: 16px; margin-top: 24px; }
+  .lg-otp-cell { height: 56px; font-size: 24px; }
+  .lg-otp--long .lg-otp-cell { height: 48px; font-size: 18px; }
+  .lg-otp, .lg-otp-group { gap: 6px; }
+}

@@ -436,13 +436,14 @@ html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="2"].w-14
 html[data-color-preset="avenit"]:not(.dark) [data-pick][data-pick][data-pick][data-selected="true"] { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 14px 28px -14px rgba(42, 35, 18, 0.65) !important; }
 
 /* Pola: fokus jako ciepła poświata kurkumy. W jasnym motywie ramka musztardą (5,3:1) + mocniejsze
-   halo — sama kurkuma z poświatą 22% miała ~1,1:1 i nie było widać, które pole jest aktywne. */
-html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):focus {
+   halo — sama kurkuma z poświatą 22% miała ~1,1:1 i nie było widać, które pole jest aktywne.
+   Ekran logowania (.lg-root, styles/login.css) ma własne pola — wyłączony z reguł pól tej warstwy. */
+html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.lg-root *):focus {
   border-color: #FFBE0B !important;
   box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.30) !important;
   outline: none;
 }
-html[data-color-preset="avenit"]:not(.dark) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.dark *):not(.ui-field *):focus {
+html[data-color-preset="avenit"]:not(.dark) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.dark *):not(.ui-field *):not(.lg-root *):focus {
   border-color: #8A6606 !important;
   box-shadow: 0 0 0 1px #8A6606, 0 0 0 5px rgba(255, 190, 11, 0.40) !important;
 }
@@ -571,7 +572,7 @@ html[data-color-preset="avenit"] :is(
   input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="tel"],
   input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"], input[type="search"], input[type="url"],
   input:not([type]), textarea, select
-):not(.ui-field *):not([class*="bg-transparent"]),
+):not(.ui-field *):not(.lg-root *):not([class*="bg-transparent"]),
 html[data-color-preset="avenit"] .ui-field.rounded-xl {
   background-color: var(--field-bg) !important;
   border: 1px solid rgb(var(--field-border)) !important;
@@ -582,9 +583,9 @@ html[data-color-preset="avenit"] .ui-field.rounded-xl {
   color: var(--field-text);
 }
 html[data-color-preset="avenit"] :is(input, textarea, select):disabled:not(.ui-field *) { color: var(--field-text-muted) !important; -webkit-text-fill-color: var(--field-text-muted); }
-html[data-color-preset="avenit"] :is(input, textarea)::placeholder { color: rgb(var(--gray-400)); opacity: 1; }
+html[data-color-preset="avenit"] :is(input, textarea):not(.lg-root *)::placeholder { color: rgb(var(--gray-400)); opacity: 1; }
 html[data-color-preset="avenit"] .ui-field.rounded-xl:hover,
-html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.ui-field *):not(:focus):hover { border-color: rgb(var(--field-border-hover)) !important; }
+html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.ui-field *):not(.lg-root *):not(:focus):hover { border-color: rgb(var(--field-border-hover)) !important; }
 html[data-color-preset="avenit"] .ui-field.rounded-xl.border-accent-primary-light { border-color: #FFBE0B !important; box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.22) !important; }
 /* Natywny <select> wygląda jak CustomSelect: bez systemowej strzałki, ta sama ikona chevron. */
 html[data-color-preset="avenit"] select:not([multiple]):not([size]) {

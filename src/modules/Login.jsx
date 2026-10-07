@@ -1,13 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTwoFactor } from '../hooks/useTwoFactor';
-import { Shield, ArrowLeft } from 'lucide-react';
-import { tr, useT } from '../i18n';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Clock } from 'lucide-react';
+import { tr, useI18n } from '../i18n';
 import { LOGIN_BG_OPTIONS, applyFont, applyHeadingFont, applyBackground, applyRadius, injectCustomFont } from '../lib/appearance';
 import { applyColorPreset, applyCustomColors } from '../lib/colorPresets';
+import '../styles/login.css';
+
+const LOGO_INK = '/brand/avenit-logo-slod.png';
+const LOGO_PAPER = '/brand/avenit-logo-papier.png';
+const MARK = '/brand/avenit-znak-kurkuma.png';
+const PRIVACY_URL = 'https://avenit.pl/polityka-prywatnosci/';
+
+// Nagłówek w dwóch grubościach (sygnatura marki): gruba linia + cienka z kropką w kurkumie.
+function TwoWeight({ strong, light, className, as: Tag = 'h2' }) {
+  return (
+    <Tag className={className}>
+      <span className="lg-strong">{strong}</span>
+      {light && <span className="lg-light">{light}<span className="lg-dot">.</span></span>}
+    </Tag>
+  );
+}
+
+function Spinner() {
+  return <span className="lg-spin animate-spin" aria-hidden="true" />;
+}
+
+// Kod 2FA jako komórki; pod spodem jedno prawdziwe pole (wklejanie i autouzupełnianie kodu działają).
+function CodeCells({ value, length, onChange, label }) {
+  const [focused, setFocused] = useState(false);
+  const chars = Array.from({ length }, (_, i) => value[i] || '');
+  const active = Math.min(value.length, length - 1);
+  const cell = (ch, i) => (
+    <span
+      key={i}
+      className={`lg-otp-cell${focused && i === active ? ' is-active' : ''}${ch ? '' : ' is-empty'}`}
+      aria-hidden="true"
+    >
+      {ch}
+    </span>
+  );
+  const half = length / 2;
+  return (
+    <div className={`lg-otp${length > 6 ? ' lg-otp--long' : ''}`}>
+      <div className="lg-otp-group">{chars.slice(0, half).map((ch, i) => cell(ch, i))}</div>
+      <span className="lg-otp-dot" aria-hidden="true" />
+      <div className="lg-otp-group">{chars.slice(half).map((ch, i) => cell(ch, i + half))}</div>
+      <input
+        className="lg-otp-input"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        inputMode={length > 6 ? 'text' : 'numeric'}
+        autoComplete="one-time-code"
+        autoCapitalize="characters"
+        spellCheck={false}
+        maxLength={length}
+        aria-label={label}
+        autoFocus
+      />
+    </div>
+  );
+}
+
+function PasswordInput({ id, value, onChange, autoComplete }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="lg-pass">
+      <input
+        id={id}
+        className="lg-input"
+        type={visible ? 'text' : 'password'}
+        value={value}
+        onChange={onChange}
+        autoComplete={autoComplete}
+        required
+        placeholder="••••••••"
+      />
+      <button
+        type="button"
+        className="lg-eye"
+        onClick={() => setVisible(v => !v)}
+        aria-label={visible ? tr('Ukryj hasło') : tr('Pokaż hasło')}
+        aria-pressed={visible}
+      >
+        {visible ? <EyeOff size={20} /> : <Eye size={20} />}
+      </button>
+    </div>
+  );
+}
 
 export default function Login() {
-  const t = useT();
+  const { lang, setLang, languages } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,8 +121,9 @@ export default function Login() {
   const [requires2FA, setRequires2FA] = useState(false);
   const [totpCode, setTotpCode] = useState('');
   const [pendingEmail, setPendingEmail] = useState('');
+  const [useBackupCode, setUseBackupCode] = useState(false);
 
-  const { verifyLoginCode, checkTwoFactorStatus, loading: verifyLoading } = useTwoFactor();
+  const { loading: verifyLoading } = useTwoFactor();
 
   // Branding logowania przy starcie (logo, tło, teksty powitalne + motyw kościoła) — z publicznej
   // konfiguracji rejestracji; dane API wymagają sesji, a wylogowanie czyści zapamiętany preset.
@@ -57,7 +143,7 @@ export default function Login() {
       if (m.ui_bg) applyBackground(m.ui_bg);
       if (m.ui_radius) applyRadius(m.ui_radius);
     };
-    // Tryb rejestracji (czy pokazać „Zarejestruj się") + komunikat po potwierdzeniu e-mail.
+    // Tryb rejestracji (czy pokazać „Załóż konto") + komunikat po potwierdzeniu e-mail.
     supabase.auth.getRegistrationConfig?.().then((c) => {
       setRegMode(c?.mode || 'closed');
       setRegCaptcha(c?.captcha !== false);
@@ -115,9 +201,9 @@ export default function Login() {
     setPassword(''); setCaptchaAnswer(''); setConsentChecked(false);
   };
 
-  // Styl tła ekranu logowania (własny obraz / gradient presetu / domyślne).
-  const loginBgStyle = (() => {
-    if (loginBg === 'custom' && loginBgUrl) return { backgroundImage: `url("${loginBgUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' };
+  // Tło ekranu logowania ustawione przez kościół (własny obraz / gradient presetu) — pod hasłem marki.
+  const heroBgStyle = (() => {
+    if (loginBg === 'custom' && loginBgUrl) return { backgroundImage: `url("${loginBgUrl}")` };
     const css = LOGIN_BG_OPTIONS[loginBg]?.css;
     return css ? { background: css } : undefined;
   })();
@@ -150,10 +236,22 @@ export default function Login() {
     }
   };
 
+  const codeLength = useBackupCode ? 8 : 6;
+  // Kod z aplikacji = 6 cyfr; kod zapasowy = 8 znaków szesnastkowych (serwer porównuje wielkimi literami).
+  const changeCode = (raw) => setTotpCode(useBackupCode
+    ? raw.toUpperCase().replace(/[^0-9A-F]/g, '').slice(0, 8)
+    : raw.replace(/\D/g, '').slice(0, 6));
+
+  const toggleBackupCode = () => {
+    setUseBackupCode(b => !b);
+    setTotpCode('');
+    setError('');
+  };
+
   const handleVerify2FA = async e => {
     e.preventDefault();
-    if (totpCode.length < 6) {
-      setError(tr('Wprowadź 6-cyfrowy kod'));
+    if (totpCode.length < codeLength) {
+      setError(useBackupCode ? tr('Wprowadź 8-znakowy kod zapasowy') : tr('Wprowadź 6-cyfrowy kod'));
       return;
     }
 
@@ -178,6 +276,7 @@ export default function Login() {
   const handleBack2FA = () => {
     setRequires2FA(false);
     setTotpCode('');
+    setUseBackupCode(false);
     setPendingEmail('');
     setPassword('');
     setError('');
@@ -205,329 +304,255 @@ export default function Login() {
     }
   };
 
-  // Ekran weryfikacji 2FA
+  const backToLogin = () => {
+    setShowForgotPassword(false);
+    setShowRegister(false);
+    setResetEmailSent(false);
+    setError('');
+    setInfo('');
+  };
+
+  const errorBox = error && <p className="lg-msg lg-msg--error" role="alert">{error}</p>;
+  const backButton = (onClick) => (
+    <button type="button" className="lg-back" onClick={onClick}>
+      <ArrowLeft size={16} strokeWidth={2.4} />
+      {tr('Powrót do logowania')}
+    </button>
+  );
+  const cta = (busy, busyLabel, label, arrow) => (
+    <button type="submit" className="lg-cta" disabled={busy}>
+      {busy ? <><Spinner />{busyLabel}</> : <>{label}{arrow && <ArrowRight size={18} strokeWidth={2.4} />}</>}
+    </button>
+  );
+
+  let content;
   if (requires2FA) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
-        {/* Tło ozdobne */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-accent-primary-light/20 dark:bg-accent-primary/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-accent-secondary-light/20 dark:bg-accent-secondary/10 rounded-full blur-3xl"></div>
-        </div>
-
-        <form
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 shadow-2xl rounded-2xl max-w-md w-full border border-gray-200 dark:border-gray-700 relative z-10 animate-in fade-in zoom-in duration-300"
-          onSubmit={handleVerify2FA}
-        >
-          <div className="flex justify-center mb-6">
-            <div className="h-16 w-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center text-white shadow-lg">
-              <Shield size={32} />
-            </div>
-          </div>
-
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-            {tr('Weryfikacja dwuetapowa')}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-            {tr('Wprowadź kod z aplikacji Authenticator')}
+    content = (
+      <>
+        <div className="lg-head">
+          <span className="lg-eyebrow">{tr('Weryfikacja dwuetapowa')}</span>
+          {useBackupCode
+            ? <TwoWeight className="lg-title" strong={tr('Kod zapasowy')} light={tr('8 znaków')} />
+            : <TwoWeight className="lg-title" strong={tr('Wpisz kod')} light={tr('z aplikacji')} />}
+          <p className="lg-sub">
+            {useBackupCode
+              ? tr('Każdy kod zapasowy działa tylko raz.')
+              : tr('Otwórz aplikację uwierzytelniającą (np. Google Authenticator) i przepisz 6 cyfr dla konta Avenit.')}
           </p>
-
-          <div className="mb-6">
-            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
-              {tr('Kod weryfikacyjny')}
-            </label>
-            <input
-              type="text"
-              className="w-full px-4 py-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition text-center text-2xl font-mono tracking-[0.3em]"
-              value={totpCode}
-              onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-              required
-              autoFocus
-              placeholder="000000"
-              maxLength={8}
-            />
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">
-              {tr('Możesz też użyć kodu zapasowego (8 znaków)')}
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm text-center">
-              {error}
-            </div>
+        </div>
+        <form className="lg-form" onSubmit={handleVerify2FA}>
+          <CodeCells
+            key={codeLength}
+            value={totpCode}
+            length={codeLength}
+            onChange={changeCode}
+            label={useBackupCode ? tr('Kod zapasowy') : tr('Kod weryfikacyjny')}
+          />
+          {!useBackupCode && (
+            <p className="lg-hint"><Clock size={15} aria-hidden="true" />{tr('Kod zmienia się co 30 sekund.')}</p>
           )}
-
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-accent-primary-light/25 transition transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-            disabled={loading || verifyLoading}
-          >
-            {loading || verifyLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                {tr('Weryfikacja...')}
-              </span>
-            ) : tr('Weryfikuj')}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleBack2FA}
-            className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"
-          >
-            <ArrowLeft size={16} />
-            {tr('Powrót do logowania')}
+          {errorBox}
+          {cta(loading || verifyLoading, tr('Weryfikacja...'), tr('Potwierdź'))}
+          <button type="button" className="lg-textlink" style={{ alignSelf: 'center' }} onClick={toggleBackupCode}>
+            {useBackupCode ? tr('Użyj kodu z aplikacji') : tr('Użyj kodu zapasowego')}
           </button>
         </form>
-      </div>
+        {backButton(handleBack2FA)}
+      </>
     );
-  }
-
-  return (
-    <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 relative overflow-hidden" style={loginBgStyle}>
-      {/* Tło ozdobne (widoczne przy domyślnym tle) */}
-      {!loginBgStyle && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-accent-primary-light/20 dark:bg-accent-primary/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-accent-secondary-light/20 dark:bg-accent-secondary/10 rounded-full blur-3xl"></div>
+  } else if (showRegister) {
+    content = (
+      <>
+        <div className="lg-head">
+          <span className="lg-eyebrow">{tr('Rejestracja')}</span>
+          <TwoWeight className="lg-title" strong={tr('Załóż konto')} light={tr('w Avenit')} />
+          <p className="lg-sub">{tr('Wypełnij dane, aby utworzyć konto')}</p>
         </div>
-      )}
-
-      <form
-        className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 shadow-2xl rounded-2xl max-w-md w-full border border-gray-200 dark:border-gray-700 relative z-10 animate-in fade-in zoom-in duration-300"
-        onSubmit={showRegister ? handleRegister : handleLogin}
-      >
-        <div className="flex justify-center mb-6">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={tr('Logo organizacji')}
-              className="max-h-24 object-contain"
-            />
-          ) : (
-            <div className="h-16 w-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-              S
+        <form className="lg-form" onSubmit={handleRegister}>
+          <div className="lg-field">
+            <label className="lg-label" htmlFor="lg-name">{tr('Imię i nazwisko')}</label>
+            <input id="lg-name" className="lg-input" type="text" autoComplete="name" value={regName} onChange={e => setRegName(e.target.value)} placeholder={tr('Jan Kowalski')} />
+          </div>
+          <div className="lg-field">
+            <label className="lg-label" htmlFor="lg-reg-email">{tr('E-mail')}</label>
+            <input id="lg-reg-email" className="lg-input" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="jan@example.com" />
+          </div>
+          <div className="lg-field">
+            <label className="lg-label" htmlFor="lg-reg-pass">{tr('Hasło')}</label>
+            <PasswordInput id="lg-reg-pass" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
+            <p className="lg-hint">{tr('Min.')} {pwPolicy.min} {tr('znaków')}{pwPolicy.complexity ? tr(', w tym mała i wielka litera oraz cyfra') : ''}</p>
+          </div>
+          {regCaptcha && captcha && (
+            <div className="lg-field">
+              <label className="lg-label" htmlFor="lg-captcha">{tr('Weryfikacja')}: {captcha.question} = ?</label>
+              <input id="lg-captcha" className="lg-input" type="text" inputMode="numeric" value={captchaAnswer} onChange={e => setCaptchaAnswer(e.target.value)} required placeholder={tr('Wynik działania')} />
             </div>
           )}
-        </div>
-
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-          {showRegister ? tr('Załóż konto') : showForgotPassword ? tr('Resetuj hasło') : (loginTitle || tr('Witaj ponownie'))}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-          {showRegister
-            ? tr('Wypełnij dane, aby utworzyć konto')
-            : showForgotPassword
-              ? tr('Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła')
-              : (loginSubtitle || tr('Zaloguj się do Avenit'))}
-        </p>
-
-        {info && (
-          <div className="mb-6 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm text-center">
-            {info}
-          </div>
-        )}
-
-        {showRegister && (
-          <div className="mb-5">
-            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{tr('Imię i nazwisko')}</label>
-            <input
-              type="text"
-              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
-              value={regName}
-              onChange={e => setRegName(e.target.value)}
-              placeholder={tr('Jan Kowalski')}
-            />
-          </div>
-        )}
-
-        <div className="mb-5">
-          <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{tr('E-mail')}</label>
-          <input
-            type="email"
-            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            autoFocus
-            placeholder="jan@example.com"
-          />
-        </div>
-
-        {!showForgotPassword && (
-          <div className="mb-6">
-            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{t('Hasło')}</label>
-            <input
-              type="password"
-              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-            />
-            {showRegister && (
-              <p className="text-xs text-gray-400 mt-1.5">{tr('Min.')} {pwPolicy.min} {tr('znaków')}{pwPolicy.complexity ? tr(', w tym mała i wielka litera oraz cyfra') : ''}</p>
-            )}
-          </div>
-        )}
-
-        {showRegister && regCaptcha && captcha && (
-          <div className="mb-6">
-            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
-              {tr('Weryfikacja')}: {captcha.question} = ?
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
-              value={captchaAnswer}
-              onChange={e => setCaptchaAnswer(e.target.value)}
-              required
-              placeholder={tr('Wynik działania')}
-            />
-          </div>
-        )}
-
-        {showRegister && (
           <input
             type="text"
+            className="lg-honeypot"
             tabIndex={-1}
             autoComplete="off"
             aria-hidden="true"
             value={honeypot}
             onChange={e => setHoneypot(e.target.value)}
-            style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
           />
-        )}
-
-        {showRegister && consentCfg.required && (
-          <div className="mb-6">
-            <label className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-              <input type="checkbox" className="mt-0.5 w-4 h-4" checked={consentChecked} onChange={e => setConsentChecked(e.target.checked)} />
+          {consentCfg.required && (
+            <label className="lg-check">
+              <input type="checkbox" checked={consentChecked} onChange={e => setConsentChecked(e.target.checked)} />
               <span>
                 {consentCfg.text || tr('Akceptuję regulamin i politykę prywatności')}
-                {consentCfg.url && <> — <a href={consentCfg.url} target="_blank" rel="noreferrer" className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('czytaj')}</a></>}
+                {consentCfg.url && <> — <a href={consentCfg.url} target="_blank" rel="noreferrer">{tr('czytaj')}</a></>}
               </span>
             </label>
+          )}
+          {errorBox}
+          {cta(loading, tr('Rejestracja...'), tr('Zarejestruj się'))}
+        </form>
+        {backButton(backToLogin)}
+      </>
+    );
+  } else if (showForgotPassword && resetEmailSent) {
+    content = (
+      <>
+        <div className="lg-head">
+          <TwoWeight className="lg-title" strong={tr('Sprawdź')} light={tr('skrzynkę')} />
+          <p className="lg-sub">{tr('Sprawdź swoją skrzynkę i kliknij link, aby zresetować hasło.')}</p>
+        </div>
+        {backButton(backToLogin)}
+      </>
+    );
+  } else if (showForgotPassword) {
+    content = (
+      <>
+        <div className="lg-head">
+          <span className="lg-eyebrow">{tr('Reset hasła')}</span>
+          <TwoWeight className="lg-title" strong={tr('Nowe')} light={tr('hasło')} />
+          <p className="lg-sub">{tr('Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła')}</p>
+        </div>
+        <form className="lg-form" onSubmit={handleForgotPassword}>
+          <div className="lg-field">
+            <label className="lg-label" htmlFor="lg-reset-email">{tr('E-mail')}</label>
+            <input id="lg-reset-email" className="lg-input" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus placeholder="jan@example.com" />
+          </div>
+          {errorBox}
+          {cta(loading, tr('Wysyłanie...'), tr('Wyślij link do resetu hasła'))}
+        </form>
+        {backButton(backToLogin)}
+      </>
+    );
+  } else {
+    content = (
+      <>
+        <div className="lg-head">
+          <span className="lg-eyebrow">{tr('Logowanie')}</span>
+          <TwoWeight className="lg-title" strong={loginTitle || tr('Dobrze Cię widzieć.')} light={tr('Zaloguj się')} />
+          {loginSubtitle && <p className="lg-sub">{loginSubtitle}</p>}
+        </div>
+        {info && <p className="lg-msg lg-msg--info" role="status">{info}</p>}
+        <form className="lg-form" onSubmit={handleLogin}>
+          <div className="lg-field">
+            <label className="lg-label" htmlFor="lg-email">{tr('E-mail')}</label>
+            <input id="lg-email" className="lg-input" type="email" autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} required autoFocus placeholder="jan@example.com" />
+          </div>
+          <div className="lg-field">
+            <div className="lg-label-row">
+              <label className="lg-label" htmlFor="lg-pass">{tr('Hasło')}</label>
+              <button
+                type="button"
+                className="lg-textlink"
+                onClick={() => { setShowForgotPassword(true); setError(''); setInfo(''); setResetEmailSent(false); }}
+              >
+                {tr('Nie pamiętam hasła')}
+              </button>
+            </div>
+            <PasswordInput id="lg-pass" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" />
+          </div>
+          {errorBox}
+          {cta(loading, tr('Logowanie...'), tr('Zaloguj się'), true)}
+        </form>
+
+        {(ssoProviders.google || ssoProviders.microsoft) && (
+          <div className="lg-sso">
+            <div className="lg-or">{tr('lub')}</div>
+            {ssoProviders.google && (
+              <a href="/api/auth/oauth/google/start">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                {tr('Zaloguj przez Google')}
+              </a>
+            )}
+            {ssoProviders.microsoft && (
+              <a href="/api/auth/oauth/microsoft/start">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#F25022" d="M1 1h10v10H1z"/><path fill="#7FBA00" d="M13 1h10v10H13z"/><path fill="#00A4EF" d="M1 13h10v10H1z"/><path fill="#FFB900" d="M13 13h10v10H13z"/></svg>
+                {tr('Zaloguj przez Microsoft')}
+              </a>
+            )}
           </div>
         )}
 
-        {error && (
-          <div className="mb-6 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm text-center">
-            {error}
+        {regMode !== 'closed' && (
+          <div className="lg-alt">
+            {tr('Nie masz konta?')}{' '}
+            <button type="button" className="lg-strong-link" onClick={openRegister}>
+              {regMode === 'approval' ? tr('Poproś o dostęp') : tr('Załóż konto')}
+            </button>
           </div>
         )}
+      </>
+    );
+  }
 
-        {showRegister ? (
-          <>
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-accent-primary-light/25 transition transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  {tr('Rejestracja...')}
-                </span>
-              ) : tr('Zarejestruj się')}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowRegister(false); setError(''); setInfo(''); }}
-              className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
-            >
-              {tr('← Powrót do logowania')}
-            </button>
-          </>
-        ) : !showForgotPassword ? (
-          <>
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-accent-primary to-accent-secondary hover:from-accent-primary hover:to-accent-secondary text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-accent-primary-light/25 transition transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  {tr('Logowanie...')}
-                </span>
-              ) : tr('Zaloguj się')}
-            </button>
+  return (
+    <div className="lg-root">
+      <section className={`lg-hero${heroBgStyle ? ' lg-hero--image' : ''}`} style={heroBgStyle}>
+        <header className="lg-brand">
+          {heroBgStyle ? (
+            <img src={LOGO_PAPER} alt="Avenit" />
+          ) : (
+            <>
+              <img src={LOGO_INK} alt="Avenit" className="lg-only-light" />
+              <img src={LOGO_PAPER} alt="Avenit" className="lg-only-dark" />
+            </>
+          )}
+          <span className="lg-brand-sep" aria-hidden="true" />
+          <span className="lg-brand-claim">Church Manager</span>
+        </header>
+        <div>
+          <TwoWeight as="p" className="lg-display" strong={tr('Cały kościół.')} light={tr('Jedna aplikacja')} />
+          <p className="lg-lead">{tr('Programy nabożeństw, grafiki służb, grupy domowe, kazania, pieśni, modlitwy, komunikacja, finanse i check-in dzieci.')}</p>
+        </div>
+        <footer className="lg-foot">
+          <span>© {new Date().getFullYear()} Avenit</span>
+          <a href={PRIVACY_URL} target="_blank" rel="noreferrer">{tr('Polityka prywatności')}</a>
+          <a href="https://avenit.pl" target="_blank" rel="noreferrer">avenit.pl</a>
+        </footer>
+      </section>
 
-            <button
-              type="button"
-              onClick={() => { setShowForgotPassword(true); setError(''); setResetEmailSent(false); }}
-              className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
-            >
-              {tr('Nie pamiętam hasła')}
-            </button>
-
-            {regMode !== 'closed' && (
-              <button
-                type="button"
-                onClick={openRegister}
-                className="w-full mt-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light hover:underline transition"
-              >
-                {tr('Nie masz konta? Zarejestruj się')}
-              </button>
-            )}
-
-            {(ssoProviders.google || ssoProviders.microsoft) && (
-              <div className="mt-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-                  <span className="text-xs text-gray-400">{tr('lub')}</span>
-                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-                </div>
-                {ssoProviders.google && (
-                  <a href="/api/auth/oauth/google/start" className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium mb-2">
-                    <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                    {tr('Zaloguj przez Google')}
-                  </a>
-                )}
-                {ssoProviders.microsoft && (
-                  <a href="/api/auth/oauth/microsoft/start" className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium">
-                    <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#F25022" d="M1 1h10v10H1z"/><path fill="#7FBA00" d="M13 1h10v10H13z"/><path fill="#00A4EF" d="M1 13h10v10H1z"/><path fill="#FFB900" d="M13 13h10v10H13z"/></svg>
-                    {tr('Zaloguj przez Microsoft')}
-                  </a>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            {resetEmailSent ? (
-              <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-center">
-                <p className="font-bold mb-1">{t('Email został wysłany!')}</p>
-                <p className="text-sm">{t('Sprawdź swoją skrzynkę i kliknij link, aby zresetować hasło.')}</p>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="w-full bg-gradient-to-r from-accent-primary to-accent-secondary hover:from-accent-primary hover:to-accent-secondary text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-accent-primary-light/25 transition transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    {tr('Wysyłanie...')}
-                  </span>
-                ) : tr('Wyślij link do resetu hasła')}
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => { setShowForgotPassword(false); setError(''); setResetEmailSent(false); }}
-              className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
-            >
-              {tr('← Powrót do logowania')}
-            </button>
-          </>
-        )}
-      </form>
+      <main className="lg-side">
+        <div className="lg-card">
+          <div className="lg-card-top">
+            {logoUrl
+              ? <img src={logoUrl} alt={tr('Logo organizacji')} className="lg-org-logo" />
+              : <img src={MARK} alt="" className="lg-mark" />}
+            <div className="lg-lang" role="group" aria-label={tr('Język')}>
+              {languages.map(l => (
+                <button
+                  key={l.code}
+                  type="button"
+                  lang={l.code}
+                  aria-pressed={lang === l.code}
+                  aria-label={l.label}
+                  onClick={() => setLang(l.code)}
+                >
+                  {l.code.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          {content}
+        </div>
+        <p className="lg-secure"><Lock size={15} aria-hidden="true" />{tr('Połączenie szyfrowane')}</p>
+      </main>
     </div>
   );
 }
