@@ -39,7 +39,8 @@
       "channel": "production",
       "env": {
         "APP_VARIANT": "production"
-      }
+      },
+      "autoIncrement": true
     }
   },
   "submit": {
@@ -48,6 +49,9 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal",
         "releaseStatus": "draft"
+      },
+      "ios": {
+        "appleTeamId": "N4C97P5LL8"
       }
     }
   }

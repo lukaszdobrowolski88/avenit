@@ -1,0 +1,50 @@
+[
+  {
+    "file": "01-dashboard.png",
+    "screen": "Pulpit — avenit://dashboard",
+    "headline": {
+      "pl": ["Cały kościół.", "Jedna aplikacja."],
+      "en-US": ["The whole church.", "One app."]
+    }
+  },
+  {
+    "file": "02-serve.png",
+    "screen": "Moja służba z zaproszeniem pending — avenit://serve",
+    "headline": {
+      "pl": ["Grafik służb.", "Jednym dotknięciem."],
+      "en-US": ["Serving schedule.", "One tap away."]
+    }
+  },
+  {
+    "file": "03-song.png",
+    "screen": "Pieśń z akordami — avenit://songs/<id>",
+    "headline": {
+      "pl": ["Akordy i tonacja.", "Na każdą próbę."],
+      "en-US": ["Chords and keys.", "Ready for rehearsal."]
+    }
+  },
+  {
+    "file": "04-messenger.png",
+    "screen": "Rozmowa zespołu z ankietą — avenit://messenger/<id>",
+    "headline": {
+      "pl": ["Rozmowy zespołów.", "Ankiety i modlitwy."],
+      "en-US": ["Team chat.", "Polls and prayer."]
+    }
+  },
+  {
+    "file": "05-calendar.png",
+    "screen": "Kalendarz / wydarzenie z zapisami — avenit://calendar",
+    "headline": {
+      "pl": ["Wydarzenia.", "Z zapisami."],
+      "en-US": ["Events.", "With sign-ups."]
+    }
+  },
+  {
+    "file": "06-modules.png",
+    "screen": "Moduły — avenit://modules",
+    "headline": {
+      "pl": ["Kazania, grupy, modlitwa.", "Zawsze pod ręką."],
+      "en-US": ["Sermons, groups, prayer.", "Always at hand."]
+    }
+  }
+]
