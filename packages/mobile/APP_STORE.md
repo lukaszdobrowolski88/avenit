@@ -90,12 +90,17 @@ Proponowany zestaw (nagłówek w sygnaturze marki: bold + light, kropka w kurkum
 
 | # | Ekran (trasa) | Nagłówek PL | Nagłówek EN |
 |---|---|---|---|
-| 1 | Pulpit (`avenit://dashboard`) | **Cały kościół.** Jedna aplikacja. | **The whole church.** One app. |
-| 2 | Moja służba / zaproszenie (`avenit://serve`) | **Grafik służb.** Jednym dotknięciem. | **Serving schedule.** One tap. |
+| 1 | Pulpit z zaproszeniem do służby (`avenit://dashboard`) | **Cały kościół.** Jedna aplikacja. | **The whole church.** One app. |
+| 2 | Program nabożeństwa (`avenit://programs/<id>`) | **Program nabożeństwa.** Krok po kroku. | **Service plans.** Step by step. |
 | 3 | Pieśń z akordami (`avenit://songs/<id>`) | **Akordy i tonacja.** Na każdą próbę. | **Chords and keys.** Ready for rehearsal. |
-| 4 | Komunikator, rozmowa zespołu | **Rozmowy zespołów.** Ankiety i modlitwy. | **Team chat.** Polls and prayer. |
-| 5 | Kalendarz / wydarzenie (`avenit://calendar`) | **Wydarzenia.** Z zapisami. | **Events.** With sign-ups. |
-| 6 | Moduły (`avenit://modules`) | **Kazania, grupy, modlitwa.** Zawsze pod ręką. | **Sermons, groups, prayer.** Always at hand. |
+| 4 | Rozmowa zespołu (`avenit://messenger/<id>`) | **Rozmowy zespołów.** Wszyscy w kontakcie. | **Team chat.** Everyone in the loop. |
+| 5 | Kalendarz z Twoją służbą (`avenit://calendar`) | **Wydarzenia.** I Twoja służba. | **Events.** And where you serve. |
+| 6 | Ściana modlitwy (`avenit://prayers`) | **Ściana modlitwy.** Módlmy się razem. | **Prayer wall.** Pray together. |
+| 7 | Moduły (`avenit://modules`) | **Kazania, grupy, modlitwa.** Zawsze pod ręką. | **Sermons, groups, prayer.** Always at hand. |
+
+**Gotowe plansze (2026-10-07)** są w `store/screenshots/out/pl/` i `out/en-US/` (7 + 7, 1320×2868, bez kanału alfa).
+Zrobione na kościele demo w symulatorze iPhone 17 Pro Max, przez lokalne API z danymi ze skryptu demo — bez
+prawdziwych osób. Po zmianach w wyglądzie apki: te same trasy, `xcrun simctl io <udid> screenshot`, `python3 frame.py`.
 
 Opcjonalnie: wideo podglądowe (App Preview) 15–30 s, 886×1920 lub 1080×1920. Nie jest wymagane.
 

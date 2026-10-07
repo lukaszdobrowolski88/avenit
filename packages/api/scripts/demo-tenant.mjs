@@ -188,7 +188,7 @@ async function main() {
   ]);
 
   // 4. Pieśni i kazania
-  const songs = await insert(db, 'songs', SONGS.map((s) => ({ ...s, tags: ['demo'] })));
+  const songs = await insert(db, 'songs', SONGS.map((s) => ({ ...s, tags: ['hymn'] })));
   await insert(db, 'sermons', SERMONS.map((s) => ({
     title: s.title, speaker: s.speaker, series: 'List do Filipian', scripture_ref: s.scripture_ref,
     sermon_date: iso(nextDow(0, -s.weeks)), is_published: true,
