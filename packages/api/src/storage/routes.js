@@ -84,10 +84,14 @@ async function canUseBucket(req, bucket) {
 const signFor = (tenant, bucket, filePath, exp) =>
   crypto.createHmac('sha256', config.JWT_SECRET).update(`${tenant}|${bucket}|${filePath}|${exp}`).digest('hex');
 
-function safeJoin(...parts) {
-  const base = path.resolve(config.STORAGE_DIR);
-  const target = path.resolve(base, ...parts);
-  if (!target.startsWith(base + path.sep) && target !== base) {
+// Ścieżka pliku MUSI zostać w katalogu swojego bucketu (i tenanta). Fastify dekoduje parametr `*`
+// (`..%2f` → `../`), a do 2026-10 sprawdzaliśmy tylko katalog główny STORAGE_DIR — przez to
+// `GET /storage/finance/..%2fmembership-declarations%2fplik.pdf` omijał podpisane linki
+// i ACL bucketów, a `..%2f..%2f<inny-tenant>` sięgał do plików innego kościoła.
+export function safeJoin(tenant, bucket, rel = '', baseDir = config.STORAGE_DIR) {
+  const root = path.resolve(baseDir, String(tenant), String(bucket));
+  const target = path.resolve(root, String(rel ?? ''));
+  if (target !== root && !target.startsWith(root + path.sep)) {
     throw Object.assign(new Error('Nieprawidłowa ścieżka'), { status: 400 });
   }
   return target;
