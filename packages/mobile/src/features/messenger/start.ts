@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import { emailPattern, normEmail } from "./api";
+import { emailPattern, normEmail, pickDirectConversation } from "./logic";
 
 // Zakładanie rozmów z telefonu — ta sama logika co web (useConversations.js:
 // createDirectConversation / createGroupConversation) i ta sama kolejność, której pilnuje
 // serwer: 1) wiersz w conversations, 2) CAŁY skład jednym zapisem z twórcą jako 'admin'
 // (pierwszy skład pustej rozmowy wolno dodać tylko jej twórcy), 3) wiadomości.
-// Rozmowę 1:1 najpierw szukamy, żeby nie dublować.
+// Rozmowę 1:1 najpierw szukamy (także w archiwum), żeby nie dublować.
 
 // Skład nowej rozmowy: twórca jako administrator, reszta bez duplikatów i bez twórcy.
 // allAdmins — rozmowa 1:1: obie strony są administratorami (każda może ją usunąć).
@@ -78,42 +78,93 @@ export const usePeopleDirectory = (myEmail: string | null) =>
     },
   });
 
-export async function findOrCreateDirect(myEmail: string, otherEmail: string): Promise<string> {
+// Istniejąca rozmowa 1:1 z tą osobą (także zarchiwizowana). Przy dawnych duplikatach — ta
+// z najświeższą wiadomością (jak web: chatLogic.pickDirectConversation).
+export async function findExistingDirect(myEmail: string, otherEmail: string): Promise<string | null> {
   const { data: mine, error: mineErr } = await supabase
     .from("conversation_participants")
     .select("conversation_id")
     .ilike("user_email", emailPattern(myEmail));
   if (mineErr) throw mineErr;
   const myIds = ((mine ?? []) as any[]).map((p) => p.conversation_id);
+  if (myIds.length === 0) return null;
 
-  if (myIds.length > 0) {
-    const { data: theirs, error: theirsErr } = await supabase
-      .from("conversation_participants")
-      .select("conversation_id")
-      .ilike("user_email", emailPattern(otherEmail))
-      .in("conversation_id", myIds);
-    if (theirsErr) throw theirsErr;
-    const common = ((theirs ?? []) as any[]).map((p) => p.conversation_id);
-    if (common.length > 0) {
-      const { data: convs, error: convsErr } = await supabase
-        .from("conversations")
-        .select("id, type")
-        .in("id", common)
-        .eq("type", "direct")
+  const { data: theirs, error: theirsErr } = await supabase
+    .from("conversation_participants")
+    .select("conversation_id")
+    .ilike("user_email", emailPattern(otherEmail))
+    .in("conversation_id", myIds);
+  if (theirsErr) throw theirsErr;
+  const common = Array.from(new Set(((theirs ?? []) as any[]).map((p) => p.conversation_id)));
+  if (common.length === 0) return null;
+
+  const { data: convs, error: convsErr } = await supabase
+    .from("conversations")
+    .select("id, type, created_at, updated_at, last_message_at")
+    .in("id", common)
+    .eq("type", "direct");
+  if (convsErr) throw convsErr;
+  const list = (convs ?? []) as any[];
+  if (list.length === 0) return null;
+  if (list.length === 1) return String(list[0].id);
+  const withLast = await Promise.all(
+    list.map(async (c) => {
+      const { data } = await supabase
+        .from("messages")
+        .select("created_at")
+        .eq("conversation_id", c.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
         .limit(1);
-      if (convsErr) throw convsErr;
-      const hit = ((convs ?? []) as any[])[0];
-      if (hit?.id) return String(hit.id);
-    }
-  }
-
-  return insertConversation(myEmail, { type: "direct" }, [otherEmail], true);
+      return { ...c, last_message: ((data ?? []) as any[])[0] ?? null };
+    }),
+  );
+  const best = pickDirectConversation(withLast);
+  return best ? String(best.id) : null;
 }
 
+// Otwierana rozmowa wraca z archiwum (mój wiersz) — inaczej nie było jej na liście.
+async function unarchiveMine(conversationId: string, myEmail: string) {
+  const { error } = await (supabase.from("conversation_participants") as any)
+    .update({ archived: false })
+    .eq("conversation_id", conversationId)
+    .ilike("user_email", emailPattern(myEmail))
+    .eq("archived", true)
+    .select("conversation_id");
+  if (error && __DEV__) console.warn("[messenger] unarchive failed:", error.message);
+}
+
+// Rozmowa 1:1: najpierw istniejąca (nigdy druga z tą samą osobą — pilnuje też serwer: 409
+// DIRECT_EXISTS), dopiero potem nowa.
+export async function findOrCreateDirect(myEmail: string, otherEmail: string): Promise<string> {
+  const existing = await findExistingDirect(myEmail, otherEmail);
+  if (existing) {
+    await unarchiveMine(existing, myEmail);
+    return existing;
+  }
+  try {
+    return await insertConversation(myEmail, { type: "direct" }, [otherEmail], true);
+  } catch (e) {
+    if ((e as { code?: string } | null)?.code === "DIRECT_EXISTS") {
+      const id = await findExistingDirect(myEmail, otherEmail);
+      if (id) {
+        await unarchiveMine(id, myEmail);
+        return id;
+      }
+    }
+    throw e;
+  }
+}
+
+// Grupa albo kanał ogłoszeń (jak web: createAnnouncementChannel — piszą tylko administratorzy).
 export async function createGroupConversation(
   myEmail: string,
   name: string,
   participantEmails: string[],
+  opts: { announcement?: boolean } = {},
 ): Promise<string> {
-  return insertConversation(myEmail, { type: "group", name }, participantEmails);
+  const values = opts.announcement
+    ? { type: "announcement", name, posting_policy: "admins" }
+    : { type: "group", name };
+  return insertConversation(myEmail, values, participantEmails);
 }

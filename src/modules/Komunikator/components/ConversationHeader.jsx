@@ -6,6 +6,7 @@ import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
 import { toast } from '../../../lib/toast';
+import { statusColors, statusLabels } from '../../../hooks/usePresence';
 
 const ministryIcons = {
   worship_team: Music,
@@ -28,7 +29,8 @@ export default function ConversationHeader({
   onDelete,
   onOpenMediaGallery,
   onOpenSearch,
-  showBackButton = false
+  showBackButton = false,
+  peerStatus = null // obecność drugiej osoby (rozmowa 1:1)
 }) {
   const t = useT();
   const [showMenu, setShowMenu] = useState(false);
@@ -39,7 +41,7 @@ export default function ConversationHeader({
   const getConversationIcon = () => {
     if (conversation.type === 'direct') {
       // Druga osoba rozmowy (nazwa i awatar policzone na liście rozmów)
-      return <UserAvatar user={{ full_name: conversation.displayName, avatar_url: conversation.displayAvatar }} size="md" />;
+      return <UserAvatar user={{ full_name: conversation.displayName, avatar_url: conversation.displayAvatar }} size="md" showStatus={!!peerStatus} status={peerStatus} />;
     }
 
     if (conversation.type === 'announcement') {
@@ -68,8 +70,9 @@ export default function ConversationHeader({
   };
 
   const getSubtitle = () => {
+    // Jak w aplikacji: status obecności, a gdy osoba jest poza aplikacją — „Prywatna rozmowa”.
     if (conversation.type === 'direct') {
-      return t('Prywatna rozmowa');
+      return peerStatus && peerStatus !== 'offline' ? t(statusLabels[peerStatus]) : t('Prywatna rozmowa');
     }
 
     if (conversation.type === 'ministry') {
@@ -132,7 +135,9 @@ export default function ConversationHeader({
           {displayName}
         </h2>
         <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+          {conversation.type === 'direct' && peerStatus && peerStatus !== 'offline' && (
+            <span className={`w-1.5 h-1.5 rounded-full ${statusColors[peerStatus]}`} aria-hidden="true" />
+          )}
           {getSubtitle()}
         </p>
       </div>

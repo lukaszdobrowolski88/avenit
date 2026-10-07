@@ -11,7 +11,8 @@ import {
   Text,
   View,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { goBack } from "../../../src/lib/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { isSameDay } from "date-fns";
 import {
@@ -30,6 +31,8 @@ import {
   useReadReceipts,
   markConversationRead,
   markMessagesAsRead,
+  clearUnreadLocally,
+  memberDisplayName,
   canEditMessage,
   usePollVotes,
   useTogglePollVote,
@@ -48,12 +51,16 @@ import {
 import { usePresence } from "../../../src/lib/presence";
 import { preloadSendSound, setActiveConversation } from "../../../src/lib/sounds";
 import {
+  pickDocument,
   pickImageFromLibrary,
   takePhoto,
   uploadAttachment,
+  uploadDocument,
   uploadVoiceMessage,
 } from "../../../src/features/messenger/attachments";
 import { useRealtimeMessages } from "../../../src/features/messenger/hooks/useRealtimeMessages";
+import { useTypingStatus, typingLabel } from "../../../src/features/messenger/hooks/useTypingStatus";
+import { unreadIdsToMark } from "../../../src/features/messenger/logic";
 import { MessageBubble } from "../../../src/features/messenger/components/MessageBubble";
 import { ComposerBar } from "../../../src/features/messenger/components/ComposerBar";
 import { PollComposerModal } from "../../../src/features/messenger/components/PollComposerModal";
@@ -65,6 +72,7 @@ import { ForwardMessageModal } from "../../../src/features/messenger/components/
 import { SearchModal } from "../../../src/features/messenger/components/SearchModal";
 import { PinnedPanel } from "../../../src/features/messenger/components/PinnedPanel";
 import { MediaGalleryModal } from "../../../src/features/messenger/components/MediaGalleryModal";
+import { ConversationInfoModal } from "../../../src/features/messenger/components/ConversationInfoModal";
 import { useAuthSession } from "../../../src/lib/auth";
 import { usePermissions } from "../../../src/lib/permissions";
 import { friendlyError } from "../../../src/lib/errors";
@@ -85,6 +93,7 @@ export default function ConversationScreen() {
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const { user } = useAuthSession();
   const qc = useQueryClient();
+  const router = useRouter();
   const cid = String(conversationId ?? "");
   const perms = usePermissions();
   // Co rola pozwala zapisać — jak web (KomunikatorModule.perms). Serwer i tak pilnuje zakresu.
@@ -167,7 +176,11 @@ export default function ConversationScreen() {
   const [forwardTarget, setForwardTarget] = useState<MessageRow | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
   const [galleryVisible, setGalleryVisible] = useState(false);
+  const [prayerMode, setPrayerMode] = useState(false);
+  const [infoVisible, setInfoVisible] = useState(false);
   const listRef = useRef<FlatList<FeedItem>>(null);
+  // Wiadomości już oznaczone przeze mnie jako przeczytane (bez powtórnych zapisów — jak web).
+  const markedRef = useRef<Set<string>>(new Set());
 
   // Inna rozmowa w tym samym ekranie (powiadomienie, link) — szkic, załącznik i odpowiedź
   // nie mogą „przejść” do innej rozmowy.
@@ -178,6 +191,8 @@ export default function ConversationScreen() {
     setEditingId(null);
     setActionTarget(null);
     setForwardTarget(null);
+    setPrayerMode(false);
+    markedRef.current = new Set();
   }, [cid]);
 
   const messageById = useMemo(() => {
@@ -216,24 +231,42 @@ export default function ConversationScreen() {
     return out;
   }, [messagesQuery.data]);
 
+  // Wejście w rozmowę i każda nowa wiadomość = przeczytane (jak web). Znacznik nie wcześniejszy niż
+  // ostatnia wiadomość (spóźniony zegar telefonu), licznik na liście znika od razu.
+  const newestCreatedAt = messagesQuery.data?.[messagesQuery.data.length - 1]?.created_at ?? null;
   useEffect(() => {
-    if (cid && user?.email && detailsQuery.data?.is_participant) {
+    // Potwierdzenia liczymy po wczytaniu istniejących (bez ponownego zapisu setek przeczytanych).
+    if (cid && user?.email && detailsQuery.data?.is_participant && readReceiptsQuery.isFetched) {
+      clearUnreadLocally(qc, user.email, cid);
       // „Przeczytane” — tylko gdy rola może zmieniać swój wiersz uczestnika (inaczej 403).
       if (canManageOwn) {
-        markConversationRead(cid, user.email)
-          // Po oznaczeniu jako przeczytane odśwież listę rozmów, żeby zniknął badge nieprzeczytanych.
+        markConversationRead(cid, user.email, newestCreatedAt)
           .then(() => qc.invalidateQueries({ queryKey: ["conversations"] }))
           .catch(() => undefined);
       }
-      // Per-message read receipts — tylko cudze wiadomości.
-      const ids = (messagesQuery.data ?? [])
-        .filter((m: MessageRow) => !sameEmail(m.sender_email, user.email))
-        .map((m: MessageRow) => m.id);
+      // Potwierdzenia przeczytania — tylko cudze, jeszcze nieoznaczone wiadomości.
+      const ids = unreadIdsToMark(
+        messagesQuery.data ?? [],
+        user.email,
+        markedRef.current,
+        (readReceiptsQuery.data ?? {}) as Record<string, ReadReceiptRow[]>,
+      );
       if (ids.length > 0) {
-        markMessagesAsRead(ids, user.email).catch(() => undefined);
+        ids.forEach((id) => markedRef.current.add(id));
+        markMessagesAsRead(ids, user.email).catch(() => {
+          ids.forEach((id) => markedRef.current.delete(id));
+        });
       }
     }
-  }, [cid, user?.email, messagesQuery.data?.length, detailsQuery.data?.is_participant, canManageOwn]);
+  }, [
+    cid,
+    user?.email,
+    messagesQuery.data?.length,
+    newestCreatedAt,
+    detailsQuery.data?.is_participant,
+    canManageOwn,
+    readReceiptsQuery.isFetched,
+  ]);
 
   useEffect(() => {
     if (feed.length === 0) return;
@@ -251,6 +284,20 @@ export default function ConversationScreen() {
       setPendingAttachment(att);
     } catch (e) {
       Alert.alert("Nie udało się dodać zdjęcia", friendlyError(e, "Spróbuj ponownie."));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handlePickFile = async () => {
+    if (uploading) return;
+    setUploading(true);
+    try {
+      const asset = await pickDocument();
+      if (!asset) return;
+      setPendingAttachment(await uploadDocument(cid, asset));
+    } catch (e) {
+      Alert.alert("Nie udało się dodać pliku", friendlyError(e, "Spróbuj ponownie."));
     } finally {
       setUploading(false);
     }
@@ -303,11 +350,24 @@ export default function ConversationScreen() {
   const readOnlyText = !details
     ? detailsQuery.isError
       ? friendlyError(detailsQuery.error, "Nie udało się wczytać rozmowy.")
-      : ""
+      : detailsQuery.isSuccess
+        ? "Tej rozmowy już nie ma albo nie masz do niej dostępu."
+        : ""
     : !details.is_participant
       ? "Nie jesteś uczestnikiem tej rozmowy."
       : "W tym kanale piszą tylko administratorzy.";
   const isConvAdmin = details?.my_role === "admin";
+  // „pisze…” — jak web: zapis tylko z prawem do typing_status i tylko gdy mogę pisać.
+  const { typingEmails, startTyping, stopTyping } = useTypingStatus(
+    cid,
+    user?.email ?? null,
+    canPost && perms.can("res:typing_status:create"),
+  );
+  const typingText = typingLabel(typingEmails.map((e) => memberDisplayName(members, e)));
+  const handleChangeText = (t: string) => {
+    setText(t);
+    if (t.trim() && !editingId) startTyping();
+  };
   // Przypinanie wiadomości — jak web: administrator rozmowy z prawem do przypięć.
   const canPin = isConvAdmin && perms.can("res:pinned_messages:create");
   const sending = sendMutation.isPending || editMutation.isPending;
@@ -355,6 +415,22 @@ export default function ConversationScreen() {
     }
 
     const t = text.trim();
+    if (prayerMode) {
+      // Prośba o modlitwę (jak web): treść pola staje się tytułem prośby.
+      if (!t) return;
+      try {
+        await sendMutation.mutateAsync({ content: t, messageType: "prayer", metadata: { title: t } });
+        void stopTyping();
+        setPrayerMode(false);
+        resetComposer();
+      } catch (e) {
+        Alert.alert(
+          "Nie udało się wysłać prośby",
+          friendlyError(e, "Nie udało się wysłać prośby o modlitwę. Spróbuj ponownie."),
+        );
+      }
+      return;
+    }
     if (!t && !pendingAttachment) return;
     try {
       await sendMutation.mutateAsync({
@@ -363,6 +439,7 @@ export default function ConversationScreen() {
         replyToId: replyTo?.id ?? null,
         mentions: extractMentions(t, members),
       });
+      void stopTyping();
       resetComposer();
     } catch (e) {
       Alert.alert(
@@ -410,7 +487,8 @@ export default function ConversationScreen() {
       const { sent, total } = await forwardMutation.mutateAsync({
         conversationIds,
         content: target.content,
-        attachments: target.attachments ?? [],
+        attachments: Array.isArray(target.attachments) ? target.attachments : [],
+        forwardedFrom: target.id,
       });
       setForwardTarget(null);
       if (sent < total) {
@@ -497,6 +575,7 @@ export default function ConversationScreen() {
           onSearch={() => setSearchVisible(true)}
           onOpenGallery={() => setGalleryVisible(true)}
           peerStatus={peerStatus}
+          onOpenInfo={details ? () => setInfoVisible(true) : undefined}
         />
 
         <PinnedPanel
@@ -598,16 +677,28 @@ export default function ConversationScreen() {
           />
         )}
 
+        {typingText ? (
+          <View style={{ paddingHorizontal: 16, paddingVertical: 4, backgroundColor: "#F6F4EE" }}>
+            <Text
+              accessibilityLiveRegion="polite"
+              style={{ fontSize: 12, color: "#6B6557", fontStyle: "italic", fontFamily: "Manrope_500Medium" }}
+            >
+              {typingText}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={{ paddingBottom: composerBottomPad, backgroundColor: "#F6F4EE" }}>
           <ComposerBar
             text={text}
-            onChangeText={setText}
+            onChangeText={handleChangeText}
             onSend={handleSend}
             sending={sending}
             pendingAttachment={pendingAttachment}
             onClearAttachment={() => setPendingAttachment(null)}
             onPickImage={handlePickImage}
             onTakePhoto={handleTakePhoto}
+            onPickFile={handlePickFile}
             uploading={uploading}
             replyTo={replyTo}
             onClearReply={() => setReplyTo(null)}
@@ -618,6 +709,13 @@ export default function ConversationScreen() {
             readOnlyText={readOnlyText}
             onCreatePoll={() => setPollOpen(true)}
             onShareEvent={() => setEventShareOpen(true)}
+            prayerMode={prayerMode}
+            onStartPrayer={() => {
+              setPrayerMode(true);
+              setReplyTo(null);
+              setPendingAttachment(null);
+            }}
+            onCancelPrayer={() => setPrayerMode(false)}
           />
         </View>
       </KeyboardAvoidingView>
@@ -657,6 +755,8 @@ export default function ConversationScreen() {
         onForward={() => {
           if (actionTarget) handleForward(actionTarget);
         }}
+        // Jak web: ankiet, wydarzeń i próśb o modlitwę się nie przekazuje (poszłaby sama treść).
+        canForward={!!actionTarget && (!actionTarget.message_type || actionTarget.message_type === "text")}
         canReply={canPost}
         onCopy={() => {
           if (actionTarget) handleCopyMessage(actionTarget);
@@ -697,6 +797,17 @@ export default function ConversationScreen() {
         visible={galleryVisible}
         onClose={() => setGalleryVisible(false)}
         conversationId={cid}
+      />
+
+      <ConversationInfoModal
+        visible={infoVisible}
+        onClose={() => setInfoVisible(false)}
+        details={details ?? null}
+        members={members}
+        myEmail={user?.email ?? null}
+        canLeave={perms.can("res:conversation_participants:delete")}
+        canDelete={perms.can("res:conversations:delete")}
+        onGone={() => goBack(router)}
       />
     </>
   );

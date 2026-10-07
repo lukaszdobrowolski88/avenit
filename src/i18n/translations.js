@@ -6912,6 +6912,21 @@ const en = {
   'Jedna aplikacja': 'One app',
   'Programy nabożeństw, grafiki służb, grupy domowe, kazania, pieśni, modlitwy, komunikacja, finanse i check-in dzieci.': 'Service plans, team schedules, small groups, sermons, songs, prayer, communication, finances and kids check-in.',
   'Połączenie szyfrowane': 'Encrypted connection',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Zdjęcia: {n}': 'Photos: {n}',
+  'Załączniki: {n}': 'Attachments: {n}',
+  'Nieprzeczytane: {n}': 'Unread: {n}',
+  'Wszystko przeczytane': 'All caught up',
+  'Nie masz nieprzeczytanych wiadomości': 'You have no unread messages',
+  'Pokaż wszystkie': 'Show all',
+  'Nie znaleziono rozmów dla „{q}”': 'No conversations found for “{q}”',
+  'Wczoraj': 'Yesterday',
+  '{name} pisze…': '{name} is typing…',
+  '{a} i {b} piszą…': '{a} and {b} are typing…',
+  '{name} i inni piszą…': '{name} and others are typing…',
+  'W tym kanale piszą tylko administratorzy.': 'Only admins can post in this channel.',
+  'Nie udało się wczytać listy osób. Spróbuj ponownie.': 'Couldn\'t load the list of people. Please try again.',
+  'Nie udało się otworzyć rozmowy. Spróbuj ponownie.': 'Couldn\'t open the conversation. Please try again.',
 };
 
 const uk = {
@@ -13822,6 +13837,21 @@ const uk = {
   'Jedna aplikacja': 'Один застосунок',
   'Programy nabożeństw, grafiki służb, grupy domowe, kazania, pieśni, modlitwy, komunikacja, finanse i check-in dzieci.': 'Програми богослужінь, графіки служінь, домашні групи, проповіді, пісні, молитви, комунікація, фінанси та реєстрація дітей.',
   'Połączenie szyfrowane': 'Зашифроване з’єднання',
+  // ── Uzupełnienie tłumaczeń (audyt i18n, 2026-10) ──
+  'Zdjęcia: {n}': 'Фото: {n}',
+  'Załączniki: {n}': 'Вкладення: {n}',
+  'Nieprzeczytane: {n}': 'Непрочитані: {n}',
+  'Wszystko przeczytane': 'Усе прочитано',
+  'Nie masz nieprzeczytanych wiadomości': 'У вас немає непрочитаних повідомлень',
+  'Pokaż wszystkie': 'Показати всі',
+  'Nie znaleziono rozmów dla „{q}”': 'Не знайдено розмов для «{q}»',
+  'Wczoraj': 'Вчора',
+  '{name} pisze…': '{name} пише…',
+  '{a} i {b} piszą…': '{a} і {b} пишуть…',
+  '{name} i inni piszą…': '{name} та інші пишуть…',
+  'W tym kanale piszą tylko administratorzy.': 'У цьому каналі пишуть лише адміністратори.',
+  'Nie udało się wczytać listy osób. Spróbuj ponownie.': 'Не вдалося завантажити список людей. Спробуйте ще раз.',
+  'Nie udało się otworzyć rozmowy. Spróbuj ponownie.': 'Не вдалося відкрити розмову. Спробуйте ще раз.',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

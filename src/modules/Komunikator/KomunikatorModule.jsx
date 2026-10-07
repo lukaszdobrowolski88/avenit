@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ConversationList from './components/ConversationList';
@@ -48,6 +48,8 @@ export default function KomunikatorModule() {
     getUser();
   }, []);
 
+  const [selectedConversation, setSelectedConversation] = useState(null);
+
   const {
     conversations,
     loading,
@@ -62,7 +64,7 @@ export default function KomunikatorModule() {
     toggleArchive,
     togglePin,
     toggleMute
-  } = useConversations(userEmail, { canManageOwn: perms.manageOwn });
+  } = useConversations(userEmail, { canManageOwn: perms.manageOwn, openConversationId: selectedConversation?.id ?? null });
 
   // Hook powiadomień - używamy wspólnego kontekstu
   const { notifications, markAsRead: markNotificationAsRead } = useNotificationContext();
@@ -72,8 +74,8 @@ export default function KomunikatorModule() {
     onSynced: (changed) => { if (changed) refetch(); }
   });
 
-  const [selectedConversation, setSelectedConversation] = useState(null);
   const [pendingOpenId, setPendingOpenId] = useState(null);
+  const urlRefetchRef = useRef(null); // rozmowa z linku, dla której już odświeżyliśmy listę
   const [showNewModal, setShowNewModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
@@ -108,7 +110,7 @@ export default function KomunikatorModule() {
     if (!conversationId || !notifications || notifications.length === 0) return;
     const convIdStr = String(conversationId);
     notifications
-      .filter(n => !n.read && n.type === 'message' && n.data?.conversation_id && String(n.data.conversation_id) === convIdStr)
+      .filter(n => !n.read && (n.type === 'message' || n.type === 'mention') && n.data?.conversation_id && String(n.data.conversation_id) === convIdStr)
       .forEach(n => markNotificationAsRead(n.id));
   }, [notifications, markNotificationAsRead]);
 
@@ -119,18 +121,21 @@ export default function KomunikatorModule() {
     if (conv?.id) markConversationNotificationsAsRead(conv.id);
   }, [isMobileView, markConversationNotificationsAsRead]);
 
-  // Obsłuż parametr conversation z URL (np. z powiadomienia)
+  // Obsłuż parametr conversation z URL (np. z powiadomienia). Rozmowy, której jeszcze nie ma na
+  // liście (nowa, albo lista z pamięci podręcznej sprzed chwili) — odśwież listę raz i otwórz po wczytaniu.
   useEffect(() => {
     const conversationId = searchParams.get('conversation');
-    if (conversationId && conversations.length > 0) {
-      const conv = conversations.find(c => c.id === conversationId);
-      if (conv) {
-        handleSelectConversation(conv);
-        // Wyczyść parametr z URL po otwarciu konwersacji
-        setSearchParams({}, { replace: true });
-      }
+    if (!conversationId || !userEmail) return;
+    const conv = conversations.find(c => String(c.id) === conversationId);
+    if (conv) {
+      handleSelectConversation(conv);
+      // Wyczyść parametr z URL po otwarciu konwersacji
+      setSearchParams({}, { replace: true });
+    } else if (!loading && urlRefetchRef.current !== conversationId) {
+      urlRefetchRef.current = conversationId;
+      refetch();
     }
-  }, [searchParams, conversations, handleSelectConversation, setSearchParams]);
+  }, [searchParams, conversations, handleSelectConversation, setSearchParams, loading, refetch, userEmail]);
 
   // Oznacz powiadomienia jako przeczytane gdy użytkownik wejdzie w konwersację
   useEffect(() => {

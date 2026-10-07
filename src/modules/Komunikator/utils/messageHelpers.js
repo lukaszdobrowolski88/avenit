@@ -1,22 +1,36 @@
-import { appLocale } from '../../../i18n';
-// Formatowanie daty wiadomości
+import { appLocale, tr } from '../../../i18n';
+// Formatowanie daty wiadomości na liście rozmów (tak samo w aplikacji: logic.ts → formatListTime):
+// dziś — godzina, wczoraj — „Wczoraj”, w tym tygodniu — dzień tygodnia, starsze — „7 paź”.
 export const formatMessageDate = (dateString) => {
   const date = new Date(dateString);
+  if (!Number.isFinite(date.getTime())) return '';
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
   const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((today.getTime() - messageDate.getTime()) / 86400000);
 
-  if (messageDate.getTime() === today.getTime()) {
+  if (diffDays <= 0) {
     return date.toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' });
-  } else if (messageDate.getTime() === yesterday.getTime()) {
-    return 'Wczoraj';
-  } else if (now.getTime() - date.getTime() < 7 * 24 * 60 * 60 * 1000) {
+  } else if (diffDays === 1) {
+    return tr('Wczoraj');
+  } else if (diffDays < 7) {
     return date.toLocaleDateString(appLocale(), { weekday: 'long' });
   } else {
     return date.toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' });
   }
+};
+
+// Separator dnia w wątku (jak w aplikacji): „Dzisiaj”, „Wczoraj”, dalej pełna data z dniem tygodnia.
+export const formatDateSeparator = (dateString) => {
+  const date = new Date(dateString);
+  if (!dateString || !Number.isFinite(date.getTime())) return '';
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((today.getTime() - day.getTime()) / 86400000);
+  if (diffDays === 0) return tr('Dzisiaj');
+  if (diffDays === 1) return tr('Wczoraj');
+  return date.toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 // Formatowanie czasu wiadomości

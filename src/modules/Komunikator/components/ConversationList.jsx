@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Plus, MessageSquare, Users, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Star, Archive, Pin, Megaphone, MoreHorizontal, BellOff } from 'lucide-react';
 import UserAvatar from './UserAvatar';
-import { formatMessageDate, truncateText, getMinistryName } from '../utils/messageHelpers';
+import { formatMessageDate, getMinistryName } from '../utils/messageHelpers';
 import { usePresence } from '../../../hooks/usePresence';
-import { sameEmail } from '../utils/chatLogic';
+import { sameEmail, matchesFilter, groupIntoSections, lastMessagePreview } from '../utils/chatLogic';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import Button from '../../../components/Button';
@@ -37,7 +37,7 @@ export default function ConversationList({
 }) {
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'starred' | 'archived'
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'unread' | 'starred' | 'archived' (jak w aplikacji)
   const [menuFor, setMenuFor] = useState(null); // id rozmowy z otwartym menu „⋯”
   const menuRef = useRef(null);
 
@@ -59,6 +59,13 @@ export default function ConversationList({
   // Filtry „Ulubione”/„Archiwum” mają sens, gdy można oznaczać rozmowy (albo już coś oznaczono).
   const showStarredFilter = canManage || conversations.some(c => c.starred);
   const showArchivedFilter = canManage || conversations.some(c => c.archived);
+  const filters = [
+    { key: 'all', label: t('Wszystkie') },
+    { key: 'unread', label: t('Nieprzeczytane') },
+    ...(showStarredFilter ? [{ key: 'starred', label: t('Ulubione'), Icon: Star }] : []),
+    ...(showArchivedFilter ? [{ key: 'archived', label: t('Archiwum'), Icon: Archive }] : []),
+  ];
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.archived ? 0 : (c.unreadCount || 0)), 0);
 
   // Zbierz emaile wszystkich uczestników konwersacji direct
   const participantEmails = useMemo(() => {
@@ -78,31 +85,21 @@ export default function ConversationList({
   // Pobierz statusy presence
   const { getStatus } = usePresence(participantEmails);
 
-  // Filtruj konwersacje po wyszukiwaniu i filtrze
+  // Filtruj konwersacje po wyszukiwaniu i filtrze (zarchiwizowane tylko w „Archiwum” — jak w aplikacji).
+  // Szukanie obejmuje też zarchiwizowane, żeby dało się znaleźć każdą rozmowę.
   const filteredConversations = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
     return conversations.filter(conv => {
-      // Filtr archiwizacji/gwiazdek
-      if (activeFilter === 'starred' && !conv.starred) return false;
-      if (activeFilter === 'archived' && !conv.archived) return false;
-      if (activeFilter === 'all' && conv.archived) return false; // Ukryj zarchiwizowane w widoku "wszystkie"
-
-      // Filtr wyszukiwania
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        conv.displayName?.toLowerCase().includes(query) ||
-        conv.name?.toLowerCase().includes(query) ||
-        conv.lastMessage?.content?.toLowerCase().includes(query)
-      );
+      if (!query) return matchesFilter(conv, activeFilter, currentUserEmail);
+      if (activeFilter !== 'all' && !matchesFilter(conv, activeFilter, currentUserEmail)) return false;
+      const ministryName = conv.type === 'ministry' ? getMinistryName(conv.ministry_key) : '';
+      return [conv.displayName, conv.name, ministryName, conv.lastMessage?.content]
+        .some(v => String(v || '').toLowerCase().includes(query));
     });
-  }, [conversations, activeFilter, searchQuery]);
+  }, [conversations, activeFilter, searchQuery, currentUserEmail]);
 
-  // Grupuj konwersacje po typie (przypięte osobno, na górze)
-  const pinnedConversations = filteredConversations.filter(c => c.pinned);
-  const directConversations = filteredConversations.filter(c => c.type === 'direct' && !c.pinned);
-  const groupConversations = filteredConversations.filter(c => c.type === 'group' && !c.pinned);
-  const announcementConversations = filteredConversations.filter(c => c.type === 'announcement' && !c.pinned);
-  const ministryConversations = filteredConversations.filter(c => c.type === 'ministry' && !c.pinned);
+  // Sekcje (te same i w tej samej kolejności co w aplikacji): Przypięte, Ogłoszenia, Prywatne, Grupy, Kanały służb
+  const sections = useMemo(() => groupIntoSections(filteredConversations), [filteredConversations]);
 
   // Akcja z menu „⋯”: zamknij menu i wykonaj
   const runMenuAction = (e, fn, convId) => {
@@ -113,7 +110,15 @@ export default function ConversationList({
 
   const renderConversationItem = (conv) => {
     const isSelected = conv.id === selectedId;
-    const hasUnread = conv.unreadCount > 0;
+    const unread = conv.unreadCount || 0;
+    const hasUnread = unread > 0;
+    const last = conv.lastMessage;
+    const senderName = last
+      ? conv.participants?.find(p => sameEmail(p.user_email, last.sender_email))?.full_name || last.sender_email
+      : '';
+    const preview = last
+      ? lastMessagePreview(last, { myEmail: currentUserEmail, convType: conv.type, senderName, t })
+      : '';
 
     const getIcon = () => {
       if (conv.type === 'direct') {
@@ -179,11 +184,6 @@ export default function ConversationList({
         >
           <div className="relative flex-shrink-0">
             {getIcon()}
-            {hasUnread && (
-              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent-primary rounded-full ring-2 ring-white dark:ring-gray-900">
-                <span className="sr-only">{t('Nieprzeczytane wiadomości')}</span>
-              </span>
-            )}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -202,23 +202,32 @@ export default function ConversationList({
                   <BellOff size={12} className="text-gray-400 flex-shrink-0" aria-label={t('Wyciszona')} />
                 )}
               </div>
-              {conv.lastMessage && (
-                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium flex-shrink-0">
-                  {formatMessageDate(conv.lastMessage.created_at)}
+              {last && (
+                <span className={`text-[10px] flex-shrink-0 ${hasUnread ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-400 dark:text-gray-500 font-medium'}`}>
+                  {formatMessageDate(last.created_at)}
                 </span>
               )}
             </div>
 
-            {conv.lastMessage ? (
-              <p className={`text-xs truncate mt-0.5 ${hasUnread ? 'text-gray-600 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-                {sameEmail(conv.lastMessage.sender_email, currentUserEmail) ? t('Ty: ') : ''}
-                {truncateText(conv.lastMessage.content, 40)}
-              </p>
-            ) : (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 italic">
-                {tr('Brak wiadomości')}
-              </p>
-            )}
+            <div className="flex items-center gap-2 mt-0.5">
+              {last ? (
+                <p className={`flex-1 min-w-0 text-xs truncate ${hasUnread ? 'text-gray-800 dark:text-gray-200 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                  {preview || t('Wiadomość')}
+                </p>
+              ) : (
+                <p className="flex-1 min-w-0 text-xs text-gray-400 dark:text-gray-500 italic truncate">
+                  {tr('Brak wiadomości')}
+                </p>
+              )}
+              {hasUnread && (
+                <span
+                  className="flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900 text-[11px] font-bold leading-5 text-center"
+                  aria-label={t('Nieprzeczytane: {n}', { n: unread })}
+                >
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              )}
+            </div>
           </div>
         </button>
 
@@ -283,9 +292,14 @@ export default function ConversationList({
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-primary-light/20">
               <MessageSquare size={16} className="text-white" />
             </div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-              {tr('Komunikator')}
-            </h1>
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                {tr('Komunikator')}
+              </h1>
+              {totalUnread > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Nieprzeczytane: {n}', { n: totalUnread })}</p>
+              )}
+            </div>
           </div>
           <button
             data-tour="komunikator-new"
@@ -311,53 +325,28 @@ export default function ConversationList({
           />
         </div>
 
-        {/* Filtry */}
-        {(showStarredFilter || showArchivedFilter) && (
-        <div className="flex gap-1.5 mt-3" role="group" aria-label={t('Filtr rozmów')}>
-          <button
-            type="button"
-            onClick={() => setActiveFilter('all')}
-            aria-pressed={activeFilter === 'all'}
-            className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
-              activeFilter === 'all'
-                ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md shadow-accent-primary-light/30'
-                : 'bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50'
-            }`}
-          >
-            {tr('Wszystkie')}
-          </button>
-          {showStarredFilter && (
-          <button
-            type="button"
-            onClick={() => setActiveFilter('starred')}
-            aria-pressed={activeFilter === 'starred'}
-            className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
-              activeFilter === 'starred'
-                ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md shadow-accent-primary/30'
-                : 'bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50'
-            }`}
-          >
-            <Star size={12} className={activeFilter === 'starred' ? 'fill-current' : ''} />
-            {tr('Ulubione')}
-          </button>
-          )}
-          {showArchivedFilter && (
-          <button
-            type="button"
-            onClick={() => setActiveFilter('archived')}
-            aria-pressed={activeFilter === 'archived'}
-            className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
-              activeFilter === 'archived'
-                ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md shadow-accent-primary-light/30'
-                : 'bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50'
-            }`}
-          >
-            <Archive size={12} />
-            {tr('Archiwum')}
-          </button>
-          )}
+        {/* Filtry — te same co w aplikacji: Wszystkie, Nieprzeczytane, Ulubione, Archiwum */}
+        <div className="flex gap-1.5 mt-3 overflow-x-auto -mx-1 px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label={t('Filtr rozmów')}>
+          {filters.map(({ key, label, Icon }) => {
+            const active = activeFilter === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setActiveFilter(key)}
+                aria-pressed={active}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
+                  active
+                    ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md shadow-accent-primary-light/30'
+                    : 'bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50'
+                }`}
+              >
+                {Icon && <Icon size={12} className={active && key === 'starred' ? 'fill-current' : ''} />}
+                {label}
+              </button>
+            );
+          })}
         </div>
-        )}
       </div>
 
       {/* Lista konwersacji */}
@@ -368,29 +357,33 @@ export default function ConversationList({
           <EmptyState
             compact
             icon={activeFilter === 'starred' ? Star : activeFilter === 'archived' ? Archive : searchQuery ? Search : MessageSquare}
-            title={searchQuery ? t('Brak wyników') : activeFilter === 'starred' ? t('Brak ulubionych') : activeFilter === 'archived' ? t('Brak archiwum') : t('Brak rozmów')}
+            title={searchQuery
+              ? t('Brak wyników')
+              : activeFilter === 'unread'
+                ? t('Wszystko przeczytane')
+                : activeFilter === 'starred' ? t('Brak ulubionych') : activeFilter === 'archived' ? t('Brak archiwum') : t('Brak rozmów')}
             subtitle={searchQuery
-              ? t('Nie znaleziono rozmów dla "{q}"', { q: searchQuery })
-              : activeFilter === 'starred'
-                ? t('Oznacz rozmowę gwiazdką, by ją tu zobaczyć')
-                : activeFilter === 'archived'
-                  ? t('Zarchiwizowane rozmowy pojawią się tutaj')
-                  : t('Rozpocznij pierwszą rozmowę')
+              ? t('Nie znaleziono rozmów dla „{q}”', { q: searchQuery.trim() })
+              : activeFilter === 'unread'
+                ? t('Nie masz nieprzeczytanych wiadomości')
+                : activeFilter === 'starred'
+                  ? t('Oznacz rozmowę gwiazdką, by ją tu zobaczyć')
+                  : activeFilter === 'archived'
+                    ? t('Zarchiwizowane rozmowy pojawią się tutaj')
+                    : t('Rozpocznij pierwszą rozmowę')
             }
-            action={!searchQuery && activeFilter === 'all' && (
+            action={!searchQuery && activeFilter === 'all' ? (
               <Button size="sm" icon={Plus} onClick={onNewConversation}>
                 {t('Rozpocznij nową rozmowę')}
               </Button>
-            )}
+            ) : !searchQuery && activeFilter !== 'all' ? (
+              <Button size="sm" variant="secondary" onClick={() => setActiveFilter('all')}>
+                {t('Pokaż wszystkie')}
+              </Button>
+            ) : null}
           />
         ) : (
-          <>
-            {renderSection(t('Przypięte'), pinnedConversations)}
-            {renderSection(t('Ogłoszenia'), announcementConversations)}
-            {renderSection(t('Prywatne'), directConversations)}
-            {renderSection(t('Grupy'), groupConversations)}
-            {renderSection(t('Kanały służb'), ministryConversations)}
-          </>
+          sections.map(s => <React.Fragment key={s.key}>{renderSection(t(s.title), s.items)}</React.Fragment>)
         )}
       </div>
     </div>

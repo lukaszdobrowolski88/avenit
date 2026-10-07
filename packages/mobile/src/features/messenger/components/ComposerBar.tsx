@@ -5,8 +5,10 @@ import {
   Calendar,
   Camera,
   CornerUpLeft,
+  HeartHandshake,
   Image as ImageIcon,
   Mic,
+  Paperclip,
   Pencil,
   Plus,
   Send,
@@ -15,6 +17,7 @@ import {
 import { GradientIcon } from "../../../components/ui/GradientIcon";
 import type { MemberLite, MemberMap, MessageAttachment, MessageRow } from "../api";
 import { memberDisplayName } from "../api";
+import { previewText } from "../logic";
 import { AudioRecorder } from "./AudioRecorder";
 
 interface Props {
@@ -26,6 +29,8 @@ interface Props {
   onClearAttachment: () => void;
   onPickImage: () => void;
   onTakePhoto: () => void;
+  /** Plik (PDF, dokument…) — jak „Zdjęcie lub plik” w webie. */
+  onPickFile?: () => void;
   uploading: boolean;
   replyTo: MessageRow | null;
   onClearReply: () => void;
@@ -38,6 +43,10 @@ interface Props {
   readOnlyText?: string;
   onCreatePoll?: () => void;
   onShareEvent?: () => void;
+  // Prośba o modlitwę (jak web): treść pola staje się prośbą.
+  prayerMode?: boolean;
+  onStartPrayer?: () => void;
+  onCancelPrayer?: () => void;
 }
 
 export const ComposerBar = ({
@@ -49,6 +58,7 @@ export const ComposerBar = ({
   onClearAttachment,
   onPickImage,
   onTakePhoto,
+  onPickFile,
   uploading,
   replyTo,
   onClearReply,
@@ -59,6 +69,9 @@ export const ComposerBar = ({
   readOnlyText,
   onCreatePoll,
   onShareEvent,
+  prayerMode = false,
+  onStartPrayer,
+  onCancelPrayer,
 }: Props) => {
   // Hooki ZAWSZE przed warunkowym returnem (prawo pisania zmienia się po wczytaniu rozmowy).
   const [recording, setRecording] = useState(false);
@@ -93,8 +106,10 @@ export const ComposerBar = ({
   const actions: { key: string; label: string; Icon: typeof ImageIcon; tint: string; bg: string; onPress: () => void }[] = [
     { key: "image", label: "Zdjęcie", Icon: ImageIcon, tint: "#2A2312", bg: "#ECE8DE", onPress: onPickImage },
     { key: "camera", label: "Aparat", Icon: Camera, tint: "#2A2312", bg: "#ECE8DE", onPress: onTakePhoto },
+    ...(onPickFile ? [{ key: "file", label: "Plik", Icon: Paperclip, tint: "#2A2312", bg: "#ECE8DE", onPress: onPickFile }] : []),
     ...(onCreatePoll ? [{ key: "poll", label: "Ankieta", Icon: BarChart3, tint: "#2A2312", bg: "#ECE8DE", onPress: onCreatePoll }] : []),
-    ...(onShareEvent ? [{ key: "event", label: "Wydarzenie", Icon: Calendar, tint: "#8A6606", bg: "#FFF1C2", onPress: onShareEvent }] : []),
+    ...(onShareEvent ? [{ key: "event", label: "Wydarzenie", Icon: Calendar, tint: "#2A2312", bg: "#ECE8DE", onPress: onShareEvent }] : []),
+    ...(onStartPrayer ? [{ key: "prayer", label: "Prośba o modlitwę", Icon: HeartHandshake, tint: "#2A2312", bg: "#ECE8DE", onPress: onStartPrayer }] : []),
   ];
   const runAction = (fn: () => void) => {
     setShowActions(false);
@@ -130,7 +145,38 @@ export const ComposerBar = ({
         borderTopColor: "#E6E1D5",
       }}
     >
-      {replyTo && !editing ? (
+      {prayerMode ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingTop: 8 }}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              borderRadius: 12,
+              backgroundColor: "#FFF1C2",
+              paddingHorizontal: 10,
+              paddingVertical: 8,
+            }}
+          >
+            <HeartHandshake size={13} color="#8A6606" />
+            <Text style={{ flex: 1, fontSize: 12, color: "#8A6606", fontFamily: "Manrope_700Bold" }}>
+              Prośba o modlitwę – wpisz treść i wyślij
+            </Text>
+          </View>
+          <Pressable
+            onPress={onCancelPrayer}
+            hitSlop={10}
+            style={{ padding: 4 }}
+            accessibilityRole="button"
+            accessibilityLabel="Anuluj prośbę o modlitwę"
+          >
+            <X size={16} color="#6E685A" />
+          </Pressable>
+        </View>
+      ) : null}
+
+      {replyTo && !editing && !prayerMode ? (
         <View
           style={{
             flexDirection: "row",
@@ -169,7 +215,7 @@ export const ComposerBar = ({
               }}
               numberOfLines={1}
             >
-              {replyTo.content || "(załącznik)"}
+              {previewText(replyTo) || "Wiadomość"}
             </Text>
           </View>
           <Pressable onPress={onClearReply} hitSlop={10} style={{ padding: 4 }}>
@@ -256,9 +302,11 @@ export const ComposerBar = ({
           paddingVertical: 10,
         }}
       >
-        {!editing ? (
+        {!editing && !prayerMode ? (
           <Pressable
             onPress={() => setShowActions(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Dodaj zdjęcie, ankietę, wydarzenie albo prośbę o modlitwę"
             disabled={uploading}
             hitSlop={6}
             style={{
@@ -295,17 +343,21 @@ export const ComposerBar = ({
             color: "#2A2312",
             fontFamily: "Manrope_400Regular",
           }}
-          placeholder={editing ? "Edytuj…" : uploading ? "Wgrywanie…" : "Napisz wiadomość…"}
+          placeholder={
+            editing ? "Edytuj…" : uploading ? "Wgrywanie…" : prayerMode ? "Treść prośby o modlitwę…" : "Napisz wiadomość…"
+          }
           placeholderTextColor="#6E685A"
           value={text}
           onChangeText={onChangeText}
           multiline
           editable={!sending && !uploading}
         />
-        {!editing && !canSend && onSendVoice ? (
+        {!editing && !prayerMode && !canSend && onSendVoice ? (
           <Pressable
             onPress={() => setRecording(true)}
             disabled={sending || uploading}
+            accessibilityRole="button"
+            accessibilityLabel="Nagraj wiadomość głosową"
             style={{
               width: 44,
               height: 44,
@@ -326,6 +378,8 @@ export const ComposerBar = ({
           <Pressable
             onPress={onSend}
             disabled={sending || !canSend}
+            accessibilityRole="button"
+            accessibilityLabel={editing ? "Zapisz zmiany" : "Wyślij"}
             style={{ opacity: canSend ? 1 : 0.4 }}
           >
             {sending || uploading ? (

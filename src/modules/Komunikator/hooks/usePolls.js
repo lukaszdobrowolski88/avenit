@@ -22,10 +22,9 @@ export default function usePolls(conversationId, userEmail) {
         throw error;
       }
 
-      const grouped = (data || []).reduce((acc, v) => {
-        (acc[v.message_id] = acc[v.message_id] || []).push(v);
-        return acc;
-      }, {});
+      // Każda pobrana ankieta dostaje świeżą listę (także pustą — po wycofaniu ostatniego głosu).
+      const grouped = Object.fromEntries(messageIds.map(id => [id, []]));
+      (data || []).forEach(v => { (grouped[v.message_id] = grouped[v.message_id] || []).push(v); });
       setVotes(prev => ({ ...prev, ...grouped }));
     } catch (err) {
       console.error('Error fetching poll votes:', err);
@@ -120,6 +119,10 @@ export default function usePolls(conversationId, userEmail) {
     const channel = supabase
       .channel(`poll-votes-${conversationId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, (payload) => {
+        // Niepełny wiersz (np. zapis bez pełnego RETURNING ze starszej wersji aplikacji) — dociągnij.
+        const row = payload?.new || payload?.old;
+        const partial = payload?.eventType === 'DELETE' ? !row?.id : !(row?.id && row?.option_id && row?.user_email);
+        if (row?.message_id && partial) { fetchVotes([row.message_id]); return; }
         if (payload?.eventType === 'INSERT' && payload.new?.message_id) {
           const v = payload.new;
           setVotes(prev => {
@@ -137,7 +140,7 @@ export default function usePolls(conversationId, userEmail) {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [conversationId]);
+  }, [conversationId, fetchVotes]);
 
   return { votes, fetchVotes, castVote, getResults };
 }

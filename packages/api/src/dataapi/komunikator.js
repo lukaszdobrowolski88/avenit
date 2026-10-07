@@ -105,6 +105,33 @@ async function conversationOf(db, convId) {
   return rows[0] || null;
 }
 
+// Strażnik duplikatów rozmów 1:1: druga rozmowa „direct” tej samej pary osób nie powstaje.
+// Dawniej każde kliknięcie „Nowa rozmowa” zakładało kolejną (pustą) rozmowę z tą samą osobą —
+// wiadomości rozjeżdżały się między duplikaty. Klienci najpierw szukają istniejącej rozmowy;
+// to zabezpieczenie na wyścigi i starsze wersje aplikacji. Świeżo założona pusta rozmowa
+// (bez uczestników, niewidoczna dla nikogo) jest sprzątana, a klient dostaje 409 DIRECT_EXISTS.
+async function assertNoOtherDirect(db, convId, emails) {
+  const pair = [...new Set(emails.map(lower).filter(Boolean))];
+  if (pair.length !== 2) return;
+  const { rows } = await db.query(
+    `SELECT d.id FROM conversations d
+      WHERE d.type = 'direct' AND d.id::text <> $1
+        AND (SELECT count(DISTINCT lower(p.user_email)) FROM conversation_participants p
+              WHERE p.conversation_id = d.id AND lower(p.user_email) = ANY($2::text[])) = 2
+      LIMIT 1`,
+    [String(convId), pair]
+  );
+  if (!rows[0]) return;
+  await db.query(
+    `DELETE FROM conversations e
+      WHERE e.id::text = $1 AND e.type = 'direct'
+        AND NOT EXISTS (SELECT 1 FROM conversation_participants p WHERE p.conversation_id = e.id)
+        AND NOT EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = e.id)`,
+    [String(convId)]
+  ).catch(() => undefined);
+  throw new ApiError(409, 'Rozmowa z tą osobą już istnieje', 'DIRECT_EXISTS');
+}
+
 async function inMinistry(db, ministryKey, emails) {
   const table = MINISTRY_TABLES[ministryKey];
   if (!table || !emails.length) return false;
@@ -163,7 +190,11 @@ export async function enforceConversationWrite(q, req) {
       const role = (await isMember(db, convId, me))?.role;
       if (role === 'admin') continue;
       // Nowa rozmowa (0 uczestników) — pierwszy skład dodaje wyłącznie jej twórca.
-      if (conv.n === 0 && lower(conv.created_by) === me) continue;
+      // Rozmowa 1:1: tylko jeśli z tą osobą nie ma już innej rozmowy (bez duplikatów).
+      if (conv.n === 0 && lower(conv.created_by) === me) {
+        if (conv.type === 'direct') await assertNoOtherDirect(db, convId, [...emails, me]);
+        continue;
+      }
       if (conv.type === 'ministry' && (await inMinistry(db, conv.ministry_key, [...emails, me]))) {
         // Synchronizacja kanału służby: dopisujemy wyłącznie członków tego zespołu, bez ról admina.
         for (const r of rows) if (String(r.conversation_id) === convId) r.role = 'member';

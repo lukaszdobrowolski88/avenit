@@ -99,6 +99,41 @@ test('zmiana roli uczestnika — zakres zawężony do administratora rozmowy', a
   assert.match(own.__ownerScope.update('t', () => 1), /lower\(t\."user_email"\)/);
 });
 
+test('rozmowa 1:1: druga z tą samą osobą nie powstaje (409 DIRECT_EXISTS, pusta rozmowa sprzątnięta)', async () => {
+  const calls = [];
+  const db = { query: async (sql, params) => {
+    calls.push({ sql, params });
+    if (sql.includes('FROM conversations c')) return { rows: [{ id: 'new', type: 'direct', n: 0, created_by: 'jan@kosciol.pl' }] };
+    if (sql.includes('FROM conversations d')) return { rows: [{ id: 'old' }] };
+    return { rows: [] };
+  } };
+  const q = { table: 'conversation_participants', op: 'insert', values: [
+    { conversation_id: 'new', user_email: 'Jan@Kosciol.pl', role: 'admin' },
+    { conversation_id: 'new', user_email: 'ola@x.pl', role: 'admin' },
+  ] };
+  await assert.rejects(enforceConversationWrite(q, req(db)), (e) => e.status === 409 && e.code === 'DIRECT_EXISTS');
+  const lookup = calls.find((c) => c.sql.includes('FROM conversations d'));
+  assert.deepEqual(lookup.params, ['new', ['jan@kosciol.pl', 'ola@x.pl']]);
+  assert.ok(calls.some((c) => c.sql.includes('DELETE FROM conversations e') && c.params[0] === 'new'));
+});
+
+test('rozmowa 1:1: pierwsza z daną osobą i grupy — bez strażnika duplikatów', async () => {
+  const seen = [];
+  const mk = (type) => ({ query: async (sql) => {
+    seen.push(sql);
+    if (sql.includes('FROM conversations c')) return { rows: [{ id: 'n1', type, n: 0, created_by: 'jan@kosciol.pl' }] };
+    return { rows: [] };
+  } });
+  await enforceConversationWrite({ table: 'conversation_participants', op: 'insert', values: [
+    { conversation_id: 'n1', user_email: 'jan@kosciol.pl' }, { conversation_id: 'n1', user_email: 'ola@x.pl' },
+  ] }, req(mk('direct')));
+  seen.length = 0;
+  await enforceConversationWrite({ table: 'conversation_participants', op: 'insert', values: [
+    { conversation_id: 'n1', user_email: 'jan@kosciol.pl' }, { conversation_id: 'n1', user_email: 'ola@x.pl' },
+  ] }, req(mk('group')));
+  assert.ok(!seen.some((s) => s.includes('FROM conversations d')));
+});
+
 test('stara rozmowa (rola uczestnika NULL) — wiadomość przechodzi', async () => {
   const db = fakeDb([
     ['FROM conversations c', () => [{ id: 'c9', type: 'direct', posting_policy: 'everyone', n: 2 }]],
@@ -107,4 +142,15 @@ test('stara rozmowa (rola uczestnika NULL) — wiadomość przechodzi', async ()
   const q = { table: 'messages', op: 'insert', values: { conversation_id: 'c9', content: 'hej' } };
   await enforceConversationWrite(q, req(db));
   assert.equal(q.values.sender_email, 'Jan@Kosciol.pl');
+});
+
+test('powiadomienie o wiadomości: link działa w webie i w aplikacji, podgląd opisuje załączniki', async () => {
+  const { messageLink, messagePreview } = await import('../src/realtime/push-hooks.js');
+  assert.equal(messageLink('c1-uuid'), '/komunikator?conversation=c1-uuid');
+  assert.equal(messagePreview({ content: '  hej\n tam ' }), 'hej tam');
+  assert.equal(messagePreview({ content: '', attachments: [{ type: 'image/jpeg' }] }), '📷 Zdjęcie');
+  assert.equal(messagePreview({ content: '', attachments: JSON.stringify([{ type: 'audio/webm', isVoiceMessage: true }]) }), '🎤 Wiadomość głosowa');
+  assert.equal(messagePreview({ content: '', attachments: [{ name: 'plan.pdf', type: 'application/pdf' }] }), '📎 plan.pdf');
+  assert.equal(messagePreview({ content: '', attachments: {} }), 'Nowa wiadomość');
+  assert.equal(messagePreview({ message_type: 'prayer', content: 'Za chorych' }), '🙏 Za chorych');
 });

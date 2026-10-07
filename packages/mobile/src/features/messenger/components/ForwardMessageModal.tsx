@@ -12,6 +12,7 @@ import {
 import { Check, Hash, Search, Users as UsersIcon, X } from "lucide-react-native";
 import {
   canPostIn,
+  conversationTitle,
   useConversations,
   useMembersByEmails,
   memberDisplayName,
@@ -135,12 +136,12 @@ export const ForwardMessageModal = ({
       const ministry = c.ministry_key
         ? MINISTRY_CHANNEL_META[c.ministry_key]?.label ?? ""
         : "";
-      return [c.name ?? "", ministry, c.last_message?.content ?? ""]
+      return [c.name ?? "", ministry, conversationTitle(c, members), c.last_message?.content ?? ""]
         .join(" ")
         .toLowerCase()
         .includes(q);
     });
-  }, [data, search, sourceConversationId]);
+  }, [data, search, sourceConversationId, members]);
 
   const toggle = (id: string) => {
     setSelected((s) => {
@@ -287,25 +288,15 @@ export const ForwardMessageModal = ({
               </Text>
             }
             renderItem={({ item }) => {
-              const isMinistry = item.type === "ministry";
-              const meta =
-                isMinistry && item.ministry_key
-                  ? MINISTRY_CHANNEL_META[item.ministry_key]
-                  : null;
-              const last = item.last_message;
-              const title =
-                item.name ||
-                (isMinistry ? meta?.label ?? item.ministry_key : null) ||
-                (item.type === "direct" && item.peer_email
-                  ? memberDisplayName(members, item.peer_email)
-                  : null) ||
-                (last?.sender_email && last.sender_email !== myEmail
-                  ? memberDisplayName(members, last.sender_email)
-                  : "Rozmowa");
+              // Nazwa jak na liście rozmów (kanał służby po służbie, 1:1 po drugiej osobie).
+              const title = conversationTitle(item, members);
               const isSelected = selected.has(item.id);
               return (
                 <Pressable
                   onPress={() => toggle(item.id)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isSelected }}
+                  accessibilityLabel={title}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",

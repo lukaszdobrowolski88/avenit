@@ -7,6 +7,8 @@ import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import { getInitials, stringToColor } from '../../../utils/text';
 import { brandTone } from '../../../lib/brandTone';
+import { toast } from '../../../lib/toast';
+import { openOrCreateDirect } from '../../Komunikator/utils/directConversation';
 
 // Kolory statusów
 const statusColors = {
@@ -128,56 +130,15 @@ export default function OnlineUsersWidget({ userEmail }) {
     };
   }, [fetchUsersWithPresence]);
 
-  // Utwórz lub znajdź konwersację i nawiguj do niej
+  // Otwórz istniejącą rozmowę 1:1 (także z archiwum) albo załóż nową — wspólna logika Komunikatora
+  // (dawniej każde kliknięcie mogło zakładać kolejną pustą rozmowę z tą samą osobą).
   const handleUserClick = async (targetEmail) => {
     try {
-      // Szukaj istniejącej konwersacji direct
-      const { data: existingConvs } = await supabase
-        .from('conversations')
-        .select(`
-          id,
-          conversation_participants!inner (user_email)
-        `)
-        .eq('type', 'direct');
-
-      // Znajdź konwersację, w której są obaj użytkownicy
-      let conversationId = null;
-
-      if (existingConvs) {
-        for (const conv of existingConvs) {
-          const participants = conv.conversation_participants.map(p => p.user_email);
-          if (participants.includes(userEmail) && participants.includes(targetEmail) && participants.length === 2) {
-            conversationId = conv.id;
-            break;
-          }
-        }
-      }
-
-      // Jeśli nie ma konwersacji, utwórz nową
-      if (!conversationId) {
-        const { data: newConv, error: convError } = await supabase
-          .from('conversations')
-          .insert({ type: 'direct' })
-          .select()
-          .single();
-
-        if (convError) throw convError;
-
-        // Dodaj uczestników
-        await supabase
-          .from('conversation_participants')
-          .insert([
-            { conversation_id: newConv.id, user_email: userEmail },
-            { conversation_id: newConv.id, user_email: targetEmail }
-          ]);
-
-        conversationId = newConv.id;
-      }
-
-      // Nawiguj do komunikatora z parametrem conversation
-      navigate(`/komunikator?conversation=${conversationId}`);
+      const { id } = await openOrCreateDirect(userEmail, targetEmail);
+      navigate(`/komunikator?conversation=${id}`);
     } catch (err) {
       console.error('Error opening conversation:', err);
+      toast.error(err, { fallback: tr('Nie udało się otworzyć rozmowy. Spróbuj ponownie.') });
     }
   };
 

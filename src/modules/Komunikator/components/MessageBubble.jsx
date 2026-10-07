@@ -10,16 +10,19 @@ import PrayerCard from './PrayerCard';
 import EventCard from './EventCard';
 import { tr } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
+import { isVoiceAttachment, voiceDurationMs, previewText, mentionsUser, attachmentsOf } from '../utils/chatLogic';
 import { toast } from '../../../lib/toast';
 
-// Podświetl @wzmianki w tekście
-function renderTextWithMentions(text) {
+// Podświetl @wzmianki w tekście (w moim — ciemnym — dymku jasno, żeby było czytelne)
+function renderTextWithMentions(text, isOwn = false) {
   if (!text) return null;
   const parts = text.split(/(@[\p{L}0-9._-]+)/u);
   return parts.map((part, i) => {
     if (part.startsWith('@') && part.length > 1) {
       return (
-        <span key={i} className="font-semibold text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/30 rounded px-0.5">
+        <span key={i} className={isOwn
+          ? 'font-semibold text-white underline decoration-white/40 underline-offset-2'
+          : 'font-semibold text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/30 rounded px-0.5'}>
           {part}
         </span>
       );
@@ -83,7 +86,8 @@ export default function MessageBubble({
 
   const messageType = message.message_type || 'text';
   const isRich = messageType === 'poll' || messageType === 'prayer' || messageType === 'event';
-  const mentionedMe = currentUserEmail && Array.isArray(message.mentions) && message.mentions.includes(currentUserEmail);
+  const mentionedMe = mentionsUser(message, currentUserEmail);
+  const attachments = attachmentsOf(message); // API bywa zwraca {} zamiast []
 
   const handleCopy = async () => {
     setShowMenu(false);
@@ -141,14 +145,14 @@ export default function MessageBubble({
   };
 
   const replyToMessage = message.reply_to_id ? allMessages.find(m => m.id === message.reply_to_id) : null;
-  const isAudioFile = (type) => type?.startsWith('audio/') || false;
 
   const renderAttachment = (attachment, idx) => {
     const iconMap = { 'image': Image, 'file-text': FileText, 'table': Table, 'file': File };
     const IconComponent = iconMap[getFileIcon(attachment.type)] || File;
 
-    if (isAudioFile(attachment.type) || attachment.isVoiceMessage) {
-      return <AudioPlayer key={idx} url={attachment.url} duration={attachment.duration} isOwn={isOwn} />;
+    if (isVoiceAttachment(attachment)) {
+      const ms = voiceDurationMs(attachment);
+      return <AudioPlayer key={idx} url={attachment.url} duration={ms ? ms / 1000 : undefined} isOwn={isOwn} />;
     }
     if (isImageFile(attachment.type)) {
       return (
@@ -232,9 +236,10 @@ export default function MessageBubble({
           ) : (
             <>
               <div className={`px-4 py-2.5 rounded-2xl transition-all duration-200 ${
+                // Jak w aplikacji: moje — słód z białym tekstem, cudze — biała karta na papierze.
                 isOwn
-                  ? 'bg-gradient-to-br from-accent-primary-light to-accent-primary text-white rounded-br-md shadow-lg shadow-accent-primary-light/20'
-                  : 'bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-900 dark:text-gray-100 rounded-bl-md shadow-md border border-gray-100/50 dark:border-gray-700/50'
+                  ? 'bg-gray-800 dark:bg-gray-700 text-white rounded-br-md shadow-sm'
+                  : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md shadow-sm border border-gray-100 dark:border-gray-700/50'
                 } ${isPinned ? 'ring-2 ring-yellow-400/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-900' : ''} ${mentionedMe && !isOwn ? 'ring-2 ring-accent-primary-light/50' : ''}`}>
                 {message.forwarded_from && (
                   <div className={`flex items-center gap-1.5 mb-2 text-xs ${isOwn ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
@@ -251,18 +256,18 @@ export default function MessageBubble({
                       {replyToMessage.sender?.full_name || replyToMessage.sender_email}
                     </p>
                     <p className={`text-xs line-clamp-2 ${isOwn ? 'text-white/70' : 'text-gray-600 dark:text-gray-400'}`}>
-                      {replyToMessage.content || (replyToMessage.attachments?.length > 0 ? tr('📎 Załącznik') : '')}
+                      {previewText(replyToMessage, tr)}
                     </p>
                   </div>
                 )}
 
                 {message.content && (
-                  <p className="whitespace-pre-wrap break-words">{renderTextWithMentions(message.content)}</p>
+                  <p className="whitespace-pre-wrap break-words">{renderTextWithMentions(message.content, isOwn)}</p>
                 )}
 
-                {message.attachments && message.attachments.length > 0 && (
-                  <div className="mt-2 space-y-2">
-                    {message.attachments.map((att, idx) => renderAttachment(att, idx))}
+                {attachments.length > 0 && (
+                  <div className={`${message.content ? 'mt-2' : ''} space-y-2`}>
+                    {attachments.map((att, idx) => renderAttachment(att, idx))}
                   </div>
                 )}
               </div>

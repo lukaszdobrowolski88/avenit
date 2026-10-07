@@ -22,10 +22,8 @@ export default function usePrayer(conversationId, userEmail) {
         throw error;
       }
 
-      const grouped = (data || []).reduce((acc, r) => {
-        (acc[r.message_id] = acc[r.message_id] || []).push(r);
-        return acc;
-      }, {});
+      const grouped = Object.fromEntries(messageIds.map(id => [id, []]));
+      (data || []).forEach(r => { (grouped[r.message_id] = grouped[r.message_id] || []).push(r); });
       setResponses(prev => ({ ...prev, ...grouped }));
     } catch (err) {
       console.error('Error fetching prayer responses:', err);
@@ -84,6 +82,10 @@ export default function usePrayer(conversationId, userEmail) {
     const channel = supabase
       .channel(`prayer-responses-${conversationId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'prayer_responses' }, (payload) => {
+        // Niepełny wiersz (np. zapis bez pełnego RETURNING ze starszej wersji aplikacji) — dociągnij.
+        const row = payload?.new || payload?.old;
+        const partial = payload?.eventType === 'DELETE' ? !row?.id : !(row?.id && row?.user_email);
+        if (row?.message_id && partial) { fetchResponses([row.message_id]); return; }
         if (payload?.eventType === 'INSERT' && payload.new?.message_id) {
           const r = payload.new;
           setResponses(prev => {
@@ -101,7 +103,7 @@ export default function usePrayer(conversationId, userEmail) {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [conversationId]);
+  }, [conversationId, fetchResponses]);
 
   return { responses, fetchResponses, togglePraying, getForMessage };
 }

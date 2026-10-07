@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../../lib/supabase";
-import type { MessageRow } from "../api";
+import { getActiveConversation } from "../../../lib/sounds";
+import { applyMessageToConversations, type MessageRow } from "../api";
 
 /**
  * Realtime dla pojedynczej konwersacji:
@@ -142,9 +143,9 @@ export const useRealtimeMessages = (conversationId: string) => {
 };
 
 /**
- * Realtime dla listy konwersacji + presence — wystarczy nasłuchiwać INSERT na messages
- * (dla każdej konwersacji w której jestem) i invalidować cache.
- * Subskrypcja "głobalna" — bez filtra, bo RLS i tak ogranicza do widzialnych wierszy.
+ * Realtime dla listy rozmów (jak web): nowa wiadomość od razu podnosi rozmowę na górę, zmienia
+ * podgląd, zwiększa licznik (gdy rozmowa nie jest otwarta) i wyjmuje ją z archiwum; potem pełne
+ * odświeżenie. Serwer wysyła zdarzenia tylko uczestnikom rozmowy (filtr kanału nie jest stosowany).
  */
 export const useRealtimeConversations = (userEmail: string | null) => {
   const qc = useQueryClient();
@@ -165,6 +166,16 @@ export const useRealtimeConversations = (userEmail: string | null) => {
           schema: "public",
           table: "messages",
         },
+        (payload) => {
+          const msg = payload.new as MessageRow | null;
+          if (msg?.conversation_id) applyMessageToConversations(qc, userEmail, msg, getActiveConversation());
+          qc.invalidateQueries({ queryKey: ["conversations", userEmail] });
+        },
+      )
+      // Edycja / usunięcie wiadomości — podgląd ostatniej wiadomości mógł się zmienić.
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages" },
         () => {
           qc.invalidateQueries({ queryKey: ["conversations", userEmail] });
         },
