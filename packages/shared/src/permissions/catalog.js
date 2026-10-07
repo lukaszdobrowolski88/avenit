@@ -375,8 +375,13 @@ export const MODULES = [
     tabs: [], actions: [], fields: [],
   },
   {
-    key: 'serve', label: 'Służba',
-    resources: ['volunteer_blockouts', 'song_usage'],
+    key: 'serve', label: 'Dostępność',
+    resources: ['volunteer_blockouts'],
+    tabs: [], actions: [], fields: [],
+  },
+  {
+    key: 'analytics', label: 'Analityka',
+    resources: ['song_usage'],
     tabs: [], actions: [], fields: [],
   },
   {
