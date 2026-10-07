@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, clearUserCache } from '../lib/supabase';
-import { setBiometricEnabled } from '../lib/biometric';
 import type { AuthUser as User, AuthSession as Session } from '../lib/auth';
 
 interface AuthContextType {
@@ -78,7 +77,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     clearUserCache();
-    await setBiometricEnabled(false).catch(() => undefined);
+    // Wyboru biometrii NIE kasujemy przy wylogowaniu — jest zapamiętany per konto (biometric.ts),
+    // więc po ponownym zalogowaniu tym samym kontem nie pytamy znowu; bez sesji nic nie odblokowuje.
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

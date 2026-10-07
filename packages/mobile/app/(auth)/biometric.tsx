@@ -7,6 +7,8 @@ import {
   getBiometricCapability,
   setBiometricEnabled,
   authenticateWithBiometric,
+  wasBiometricAsked,
+  markBiometricAsked,
 } from '../../src/lib/biometric';
 
 export default function BiometricScreen() {
@@ -15,8 +17,9 @@ export default function BiometricScreen() {
   const [hint, setHint] = useState('Face ID / Touch ID');
 
   useEffect(() => {
-    getBiometricCapability().then((cap) => {
-      setAvailable(cap.available);
+    // To konto już zdecydowało (włączone albo „Nie teraz”) — nie pytamy przy każdym logowaniu.
+    Promise.all([getBiometricCapability(), wasBiometricAsked()]).then(([cap, asked]) => {
+      setAvailable(cap.available && !asked);
       if (cap.types.length > 0) {
         const labels: string[] = [];
         for (const t of cap.types) {
@@ -40,10 +43,13 @@ export default function BiometricScreen() {
     if (ok) {
       await setBiometricEnabled(true);
     }
+    await markBiometricAsked();
     router.replace('/(app)/dashboard');
   };
 
-  const skip = () => {
+  const skip = async () => {
+    // „Nie teraz” też zapamiętujemy — włączyć można później w Koncie.
+    await markBiometricAsked();
     router.replace('/(app)/dashboard');
   };
 
