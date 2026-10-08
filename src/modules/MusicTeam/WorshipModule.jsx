@@ -6,7 +6,7 @@ import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { Plus, Search, Trash2, X, FileText, Music, Calendar, ChevronDown, Check, ChevronUp, User, UserX, Link as LinkIcon, Clock, History, ExternalLink, Minus, Hash, DollarSign, ChevronLeft, ChevronRight, Tag, Upload, FileDown, MessageSquare, Download, Play, Pause, Volume2, Users, FolderOpen, Package, Send } from 'lucide-react';
+import { Plus, Search, Trash2, X, FileText, Music, Calendar, ChevronDown, Check, ChevronUp, User, UserX, Link as LinkIcon, Clock, History, ExternalLink, Minus, Hash, DollarSign, ChevronLeft, ChevronRight, Tag, Upload, FileDown, MessageSquare, Download, Play, Pause, Volume2, Users, FolderOpen, Package, Send, CalendarPlus, Pencil } from 'lucide-react';
 import SongForm from './SongForm';
 import { AddSongToProgramModal, ProgramsSongsManagerModal } from './ProgramSuggestionsModals';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
@@ -736,6 +736,387 @@ const formatChordsForPDF = (htmlContent, baseFontSize = 14) => {
 
   processTextNodes(tempDiv);
   return tempDiv.innerHTML;
+};
+
+// Ikony dla ścieżek instrumentów
+const MicIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+    <line x1="12" y1="19" x2="12" y2="22"/>
+  </svg>
+);
+
+const DrumIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="12" r="3"/>
+    <line x1="12" y1="2" x2="12" y2="9"/>
+    <line x1="12" y1="15" x2="12" y2="22"/>
+  </svg>
+);
+
+const BassIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 18V5l12-2v13"/>
+    <circle cx="6" cy="18" r="3"/>
+    <circle cx="18" cy="16" r="3"/>
+  </svg>
+);
+
+const GuitarIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m11.9 12.1 4.514-4.514"/>
+    <path d="M20.1 2.3a1 1 0 0 0-1.4 0l-1.114 1.114A1 1 0 0 0 17.3 4.5l1.8 1.8a1 1 0 0 0 1.086.287l1.114-.115a1 1 0 0 0 0-1.414Z"/>
+    <path d="m6 16 2 2"/>
+    <path d="M8.2 9.9C8.7 8.8 9.8 8 11 8c2.8 0 5 2.2 5 5 0 1.2-.8 2.3-1.9 2.8l-.9.4A2 2 0 0 0 12 18a4 4 0 0 1-4 4c-3.3 0-6-2.7-6-6a4 4 0 0 1 4-4 2 2 0 0 0 1.8-1.2Z"/>
+  </svg>
+);
+
+// Zaawansowany odtwarzacz MP3 z pitch shift (bez zmiany tempa) i kontrolą ścieżek.
+// Przywrócony: sprzątanie w PR5 (a2f0726) usunęło definicję, a szczegóły pieśni dalej go używają —
+// otwarcie pieśni z załącznikiem MP3 kończyło się błędem „AudioPlayer is not defined”.
+const AudioPlayer = ({ url, name }) => {
+  const audioContextRef = useRef(null);
+  const shifterRef = useRef(null);
+  const gainNodeRef = useRef(null);
+  const animationRef = useRef(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [pitchShift, setPitchShift] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [showStemControls, setShowStemControls] = useState(false);
+
+  // Głośności ścieżek (0-100)
+  const [stemVolumes, setStemVolumes] = useState({
+    vocals: 100,
+    drums: 100,
+    bass: 100,
+    other: 100
+  });
+
+  // Czy ścieżki są włączone
+  const [stemEnabled, setStemEnabled] = useState({
+    vocals: true,
+    drums: true,
+    bass: true,
+    other: true
+  });
+
+  // Inicjalizacja AudioContext
+  const initAudioContext = () => {
+    if (!audioContextRef.current) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioContextRef.current = new AudioContextClass();
+    }
+    return audioContextRef.current;
+  };
+
+  // Załaduj audio z SoundTouchJS
+  const loadAudio = async () => {
+    if (!url || isReady) return;
+
+    setIsLoading(true);
+    try {
+      const ctx = initAudioContext();
+
+      // Pobierz audio
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+
+      // Utwórz PitchShifter z SoundTouchJS
+      shifterRef.current = new PitchShifter(ctx, arrayBuffer, 16384);
+      shifterRef.current.tempo = 1.0;
+      shifterRef.current.pitch = 1.0;
+
+      // Gain node
+      gainNodeRef.current = ctx.createGain();
+      gainNodeRef.current.connect(ctx.destination);
+
+      // Podłącz shifter do gain
+      shifterRef.current.connect(gainNodeRef.current);
+
+      setDuration(shifterRef.current.duration);
+      setIsReady(true);
+
+      // Callback dla aktualizacji czasu
+      shifterRef.current.on('play', (detail) => {
+        setCurrentTime(detail.timePlayed);
+      });
+
+    } catch (err) {
+      console.error('Błąd ładowania audio:', err);
+    }
+    setIsLoading(false);
+  };
+
+  // Aktualizacja pitch
+  useEffect(() => {
+    if (shifterRef.current) {
+      const pitchFactor = Math.pow(2, pitchShift / 12);
+      shifterRef.current.pitch = pitchFactor;
+    }
+  }, [pitchShift]);
+
+  // Animacja czasu
+  useEffect(() => {
+    if (isPlaying && shifterRef.current) {
+      const updateTime = () => {
+        if (shifterRef.current) {
+          setCurrentTime(shifterRef.current.timePlayed || 0);
+          if (shifterRef.current.timePlayed >= duration) {
+            setIsPlaying(false);
+            setCurrentTime(0);
+            shifterRef.current.percentagePlayed = 0;
+          } else {
+            animationRef.current = requestAnimationFrame(updateTime);
+          }
+        }
+      };
+      animationRef.current = requestAnimationFrame(updateTime);
+    }
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isPlaying, duration]);
+
+  const togglePlay = async () => {
+    // Załaduj audio jeśli nie gotowe
+    if (!isReady) {
+      await loadAudio();
+    }
+
+    const ctx = audioContextRef.current;
+    const shifter = shifterRef.current;
+
+    if (!ctx || !shifter) return;
+
+    // Resume context jeśli suspended
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+
+    if (isPlaying) {
+      shifter.disconnect();
+      setIsPlaying(false);
+    } else {
+      shifter.connect(gainNodeRef.current);
+      setIsPlaying(true);
+    }
+  };
+
+  const handleSeek = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(x / rect.width, 1));
+
+    if (shifterRef.current) {
+      shifterRef.current.percentagePlayed = percentage;
+      setCurrentTime(percentage * duration);
+    }
+  };
+
+  const formatTime = (time) => {
+    if (isNaN(time)) return '0:00';
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const changePitch = (delta) => {
+    setPitchShift(prev => Math.max(-12, Math.min(12, prev + delta)));
+  };
+
+  const resetPitch = () => {
+    setPitchShift(0);
+  };
+
+  const getPitchLabel = () => {
+    if (pitchShift === 0) return tr('Oryginał');
+    const sign = pitchShift > 0 ? '+' : '';
+    return `${sign}${pitchShift} półton${Math.abs(pitchShift) === 1 ? '' : pitchShift >= 2 && pitchShift <= 4 ? 'y' : 'ów'}`;
+  };
+
+  const toggleStem = (stem) => {
+    setStemEnabled(prev => ({ ...prev, [stem]: !prev[stem] }));
+  };
+
+  const changeStemVolume = (stem, value) => {
+    setStemVolumes(prev => ({ ...prev, [stem]: value }));
+  };
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      if (shifterRef.current) {
+        shifterRef.current.disconnect();
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  const stemConfig = [
+    { key: 'vocals', label: 'Wokal', icon: MicIcon, color: 'pink' },
+    { key: 'drums', label: 'Perkusja', icon: DrumIcon, color: 'orange' },
+    { key: 'bass', label: 'Bas', icon: BassIcon, color: 'purple' },
+    { key: 'other', label: tr('Inne'), icon: GuitarIcon, color: 'blue' }
+  ];
+
+  return (
+    <div className="mt-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-purple-50 dark:from-gray-700 dark:to-gray-700 rounded-xl border border-accent-primary-lighter dark:border-gray-600">
+      {/* Główne kontrolki */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={togglePlay}
+          disabled={isLoading}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-accent-primary dark:bg-accent-primary-light text-white shadow-lg shadow-accent-primary-light/30 hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50"
+        >
+          {isLoading ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : isPlaying ? (
+            <Pause size={18} />
+          ) : (
+            <Play size={18} className="ml-0.5" />
+          )}
+        </button>
+
+        <div className="flex-1">
+          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+            <span className="flex items-center gap-1">
+              <Volume2 size={12} />
+              {name || 'Odtwarzacz MP3'}
+            </span>
+            <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
+          </div>
+          <div
+            className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full cursor-pointer overflow-hidden"
+            onClick={handleSeek}
+          >
+            <div
+              className="h-full bg-gradient-to-r from-accent-primary-light to-purple-500 rounded-full transition-all duration-100"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Kontrolki zmiany tonacji */}
+      <div className="mt-3 pt-3 border-t border-accent-primary-lighter dark:border-gray-600">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-300 flex items-center gap-1">
+            <Music size={12} />
+            Tonacja:
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => changePitch(-1)}
+              disabled={pitchShift <= -12}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-500 transition disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold"
+            >
+              −
+            </button>
+            <button
+              onClick={resetPitch}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition min-w-[80px] ${
+                pitchShift === 0
+                  ? 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
+                  : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark/50'
+              }`}
+            >
+              {getPitchLabel()}
+            </button>
+            <button
+              onClick={() => changePitch(1)}
+              disabled={pitchShift >= 12}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-500 transition disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-center">
+          Zmiana tonacji bez zmiany tempa
+        </p>
+      </div>
+
+      {/* Przycisk rozwijania kontrolek ścieżek */}
+      <div className="mt-3 pt-3 border-t border-accent-primary-lighter dark:border-gray-600">
+        <button
+          onClick={() => setShowStemControls(!showStemControls)}
+          className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-gray-600 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500 transition"
+        >
+          <span className="flex items-center gap-2">
+            <Users size={14} />
+            {tr('Kontrola instrumentów')}
+          </span>
+          <ChevronDown size={14} className={`transform transition ${showStemControls ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Panel kontroli ścieżek */}
+        {showStemControls && (
+          <div className="mt-3 space-y-2">
+            {stemConfig.map(({ key, label, icon: Icon, color }) => (
+              <div key={key} className="flex items-center gap-3 p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                <button
+                  onClick={() => toggleStem(key)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition ${
+                    stemEnabled[key]
+                      ? `bg-${color}-100 dark:bg-${color}-900/30 text-${color}-600 dark:text-${color}-400`
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                  }`}
+                  style={{
+                    backgroundColor: stemEnabled[key]
+                      ? (color === 'pink' ? '#fce7f3' : color === 'orange' ? '#ffedd5' : color === 'purple' ? '#f3e8ff' : '#dbeafe')
+                      : undefined,
+                    color: stemEnabled[key]
+                      ? (color === 'pink' ? '#db2777' : color === 'orange' ? '#ea580c' : color === 'purple' ? '#9333ea' : '#2563eb')
+                      : undefined
+                  }}
+                >
+                  <Icon size={16} />
+                </button>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{label}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{stemVolumes[key]}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={stemEnabled[key] ? stemVolumes[key] : 0}
+                    onChange={(e) => changeStemVolume(key, parseInt(e.target.value))}
+                    disabled={!stemEnabled[key]}
+                    className="w-full h-1.5 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: stemEnabled[key]
+                        ? `linear-gradient(to right, ${color === 'pink' ? '#ec4899' : color === 'orange' ? '#f97316' : color === 'purple' ? '#a855f7' : '#3b82f6'} 0%, ${color === 'pink' ? '#ec4899' : color === 'orange' ? '#f97316' : color === 'purple' ? '#a855f7' : '#3b82f6'} ${stemVolumes[key]}%, #e5e7eb ${stemVolumes[key]}%, #e5e7eb 100%)`
+                        : undefined
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center pt-2">
+              Wymaga oddzielnych ścieżek audio (vocals, drums, bass, other)
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 function SongDetailsModal({ song, onClose, onEdit }) {
@@ -1610,17 +1991,6 @@ export default function WorshipModule() {
     fetchData({ quiet: true });
   };
 
-  const removeTagFromSong = async (songId, tagToRemove) => {
-    const song = songs.find(s => s.id === songId);
-    if (!song) return;
-
-    const updatedTags = (song.tags || []).filter(t => t !== tagToRemove);
-
-    const { error } = await supabase.from('songs').update({ tags: updatedTags }).eq('id', songId);
-    if (error) { toast.error(error, { fallback: tr('Nie udało się usunąć tagu z pieśni.') }); return; }
-    setSongs(prev => prev.map(s => s.id === songId ? { ...s, tags: updatedTags } : s));
-  };
-
   // Zmiana nazwy tagu we wszystkich pieśniach
   const renameTagGlobally = async (oldTag, newTag) => {
     if (!newTag.trim() || oldTag === newTag) return;
@@ -1832,49 +2202,59 @@ export default function WorshipModule() {
           <THead>
             <tr>
               <TH>{tr('Tytuł')}</TH>
-              <TH>{tr('Autor')}</TH>
-              <TH>{tr('Tonacja')}</TH>
-              <TH>{tr('Tempo')}</TH>
+              <TH className="w-24">{tr('Tonacja')}</TH>
+              <TH className="w-24">{tr('Tempo')}</TH>
               <TH>{tr('Tagi')}</TH>
               <TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH>
             </tr>
           </THead>
           <tbody>
-            {filteredSongs.map(s => (
-              <TR key={s.id}>
-                <TD className="font-semibold text-gray-900 dark:text-white">
-                  <button type="button" onClick={() => setShowSongDetails(s)} className="text-left hover:text-accent-primary dark:hover:text-accent-primary-light hover:underline">{s.title}</button>
+            {filteredSongs.map(s => {
+              // Najwyżej 3 tagi w wierszu (reszta jako „+N” z podpowiedzią) — wiersze mają równą wysokość.
+              const tags = Array.isArray(s.tags) ? s.tags : [];
+              const shown = tags.slice(0, 3);
+              const rest = tags.slice(3);
+              return (
+              <TR key={s.id} onClick={() => setShowSongDetails(s)}>
+                <TD className="min-w-[200px]">
+                  <div className="font-semibold text-gray-900 dark:text-white leading-snug">{s.title}</div>
+                  {s.author && <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{s.author}</div>}
                 </TD>
-                <TD muted>{s.author || ''}</TD>
                 <TD className="tabular-nums font-bold text-accent-primary dark:text-accent-primary-light">{s.key || ''}</TD>
                 <TD muted numeric>{s.tempo || ''}</TD>
                 <TD>
+                  {/* Tło pigułki półprzezroczyste: zostaje widoczne na podświetlonym wierszu (pełny beż zlewał się z hoverem). */}
                   <div className="flex gap-1 flex-wrap">
-                    {Array.isArray(s.tags) && s.tags.length > 0 ? s.tags.map((tag, i) => (
-                      <span key={i} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-2 py-0.5 text-xs rounded-full text-accent-primary-dark dark:text-accent-primary-light font-medium flex items-center gap-1 group">
-                        {tag}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); removeTagFromSong(s.id, tag); }}
-                          className="opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-red-500 transition-opacity"
-                          title={t('Usuń tag')}
-                          aria-label={tr('Usuń tag {tag} z pieśni {title}', { tag, title: s.title })}
-                        >
-                          <X size={12} aria-hidden="true" />
-                        </button>
-                      </span>
-                    )) : null}
+                    {shown.map((tag, i) => (
+                      <span key={i} className="px-2 py-0.5 text-xs rounded-full font-medium whitespace-nowrap bg-[rgba(42,35,18,0.06)] text-gray-700 dark:bg-white/[0.08] dark:text-gray-200">{tag}</span>
+                    ))}
+                    {rest.length > 0 && (
+                      <span className="px-1.5 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400" title={rest.join(', ')}>+{rest.length}</span>
+                    )}
                   </div>
                 </TD>
                 <TD align="right">
-                  <div className="flex justify-end items-center gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
-                    <button onClick={() => setShowSongDetails(s)} className="text-gray-800 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">{t('Szczegóły')}</button>
-                    <button onClick={() => setAddToProgramSong(s)} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-primary-dark dark:hover:text-accent-primary font-medium transition flex items-center gap-1" title={t('Dodaj do programu jako sugerowaną pieśń')}><Calendar size={14}/> {tr('Do programu')}</button>
-                    <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">{tr('Edytuj')}</button>
-                    <button onClick={() => deleteSong(s)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
+                  <div className="flex justify-end items-center gap-1 opacity-60 group-hover/row:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setAddToProgramSong(s); }}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold whitespace-nowrap text-gray-700 dark:text-gray-200 hover:bg-[rgba(42,35,18,0.07)] dark:hover:bg-white/10 transition-colors"
+                      title={t('Dodaj do programu jako sugerowaną pieśń')}>
+                      <CalendarPlus size={14} aria-hidden="true" />{tr('Do programu')}
+                    </button>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setSongForm(s); setShowSongModal(true); }}
+                      className="inline-grid place-items-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-900 hover:bg-[rgba(42,35,18,0.07)] dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
+                      title={tr('Edytuj')} aria-label={tr('Edytuj pieśń {title}', { title: s.title })}>
+                      <Pencil size={15} aria-hidden="true" />
+                    </button>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); deleteSong(s); }}
+                      className="inline-grid place-items-center w-8 h-8 rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-500/10 transition-colors"
+                      title={tr('Usuń')} aria-label={tr('Usuń pieśń {title}', { title: s.title })}>
+                      <Trash2 size={15} aria-hidden="true" />
+                    </button>
                   </div>
                 </TD>
               </TR>
-            ))}
+              );
+            })}
           </tbody>
         </DataTable>
         {filteredSongs.length === 0 && (

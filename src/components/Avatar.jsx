@@ -1,6 +1,7 @@
 import React from 'react';
 import { getInitials, stringToColor } from '../utils/text';
 import { brandTone } from '../lib/brandTone';
+import { thumbUrl } from '../lib/imageThumb';
 
 // Kanoniczny avatar (design system): zdjęcie (url) albo inicjały na deterministycznym kolorze
 // z nazwy/e-maila. Zastępuje ~12 ad-hoc kółek-z-inicjałem rozsianych po modułach.
@@ -10,8 +11,9 @@ export default function Avatar({ name, email, url, size = 36, className = '', ti
   const px = typeof size === 'number' ? size : 36;
   const label = name || email || '';
   if (url) {
+    // Miniatura z serwera (?w=) zamiast oryginału — zdjęcia z telefonu mają po kilka MB.
     return (
-      <img src={url} alt={label} title={title || label}
+      <img src={thumbUrl(url, px)} alt={label} title={title || label} loading="lazy" decoding="async"
         className={`rounded-full object-cover shrink-0 ${className}`}
         style={{ width: px, height: px }} />
     );

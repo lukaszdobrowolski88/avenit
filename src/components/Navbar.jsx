@@ -13,6 +13,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { useCampus } from '../contexts/CampusContext';
 import { useT, useI18n } from '../i18n';
 import { tr } from '../i18n';
+import { thumbUrl } from '../lib/imageThumb';
 
 // Wspólna obsługa rozwijanego menu (klik, Esc, klik poza, strzałki) — A11Y-07 / UXE-15.
 function useMenu() {
@@ -262,7 +263,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
           >
             {userProfile?.avatar_url ? (
               <img
-                src={userProfile.avatar_url}
+                src={thumbUrl(userProfile.avatar_url, 40)}
                 alt=""
                 className="w-full h-full rounded-full object-cover"
               />

@@ -22,6 +22,7 @@ import TemplatesModal from './schedule/TemplatesModal';
 import ReminderSettingsModal from './schedule/ReminderSettingsModal';
 import MyServicesModal from './schedule/MyServicesModal';
 import './scheduleGrid.css';
+import '../../components/pickList.css';
 
 // Grafik nad WYDARZENIAMI (twardy switch z programów). Wiersze = wydarzenia danej służby:
 // wydarzenie należy do służby, jeśli reguła event_type_teams (module_key, event_type) zawiera
@@ -262,13 +263,13 @@ const PeoplePicker = ({ label, options, value, onChange, blocked, locked = [], l
         aria-selected={isSel}
         aria-disabled={disabled || undefined}
         key={person.id ?? name}
-        className="sg-opt text-gray-800 dark:text-gray-100"
+        className="pick-opt text-gray-800 dark:text-gray-100"
         title={hint ? `${name} — ${hint}` : name}
         onClick={() => { if (!disabled) toggle(name); }}
       >
-        <span className="sg-check" aria-hidden="true">{isSel && <Check size={12} strokeWidth={3} />}</span>
+        <span className="pick-check" aria-hidden="true">{isSel && <Check size={12} strokeWidth={3} />}</span>
         <span className="truncate">{name}</span>
-        {hint && <span className={`sg-opt-hint ${reason || isLocked ? 'sg-opt-hint--warn' : ''}`}>{hint}</span>}
+        {hint && <span className={`pick-opt-hint ${reason || isLocked ? 'pick-opt-hint--warn' : ''}`}>{hint}</span>}
       </button>
     );
   };
@@ -301,7 +302,7 @@ const PeoplePicker = ({ label, options, value, onChange, blocked, locked = [], l
         <div
           ref={popRef}
           onKeyDown={onKeyDown}
-          className="portal-multiselect sg-pop fixed z-[9999] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+          className="portal-multiselect pick-pop fixed z-[9999] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
           style={{
             ...(coords.openUpward ? { bottom: coords.bottom } : { top: coords.top }),
             left: coords.left,
@@ -317,7 +318,7 @@ const PeoplePicker = ({ label, options, value, onChange, blocked, locked = [], l
               onChange={(e) => setQuery(e.target.value)}
               placeholder={tr('Szukaj osoby…')}
               aria-label={tr('Szukaj osoby…')}
-              className="sg-search bg-transparent text-gray-800 dark:text-gray-100"
+              className="pick-search bg-transparent text-gray-800 dark:text-gray-100"
             />
           )}
           <div ref={listRef} role="listbox" aria-multiselectable="true" aria-label={label || undefined} className="overflow-y-auto custom-scrollbar py-1">
@@ -327,11 +328,11 @@ const PeoplePicker = ({ label, options, value, onChange, blocked, locked = [], l
             {options.length > 0 && visible.length === 0 && (
               <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">{tr('Nikogo nie znaleziono')}</div>
             )}
-            {lockedList.length > 0 && <div className="sg-section" role="presentation">{lockedTitle}</div>}
+            {lockedList.length > 0 && <div className="pick-section" role="presentation">{lockedTitle}</div>}
             {lockedList.map(renderOption)}
-            {lockedList.length > 0 && free.length > 0 && <div className="sg-section" role="presentation">{tr('Pozostali')}</div>}
+            {lockedList.length > 0 && free.length > 0 && <div className="pick-section" role="presentation">{tr('Pozostali')}</div>}
             {free.map(renderOption)}
-            {away.length > 0 && <div className="sg-section" role="presentation">{tr('Niedostępni w tym dniu')}</div>}
+            {away.length > 0 && <div className="pick-section" role="presentation">{tr('Niedostępni w tym dniu')}</div>}
             {away.map(renderOption)}
           </div>
         </div>,
@@ -1259,29 +1260,29 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
         </h2>
         <div className="flex items-center gap-2 flex-wrap">
           {!narrow && teamEvents.length > 0 && (
-            <div className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-gray-800" role="group" aria-label={tr('Układ grafiku')}>
+            <div className="sg-segbar" role="group" aria-label={tr('Układ grafiku')}>
               <button type="button" aria-pressed={viewMode === 'dates'} onClick={() => changeView('dates')}
-                className={`sg-seg ${viewMode === 'dates' ? 'bg-white shadow-sm text-gray-900 dark:bg-gray-700 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}
-                title={tr('Wiersze = wydarzenia')}>
+                className="sg-seg" title={tr('Wiersze = wydarzenia')}>
                 <Rows size={15} aria-hidden="true" />{tr('Daty')}
               </button>
               <button type="button" aria-pressed={viewMode === 'roles'} onClick={() => changeView('roles')}
-                className={`sg-seg ${viewMode === 'roles' ? 'bg-white shadow-sm text-gray-900 dark:bg-gray-700 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}
-                title={tr('Wiersze = role, kolumny = daty')}>
+                className="sg-seg" title={tr('Wiersze = role, kolumny = daty')}>
                 <Columns size={15} aria-hidden="true" />{tr('Role')}
               </button>
             </div>
           )}
-          <Button variant="secondary" size="sm" icon={CalendarPlus} onClick={() => setMyServicesOpen(true)}
+          <button type="button" className="sg-tool" onClick={() => setMyServicesOpen(true)}
             title={tr('Dodaj swoje służby do kalendarza w telefonie')}>
-            {tr('Moje służby')}
-          </Button>
-          <Button variant="secondary" size="sm" icon={BellRing} onClick={() => setReminderOpen(true)}
-            title={tr('Automatyczne przypomnienia')} aria-label={tr('Automatyczne przypomnienia')}>
-            {tr('Przypomnienia')}
-          </Button>
+            <CalendarPlus size={15} aria-hidden="true" />{tr('Moje służby')}
+          </button>
+          <button type="button" className="sg-tool" onClick={() => setReminderOpen(true)}
+            title={tr('Automatyczne przypomnienia')}>
+            <BellRing size={15} aria-hidden="true" />{tr('Przypomnienia')}
+          </button>
           {teamEvents.length > 0 && (
-            <Button variant="secondary" size="sm" icon={Download} onClick={exportCsv}>{tr('CSV')}</Button>
+            <button type="button" className="sg-tool" onClick={exportCsv} title={tr('Pobierz grafik jako CSV')}>
+              <Download size={15} aria-hidden="true" />{tr('CSV')}
+            </button>
           )}
         </div>
       </div>

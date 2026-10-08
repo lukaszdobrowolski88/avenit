@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreHorizontal } from 'lucide-react';
+import '../../../components/pickList.css';
 
 // Małe menu akcji (⋯) dla wydarzenia w grafiku. Lista w portalu (position: fixed), żeby nie
 // ucinała jej przewijana siatka. Klawiatura: Enter/↓ otwiera, ↑/↓ po pozycjach, Esc zamyka.
@@ -64,7 +65,7 @@ export default function ActionMenu({ items, label, align = 'right' }) {
       </button>
       {open && pos && createPortal(
         <div ref={listRef} role="menu" aria-label={label} onKeyDown={onKeyDown}
-          className="portal-multiselect sg-pop fixed z-[9999] py-1 animate-in fade-in zoom-in-95 duration-100"
+          className="portal-multiselect pick-pop fixed z-[9999] py-1 animate-in fade-in zoom-in-95 duration-100"
           style={pos}>
           {items.map((it, i) => (it.divider ? (
             <div key={`d${i}`} className="my-1 border-t border-gray-100 dark:border-white/10" role="separator" />
@@ -75,13 +76,13 @@ export default function ActionMenu({ items, label, align = 'right' }) {
               role="menuitem"
               tabIndex={-1}
               aria-disabled={it.disabled || undefined}
-              className={`sg-opt ${it.danger ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}
+              className={`pick-opt ${it.danger ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}
               onClick={() => { if (it.disabled) return; close(false); it.onClick(); }}
               title={it.hint || undefined}
             >
               {it.icon && <it.icon size={15} className="shrink-0 opacity-80" aria-hidden="true" />}
               <span className="truncate">{it.label}</span>
-              {it.hint && <span className="sg-opt-hint">{it.hint}</span>}
+              {it.hint && <span className="pick-opt-hint">{it.hint}</span>}
             </button>
           )))}
         </div>,

@@ -9,6 +9,7 @@ import { getInitials, stringToColor } from '../../../utils/text';
 import { brandTone } from '../../../lib/brandTone';
 import { toast } from '../../../lib/toast';
 import { openOrCreateDirect } from '../../Komunikator/utils/directConversation';
+import { thumbUrl } from '../../../lib/imageThumb';
 
 // Kolory statusów
 const statusColors = {
@@ -189,7 +190,7 @@ export default function OnlineUsersWidget({ userEmail }) {
                 <div className="relative flex-shrink-0">
                   {user.avatar_url ? (
                     <img
-                      src={user.avatar_url}
+                      src={thumbUrl(user.avatar_url, 40)}
                       alt={user.full_name}
                       className="w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-gray-800"
                     />

@@ -147,11 +147,14 @@ export default function ConversationList({
           type="button"
           onClick={() => onSelect(conv)}
           aria-current={isSelected ? 'true' : undefined}
-          className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/60
+          // Bez klasy `border` — warstwa marki maluje każdy przycisk „z samą ramką” na beżowo i wtedy
+          // WSZYSTKIE wiersze wyglądały na zaznaczone. Tło niezaznaczonego = przezroczyste (hover lekki),
+          // zaznaczony = jasna kurkuma marki + pogrubiona nazwa.
+          className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors duration-150 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/60
             ${canManage ? 'pr-12 lg:pr-3' : ''}
             ${isSelected
-              ? 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/20 shadow-sm border border-accent-primary-lighter/50 dark:border-accent-primary-dark/30'
-              : 'hover:bg-white/80 dark:hover:bg-gray-800/60 hover:shadow-sm border border-transparent'
+              ? 'bg-[rgb(var(--accent-primary-lighter))] dark:bg-[rgba(255,190,11,0.14)]'
+              : 'bg-transparent hover:bg-[rgba(42,35,18,0.045)] dark:hover:bg-white/5'
             }
           `}
         >
@@ -162,7 +165,7 @@ export default function ConversationList({
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className={`truncate transition-colors ${hasUnread ? 'font-semibold text-gray-900 dark:text-white' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+                <span className={`truncate transition-colors ${hasUnread || isSelected ? 'font-semibold text-gray-900 dark:text-white' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
                   {displayName}
                 </span>
                 {conv.pinned && (

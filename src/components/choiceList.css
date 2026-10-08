@@ -1,0 +1,34 @@
+/* Lista wyboru w oknach (ChoiceList.jsx). Kolory przez zmienne motywu, żeby działało w każdym presecie. */
+.ch-group + .ch-group { margin-top: 14px; }
+.ch-label {
+  padding: 0 12px 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: rgb(var(--accent-primary));
+}
+html.dark .ch-label { color: rgb(var(--gray-400)); }
+.ch-list { display: flex; flex-direction: column; gap: 2px; }
+
+.ch-row {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px 12px; border-radius: 14px;
+  text-align: left; background: transparent; cursor: pointer; transition: background-color .12s;
+}
+.ch-row:hover { background: rgba(42, 35, 18, 0.045); }
+html.dark .ch-row:hover { background: rgba(255, 255, 255, 0.06); }
+.ch-row:focus-visible { outline: none !important; box-shadow: 0 0 0 2px rgb(var(--accent-primary-light)); }
+
+.ch-tile {
+  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+  background: rgba(42, 35, 18, 0.06); color: rgb(var(--gray-800));
+}
+html.dark .ch-tile { background: rgba(255, 255, 255, 0.08); color: rgb(var(--gray-100)); }
+.ch-row--primary .ch-tile { background: rgb(var(--accent-primary-light)); color: rgb(var(--accent-primary-darkest)); }
+html.dark .ch-row--primary .ch-tile { background: rgb(var(--accent-primary-light)); color: #1a160c; }
+
+.ch-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ch-title { font-size: 15px; font-weight: 700; line-height: 1.3; color: rgb(var(--gray-900)); }
+html.dark .ch-title { color: #fff; }
+.ch-desc { margin-top: 1px; font-size: 12.5px; line-height: 1.35; color: rgb(var(--gray-500)); }
+html.dark .ch-desc { color: rgb(var(--gray-400)); }
+
+.ch-chev { flex-shrink: 0; color: rgb(var(--gray-400)); opacity: 0; transform: translateX(-4px); transition: opacity .12s, transform .12s; }
+.ch-row:hover .ch-chev, .ch-row:focus-visible .ch-chev { opacity: 1; transform: none; }
+@media (hover: none) { .ch-chev { opacity: .6; transform: none; } }

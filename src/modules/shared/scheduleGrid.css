@@ -129,28 +129,6 @@ html.dark .sg-chip--away { color: #FCA5A5; box-shadow: inset 0 0 0 1px rgba(252,
 .sg-counts > span { display: inline-flex; align-items: center; gap: 2px; }
 
 /* Lista wyboru osób */
-.sg-pop { background: #fff; border-radius: 14px; box-shadow: 0 18px 40px -12px rgba(42, 35, 18, 0.28), 0 0 0 1px rgba(42, 35, 18, 0.08); }
-html.dark .sg-pop { background: rgb(var(--gray-800)); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1); }
-.sg-search { width: 100%; padding: 8px 10px; font-size: 13px; background: transparent; border-bottom: 1px solid rgb(var(--gray-200)) !important; outline: none; }
-html.dark .sg-search { border-bottom-color: rgba(255, 255, 255, 0.1) !important; }
-.sg-section { padding: 10px 12px 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgb(var(--gray-500)); }
-.sg-opt {
-  width: 100%; display: flex; align-items: center; gap: 8px; text-align: left;
-  min-height: 38px; padding: 6px 12px; font-size: 13px; cursor: pointer; border-radius: 0;
-}
-.sg-opt:hover, .sg-opt:focus-visible { background-color: rgb(var(--gray-50)); outline: none !important; }
-html.dark .sg-opt:hover, html.dark .sg-opt:focus-visible { background-color: rgba(255, 255, 255, 0.06); }
-.sg-opt:focus-visible { box-shadow: inset 2px 0 0 var(--sg-accent, #FFBE0B); }
-.sg-opt[aria-selected="true"] { font-weight: 600; }
-.sg-opt[aria-disabled="true"] { cursor: not-allowed; color: rgb(var(--gray-400)); }
-.sg-opt[aria-disabled="true"]:hover { background: transparent; }
-.sg-opt-hint { margin-left: auto; font-size: 11px; color: rgb(var(--gray-500)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%; flex-shrink: 0; }
-.sg-opt-hint--warn { color: #B42318; }
-html.dark .sg-opt-hint--warn { color: #FCA5A5; }
-.sg-check { width: 18px; height: 18px; border-radius: 6px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1.5px rgb(var(--gray-300)); }
-.sg-opt[aria-selected="true"] .sg-check { background: #2A2312; box-shadow: none; color: #FFBE0B; }
-html.dark .sg-opt[aria-selected="true"] .sg-check { background: #FFBE0B; color: #2A2312; }
-
 /* Nagłówek miesiąca */
 .sg-month { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 4px 10px; }
 .sg-month-toggle { display: inline-flex; align-items: center; gap: 8px; background: transparent; font-size: 17px; letter-spacing: -0.01em; }
@@ -196,7 +174,32 @@ th.sg-col-rolehead { vertical-align: bottom; padding-bottom: 12px; }
 .sg-rolelabel { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sg-muted); }
 
 /* Przełącznik układu (segment) */
-.sg-seg { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 9px; font-size: 13px; font-weight: 600; transition: background-color .12s; }
+/* Pasek narzędzi grafiku: przełącznik układu i przyciski mają jedną wysokość, czcionkę i kształt
+   (własne klasy — warstwa marki zmniejszała <Button size="sm"> do 24 px obok 36 px przełącznika). */
+.sg-tool, .sg-segbar {
+  --sg-tool-bg: rgba(42, 35, 18, 0.055);
+  --sg-tool-hover: rgba(42, 35, 18, 0.09);
+  height: 34px; border-radius: 9999px; background: var(--sg-tool-bg);
+}
+html.dark .sg-tool, html.dark .sg-segbar { --sg-tool-bg: rgba(255, 255, 255, 0.07); --sg-tool-hover: rgba(255, 255, 255, 0.12); }
+.sg-tool {
+  display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; flex-shrink: 0;
+  font-size: 13px; font-weight: 600; line-height: 1; color: rgb(var(--gray-700)); cursor: pointer;
+  transition: background-color .12s;
+}
+html.dark .sg-tool { color: rgb(var(--gray-200)); }
+.sg-tool:hover { background: var(--sg-tool-hover); }
+.sg-tool:focus-visible, .sg-seg:focus-visible { outline: none !important; box-shadow: 0 0 0 2px var(--sg-accent, #FFBE0B); }
+.sg-segbar { display: inline-flex; align-items: center; gap: 2px; padding: 3px; }
+.sg-seg {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 9999px;
+  font-size: 13px; font-weight: 600; line-height: 1; color: rgb(var(--gray-600)); transition: background-color .12s, color .12s;
+}
+html.dark .sg-seg { color: rgb(var(--gray-300)); }
+.sg-seg:hover { color: rgb(var(--gray-900)); }
+.sg-seg[aria-pressed="true"] { background: #fff; color: rgb(var(--gray-900)); box-shadow: 0 1px 2px rgba(42, 35, 18, 0.12); }
+html.dark .sg-seg:hover, html.dark .sg-seg[aria-pressed="true"] { color: #fff; }
+html.dark .sg-seg[aria-pressed="true"] { background: rgba(255, 255, 255, 0.14); box-shadow: none; }
 
 /* Okna: checkbox i linki kalendarza */
 .sg-native-check { width: 16px; height: 16px; accent-color: #2A2312; flex-shrink: 0; }

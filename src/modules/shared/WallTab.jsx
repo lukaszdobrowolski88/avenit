@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { confirmDialog } from '../../lib/dialog';
 import { tr, appLocale } from '../../i18n';
+import { thumbUrl } from '../../lib/imageThumb';
 
 // wall_posts.likes ma być tablicą e-maili, ale część rekordów bywa nie-tablicą
 // (np. {} z domyślnej wartości JSONB). Normalizujemy przy KAŻDYM odczycie, żeby
@@ -367,7 +368,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                       <div className={`w-9 h-9 shrink-0 ${!showAvatar ? 'invisible' : ''}`}>
                         {avatar ? (
                           <img
-                            src={avatar}
+                            src={thumbUrl(avatar, 36)}
                             alt=""
                             className="w-9 h-9 rounded-full object-cover"
                           />

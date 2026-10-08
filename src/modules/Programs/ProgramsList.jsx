@@ -17,7 +17,7 @@ import EmptyState from '../../components/EmptyState';
 
 const {
   Plus, Search, History, ArrowUpDown, Copy, Trash2,
-  ChevronUp, ChevronDown, Calendar, Edit3, GripVertical,
+  ChevronUp, ChevronDown, ChevronRight, Calendar, Edit3, GripVertical,
   Settings, ToggleLeft, ToggleRight, Palette, MapPin
 } = LucideIcons;
 
@@ -249,122 +249,143 @@ export default function ProgramsList() {
     });
   };
 
-  const formatDateFull = (dateString) => {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const date = localDate(dateString);
-    if (!date) return tr('Bez daty');
-    const formatted = date.toLocaleDateString(appLocale(), options);
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  // Dni do programu: „dziś” / „jutro” / „za N dni” (do dwóch tygodni; dalej sama data wystarcza).
+  const daysUntil = (dateString) => {
+    const d = localDate(dateString);
+    const t0 = localDate(today);
+    return d && t0 ? Math.round((d - t0) / 86400000) : null;
+  };
+  const relativeDay = (n) => {
+    if (n === 0) return tr('dziś');
+    if (n === 1) return tr('jutro');
+    if (n > 1 && n <= 14) return tr('za {n} dni', { n });
+    return '';
   };
 
   // --- Components ---
-  const ProgramCard = ({ p, typeColor }) => {
+  // Wiersz programu: kafelek daty (data to główna informacja — wcześniej ginęła w drugiej linii),
+  // tytuł, dzień tygodnia + „za N dni”, stan planu. Najbliższy program ma kafelek w kolorze marki.
+  const ProgramRow = ({ p, next = false, type = null }) => {
     const campus = showCampus && multiCampus ? campusById[p.campus_id] : null;
     const n = p.schedule?.length || 0;
+    const d = localDate(p.date);
+    const rel = p.date >= today ? relativeDay(daysUntil(p.date)) : '';
+    const thisYear = d && d.getFullYear() === new Date().getFullYear();
+    const weekday = d ? d.toLocaleDateString(appLocale(), thisYear ? { weekday: 'long' } : { weekday: 'long', year: 'numeric' }) : tr('Bez daty');
+    const open = () => navigate(`/programs/${p.id}`);
     return (
-      <div
-        onClick={() => navigate(`/programs/${p.id}`)}
-        className="px-4 py-3 rounded-xl cursor-pointer transition group bg-white/70 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700/50 hover:shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
-      >
-        <div className="flex justify-between items-center gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Kolor typu jako kropka, nie pionowa belka (decyzja właściciela: belka = „AI slop”). */}
-            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: typeColor || '#ec4899' }} />
-            <div className="min-w-0">
-              <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">
-                {programName(p)}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {formatDateFull(p.date)} · {plural(n, tr('{n} element', { n }), tr('{n} elementy', { n }), tr('{n} elementów', { n }))}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {campus && (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300"
-                style={campus.color ? { background: `${campus.color}1a`, color: campus.color } : undefined}
-                title={`${t('Kampus')}: ${campus.name}`}
-              >
-                <MapPin size={11} />
-                {campus.name}
-              </span>
+      <div onClick={open} className="group flex items-center gap-4 px-3 py-2.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(42,35,18,0.04)] dark:hover:bg-white/5">
+        <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center flex-shrink-0 ${next ? 'bg-[rgb(var(--accent-primary-light))] text-[rgb(var(--accent-primary-darkest))]' : 'bg-[rgba(42,35,18,0.05)] text-gray-800 dark:bg-white/[0.07] dark:text-gray-100'}`} aria-hidden="true">
+          <span className="text-[17px] font-extrabold leading-none tabular-nums">{d ? d.getDate() : '–'}</span>
+          {d && <span className="text-[10px] font-bold uppercase tracking-wide mt-1 leading-none opacity-75">{d.toLocaleDateString(appLocale(), { month: 'short' }).replace('.', '')}</span>}
+        </div>
+        <div className="min-w-0 flex-1">
+          <button type="button" onClick={(e) => { e.stopPropagation(); open(); }}
+            className="block max-w-full text-left font-semibold text-[15px] text-gray-900 dark:text-white truncate focus-visible:outline-none focus-visible:underline">
+            {programName(p)}
+          </button>
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 min-w-0">
+            <span className="first-letter:uppercase whitespace-nowrap">{weekday}</span>
+            {rel && <><span aria-hidden="true">·</span><span className={`whitespace-nowrap ${next ? 'font-semibold text-accent-primary dark:text-accent-primary-light' : ''}`}>{rel}</span></>}
+            {type && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="inline-flex items-center gap-1.5 truncate">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: type.color || '#8A6606' }} aria-hidden="true" />
+                  {type.name}
+                </span>
+              </>
             )}
-            {!campus && showCampus && multiCampus && p.campus_id == null && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-400 dark:text-gray-500" title={t('Brak przypisanego kampusu')}>
-                <MapPin size={11} />
-                {t('Bez kampusu')}
-              </span>
-            )}
-            <div className="flex gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition">
-              <button onClick={(e) => handleDuplicate(p, e)} className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition" title={t('Duplikuj (za tydzień)')} aria-label={tr('Duplikuj program „{name}”', { name: programName(p) })}><Copy size={14} aria-hidden="true" /></button>
-              <button onClick={(e) => handleDelete(p, e)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 rounded-lg hover:bg-red-100 transition" title={t('Usuń')} aria-label={tr('Usuń program „{name}”', { name: programName(p) })}><Trash2 size={14} aria-hidden="true" /></button>
-            </div>
           </div>
         </div>
+        {campus && (
+          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300 flex-shrink-0"
+            style={campus.color ? { background: `${campus.color}1a`, color: campus.color } : undefined}
+            title={`${t('Kampus')}: ${campus.name}`}>
+            <MapPin size={11} aria-hidden="true" />{campus.name}
+          </span>
+        )}
+        {n === 0 ? (
+          <span className="flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-primary-lighter text-accent-primary dark:bg-accent-primary-light/15 dark:text-accent-primary-light">{t('Plan pusty')}</span>
+        ) : (
+          <span className="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+            {plural(n, tr('{n} element', { n }), tr('{n} elementy', { n }), tr('{n} elementów', { n }))}
+          </span>
+        )}
+        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+          <button type="button" onClick={(e) => handleDuplicate(p, e)}
+            className="inline-grid place-items-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-900 hover:bg-[rgba(42,35,18,0.07)] dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
+            title={t('Duplikuj (za tydzień)')} aria-label={tr('Duplikuj program „{name}”', { name: programName(p) })}><Copy size={15} aria-hidden="true" /></button>
+          <button type="button" onClick={(e) => handleDelete(p, e)}
+            className="inline-grid place-items-center w-8 h-8 rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-500/10 transition-colors"
+            title={t('Usuń')} aria-label={tr('Usuń program „{name}”', { name: programName(p) })}><Trash2 size={15} aria-hidden="true" /></button>
+        </div>
+        <ChevronRight size={16} className="flex-shrink-0 text-gray-300 dark:text-gray-600" aria-hidden="true" />
       </div>
     );
   };
 
+  // Karta kategorii: neutralna ikona, kolor kategorii tylko kropką (bez fioletowego tła nagłówka).
+  const SectionCard = ({ icon, title, color, count, actions, children }) => (
+    <section className="mb-5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between gap-3 px-4 sm:px-5 pt-4 pb-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 bg-[rgba(42,35,18,0.06)] text-gray-800 dark:bg-white/[0.08] dark:text-gray-100" aria-hidden="true">
+            <DynamicIcon name={icon} size={17} />
+          </div>
+          <h2 className="font-bold text-gray-900 dark:text-white text-base truncate">{title}</h2>
+          {color && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} aria-hidden="true" />}
+          {count ? <span className="text-xs text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{count}</span> : null}
+        </div>
+        {actions && <div className="flex items-center gap-1.5 flex-shrink-0">{actions}</div>}
+      </div>
+      <div className="px-2 sm:px-3 pb-3">{children}</div>
+    </section>
+  );
+
   const TypeSection = ({ type }) => {
     const typePrograms = getProgramsByType(type.id);
     const upcoming = sortPrograms(typePrograms.filter(p => p.date >= today));
-    const past = typePrograms.filter(p => p.date < today);
+    // Najbliższy = najwcześniejszy nadchodzący, niezależnie od kierunku sortowania.
+    const nextId = [...upcoming].sort((a, b) => String(a.date).localeCompare(String(b.date)))[0]?.id;
 
     return (
-      <div className="mb-6 bg-white/50 dark:bg-gray-800/40 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/50 overflow-hidden">
-        {/* Section header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/50" style={{ background: `${type.color || '#6366f1'}08` }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm from-accent-primary" style={{ background: type.color || '#6366f1' }}>
-              <DynamicIcon name={type.icon} size={16} />
-            </div>
-            <h2 className="font-bold text-gray-800 dark:text-white text-base">{type.name}</h2>
-            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
-              {upcoming.length > 0 ? plural(upcoming.length, tr('{n} nadchodzący', { n: upcoming.length }), tr('{n} nadchodzące', { n: upcoming.length }), tr('{n} nadchodzących', { n: upcoming.length })) : ''}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={(e) => openEditType(type, e)}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-700 rounded-lg transition"
-              title={t('Edytuj kategorię')}
-            >
-              <Edit3 size={14} />
+      <SectionCard
+        icon={type.icon}
+        title={type.name}
+        color={type.color}
+        count={upcoming.length > 0 ? plural(upcoming.length, tr('{n} nadchodzący', { n: upcoming.length }), tr('{n} nadchodzące', { n: upcoming.length }), tr('{n} nadchodzących', { n: upcoming.length })) : ''}
+        actions={(
+          <>
+            <button type="button" onClick={(e) => openEditType(type, e)}
+              className="inline-grid place-items-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-900 hover:bg-[rgba(42,35,18,0.07)] dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
+              title={t('Edytuj kategorię')} aria-label={t('Edytuj kategorię')}>
+              <Edit3 size={15} aria-hidden="true" />
             </button>
-            <button
-              data-tour="prog-new"
-              onClick={() => handleNewProgram(type.id)}
-              // from-accent-primary: w motywie „Avenit” przycisk akcji (kurkuma); w innych wygrywa kolor typu z inline.
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition text-white shadow-sm hover:shadow-md from-accent-primary"
-              style={{ background: type.color || '#6366f1' }}
-            >
-              <Plus size={14} />
-              {t('Nowy')}
+            <button type="button" data-tour="prog-new" onClick={() => handleNewProgram(type.id)}
+              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13px] font-semibold bg-[rgb(var(--accent-primary-light))] text-[rgb(var(--accent-primary-darkest))] hover:brightness-95 transition">
+              <Plus size={15} aria-hidden="true" />{t('Nowy')}
             </button>
+          </>
+        )}
+      >
+        {upcoming.length === 0 ? (
+          <EmptyState
+            compact
+            icon={Calendar}
+            title={t('Brak nadchodzących programów')}
+            action={
+              <Button variant="outline" size="sm" icon={Plus} onClick={() => handleNewProgram(type.id)}>
+                {t('Utwórz pierwszy')}
+              </Button>
+            }
+          />
+        ) : (
+          <div className="flex flex-col gap-0.5">
+            {upcoming.map(p => <ProgramRow key={p.id} p={p} next={p.id === nextId} />)}
           </div>
-        </div>
-
-        {/* Program cards */}
-        <div className="p-3">
-          {upcoming.length === 0 ? (
-            <EmptyState
-              compact
-              icon={Calendar}
-              title={t('Brak nadchodzących programów')}
-              action={
-                <Button variant="outline" size="sm" icon={Plus} onClick={() => handleNewProgram(type.id)}>
-                  {t('Utwórz pierwszy')}
-                </Button>
-              }
-            />
-          ) : (
-            <div className="grid gap-2">
-              {upcoming.map(p => <ProgramCard key={p.id} p={p} typeColor={type.color} />)}
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </SectionCard>
     );
   };
 
@@ -410,7 +431,10 @@ export default function ProgramsList() {
             />
           </div>
           <button
+            type="button"
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            title={sortOrder === 'asc' ? t('Najbliższe najpierw') : t('Najdalsze najpierw')}
+            aria-label={sortOrder === 'asc' ? t('Najbliższe najpierw') : t('Najdalsze najpierw')}
             className="px-4 py-3 bg-white/60 dark:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition"
           >
             <ArrowUpDown size={18} />
@@ -425,37 +449,33 @@ export default function ProgramsList() {
         {/* Unassigned programs (legacy, no type_id) */}
         {/* Ukryta, gdy nie ma w niej nadchodzących programów (pusta sekcja „(0)” była szumem). */}
         {unassignedPrograms.some(p => p.date >= today) && activeTypes.some(t => t.id !== null) && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                <Calendar size={16} />
-              </div>
-              <h2 className="font-bold text-gray-600 dark:text-gray-400 text-base">{t('Bez kategorii')}</h2>
-              <span className="text-xs text-gray-400">({unassignedPrograms.filter(p => p.date >= today).length})</span>
+          <SectionCard icon="Calendar" title={t('Bez kategorii')}
+            count={String(unassignedPrograms.filter(p => p.date >= today).length)}>
+            <div className="flex flex-col gap-0.5">
+              {sortPrograms(unassignedPrograms.filter(p => p.date >= today)).map(p => <ProgramRow key={p.id} p={p} />)}
             </div>
-            <div className="grid gap-2">
-              {sortPrograms(unassignedPrograms.filter(p => p.date >= today)).map(p => <ProgramCard key={p.id} p={p} />)}
-            </div>
-          </div>
+          </SectionCard>
         )}
 
         {/* History */}
         {allPastPrograms.length > 0 && (
-          <div className="mt-4">
+          <div className="mt-2">
             <button
+              type="button"
               onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-2 text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 hover:text-gray-600 dark:hover:text-gray-300 transition"
+              aria-expanded={showHistory}
+              className="flex items-center gap-2 h-9 px-3 -ml-1 rounded-full text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-[rgba(42,35,18,0.05)] dark:hover:bg-white/5 transition-colors"
             >
-              <History size={14} />
-              {t('Historia')} ({allPastPrograms.length})
-              {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              <History size={15} aria-hidden="true" />
+              {t('Historia')}
+              <span className="px-1.5 min-w-[20px] h-5 inline-grid place-items-center rounded-full text-[11px] font-bold bg-[rgba(42,35,18,0.07)] dark:bg-white/10 tabular-nums">{allPastPrograms.length}</span>
+              {showHistory ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
             </button>
             {showHistory && (
-              <div className="grid gap-2">
-                {allPastPrograms.map(p => {
-                  const type = programTypes.find(t => t.id === p.type_id);
-                  return <ProgramCard key={p.id} p={p} typeColor={type?.color} />;
-                })}
+              <div className="mt-2 px-2 sm:px-3 py-2 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col gap-0.5">
+                {allPastPrograms.map(p => (
+                  <ProgramRow key={p.id} p={p} type={programTypes.find(pt => pt.id === p.type_id) || null} />
+                ))}
               </div>
             )}
           </div>
