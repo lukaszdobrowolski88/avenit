@@ -61,7 +61,7 @@ function useDropdownPosition(triggerRef, isOpen) {
 // dzień (albo dziś); ←→ ±1 dzień, ↑↓ ±7 dni, Home/End początek/koniec tygodnia, PageUp/PageDown
 // ±miesiąc (z Shift ±rok), Enter/Spacja wybiera, Esc zamyka TYLKO kalendarz (nie okno z formularzem)
 // i oddaje fokus polu. Tab krąży w panelu. Nazwa pola: `label` albo `aria-label`/`aria-labelledby`.
-export default function CustomDatePicker({ label, value, onChange, placeholder = tr('Wybierz datę'), compact = false, min, max, disabled = false, autoFocus = false, onClose, clearable = true, id, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledBy, 'aria-describedby': ariaDescribedBy }) {
+export default function CustomDatePicker({ label, value, onChange, placeholder = tr('Wybierz datę'), compact = false, variant = 'field', min, max, disabled = false, autoFocus = false, onClose, clearable = true, id, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledBy, 'aria-describedby': ariaDescribedBy }) {
   const [isOpen, setIsOpen] = useState(!!autoFocus && !disabled);
   const uid = useId();
   const fieldId = id || `dp-${uid}`;
@@ -241,8 +241,11 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
       ? { 'aria-labelledby': `${ariaLabelledBy} ${valueId}` }
       : label ? { 'aria-labelledby': `${labelId} ${valueId}` } : { 'aria-labelledby': valueId };
 
+  // variant="cell" — komórka tabeli: sama data tekstem (bez ramki pola), pusto = „+” na hover wiersza;
+  // po kliknięciu ten sam kalendarz co w formularzach.
+  const cell = variant === 'cell';
   return (
-    <div className="relative w-full">
+    <div className={`relative w-full${cell ? ' h-full' : ''}`}>
       {label && <label id={labelId} onClick={() => !disabled && triggerRef.current?.focus()} className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{label}</label>}
       <div
         ref={triggerRef}
@@ -256,19 +259,27 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
         {...nameProps}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onKeyDown={onTriggerKeyDown}
-        className={`ui-field w-full ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${compact ? 'px-2 py-1 text-xs h-[26px]' : 'px-4 py-3'} border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all outline-none focus-visible:border-accent-primary-light focus-visible:ring-2 focus-visible:ring-accent-primary-light/30
+        className={cell
+          ? `w-full h-full px-2 flex items-center justify-center text-sm cursor-pointer outline-none rounded focus-visible:ring-2 focus-visible:ring-accent-primary-light/50 ${isOpen ? 'bg-black/[0.03] dark:bg-white/5' : ''}`
+          : `ui-field w-full ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${compact ? 'px-2 py-1 text-xs h-[26px]' : 'px-4 py-3'} border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all outline-none focus-visible:border-accent-primary-light focus-visible:ring-2 focus-visible:ring-accent-primary-light/30
           ${isOpen
             ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
             : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }
         `}
       >
-        <div className="flex items-center gap-2 text-sm">
-          <Calendar size={compact ? 14 : 16} className="text-gray-400" aria-hidden="true" />
-          <span id={valueId} className={displayValue ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {displayValue || placeholder}
-          </span>
-        </div>
+        {cell ? (
+          displayValue
+            ? <span id={valueId} className="tabular-nums text-gray-700 dark:text-gray-200">{displayValue}</span>
+            : <span id={valueId} className="text-gray-300 dark:text-gray-600 text-base leading-none opacity-0 group-hover/row:opacity-100 transition-opacity"><span aria-hidden="true">+</span><span className="sr-only">{placeholder}</span></span>
+        ) : (
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar size={compact ? 14 : 16} className="text-gray-400" aria-hidden="true" />
+            <span id={valueId} className={displayValue ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
+              {displayValue || placeholder}
+            </span>
+          </div>
+        )}
       </div>
 
       {isOpen && coords.width > 0 && document.body && createPortal(

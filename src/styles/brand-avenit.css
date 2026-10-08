@@ -536,6 +536,8 @@ html[data-color-preset="avenit"]:not(.dark) :is(.hover\:text-accent-secondary:ho
 
 /* Tła po najechaniu: wyraźne, ciepłe, widoczne zarówno na bieli, jak i na papierze. */
 html[data-color-preset="avenit"]:not(.dark) :is(.hover\:bg-gray-50, .hover\:bg-gray-50\/50, .hover\:bg-gray-50\/70, .hover\:bg-white\/50, .hover\:bg-white\/60):hover { background-color: #F1EDE3 !important; }
+/* Beżowe pigułki (bg-accent-primary-lightest #F2EEE3) w podświetlonym wierszu tabeli zlewały się z hoverem (#F1EDE3) — o ton ciemniej. */
+html[data-color-preset="avenit"]:not(.dark) tr:hover .bg-accent-primary-lightest { background-color: #E8E1CE !important; }
 html[data-color-preset="avenit"]:not(.dark) :is(.hover\:bg-gray-100, .hover\:bg-gray-100\/50, .hover\:bg-gray-100\/70):hover { background-color: #EAE5D9 !important; }
 html[data-color-preset="avenit"]:not(.dark) :is(.hover\:bg-accent-primary-lightest, .hover\:bg-accent-secondary-lightest, .hover\:bg-accent-primary-lightest\/50, .hover\:bg-accent-primary-lightest\/40):hover { background-color: #FFF3CC !important; }
 html[data-color-preset="avenit"]:not(.dark) :is(.hover\:bg-accent-primary-lighter, .hover\:bg-accent-secondary-lighter):hover { background-color: #FFE9A6 !important; }

@@ -8,7 +8,7 @@ import {
   Users, HeartHandshake, Home, Baby, Trash2,
   MapPin, Search, Check,
   LayoutGrid, List, LayoutList, Columns, CalendarPlus, ListTodo,
-  Filter
+  Filter, Church
 } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import Modal from '../components/Modal';
@@ -24,6 +24,8 @@ import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
+import { ChoiceList, ChoiceRow } from '../components/ChoiceList';
+import * as LucideIcons from 'lucide-react';
 
 // --- POMOCNICZE (czyste funkcje — testy w CalendarModule.test.js) ---
 
@@ -264,7 +266,7 @@ const FieldError = ({ children }) => (children ? <p className="text-xs text-red-
 
 // --- MODAL WYBORU TYPU (WYDARZENIE VS ZADANIE) ---
 
-const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
+export const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
   const t = useT();
   return (
     <Modal
@@ -276,35 +278,13 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
       size="sm"
       closeOnBackdrop={false}
     >
-      <div className="p-6">
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            data-tour="cal-type-event"
-            onClick={onSelectEvent}
-            className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-2 border-accent-primary-lighter dark:border-accent-primary-dark rounded-2xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:shadow-lg transition group"
-          >
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white shadow-lg shadow-accent-primary-light/30 group-hover:scale-110 transition">
-              <CalendarPlus size={28} />
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-gray-800 dark:text-white">{t('Wydarzenie')}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t('Nabożeństwo, spotkanie...')}</div>
-            </div>
-          </button>
-
-          <button
-            onClick={onSelectTask}
-            className="flex flex-col items-center gap-3 p-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:shadow-lg transition group"
-          >
-            <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:scale-110 transition">
-              <ListTodo size={28} />
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-gray-800 dark:text-white">{t('Zadanie')}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t('Do zrobienia, przypomnienie...')}</div>
-            </div>
-          </button>
-        </div>
+      <div className="p-3 sm:p-4">
+        <ChoiceList>
+          <ChoiceRow data-tour="cal-type-event" primary icon={CalendarPlus} title={t('Wydarzenie')}
+            description={t('Nabożeństwo, spotkanie, próba')} onClick={onSelectEvent} />
+          <ChoiceRow icon={ListTodo} title={t('Zadanie')}
+            description={t('Coś do zrobienia na ten dzień')} onClick={onSelectTask} />
+        </ChoiceList>
       </div>
     </Modal>
   );
@@ -312,17 +292,18 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
 
 // --- MODAL WYBORU KALENDARZA WYDARZENIA ---
 
-// Znane kalendarze służb (nazwa na ekranie = nazwa modułu z Ustawień, tu tylko zapas).
-const MINISTRY_CALENDARS = [
-  { key: 'worship', icon: '🎵', title: tr('Uwielbienie'), description: tr('Próby, koncerty, nabożeństwa') },
-  { key: 'media', icon: '🎬', title: tr('Media'), description: tr('Produkcje, streaming, szkolenia') },
-  { key: 'atmosfera', icon: '💚', title: tr('Atmosfera'), description: tr('Spotkania, integracje') },
-  { key: 'kids', icon: '👶', title: tr('Dzieci'), description: tr('Zajęcia, warsztaty, wycieczki') },
-  { key: 'homegroups', icon: '🏠', title: tr('Grupy domowe'), description: tr('Spotkania grupowe') },
-  { key: 'mlodziezowka', icon: '🎉', title: tr('Młodzieżówka'), description: tr('Wydarzenia młodzieżowe') }
+// Znane kalendarze służb (nazwa i ikona na ekranie = nazwa i ikona modułu z Ustawień, tu tylko zapas).
+export const MINISTRY_CALENDARS = [
+  { key: 'worship', iconName: 'Music', title: tr('Uwielbienie'), description: tr('Próby, koncerty, nabożeństwa') },
+  { key: 'media', iconName: 'Video', title: tr('Media'), description: tr('Produkcje, streaming, szkolenia') },
+  { key: 'atmosfera', iconName: 'Coffee', title: tr('Atmosfera'), description: tr('Spotkania, integracje') },
+  { key: 'kids', iconName: 'Baby', title: tr('Dzieci'), description: tr('Zajęcia, warsztaty, wycieczki') },
+  { key: 'homegroups', iconName: 'Home', title: tr('Grupy domowe'), description: tr('Spotkania grupowe') },
+  { key: 'mlodziezowka', iconName: 'Flame', title: tr('Młodzieżówka'), description: tr('Wydarzenia młodzieżowe') }
 ];
+const calendarIcon = (name) => LucideIcons[name] || CalIcon;
 
-const ModalSelectEventCategory = ({ date, ministries, onClose, onSelectCategory, onSelectMinistry }) => {
+export const ModalSelectEventCategory = ({ date, ministries, onClose, onSelectCategory, onSelectMinistry }) => {
   return (
     <Modal
       isOpen
@@ -330,42 +311,25 @@ const ModalSelectEventCategory = ({ date, ministries, onClose, onSelectCategory,
       title={tr('Wybierz kalendarz')}
       subtitle={date ? localDateTime(date).toLocaleDateString(appLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
       icon={CalendarPlus}
+      size="sm"
       closeOnBackdrop={false}
     >
-      <div className="p-6">
-        <div className="space-y-2">
-          {/* Nabożeństwo - zawsze na górze. Tworzy WYDARZENIE (grafik służb jest na wydarzeniu,
-              program podpina się na jego stronie) — nic nie zapisuje, zanim klikniesz „Utwórz”. */}
-          <button
-            onClick={() => onSelectCategory('nabożeństwo')}
-            className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-2 border-accent-primary-lighter dark:border-accent-primary-dark rounded-xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:shadow-md transition group"
-          >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white shadow-lg shadow-accent-primary-light/30 group-hover:scale-105 transition">
-              <Music size={24} />
-            </div>
-            <div className="text-left flex-1">
-              <div className="font-bold text-gray-800 dark:text-white">{tr('Nabożeństwo')}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{tr('Grafik służb i program dodasz na stronie wydarzenia')}</div>
-            </div>
-          </button>
+      <div className="p-3 sm:p-4">
+        {/* Nabożeństwo - zawsze na górze. Tworzy WYDARZENIE (grafik służb jest na wydarzeniu,
+            program podpina się na jego stronie) — nic nie zapisuje, zanim klikniesz „Utwórz”. */}
+        <ChoiceList>
+          <ChoiceRow primary icon={Church} title={tr('Nabożeństwo')}
+            description={tr('Grafik służb i program dodasz na stronie wydarzenia')}
+            onClick={() => onSelectCategory('nabożeństwo')} />
+        </ChoiceList>
 
-          {/* Kalendarze służb — dynamicznie: wszystkie moduły z zakładką „Wydarzenia" */}
-          {(ministries || MINISTRY_CALENDARS).map(ministry => (
-            <button
-              key={ministry.key}
-              onClick={() => onSelectMinistry(ministry.key)}
-              className="w-full flex items-center gap-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:bg-accent-primary-lightest/50 dark:hover:bg-accent-primary-darkest/10 transition group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover:scale-105 transition text-2xl" aria-hidden="true">
-                {ministry.icon}
-              </div>
-              <div className="text-left flex-1">
-                <div className="font-bold text-gray-800 dark:text-white">{ministry.title}</div>
-                {ministry.description && <div className="text-xs text-gray-500 dark:text-gray-400">{ministry.description}</div>}
-              </div>
-            </button>
+        {/* Kalendarze służb — dynamicznie: wszystkie moduły z zakładką „Wydarzenia" */}
+        <ChoiceList label={tr('Kalendarze służb')}>
+          {(ministries || MINISTRY_CALENDARS).map((ministry) => (
+            <ChoiceRow key={ministry.key} icon={calendarIcon(ministry.iconName)} title={ministry.title}
+              description={ministry.description} onClick={() => onSelectMinistry(ministry.key)} />
           ))}
-        </div>
+        </ChoiceList>
       </div>
     </Modal>
   );
@@ -520,13 +484,13 @@ export default function CalendarModule({ embedded = false } = {}) {
     MINISTRY_CALENDARS.forEach((c) => {
       const m = moduleByKey.get(c.key);
       if (m && !m.is_enabled) return;
-      list.push({ ...c, title: m?.label || c.title });
+      list.push({ ...c, title: m?.label || c.title, iconName: m?.icon || c.iconName });
     });
     const have = new Set(MINISTRY_CALENDARS.map((m) => m.key));
     (allModules || []).forEach((m) => {
       if (have.has(m.key) || !m.is_enabled) return;
       if (!(allTabs[m.id] || []).some((tb) => tb.component_type === 'events')) return;
-      list.push({ key: m.key, icon: '📅', title: m.label || m.key, description: '' });
+      list.push({ key: m.key, iconName: m.icon || 'CalendarDays', title: m.label || m.key, description: '' });
     });
     return list;
   }, [allModules, allTabs, moduleByKey]);

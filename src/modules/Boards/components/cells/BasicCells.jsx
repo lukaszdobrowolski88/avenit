@@ -3,6 +3,7 @@ import { Star, Link as LinkIcon, Paperclip, Plus, X, ExternalLink } from 'lucide
 import Popover from '../Popover';
 import { evalFormula } from '../../lib/formula';
 import { DateInput } from '../../../../components/pickers';
+import CustomDatePicker from '../../../../components/CustomDatePicker';
 import { tr } from '../../../../i18n';
 
 // ── Tekst (inline) ───────────────────────────────────────────────────
@@ -39,24 +40,14 @@ export function NumberCell({ column, value, onChange, readOnly }) {
 }
 
 // ── Data ─────────────────────────────────────────────────────────────
-// Spokojnie jak w Notion: data to zwykły tekst; input pojawia się dopiero po kliknięciu.
-// Puste = pusto, z afordancją „+" na hover wiersza (grupa group/row w wierszu).
-export function DateCell({ value, onChange, readOnly }) {
-  const [editing, setEditing] = useState(false);
+// Spokojnie jak w Notion: data to zwykły tekst, pusto = „+” na hover wiersza. Kliknięcie otwiera
+// ten sam kalendarz co w formularzach aplikacji (wcześniej w komórce pojawiało się całe pole).
+export function DateCell({ column, value, onChange, readOnly }) {
   const fmt = value ? String(value).slice(0, 10).split('-').reverse().join('.') : '';
   if (readOnly) return <div className="px-2 text-sm text-gray-600 dark:text-gray-300 w-full text-center tabular-nums">{fmt}</div>;
-  if (editing) {
-    return (
-      <DateInput compact autoFocus value={value || ''} onChange={(e) => onChange(e.target.value || null)}
-        onBlur={() => setEditing(false)}
-        className="w-full h-full bg-transparent px-2 text-sm text-gray-600 dark:text-gray-300 outline-none text-center focus:ring-2 focus:ring-accent-primary/40 rounded [color-scheme:light] dark:[color-scheme:dark]" />
-    );
-  }
   return (
-    <button onClick={() => setEditing(true)} className="w-full h-full px-2 flex items-center justify-center text-sm text-gray-600 dark:text-gray-300">
-      {fmt ? <span className="tabular-nums">{fmt}</span>
-        : <span className="text-gray-300 dark:text-gray-600 text-base leading-none opacity-0 group-hover/row:opacity-100 transition-opacity">+</span>}
-    </button>
+    <CustomDatePicker variant="cell" value={value ? String(value).slice(0, 10) : ''}
+      onChange={(v) => onChange(v || null)} aria-label={column?.name || tr('Data')} />
   );
 }
 

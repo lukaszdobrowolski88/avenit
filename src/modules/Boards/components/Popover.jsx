@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 
 // Lekki popover zakotwiczony do elementu wyzwalającego (portal do body).
 // Zamyka się po kliknięciu poza i przy Escape. Używany do edytorów komórek.
-export default function Popover({ trigger, children, className = '', width, onOpenChange, align = 'left', triggerClassName = 'w-full h-full' }) {
+// `bare` = bez domyślnej ramki/cienia — wygląd daje className (np. wspólne pick-pop z pickList.css).
+export default function Popover({ trigger, children, className = '', width, onOpenChange, align = 'left', triggerClassName = 'w-full h-full', bare = false }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const popRef = useRef(null);
@@ -63,7 +64,7 @@ export default function Popover({ trigger, children, className = '', width, onOp
         <div
           ref={popRef}
           style={{ position: 'fixed', top: coords.top, left: coords.left, minWidth: coords.minWidth, zIndex: 200 }}
-          className={`bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 ${className}`}
+          className={bare ? className : `bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 ${className}`}
         >
           {typeof children === 'function' ? children({ close: () => setOpen(false) }) : children}
         </div>,

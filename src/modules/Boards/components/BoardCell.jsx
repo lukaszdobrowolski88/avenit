@@ -40,7 +40,7 @@ export default function BoardCell({ column, value, onChange, onUpdateColumn, peo
     case 'number':
       return <NumberCell column={column} {...common} />;
     case 'date':
-      return <DateCell {...common} />;
+      return <DateCell column={column} {...common} />;
     case 'timeline':
       return <TimelineCell {...common} />;
     case 'checkbox':

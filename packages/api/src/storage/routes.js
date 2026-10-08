@@ -40,6 +40,37 @@ async function shrinkImage(bucket, target) {
   }
 }
 
+// Miniatury zdjęć na żądanie: GET /storage/<bucket>/<plik>?w=96. Awatary to często zdjęcia
+// z telefonu (3–4 MB) pokazywane w kółku 40 px — lista rozmów ładowała je bardzo długo.
+// Szerokości z białej listy (żadnego zalewu cache), krótszy bok = w (pod object-cover), WebP,
+// zapis w STORAGE_DIR/<tenant>/.thumbs/<bucket>/<plik>@<w>.webp; odświeżane, gdy oryginał jest
+// nowszy. Oryginał zostaje nietknięty; bez sharp albo przy błędzie → null (serwujemy oryginał).
+export const THUMB_WIDTHS = new Set([48, 64, 96, 128, 192, 256]);
+const THUMB_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+export async function thumbnailFor(tenant, bucket, filePath, target, width, baseDir = config.STORAGE_DIR) {
+  if (!THUMB_WIDTHS.has(width) || !THUMB_EXT.has(path.extname(target).toLowerCase())) return null;
+  try {
+    if (sharpLib === undefined) sharpLib = (await import('sharp').catch(() => null))?.default ?? null;
+    if (!sharpLib) return null;
+    const thumb = safeJoin(tenant, '.thumbs', `${bucket}/${filePath}@${width}.webp`, baseDir);
+    const [src, existing] = await Promise.all([fsp.stat(target), fsp.stat(thumb).catch(() => null)]);
+    if (existing && existing.mtimeMs >= src.mtimeMs) return thumb;
+    await fsp.mkdir(path.dirname(thumb), { recursive: true });
+    const out = await sharpLib(target)
+      .rotate() // orientacja z EXIF (zdjęcia z iPhone'a)
+      .resize({ width, height: width, fit: 'outside', withoutEnlargement: true })
+      .webp({ quality: 78 })
+      .toBuffer();
+    // Zapis przez plik tymczasowy + rename — równoległe żądania nie zobaczą połowy pliku.
+    const tmp = `${thumb}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+    await fsp.writeFile(tmp, out);
+    await fsp.rename(tmp, thumb);
+    return thumb;
+  } catch {
+    return null;
+  }
+}
+
 // Znane buckety (jak w Supabase) — fail-closed na literówki.
 const BUCKETS = new Set([
   'public-assets',
@@ -327,6 +358,16 @@ export default async function storageRoutes(app) {
     const target = safeJoin(req.tenant.slug, bucket, filePath);
     if (!fs.existsSync(target) || !fs.statSync(target).isFile()) {
       return reply.code(404).send({ error: 'Nie znaleziono pliku' });
+    }
+    const width = Number(req.query?.w);
+    if (width && !signedOnly) {
+      const thumb = await thumbnailFor(req.tenant.slug, bucket, filePath, target, width);
+      if (thumb) {
+        // Nazwy awatarów zawierają znacznik czasu (nowe zdjęcie = nowy adres), a miniatura
+        // odświeża się po zmianie oryginału — tydzień w cache przeglądarki jest bezpieczny.
+        reply.header('Cache-Control', 'public, max-age=604800');
+        return reply.type('image/webp').send(fs.createReadStream(thumb));
+      }
     }
     return reply.sendFile
       ? reply.sendFile(target) // jeśli zarejestrowano @fastify/static

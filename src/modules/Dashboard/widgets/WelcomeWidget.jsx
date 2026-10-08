@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckSquare, Calendar, Heart } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { thumbUrl } from '../../../lib/imageThumb';
 
 export default function WelcomeWidget({ userProfile, userEmail, stats }) {
   const displayName = userProfile?.full_name || userEmail?.split('@')[0] || tr('Użytkowniku');
@@ -20,7 +21,7 @@ export default function WelcomeWidget({ userProfile, userEmail, stats }) {
         <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light p-1 shadow-lg">
           {userProfile?.avatar_url ? (
             <img
-              src={userProfile.avatar_url}
+              src={thumbUrl(userProfile.avatar_url, 96)}
               alt="Avatar"
               className="w-full h-full rounded-xl object-cover"
             />

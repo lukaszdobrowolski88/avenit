@@ -68,8 +68,13 @@ function SummaryCell({ column, items }) {
   if (s.kind === 'duration') {
     return <div className="w-full text-right px-2 text-sm font-semibold text-gray-600 dark:text-gray-300">{s.text}</div>;
   }
-  return <div className="w-full text-center text-[11px] text-gray-400">{s.filled}/{s.total}</div>;
+  // „wypełnione/wszystkie” (np. 0/1) przy osobach czy datach było szumem — pozostałe tabele go nie mają.
+  return null;
 }
+const hasSummary = (column, items) => {
+  const s = summarizeColumn(column, items);
+  return (s.kind === 'battery' && s.total > 0) || s.kind === 'number' || s.kind === 'duration';
+};
 
 // ── Wiersz elementu (sortowalny + memoizowany) ───────────────────────
 const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn, onOpen, onDelete, canDelete, updatesCount,
@@ -247,7 +252,8 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
               </div>
             </div>
 
-            {/* Podsumowania */}
+            {/* Podsumowania — tylko gdy któraś kolumna ma co podsumować (status, liczby, czas) */}
+            {columns.some(col => hasSummary(col, groupItems)) && (
             <div className="flex items-stretch bg-gray-50/70 dark:bg-gray-800/60 min-h-[34px]">
               <div className="shrink-0" style={{ width: HANDLE_W }} />
               <div className="shrink-0" style={{ width: 4 }} />
@@ -259,6 +265,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
               ))}
               <div className="shrink-0" style={{ width: ADDCOL_W }} />
             </div>
+            )}
           </div>
         </div>
       )}

@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 import { getInitials, stringToColor } from '../utils/messageHelpers';
 import { brandTone } from '../../../lib/brandTone';
+import { thumbUrl } from '../../../lib/imageThumb';
 import { statusColors, statusLabels } from '../../../hooks/usePresence';
 
+const SIZE_PX = { xs: 24, sm: 32, md: 40, lg: 48, xl: 64 };
+
 export default function UserAvatar({ user, size = 'md', className = '', showStatus = false, status = null }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  useEffect(() => { setImgFailed(false); }, [user?.avatar_url]);
   const sizeClasses = {
     xs: 'w-6 h-6 text-[10px]',
     sm: 'w-8 h-8 text-xs',
@@ -38,19 +43,6 @@ export default function UserAvatar({ user, size = 'md', className = '', showStat
     );
   };
 
-  if (user?.avatar_url) {
-    return (
-      <div className={`relative ${sizeClasses[size]} ${className}`}>
-        <img
-          src={user.avatar_url}
-          alt={name}
-          className="w-full h-full rounded-full object-cover ring-2 ring-white dark:ring-gray-800"
-        />
-        {renderStatusIndicator()}
-      </div>
-    );
-  }
-
   return (
     <div className={`relative ${sizeClasses[size]} ${className}`}>
       <div
@@ -60,6 +52,17 @@ export default function UserAvatar({ user, size = 'md', className = '', showStat
       >
         {initials || <User size={size === 'xs' ? 12 : size === 'sm' ? 14 : size === 'lg' ? 20 : size === 'xl' ? 24 : 16} />}
       </div>
+      {/* Zdjęcie jako miniatura (serwer ?w=) nad inicjałami — zanim się wczyta, widać inicjały, a nie puste kółko. */}
+      {user?.avatar_url && !imgFailed && (
+        <img
+          src={thumbUrl(user.avatar_url, SIZE_PX[size] || 40)}
+          alt={name}
+          loading="lazy"
+          decoding="async"
+          onError={() => setImgFailed(true)}
+          className="absolute inset-0 w-full h-full rounded-full object-cover ring-2 ring-white dark:ring-gray-800"
+        />
+      )}
       {renderStatusIndicator()}
     </div>
   );

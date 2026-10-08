@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { MoreHorizontal, Trash2, Pencil, ArrowLeft, ArrowRight } from 'lucide-react';
 import Popover from './Popover';
-import ColumnIcon from './ColumnIcon';
 import LabelsEditor from './LabelsEditor';
 import CustomSelect from '../../../components/CustomSelect';
 import { tr } from '../../../i18n';
-import { getColumnType } from '../lib/columnTypes';
 import { supabase } from '../../../lib/supabase';
 import { fetchBoardColumnsCached } from '../lib/relationCache';
 import { confirmDialog } from '../../../lib/dialog';
 
-// Nagłówek kolumny: ikona typu + nazwa (edycja) + menu (ustawienia/usuń).
+// Nagłówek kolumny: nazwa (edycja) + menu (ustawienia/usuń). Bez ikony typu — nagłówki jak w
+// pozostałych tabelach aplikacji (DataTable); typ kolumny widać po zawartości komórek.
 export default function ColumnHeader({ column, allColumns = [], onUpdate, onDelete, onReorder }) {
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(column.name);
   const [boards, setBoards] = useState([]);
   const [targetCols, setTargetCols] = useState([]);
-  const t = getColumnType(column.type);
 
   // Reorder kolumn (menu w lewo/prawo) — bez ryzykownego drag na duplikowanym nagłówku.
   const sortedCols = [...allColumns].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
@@ -45,7 +43,6 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
 
   return (
     <div className="board-th h-full flex items-center gap-1.5 px-2 group/col text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-      <ColumnIcon name={t.icon} size={13} className="text-gray-400 shrink-0" />
       {renaming ? (
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onBlur={commit}
           onKeyDown={(e) => e.key === 'Enter' && commit()}

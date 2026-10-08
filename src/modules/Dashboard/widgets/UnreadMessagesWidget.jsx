@@ -11,6 +11,7 @@ import { getMinistryName } from '../../Komunikator/utils/messageHelpers';
 import {
   emailPattern, normEmail, sameEmail, readSince, unreadSummary, previewText, channelName,
 } from '../../Komunikator/utils/chatLogic';
+import { thumbUrl } from '../../../lib/imageThumb';
 
 // Widżet „Nieprzeczytane wiadomości” (K11): stała liczba zapytań niezależnie od liczby rozmów —
 // mój skład, rozmowy, JEDNA paczka nieprzeczytanych wiadomości (bez usuniętych), druga osoba
@@ -165,7 +166,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
     if (sender?.avatar_url) {
       return (
         <img
-          src={sender.avatar_url}
+          src={thumbUrl(sender.avatar_url, 40)}
           alt={sender.full_name || tr('Nadawca')}
           className="w-10 h-10 rounded-full object-cover"
         />

@@ -33,6 +33,7 @@ import {
 import { CATEGORIES } from './categories';
 import { tr, appLocale } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
+import { thumbUrl } from '../../lib/imageThumb';
 
 // ============================================
 // SKELETON LOADER
@@ -134,7 +135,7 @@ function PrayerRequestCard({
           </div>
         ) : avatarUrl ? (
           <img
-            src={avatarUrl}
+            src={thumbUrl(avatarUrl, 40)}
             alt={authorName}
             className="w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-gray-700"
           />

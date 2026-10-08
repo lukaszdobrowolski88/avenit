@@ -32,6 +32,7 @@ import { tr, appLocale } from '../../i18n';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import Button from '../../components/Button';
+import { thumbUrl } from '../../lib/imageThumb';
 
 const WIDGET_ICONS = {
   ministry: Calendar,
@@ -163,7 +164,7 @@ export default function PersonalDashboard({ user }) {
           {/* Avatar */}
           {userProfile?.avatar_url ? (
             <img
-              src={userProfile.avatar_url}
+              src={thumbUrl(userProfile.avatar_url, 56)}
               alt="Avatar"
               className="w-14 h-14 rounded-full object-cover ring-2 ring-white dark:ring-gray-700 shadow-lg"
             />
