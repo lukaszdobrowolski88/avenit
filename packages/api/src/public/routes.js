@@ -4,6 +4,7 @@
 // Wyjątek: /api/assignment/:id/respond — ta sama odpowiedź z aplikacji (zalogowany, własny wiersz).
 import { applyOps } from '../fn/event-assignments-patch.js';
 import { emitChange } from '../realtime/hub.js';
+import { isAccountForAssignee } from '../lib/assigneeIdentity.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ID_RE = /^[0-9A-Za-z-]{1,64}$/;
@@ -173,16 +174,17 @@ export default async function publicPageRoutes(app) {
     const email = String(req.user?.email || '');
     if (!email) return reply.code(403).send({ error: 'Brak e-maila w sesji' });
     try {
-      const result = await respondToAssignments(req.db, {
-        action, whereSql: 'id::text = $2 AND lower(assigned_email) = lower($3)', params: [id, email],
-      });
-      if (!result.updated) {
-        const { rows } = await req.db.query(
-          'SELECT status FROM schedule_assignments WHERE id::text = $1 AND lower(assigned_email) = lower($2)', [id, email]
-        );
-        if (!rows.length) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
-        return reply.send({ ok: true, status: rows[0].status, already: true });
+      // Własny wiersz = konto tej osoby z grafiku — także gdy konto ma inny e-mail niż lista
+      // zespołu (powiązania w lib/assigneeIdentity.js). Cudze przypisanie = 404, jak brak wiersza.
+      const { rows: own } = await req.db.query(
+        'SELECT assigned_email, assigned_name, team_type, status FROM schedule_assignments WHERE id::text = $1', [id]
+      );
+      const a = own[0];
+      if (!a || !(await isAccountForAssignee(req.db, email, { email: a.assigned_email, name: a.assigned_name, teamType: a.team_type }))) {
+        return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
       }
+      const result = await respondToAssignments(req.db, { action, whereSql: 'id::text = $2', params: [id] });
+      if (!result.updated) return reply.send({ ok: true, status: a.status, already: true });
       emitEvents(req, result.events);
       return reply.send({ ok: true, status: result.status });
     } catch (err) {
