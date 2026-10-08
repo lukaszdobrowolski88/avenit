@@ -1,18 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import Button from '../../components/Button';
-import { createPortal } from 'react-dom';
-import { supabase } from '../../lib/supabase';
-import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX, Users, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
+import { supabase, getCachedUser } from '../../lib/supabase';
+import { ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX, Users, Calendar, AlertTriangle, RefreshCw, Plus, MapPin, CircleDashed } from 'lucide-react';
 import { toast } from '../../lib/toast';
-import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
-import { useT } from '../../i18n';
-import { tr, appLocale } from '../../i18n';
+import { useCampusBadge } from '../../components/CampusBadge';
+import { useT, tr, appLocale } from '../../i18n';
 import { useScheduleAssignments, patchEventAssignments, scheduleSaveErrorMessage } from '../../hooks/useScheduleAssignments';
-import { eventInviteSummary, eventIncludesTeam } from '../../lib/scheduleBridge';
-import { getCachedUser } from '../../lib/supabase';
-import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
+import { eventIncludesTeam } from '../../lib/scheduleBridge';
+import { useModuleLabel } from '../../hooks/useModuleLabel';
+import { TH } from '../../components/ui/DataTable';
+import './scheduleGrid.css';
 
 // Grafik nad WYDARZENIAMI (twardy switch z programów). Wiersze = wydarzenia danej służby:
 // wydarzenie należy do służby, jeśli reguła event_type_teams (module_key, event_type) zawiera
@@ -21,6 +22,12 @@ import { DataTable, THead, TH, TR, TD } from '../../components/ui/DataTable';
 // WYŁĄCZNIE przez fn event-assignments-patch (atomowo, tylko zmienione pola — nie nadpisuje
 // przypisań innych służb wpisanych w międzyczasie). Wysyłka/statusy przez silnik
 // schedule_assignments po event_id (ten sam co zakładka „Służby").
+//
+// Układ: data + wydarzenie przyklejone z lewej, status/„Powiadom” z prawej, role przewijane
+// w środku. Przy każdej osobie jej status (potwierdzone / czeka / odmowa / jeszcze nie
+// powiadomiono). Osoby z nieobecnością (zgłoszoną w Dostępności albo wpisaną w kolumnie
+// „Nieobecni”) są na liście wyboru zablokowane; gdy ktoś już przypisany zgłosi nieobecność,
+// jego pigułka robi się czerwona (konflikt do rozwiązania).
 
 // Mapowanie tabeli osób służby (zgodne z EventTeamsTab).
 const TEAM_MEMBER_TABLE = {
@@ -32,6 +39,10 @@ const csvNames = (s) => String(s || '').split(',').map((x) => x.trim()).filter(B
 const pad2 = (n) => String(n).padStart(2, '0');
 // Dzień/miesiąc LOKALNY (toISOString dawał UTC — między 00:00 a 02:00 „wczoraj”).
 const localDay = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+// Data z API bywa „2026-10-18T00:00:00.000Z” — liczymy dzień z samego YYYY-MM-DD (bez strefy).
+const dayKey = (v) => String(v || '').slice(0, 10);
+const parseDay = (v) => { const [y, m, d] = dayKey(v).split('-').map(Number); return new Date(y, (m || 1) - 1, d || 1); };
+const shortDay = (v) => { const [, m, d] = dayKey(v).split('-'); return `${d}.${m}`; };
 
 // Wąski ekran (telefon) → widok kart zamiast szerokiej tabeli.
 function useIsNarrow(query = '(max-width: 767px)') {
@@ -48,233 +59,344 @@ function useIsNarrow(query = '(max-width: 767px)') {
   return narrow;
 }
 
-// Hook do obliczania pozycji dropdowna
+// Tło karty, w której leży grafik → --sg-bg (tym kryją się przyklejone kolumny). Liczone
+// z wyglądu, bo zależy od presetu/motywu; odświeżane po przełączeniu trybu ciemnego.
+function useSurfaceBg(ref, ready) {
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || typeof window === 'undefined') return undefined;
+    const apply = () => {
+      for (let n = el.parentElement; n; n = n.parentElement) {
+        const m = getComputedStyle(n).backgroundColor.match(/rgba?\(([^)]+)\)/);
+        if (!m) continue;
+        const [r, g, b, a = '1'] = m[1].split(',').map((x) => x.trim());
+        if (parseFloat(a) >= 0.95) { el.style.setProperty('--sg-bg', `rgb(${r}, ${g}, ${b})`); return; }
+      }
+      el.style.removeProperty('--sg-bg');
+    };
+    apply();
+    const mo = new MutationObserver(apply);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-color-preset'] });
+    return () => mo.disconnect();
+  }, [ref, ready]);
+}
+
+// Poziome przewijanie siatki + znaczniki krawędzi (cień przy przyklejonych kolumnach tylko,
+// gdy coś się pod nie wsunęło).
+function GridScroller({ children }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const update = () => {
+      el.dataset.scrollStart = el.scrollLeft <= 1 ? '1' : '0';
+      el.dataset.scrollEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 ? '1' : '0';
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(update);
+      ro.observe(el);
+      if (el.firstElementChild) ro.observe(el.firstElementChild);
+    }
+    return () => { el.removeEventListener('scroll', update); ro?.disconnect(); };
+  }, []);
+  return (
+    <div ref={ref} className="sg-wrap overflow-x-auto custom-scrollbar pb-2" data-scroll-start="1" data-scroll-end="1">
+      {children}
+    </div>
+  );
+}
+
+// Pozycja listy (position: fixed → współrzędne okna, bez scrollY).
 function useDropdownPosition(triggerRef, isOpen) {
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, openUpward: false });
+  const [coords, setCoords] = useState({ top: 0, bottom: 0, left: 0, width: 0, openUpward: false });
 
   useEffect(() => {
-    if (isOpen && triggerRef.current) {
-      const updatePosition = () => {
-        const rect = triggerRef.current.getBoundingClientRect();
-        const dropdownMaxHeight = 280;
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        const openUpward = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
-        // Lista nie może wyjść poza prawą krawędź ekranu (telefon).
-        const listWidth = Math.max(rect.width, 224);
-        const left = Math.max(8, Math.min(rect.left + window.scrollX, window.scrollX + window.innerWidth - listWidth - 8));
-
-        setCoords({
-          top: openUpward
-            ? rect.top + window.scrollY - 4
-            : rect.bottom + window.scrollY + 4,
-          left,
-          width: listWidth,
-          openUpward
-        });
-      };
-      updatePosition();
-      window.addEventListener('resize', updatePosition);
-      window.addEventListener('scroll', updatePosition, true);
-      return () => {
-        window.removeEventListener('resize', updatePosition);
-        window.removeEventListener('scroll', updatePosition, true);
-      };
-    }
-  }, [isOpen]);
+    if (!isOpen || !triggerRef.current) return undefined;
+    const updatePosition = () => {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const dropdownMaxHeight = 340;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openUpward = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
+      // Lista nie może wyjść poza prawą krawędź ekranu (telefon).
+      const listWidth = Math.min(Math.max(rect.width, 296), window.innerWidth - 16);
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - listWidth - 8));
+      setCoords({ top: rect.bottom + 4, bottom: window.innerHeight - rect.top + 4, left, width: listWidth, openUpward });
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return coords;
 }
 
-// Multi-select dla tabeli grafiku (obsługa myszą, dotykiem i klawiaturą:
-// Enter/Spacja/↓ otwiera, ↑/↓ przechodzi po osobach, Enter/Spacja zaznacza, Esc zamyka).
-// unavailableMembers — zgłoszone nieobecności (volunteer_blockouts): ostrzeżenie, ale wybór możliwy
-// (lider może wiedzieć więcej); absentMembers — ręczna nieobecność w grafiku: wybór zablokowany.
-const TableMultiSelect = ({ options, value, onChange, absentMembers = [], unavailableMembers = [], label }) => {
-  const t = useT();
+// Status osoby w komórce — kolorowy jest tylko znak, pigułka zostaje neutralna (bez „tęczy”).
+const STATUS = {
+  accepted: { icon: Check, cls: 'text-green-700 dark:text-green-400', label: () => tr('potwierdzone') },
+  pending: { icon: Clock, cls: 'text-amber-700 dark:text-amber-400', label: () => tr('czeka na odpowiedź') },
+  rejected: { icon: XIcon, cls: 'text-red-600 dark:text-red-400', label: () => tr('odmowa') },
+  draft: { icon: CircleDashed, cls: 'text-gray-400 dark:text-gray-500', label: () => tr('jeszcze nie powiadomiono') },
+  noemail: { icon: AlertTriangle, cls: 'text-amber-700 dark:text-amber-400', label: () => tr('brak e-maila — bez powiadomienia') },
+};
+
+function PersonChip({ name, status = 'draft', conflict = null }) {
+  const meta = STATUS[status] || STATUS.draft;
+  const Icon = conflict ? CalendarX : meta.icon;
+  const label = conflict || meta.label();
+  return (
+    <span
+      className={`sg-chip ${status === 'rejected' && !conflict ? 'sg-chip--rejected' : ''} ${conflict ? 'sg-chip--conflict' : ''}`}
+      title={`${name} — ${label}`}
+    >
+      <Icon size={12} strokeWidth={2.5} className={`shrink-0 ${conflict ? '' : meta.cls}`} aria-hidden="true" />
+      <span className="sg-chip-name">{name}</span>
+      <span className="sr-only">({label})</span>
+    </span>
+  );
+}
+
+function AwayChip({ name, reported, title }) {
+  const Icon = reported ? CalendarX : UserX;
+  return (
+    <span className="sg-chip sg-chip--away" title={title}>
+      <Icon size={12} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
+      <span className="sg-chip-name">{name}</span>
+    </span>
+  );
+}
+
+// Wybór osób do komórki (mysz, dotyk, klawiatura: Enter/Spacja/↓ otwiera, ↑/↓ po osobach,
+// Enter/Spacja zaznacza, Esc zamyka; przy dłuższej liście pole szukania).
+//   blocked — Map(imię → powód): tej osoby nie da się DODAĆ (nieobecność); jeśli już jest
+//             w komórce, da się ją zdjąć.
+//   locked  — imiona pokazane jako zaznaczone i niezmienialne (kolumna „Nieobecni”: zgłoszone
+//             w Dostępności).
+//   hints   — Map(imię → podpowiedź), np. „też: Wokale”.
+const PeoplePicker = ({ label, options, value, onChange, blocked, locked = [], lockedTitle, hints, renderChip, renderLocked }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const triggerRef = useRef(null);
+  const popRef = useRef(null);
   const listRef = useRef(null);
+  const searchRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
-  const selectedItems = csvNames(value);
+  const selected = csvNames(value);
+  const lockedSet = useMemo(() => new Set(locked), [locked]);
+  const showSearch = options.length > 7;
 
   const close = useCallback((focusTrigger) => {
     setIsOpen(false);
+    setQuery('');
     if (focusTrigger) triggerRef.current?.focus();
   }, []);
 
   useEffect(() => {
     if (!isOpen) return undefined;
     const handleClickOutside = (e) => {
-      if (triggerRef.current && !triggerRef.current.contains(e.target) && !e.target.closest('.portal-multiselect')) {
-        setIsOpen(false);
-      }
+      if (triggerRef.current && !triggerRef.current.contains(e.target) && !e.target.closest('.portal-multiselect')) close(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+  }, [isOpen, close]);
 
-  // Po otwarciu fokus na zaznaczonej (albo pierwszej) osobie — żeby dało się działać klawiaturą.
+  // Po otwarciu fokus w szukajce albo na zaznaczonej (pierwszej) osobie — żeby działała klawiatura.
   useEffect(() => {
-    if (!isOpen || !coords.width || !listRef.current) return;
-    const sel = listRef.current.querySelector('[role="option"][aria-selected="true"]')
-      || listRef.current.querySelector('[role="option"]');
+    if (!isOpen || !coords.width) return;
+    if (searchRef.current) { searchRef.current.focus({ preventScroll: true }); return; }
+    const list = listRef.current;
+    const sel = list?.querySelector('[role="option"][aria-selected="true"]:not([aria-disabled="true"])')
+      || list?.querySelector('[role="option"]:not([aria-disabled="true"])');
     sel?.focus({ preventScroll: true });
   }, [isOpen, coords.width]);
 
-  const toggleSelection = (name, isAbsent) => {
-    if (isAbsent) return;
-    const newSelection = selectedItems.includes(name)
-      ? selectedItems.filter((i) => i !== name)
-      : [...selectedItems, name];
-    onChange(newSelection.join(', '));
+  const toggle = (name) => {
+    const next = selected.includes(name) ? selected.filter((n) => n !== name) : [...selected, name];
+    onChange(next.join(', '));
   };
 
-  const onListKeyDown = (e) => {
-    const items = Array.from(listRef.current?.querySelectorAll('[role="option"]') || []);
+  const enabledOptions = () => Array.from(listRef.current?.querySelectorAll('[role="option"]:not([aria-disabled="true"])') || []);
+  const onKeyDown = (e) => {
+    const items = enabledOptions();
     const idx = items.indexOf(document.activeElement);
-    if (e.key === 'ArrowDown') { e.preventDefault(); items[Math.min(items.length - 1, idx + 1)]?.focus(); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); items[Math.max(0, idx - 1)]?.focus(); }
-    else if (e.key === 'Home') { e.preventDefault(); items[0]?.focus(); }
-    else if (e.key === 'End') { e.preventDefault(); items[items.length - 1]?.focus(); }
+    const inSearch = document.activeElement === searchRef.current;
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[inSearch ? 0 : Math.min(items.length - 1, idx + 1)]?.focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx <= 0 && searchRef.current) searchRef.current.focus(); else items[Math.max(0, idx - 1)]?.focus(); }
+    else if (e.key === 'Enter' && inSearch) { e.preventDefault(); items[0]?.click(); }
     else if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); close(true); }
   };
 
-  const summary = selectedItems.length ? selectedItems.join(', ') : t('Wybierz...');
+  const q = query.trim().toLowerCase();
+  const visible = q ? options.filter((p) => p.full_name.toLowerCase().includes(q)) : options;
+  const lockedList = visible.filter((p) => lockedSet.has(p.full_name));
+  const free = visible.filter((p) => !lockedSet.has(p.full_name) && !blocked?.has(p.full_name));
+  const away = visible.filter((p) => !lockedSet.has(p.full_name) && blocked?.has(p.full_name));
+
+  const renderOption = (person) => {
+    const name = person.full_name;
+    const isLocked = lockedSet.has(name);
+    const isSel = isLocked || selected.includes(name);
+    const reason = blocked?.get(name);
+    const disabled = isLocked || (!!reason && !selected.includes(name));
+    const hint = isLocked ? lockedTitle : reason || hints?.get(name) || (!person.email ? tr('brak e-maila') : '');
+    return (
+      <button
+        type="button"
+        role="option"
+        tabIndex={-1}
+        aria-selected={isSel}
+        aria-disabled={disabled || undefined}
+        key={person.id ?? name}
+        className="sg-opt text-gray-800 dark:text-gray-100"
+        title={hint ? `${name} — ${hint}` : name}
+        onClick={() => { if (!disabled) toggle(name); }}
+      >
+        <span className="sg-check" aria-hidden="true">{isSel && <Check size={12} strokeWidth={3} />}</span>
+        <span className="truncate">{name}</span>
+        {hint && <span className={`sg-opt-hint ${reason || isLocked ? 'sg-opt-hint--warn' : ''}`}>{hint}</span>}
+      </button>
+    );
+  };
+
+  const summary = [...locked, ...selected].join(', ') || tr('Dodaj');
 
   return (
-    <div className="relative w-full">
+    <>
       <button
         type="button"
         ref={triggerRef}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label={label ? `${label}: ${summary}` : summary}
-        className="w-full min-h-[36px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-left cursor-pointer flex flex-wrap gap-1 items-center hover:border-accent-primary-light dark:hover:border-accent-primary-light focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 transition"
-        onClick={() => setIsOpen((o) => !o)}
+        className="sg-cell"
+        onClick={() => (isOpen ? close(false) : setIsOpen(true))}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown' && !isOpen) { e.preventDefault(); setIsOpen(true); }
           else if (e.key === 'Escape' && isOpen) { e.preventDefault(); close(true); }
         }}
       >
-        {selectedItems.length === 0 ? (
-          <span className="text-gray-500 dark:text-gray-400 text-xs">{t('Wybierz...')}</span>
-        ) : (
-          selectedItems.map((item, idx) => (
-            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-xs border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">
-              {item}
-            </span>
-          ))
+        {locked.map((n) => <React.Fragment key={`l:${n}`}>{renderLocked ? renderLocked(n) : n}</React.Fragment>)}
+        {selected.map((n) => <React.Fragment key={n}>{renderChip(n)}</React.Fragment>)}
+        {locked.length + selected.length === 0 && (
+          <span className="sg-add"><Plus size={13} aria-hidden="true" />{tr('Dodaj')}</span>
         )}
       </button>
 
       {isOpen && coords.width > 0 && document.body && createPortal(
         <div
-          ref={listRef}
-          role="listbox"
-          aria-multiselectable="true"
-          aria-label={label || undefined}
-          onKeyDown={onListKeyDown}
-          className="portal-multiselect fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-72 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100"
+          ref={popRef}
+          onKeyDown={onKeyDown}
+          className="portal-multiselect sg-pop fixed z-[9999] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
           style={{
-            ...(coords.openUpward
-              ? { bottom: `calc(100vh - ${coords.top}px)` }
-              : { top: coords.top }),
+            ...(coords.openUpward ? { bottom: coords.bottom } : { top: coords.top }),
             left: coords.left,
             width: coords.width,
+            maxHeight: 340,
           }}
         >
-          {options.length === 0 && (
-            <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">{t('Brak osób w tej służbie')}</div>
+          {showSearch && (
+            <input
+              ref={searchRef}
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={tr('Szukaj osoby…')}
+              aria-label={tr('Szukaj osoby…')}
+              className="sg-search bg-transparent text-gray-800 dark:text-gray-100"
+            />
           )}
-          {options.map((person) => {
-            const isSelected = selectedItems.includes(person.full_name);
-            const isAbsent = absentMembers.includes(person.full_name);
-            const isUnavailable = !isAbsent && unavailableMembers.includes(person.full_name);
-            return (
-              <button
-                type="button"
-                role="option"
-                tabIndex={-1}
-                aria-selected={isSelected}
-                aria-disabled={isAbsent || undefined}
-                key={person.id}
-                className={`w-full text-left px-3 py-2 min-h-[40px] text-[13px] flex items-center justify-between gap-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-primary/40
-                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed' : 'cursor-pointer hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300'}
-                  ${isSelected ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
-                `}
-                onClick={() => toggleSelection(person.full_name, isAbsent)}
-              >
-                <span className={isAbsent ? 'line-through decoration-gray-400 dark:decoration-gray-600' : isUnavailable ? 'text-red-600 dark:text-red-400' : ''}>
-                  {person.full_name}
-                  {isUnavailable && <span className="ml-1 text-xs opacity-80">({t('zgłoszona nieobecność')})</span>}
-                  {!person.email && !isAbsent && (
-                    <span className="ml-1 text-xs text-amber-700 dark:text-amber-400" title={tr('Brak e-maila — ta osoba nie dostanie powiadomienia')}>⚠</span>
-                  )}
-                </span>
-                {isSelected && !isAbsent && <Check size={14} aria-hidden="true" />}
-                {isAbsent && <UserX size={14} className="text-red-300 dark:text-red-400" aria-hidden="true" />}
-                {isUnavailable && !isSelected && <CalendarX size={14} className="text-red-400" aria-hidden="true" />}
-              </button>
-            );
-          })}
+          <div ref={listRef} role="listbox" aria-multiselectable="true" aria-label={label || undefined} className="overflow-y-auto custom-scrollbar py-1">
+            {options.length === 0 && (
+              <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">{tr('Brak osób w tej służbie')}</div>
+            )}
+            {options.length > 0 && visible.length === 0 && (
+              <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">{tr('Nikogo nie znaleziono')}</div>
+            )}
+            {lockedList.length > 0 && <div className="sg-section" role="presentation">{lockedTitle}</div>}
+            {lockedList.map(renderOption)}
+            {lockedList.length > 0 && free.length > 0 && <div className="sg-section" role="presentation">{tr('Pozostali')}</div>}
+            {free.map(renderOption)}
+            {away.length > 0 && <div className="sg-section" role="presentation">{tr('Niedostępni w tym dniu')}</div>}
+            {away.map(renderOption)}
+          </div>
         </div>,
         document.body
       )}
-    </div>
+    </>
   );
 };
 
-// Przycisk „Powiadom" + status akceptacji per wydarzenie (grafik nad wydarzeniami).
-// Przypisania są zsynchronizowane do schedule_assignments przy każdym wyborze osoby
-// (createAssignment/removeEventAssignment z event_id), więc tu tylko wysyłamy i pokazujemy status.
-// Wybór osoby NIE wysyła maila sam — dlatego przycisk jest wyraźny i pokazuje liczbę niewysłanych.
-function EventSendCell({ eventId, teamType, assignments, onSent }) {
-  const [loading, setLoading] = useState(false);
-  const s = eventInviteSummary(assignments, eventId, teamType);
-  const total = s.accepted + s.rejected + s.pending;
+// Podsumowanie statusów jednego wydarzenia (dla tej służby). Rozbija „czeka” na wysłane
+// (czekają na odpowiedź) i jeszcze niewysłane (toSend — do „Powiadom”).
+function summarize(assignments, eventId, teamType) {
+  let accepted = 0, rejected = 0, waiting = 0, toSend = 0;
+  const noEmail = [];
+  for (const a of assignments || []) {
+    if (a.event_id !== eventId || a.team_type !== teamType) continue;
+    if (a.status === 'accepted') accepted++;
+    else if (a.status === 'rejected') rejected++;
+    else if (a.email_sent_at) waiting++;
+    else if (a.assigned_email) toSend++;
+    else if (!noEmail.includes(a.assigned_name)) noEmail.push(a.assigned_name);
+  }
+  return { accepted, rejected, waiting, toSend, noEmail };
+}
 
+// Kolumna „Status” (przyklejona z prawej): Powiadom + liczniki odpowiedzi + konflikty.
+// Wybór osoby NIE wysyła maila sam — dlatego przycisk jest wyraźny i pokazuje liczbę niewysłanych.
+function EventStatus({ summary: s, conflicts, onSend }) {
+  const [loading, setLoading] = useState(false);
+  const hasCounts = s.accepted || s.waiting || s.rejected || s.noEmail.length || conflicts.length;
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-col items-start gap-1.5">
       {s.toSend > 0 && (
         <Button
           size="sm"
           icon={Send}
           loading={loading}
-          onClick={async () => { setLoading(true); try { await onSent(); } finally { setLoading(false); } }}
-          title={tr('Wyślij zaproszenia (e-mail i powiadomienie w aplikacji) osobom, które jeszcze ich nie dostały')}
+          onClick={async () => { setLoading(true); try { await onSend(); } finally { setLoading(false); } }}
+          title={tr('Wyślij zaproszenia (e-mail i powiadomienie push) osobom, które jeszcze ich nie dostały')}
           className="whitespace-nowrap"
         >
           {tr('Powiadom ({n})', { n: s.toSend })}
         </Button>
       )}
-      {total > 0 && (
-        <span className="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+      {hasCounts ? (
+        <div className="sg-counts">
           {s.accepted > 0 && (
-            <span className="inline-flex items-center gap-0.5 text-green-700 dark:text-green-400" title={tr('Potwierdzone: {n}', { n: s.accepted })} aria-label={tr('Potwierdzone: {n}', { n: s.accepted })}>
-              <Check size={12} aria-hidden="true" />{s.accepted}
+            <span className="text-green-700 dark:text-green-400" title={tr('Potwierdzone: {n}', { n: s.accepted })} aria-label={tr('Potwierdzone: {n}', { n: s.accepted })}>
+              <Check size={13} strokeWidth={2.5} aria-hidden="true" />{s.accepted}
             </span>
           )}
-          {s.pending > 0 && (
-            <span className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-400" title={tr('Czeka na odpowiedź: {n}', { n: s.pending })} aria-label={tr('Czeka na odpowiedź: {n}', { n: s.pending })}>
-              <Clock size={12} aria-hidden="true" />{s.pending}
+          {s.waiting > 0 && (
+            <span className="text-amber-700 dark:text-amber-400" title={tr('Czeka na odpowiedź: {n}', { n: s.waiting })} aria-label={tr('Czeka na odpowiedź: {n}', { n: s.waiting })}>
+              <Clock size={13} strokeWidth={2.5} aria-hidden="true" />{s.waiting}
             </span>
           )}
           {s.rejected > 0 && (
-            <span className="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400" title={tr('Odmówiło: {n}', { n: s.rejected })} aria-label={tr('Odmówiło: {n}', { n: s.rejected })}>
-              <XIcon size={12} aria-hidden="true" />{s.rejected}
+            <span className="text-red-600 dark:text-red-400" title={tr('Odmówiło: {n}', { n: s.rejected })} aria-label={tr('Odmówiło: {n}', { n: s.rejected })}>
+              <XIcon size={13} strokeWidth={2.5} aria-hidden="true" />{s.rejected}
             </span>
           )}
-        </span>
-      )}
-      {s.noEmail.length > 0 && (
-        <span
-          className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400"
-          title={tr('Bez e-maila — nie dostaną powiadomienia: {names}', { names: s.noEmail.join(', ') })}
-        >
-          <AlertTriangle size={12} aria-hidden="true" /> {tr('Bez e-maila: {names}', { names: s.noEmail.join(', ') })}
-        </span>
-      )}
+          {s.noEmail.length > 0 && (
+            <span className="text-amber-700 dark:text-amber-400" title={tr('Bez e-maila — nie dostaną powiadomienia: {names}', { names: s.noEmail.join(', ') })} aria-label={tr('Bez e-maila — nie dostaną powiadomienia: {names}', { names: s.noEmail.join(', ') })}>
+              <AlertTriangle size={13} strokeWidth={2.5} aria-hidden="true" />{s.noEmail.length}
+            </span>
+          )}
+          {conflicts.length > 0 && (
+            <span className="text-red-600 dark:text-red-400" title={tr('Przypisani mimo nieobecności: {names}', { names: conflicts.join(', ') })} aria-label={tr('Przypisani mimo nieobecności: {names}', { names: conflicts.join(', ') })}>
+              <CalendarX size={13} strokeWidth={2.5} aria-hidden="true" />{conflicts.length}
+            </span>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -284,8 +406,10 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const t = useT();
   const { getCampus } = useCampusBadge();
   const teamType = moduleKey;
+  const teamLabel = useModuleLabel(teamType, moduleName || '');
   const memberTableName = memberTableFor(teamType);
   const narrow = useIsNarrow();
+  const rootRef = useRef(null);
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -296,8 +420,10 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  useSurfaceBg(rootRef, !loading);
   const [bulkSending, setBulkSending] = useState(null); // monthKey
   const hintShown = useRef(false);
+  const expandInit = useRef(false);
   const saveSeq = useRef({}); // { [eventId]: numer ostatniego zapisu } — starsze odpowiedzi nie nadpisują nowszych
 
   const { assignments: schedAssignments, fetchAssignmentsForEvents, createAssignment, removeEventAssignment, sendInvitesForEvent } = useScheduleAssignments();
@@ -373,11 +499,11 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   // Tylko wydarzenia tej służby.
   const teamEvents = events.filter(includesThisTeam);
   const teamEventIds = () => teamEvents.map((e) => e.id).filter(Boolean);
+  const today = localDay();
 
   // Nieobecności dla zakresu dat wydarzeń grafiku (od dziś — przeszłości nie układamy).
   const availRange = (() => {
-    const today = localDay();
-    const dates = teamEvents.map((e) => String(e.date || '').slice(0, 10)).filter((d) => d >= today).sort();
+    const dates = teamEvents.map((e) => dayKey(e.date)).filter((d) => d >= today).sort();
     return dates.length ? `${dates[0]}|${dates[dates.length - 1]}` : '';
   })();
   useEffect(() => {
@@ -387,41 +513,54 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       .then(({ data }) => setAvailability(Array.isArray(data?.blockouts) ? data.blockouts : []))
       .catch(() => setAvailability([]));
   }, [availRange, teamType]);
-  const unavailableOn = (date) => {
-    const d = String(date || '').slice(0, 10);
-    return [...new Set(availability.filter((b) => b.start_date <= d && d <= b.end_date).map((b) => b.name))];
+
+  // Zgłoszone nieobecności w danym dniu: Map(imię → „17.10–19.10”).
+  const reportedOn = (date) => {
+    const d = dayKey(date);
+    const out = new Map();
+    for (const b of availability) {
+      if (!(b.start_date <= d && d <= b.end_date) || out.has(b.name)) continue;
+      out.set(b.name, b.start_date === b.end_date ? shortDay(b.start_date) : `${shortDay(b.start_date)}–${shortDay(b.end_date)}`);
+    }
+    return out;
   };
 
-  // Grupowanie po miesiącach
+  // Grupowanie po miesiącach: najpierw bieżący i przyszłe (rosnąco), potem minione (od najnowszego).
   const groupedEvents = teamEvents.reduce((acc, ev) => {
     if (!ev.date) return acc;
-    const date = new Date(ev.date);
-    const key = `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
+    const key = dayKey(ev.date).slice(0, 7);
     if (!acc[key]) acc[key] = [];
     acc[key].push(ev);
     return acc;
   }, {});
+  const currentMonth = today.slice(0, 7);
+  const upcomingMonths = Object.keys(groupedEvents).filter((k) => k >= currentMonth).sort();
+  const pastMonths = Object.keys(groupedEvents).filter((k) => k < currentMonth).sort().reverse();
+  const nextEventId = teamEvents
+    .filter((e) => dayKey(e.date) >= today)
+    .sort((a, b) => dayKey(a.date).localeCompare(dayKey(b.date)))[0]?.id;
 
-  const sortedMonths = Object.keys(groupedEvents).sort().reverse();
-
+  // Domyślnie rozwinięty bieżący i następny miesiąc (raz, po wczytaniu danych).
+  const monthsKey = `${upcomingMonths.join(',')}|${pastMonths.join(',')}`;
   useEffect(() => {
-    const currentMonthKey = localDay().slice(0, 7);
-    setExpandedMonths(prev => ({ ...prev, [currentMonthKey]: true }));
-  }, []);
+    if (expandInit.current || loading || monthsKey === '|') return;
+    expandInit.current = true;
+    const open = upcomingMonths.length ? upcomingMonths.slice(0, 2) : pastMonths.slice(0, 1);
+    setExpandedMonths(Object.fromEntries(open.map((k) => [k, true])));
+  }, [loading, monthsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleMonth = (monthKey) => {
     setExpandedMonths(prev => ({ ...prev, [monthKey]: !prev[monthKey] }));
   };
 
-  const formatMonthName = (monthKey) => {
+  const monthParts = (monthKey) => {
     const [year, month] = monthKey.split('-');
-    const date = new Date(year, month - 1);
-    return date.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+    const name = new Date(year, month - 1).toLocaleDateString(appLocale(), { month: 'long' });
+    return { name: name.replace(/^\p{L}/u, (c) => c.toUpperCase()), year };
   };
 
-  const formatDateShort = (dateString) => {
-    return new Date(dateString).toLocaleDateString(appLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
-  };
+  const formatDateShort = (dateString) => parseDay(dateString).toLocaleDateString(appLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const weekdayShort = (dateString) => parseDay(dateString).toLocaleDateString(appLocale(), { weekday: 'short' });
 
   // Ustaw pola sekcji tej służby w lokalnym stanie wydarzenia.
   const setTeamFields = (eventId, fields) => {
@@ -483,7 +622,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       const res = await createAssignment({
         eventId, teamType, roleKey, roleLabel,
         assignedName: name, assignedEmail: m?.email || null,
-        assignedByEmail: me?.email || null, assignedByName: me?.email?.split('@')[0] || 'Administrator',
+        assignedByEmail: me?.email || null, assignedByName: me?.full_name || me?.email?.split('@')[0] || 'Administrator',
         isSelfAssignment: !!(me?.email && m?.email && me.email.toLowerCase() === m.email.toLowerCase()),
       });
       if (!res?.success) failedAdd.push(name);
@@ -503,7 +642,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       const withEmail = added.some((n) => members.find((x) => x.full_name === n)?.email);
       if (withEmail) {
         hintShown.current = true;
-        toast.info(tr('Zapisano w grafiku. Aby powiadomić osoby, kliknij „Powiadom” przy dacie.'));
+        toast.info(tr('Zapisano w grafiku. Aby wysłać zaproszenia, kliknij „Powiadom” w kolumnie Status.'));
       }
     }
     await fetchAssignmentsForEvents(teamEventIds());
@@ -524,10 +663,15 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     await patchTeam(eventId, { absencja: value });
   };
 
+  // Kolumny na podstawie ról
+  const columns = roles.length > 0
+    ? roles.map(role => ({ key: role.field_key, label: role.name, roleId: role.id }))
+    : [{ key: 'osoba', label: t('Osoba'), roleId: null }];
+
   // Eksport widocznego grafiku (wszystkie wydarzenia tej służby) do CSV.
   const exportCsv = () => {
     const header = [tr('Data'), tr('Wydarzenie'), ...columns.map((c) => c.label), tr('Nieobecni'), tr('Notatki')];
-    const rows = teamEvents.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map((ev) => {
+    const rows = teamEvents.slice().sort((a, b) => dayKey(a.date).localeCompare(dayKey(b.date))).map((ev) => {
       const td = ev.assignments?.[teamType] || {};
       return [formatDateShort(ev.date), ev.title || '', ...columns.map((c) => td[c.key] || ''), td.absencja || '', td.notatki || ''];
     });
@@ -542,15 +686,18 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
 
   // Wysyłka zaproszeń dla jednego albo kilku wydarzeń (cały miesiąc) — jeden zbiorczy komunikat.
   const sendForEvents = async (eventIds) => {
-    let sent = 0, failed = 0, errorMsg = null, notConfigured = false;
+    let sent = 0, failed = 0, pushed = 0, errorMsg = null, notConfigured = false;
     for (const id of eventIds) {
-      const res = await sendInvitesForEvent(id, teamType);
-      if (res?.success) { sent += res.sent || 0; failed += res.failed || 0; continue; }
+      const res = await sendInvitesForEvent(id, teamType, teamLabel);
+      if (res?.success) { sent += res.sent || 0; failed += res.failed || 0; pushed += res.pushed || 0; continue; }
       if (res?.emailReady === false) { notConfigured = true; break; }
       errorMsg = res?.error || 'error';
     }
     if (notConfigured) toast.error(tr('Wysyłka e-maili nie jest skonfigurowana. Skontaktuj się z administratorem.'));
-    else if (sent > 0) toast.success(failed ? tr('Wysłano powiadomienia: {sent}, niepowodzeń: {failed}', { sent, failed }) : tr('Wysłano powiadomienia: {sent}', { sent }));
+    else if (sent > 0) {
+      const base = failed ? tr('Wysłano powiadomienia: {sent}, niepowodzeń: {failed}', { sent, failed }) : tr('Wysłano powiadomienia: {sent}', { sent });
+      toast.success(pushed ? `${base} ${tr('(push na telefon: {n})', { n: pushed })}` : base);
+    } else if (pushed > 0) toast.info(tr('E-mail nie wyszedł, ale push dotarł do: {n}. Spróbuj „Powiadom” ponownie później.', { n: pushed }));
     else if (failed > 0 || errorMsg) toast.error(tr('Nie udało się wysłać powiadomień.'));
     else toast.info(tr('Brak nowych osób do powiadomienia (sprawdź, czy mają e-mail w profilu).'));
     await fetchAssignmentsForEvents(teamEventIds());
@@ -561,10 +708,23 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     try { await sendForEvents(ids); } finally { setBulkSending(null); }
   };
 
-  // Kolumny na podstawie ról
-  const columns = roles.length > 0
-    ? roles.map(role => ({ key: role.field_key, label: role.name, roleId: role.id }))
-    : [{ key: 'osoba', label: t('Osoba'), roleId: null }];
+  // Status osoby w komórce (z silnika schedule_assignments).
+  const assignmentByKey = useMemo(() => {
+    const m = new Map();
+    for (const a of schedAssignments || []) {
+      if (a.event_id && a.team_type === teamType) m.set(`${a.event_id}|${a.role_key}|${a.assigned_name}`, a);
+    }
+    return m;
+  }, [schedAssignments, teamType]);
+  const memberByName = useMemo(() => new Map(members.map((m) => [m.full_name, m])), [members]);
+  const personStatus = (eventId, roleKey, name) => {
+    const a = assignmentByKey.get(`${eventId}|${roleKey}|${name}`);
+    if (!a) return memberByName.get(name) && !memberByName.get(name).email ? 'noemail' : 'draft';
+    if (a.status === 'accepted') return 'accepted';
+    if (a.status === 'rejected') return 'rejected';
+    if (!a.assigned_email) return 'noemail';
+    return a.email_sent_at ? 'pending' : 'draft';
+  };
 
   // Filtrowanie osób według roli
   const getMembersForRole = (roleId) => {
@@ -574,6 +734,22 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       .map(mr => String(mr.member_id));
     if (assignedMemberIds.length === 0) return members;
     return members.filter(member => assignedMemberIds.includes(String(member.id)));
+  };
+
+  // Kontekst wiersza: kto nieobecny (i dlaczego), kto już w której roli, konflikty.
+  const rowContext = (ev) => {
+    const team = ev.assignments?.[teamType] || {};
+    const manualAbsent = csvNames(team.absencja);
+    const reported = reportedOn(ev.date);
+    const blocked = new Map();
+    for (const n of manualAbsent) blocked.set(n, tr('nieobecność'));
+    for (const [n, range] of reported) if (!blocked.has(n)) blocked.set(n, tr('nieobecność {range}', { range }));
+    const rolesOf = new Map();
+    for (const c of columns) {
+      for (const n of csvNames(team[c.key])) rolesOf.set(n, [...(rolesOf.get(n) || []), c.label]);
+    }
+    const conflicts = [...rolesOf.keys()].filter((n) => blocked.has(n));
+    return { team, manualAbsent, reported, blocked, rolesOf, conflicts };
   };
 
   if (loading) {
@@ -591,55 +767,59 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     );
   }
 
-  // ── Wspólne elementy wiersza (tabela na komputerze / karta na telefonie) ──
-  const dateInfo = (ev, unavailableList) => (
-    <div className="flex flex-col gap-1.5 items-start text-xs">
-      <span className="tabular-nums font-semibold text-gray-800 dark:text-gray-100 text-[13px]">{formatDateShort(ev.date)}</span>
-      {ev.title && <span className="text-xs text-gray-600 dark:text-gray-400 font-normal">{ev.title}</span>}
-      <CampusBadge campus={getCampus(ev.campus_id)} />
-      {unavailableList.length > 0 && (
-        <span className="inline-flex items-start gap-1 text-xs text-red-600 dark:text-red-400 max-w-[200px]" title={t('Zgłoszone nieobecności')}>
-          <CalendarX size={12} className="shrink-0 mt-px" aria-hidden="true" />
-          <span>{unavailableList.join(', ')}</span>
-        </span>
-      )}
-      <EventSendCell
-        eventId={ev.id}
-        teamType={teamType}
-        assignments={schedAssignments}
-        onSent={() => sendForEvents([ev.id])}
+  // ── Komórki (tabela na komputerze / karta na telefonie) ──
+  const roleSelect = (ev, col, ctx) => {
+    const hints = new Map();
+    for (const [n, labels] of ctx.rolesOf) {
+      const others = labels.filter((l) => l !== col.label);
+      if (others.length) hints.set(n, tr('też: {roles}', { roles: others.join(', ') }));
+    }
+    return (
+      <PeoplePicker
+        label={col.label}
+        options={getMembersForRole(col.roleId)}
+        value={ctx.team[col.key] || ''}
+        onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
+        blocked={ctx.blocked}
+        hints={hints}
+        renderChip={(name) => (
+          <PersonChip
+            name={name}
+            status={personStatus(ev.id, col.key, name)}
+            conflict={ctx.blocked.has(name) ? tr('Nieobecność: {reason}', { reason: ctx.blocked.get(name) }) : null}
+          />
+        )}
       />
-    </div>
-  );
+    );
+  };
 
-  const roleSelect = (ev, col, absentList, unavailableList) => (
-    <TableMultiSelect
-      label={col.label}
-      options={getMembersForRole(col.roleId)}
-      value={ev.assignments?.[teamType]?.[col.key] || ''}
-      onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
-      absentMembers={absentList}
-      unavailableMembers={unavailableList}
-    />
-  );
+  const absenceSelect = (ev, ctx) => {
+    const locked = [...ctx.reported.keys()].filter((n) => !ctx.manualAbsent.includes(n));
+    return (
+      <PeoplePicker
+        label={tr('Nieobecni')}
+        options={members}
+        value={ctx.team.absencja || ''}
+        onChange={(val) => updateAbsence(ev.id, val)}
+        locked={locked}
+        lockedTitle={tr('Zgłoszone w Dostępności')}
+        renderLocked={(name) => (
+          <AwayChip name={name} reported title={tr('{name} — zgłoszona nieobecność {range}', { name, range: ctx.reported.get(name) })} />
+        )}
+        renderChip={(name) => <AwayChip name={name} title={tr('{name} — nieobecny/a (wpisane w grafiku)', { name })} />}
+      />
+    );
+  };
 
-  const absenceSelect = (ev) => (
-    <TableMultiSelect
-      label={tr('Nieobecni')}
-      options={members}
-      value={ev.assignments?.[teamType]?.absencja || ''}
-      onChange={(val) => updateAbsence(ev.id, val)}
-    />
-  );
-
-  const notesInput = (ev) => {
-    const notes = ev.assignments?.[teamType]?.notatki || '';
+  const notesInput = (ev, ctx) => {
+    const notes = ctx.team.notatki || '';
     return (
       <input
         key={`${ev.id}:${notes}`}
+        type="text"
         aria-label={tr('Notatki')}
-        className="w-full bg-transparent border-b border-gray-200 dark:border-gray-700 md:border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-[13px] p-1.5 outline-none transition placeholder-gray-400 dark:placeholder-gray-500 text-gray-700 dark:text-gray-300"
-        placeholder={tr('Wpisz...')}
+        className="sg-note bg-transparent text-gray-700 dark:text-gray-200"
+        placeholder={tr('Dodaj notatkę')}
         defaultValue={notes}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
         onBlur={(e) => updateNotes(ev.id, e.target.value)}
@@ -647,140 +827,187 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     );
   };
 
+  const eventTitle = (ev) => (
+    <Link to={`/wydarzenie/${ev.id}`} className="sg-event-title text-gray-900 dark:text-gray-100" title={ev.title || tr('Wydarzenie')}>
+      {ev.title || tr('Wydarzenie')}
+    </Link>
+  );
+  const campusLine = (ev) => {
+    const campus = getCampus(ev.campus_id);
+    return campus ? (
+      <div className="sg-meta"><MapPin size={11} className="shrink-0" aria-hidden="true" /><span className="truncate">{campus.name}</span></div>
+    ) : null;
+  };
+  const timeOf = (ev) => (ev.time ? String(ev.time).slice(0, 5) : '');
+
   const legend = (
-    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mb-4">
-      <span className="inline-flex items-center gap-1"><Check size={12} className="text-green-700 dark:text-green-400" aria-hidden="true" /> {tr('potwierdzone')}</span>
-      <span className="inline-flex items-center gap-1"><Clock size={12} className="text-amber-700 dark:text-amber-400" aria-hidden="true" /> {tr('czeka na odpowiedź')}</span>
-      <span className="inline-flex items-center gap-1"><XIcon size={12} className="text-red-600 dark:text-red-400" aria-hidden="true" /> {tr('odmowa')}</span>
-      <span className="inline-flex items-center gap-1"><AlertTriangle size={12} className="text-amber-700 dark:text-amber-400" aria-hidden="true" /> {tr('brak e-maila — bez powiadomienia')}</span>
+    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+      {['accepted', 'pending', 'rejected', 'draft', 'noemail'].map((k) => {
+        const { icon: Icon, cls, label } = STATUS[k];
+        return (
+          <span key={k} className="inline-flex items-center gap-1">
+            <Icon size={12} strokeWidth={2.5} className={cls} aria-hidden="true" /> {label()}
+          </span>
+        );
+      })}
+      <span className="inline-flex items-center gap-1">
+        <CalendarX size={12} strokeWidth={2.5} className="text-red-600 dark:text-red-400" aria-hidden="true" /> {tr('nieobecność')}
+      </span>
     </p>
   );
 
+  const renderMonth = (monthKey) => {
+    const isExpanded = !!expandedMonths[monthKey];
+    const monthEvents = groupedEvents[monthKey].slice().sort((a, b) => dayKey(a.date).localeCompare(dayKey(b.date)));
+    const summaries = new Map(monthEvents.map((ev) => [ev.id, summarize(schedAssignments, ev.id, teamType)]));
+    const toSendIds = monthEvents.filter((ev) => summaries.get(ev.id).toSend > 0).map((ev) => ev.id);
+    const toSendCount = monthEvents.reduce((acc, ev) => acc + summaries.get(ev.id).toSend, 0);
+    const { name, year } = monthParts(monthKey);
+    const contexts = new Map(monthEvents.map((ev) => [ev.id, rowContext(ev)]));
+    const conflictCount = [...contexts.values()].reduce((acc, c) => acc + c.conflicts.length, 0);
+
+    return (
+      <section key={monthKey} aria-label={`${name} ${year}`}>
+        <div className="sg-month">
+          <button type="button" className="sg-month-toggle text-gray-900 dark:text-gray-100" onClick={() => toggleMonth(monthKey)} aria-expanded={isExpanded}>
+            <ChevronDown size={18} className="text-gray-500 dark:text-gray-400" aria-hidden="true" />
+            <span className="font-extrabold">{name}</span>
+            <span className="font-light">{year}</span>
+          </button>
+          <div className="ml-auto flex items-center gap-3 flex-wrap">
+            {conflictCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
+                <CalendarX size={13} strokeWidth={2.5} aria-hidden="true" />
+                {tr('Przypisani mimo nieobecności: {n}', { n: conflictCount })}
+              </span>
+            )}
+            {toSendCount > 0 && (isExpanded ? (
+              <Button size="sm" icon={Send} loading={bulkSending === monthKey} onClick={() => sendForMonth(monthKey, toSendIds)}>
+                {tr('Powiadom wszystkich ({n})', { n: toSendCount })}
+              </Button>
+            ) : (
+              <span className="text-xs font-medium text-accent-primary">{tr('Do powiadomienia: {n}', { n: toSendCount })}</span>
+            ))}
+          </div>
+        </div>
+
+        {isExpanded && narrow && (
+          <div className="sg-cards">
+            {monthEvents.map((ev) => {
+              const ctx = contexts.get(ev.id);
+              const past = dayKey(ev.date) < today;
+              return (
+                <div key={ev.id} className={`sg-card ${past ? 'opacity-70' : ''}`}>
+                  <div className="flex items-start justify-between gap-3 px-1.5 mb-1">
+                    <div className="min-w-0">
+                      <div className="sg-date text-gray-900 dark:text-gray-100">
+                        {ev.id === nextEventId && <span className="sg-next-dot" title={tr('Najbliższe')} />}
+                        {shortDay(ev.date)}
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{weekdayShort(ev.date)}{timeOf(ev) ? ` · ${timeOf(ev)}` : ''}</span>
+                      </div>
+                      <div className="mt-0.5">{eventTitle(ev)}</div>
+                      {campusLine(ev)}
+                    </div>
+                    <EventStatus summary={summaries.get(ev.id)} conflicts={ctx.conflicts} onSend={() => sendForEvents([ev.id])} />
+                  </div>
+                  <div className="sg-card-grid">
+                    {columns.map((col) => (
+                      <React.Fragment key={col.key}>
+                        <div className="sg-card-label">{col.label}</div>
+                        <div className="min-w-0">{roleSelect(ev, col, ctx)}</div>
+                      </React.Fragment>
+                    ))}
+                    <div className="sg-card-label">{tr('Nieobecni')}</div>
+                    <div className="min-w-0">{absenceSelect(ev, ctx)}</div>
+                  </div>
+                  <div className="sg-card-label">{tr('Notatki')}</div>
+                  {notesInput(ev, ctx)}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {isExpanded && !narrow && (
+          <GridScroller>
+            <table className="sg-table">
+              <thead>
+                <tr>
+                  <TH className="sg-sticky sg-col-date">{t('Data')}</TH>
+                  <TH className="sg-sticky sg-col-event sg-edge-l">{tr('Wydarzenie')}</TH>
+                  {columns.map((col) => (
+                    <TH key={col.key} className="sg-col-role">{col.label}</TH>
+                  ))}
+                  <TH className="sg-col-absent">{tr('Nieobecni')}</TH>
+                  <TH className="sg-col-notes">{tr('Notatki')}</TH>
+                  <TH className="sg-sticky sg-col-status sg-edge-r">{tr('Status')}</TH>
+                </tr>
+              </thead>
+              <tbody>
+                {monthEvents.map((ev) => {
+                  const ctx = contexts.get(ev.id);
+                  const past = dayKey(ev.date) < today;
+                  return (
+                    <tr key={ev.id} className={`sg-row ${past ? 'sg-row--past' : ''}`}>
+                      <td className="sg-td sg-sticky sg-col-date text-gray-900 dark:text-gray-100">
+                        <div className="sg-date">
+                          {shortDay(ev.date)}
+                          {ev.id === nextEventId && <span className="sg-next-dot" title={tr('Najbliższe')} />}
+                        </div>
+                        <div className="sg-meta">{weekdayShort(ev.date)}{timeOf(ev) ? ` · ${timeOf(ev)}` : ''}</div>
+                      </td>
+                      <td className="sg-td sg-sticky sg-col-event sg-edge-l">
+                        {eventTitle(ev)}
+                        {campusLine(ev)}
+                      </td>
+                      {columns.map((col) => (
+                        <td key={col.key} className="sg-td sg-col-role">{roleSelect(ev, col, ctx)}</td>
+                      ))}
+                      <td className="sg-td sg-col-absent">{absenceSelect(ev, ctx)}</td>
+                      <td className="sg-td sg-col-notes">{notesInput(ev, ctx)}</td>
+                      <td className="sg-td sg-sticky sg-col-status sg-edge-r">
+                        <EventStatus summary={summaries.get(ev.id)} conflicts={ctx.conflicts} onSend={() => sendForEvents([ev.id])} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </GridScroller>
+        )}
+      </section>
+    );
+  };
+
   return (
-    <div>
-      <div className="flex justify-between items-center gap-3 mb-4 flex-wrap">
+    <div ref={rootRef} className="sg-root">
+      <div className="flex justify-between items-start gap-3 mb-2 flex-wrap">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           {tr('Grafik')}
         </h2>
         {teamEvents.length > 0 && (
-          <button onClick={exportCsv}
-            className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-            <Download size={15} aria-hidden="true" /> {tr('Eksport CSV')}
-          </button>
+          <Button variant="secondary" size="sm" icon={Download} onClick={exportCsv}>{tr('Eksport CSV')}</Button>
         )}
       </div>
 
       {members.length === 0 ? (
         <EmptyState icon={Users} title={t('Brak członków w zespole')} subtitle={tr('Najpierw dodaj członków w zakładce "Służby"')} />
-      ) : sortedMonths.length === 0 ? (
+      ) : upcomingMonths.length + pastMonths.length === 0 ? (
         <EmptyState icon={Calendar} title={t('Brak wydarzeń')} subtitle={tr('Dodaj wydarzenia w tym module albo przypisz tę służbę do typu wydarzenia w Ustawieniach.')} />
       ) : (
-        <div className="space-y-4">
+        <div>
           {legend}
-          {sortedMonths.map(monthKey => {
-            const isExpanded = expandedMonths[monthKey];
-            const monthEvents = groupedEvents[monthKey].slice().sort((a, b) => new Date(a.date) - new Date(b.date));
-            const toSendIds = monthEvents.filter((ev) => eventInviteSummary(schedAssignments, ev.id, teamType).toSend > 0).map((ev) => ev.id);
-            const toSendCount = monthEvents.reduce((acc, ev) => acc + eventInviteSummary(schedAssignments, ev.id, teamType).toSend, 0);
-            return (
-              <div key={monthKey} className={`bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm relative z-0 transition-all duration-300 ${isExpanded ? 'mb-8' : 'mb-0'}`}>
-                <button
-                  onClick={() => toggleMonth(monthKey)}
-                  aria-expanded={!!isExpanded}
-                  className={`w-full px-4 sm:px-6 py-4 bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80 flex justify-between items-center gap-2 transition border-b border-gray-100 dark:border-gray-700 ${isExpanded ? 'rounded-t-2xl' : 'rounded-2xl'}`}
-                >
-                  <span className="font-bold text-gray-800 dark:text-gray-200 text-sm uppercase tracking-wider">{formatMonthName(monthKey)}</span>
-                  <span className="inline-flex items-center gap-2">
-                    {!isExpanded && toSendCount > 0 && (
-                      <span className="text-xs font-medium text-accent-primary">{tr('Do powiadomienia: {n}', { n: toSendCount })}</span>
-                    )}
-                    {isExpanded ? <ChevronUp size={18} className="text-gray-500 dark:text-gray-400" aria-hidden="true" /> : <ChevronDown size={18} className="text-gray-500 dark:text-gray-400" aria-hidden="true" />}
-                  </span>
-                </button>
-
-                {isExpanded && toSendCount > 0 && (
-                  <div className="flex items-center justify-between gap-3 flex-wrap px-4 sm:px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/20">
-                    <span className="text-sm text-gray-700 dark:text-gray-200">
-                      {tr('Nowe przypisania bez powiadomienia: {n}', { n: toSendCount })}
-                    </span>
-                    <Button size="sm" icon={Send} loading={bulkSending === monthKey} onClick={() => sendForMonth(monthKey, toSendIds)}>
-                      {tr('Powiadom wszystkich ({n})', { n: toSendCount })}
-                    </Button>
-                  </div>
-                )}
-
-                {isExpanded && narrow && (
-                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {monthEvents.map((ev) => {
-                      const absentList = csvNames(ev.assignments?.[teamType]?.absencja);
-                      const unavailableList = unavailableOn(ev.date);
-                      return (
-                        <div key={ev.id} className="p-4 space-y-3">
-                          {dateInfo(ev, unavailableList)}
-                          <div className="grid grid-cols-1 gap-3">
-                            {columns.map((col) => (
-                              <div key={col.key}>
-                                <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{col.label}</div>
-                                {roleSelect(ev, col, absentList, unavailableList)}
-                              </div>
-                            ))}
-                            <div>
-                              <div className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1">{tr('Nieobecni')}</div>
-                              {absenceSelect(ev)}
-                            </div>
-                            <div>
-                              <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{tr('Notatki')}</div>
-                              {notesInput(ev)}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {isExpanded && !narrow && (
-                  <DataTable flush className="pb-4 rounded-b-2xl" tableClassName="min-w-max">
-                    <THead>
-                      <tr>
-                        {/* Kolumna daty przyklejona — po przewinięciu w prawo nadal wiadomo, która to niedziela. */}
-                        <TH className="sticky left-0 z-[2] bg-gray-50 dark:bg-gray-800 min-w-[150px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.12)]">{t('Data')}</TH>
-                        {columns.map(col => (
-                          <TH key={col.key} className="min-w-[150px]">{col.label}</TH>
-                        ))}
-                        <TH className="min-w-[150px] !text-red-500 dark:!text-red-400">{tr('Nieobecni')}</TH>
-                        <TH className="min-w-[170px]">{tr('Notatki')}</TH>
-                      </tr>
-                    </THead>
-                    <tbody className="relative">
-                      {monthEvents.map((ev) => {
-                        const absentList = csvNames(ev.assignments?.[teamType]?.absencja);
-                        const unavailableList = unavailableOn(ev.date);
-                        return (
-                          <TR key={ev.id} className="relative">
-                            <TD className="font-medium sticky left-0 z-[1] bg-white dark:bg-gray-800 align-top min-w-[150px] max-w-[220px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.12)]">
-                              {dateInfo(ev, unavailableList)}
-                            </TD>
-                            {columns.map(col => (
-                              <TD key={col.key} className="relative align-top">
-                                {roleSelect(ev, col, absentList, unavailableList)}
-                              </TD>
-                            ))}
-                            <TD className="relative align-top">
-                              {absenceSelect(ev)}
-                            </TD>
-                            <TD className="align-top">
-                              {notesInput(ev)}
-                            </TD>
-                          </TR>
-                        );
-                      })}
-                    </tbody>
-                  </DataTable>
-                )}
+          <div className="mt-2 divide-y divide-gray-100 dark:divide-gray-800">
+            {upcomingMonths.map(renderMonth)}
+          </div>
+          {pastMonths.length > 0 && (
+            <>
+              <div className="sg-divider">{tr('Minione')}</div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {pastMonths.map(renderMonth)}
               </div>
-            );
-          })}
+            </>
+          )}
         </div>
       )}
     </div>

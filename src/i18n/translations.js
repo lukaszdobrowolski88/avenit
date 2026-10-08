@@ -7117,6 +7117,26 @@ const en = {
   'czeski': 'Czech',
   'słowacki': 'Slovak',
   'białoruski': 'Belarusian',
+  // ── Grafik służby (siatka, wybór osób, nieobecności) ──
+  'jeszcze nie powiadomiono': 'not notified yet',
+  'brak e-maila': 'no email',
+  'Nikogo nie znaleziono': 'No one found',
+  'Pozostali': 'Others',
+  'Niedostępni w tym dniu': 'Unavailable on this day',
+  'Wyślij zaproszenia (e-mail i powiadomienie push) osobom, które jeszcze ich nie dostały': 'Send invitations (email and push notification) to people who haven\'t received them yet',
+  'Przypisani mimo nieobecności: {names}': 'Assigned despite absence: {names}',
+  'Przypisani mimo nieobecności: {n}': 'Assigned despite absence: {n}',
+  'Zapisano w grafiku. Aby wysłać zaproszenia, kliknij „Powiadom” w kolumnie Status.': 'Saved to the schedule. To send invitations, click "Notify" in the Status column.',
+  '(push na telefon: {n})': '(push to phone: {n})',
+  'E-mail nie wyszedł, ale push dotarł do: {n}. Spróbuj „Powiadom” ponownie później.': 'The email failed, but the push reached: {n}. Try "Notify" again later.',
+  'nieobecność': 'absence',
+  'nieobecność {range}': 'absence {range}',
+  'też: {roles}': 'also: {roles}',
+  'Nieobecność: {reason}': 'Absence: {reason}',
+  'Zgłoszone w Dostępności': 'Reported in Availability',
+  '{name} — zgłoszona nieobecność {range}': '{name} — reported absence {range}',
+  '{name} — nieobecny/a (wpisane w grafiku)': '{name} — absent (entered in the schedule)',
+  'Minione': 'Past',
 };
 
 const uk = {
@@ -14232,6 +14252,26 @@ const uk = {
   'czeski': 'чеська',
   'słowacki': 'словацька',
   'białoruski': 'білоруська',
+  // ── Grafik służby (siatka, wybór osób, nieobecności) ──
+  'jeszcze nie powiadomiono': 'ще не сповіщено',
+  'brak e-maila': 'немає e-mail',
+  'Nikogo nie znaleziono': 'Нікого не знайдено',
+  'Pozostali': 'Інші',
+  'Niedostępni w tym dniu': 'Недоступні цього дня',
+  'Wyślij zaproszenia (e-mail i powiadomienie push) osobom, które jeszcze ich nie dostały': 'Надіслати запрошення (e-mail і push-сповіщення) тим, хто їх ще не отримав',
+  'Przypisani mimo nieobecności: {names}': 'Призначені попри відсутність: {names}',
+  'Przypisani mimo nieobecności: {n}': 'Призначені попри відсутність: {n}',
+  'Zapisano w grafiku. Aby wysłać zaproszenia, kliknij „Powiadom” w kolumnie Status.': 'Збережено в графіку. Щоб надіслати запрошення, натисніть «Сповістити» в колонці «Статус».',
+  '(push na telefon: {n})': '(push на телефон: {n})',
+  'E-mail nie wyszedł, ale push dotarł do: {n}. Spróbuj „Powiadom” ponownie później.': 'E-mail не надіслано, але push отримали: {n}. Спробуйте «Сповістити» пізніше.',
+  'nieobecność': 'відсутність',
+  'nieobecność {range}': 'відсутність {range}',
+  'też: {roles}': 'також: {roles}',
+  'Nieobecność: {reason}': 'Відсутність: {reason}',
+  'Zgłoszone w Dostępności': 'Повідомлено в «Доступності»',
+  '{name} — zgłoszona nieobecność {range}': '{name} — повідомлена відсутність {range}',
+  '{name} — nieobecny/a (wpisane w grafiku)': '{name} — відсутній/я (внесено в графік)',
+  'Minione': 'Минулі',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

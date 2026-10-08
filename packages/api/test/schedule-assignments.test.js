@@ -102,3 +102,22 @@ test('akceptacja nie rusza grafiku', async () => {
   assert.equal(res.status, 'accepted');
   assert.ok(!log.some((l) => /events/.test(l.sql)));
 });
+
+test('nowy mail z zaproszeniem: służba/godzina/miejsce escapowane, wersja tekstowa z linkami', async () => {
+  const { emailText } = await import('../src/fn/send-assignment-invites.js');
+  const args = {
+    assignedByName: 'Ala', roles: ['Wokal', 'Bas'], programDate: 'niedziela, 18 października 2026', programTitle: 'Nabożeństwo',
+    acceptUrl: 'https://a.pl/assignment-response?token=1&action=accept', rejectUrl: 'https://a.pl/assignment-response?token=1&action=reject',
+    contextLabel: 'Wydarzenie', teamLabel: '<Uwielbienie>', timeLabel: '10:00', place: 'Sala "A" & <B>',
+  };
+  const html = emailHtml(args);
+  assert.ok(html.includes('&lt;Uwielbienie&gt;'));
+  assert.ok(!html.includes('<Uwielbienie>'));
+  assert.ok(html.includes('Sala &quot;A&quot; &amp; &lt;B&gt;'));
+  assert.ok(html.includes('godz. 10:00'));
+  assert.ok(!/linear-gradient|🎵/.test(html), 'bez gradientów i emoji');
+  const text = emailText(args);
+  assert.ok(text.includes('Role: Wokal, Bas'));
+  assert.ok(text.includes('Potwierdzam: https://a.pl/assignment-response?token=1&action=accept'));
+  assert.ok(text.includes('Miejsce: Sala "A" & <B>'));
+});

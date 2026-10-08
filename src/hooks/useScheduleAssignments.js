@@ -429,11 +429,12 @@ export function useScheduleAssignments() {
 
   /**
    * Wsadowa wysyłka zaproszeń dla WYDARZENIA (grafik/służby na events).
+   * teamLabel — nazwa służby do maila/push (np. „Grupa Uwielbienia”); opcjonalna.
    */
-  const sendInvitesForEvent = useCallback(async (eventId, teamType) => {
+  const sendInvitesForEvent = useCallback(async (eventId, teamType, teamLabel) => {
     try {
       const { data, error } = await supabase.functions.invoke('send-assignment-invites', {
-        body: { eventId, teamType, baseUrl: window.location.origin },
+        body: { eventId, teamType, teamLabel: teamLabel || undefined, baseUrl: window.location.origin },
       });
       if (error) return { success: false, error: error.message, status: error.status };
       // Brak konfiguracji poczty: serwer zwraca success:false + emailReady:false — przekaż flagę,
