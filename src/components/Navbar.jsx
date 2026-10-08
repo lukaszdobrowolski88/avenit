@@ -134,8 +134,10 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
   const showCampusInMenu = campuses.length >= 2;
 
   return (
-    // z-40 aby navbar był nad treścią, ale pod modalami (z-[100])
-    <div className="app-topbar relative z-40 h-14 lg:h-16 bg-white/80 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700 flex items-center justify-between px-3 lg:px-6 transition-colors duration-300">
+    // z-40 aby navbar był nad treścią, ale pod modalami (z-[100]). Gdy któreś menu paska jest
+    // rozwinięte (aria-expanded), pasek wskakuje na z-[60] — inaczej menu chowało się pod kartami
+    // modułów (sekcje mają relative z-[50]). Na stałe wyżej nie: przykryłby starsze modale z-50.
+    <div className="app-topbar relative z-40 has-[[aria-expanded=true]]:z-[60] h-14 lg:h-16 bg-white/80 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700 flex items-center justify-between px-3 lg:px-6 transition-colors duration-300">
 
       {/* Lewa strona */}
       <div className="flex items-center gap-2 lg:gap-4 min-w-0">
