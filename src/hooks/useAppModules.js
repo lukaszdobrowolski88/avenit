@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { AI_ENABLED } from '../lib/features';
 
 // Jedno źródło listy modułów (app_modules) dla powłoki aplikacji: menu boczne, trasy modułów
 // z kreatora (App.jsx), wyszukiwarka ⌘K i biblioteka samouczków. Singleton: jeden fetch,
@@ -18,13 +19,15 @@ function readCache() {
 
 const cached = readCache();
 // loaded = pierwsze pobranie z serwera zakończone (sukcesem albo błędem).
-let snapshot = { modules: cached || [], loaded: false, fromCache: !!cached, error: false };
+let snapshot = { modules: (cached || []).filter((m) => AI_ENABLED || m?.key !== 'ai'), loaded: false, fromCache: !!cached, error: false };
 const subs = new Set();
 let inflight = null;
 let channel = null;
 let debounce = null;
 
 function emit(patch) {
+  // Moduł „Asystent AI” ukryty, gdy AI wyłączone (menu, ⌘K i trasy biorą listę stąd).
+  if (!AI_ENABLED && patch.modules) patch = { ...patch, modules: patch.modules.filter((m) => m?.key !== 'ai') };
   snapshot = { ...snapshot, ...patch };
   subs.forEach((fn) => fn(snapshot));
 }

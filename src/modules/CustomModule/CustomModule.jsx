@@ -10,6 +10,7 @@ import { useTabAccess } from '../../components/Can';
 import { tr } from '../../i18n';
 import ModuleWidget, { WIDGET_TYPES, SELF_WRAPPING_WIDGETS } from './components/ModuleWidget';
 import LayoutRenderer from './components/LayoutRenderer';
+import { hasItemDeepLink } from '../Boards/ModuleBoard';
 
 const CARD_CLASS =
   'bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[50] transition-colors duration-300';
@@ -47,7 +48,11 @@ export default function CustomModule() {
           .order('display_order', { ascending: true });
         if (!tabsError && tabsData) {
           setTabs(tabsData);
-          if (tabsData.length > 0) setActiveTab(tabsData[0].key);
+          if (tabsData.length > 0) {
+            // Link z powiadomienia o zadaniu (?item=) → od razu zakładka Zadania.
+            const tasksTab = hasItemDeepLink() && tabsData.find((t) => t.component_type === 'tasks');
+            setActiveTab((tasksTab || tabsData[0]).key);
+          }
         }
       } catch (err) {
         console.error('Błąd pobierania modułu:', err);

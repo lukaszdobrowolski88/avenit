@@ -1,20 +1,20 @@
-import React, { useState, useRef } from 'react';
-import { Search, SlidersHorizontal, ArrowUpDown, Plus, X, Filter, MoreHorizontal, Download, Upload } from 'lucide-react';
+import React from 'react';
+import { Search, SlidersHorizontal, ArrowUpDown, Plus, X } from 'lucide-react';
 import Popover from './Popover';
 import ColumnIcon from './ColumnIcon';
 import CustomSelect from '../../../components/CustomSelect';
 import CustomDatePicker from '../../../components/CustomDatePicker';
-import Button from '../../../components/Button';
+import '../../../components/toolbar.css';
+import '../../../components/pickList.css';
 import { tr } from '../../../i18n';
 import { getColumnType, cellToText } from '../lib/columnTypes';
-import { parseCsv } from '../lib/csv';
 
 // Wybór wartości do filtra zależny od typu kolumny.
 function FilterValue({ column, value, onChange }) {
   const t = column.type;
   if (t === 'status' || t === 'priority') {
     return (
-      <div className="w-40">
+      <div className="w-full">
         <CustomSelect compact placeholder={tr('— wybierz —')} value={value ?? ''} onChange={(v) => onChange(v || null)}
           options={column.settings?.labels || []} mapOptionToValue={(l) => l.id} mapOptionToLabel={(l) => l.title} />
       </div>
@@ -22,7 +22,7 @@ function FilterValue({ column, value, onChange }) {
   }
   if (t === 'dropdown') {
     return (
-      <div className="w-40">
+      <div className="w-full">
         <CustomSelect compact placeholder={tr('— wybierz —')} value={value ?? ''} onChange={(v) => onChange(v || null)}
           options={column.settings?.options || []} mapOptionToValue={(o) => o.id} mapOptionToLabel={(o) => o.title} />
       </div>
@@ -30,15 +30,16 @@ function FilterValue({ column, value, onChange }) {
   }
   if (t === 'checkbox') {
     return (
-      <div className="w-40">
+      <div className="w-full">
         <CustomSelect compact value={String(value)} onChange={(v) => onChange(v === 'true')}
           options={[{ value: 'true', label: tr('Zaznaczone') }, { value: 'false', label: tr('Niezaznaczone') }]} />
       </div>
     );
   }
-  if (t === 'date') return <div className="w-40"><CustomDatePicker compact value={value || ''} onChange={(v) => onChange(v)} /></div>;
-  if (t === 'number') return <input type="number" value={value ?? ''} onChange={(e) => onChange(e.target.value)} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 w-20 outline-none" />;
-  return <input value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder={tr('wartość')} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" />;
+  if (t === 'date') return <div className="w-full"><CustomDatePicker compact value={value || ''} onChange={(v) => onChange(v)} /></div>;
+  const field = 'w-full h-8 px-2.5 rounded-lg text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-accent-primary-light/40';
+  if (t === 'number') return <input type="number" inputMode="decimal" value={value ?? ''} onChange={(e) => onChange(e.target.value)} aria-label={column.name} className={field} />;
+  return <input value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder={tr('wartość')} aria-label={column.name} className={field} />;
 }
 
 function defaultOp(type) {
@@ -48,19 +49,9 @@ function defaultOp(type) {
   return 'is';
 }
 
-export default function ViewToolbar({ columns, config, onUpdateConfig, search, onSearch, onAddItem, onExport, onImport }) {
+export default function ViewToolbar({ columns, config, onUpdateConfig, search, onSearch }) {
   const filters = config.filters || [];
   const sorts = config.sorts || [];
-  const fileRef = useRef(null);
-
-  const onFile = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => { const { records } = parseCsv(String(reader.result || '')); onImport?.(records); };
-    reader.readAsText(f);
-    e.target.value = '';
-  };
   const filterableCols = columns.filter(c => c.type !== 'files');
 
   const addFilter = (col) => onUpdateConfig({ filters: [...filters, { columnId: col.id, op: defaultOp(col.type), value: col.type === 'checkbox' ? true : null }] });
@@ -70,85 +61,91 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
   const addSort = (col) => onUpdateConfig({ sorts: [{ columnId: col.id, dir: 'asc' }] });
   const clearSort = () => onUpdateConfig({ sorts: [] });
 
+  // Pasek jak narzędzia Grafiku (toolbar.css): szukanie, Filtruj, Sortuj — jedna wysokość i kształt.
+  // „Dodaj zadanie”, eksport/import CSV i widoki są w nagłówku zakładki (BoardView).
   return (
     <div className="flex items-center gap-2 mb-4 flex-wrap">
-      <Button icon={Plus} onClick={onAddItem}>{tr('Nowy element')}</Button>
-
-      {/* Wyszukiwarka jak w pozostałych modułach (ikona w polu, ta sama wysokość co przyciski). */}
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={search || ''} onChange={(e) => onSearch(e.target.value)} placeholder={tr('Szukaj...')}
-          className="w-56 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none" />
-      </div>
+      <label className="tool-search">
+        <Search size={15} aria-hidden="true" />
+        <input type="search" className="tool-search-input bg-transparent" value={search || ''} onChange={(e) => onSearch(e.target.value)} placeholder={tr('Szukaj...')} aria-label={tr('Szukaj')} />
+      </label>
 
       {/* Filtry */}
-      <Popover width={340} triggerClassName="inline-flex" trigger={
-        <button className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2.5 rounded-xl border transition-colors ${filters.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
-          <SlidersHorizontal size={14} /> {tr('Filtruj')} {filters.length ? `(${filters.length})` : ''}
+      <Popover width={360} bare className="pick-pop" triggerClassName="inline-flex" trigger={
+        <button type="button" className={`tool-btn${filters.length ? ' tool-btn--active' : ''}`}>
+          <SlidersHorizontal size={15} aria-hidden="true" /> {tr('Filtruj')}{filters.length ? ` · ${filters.length}` : ''}
         </button>
       }>
         {() => (
-          <div className="p-3">
+          <div className="py-1">
+            <div className="pick-section">{tr('Filtry')}</div>
+            {filters.length === 0 && (
+              <p className="px-3 pb-2 text-xs text-gray-500 dark:text-gray-400">{tr('Pokaż tylko zadania spełniające warunki — wybierz kolumnę poniżej.')}</p>
+            )}
             {filters.map((f, i) => {
               const col = columns.find(c => c.id === f.columnId);
               if (!col) return null;
               return (
-                <div key={i} className="flex items-center gap-1.5 mb-2">
-                  <span className="text-xs text-gray-500 w-16 truncate">{col.name}</span>
+                <div key={i} className="flex items-center gap-2 px-3 py-1.5">
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 w-20 truncate" title={col.name}>{col.name}</span>
                   {col.type === 'number' && (
-                    <div className="w-14 shrink-0"><CustomSelect compact value={f.op} onChange={(v) => updateFilter(i, { op: v })}
+                    <div className="w-16 shrink-0"><CustomSelect compact value={f.op} onChange={(v) => updateFilter(i, { op: v })}
                       options={[{ value: 'eq', label: '=' }, { value: 'gt', label: '>' }, { value: 'lt', label: '<' }]} /></div>
                   )}
                   {col.type === 'date' && (
-                    <div className="w-16 shrink-0"><CustomSelect compact value={f.op} onChange={(v) => updateFilter(i, { op: v })}
-                      options={[{ value: 'on', label: '=' }, { value: 'after', label: tr('po') }, { value: 'before', label: tr('przed') }]} /></div>
+                    <div className="w-20 shrink-0"><CustomSelect compact value={f.op} onChange={(v) => updateFilter(i, { op: v })}
+                      options={[{ value: 'on', label: tr('w dniu') }, { value: 'after', label: tr('po') }, { value: 'before', label: tr('przed') }]} /></div>
                   )}
-                  <FilterValue column={col} value={f.value} onChange={(v) => updateFilter(i, { value: v })} />
-                  <button onClick={() => removeFilter(i)} className="text-gray-400 hover:text-red-500 ml-auto"><X size={14} /></button>
+                  <div className="min-w-0 flex-1"><FilterValue column={col} value={f.value} onChange={(v) => updateFilter(i, { value: v })} /></div>
+                  <button type="button" onClick={() => removeFilter(i)} aria-label={tr('Usuń filtr {name}', { name: col.name })}
+                    className="shrink-0 p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"><X size={14} aria-hidden="true" /></button>
                 </div>
               );
             })}
-            <Popover width={200} trigger={<button className="flex items-center gap-1 text-sm text-accent-primary mt-1"><Plus size={14} /> {tr('Dodaj filtr')}</button>}>
-              {({ close }) => (
-                <div className="p-1 max-h-56 overflow-y-auto custom-scrollbar">
-                  {filterableCols.map(c => {
-                    const t = getColumnType(c.type);
-                    return (
-                      <button key={c.id} onClick={() => { addFilter(c); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-left text-sm">
-                        <ColumnIcon name={t.icon} size={14} className="text-gray-400" /> {c.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </Popover>
+            <div className="mt-1 border-t border-gray-100 dark:border-white/10">
+              <div className="pick-section">{tr('Dodaj filtr')}</div>
+              <div className="max-h-56 overflow-y-auto custom-scrollbar">
+                {filterableCols.map(c => {
+                  const t = getColumnType(c.type);
+                  return (
+                    <button key={c.id} type="button" onClick={() => addFilter(c)} className="pick-opt text-gray-800 dark:text-gray-100">
+                      <ColumnIcon name={t.icon} size={15} className="text-gray-400 shrink-0" /> <span className="truncate">{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </Popover>
 
       {/* Sortowanie */}
-      <Popover width={220} triggerClassName="inline-flex" trigger={
-        <button className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2.5 rounded-xl border transition-colors ${sorts.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
-          <ArrowUpDown size={14} /> {tr('Sortuj')}
+      <Popover width={240} bare className="pick-pop" triggerClassName="inline-flex" trigger={
+        <button type="button" className={`tool-btn${sorts.length ? ' tool-btn--active' : ''}`}>
+          <ArrowUpDown size={15} aria-hidden="true" /> {tr('Sortuj')}
         </button>
       }>
         {({ close }) => (
-          <div className="p-2">
+          <div className="py-1">
             {sorts.length > 0 && (
-              <div className="flex items-center justify-between px-2 py-1 mb-1">
-                <span className="text-xs text-gray-500">{columns.find(c => c.id === sorts[0].columnId)?.name}</span>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => onUpdateConfig({ sorts: [{ ...sorts[0], dir: sorts[0].dir === 'asc' ? 'desc' : 'asc' }] })} className="text-xs text-accent-primary">{sorts[0].dir === 'asc' ? `↑ ${tr('rosnąco')}` : `↓ ${tr('malejąco')}`}</button>
-                  <button onClick={clearSort} className="text-gray-400 hover:text-red-500"><X size={13} /></button>
-                </div>
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 dark:border-white/10">
+                <span className="flex-1 min-w-0 truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{columns.find(c => c.id === sorts[0].columnId)?.name}</span>
+                <button type="button" onClick={() => onUpdateConfig({ sorts: [{ ...sorts[0], dir: sorts[0].dir === 'asc' ? 'desc' : 'asc' }] })}
+                  className="text-xs font-semibold px-2.5 h-7 rounded-full bg-[rgba(42,35,18,0.06)] dark:bg-white/10 text-gray-700 dark:text-gray-200">
+                  {sorts[0].dir === 'asc' ? tr('rosnąco') : tr('malejąco')}
+                </button>
+                <button type="button" onClick={clearSort} aria-label={tr('Wyłącz sortowanie')}
+                  className="p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"><X size={14} aria-hidden="true" /></button>
               </div>
             )}
-            <div className="max-h-52 overflow-y-auto custom-scrollbar">
+            <div className="pick-section">{tr('Sortuj według')}</div>
+            <div className="max-h-52 overflow-y-auto custom-scrollbar" role="listbox" aria-label={tr('Sortuj według')}>
               {columns.map(c => {
                 const t = getColumnType(c.type);
+                const sel = sorts[0]?.columnId === c.id;
                 return (
-                  <button key={c.id} onClick={() => { addSort(c); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-left text-sm">
-                    <ColumnIcon name={t.icon} size={14} className="text-gray-400" /> {c.name}
+                  <button key={c.id} type="button" role="option" aria-selected={sel} onClick={() => { addSort(c); close(); }} className="pick-opt text-gray-800 dark:text-gray-100">
+                    <ColumnIcon name={t.icon} size={15} className="text-gray-400 shrink-0" /> <span className="truncate">{c.name}</span>
                   </button>
                 );
               })}
@@ -157,18 +154,6 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
         )}
       </Popover>
 
-      {/* Więcej: Eksport / Import CSV */}
-      <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} className="hidden" />
-      <Popover align="right" width={190} triggerClassName="inline-flex ml-auto" trigger={
-        <button className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"><MoreHorizontal size={16} /></button>
-      }>
-        {({ close }) => (
-          <div className="p-1.5">
-            <button onClick={() => { onExport?.(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Download size={14} /> {tr('Eksportuj CSV')}</button>
-            <button onClick={() => { fileRef.current?.click(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Upload size={14} /> {tr('Importuj CSV')}</button>
-          </div>
-        )}
-      </Popover>
     </div>
   );
 }

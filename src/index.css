@@ -134,8 +134,9 @@ html.reduce-motion .animate-spin { animation-duration: 1s !important; animation-
 }
 
 /* Pasek przewijania w kolorze akcentu (opcjonalny akcent wizualny). */
-html.scrollbar-accent ::-webkit-scrollbar-thumb { background: rgb(var(--accent-primary-light)); }
-html.scrollbar-accent ::-webkit-scrollbar-thumb:hover { background: rgb(var(--accent-primary)); }
+html.scrollbar-accent { scrollbar-color: rgb(var(--accent-primary-light)) transparent; }
+html.scrollbar-accent ::-webkit-scrollbar-thumb { background-color: rgb(var(--accent-primary-light)); }
+html.scrollbar-accent ::-webkit-scrollbar-thumb:hover { background-color: rgb(var(--accent-primary)); }
 
 /* Tryb OLED (czysta czerń) — TYLKO w trybie ciemnym. Jednym zestawem reguł remapuje wszystkie
    ciemne powierzchnie (te same klasy Tailwinda w całej apce) na czerń/prawie-czerń. Wyższa
@@ -169,18 +170,34 @@ textarea {
   resize: vertical;
 }
 
-/* Paski przewijania */
+/* Paski przewijania — jeden styl w całej aplikacji: cienka, ciepła „pigułka” na przezroczystym
+   torze (wcześniej chłodny niebieskoszary #cbd5e1/#94a3b8 spoza palety, a Firefox/nowy Chrome
+   rysowały systemowe). Standardowe scrollbar-color/-width (dziedziczone) dla Firefoksa i Chrome,
+   ::-webkit-scrollbar dla Safari. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 35, 18, 0.24) transparent;
+}
+html.dark { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background-color: rgba(42, 35, 18, 0.24);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background-color: rgba(42, 35, 18, 0.4);
 }
+html.dark ::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22); }
+html.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.36); }
 
 /* Nowoczesne inputy */
 input[type="text"],

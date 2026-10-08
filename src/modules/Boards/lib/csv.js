@@ -41,6 +41,16 @@ export function parseCsv(text) {
 }
 
 // Zbuduj cells (columnId → wartość) z rekordu CSV, mapując po nazwie kolumny.
+// „2026-10-12…” albo „12.10.2026” (także 1.2.2026) → „2026-10-12”; inne → null.
+export function parseDateText(raw) {
+  const t = String(raw || '').trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(t);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  return null;
+}
+
 export function buildCellsFromRecord(record, columns) {
   const cells = {};
   for (const col of columns) {
@@ -58,7 +68,16 @@ export function buildCellsFromRecord(record, columns) {
     } else if (col.type === 'number' || col.type === 'rating' || col.type === 'progress') {
       const n = Number(raw.replace(',', '.').replace(/[^\d.-]/g, '')); if (!isNaN(n)) cells[col.id] = n;
     } else if (col.type === 'date') {
-      cells[col.id] = raw.slice(0, 10);
+      // Eksport pisze daty jako dd.mm.yyyy (jak w tabeli) — import przyjmuje oba formaty.
+      const iso = parseDateText(raw);
+      if (iso) cells[col.id] = iso;
+    } else if (col.type === 'timeline') {
+      const [a, b] = raw.split(/\s*[–—→-]\s*/);
+      const end = parseDateText(b);
+      let start = parseDateText(a);
+      // „01.01 – 05.01.2026” — rok tylko przy końcu.
+      if (!start && end && /^\d{1,2}\.\d{1,2}\.?$/.test((a || '').trim())) start = parseDateText(`${a.trim().replace(/\.$/, '')}.${end.slice(0, 4)}`);
+      if (start) cells[col.id] = { start, end: end || null };
     } else if (col.type === 'people') {
       // pomiń — brak pewnego mapowania na osoby
     } else if (col.type === 'link') {

@@ -2,6 +2,7 @@
 // ikonę (nazwa lucide), domyślne ustawienia, domyślną wartość komórki oraz
 // możliwości (czy można po nim grupować w Kanbanie, jakie podsumowania wspiera).
 import { DEFAULT_STATUS_LABELS, DEFAULT_PRIORITY_LABELS } from './constants';
+import { tr, appLocale } from '../../../i18n';
 
 // Definicje typów. `icon` = nazwa ikony lucide-react (rozwiązywana w UI).
 export const COLUMN_TYPES = {
@@ -254,6 +255,59 @@ export function resolveOptions(column, ids) {
   return (ids || []).map(id => options.find(o => o.id === id)).filter(Boolean);
 }
 
+// ── Formatowanie dat i liczb (komórki, Kanban, kalendarz, CSV, wyszukiwanie) ──
+// 'YYYY-MM-DD' to dzień kalendarzowy — parsujemy lokalnie, bo new Date('2026-10-12') to północ UTC
+// (na zachód od Greenwich wychodził dzień wcześniej). Znaczniki czasu (created_at) — zwykły Date.
+export function toDate(v) {
+  if (!v) return null;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v;
+  const s = String(v);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  const d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+const DMY = { day: '2-digit', month: '2-digit', year: 'numeric' };
+const DM = { day: '2-digit', month: '2-digit' };
+
+// dd.mm.yyyy (separator wg języka — jak kalendarz CustomDatePicker), zamiast surowego ISO.
+export function formatDate(v) {
+  const d = toDate(v);
+  return d ? d.toLocaleDateString(appLocale(), DMY) : '';
+}
+
+// Zakres „12.10 – 18.10.2026” (rok raz, gdy ten sam); inny rok → obie daty pełne.
+export function formatDateRange(start, end) {
+  const s = toDate(start), e = toDate(end);
+  if (!s && !e) return '';
+  if (!s) return `– ${formatDate(e)}`;
+  if (!e || s.getTime() === e.getTime()) return formatDate(s);
+  const head = s.getFullYear() === e.getFullYear() ? s.toLocaleDateString(appLocale(), DM) : formatDate(s);
+  return `${head} – ${formatDate(e)}`;
+}
+
+// Liczba wg języka („1,5” po polsku). `decimals` > 0 = stała liczba miejsc po przecinku;
+// 0/brak = bez zaokrąglania (domyślne decimals: 0 nie ma przełącznika w UI, a zaokrąglanie
+// chowałoby wpisane ułamki).
+export function formatNumber(value, decimals) {
+  if (value === null || value === undefined || value === '') return '';
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '';
+  const d = Number.isInteger(decimals) && decimals > 0 ? Math.min(decimals, 10) : null;
+  return n.toLocaleString(appLocale(), d != null
+    ? { minimumFractionDigits: d, maximumFractionDigits: d }
+    : { maximumFractionDigits: 10 });
+}
+
+// „1 plik / 2 pliki / 5 plików” — kategoria liczby z Intl (dla ukraińskiego 21 = forma pojedyncza).
+export function filesCountText(n) {
+  let cat = 'other';
+  try { cat = new Intl.PluralRules(appLocale()).select(n); } catch { /* stare przeglądarki */ }
+  if (cat === 'one') return tr('{n} plik', { n });
+  if (cat === 'few') return tr('{n} pliki', { n });
+  return tr('{n} plików', { n });
+}
+
 // Formatuj sekundy → H:MM:SS (śledzenie czasu)
 export function formatDuration(totalSeconds) {
   const s = Math.max(0, Math.floor(totalSeconds || 0));
@@ -278,15 +332,17 @@ export function cellToText(column, value) {
     case 'checkbox':
       return value ? '✓' : '';
     case 'date':
-      return value || '';
+      return formatDate(String(value).slice(0, 10));
     case 'timeline':
-      return value.start ? `${value.start}${value.end ? ' → ' + value.end : ''}` : '';
+      return formatDateRange(value.start, value.end);
     case 'link':
       return value.text || value.url || '';
     case 'files':
-      return `${(value || []).length} plik(ów)`;
-    case 'number':
-      return value === null ? '' : `${value}${column.settings?.unit ? ' ' + column.settings.unit : ''}`;
+      return (value || []).length ? filesCountText(value.length) : '';
+    case 'number': {
+      const n = formatNumber(value, column.settings?.decimals);
+      return n ? `${n}${column.settings?.unit ? ' ' + column.settings.unit : ''}` : '';
+    }
     case 'rating': {
       // Clamp: goła '★'.repeat(value) rzuca RangeError dla wartości ujemnej/olbrzymiej (zepsute dane).
       const n = Math.max(0, Math.min(20, Math.floor(Number(value) || 0)));

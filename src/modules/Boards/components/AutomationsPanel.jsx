@@ -6,6 +6,8 @@ import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import { generateAutomationSpec } from '../lib/aiBoards';
 import { tr } from '../../../i18n';
+import { AI_ENABLED } from '../../../lib/features';
+import { confirmDialog } from '../../../lib/dialog';
 
 const TRIGGERS = [
   { type: 'status_changes_to', label: 'Gdy status zmieni się na…' },
@@ -107,34 +109,29 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
   };
 
   return (
-    <Modal isOpen className="flex justify-end">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-[520px] h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-          <Zap size={20} className="text-accent-primary" />
-          <h2 className="flex-1 text-lg font-semibold text-gray-800 dark:text-gray-100">{tr('Automatyzacje')}</h2>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-          <AiAutomationBox columns={columns} onAdd={onAdd} />
+    <Modal isOpen onClose={onClose} title={tr('Automatyzacje')} subtitle={tr('Reguły „kiedy… to…” wykonywane przy zmianach w zadaniach')} icon={Zap} size="lg">
+      <div>
+        <div className="p-6">
+          {AI_ENABLED && <AiAutomationBox columns={columns} onAdd={onAdd} />}
           {/* Istniejące */}
           <div className="space-y-2 mb-4">
             {automations.map(a => (
-              <div key={a.id} className="flex items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" checked={a.enabled} onChange={() => onUpdate(a.id, { enabled: !a.enabled })} className="sr-only peer" />
-                  <div className="w-9 h-5 bg-gray-200 dark:bg-gray-600 peer-checked:bg-accent-primary rounded-full peer transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-                </label>
+              <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                <button type="button" role="switch" aria-checked={!!a.enabled} aria-label={tr('Włączona')} onClick={() => onUpdate(a.id, { enabled: !a.enabled })}
+                  className={`relative w-10 h-6 rounded-full shrink-0 transition-colors ${a.enabled ? 'bg-accent-primary' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${a.enabled ? 'translate-x-4' : ''}`} />
+                </button>
                 <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{sentence(a, columns)}</span>
-                <button onClick={() => onDelete(a.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={15} /></button>
+                <button type="button" aria-label={tr('Usuń automatyzację')} title={tr('Usuń')}
+                  onClick={async () => { if (await confirmDialog({ title: tr('Usunąć automatyzację?'), message: sentence(a, columns), confirmLabel: tr('Usuń'), danger: true })) onDelete(a.id); }}
+                  className="inline-grid place-items-center w-8 h-8 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"><Trash2 size={15} aria-hidden="true" /></button>
               </div>
             ))}
             {automations.length === 0 && !creating && <EmptyState compact icon={Zap} title={tr('Brak automatyzacji.')} />}
           </div>
 
           {creating ? (
-            <div className="border border-accent-primary/30 rounded-xl p-4 space-y-3 bg-accent-primary/5">
+            <div className="rounded-xl p-4 space-y-3 bg-[rgba(42,35,18,0.035)] dark:bg-white/[0.04] border border-gray-200 dark:border-gray-700">
               {/* Wyzwalacz */}
               <div>
                 <div className="text-xs font-semibold text-gray-500 mb-1">{tr('KIEDY')}</div>
@@ -242,9 +239,7 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
               </div>
             </div>
           ) : (
-            <button onClick={() => setCreating(true)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-accent-primary hover:border-accent-primary/50">
-              <Plus size={18} /> {tr('Nowa automatyzacja')}
-            </button>
+            <Button variant="secondary" icon={Plus} onClick={() => setCreating(true)} className="w-full">{tr('Nowa automatyzacja')}</Button>
           )}
         </div>
       </div>

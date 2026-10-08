@@ -56,7 +56,7 @@ vi.mock('../../hooks/useUserRole', () => ({ useUserRole: () => ({ userRole: 'sup
 vi.mock('../../components/Can', () => ({ useTabAccess: () => () => true, useCan: () => true, default: ({ children }) => children }));
 vi.mock('../../components/PageHeader', () => ({ default: ({ title }) => <h1>{title}</h1> }));
 vi.mock('../../components/ResponsiveTabs', () => ({ default: () => null }));
-vi.mock('../Boards/ModuleBoard', () => ({ default: () => null }));
+vi.mock('../Boards/ModuleBoard', () => ({ default: () => null, hasItemDeepLink: () => false }));
 vi.mock('../shared/FinanceTab', () => ({ default: () => null }));
 vi.mock('../shared/EventsTab', () => ({ default: () => null }));
 vi.mock('../shared/MaterialsTab', () => ({ default: () => null }));

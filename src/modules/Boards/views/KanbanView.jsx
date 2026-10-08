@@ -1,57 +1,78 @@
 import React, { useMemo, useState } from 'react';
 import {
-  DndContext, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, DragOverlay,
+  DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, useDraggable, useDroppable, DragOverlay,
 } from '@dnd-kit/core';
-import { Plus, GripVertical, Settings2 } from 'lucide-react';
+import { Plus, Settings2, Trello } from 'lucide-react';
 import ItemCard from '../components/ItemCard';
 import CustomSelect from '../../../components/CustomSelect';
+import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import Popover from '../components/Popover';
 import LabelsEditor from '../components/LabelsEditor';
 import { tr } from '../../../i18n';
 import { applyView, groupItemsByColumn } from '../lib/viewData';
 import { getColumnType } from '../lib/columnTypes';
 
-function DraggableCard({ item, columns, onOpen, updatesCount, subCount, disabled }) {
+// Klawiatura: strzałka w lewo/prawo przeskakuje od razu do sąsiedniej kolumny (domyślne 25 px
+// na naciśnięcie wymagałoby kilkunastu naciśnięć na jedną kolumnę).
+function columnKeyboardCoordinates(event, { context, currentCoordinates }) {
+  const dir = event.code === 'ArrowRight' ? 1 : event.code === 'ArrowLeft' ? -1 : 0;
+  if (!dir) return undefined;
+  const rects = [...(context.droppableRects?.values?.() || [])].filter(Boolean).sort((a, b) => a.left - b.left);
+  const x = currentCoordinates.x;
+  const target = dir > 0 ? rects.find(r => r.left > x + 10) : [...rects].reverse().find(r => r.left < x - 10);
+  return target ? { x: target.left + 8, y: target.top + 8 } : undefined;
+}
+
+function DraggableCard({ item, columns, people, onOpen, updatesCount, subCount, disabled }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id, disabled });
   const style = { transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined, opacity: isDragging ? 0.3 : 1 };
   return (
     <div ref={setNodeRef} style={style} className="mb-2">
-      <ItemCard item={item} columns={columns} onOpen={onOpen} updatesCount={updatesCount} subCount={subCount}
-        dragHandleProps={disabled ? undefined : { ...attributes, ...listeners, className: 'cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600', children: <GripVertical size={14} /> }} />
+      <ItemCard item={item} columns={columns} people={people} onOpen={onOpen} updatesCount={updatesCount} subCount={subCount}
+        dragHandleProps={disabled ? undefined : { ...attributes, ...listeners }} />
     </div>
   );
 }
 
-function KanbanColumn({ col, columns, onOpen, onAdd, updatesCountByItem, subCountByItem, disabled }) {
-  const { setNodeRef, isOver } = useDroppable({ id: col.key });
+function KanbanColumn({ col, columns, people, onOpen, onAdd, addLabel, updatesCountByItem, subCountByItem, disabled }) {
+  const { setNodeRef, isOver } = useDroppable({ id: col.key, disabled });
   return (
-    <div className="w-72 shrink-0 flex flex-col">
+    <section className="w-72 shrink-0 flex flex-col snap-start" aria-label={col.title}>
       <div className="flex items-center gap-2 mb-2 px-1">
-        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: col.color }} />
-        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate">{col.title}</span>
-        <span className="text-xs text-gray-400">{col.items.length}</span>
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: col.color }} aria-hidden="true" />
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate">{col.title}</h3>
+        <span className="text-xs text-gray-400 tabular-nums">{col.items.length}</span>
       </div>
       <div ref={setNodeRef}
         className={`flex-1 rounded-xl p-2 min-h-[120px] transition-colors ${isOver ? 'bg-accent-primary/10 ring-2 ring-accent-primary/30' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
         {col.items.map(it => (
-          <DraggableCard key={it.id} item={it} columns={columns} onOpen={onOpen} updatesCount={updatesCountByItem?.[it.id] || 0} subCount={subCountByItem?.[it.id] || 0} disabled={disabled} />
+          <DraggableCard key={it.id} item={it} columns={columns} people={people} onOpen={onOpen}
+            updatesCount={updatesCountByItem?.[it.id] || 0} subCount={subCountByItem?.[it.id] || 0} disabled={disabled} />
         ))}
         {onAdd && (
-          <button onClick={() => onAdd(col)} className="w-full flex items-center gap-1.5 px-2 py-2 text-sm text-gray-400 hover:text-accent-primary">
-            <Plus size={15} /> {tr('Dodaj')}
+          <button type="button" onClick={() => onAdd(col)}
+            className="w-full flex items-center gap-1.5 px-2 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-white/70 dark:hover:bg-gray-700/40 transition">
+            <Plus size={15} aria-hidden="true" /> {addLabel}
           </button>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
-export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, updatesCountByItem }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, updatesCountByItem, terms }) {
+  const can = data.can || {};
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: columnKeyboardCoordinates }),
+  );
   const [activeId, setActiveId] = useState(null);
 
   const groupableCols = data.columns.filter(c => getColumnType(c.type).groupable);
-  const groupColId = config.kanbanGroupBy || groupableCols.find(c => c.type === 'status')?.id || groupableCols[0]?.id;
+  // Zapisana kolumna grupująca mogła zostać usunięta — wtedy domyślna (Status), a nie pusty widok.
+  const savedGroupBy = groupableCols.some(c => c.id === config.kanbanGroupBy) ? config.kanbanGroupBy : null;
+  const groupColId = savedGroupBy || groupableCols.find(c => c.type === 'status')?.id || groupableCols[0]?.id;
   const groupCol = data.columns.find(c => c.id === groupColId);
 
   const visibleItems = useMemo(() => applyView(data.items, data.columns, config), [data.items, data.columns, config]);
@@ -61,12 +82,17 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
     data.items.forEach(it => { if (it.parent_item_id) m[it.parent_item_id] = (m[it.parent_item_id] || 0) + 1; });
     return m;
   }, [data.items]);
+  const firstGroup = useMemo(() => [...data.groups].sort((a, b) => (a.display_order || 0) - (b.display_order || 0))[0], [data.groups]);
+  const boardEmpty = !data.items.some(it => !it.parent_item_id);
 
   if (!groupCol) {
-    return <div className="text-center py-16 text-gray-400 text-sm">{tr('Dodaj kolumnę typu Status, Priorytet, Lista lub Osoby, aby użyć widoku Kanban.')}</div>;
+    return <EmptyState icon={Trello} title={tr('Dodaj kolumnę typu Status, Priorytet, Lista lub Osoby, aby użyć widoku Kanban.')} />;
   }
 
-  const dragDisabled = groupCol.type === 'people';
+  // Przeciąganie zmienia wartość kolumny grupującej — tylko z prawem edycji zadań i nie dla
+  // „Osób” (zadanie bywa w kilku kolumnach naraz, przeniesienie byłoby niejednoznaczne).
+  const dragDisabled = groupCol.type === 'people' || !can.editItems;
+  const canAdd = can.createItems && groupCol.type !== 'people' && !!firstGroup;
 
   const applyGroupValue = (itemId, key) => {
     if (groupCol.type === 'status' || groupCol.type === 'priority') data.updateCell(itemId, groupCol.id, key === '__empty__' ? null : key);
@@ -74,7 +100,7 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
     else if (groupCol.type === 'checkbox') data.updateCell(itemId, groupCol.id, key === 'true');
   };
 
-  // Wartość komórki dla nowego elementu dodawanego w danej kolumnie Kanban.
+  // Wartość komórki dla nowego zadania dodawanego w danej kolumnie Kanban.
   const groupCellsFor = (key) => {
     if (key === '__empty__') return {};
     if (groupCol.type === 'status' || groupCol.type === 'priority') return { [groupCol.id]: key };
@@ -87,50 +113,72 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
     setActiveId(null);
     const { active, over } = e;
     if (!over) return;
+    const it = visibleItems.find(i => i.id === active.id);
+    const fromCol = kanbanCols.find(c => c.items.some(i => i.id === active.id));
+    if (!it || fromCol?.key === over.id) return; // upuszczenie w tej samej kolumnie — bez zapisu
     applyGroupValue(active.id, over.id);
   };
 
-  const addToColumn = (col) => {
-    const firstGroup = [...data.groups].sort((a, b) => a.display_order - b.display_order)[0];
-    // Ustaw wartość kolumny grupującej OD RAZU przy tworzeniu — inaczej updateCell w .then
-    // działa na nieaktualnym stanie (element jeszcze nie w items) i status przepadał.
-    data.addItem(firstGroup?.id, '', groupCellsFor(col.key));
+  // „+ Dodaj zadanie” w kolumnie: od razu z wartością tej kolumny (updateCell w .then działałby na
+  // nieaktualnym stanie i status przepadał) i z otwartym oknem, żeby wpisać nazwę.
+  const addToColumn = async (col) => {
+    if (!canAdd) return;
+    const it = await data.addItem(firstGroup.id, '', groupCellsFor(col.key));
+    if (it) onOpenItem?.(it);
   };
 
   const activeItem = activeId ? visibleItems.find(i => i.id === activeId) : null;
+  const nameOf = (id) => visibleItems.find(i => i.id === id)?.name || tr('Bez nazwy');
+  const titleOf = (key) => kanbanCols.find(c => c.key === key)?.title || '';
+  const accessibility = {
+    screenReaderInstructions: {
+      draggable: tr('Aby przenieść kartę, naciśnij spację lub Enter, wybierz kolumnę strzałkami w lewo i w prawo i ponownie naciśnij spację. Esc anuluje.'),
+    },
+    announcements: {
+      onDragStart: ({ active }) => tr('Podniesiono: {name}', { name: nameOf(active.id) }),
+      onDragOver: ({ over }) => (over ? tr('Nad kolumną: {col}', { col: titleOf(over.id) }) : undefined),
+      onDragEnd: ({ active, over }) => (over ? tr('Przeniesiono „{name}” do: {col}', { name: nameOf(active.id), col: titleOf(over.id) }) : tr('Anulowano przenoszenie')),
+      onDragCancel: () => tr('Anulowano przenoszenie'),
+    },
+  };
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
+      <div className="flex items-center gap-2 mb-3 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
         {tr('Grupuj wg:')}
         <div className="w-48">
           <CustomSelect compact value={groupColId} onChange={(v) => onUpdateConfig({ kanbanGroupBy: v })}
             options={groupableCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
         </div>
-        {(groupCol.type === 'status' || groupCol.type === 'priority') && (
-          <Popover align="left" width={280} triggerClassName="" trigger={
-            <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-              <Settings2 size={14} /> {tr('Zarządzaj statusami')}
-            </button>
+        {can.editColumns && (groupCol.type === 'status' || groupCol.type === 'priority') && (
+          <Popover align="left" width={280} triggerClassName="rounded-lg" label={tr('Zarządzaj statusami')} trigger={
+            // tabIndex -1: przystankiem Tab jest opakowanie Popovera (rola przycisku) — bez podwójnego.
+            <Button variant="outline" size="sm" icon={Settings2} tabIndex={-1}>{tr('Zarządzaj statusami')}</Button>
           }>
             <div className="p-3">
-              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">{tr('Etykiety')}: {groupCol.name}</div>
+              <div className="text-xs font-bold text-gray-500 uppercase mb-2">{tr('Etykiety')}: {groupCol.name}</div>
               <LabelsEditor column={groupCol} onUpdateColumn={data.updateColumn} />
             </div>
           </Popover>
         )}
       </div>
-      <DndContext sensors={sensors} onDragStart={(e) => setActiveId(e.active.id)} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
-        <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-4">
-          {kanbanCols.map(col => (
-            <KanbanColumn key={col.key} col={col} columns={data.columns} onOpen={onOpenItem}
-              onAdd={dragDisabled ? null : addToColumn} updatesCountByItem={updatesCountByItem} subCountByItem={subCountByItem} disabled={dragDisabled} />
-          ))}
-        </div>
-        <DragOverlay>
-          {activeItem ? <div className="w-72"><ItemCard item={activeItem} columns={data.columns} /></div> : null}
-        </DragOverlay>
-      </DndContext>
+      {boardEmpty ? (
+        <EmptyState compact icon={Trello} title={tr(terms?.kind !== 'item' ? 'Brak zadań' : 'Brak elementów')}
+          action={canAdd && kanbanCols[0] ? <Button icon={Plus} onClick={() => addToColumn(kanbanCols[0])}>{tr(terms?.add || 'Dodaj')}</Button> : null} />
+      ) : (
+        <DndContext sensors={sensors} accessibility={accessibility} onDragStart={(e) => setActiveId(e.active.id)} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
+          <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-4 snap-x">
+            {kanbanCols.map(col => (
+              <KanbanColumn key={col.key} col={col} columns={data.columns} people={data.people} onOpen={onOpenItem}
+                onAdd={canAdd ? addToColumn : null} addLabel={tr(terms?.add || 'Dodaj')}
+                updatesCountByItem={updatesCountByItem} subCountByItem={subCountByItem} disabled={dragDisabled} />
+            ))}
+          </div>
+          <DragOverlay>
+            {activeItem ? <div className="w-72"><ItemCard item={activeItem} columns={data.columns} people={data.people} /></div> : null}
+          </DragOverlay>
+        </DndContext>
+      )}
     </div>
   );
 }

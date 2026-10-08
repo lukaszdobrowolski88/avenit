@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import '../../../components/pickList.css';
 
 // Lekki popover zakotwiczony do elementu wyzwalającego (portal do body).
-// Zamyka się po kliknięciu poza i przy Escape. Używany do edytorów komórek.
-// `bare` = bez domyślnej ramki/cienia — wygląd daje className (np. wspólne pick-pop z pickList.css).
-export default function Popover({ trigger, children, className = '', width, onOpenChange, align = 'left', triggerClassName = 'w-full h-full', bare = false }) {
+// Zamyka się po kliknięciu poza i przy Escape. Używany do edytorów komórek i menu tablic.
+// Wygląd domyślny = wspólna lista wyboru aplikacji (pick-pop z pickList.css); `bare` = bez
+// domyślnej skórki — wygląd daje className.
+// Klawiatura: wyzwalacz jest osiągalny Tabem (rola przycisku, Enter/Spacja otwiera; gdy wyzwalaczem
+// jest już <button>, opakowanie nie dokłada drugiego przystanku), Esc zamyka TYLKO ten popover
+// (nie panel zadania pod spodem) i oddaje fokus wyzwalaczowi.
+export default function Popover({ trigger, children, className = '', width, onOpenChange, align = 'left', triggerClassName = 'w-full h-full', bare = false, label, disabled = false }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const popRef = useRef(null);
@@ -39,34 +44,74 @@ export default function Popover({ trigger, children, className = '', width, onOp
     };
   }, [open, width, align]);
 
+  const close = (refocus) => {
+    setOpen(false);
+    if (refocus) (triggerRef.current?.querySelector('button') || triggerRef.current)?.focus({ preventScroll: true });
+  };
+
   useEffect(() => {
     if (!open) return;
     const onDown = (e) => {
       if (triggerRef.current?.contains(e.target)) return;
       if (popRef.current?.contains(e.target)) return;
+      // Listy, kalendarze i zagnieżdżone popovery otwarte Z WNĘTRZA rysują się w osobnym portalu —
+      // klik w nie nie jest „poza” (inaczej wybór wartości filtra zamykał cały panel filtrów).
+      if (e.target.closest?.('.portal-dropdown-select, .portal-datepicker, .portal-multiselect, [data-popover]')) return;
       setOpen(false);
     };
-    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
+    return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
+
+  // Fokus do środka po otwarciu (pierwsze pole / opcja), jeśli nic nie ustawiło go samo (autoFocus).
+  useEffect(() => {
+    if (!open) return undefined;
+    const id = requestAnimationFrame(() => {
+      const pop = popRef.current;
+      if (!pop || pop.contains(document.activeElement)) return;
+      pop.querySelector('input, textarea, [role="option"], [role="menuitem"], button')?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [open]);
+
+  // Esc w popoverze: zamyka tylko jego. preventDefault — Modal (panel zadania) sprawdza
+  // defaultPrevented i wtedy się nie zamyka; stopPropagation — nadrzędny popover też zostaje.
+  const onPopKeyDown = (e) => {
+    if (e.key !== 'Escape') return;
+    e.preventDefault();
+    e.stopPropagation();
+    close(true);
+  };
+
+  const triggerIsButton = React.isValidElement(trigger) && trigger.type === 'button';
+  const onTriggerKeyDown = (e) => {
+    if (disabled || triggerIsButton || e.target !== e.currentTarget) return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o); }
+  };
+  const a11y = triggerIsButton
+    ? {}
+    : { role: 'button', tabIndex: disabled ? -1 : 0, 'aria-haspopup': 'dialog', 'aria-expanded': open, 'aria-label': label, 'aria-disabled': disabled || undefined };
 
   return (
     <>
-      <div ref={triggerRef} onClick={() => setOpen(o => !o)} className={`${triggerClassName} cursor-pointer`}>
+      <div
+        ref={triggerRef}
+        {...a11y}
+        onClick={() => { if (!disabled) setOpen(o => !o); }}
+        onKeyDown={onTriggerKeyDown}
+        className={`${triggerClassName} ${disabled ? '' : 'cursor-pointer'} ${triggerIsButton ? '' : 'outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/60 rounded'}`}
+      >
         {typeof trigger === 'function' ? trigger(open) : trigger}
       </div>
       {open && createPortal(
         <div
           ref={popRef}
+          data-popover=""
+          onKeyDown={onPopKeyDown}
           style={{ position: 'fixed', top: coords.top, left: coords.left, minWidth: coords.minWidth, zIndex: 200 }}
-          className={bare ? className : `bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 ${className}`}
+          className={bare ? className : `pick-pop ${className}`}
         >
-          {typeof children === 'function' ? children({ close: () => setOpen(false) }) : children}
+          {typeof children === 'function' ? children({ close: () => close(true) }) : children}
         </div>,
         document.body
       )}

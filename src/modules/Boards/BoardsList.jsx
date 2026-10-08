@@ -15,6 +15,7 @@ import { generateBoardSpec } from './lib/aiBoards';
 import { Sparkles } from 'lucide-react';
 import Popover from './components/Popover';
 import { confirmDialog } from '../../lib/dialog';
+import { AI_ENABLED } from '../../lib/features';
 
 const CARD_COLORS = ['#6366f1', '#00c875', '#e2445c', '#fdab3d', '#a25ddc', '#0086c0', '#ff5ac4'];
 const TPL_ICON = { LayoutGrid, CalendarRange, CheckSquare, Users };
@@ -171,7 +172,7 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
         </div>
       )}
 
-      {canCreate && <AiBoardGenerator onGenerate={handleAiGenerate} busy={aiBusy} />}
+      {AI_ENABLED && canCreate && <AiBoardGenerator onGenerate={handleAiGenerate} busy={aiBusy} />}
       {aiError && <div className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{aiError}</div>}
 
       {loading ? (

@@ -16,13 +16,14 @@ import { TH } from '../../components/ui/DataTable';
 import { useCan } from '../../components/Can';
 import { lineupOf, teamHistory, previousLineup, fillEmptyRoles, serviceStats, proposeLineups } from './schedule/lineup';
 import { buildPrintHtml, openPrintWindow } from './schedule/printSchedule';
-import ActionMenu from './schedule/ActionMenu';
+import ActionMenu from '../../components/ActionMenu';
 import ProposalModal from './schedule/ProposalModal';
 import TemplatesModal from './schedule/TemplatesModal';
 import ReminderSettingsModal from './schedule/ReminderSettingsModal';
 import MyServicesModal from './schedule/MyServicesModal';
 import './scheduleGrid.css';
 import '../../components/pickList.css';
+import '../../components/toolbar.css';
 
 // Grafik nad WYDARZENIAMI (twardy switch z programów). Wiersze = wydarzenia danej służby:
 // wydarzenie należy do służby, jeśli reguła event_type_teams (module_key, event_type) zawiera
@@ -1260,27 +1261,27 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
         </h2>
         <div className="flex items-center gap-2 flex-wrap">
           {!narrow && teamEvents.length > 0 && (
-            <div className="sg-segbar" role="group" aria-label={tr('Układ grafiku')}>
+            <div className="seg-bar" role="group" aria-label={tr('Układ grafiku')}>
               <button type="button" aria-pressed={viewMode === 'dates'} onClick={() => changeView('dates')}
-                className="sg-seg" title={tr('Wiersze = wydarzenia')}>
+                className="seg-btn" title={tr('Wiersze = wydarzenia')}>
                 <Rows size={15} aria-hidden="true" />{tr('Daty')}
               </button>
               <button type="button" aria-pressed={viewMode === 'roles'} onClick={() => changeView('roles')}
-                className="sg-seg" title={tr('Wiersze = role, kolumny = daty')}>
+                className="seg-btn" title={tr('Wiersze = role, kolumny = daty')}>
                 <Columns size={15} aria-hidden="true" />{tr('Role')}
               </button>
             </div>
           )}
-          <button type="button" className="sg-tool" onClick={() => setMyServicesOpen(true)}
+          <button type="button" className="tool-btn" onClick={() => setMyServicesOpen(true)}
             title={tr('Dodaj swoje służby do kalendarza w telefonie')}>
             <CalendarPlus size={15} aria-hidden="true" />{tr('Moje służby')}
           </button>
-          <button type="button" className="sg-tool" onClick={() => setReminderOpen(true)}
+          <button type="button" className="tool-btn" onClick={() => setReminderOpen(true)}
             title={tr('Automatyczne przypomnienia')}>
             <BellRing size={15} aria-hidden="true" />{tr('Przypomnienia')}
           </button>
           {teamEvents.length > 0 && (
-            <button type="button" className="sg-tool" onClick={exportCsv} title={tr('Pobierz grafik jako CSV')}>
+            <button type="button" className="tool-btn" onClick={exportCsv} title={tr('Pobierz grafik jako CSV')}>
               <Download size={15} aria-hidden="true" />{tr('CSV')}
             </button>
           )}

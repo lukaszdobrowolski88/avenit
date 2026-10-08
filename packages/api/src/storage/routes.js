@@ -45,7 +45,7 @@ async function shrinkImage(bucket, target) {
 // Szerokości z białej listy (żadnego zalewu cache), krótszy bok = w (pod object-cover), WebP,
 // zapis w STORAGE_DIR/<tenant>/.thumbs/<bucket>/<plik>@<w>.webp; odświeżane, gdy oryginał jest
 // nowszy. Oryginał zostaje nietknięty; bez sharp albo przy błędzie → null (serwujemy oryginał).
-export const THUMB_WIDTHS = new Set([48, 64, 96, 128, 192, 256]);
+export const THUMB_WIDTHS = new Set([48, 64, 96, 128, 192, 256, 384, 512, 768]); // do 768 — karty zdjęć (Wyposażenie)
 const THUMB_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 export async function thumbnailFor(tenant, bucket, filePath, target, width, baseDir = config.STORAGE_DIR) {
   if (!THUMB_WIDTHS.has(width) || !THUMB_EXT.has(path.extname(target).toLowerCase())) return null;

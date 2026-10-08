@@ -28,6 +28,7 @@ import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 import Spinner from '../../components/Spinner';
+import CustomDatePicker from '../../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
 
 const PROGRAM_ELEMENTS = [
   'Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie',
@@ -134,91 +135,6 @@ const getDaysInMonth = (date) => {
   return { days, firstDay: firstDay === 0 ? 6 : firstDay - 1 };
 };
 
-const CustomDatePicker = ({ value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
-  const wrapperRef = useRef(null);
-  const coords = useDropdownPosition(wrapperRef, isOpen);
-
-  useEffect(() => { if (value) setViewDate(new Date(value)); }, [value]);
-
-  useEffect(() => {
-    const handleClick = (e) => {
-        if (isOpen && wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-           const portal = document.getElementById('datepicker-portal');
-           if (portal && !portal.contains(e.target)) setIsOpen(false);
-        }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [isOpen]);
-
-  const handleDayClick = (day) => {
-    const d = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const dayStr = String(d.getDate()).padStart(2, '0');
-    onChange(`${year}-${month}-${dayStr}`);
-    setIsOpen(false);
-  };
-
-  const { days, firstDay } = getDaysInMonth(viewDate);
-  const daysArray = Array.from({ length: days }, (_, i) => i + 1);
-  const emptyDays = Array.from({ length: firstDay });
-
-  return (
-    <div className="relative" ref={wrapperRef}>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-gray-200/50 dark:border-gray-700/50 cursor-pointer hover:border-accent-primary-light transition"
-      >
-        <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
-        <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
-          {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
-        </span>
-      </div>
-
-      {isOpen && coords.width > 0 && document.body && createPortal(
-        <div
-            id="datepicker-portal"
-            className="fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-4 w-[280px]"
-            style={{
-              top: coords.openUpward ? 'auto' : `${coords.top}px`,
-              bottom: coords.openUpward ? `${window.innerHeight - coords.top + 4}px` : 'auto',
-              left: `${coords.left}px`
-            }}
-        >
-           <div className="flex justify-between items-center mb-4">
-             <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronLeft size={18} /></button>
-             <span className="text-sm font-bold capitalize text-gray-800 dark:text-gray-200">{viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
-             <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronRight size={18} /></button>
-           </div>
-           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
-           <div className="grid grid-cols-7 gap-1">
-             {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
-             {daysArray.map(d => {
-               const dDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), d);
-               const dStr = `${dDate.getFullYear()}-${String(dDate.getMonth()+1).padStart(2,'0')}-${String(dDate.getDate()).padStart(2,'0')}`;
-               const isSelected = value === dStr;
-               return (
-                 <button
-                    key={d}
-                    onClick={(e) => { e.stopPropagation(); handleDayClick(d); }}
-                    className={`h-8 w-8 rounded-lg text-xs font-medium transition
-                      ${isSelected ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
-                    `}
-                 >
-                   {d}
-                 </button>
-               )
-             })}
-           </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-};
 
 // --- POMOCNICZE KOMPONENTY ---
 

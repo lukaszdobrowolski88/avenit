@@ -61,7 +61,7 @@ function useDropdownPosition(triggerRef, isOpen) {
 // dzień (albo dziś); ←→ ±1 dzień, ↑↓ ±7 dni, Home/End początek/koniec tygodnia, PageUp/PageDown
 // ±miesiąc (z Shift ±rok), Enter/Spacja wybiera, Esc zamyka TYLKO kalendarz (nie okno z formularzem)
 // i oddaje fokus polu. Tab krąży w panelu. Nazwa pola: `label` albo `aria-label`/`aria-labelledby`.
-export default function CustomDatePicker({ label, value, onChange, placeholder = tr('Wybierz datę'), compact = false, variant = 'field', min, max, disabled = false, autoFocus = false, onClose, clearable = true, id, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledBy, 'aria-describedby': ariaDescribedBy }) {
+export default function CustomDatePicker({ label, value, onChange, placeholder = tr('Wybierz datę'), compact = false, variant = 'field', invalid = false, min, max, disabled = false, autoFocus = false, onClose, clearable = true, id, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledBy, 'aria-describedby': ariaDescribedBy }) {
   const [isOpen, setIsOpen] = useState(!!autoFocus && !disabled);
   const uid = useId();
   const fieldId = id || `dp-${uid}`;
@@ -256,13 +256,16 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
         aria-expanded={isOpen}
         aria-disabled={disabled || undefined}
         aria-describedby={ariaDescribedBy}
+        aria-invalid={invalid || undefined}
         {...nameProps}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onKeyDown={onTriggerKeyDown}
         className={cell
           ? `w-full h-full px-2 flex items-center justify-center text-sm cursor-pointer outline-none rounded focus-visible:ring-2 focus-visible:ring-accent-primary-light/50 ${isOpen ? 'bg-black/[0.03] dark:bg-white/5' : ''}`
           : `ui-field w-full ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${compact ? 'px-2 py-1 text-xs h-[26px]' : 'px-4 py-3'} border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all outline-none focus-visible:border-accent-primary-light focus-visible:ring-2 focus-visible:ring-accent-primary-light/30
-          ${isOpen
+          ${invalid
+            ? 'border-red-400 dark:border-red-500'
+            : isOpen
             ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
             : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }

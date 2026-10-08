@@ -1,6 +1,9 @@
 // Zastosowanie konfiguracji widoku (filtry/sortowanie/szukanie/grupowanie)
 // do listy elementów. Wspólne dla wszystkich widoków.
 import { cellToText, findLabel, isCellEmpty } from './columnTypes';
+import { boardColor } from './palette';
+import { STATUS_COLORS } from '../../../components/ui/DataTable';
+import { tr } from '../../../i18n';
 
 // Dopasowanie pojedynczego filtra {columnId, op, value} do wartości komórki.
 function matchFilter(column, cell, filter) {
@@ -103,38 +106,41 @@ function sortKey(column, cell) {
   }
 }
 
-// Grupowanie elementów po kolumnie (dla Kanbana). Zwraca [{key, title, color, items}]
+// Grupowanie elementów po kolumnie (dla Kanbana i wykresu). Zwraca [{key, title, color, items}].
+// Tytuły wiader systemowych przez tr() (widać je w kolumnach Kanbana i legendzie wykresu); kolory
+// z palety aplikacji — kolory etykiet z bazy mogą być jeszcze z palety Monday, więc boardColor().
 export function groupItemsByColumn(items, column) {
   const buckets = new Map();
   const ensure = (key, title, color) => {
-    if (!buckets.has(key)) buckets.set(key, { key, title, color, items: [] });
+    if (!buckets.has(key)) buckets.set(key, { key, title, color: boardColor(color), items: [] });
     return buckets.get(key);
   };
+  const NONE = STATUS_COLORS.neutral;
 
   if (column.type === 'status' || column.type === 'priority') {
     (column.settings?.labels || []).forEach(l => ensure(l.id, l.title, l.color));
-    ensure('__empty__', 'Bez wartości', '#c4c4c4');
+    ensure('__empty__', tr('Bez wartości'), NONE);
     for (const it of items) {
       const v = it.cells?.[column.id];
       const l = findLabel(column, v);
-      ensure(l ? l.id : '__empty__', l ? l.title : 'Bez wartości', l ? l.color : '#c4c4c4').items.push(it);
+      ensure(l ? l.id : '__empty__', l ? l.title : tr('Bez wartości'), l ? l.color : NONE).items.push(it);
     }
   } else if (column.type === 'people') {
     for (const it of items) {
       const ppl = it.cells?.[column.id] || [];
-      if (ppl.length === 0) ensure('__empty__', 'Nieprzypisane', '#c4c4c4').items.push(it);
-      else ppl.forEach(p => ensure(p.email, p.name, '#579bfc').items.push(it));
+      if (ppl.length === 0) ensure('__empty__', tr('Nieprzypisane'), NONE).items.push(it);
+      else ppl.forEach(p => ensure(p.email, p.name, STATUS_COLORS.info).items.push(it));
     }
   } else if (column.type === 'dropdown') {
     (column.settings?.options || []).forEach(o => ensure(o.id, o.title, o.color));
-    ensure('__empty__', 'Bez etykiety', '#c4c4c4');
+    ensure('__empty__', tr('Bez etykiety'), NONE);
     for (const it of items) {
       const ids = it.cells?.[column.id] || [];
       if (ids.length === 0) ensure('__empty__').items.push(it);
       else ids.forEach(id => { const o = (column.settings?.options || []).find(x => x.id === id); if (o) ensure(o.id, o.title, o.color).items.push(it); });
     }
   } else if (column.type === 'checkbox') {
-    ensure('true', 'Zaznaczone', '#00c875'); ensure('false', 'Niezaznaczone', '#c4c4c4');
+    ensure('true', tr('Zaznaczone'), STATUS_COLORS.success); ensure('false', tr('Niezaznaczone'), NONE);
     for (const it of items) ensure(it.cells?.[column.id] ? 'true' : 'false').items.push(it);
   }
   return Array.from(buckets.values());

@@ -15,6 +15,7 @@ import PollTab from '../../shared/PollTab';
 import MembersTab from './MembersTab';
 import ModuleBoard from '../../Boards/ModuleBoard';
 import FinanceWidget from './FinanceWidget';
+import { tr } from '../../../i18n';
 
 // Typy gotowych widgetów danych (zakładki systemowe → też elementy kreatora).
 export const WIDGET_TYPES = ['events', 'tasks', 'finance', 'members', 'wall', 'schedule', 'duty', 'materials', 'equipment', 'gallery', 'links', 'contacts', 'faq', 'announcements', 'poll'];
@@ -47,7 +48,7 @@ export default function ModuleWidget({ widgetType, moduleKey, moduleName, module
     // Zadania modułu = Tablica (silnik Projektów), jak Media/Młodzieżówka/Grupy domowe. Przy
     // pierwszym otwarciu stare zadania z custom_<key>_tasks są jednorazowo kopiowane na tablicę
     // (źródło zostaje nietknięte — patrz Boards/lib/legacyImport.js).
-    case 'tasks':     return <ModuleBoard sourceKind={`custom_${moduleKey}_tasks`} moduleKey={moduleKey} title={moduleName ? `Zadania — ${moduleName}` : 'Zadania'} card={!inCard} />;
+    case 'tasks':     return <ModuleBoard sourceKind={`custom_${moduleKey}_tasks`} moduleKey={moduleKey} title={moduleName ? tr('Zadania — {name}', { name: moduleName }) : tr('Zadania')} card={!inCard} />;
     case 'finance':   return <FinanceWidget moduleKey={moduleKey} moduleName={moduleName} />;
     case 'members':   return <MembersTab moduleKey={moduleKey} moduleName={moduleName} />;
     case 'wall':      return <WallTab ministry={moduleKey} currentUserEmail={email} currentUserName={name} />;

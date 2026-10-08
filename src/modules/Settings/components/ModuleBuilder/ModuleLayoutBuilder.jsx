@@ -25,6 +25,7 @@ import { toast } from '../../../../lib/toast';
 import { promptDialog } from '../../../../lib/dialog';
 import Modal from '../../../../components/Modal';
 import Button from '../../../../components/Button';
+import { AI_ENABLED } from '../../../../lib/features';
 
 const collisionDetection = (args) => {
   const hits = pointerWithin(args);
@@ -212,10 +213,12 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave, o
         </div>
 
         <div className="flex items-center gap-1.5">
+          {AI_ENABLED && (
           <button onClick={() => setAi((s) => ({ ...s, open: true, error: '' }))}
             className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow-lg transition">
             <Sparkles size={16} /> <span className="hidden sm:inline">AI</span>
           </button>
+          )}
           <div className="relative">
             <button onClick={() => setTplOpen((v) => !v)}
               className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">

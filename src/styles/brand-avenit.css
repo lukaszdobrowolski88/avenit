@@ -178,7 +178,9 @@ html[data-color-preset="avenit"] :is(div, section, main):is(.bg-gradient-to-br, 
 
 /* Pola-divy: pełna biel (bez półprzezroczystości i rozmycia), ramka jak w zwykłych polach. */
 html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl { background-color: #FFFFFF !important; backdrop-filter: none !important; }
-html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl:not(.border-accent-primary-light):not(:hover) { border-color: rgb(var(--field-border)) !important; }
+html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl:not(.border-accent-primary-light):not(:hover):not([aria-invalid="true"]) { border-color: rgb(var(--field-border)) !important; }
+/* Pole-div z błędem walidacji (np. brak daty) — czerwona ramka jak przy zwykłych polach. */
+html[data-color-preset="avenit"] .ui-field[aria-invalid="true"] { border-color: #dc2626 !important; }
 
 /* Tabele: globalny nagłówek z gradientem akcentu (index.css) → spokojny papier, hover wiersza neutralny. */
 html[data-color-preset="avenit"] thead { background-image: none !important; background-color: rgb(var(--gray-50)); }
@@ -313,21 +315,24 @@ html.dark[data-color-preset="avenit"] :is(div, span):is(.w-12, .w-14, .w-16, .w-
    Obejmuje też elementy z tabindex, summary i pola edytowalne (WCAG 2.4.7 / 1.4.11). */
 html[data-color-preset="avenit"] :is(button, a, summary, [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="switch"], [role="checkbox"], [contenteditable="true"], [tabindex]:not([tabindex="-1"])):not(.ui-field):focus-visible { outline: 2px solid #FFBE0B; outline-offset: 2px; }
 html[data-color-preset="avenit"]:not(.dark) :is(button, a, summary, [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="switch"], [role="checkbox"], [contenteditable="true"], [tabindex]:not([tabindex="-1"])):not(.ui-field):not(.dark *):focus-visible {
+  /* Sam cienki obrys słodem (14:1) — bez 5-pikselowego halo kurkumy, które wyglądało ciężko. */
   outline: 2px solid #2A2312;
   outline-offset: 2px;
-  box-shadow: 0 0 0 5px #FFBE0B;
 }
 /* Pola-divy (CustomSelect, kalendarz, godzina) z klawiatury — jak pole tekstowe w fokusie. */
+/* Fokus pól — subtelnie: ciemniejsza ramka + delikatna, 3-pikselowa poświata kurkumy (wcześniej
+   musztardowa ramka + drugi obrys + 5 px żółtej poświaty = gruba żółto-brązowa obwódka).
+   Ramka słodem ma kontrast > 3:1 z tłem, więc aktywne pole jest wyraźne (WCAG 1.4.11). */
 html[data-color-preset="avenit"] .ui-field.rounded-xl:focus-visible,
 html[data-color-preset="avenit"] .ui-field:focus-within:has(input:focus-visible) {
-  border-color: #FFBE0B !important;
-  box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.35) !important;
+  border-color: rgba(255, 190, 11, 0.85) !important;
+  box-shadow: 0 0 0 3px rgba(255, 190, 11, 0.16) !important;
   outline: none;
 }
 html[data-color-preset="avenit"]:not(.dark) .ui-field.rounded-xl:focus-visible,
 html[data-color-preset="avenit"]:not(.dark) .ui-field:focus-within:has(input:focus-visible) {
-  border-color: #8A6606 !important;
-  box-shadow: 0 0 0 1px #8A6606, 0 0 0 5px rgba(255, 190, 11, 0.45) !important;
+  border-color: #2A2312 !important;
+  box-shadow: 0 0 0 3px rgba(255, 190, 11, 0.22) !important;
 }
 
 /* Przyciski drugorzędne na szarym tle (wariant secondary) też jako pigułki. */
@@ -435,17 +440,17 @@ html.dark[data-color-preset="avenit"] [data-tone][data-tone][data-tone="2"].w-14
 /* Wybrany kafelek-filtr: słód z głębią. */
 html[data-color-preset="avenit"]:not(.dark) [data-pick][data-pick][data-pick][data-selected="true"] { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 14px 28px -14px rgba(42, 35, 18, 0.65) !important; }
 
-/* Pola: fokus jako ciepła poświata kurkumy. W jasnym motywie ramka musztardą (5,3:1) + mocniejsze
-   halo — sama kurkuma z poświatą 22% miała ~1,1:1 i nie było widać, które pole jest aktywne.
+/* Pola: fokus subtelny — w jasnym motywie ramka słodem (wyraźna, > 3:1) + delikatna poświata kurkumy
+   3 px; w ciemnym ramka kurkumą. (Wcześniej musztarda + drugi obrys + 5 px halo = za ciężko.)
    Ekran logowania (.lg-root, styles/login.css) ma własne pola — wyłączony z reguł pól tej warstwy. */
 html[data-color-preset="avenit"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.lg-root *):focus {
-  border-color: #FFBE0B !important;
-  box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.30) !important;
+  border-color: rgba(255, 190, 11, 0.85) !important;
+  box-shadow: 0 0 0 3px rgba(255, 190, 11, 0.16) !important;
   outline: none;
 }
 html[data-color-preset="avenit"]:not(.dark) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select):not(.dark *):not(.ui-field *):not(.lg-root *):focus {
-  border-color: #8A6606 !important;
-  box-shadow: 0 0 0 1px #8A6606, 0 0 0 5px rgba(255, 190, 11, 0.40) !important;
+  border-color: #2A2312 !important;
+  box-shadow: 0 0 0 3px rgba(255, 190, 11, 0.22) !important;
 }
 
 /* Karta „Najbliższe”: gradient jasnej kurkumy + koła z key visualu. */

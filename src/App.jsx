@@ -78,6 +78,7 @@ const BoardsModule = lazy(() => import('./modules/Boards/BoardsModule'));
 const EventDetailPage = lazy(() => import('./modules/EventDetailPage'));
 const EventsModule = lazy(() => import('./modules/Events/EventsModule'));
 import { tr } from './i18n';
+import { AI_ENABLED } from './lib/features';
 
 // Lista kluczy systemowych modułów (mają dedykowane komponenty)
 const SYSTEM_MODULE_KEYS = [
@@ -600,7 +601,7 @@ function AppInner() {
                   <ProtectedRoute resource="module:automation"><AutomationModule /></ProtectedRoute>
                 } />
                 <Route path="/ai" element={
-                  <ProtectedRoute resource="module:ai"><AiAssistantModule /></ProtectedRoute>
+                  !AI_ENABLED ? <Navigate to="/" replace /> : <ProtectedRoute resource="module:ai"><AiAssistantModule /></ProtectedRoute>
                 } />
                 {/* Kazania wtopione w Nauczanie — /sermons prowadzi prosto na zakładkę „Kazania” */}
                 <Route path="/sermons" element={<Navigate to={MERGED_MODULE_TARGETS.sermons} replace />} />

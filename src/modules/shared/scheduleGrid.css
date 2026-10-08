@@ -174,33 +174,6 @@ th.sg-col-rolehead { vertical-align: bottom; padding-bottom: 12px; }
 .sg-rolelabel { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sg-muted); }
 
 /* Przełącznik układu (segment) */
-/* Pasek narzędzi grafiku: przełącznik układu i przyciski mają jedną wysokość, czcionkę i kształt
-   (własne klasy — warstwa marki zmniejszała <Button size="sm"> do 24 px obok 36 px przełącznika). */
-.sg-tool, .sg-segbar {
-  --sg-tool-bg: rgba(42, 35, 18, 0.055);
-  --sg-tool-hover: rgba(42, 35, 18, 0.09);
-  height: 34px; border-radius: 9999px; background: var(--sg-tool-bg);
-}
-html.dark .sg-tool, html.dark .sg-segbar { --sg-tool-bg: rgba(255, 255, 255, 0.07); --sg-tool-hover: rgba(255, 255, 255, 0.12); }
-.sg-tool {
-  display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; flex-shrink: 0;
-  font-size: 13px; font-weight: 600; line-height: 1; color: rgb(var(--gray-700)); cursor: pointer;
-  transition: background-color .12s;
-}
-html.dark .sg-tool { color: rgb(var(--gray-200)); }
-.sg-tool:hover { background: var(--sg-tool-hover); }
-.sg-tool:focus-visible, .sg-seg:focus-visible { outline: none !important; box-shadow: 0 0 0 2px var(--sg-accent, #FFBE0B); }
-.sg-segbar { display: inline-flex; align-items: center; gap: 2px; padding: 3px; }
-.sg-seg {
-  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 9999px;
-  font-size: 13px; font-weight: 600; line-height: 1; color: rgb(var(--gray-600)); transition: background-color .12s, color .12s;
-}
-html.dark .sg-seg { color: rgb(var(--gray-300)); }
-.sg-seg:hover { color: rgb(var(--gray-900)); }
-.sg-seg[aria-pressed="true"] { background: #fff; color: rgb(var(--gray-900)); box-shadow: 0 1px 2px rgba(42, 35, 18, 0.12); }
-html.dark .sg-seg:hover, html.dark .sg-seg[aria-pressed="true"] { color: #fff; }
-html.dark .sg-seg[aria-pressed="true"] { background: rgba(255, 255, 255, 0.14); box-shadow: none; }
-
 /* Okna: checkbox i linki kalendarza */
 .sg-native-check { width: 16px; height: 16px; accent-color: #2A2312; flex-shrink: 0; }
 html.dark .sg-native-check { accent-color: #FFBE0B; }
