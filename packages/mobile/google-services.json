@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:324129747505:android:dc13c0c6f717d37d7a5b10",
+        "mobilesdk_app_id": "1:324129747505:android:feddc4879de91b347a5b10",
         "android_client_info": {
-          "package_name": "pl.avenit.app.preview"
+          "package_name": "pl.avenit.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "324129747505-mbjdk4g0ffnlbdf1uetap0sjcisvgttn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA3c3asesUOlWz-EyPHsOow3wlv1Y8oeT4"
@@ -20,7 +25,41 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "324129747505-mbjdk4g0ffnlbdf1uetap0sjcisvgttn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:324129747505:android:dc13c0c6f717d37d7a5b10",
+        "android_client_info": {
+          "package_name": "pl.avenit.app.preview"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "324129747505-mbjdk4g0ffnlbdf1uetap0sjcisvgttn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3c3asesUOlWz-EyPHsOow3wlv1Y8oeT4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "324129747505-mbjdk4g0ffnlbdf1uetap0sjcisvgttn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
