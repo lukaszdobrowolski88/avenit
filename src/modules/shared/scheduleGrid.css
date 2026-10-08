@@ -1,0 +1,172 @@
+/* Grafik służby (ScheduleTab) — siatka „wydarzenia × role”.
+   Własne klasy sg-*, bo warstwa brand-avenit.css przemalowuje klasy Tailwinda (przycisk
+   z bg-white+border → beżowa pigułka, hover wiersza → beż) i pola zlewały się z podświetlonym
+   wierszem. Kolory idą przez zmienne, więc siatka działa w każdym presecie i w trybie ciemnym.
+   --sg-bg ustawia komponent (tło karty, w której leży siatka) — tym kryją się przyklejone kolumny. */
+
+.sg-root {
+  --sg-bg: #fff;
+  --sg-line: rgb(var(--gray-100));
+  --sg-line-strong: rgb(var(--gray-200));
+  --sg-tint: rgba(42, 35, 18, 0.035);
+  --sg-cell-hover: #fff;
+  --sg-cell-ring: rgb(var(--gray-300));
+  --sg-chip-bg: rgb(var(--gray-100));
+  --sg-chip-fg: rgb(var(--gray-800));
+  --sg-muted: rgb(var(--gray-500));
+  --sg-accent: rgb(var(--accent-primary-light));
+  --sg-edge-shadow: rgba(42, 35, 18, 0.28);
+}
+html.dark .sg-root {
+  --sg-line: rgba(255, 255, 255, 0.07);
+  --sg-line-strong: rgba(255, 255, 255, 0.12);
+  --sg-tint: rgba(255, 255, 255, 0.035);
+  --sg-cell-hover: rgba(255, 255, 255, 0.06);
+  --sg-cell-ring: rgba(255, 255, 255, 0.18);
+  --sg-chip-bg: rgba(255, 255, 255, 0.08);
+  --sg-chip-fg: rgb(var(--gray-100));
+  --sg-muted: rgb(var(--gray-400));
+  --sg-edge-shadow: rgba(0, 0, 0, 0.6);
+}
+
+.sg-wrap { position: relative; }
+
+/* Globalne `table { overflow-hidden; rounded; tło; blur }` z index.css robiło z tabeli kontener
+   przewijania — przyklejone kolumny wtedy nie działają (Safari: kolumna daty uciekała). */
+.sg-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: visible !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+.sg-table thead { background: transparent !important; }
+.sg-table th { border-bottom: 1px solid var(--sg-line-strong); }
+.sg-table tbody tr.sg-row:hover { background-color: transparent !important; }
+
+.sg-td {
+  padding: 6px 8px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--sg-line);
+  font-size: 13px;
+}
+.sg-table tbody tr:last-child > .sg-td { border-bottom-color: transparent; }
+.sg-row:hover > .sg-td { background-image: linear-gradient(var(--sg-tint), var(--sg-tint)); }
+
+/* Przyklejone kolumny: data + wydarzenie z lewej, status z prawej. */
+.sg-sticky { position: sticky; z-index: 2; background-color: var(--sg-bg); }
+.sg-col-date { left: 0; width: 104px; min-width: 104px; max-width: 104px; padding-left: 16px; }
+.sg-col-event { left: 104px; width: 210px; min-width: 210px; max-width: 210px; }
+.sg-col-status { right: 0; width: 150px; min-width: 150px; max-width: 150px; }
+.sg-col-role { min-width: 156px; }
+.sg-col-absent { min-width: 176px; }
+.sg-col-notes { min-width: 210px; }
+th.sg-col-date { padding-left: 16px; }
+
+.sg-edge-l { box-shadow: inset -1px 0 0 var(--sg-line); transition: box-shadow .15s; }
+.sg-edge-r { box-shadow: inset 1px 0 0 var(--sg-line); transition: box-shadow .15s; }
+.sg-wrap[data-scroll-start="0"] .sg-edge-l { box-shadow: inset -1px 0 0 var(--sg-line), 10px 0 12px -10px var(--sg-edge-shadow); }
+.sg-wrap[data-scroll-end="0"] .sg-edge-r { box-shadow: inset 1px 0 0 var(--sg-line), -10px 0 12px -10px var(--sg-edge-shadow); }
+
+/* Data i wydarzenie */
+.sg-date { font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; line-height: 1.2; display: flex; align-items: center; gap: 6px; }
+.sg-meta { font-size: 11.5px; color: var(--sg-muted); line-height: 1.35; margin-top: 2px; display: flex; align-items: center; gap: 4px; min-width: 0; }
+.sg-next-dot { width: 7px; height: 7px; border-radius: 9999px; background: #FFBE0B; flex-shrink: 0; }
+.sg-event-title {
+  font-weight: 600; font-size: 13px; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  color: inherit; text-decoration: none;
+}
+a.sg-event-title:hover { text-decoration: underline; text-underline-offset: 2px; }
+.sg-row--past .sg-col-date > *, .sg-row--past .sg-col-event > * { opacity: .55; }
+
+/* Komórka roli = przycisk otwierający listę. Pusta = pusta; „+ Dodaj” dopiero na hover wiersza. */
+.sg-cell {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  width: 100%; min-height: 34px; padding: 4px 6px;
+  border-radius: 10px; background: transparent; text-align: left; cursor: pointer;
+  transition: background-color .12s, box-shadow .12s;
+}
+.sg-cell:hover { background-color: var(--sg-cell-hover); box-shadow: inset 0 0 0 1px var(--sg-cell-ring); }
+.sg-cell[aria-expanded="true"] { background-color: var(--sg-cell-hover); box-shadow: inset 0 0 0 2px var(--sg-accent); }
+.sg-cell:focus-visible { outline: none !important; box-shadow: inset 0 0 0 2px var(--sg-accent); }
+.sg-add { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--sg-muted); opacity: 0; transition: opacity .12s; }
+.sg-row:hover .sg-add, .sg-cell:focus-visible .sg-add, .sg-cell[aria-expanded="true"] .sg-add, .sg-cards .sg-add { opacity: 1; }
+
+/* Osoba w komórce: neutralna pigułka + kolorowy znak statusu (bez „tęczy” teł). */
+.sg-chip {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  height: 24px; padding: 0 8px 0 6px; border-radius: 9999px;
+  background: var(--sg-chip-bg); color: var(--sg-chip-fg);
+  font-size: 12px; font-weight: 500; white-space: nowrap;
+}
+.sg-chip > .sg-chip-name { overflow: hidden; text-overflow: ellipsis; }
+.sg-chip--rejected { color: var(--sg-muted); }
+.sg-chip--rejected > .sg-chip-name { text-decoration: line-through; }
+.sg-chip--conflict { background: #FDECEC; color: #A61B1B; }
+html.dark .sg-chip--conflict { background: rgba(239, 68, 68, 0.16); color: #FCA5A5; }
+.sg-chip--away { background: transparent; color: #B42318; box-shadow: inset 0 0 0 1px rgba(180, 35, 24, 0.25); }
+html.dark .sg-chip--away { color: #FCA5A5; box-shadow: inset 0 0 0 1px rgba(252, 165, 165, 0.3); }
+
+/* Notatka: bez ramki, podpowiedź dopiero na hover wiersza. Selektor z input + .sg-root, bo globalne
+   `input[type="text"]` z index.css (ramka, padding, rozmycie) ma wyższą specyficzność niż sama klasa. */
+.sg-root input.sg-note {
+  width: 100%; min-height: 34px; padding: 6px 8px; border: 0; border-radius: 10px;
+  background: transparent; backdrop-filter: none; box-shadow: none; font-size: 13px; outline: none;
+  transition: background-color .12s, box-shadow .12s;
+}
+.sg-root input.sg-note:hover { background-color: var(--sg-cell-hover); box-shadow: inset 0 0 0 1px var(--sg-cell-ring); }
+.sg-root input.sg-note:focus { background-color: var(--sg-cell-hover); box-shadow: inset 0 0 0 2px var(--sg-accent); }
+.sg-root input.sg-note::placeholder { color: transparent !important; }
+.sg-row:hover input.sg-note::placeholder, .sg-root input.sg-note:focus::placeholder, .sg-cards input.sg-note::placeholder { color: var(--sg-muted) !important; }
+
+/* Statusy wydarzenia (kolumna po prawej) */
+.sg-counts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.sg-counts > span { display: inline-flex; align-items: center; gap: 2px; }
+
+/* Lista wyboru osób */
+.sg-pop { background: #fff; border-radius: 14px; box-shadow: 0 18px 40px -12px rgba(42, 35, 18, 0.28), 0 0 0 1px rgba(42, 35, 18, 0.08); }
+html.dark .sg-pop { background: rgb(var(--gray-800)); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1); }
+.sg-search { width: 100%; padding: 8px 10px; font-size: 13px; background: transparent; border-bottom: 1px solid rgb(var(--gray-200)) !important; outline: none; }
+html.dark .sg-search { border-bottom-color: rgba(255, 255, 255, 0.1) !important; }
+.sg-section { padding: 10px 12px 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgb(var(--gray-500)); }
+.sg-opt {
+  width: 100%; display: flex; align-items: center; gap: 8px; text-align: left;
+  min-height: 38px; padding: 6px 12px; font-size: 13px; cursor: pointer; border-radius: 0;
+}
+.sg-opt:hover, .sg-opt:focus-visible { background-color: rgb(var(--gray-50)); outline: none !important; }
+html.dark .sg-opt:hover, html.dark .sg-opt:focus-visible { background-color: rgba(255, 255, 255, 0.06); }
+.sg-opt:focus-visible { box-shadow: inset 2px 0 0 var(--sg-accent, #FFBE0B); }
+.sg-opt[aria-selected="true"] { font-weight: 600; }
+.sg-opt[aria-disabled="true"] { cursor: not-allowed; color: rgb(var(--gray-400)); }
+.sg-opt[aria-disabled="true"]:hover { background: transparent; }
+.sg-opt-hint { margin-left: auto; font-size: 11px; color: rgb(var(--gray-500)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%; flex-shrink: 0; }
+.sg-opt-hint--warn { color: #B42318; }
+html.dark .sg-opt-hint--warn { color: #FCA5A5; }
+.sg-check { width: 18px; height: 18px; border-radius: 6px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1.5px rgb(var(--gray-300)); }
+.sg-opt[aria-selected="true"] .sg-check { background: #2A2312; box-shadow: none; color: #FFBE0B; }
+html.dark .sg-opt[aria-selected="true"] .sg-check { background: #FFBE0B; color: #2A2312; }
+
+/* Nagłówek miesiąca */
+.sg-month { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 4px 10px; }
+.sg-month-toggle { display: inline-flex; align-items: center; gap: 8px; background: transparent; font-size: 17px; letter-spacing: -0.01em; }
+.sg-month-toggle svg { transition: transform .15s; }
+.sg-month-toggle[aria-expanded="false"] svg { transform: rotate(-90deg); }
+.sg-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0 4px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgb(var(--gray-500)); }
+.sg-divider::after { content: ""; flex: 1; height: 1px; background: rgb(var(--gray-200)); }
+html.dark .sg-divider::after { background: rgba(255, 255, 255, 0.1); }
+
+/* Telefon: karty zamiast szerokiej tabeli */
+.sg-cards > .sg-card { padding: 14px 4px; border-bottom: 1px solid var(--sg-line); }
+.sg-cards > .sg-card:last-child { border-bottom: 0; }
+.sg-card-label { font-size: 12px; font-weight: 600; color: var(--sg-muted); margin: 8px 0 2px 6px; }
+.sg-card-grid { display: grid; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); align-items: center; column-gap: 8px; margin-top: 6px; }
+.sg-card-grid > .sg-card-label { margin: 0 0 0 6px; padding: 4px 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-cell, .sg-note, .sg-add, .sg-edge-l, .sg-edge-r, .sg-month-toggle svg { transition: none; }
+}
