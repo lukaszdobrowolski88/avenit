@@ -40,6 +40,8 @@ export default function CampusSelector() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
         className="flex items-center gap-1.5 px-2 lg:px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors text-sm"
       >
         <Building2 size={16} className="text-accent-primary shrink-0" />
