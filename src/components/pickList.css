@@ -12,8 +12,9 @@ html.dark .pick-search { border-bottom-color: rgba(255, 255, 255, 0.1) !importan
 }
 .pick-opt:hover, .pick-opt:focus-visible { background-color: rgb(var(--gray-50)); outline: none !important; }
 html.dark .pick-opt:hover, html.dark .pick-opt:focus-visible { background-color: rgba(255, 255, 255, 0.06); }
-.pick-opt:focus-visible { box-shadow: inset 2px 0 0 rgb(var(--accent-primary-light)); }
 .pick-opt[aria-selected="true"] { font-weight: 600; }
+.pick-opt[role="option"][aria-selected="true"]:not(:has(.pick-check)) { background-color: rgb(var(--gray-100)); }
+html.dark .pick-opt[role="option"][aria-selected="true"]:not(:has(.pick-check)) { background-color: rgba(255, 255, 255, 0.08); }
 .pick-opt[aria-disabled="true"] { cursor: not-allowed; color: rgb(var(--gray-400)); }
 .pick-opt[aria-disabled="true"]:hover { background: transparent; }
 .pick-opt-hint { margin-left: auto; font-size: 11px; color: rgb(var(--gray-500)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50%; flex-shrink: 0; }

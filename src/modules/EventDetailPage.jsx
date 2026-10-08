@@ -131,11 +131,9 @@ export default function EventDetailPage() {
   const [uploading, setUploading] = useState(false);
   const fileRef = React.useRef(null);
 
-  // Edycja = to samo, co egzekwuje serwer (moduł + res:events:update). Dawniej wystarczał
-  // module:calendar, który ma też członek — widział edytor, a zapisy kończyły się cichym 403.
-  const canOpenCalendar = useCan('module:calendar');
-  const canUpdateEvents = useCan('res:events:update');
-  const canManage = canOpenCalendar && canUpdateEvents;
+  // Edycja = to samo, co egzekwuje serwer: globalnie (module:calendar + res:events:update) ALBO
+  // w zakresie służby wydarzenia (lider Mediów edytuje wydarzenia Mediów — moduleScope.js).
+  const canManage = useCan('res:events:update', { module: ev?.module_key });
   const moduleTitle = useModuleLabel(ev?.module_key, ev?.module_key || tr('Wydarzenie'));
   const moduleColor = useModuleColor(ev?.module_key);
   const calCfg = useModuleCalendar(ev?.module_key || 'general'); // brak modułu → typy kalendarza „Ogólne"

@@ -2,9 +2,9 @@ import React, { useMemo, useState } from 'react';
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, useDraggable, useDroppable, DragOverlay,
 } from '@dnd-kit/core';
-import { Plus, Settings2, Trello } from 'lucide-react';
+import { Plus, Settings2, Trello, Columns, Check, SearchX } from 'lucide-react';
+import '../../../components/toolbar.css';
 import ItemCard from '../components/ItemCard';
-import CustomSelect from '../../../components/CustomSelect';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import Popover from '../components/Popover';
@@ -84,6 +84,8 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
   }, [data.items]);
   const firstGroup = useMemo(() => [...data.groups].sort((a, b) => (a.display_order || 0) - (b.display_order || 0))[0], [data.groups]);
   const boardEmpty = !data.items.some(it => !it.parent_item_id);
+  // Filtr/wyszukiwanie ukryło wszystko — komunikat zamiast pustych kolumn.
+  const filteredEmpty = !visibleItems.some(it => !it.parent_item_id);
 
   if (!groupCol) {
     return <EmptyState icon={Trello} title={tr('Dodaj kolumnę typu Status, Priorytet, Lista lub Osoby, aby użyć widoku Kanban.')} />;
@@ -144,16 +146,28 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
-        {tr('Grupuj wg:')}
-        <div className="w-48">
-          <CustomSelect compact value={groupColId} onChange={(v) => onUpdateConfig({ kanbanGroupBy: v })}
-            options={groupableCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
-        </div>
+      {/* Ustawienia widoku w stylu paska narzędzi (tool-btn) — jak Filtruj/Sortuj nad nimi. */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <Popover align="left" width={240} bare className="pick-pop" triggerClassName="inline-flex" trigger={
+          <button type="button" className="tool-btn">
+            <Columns size={15} aria-hidden="true" /> {tr('Grupuj wg: {name}', { name: groupCol.name })}
+          </button>
+        }>
+          {({ close }) => (
+            <div className="py-1" role="listbox" aria-label={tr('Grupuj wg')}>
+              {groupableCols.map((c) => (
+                <button key={c.id} type="button" role="option" aria-selected={c.id === groupColId}
+                  onClick={() => { onUpdateConfig({ kanbanGroupBy: c.id }); close(); }} className="pick-opt text-gray-800 dark:text-gray-100">
+                  <span className="truncate">{c.name}</span>
+                  {c.id === groupColId && <Check size={15} className="ml-auto shrink-0" aria-hidden="true" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </Popover>
         {can.editColumns && (groupCol.type === 'status' || groupCol.type === 'priority') && (
-          <Popover align="left" width={280} triggerClassName="rounded-lg" label={tr('Zarządzaj statusami')} trigger={
-            // tabIndex -1: przystankiem Tab jest opakowanie Popovera (rola przycisku) — bez podwójnego.
-            <Button variant="outline" size="sm" icon={Settings2} tabIndex={-1}>{tr('Zarządzaj statusami')}</Button>
+          <Popover align="left" width={280} triggerClassName="inline-flex" trigger={
+            <button type="button" className="tool-btn"><Settings2 size={15} aria-hidden="true" /> {tr('Zarządzaj statusami')}</button>
           }>
             <div className="p-3">
               <div className="text-xs font-bold text-gray-500 uppercase mb-2">{tr('Etykiety')}: {groupCol.name}</div>
@@ -162,7 +176,12 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
           </Popover>
         )}
       </div>
-      {boardEmpty ? (
+      {!boardEmpty && filteredEmpty ? (
+        <EmptyState compact icon={SearchX} title={tr('Brak zadań pasujących do wyszukiwania lub filtrów')}
+          action={(config.filters?.length || 0) > 0
+            ? <Button variant="secondary" size="sm" onClick={() => onUpdateConfig({ filters: [] })}>{tr('Wyczyść filtry')}</Button>
+            : undefined} />
+      ) : boardEmpty ? (
         <EmptyState compact icon={Trello} title={tr(terms?.kind !== 'item' ? 'Brak zadań' : 'Brak elementów')}
           action={canAdd && kanbanCols[0] ? <Button icon={Plus} onClick={() => addToColumn(kanbanCols[0])}>{tr(terms?.add || 'Dodaj')}</Button> : null} />
       ) : (

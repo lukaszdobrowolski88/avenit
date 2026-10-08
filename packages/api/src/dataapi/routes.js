@@ -14,7 +14,9 @@ import { isConversationTable, conversationScope, enforceConversationWrite, conve
 import { MODERATE_CAPABILITY, reportScope, enforceReportWrite, reportAudience, normalizeBlockWrite, assertVoteFilters, anonymousPollIds, redactVotes } from './komunikatorPlus.js';
 import { isBoardTable, boardScope, enforceBoardWrite, boardAudience } from './boardsScope.js';
 import { isMailTable, mailScope, enforceMailWrite, mailAudience } from './mailScope.js';
+import { applyModuleScope } from './moduleScope.js';
 import { filterUserContent, notifyNewReport } from '../lib/moderation.js';
+import { prepareBoardAssignNotify, notifyBoardAssignees } from './boardNotify.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -126,6 +128,7 @@ export default async function dataApiRoutes(app) {
         table: q.table,
         op: q.op,
         user,
+        allowModuleScope: true, // wspólne tabele służb — zawężenie niżej (applyModuleScope)
       });
       if (!access.ok) {
         // Wyjątki self-service (mimo braku roli): własny profil w app_users,
@@ -237,7 +240,7 @@ export default async function dataApiRoutes(app) {
       }
 
       // Egzekwowanie pól przy zapisie: odrzuć próbę edycji kolumny bez prawa.
-      if (access.resolver && (q.op === 'insert' || q.op === 'update') && q.values) {
+      if (access.resolver && (q.op === 'insert' || q.op === 'update' || q.op === 'upsert') && q.values) {
         const cols = fieldColumns(q.table);
         if (cols.length) {
           const rows = Array.isArray(q.values) ? q.values : [q.values];
@@ -307,6 +310,10 @@ export default async function dataApiRoutes(app) {
         await enforceBoardWrite(q, req);
       }
 
+      // Prawo tylko „w zakresie służby” (events/grafik/tablice modułu): wiersze zawężone do służb
+      // osoby, AND z zakresem powyżej; zapis tylko do nich (moduleScope.js).
+      if (access.ok && access.moduleScope) await applyModuleScope(q, req, access.moduleScope);
+
       // Poczta: skrzynka i jej wiadomości tylko dla właściciela (mailScope.js) — także dla admina.
       if (isMailTable(q.table)) {
         q.__ownerScope = mailScope(q.table, req.user);
@@ -328,6 +335,9 @@ export default async function dataApiRoutes(app) {
         );
         return reply.send({ data: [], count: rows[0].count });
       }
+
+      // Osoby w komórkach elementu tablicy PRZED zapisem — do powiadomień o przypisaniu (nie rzuca).
+      const boardAssign = await prepareBoardAssignNotify(req.db, q);
 
       const built = buildQuery(q);
       const result = await req.db.query(built.sql, built.params);
@@ -415,6 +425,9 @@ export default async function dataApiRoutes(app) {
           notifyNewReport({ db: req.db, tenant: req.tenant, report: r, log: req.log });
         }
       }
+
+      // Nowo przypisani w kolumnie „Osoby” elementu tablicy: powiadomienie + push. Fire-and-forget.
+      if (boardAssign) notifyBoardAssignees({ db: req.db, tenant: req.tenant, prep: boardAssign, data, rowCount: result.rowCount, actor: req.user, log: req.log });
 
       return reply.send({ data, count });
     } catch (err) {

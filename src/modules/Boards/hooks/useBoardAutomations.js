@@ -66,7 +66,9 @@ export function useBoardAutomations(boardId, data, { userEmail, userName } = {})
     return [...emails];
   };
 
-  const runActions = async (automation, item) => {
+  // skip: e-maile, które już dostały powiadomienie z serwera (nowo przypisani — boardNotify.js),
+  // żeby automatyzacja „przypisano osobę → powiadom” nie dublowała powiadomienia.
+  const runActions = async (automation, item, skip = new Set()) => {
     const detail = [];
     for (const action of (automation.actions || [])) {
       const p = action.params || {};
@@ -76,6 +78,7 @@ export function useBoardAutomations(boardId, data, { userEmail, userName } = {})
           if (p.targetType === 'creator') targets = item.created_by ? [item.created_by] : [];
           else if (p.targetType === 'specific') targets = p.email ? [p.email] : [];
           else targets = peopleOfItem(item); // assignee (domyślnie)
+          targets = targets.filter((e) => !skip.has(String(e || '').toLowerCase()));
           for (const email of targets) {
             await supabase.from('notifications').insert({
               user_email: email, type: 'task',
@@ -123,7 +126,12 @@ export function useBoardAutomations(boardId, data, { userEmail, userName } = {})
     if (!hits.length) return;
     running.current = true;
     try {
-      for (const a of hits) await runActions(a, event.item);
+      // Nowo przypisane osoby powiadamia już serwer — automatyzacja ich pomija.
+      const prev = new Set((event.prevValue || []).map((p) => String(p?.email || '').toLowerCase()));
+      const added = event.type === 'cell_changed' && event.column?.type === 'people'
+        ? new Set((event.value || []).map((p) => String(p?.email || '').toLowerCase()).filter((e) => e && !prev.has(e)))
+        : new Set();
+      for (const a of hits) await runActions(a, event.item, added);
     } finally {
       running.current = false;
     }

@@ -734,10 +734,13 @@ export default function Members() {
 
           <Can cap="res:members:create">
             <div className="flex gap-2 md:ml-auto">
+              {/* Ustawienie całej organizacji (app_settings) — zapis wymaga manage_integrations jak inne ustawienia. */}
+              <Can cap="action:settings:manage_integrations">
               <button type="button" onClick={() => setShowBdayCfg(true)} title={tr('Przypomnienia urodzinowe')} aria-label={tr('Przypomnienia urodzinowe')}
                 className="whitespace-nowrap px-3 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1.5 text-sm font-medium">
                 <Cake size={16} aria-hidden="true" /> <span className="hidden sm:inline">{tr('Przypomnienia urodzinowe')}</span>
               </button>
+              </Can>
               <Button data-tour="member-add" onClick={() => openModal()} icon={Plus} className="whitespace-nowrap flex-1 md:flex-none">
                 {t('Dodaj osobę')}
               </Button>

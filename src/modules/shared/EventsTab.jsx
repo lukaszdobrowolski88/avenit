@@ -333,6 +333,10 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   const t = useT();
   const navigate = useNavigate();
   const config = getModuleConfig(ministry);
+  // Wydarzenia kalendarza tej służby: prawo globalne ALBO w zakresie służby (lider/członek
+  // służby — moduleScope.js, ta sama reguła co serwer). Ukrywamy akcje, które i tak dałyby 403.
+  const canCreateEvent = useCan('res:events:create', { module: config.teamType });
+  const canUpdateEvent = useCan('res:events:update', { module: config.teamType });
   // Typy wydarzeń tego modułu: z konfiguracji (Ustawienia kalendarza modułu) lub domyślne.
   const calCfg = useModuleCalendar(ministry);
   const eventTypes = (calCfg?.types && calCfg.types.length) ? calCfg.types : config.types;
@@ -648,12 +652,14 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       {/* Nagłówek */}
       <TabHeader className="!mb-0" title={t('Wydarzenia')} actions={
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowModal({ id: null })}
-            className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
-          >
-            <Plus size={18}/> {t('Dodaj wydarzenie')}
-          </button>
+          {canCreateEvent && (
+            <button
+              onClick={() => setShowModal({ id: null })}
+              className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
+            >
+              <Plus size={18}/> {t('Dodaj wydarzenie')}
+            </button>
+          )}
         </div>
       } />
 
@@ -778,7 +784,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                           >
                             <Users size={14} /> {rsvpMap[ev.id]?.mine ? tr('Będę') : tr('Potwierdź')}{rsvpMap[ev.id]?.count ? ` · ${rsvpMap[ev.id].count}` : ''}
                           </button>
-                          {eventScope === 'upcoming' ? (
+                          {!canUpdateEvent ? null : eventScope === 'upcoming' ? (
                             <button onClick={(e) => { e.stopPropagation(); toggleArchive(ev, true); }} title={tr('Archiwizuj')} aria-label={tr('Archiwizuj: {name}', { name: ev.title || '' })}
                               className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition"><Archive size={15} aria-hidden="true" /></button>
                           ) : ev.is_archived ? (

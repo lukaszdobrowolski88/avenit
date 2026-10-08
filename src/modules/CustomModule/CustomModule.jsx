@@ -70,6 +70,13 @@ export default function CustomModule() {
   // stan „przed załadowaniem grantów" są permisywne (can() zwraca wtedy true).
   const visibleTabs = module ? tabs.filter((t) => hasTabAccess(module.key, t.key)) : [];
 
+  // Link z powiadomienia o zadaniu (?item=) przy już otwartym module → zakładka Zadania.
+  useEffect(() => {
+    if (!hasItemDeepLink()) return;
+    const tasksTab = tabs.find((t) => t.component_type === 'tasks');
+    if (tasksTab) setActiveTab(tasksTab.key);
+  }, [location.search, tabs]);
+
   // Utrzymuj aktywną zakładkę w obrębie widocznych.
   useEffect(() => {
     if (visibleTabs.length && !visibleTabs.some((t) => t.key === activeTab)) {

@@ -259,10 +259,10 @@ export default function CustomSelect({
         {...nameProps}
         onClick={() => { if (disabled) return; if (isOpen) close(); else open(selectedIndex); }}
         onKeyDown={handleKeyDown}
-        className={`ui-field w-full ${compact ? 'px-2 py-1 text-xs h-[26px]' : 'px-4 py-3'} border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} flex justify-between items-center transition-all outline-none focus-visible:border-accent-primary-light focus-visible:ring-2 focus-visible:ring-accent-primary-light/30
+        className={`ui-field w-full ${compact ? 'px-2 py-1 text-xs h-[26px]' : 'px-4 py-3'} border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} flex justify-between items-center transition-all outline-none
           ${isOpen
-            ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
-            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
+            ? 'border-gray-500 dark:border-gray-400'
+            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-gray-400 dark:hover:border-gray-500'
           }
         `}
       >
@@ -310,14 +310,13 @@ export default function CustomSelect({
                 onMouseDown={(e) => e.preventDefault()}
                 onMouseMove={() => { if (kb || idx !== activeIndex) { setKb(false); setActiveIndex(idx); } }}
                 onClick={() => choose(idx)}
-                className={`px-4 py-2.5 text-sm cursor-pointer transition flex items-center justify-between
+                className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between
                   ${isActive
-                    ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light font-medium'
+                    ? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-semibold'
                     : isHighlighted
-                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      ? 'bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-gray-100'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
                   }
-                  ${isHighlighted ? 'outline outline-2 -outline-offset-2 outline-accent-primary/60' : ''}
                 `}
               >
                 <span>{getLabel(opt)}</span>

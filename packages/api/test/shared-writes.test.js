@@ -114,3 +114,21 @@ test('wydatek lidera bez statusu trafia do akceptacji (nie domyślne approved/op
   enforceExpenseApproval(admin, null);
   assert.equal(admin.values[0].status, undefined);
 });
+
+test('materiały wydarzenia: globalna edycja wydarzeń albo lider służby, do której należy wydarzenie', async () => {
+  const ins = { table: 'event_materials', op: 'insert', values: { event_id: 7, file_id: 3 } };
+  // globalnie (moduł Kalendarz + edycja wydarzeń) — bez zapytań do bazy
+  await enforceSharedWrite(ins, req(), resolverWith('module:calendar', 'res:events:update'));
+  // lider Mediów: wydarzenie Mediów — tak; wydarzenie Uwielbienia — nie
+  const leader = resolverWith('module:media', 'res:media_events:update');
+  await enforceSharedWrite(ins, req([[{ id: 7, module_key: 'media' }]]), leader);
+  await denied(enforceSharedWrite(ins, req([[{ id: 7, module_key: 'worship' }]]), leader));
+  // nieistniejące wydarzenie — odmowa
+  await denied(enforceSharedWrite(ins, req([[]]), leader));
+  // usunięcie: moduł z wydarzeń wskazanych filtrem
+  const del = { table: 'event_materials', op: 'delete', filters: [{ type: 'eq', column: 'event_id', value: 7 }] };
+  await enforceSharedWrite(del, req([[{ module_key: 'media' }]]), leader);
+  await denied(enforceSharedWrite(del, req([[{ module_key: 'media' }, { module_key: 'worship' }]]), leader));
+  // członek bez prawa edycji wydarzeń — odmowa
+  await denied(enforceSharedWrite(ins, req([[{ id: 7, module_key: 'media' }]]), resolverWith('module:media', 'res:media_events:read')));
+});

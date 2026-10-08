@@ -15,6 +15,7 @@
 import { can, makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { SETTINGS_WRITE_CAPABILITY, crudCapability } from '@avenit/shared/src/permissions/catalog.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
+import { isModuleScopedTable, allowedModules } from '@avenit/shared/src/permissions/moduleScope.js';
 
 export const ADMIN_ROLES = ['superadmin', 'rada_starszych'];
 
@@ -414,12 +415,18 @@ export function getTableRule(table) {
 
 // Cache grantów per tenant (60 s). Zawiera granty permission_grants + role admina.
 // grants === null => nowy model niedostępny (przed migracją) → fallback legacy.
-const grantsCache = new Map(); // dbName -> { grants, adminRoles, legacy, at }
+const grantsCache = new Map(); // dbName -> { grants, adminRoles, legacy, moduleKeys, at }
 
 export async function loadGrants(pool, dbName) {
   const cached = grantsCache.get(dbName);
   if (cached && Date.now() - cached.at < 60_000) return cached;
-  let grants = null, adminRoles = new Set(ADMIN_ROLES), legacy = [];
+  let grants = null, adminRoles = new Set(ADMIN_ROLES), legacy = [], moduleKeys = [];
+  // Klucze modułów (także własnych z kreatora) — kandydaci do uprawnień „w zakresie służby”
+  // (moduleScope.js). Błąd/brak tabeli → tylko służby wbudowane.
+  try {
+    const m = await pool.query(`SELECT key FROM app_modules`);
+    moduleKeys = m.rows.map((r) => r.key).filter(Boolean);
+  } catch { moduleKeys = []; }
   try {
     const g = await pool.query(`SELECT role, user_id, capability, allowed FROM permission_grants`);
     grants = g.rows;
@@ -449,7 +456,7 @@ export async function loadGrants(pool, dbName) {
       ({ rows: legacy } = await pool.query(`SELECT role, resource, can_read, can_write FROM app_permissions`));
     } catch { legacy = []; }
   }
-  const entry = { grants, adminRoles, legacy, at: Date.now() };
+  const entry = { grants, adminRoles, legacy, moduleKeys, at: Date.now() };
   grantsCache.set(dbName, entry);
   return entry;
 }
@@ -478,15 +485,24 @@ export function requireCapability(capability) {
   };
 }
 
-const OP_IS_WRITE = { insert: true, update: true, delete: true, select: false };
+// upsert = zapis (insert albo update). Wcześniej brakowało go tu, więc upsert przechodził jak
+// odczyt: bez strażników zapisu tabel app_* (manage_*) i bez writeRoles — każdy zalogowany mógł
+// przez /api/db upsertem zmienić ustawienia, konta czy granty uprawnień.
+const OP_IS_WRITE = { insert: true, update: true, delete: true, upsert: true, select: false };
 
-// Autoryzacja op na tabeli. op: 'select' | 'insert' | 'update' | 'delete'.
+// Autoryzacja op na tabeli. op: 'select' | 'insert' | 'update' | 'delete' | 'upsert'.
 // Zwraca { ok, rule, reason, resolver } — resolver do filtrowania pól (lub null w legacy).
-export async function canAccess({ pool, dbName, table, op, user }) {
+//
+// allowModuleScope (tylko /api/db, które umie zawęzić wiersze): dla wspólnych tabel służb
+// (events, schedule_assignments, board_*) brak prawa GLOBALNEGO nie kończy sprawy — gdy osoba
+// ma prawo „w zakresie służby” (np. lider Mediów: module:media + res:media_events:create), wynik
+// to { ok: true, moduleScope: { modules } } i wołający MUSI zawęzić wiersze do tych modułów
+// (moduleScope.js). Bez flagi (realtime, fn/*) — jak dotąd: tylko prawo globalne.
+export async function canAccess({ pool, dbName, table, op, user, allowModuleScope = false }) {
   const rule = getTableRule(table);
   if (!rule) return { ok: false, reason: `Tabela '${table}' nie jest dostępna przez API` };
   const isWrite = !!OP_IS_WRITE[op];
-  const { grants, adminRoles, legacy } = await loadGrants(pool, dbName);
+  const { grants, adminRoles, legacy, moduleKeys } = await loadGrants(pool, dbName);
 
   const isAdmin = user.is_super_admin || adminRoles.has(user.role);
   if (isAdmin) return { ok: true, rule, resolver: makeResolver([], { isAdmin: true }) };
@@ -518,10 +534,17 @@ export async function canAccess({ pool, dbName, table, op, user }) {
     // danych. Bez tego rola z szerokim res:* (np. rada_starszych z grantem '*') czytałaby dane
     // modułu mimo odebrania module:X w macierzy. Standardowe role mają module:X (preset/wildcard),
     // więc nic nie tracą — działa dopiero jawny deny (o to chodzi).
-    if (!resolver.can(rule.resource)) return { ok: false, reason: `Brak dostępu do modułu ${rule.resource}` };
     // Zasób modułu → CRUD per zasób (res:<table>:<op>).
     const cap = crudCapability(table, op);
-    if (!resolver.can(cap)) return { ok: false, reason: `Brak uprawnienia ${cap}` };
+    const moduleOk = resolver.can(rule.resource);
+    if (!moduleOk || !resolver.can(cap)) {
+      // Ścieżka „w zakresie służby” (moduleScope.js): bramka modułu to wtedy module:<służba>.
+      if (allowModuleScope && isModuleScopedTable(table)) {
+        const modules = allowedModules(resolver.can, table, op, moduleKeys || []);
+        if (modules.length) return { ok: true, rule, resolver, moduleScope: { modules } };
+      }
+      return { ok: false, reason: !moduleOk ? `Brak dostępu do modułu ${rule.resource}` : `Brak uprawnienia ${cap}` };
+    }
   } else if (isWrite && SETTINGS_WRITE_CAPABILITY[table]) {
     // Tabele app_* — zapis przez akcję manage_* (odczyt otwarty).
     if (!resolver.can(SETTINGS_WRITE_CAPABILITY[table])) {

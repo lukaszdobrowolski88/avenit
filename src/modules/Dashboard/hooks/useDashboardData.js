@@ -166,104 +166,23 @@ export function useDashboardData(userEmail) {
     if (!userEmail) return [];
 
     try {
-      // Wykonaj wszystkie początkowe zapytania RÓWNOLEGLE
-      const [personalTasksResult, leaderResult, mediaResult] = await Promise.all([
-        // 1. Osobiste zadania
-        supabase
-          .from('user_tasks')
-          .select('*')
-          .eq('user_email', userEmail)
-          .order('due_date', { ascending: true }),
-        // 2. Szukaj lidera grup domowych (po emailu lub nazwie)
-        supabase
-          .from('home_group_leaders')
-          .select('id')
-          .or(`email.eq.${userEmail}${userName ? `,full_name.eq.${userName}` : ''}`)
-          .limit(1),
-        // 3. Szukaj członka media team (po emailu lub nazwie)
-        supabase
-          .from('media_team')
-          .select('id')
-          .or(`email.eq.${userEmail}${userName ? `,full_name.eq.${userName}` : ''}`)
-          .limit(1)
-      ]);
+      // Zadania osobiste + zadania z tablic (niżej). Stare tabele zadań służb (home_group_tasks,
+      // media_tasks…) nie są już czytane — ich zadania żyją na tablicach (import przy wejściu
+      // w zakładkę „Zadania”) i liczyłyby się podwójnie.
+      const personalTasksResult = await supabase
+        .from('user_tasks')
+        .select('*')
+        .eq('user_email', userEmail)
+        .order('due_date', { ascending: true });
 
       const allTasks = [];
 
-      // Przetwórz osobiste zadania
       if (personalTasksResult.data) {
         allTasks.push(...personalTasksResult.data.map(task => ({
           ...task,
           source: 'personal',
           source_label: 'Osobiste',
         })));
-      }
-
-      // Pobierz zadania grup domowych i media RÓWNOLEGLE (jeśli znaleziono IDs)
-      const homeGroupLeaderId = leaderResult.data?.[0]?.id;
-      const mediaTeamMemberId = mediaResult.data?.[0]?.id;
-
-      const additionalQueries = [];
-
-      if (homeGroupLeaderId) {
-        additionalQueries.push(
-          supabase
-            .from('home_group_tasks')
-            .select('*, home_groups:group_id (name)')
-            .eq('assigned_to', homeGroupLeaderId)
-            .order('due_date', { ascending: true })
-            .then(({ data }) => ({ type: 'home_group', data }))
-        );
-      }
-
-      if (mediaTeamMemberId) {
-        additionalQueries.push(
-          supabase
-            .from('media_tasks')
-            .select('*')
-            .eq('assigned_to', mediaTeamMemberId)
-            .order('due_date', { ascending: true })
-            .then(({ data }) => ({ type: 'media_team', data }))
-        );
-      }
-
-      // Wykonaj dodatkowe zapytania równolegle
-      if (additionalQueries.length > 0) {
-        const additionalResults = await Promise.all(additionalQueries);
-
-        additionalResults.forEach(result => {
-          if (result.data) {
-            if (result.type === 'home_group') {
-              allTasks.push(...result.data.map(task => ({
-                id: task.id,
-                title: task.title,
-                description: task.description,
-                due_date: task.due_date,
-                status: task.status === 'Do zrobienia' ? 'todo' : task.status === 'W trakcie' ? 'in_progress' : 'done',
-                created_at: task.created_at,
-                updated_at: task.updated_at,
-                source: 'home_group',
-                source_label: task.home_groups?.name || 'Grupa domowa',
-                original_id: task.id,
-                original_table: 'home_group_tasks',
-              })));
-            } else if (result.type === 'media_team') {
-              allTasks.push(...result.data.map(task => ({
-                id: task.id,
-                title: task.title,
-                description: task.description,
-                due_date: task.due_date,
-                status: task.status === 'Do zrobienia' ? 'todo' : task.status === 'W trakcie' ? 'in_progress' : 'done',
-                created_at: task.created_at,
-                updated_at: task.updated_at,
-                source: 'media_team',
-                source_label: 'Media Team',
-                original_id: task.id,
-                original_table: 'media_tasks',
-              })));
-            }
-          }
-        });
       }
 
       // 4. Zadania z Tablic (Projekty) — elementy, w których jestem w kolumnie „Osoby".

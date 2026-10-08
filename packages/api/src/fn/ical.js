@@ -4,6 +4,8 @@
 import crypto from 'node:crypto';
 import { accountEmailsForAssignee } from '../lib/assigneeIdentity.js';
 import { roleName } from './send-assignment-invites.js';
+import { listMyBoardItems } from './my-board-items.js';
+import { callerAccess } from './board-import-legacy.js';
 
 export const name = 'ical';
 export const method = 'GET';
@@ -245,8 +247,27 @@ export default async function handler(req, reply) {
     }
   }
 
-  // Zadania — tylko moje (przypisane do mnie albo utworzone przeze mnie), nie całej organizacji.
-  if (prefs.tasks && ownerEmail) {
+  // Zadania — tylko moje. Od przeniesienia zadań Kalendarza na tablicę (source_kind 'tasks') —
+  // elementy tablic z terminem przypisane do mnie (Kalendarz + zakładki „Zadania” służb), z tymi
+  // samymi prawami co w aplikacji. Dopóki tablica Kalendarza nie powstała — stara tabela tasks.
+  const { rows: calBoard } = prefs.tasks && ownerEmail
+    ? await req.db.query(`SELECT 1 FROM boards WHERE source_kind = 'tasks' LIMIT 1`).catch(() => ({ rows: [] }))
+    : { rows: [] };
+  if (prefs.tasks && ownerEmail && calBoard.length) {
+    const { rows: who } = await req.db.query('SELECT id FROM app_users WHERE lower(email) = $1 LIMIT 1', [ownerEmail]).catch(() => ({ rows: [] }));
+    const access = who[0]
+      ? await callerAccess({ db: req.db, tenant: req.tenant, user: { id: who[0].id, email: ownerEmail } }).catch(() => null)
+      : null;
+    const items = access
+      ? await listMyBoardItems({ db: req.db, email: ownerEmail, can: access.can, from: fromStr, to: toStr }).catch((err) => { req.log?.warn?.({ err }, 'ical: board tasks'); return []; })
+      : [];
+    for (const t of items) {
+      events.push(vtodo({
+        uid: uid(t.id, 'board-item'), summary: t.name, description: t.board_name || '',
+        due: String(t.date).replace(/-/g, ''), dtstamp, status: t.done ? 'COMPLETED' : 'NEEDS-ACTION',
+      }));
+    }
+  } else if (prefs.tasks && ownerEmail) {
     const { rows } = await req.db.query(
       `SELECT * FROM tasks WHERE due_date IS NOT NULL AND due_date >= $1 AND due_date <= $2
           AND (lower(assigned_to) = $3 OR lower(created_by) = $3)`,

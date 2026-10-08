@@ -4,9 +4,11 @@ import { applyColorPreset, applyCustomColors } from '../lib/colorPresets';
 import { applyFont, applyBackground, applyScale, applyRadius, applySidebar, injectCustomFont, applyHeadingFont, applyBgPattern, setBgUrl, applySidebarWidth, applyMotion, applyScrollbar, applyOled, injectCustomCss } from '../lib/appearance';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
+import { canModuleScoped } from '@avenit/shared/src/permissions/moduleScope.js';
 
 const PermissionsContext = createContext({
   can: () => true,
+  canModule: () => true,
   canFieldRead: () => true,
   canFieldWrite: () => true,
   grants: null,
@@ -134,12 +136,22 @@ export function PermissionsProvider({ children }) {
     return resolver.can(capability);
   }, [ready, subject, resolver]);
 
+  // Wspólne tabele służb (events, schedule_assignments, board_*): prawo globalne ALBO w zakresie
+  // służby moduleKey — ta sama reguła co serwer (shared/permissions/moduleScope.js). Np. lider
+  // Mediów: canModule('media', 'events', 'create') === true, canModule('worship', …) === false.
+  // op: 'read' | 'create' | 'update' | 'delete'. moduleKey null/'' = tylko prawo globalne.
+  const canModule = useCallback((moduleKey, table, op) => {
+    if (!ready || !subject) return true;
+    if (subject.isAdmin) return true;
+    return canModuleScoped(resolver.can, moduleKey || null, table, op);
+  }, [ready, subject, resolver]);
+
   const canFieldRead = useCallback((res, col) => (!ready || !subject || subject.isAdmin) ? true : resolver.fieldReadable(res, col), [ready, subject, resolver]);
   const canFieldWrite = useCallback((res, col) => (!ready || !subject || subject.isAdmin) ? true : resolver.fieldWritable(res, col), [ready, subject, resolver]);
 
   const value = useMemo(() => ({
-    can, canFieldRead, canFieldWrite, grants, subject, appSettings, logoUrl, loading, ready,
-  }), [can, canFieldRead, canFieldWrite, grants, subject, appSettings, logoUrl, loading, ready]);
+    can, canModule, canFieldRead, canFieldWrite, grants, subject, appSettings, logoUrl, loading, ready,
+  }), [can, canModule, canFieldRead, canFieldWrite, grants, subject, appSettings, logoUrl, loading, ready]);
 
   return <PermissionsContext.Provider value={value}>{children}</PermissionsContext.Provider>;
 }

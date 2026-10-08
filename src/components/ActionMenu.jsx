@@ -6,7 +6,8 @@ import './toolbar.css';
 
 // Menu akcji (⋯) — wspólne dla grafiku (wydarzenie) i Zadań (akcje tablicy). Lista w portalu
 // (position: fixed), żeby nie ucinała jej przewijana siatka. Klawiatura: Enter/↓ otwiera, ↑/↓ po
-// pozycjach, Esc zamyka. variant: 'icon' (mały przycisk w komórce) | 'tool' (przycisk paska narzędzi).
+// pozycjach, Esc zamyka. variant: 'icon' (mały przycisk w komórce) | 'tool' (przycisk paska narzędzi)
+// | 'ghost' (okrągła ikona bez tła — nagłówki okien).
 // items: [{ key, icon, label, hint?, onClick, disabled?, danger? } | { divider: true }]
 export default function ActionMenu({ items, label, align = 'right', variant = 'icon' }) {
   const [open, setOpen] = useState(false);
@@ -55,7 +56,7 @@ export default function ActionMenu({ items, label, align = 'right', variant = 'i
       <button
         ref={btnRef}
         type="button"
-        className={variant === 'tool' ? 'tool-btn tool-btn--icon' : 'sg-icon-btn text-gray-600 dark:text-gray-300'}
+        className={variant === 'tool' ? 'tool-btn tool-btn--icon' : variant === 'ghost' ? 'icon-btn' : 'sg-icon-btn text-gray-600 dark:text-gray-300'}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={label}

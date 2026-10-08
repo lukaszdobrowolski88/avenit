@@ -76,31 +76,34 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   const [newViewOpen, setNewViewOpen] = useState(false);
   const fileRef = useRef(null);
   const [updatesCount, setUpdatesCount] = useState({});
-  const openedInitial = useRef(false);
+  const openedInitial = useRef(null); // id ostatnio otwartego z linku (?item=) — kolejny link otwiera kolejne
 
   // RBAC — jedno miejsce prawdy dla wszystkich widoków, komórek i panelu (data.can.*).
   // Członek współpracuje na zadaniach; strukturę (kolumny, etykiety, grupy, widoki) zmienia ten,
   // kto ma do tego uprawnienie. Ukrywamy to, czego ktoś i tak nie może zrobić (zamiast błędu 403).
-  const canUpdateBoard = useCan('res:boards:update');
-  const canManageViews = useCan('res:board_views:create');
-  const canUpdateViews = useCan('res:board_views:update');
-  const canManageAutomations = useCan('res:board_automations:create');
+  // Tablica modułu (zadania Mediów, Młodzieżówki…): wystarcza prawo do zadań tej służby — lider
+  // służby zmienia też strukturę, członek pracuje na zadaniach (jak serwer: moduleScope.js).
+  const scope = { board: raw.board };
+  const canUpdateBoard = useCan('res:boards:update', scope);
+  const canManageViews = useCan('res:board_views:create', scope);
+  const canUpdateViews = useCan('res:board_views:update', scope);
+  const canManageAutomations = useCan('res:board_automations:create', scope);
   const can = {
-    createItems: useCan('res:board_items:create'),
-    editItems: useCan('res:board_items:update'),
-    deleteItems: useCan('res:board_items:delete'),
-    addColumns: useCan('res:board_columns:create'),
-    editColumns: useCan('res:board_columns:update'),
-    deleteColumns: useCan('res:board_columns:delete'),
-    addGroups: useCan('res:board_groups:create'),
-    editGroups: useCan('res:board_groups:update'),
-    deleteGroups: useCan('res:board_groups:delete'),
+    createItems: useCan('res:board_items:create', scope),
+    editItems: useCan('res:board_items:update', scope),
+    deleteItems: useCan('res:board_items:delete', scope),
+    addColumns: useCan('res:board_columns:create', scope),
+    editColumns: useCan('res:board_columns:update', scope),
+    deleteColumns: useCan('res:board_columns:delete', scope),
+    addGroups: useCan('res:board_groups:create', scope),
+    editGroups: useCan('res:board_groups:update', scope),
+    deleteGroups: useCan('res:board_groups:delete', scope),
     manageViews: canManageViews,
     updateViews: canUpdateViews,
     updateBoard: canUpdateBoard,
-    comment: useCan('res:board_item_updates:create'),
-    likeUpdates: useCan('res:board_item_updates:update'),
-    deleteUpdates: useCan('res:board_item_updates:delete'),
+    comment: useCan('res:board_item_updates:create', scope),
+    likeUpdates: useCan('res:board_item_updates:update', scope),
+    deleteUpdates: useCan('res:board_item_updates:delete', scope),
   };
 
   // Zwinięcie grup — osobiste (patrz wyżej).
@@ -120,9 +123,9 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
 
   // Deep-link: otwórz wskazany element po załadowaniu (z powiadomień/@wzmianek/Mojej pracy)
   useEffect(() => {
-    if (initialItemId && !openedInitial.current && data.items.length) {
-      const it = data.items.find(i => i.id === initialItemId);
-      if (it) { setOpenItem(it); openedInitial.current = true; }
+    if (initialItemId && openedInitial.current !== initialItemId && data.items.length) {
+      const it = data.items.find(i => String(i.id) === String(initialItemId));
+      if (it) { setOpenItem(it); openedInitial.current = initialItemId; }
     }
   }, [initialItemId, data.items]);
 
@@ -175,7 +178,9 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
     if (g.collapsed) data.updateGroup(g.id, { collapsed: false });
     // W tabeli: dodaj wiersz i ustaw kursor w jego nazwie (TableView reaguje na focusItemId).
     // W widokach bez nazwy w wierszu (kanban/kalendarz/oś czasu…) otwórz panel zadania.
-    const inlineName = (activeView?.type || 'table') === 'table';
+    // Na telefonie tabela to karty (TableCards) — bez pola nazwy w wierszu, więc też panel.
+    const narrowScreen = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches;
+    const inlineName = (activeView?.type || 'table') === 'table' && !narrowScreen;
     if (inlineName) data.addItem(g.id);
     else data.addItem(g.id).then(it => it && setOpenItem(it));
   };
@@ -284,9 +289,11 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
               className={`text-2xl font-bold bg-transparent outline-none text-gray-900 dark:text-white w-full min-w-0 truncate ${canUpdateBoard ? 'rounded-lg px-1 -mx-1 focus:ring-2 focus:ring-accent-primary/30' : 'cursor-default'}`} />
           </div>
         )}
-        <div className="flex items-center gap-2 flex-wrap justify-end">
+        {/* min-w-0 + max-w-full: na telefonie przełącznik widoków przewija się w swoim pasku,
+            zamiast wypychać „Dodaj zadanie” poza ekran. */}
+        <div className="flex items-center gap-2 flex-wrap justify-end min-w-0 max-w-full">
           {data.views.length > 1 && (
-            <div className="seg-bar max-w-full overflow-x-auto custom-scrollbar" role="group" aria-label={tr('Widok')}>
+            <div className="seg-bar max-w-full overflow-x-auto" role="group" aria-label={tr('Widok')}>
               {data.views.map((v) => {
                 const Icon = VIEW_ICONS[v.type] || Table2;
                 return (

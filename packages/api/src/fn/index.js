@@ -50,6 +50,10 @@ const MODULES = [
   'send-assignment-invites',
   'board-form-get',
   'board-form-submit',
+  // Zadania: import/uzupełnienie starych tabel *_tasks na Tablice + „przypisane mi” w Kalendarzu.
+  // Uprawnienie modułu sprawdzane w funkcji (zależy od źródła), więc bez wpisu w FN_CAPABILITY.
+  'board-import-legacy',
+  'my-board-items',
   'public-form-get',
   'public-form-submit',
   'admin-set-user-password',

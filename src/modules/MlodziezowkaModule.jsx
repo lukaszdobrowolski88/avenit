@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
@@ -43,6 +44,8 @@ export default function MlodziezowkaModule() {
   const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState(() => (hasItemDeepLink() ? 'tasks' : 'events'));
+  const { search: locationSearch } = useLocation();
+  useEffect(() => { if (hasItemDeepLink()) setActiveTab('tasks'); }, [locationSearch]); // link z powiadomienia na tej samej stronie
   const [members, setMembers] = useState([]);
   const [leaders, setLeaders] = useState([]);
   const [tasks, setTasks] = useState([]);

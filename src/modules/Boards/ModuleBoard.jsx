@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import Button from '../../components/Button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import BoardView from './BoardView';
-import { importLegacyTasks } from './lib/legacyImport';
+import { importLegacyTasks, backfillLegacyTasks, needsLegacyBackfill } from './lib/legacyImport';
 import { tr } from '../../i18n';
 
-// Zabezpieczenie przed równoległym importem tego samego źródła.
+// Zabezpieczenie przed równoległym importem tego samego źródła (serwer i tak blokuje, ale jedna
+// karta nie musi wysyłać kilku żądań, gdy zakładka zamontuje się dwa razy).
 const inflight = new Map();
+// Uzupełnianie starych tablic (osoby + komentarze) — raz na sesję per źródło, w tle.
+const backfillRuns = new Map();
 
 // Link z powiadomienia (wzmianka w komentarzu) prowadzi na stronę modułu z ?item=<id>.
 // Moduł otwiera wtedy zakładkę Zadania (hasItemDeepLink), a tablica — to zadanie.
@@ -38,8 +42,9 @@ function memberTableFor(moduleKey) {
 }
 
 // Osadza pojedynczą Tablicę odpowiadającą staremu modułowi zadań.
-// Przy pierwszym wejściu adoptuje istniejący board (po source_kind) albo
-// jednorazowo importuje stare zadania (źródło pozostaje nietknięte).
+// Przy pierwszym wejściu adoptuje istniejący board (po source_kind) albo jednorazowo importuje
+// stare zadania na serwerze (fn board-import-legacy; źródło pozostaje nietknięte). Tablica
+// zaimportowana dawniej w przeglądarce (bez osób i komentarzy) jest raz uzupełniana w tle.
 // Karta jak pozostałe zakładki modułów (Grafik, Liderzy…): biała sekcja z tytułem zakładki.
 const CARD = 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300';
 
@@ -50,11 +55,23 @@ export default function ModuleBoard({ sourceKind, moduleKey = null, title, headi
   const [phase, setPhase] = useState('resolving'); // resolving | importing | ready | error
   const [err, setErr] = useState('');
   const [attempt, setAttempt] = useState(0); // „Spróbuj ponownie” po błędzie
-  const [initialItemId] = useState(takeItemDeepLink);
+  const [initialItemId, setInitialItemId] = useState(takeItemDeepLink);
+  // Link z powiadomienia, gdy strona modułu jest już otwarta (zmienia się tylko ?item=).
+  const { search } = useLocation();
+  useEffect(() => { const id = takeItemDeepLink(); if (id) setInitialItemId(id); }, [search]);
+  const [refreshKey, setRefreshKey] = useState(0); // przeładowanie tablicy po uzupełnieniu w tle
 
   useEffect(() => {
+    let alive = true;
     setPhase('resolving');
     setErr('');
+    // Uzupełnienie w tle (nie blokuje tablicy); gdy coś doszło — przeładuj ją raz.
+    const runBackfill = () => {
+      if (!backfillRuns.has(sourceKind)) {
+        backfillRuns.set(sourceKind, backfillLegacyTasks({ sourceKind }).catch(() => ({ changed: false })));
+      }
+      backfillRuns.get(sourceKind).then((res) => { if (alive && res?.changed) setRefreshKey((n) => n + 1); });
+    };
     (async () => {
       const { data: { user: u } } = await supabase.auth.getUser();
       if (u) {
@@ -77,23 +94,34 @@ export default function ModuleBoard({ sourceKind, moduleKey = null, title, headi
       }
 
       try {
-        const { data: found } = await supabase.from('boards').select('id').eq('source_kind', sourceKind).limit(1);
-        if (found && found.length) { setBoardId(found[0].id); setPhase('ready'); return; }
+        // Najstarsza tablica źródła — ta sama, którą wybiera serwer (gdyby kiedyś powstały dwie).
+        const { data: found } = await supabase.from('boards').select('*').eq('source_kind', sourceKind)
+          .order('created_at', { ascending: true }).limit(1);
+        if (found && found.length) {
+          if (!alive) return;
+          setBoardId(found[0].id);
+          setPhase('ready');
+          if (needsLegacyBackfill(found[0])) runBackfill();
+          return;
+        }
 
         setPhase('importing');
         if (!inflight.has(sourceKind)) {
-          inflight.set(sourceKind, importLegacyTasks({ sourceKind, moduleKey, title, userEmail: u?.email || null }));
+          inflight.set(sourceKind, importLegacyTasks({ sourceKind, title }).finally(() => inflight.delete(sourceKind)));
         }
         const res = await inflight.get(sourceKind);
-        inflight.delete(sourceKind);
+        if (!alive) return;
         setBoardId(res.boardId);
         setPhase('ready');
+        // Tablica już była (np. nie widać jej przez /api/db) — uzupełnij, jeśli serwer o to prosi.
+        if (res.backfillNeeded) runBackfill();
       } catch (e) {
-        inflight.delete(sourceKind);
+        if (!alive) return;
         setErr(e.message);
         setPhase('error');
       }
     })();
+    return () => { alive = false; };
   }, [sourceKind, moduleKey, title, attempt]);
 
   // card=false: już w karcie (układ z kreatora modułów) — bez drugiej ramki i tytułu.
@@ -109,7 +137,7 @@ export default function ModuleBoard({ sourceKind, moduleKey = null, title, headi
         <EmptyState icon={AlertTriangle} title={tr('Nie udało się otworzyć zadań')} subtitle={err}
           action={<Button variant="outline" icon={RefreshCw} onClick={() => setAttempt((n) => n + 1)}>{tr('Spróbuj ponownie')}</Button>} />
       ) : (
-        <BoardView boardId={boardId} userEmail={user.email} userName={user.name} scopeEmails={scopeEmails} embedded
+        <BoardView key={`${boardId}:${refreshKey}`} boardId={boardId} userEmail={user.email} userName={user.name} scopeEmails={scopeEmails} embedded
           heading={card ? heading : null} initialItemId={initialItemId} />
       )}
     </Wrap>

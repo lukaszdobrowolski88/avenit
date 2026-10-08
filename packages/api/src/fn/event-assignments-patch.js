@@ -8,8 +8,11 @@
 // Body: { event_id, ops: [{ team, key, value }] }
 //   value: string/liczba/obiekt — ustawia assignments[team][key]; null — usuwa pole.
 //   key pominięty + value obiekt/null — ustawia/usuwa całą sekcję assignments[team].
-// Dostęp: jak zwykła edycja wydarzenia (canAccess update na events).
+// Dostęp: jak zwykła edycja wydarzenia (canAccess update na events) ALBO — w zakresie służb —
+// każda zmieniana sekcja należy do służby, której wydarzenia osoba może edytować (lider Mediów
+// zmienia assignments.media na dowolnym wydarzeniu, ale nie assignments.worship). moduleScope.js.
 import { canAccess, loadGrants } from '../dataapi/registry.js';
+import { canPatchTeams } from '../dataapi/moduleScope.js';
 import { emitChange } from '../realtime/hub.js';
 
 export const name = 'event-assignments-patch';
@@ -59,8 +62,11 @@ export default async function handler(req, reply) {
 
   const { rows: me } = await req.db.query('SELECT id, role, is_super_admin, campus_id FROM app_users WHERE id = $1', [req.user.id]);
   if (!me[0]) return reply.code(403).send({ error: 'Brak konta' });
-  const access = await canAccess({ pool: req.db, dbName: req.tenant.db_name, table: 'events', op: 'update', user: { ...req.user, ...me[0] } });
-  if (!access.ok) return reply.code(403).send({ error: 'Brak uprawnień do edycji grafiku tego wydarzenia' });
+  const actor = { ...req.user, ...me[0] };
+  const access = await canAccess({ pool: req.db, dbName: req.tenant.db_name, table: 'events', op: 'update', user: actor });
+  if (!access.ok && !(await canPatchTeams({ pool: req.db, dbName: req.tenant.db_name, user: actor, ops }))) {
+    return reply.code(403).send({ error: 'Brak uprawnień do edycji grafiku tego wydarzenia' });
+  }
 
   // Izolacja kampusów jak w /api/db: osoba z kampusem (bez roli admina) — tylko wydarzenia
   // swojego kampusu albo bez kampusu.

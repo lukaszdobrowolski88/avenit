@@ -113,9 +113,11 @@ function InputModal({ title, label, initial = '', placeholder, onSubmit, onClose
 export default function BoardsList({ userEmail, userName, moduleKey = null, onOpenBoard }) {
   const { boards, loading, fetchBoards, createFromTemplate, createFromSpec, updateBoard, deleteBoard, duplicateBoard } = useBoards(userEmail, userName);
   // RBAC: członek współpracuje na elementach, ale nie tworzy/edytuje/usuwa tablic.
-  const canCreate = useCan('res:boards:create');
-  const canUpdate = useCan('res:boards:update');
-  const canDelete = useCan('res:boards:delete');
+  // W module (zakładka „Tablice”) — także prawa lidera tej służby (moduleScope.js).
+  const scope = moduleKey ? { module: moduleKey } : undefined;
+  const canCreate = useCan('res:boards:create', scope);
+  const canUpdate = useCan('res:boards:update', scope);
+  const canDelete = useCan('res:boards:delete', scope);
   const canManageBoard = canUpdate || canCreate || canDelete;
   const [creating, setCreating] = useState(false);
   const [chooser, setChooser] = useState(false);
