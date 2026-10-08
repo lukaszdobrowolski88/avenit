@@ -85,9 +85,9 @@ const config: ExpoConfig = {
   },
   android: {
     package: baseId + suffix,
-    // FCM (push). google-services.json musi zawierać pakiet danego wariantu —
-    // obecnie tylko pl.avenit.app.preview; przed buildem produkcyjnym dodaj
-    // pl.avenit.app w Firebase i pobierz nowy plik.
+    // FCM (push). google-services.json musi zawierać pakiet danego wariantu — projekt Firebase
+    // avenit-app ma pl.avenit.app (produkcja) i pl.avenit.app.preview. Nowy wariant = dodaj
+    // aplikację Android w Firebase i pobierz plik ponownie.
     googleServicesFile: './google-services.json',
     permissions: ['android.permission.RECORD_AUDIO'],
     // Mapa grup (react-native-maps). Android wymaga klucza Google Maps — podaj go
