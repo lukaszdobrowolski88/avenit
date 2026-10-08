@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreHorizontal } from 'lucide-react';
-import '../../../components/pickList.css';
+import './pickList.css';
+import './toolbar.css';
 
-// Małe menu akcji (⋯) dla wydarzenia w grafiku. Lista w portalu (position: fixed), żeby nie
-// ucinała jej przewijana siatka. Klawiatura: Enter/↓ otwiera, ↑/↓ po pozycjach, Esc zamyka.
+// Menu akcji (⋯) — wspólne dla grafiku (wydarzenie) i Zadań (akcje tablicy). Lista w portalu
+// (position: fixed), żeby nie ucinała jej przewijana siatka. Klawiatura: Enter/↓ otwiera, ↑/↓ po
+// pozycjach, Esc zamyka. variant: 'icon' (mały przycisk w komórce) | 'tool' (przycisk paska narzędzi).
 // items: [{ key, icon, label, hint?, onClick, disabled?, danger? } | { divider: true }]
-export default function ActionMenu({ items, label, align = 'right' }) {
+export default function ActionMenu({ items, label, align = 'right', variant = 'icon' }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const btnRef = useRef(null);
@@ -53,7 +55,7 @@ export default function ActionMenu({ items, label, align = 'right' }) {
       <button
         ref={btnRef}
         type="button"
-        className="sg-icon-btn text-gray-600 dark:text-gray-300"
+        className={variant === 'tool' ? 'tool-btn tool-btn--icon' : 'sg-icon-btn text-gray-600 dark:text-gray-300'}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={label}

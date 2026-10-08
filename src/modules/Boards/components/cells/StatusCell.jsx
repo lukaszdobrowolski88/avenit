@@ -1,101 +1,116 @@
 import React, { useState } from 'react';
-import { Check, Plus, X, Pencil } from 'lucide-react';
+import { Check, X, Pencil } from 'lucide-react';
 import Popover from '../Popover';
+import LabelsEditor from '../LabelsEditor';
 import { findLabel } from '../../lib/columnTypes';
-import { STATUS_COLORS, uid } from '../../lib/constants';
+import { boardColor } from '../../lib/palette';
 import { tr } from '../../../../i18n';
 import { StatusPill } from '../../../../components/ui/DataTable';
+import { CELL_TRIGGER, HoverPlus } from './BasicCells';
 import '../../../../components/pickList.css';
 
+// Strzałki góra/dół przenoszą fokus między wierszami listy wyboru (jak w natywnym <select>).
+// Podpinane na kontenerze okienka — działa też z pola wyszukiwania.
+export function listArrowNav(e) {
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  const opts = [...e.currentTarget.querySelectorAll('.pick-opt:not([aria-disabled="true"]):not(:disabled)')];
+  if (!opts.length) return;
+  e.preventDefault();
+  const i = opts.indexOf(document.activeElement);
+  const next = e.key === 'ArrowDown' ? (i + 1) % opts.length : (i <= 0 ? opts.length - 1 : i - 1);
+  opts[next].focus();
+}
+
+// Wybór etykiety (lista pick-opt z tymi samymi pigułkami co w komórce) albo — dla osób, które
+// mogą zmieniać strukturę kolumny — tryb edycji etykiet (wspólny LabelsEditor).
+function StatusPicker({ column, value, onChange, onUpdateColumn, close }) {
+  const [editing, setEditing] = useState(false);
+  const labels = column?.settings?.labels || [];
+  const canEdit = typeof onUpdateColumn === 'function';
+
+  if (editing && canEdit) {
+    return (
+      <div className="p-3">
+        <LabelsEditor column={column} onUpdateColumn={onUpdateColumn}
+          // Usunięta etykieta była wybrana w tym zadaniu → komórka pusta.
+          onRemoved={(id) => { if (id === value) onChange(null); }} />
+        <div className="flex justify-end mt-2 pt-2 border-t border-gray-100 dark:border-white/10">
+          <button type="button" onClick={() => setEditing(false)}
+            className="text-xs font-semibold px-3 h-7 rounded-full bg-[rgba(42,35,18,0.06)] dark:bg-white/10 text-gray-700 dark:text-gray-200 outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/50">
+            {tr('Gotowe')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-1" onKeyDown={listArrowNav}>
+      <div role="listbox" aria-label={column?.name} className="max-h-64 overflow-y-auto custom-scrollbar">
+        {labels.map((l, i) => {
+          const sel = value === l.id;
+          return (
+            // Ta sama miękka pigułka co w komórce (kanon tabel), nie nasycony blok z białym tekstem.
+            <button key={l.id} type="button" role="option" aria-selected={sel}
+              autoFocus={sel || (!value && i === 0)}
+              onClick={() => { onChange(l.id); close(); }}
+              className="pick-opt text-gray-800 dark:text-gray-100">
+              <StatusPill color={boardColor(l.color)} className="min-w-0 max-w-full overflow-hidden">{l.title}</StatusPill>
+              {sel && <Check size={15} className="ml-auto shrink-0 text-gray-700 dark:text-gray-200" aria-hidden="true" />}
+            </button>
+          );
+        })}
+        {labels.length === 0 && (
+          <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4 px-3">{tr('Brak etykiet')}</div>
+        )}
+      </div>
+      {(value || canEdit) && (
+        <div className="mt-1 pt-1 border-t border-gray-100 dark:border-white/10">
+          {value && (
+            <button type="button" onClick={() => { onChange(null); close(); }} className="pick-opt text-gray-600 dark:text-gray-300">
+              <X size={15} className="opacity-80" aria-hidden="true" /> {tr('Wyczyść')}
+            </button>
+          )}
+          {canEdit && (
+            <button type="button" onClick={() => setEditing(true)} className="pick-opt text-gray-600 dark:text-gray-300">
+              <Pencil size={15} className="opacity-80" aria-hidden="true" /> {tr('Edytuj etykiety')}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Komórka Status/Priorytet — wspólna pigułka tabel (StatusPill: kropka + tekst o czytelnym kontraście),
-// wyśrodkowana w komórce; picker etykiet z tymi samymi pigułkami i edycją.
+// wyśrodkowana w komórce. Stare kolory Monday z bazy mapuje boardColor.
+// `onUpdateColumn` przychodzi tylko, gdy wolno zmieniać strukturę kolumny — bez niego da się
+// wyłącznie wybrać wartość. `readOnly` = sama pigułka, bez okienka.
 export default function StatusCell({ column, value, onChange, onUpdateColumn, readOnly }) {
   const label = findLabel(column, value);
-  const labels = column?.settings?.labels || [];
-  const [editing, setEditing] = useState(false);
-
-  const setLabels = (next) => onUpdateColumn?.(column.id, { settings: { ...column.settings, labels: next } });
-
-  const addLabel = () => {
-    const used = labels.map(l => l.color);
-    const color = STATUS_COLORS.find(c => !used.includes(c)) || STATUS_COLORS[labels.length % STATUS_COLORS.length];
-    setLabels([...labels, { id: uid('lbl'), title: tr('Nowa etykieta'), color }]);
-  };
-
   const pill = label
-    ? <StatusPill color={label.color} className="max-w-full truncate">{label.title}</StatusPill>
-    : <span className="text-gray-300 dark:text-gray-600 text-base leading-none opacity-0 group-hover/row:opacity-100 transition-opacity">+</span>;
+    ? <StatusPill color={boardColor(label.color)} className="max-w-full overflow-hidden">{label.title}</StatusPill>
+    : null;
 
   if (readOnly) {
     return <div className="w-full h-full flex items-center justify-center px-2">{pill}</div>;
   }
 
+  const name = column?.name || tr('Status');
   return (
     <Popover
-      width={240}
+      width={260}
       bare
       className="pick-pop"
       trigger={
-        <div className="w-full h-full flex items-center justify-center px-2 cursor-pointer hover:bg-gray-50/70 dark:hover:bg-gray-700/30 transition-colors">
-          {pill}
-        </div>
+        <button type="button" aria-haspopup="listbox" aria-label={label ? `${name}: ${label.title}` : name}
+          className={`${CELL_TRIGGER} justify-center hover:bg-gray-50/70 dark:hover:bg-gray-700/30 transition-colors`}>
+          {pill || <HoverPlus />}
+        </button>
       }
     >
       {({ close }) => (
-        <div className="p-2">
-          <div className="grid grid-cols-1 gap-0.5 max-h-64 overflow-y-auto custom-scrollbar" role={editing ? undefined : 'listbox'} aria-label={column?.name}>
-            {labels.map(l => (
-              <div key={l.id} className="flex items-center gap-1">
-                {editing ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full shrink-0 ml-2" style={{ backgroundColor: l.color }} aria-hidden="true" />
-                    <input
-                      value={l.title}
-                      onChange={(e) => setLabels(labels.map(x => x.id === l.id ? { ...x, title: e.target.value } : x))}
-                      aria-label={tr('Nazwa etykiety')}
-                      className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-accent-primary-light/40 text-gray-800 dark:text-gray-100"
-                    />
-                    <button onClick={() => setLabels(labels.filter(x => x.id !== l.id))} aria-label={tr('Usuń etykietę')}
-                      className="p-1 text-gray-400 hover:text-red-500"><X size={14} /></button>
-                  </>
-                ) : (
-                  // Ta sama miękka pigułka co w komórce (kanon tabel), nie nasycony blok z białym tekstem.
-                  <button type="button" role="option" aria-selected={value === l.id}
-                    onClick={() => { onChange(l.id); close(); }}
-                    className="flex-1 flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-left">
-                    <StatusPill color={l.color} className="truncate">{l.title}</StatusPill>
-                    {value === l.id && <Check size={15} className="shrink-0 text-gray-700 dark:text-gray-200" aria-hidden="true" />}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {editing && (
-            <div className="mt-2 flex flex-wrap gap-1 px-1">
-              {STATUS_COLORS.map(c => (
-                <button key={c} onClick={() => {
-                  const target = labels.find(l => l.id === value) || labels[labels.length - 1];
-                  if (target) setLabels(labels.map(l => l.id === target.id ? { ...l, color: c } : l));
-                }} className="w-5 h-5 rounded" style={{ backgroundColor: c }} />
-              ))}
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-            <button onClick={addLabel} className="flex items-center gap-1 text-xs text-gray-500 hover:text-accent-primary px-2 py-1">
-              <Plus size={14} /> {tr('Dodaj etykietę')}
-            </button>
-            <button onClick={() => setEditing(e => !e)}
-              className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${editing ? 'text-accent-primary' : 'text-gray-500 hover:text-accent-primary'}`}>
-              <Pencil size={13} /> {editing ? tr('Gotowe') : tr('Edytuj')}
-            </button>
-          </div>
-          {value && !editing && (
-            <button onClick={() => { onChange(null); close(); }}
-              className="w-full mt-1 text-xs text-gray-400 hover:text-red-500 py-1">{tr('Wyczyść')}</button>
-          )}
-        </div>
+        <StatusPicker column={column} value={value} onChange={onChange} onUpdateColumn={onUpdateColumn} close={close} />
       )}
     </Popover>
   );

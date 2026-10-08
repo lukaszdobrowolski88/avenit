@@ -13,6 +13,7 @@ import { tr, appLocale } from '../../i18n';
 import TabHeader from '../../components/TabHeader';
 import { toast } from '../../lib/toast';
 import { confirmDialog } from '../../lib/dialog';
+import { thumbUrl } from '../../lib/imageThumb';
 
 const CONDITIONS = [
   { value: 'nowy', label: 'Nowy', color: 'green' },
@@ -242,9 +243,12 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
               {/* Photo */}
               <div className="relative aspect-square mb-3 rounded-lg lg:rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700">
                 {item.photo_url ? (
+                  // Miniatura z serwera (?w=) zamiast pełnego zdjęcia — karty ładowały się bardzo długo.
                   <img
-                    src={item.photo_url}
+                    src={thumbUrl(item.photo_url, 300)}
                     alt={item.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -321,7 +325,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center flex-shrink-0">
                     {form.photo_url ? (
-                      <img src={form.photo_url} alt="" className="w-full h-full object-cover" />
+                      <img src={thumbUrl(form.photo_url, 96)} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <Camera size={24} className="text-gray-400" />
                     )}

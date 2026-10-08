@@ -1,43 +1,58 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { Plus } from 'lucide-react';
 import Popover from './Popover';
 import ColumnIcon from './ColumnIcon';
 import { COLUMN_TYPES, COLUMN_TYPE_ORDER } from '../lib/columnTypes';
+import { listArrowNav } from './cells/StatusCell';
 import { tr } from '../../../i18n';
+import '../../../components/pickList.css';
 
-// Przycisk „+" w nagłówku tabeli → paleta typów kolumn.
+// Typy, po które sięga się najczęściej — na górze; reszta w „Zaawansowane” (kolejność z COLUMN_TYPE_ORDER).
+const BASIC = new Set(['text', 'long_text', 'number', 'status', 'priority', 'people', 'date', 'checkbox', 'dropdown', 'link', 'files']);
+const GROUPS = [
+  { key: 'basic', title: 'Podstawowe', types: COLUMN_TYPE_ORDER.filter(k => BASIC.has(k)) },
+  { key: 'advanced', title: 'Zaawansowane', types: COLUMN_TYPE_ORDER.filter(k => !BASIC.has(k)) },
+];
+
+// Przycisk „+" w nagłówku tabeli → lista typów kolumn (wspólny wygląd pick-pop / pick-opt).
 // `trigger` pozwala użyć własnego wyzwalacza (np. „+ Dodaj pole" w modalu elementu).
 export default function AddColumnMenu({ onAdd, trigger, align = 'right', triggerClassName }) {
+  const uid = useId();
   return (
     <Popover
-      width={240}
+      width={260}
       align={align}
+      bare
+      className="pick-pop overflow-hidden"
       triggerClassName={triggerClassName}
       trigger={
-        trigger || (
-        <div className="h-full w-full flex items-center justify-center text-gray-400 hover:text-accent-primary hover:bg-gray-50 dark:hover:bg-gray-700/40" title={tr('Dodaj kolumnę')}>
-          <Plus size={16} />
-        </div>
-        )
+        trigger || ((open) => (
+          // Prawdziwy przycisk — osiągalny klawiaturą (wcześniej goły div z ikoną).
+          <button type="button" aria-label={tr('Dodaj kolumnę')} title={tr('Dodaj kolumnę')} aria-haspopup="true" aria-expanded={open}
+            className="h-full w-full flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/40 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-primary-light/50">
+            <Plus size={16} aria-hidden="true" />
+          </button>
+        ))
       }
     >
       {({ close }) => (
-        <div className="p-2">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400 px-2 py-1">{tr('Dodaj kolumnę')}</div>
-          <div className="grid grid-cols-1 gap-0.5 max-h-72 overflow-y-auto custom-scrollbar">
-            {COLUMN_TYPE_ORDER.map(key => {
-              const t = COLUMN_TYPES[key];
-              return (
-                <button key={key} onClick={() => { onAdd(key, tr(t.label)); close(); }}
-                  className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-left">
-                  <span className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-300">
-                    <ColumnIcon name={t.icon} size={15} />
-                  </span>
-                  <span className="text-sm text-gray-700 dark:text-gray-200">{tr(t.label)}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="max-h-[min(26rem,70vh)] overflow-y-auto custom-scrollbar py-1" onKeyDown={listArrowNav}>
+          {GROUPS.map((g, gi) => (
+            <div key={g.key} role="group" aria-labelledby={`${uid}-${g.key}`}>
+              <div id={`${uid}-${g.key}`} className="pick-section">{tr(g.title)}</div>
+              {g.types.map((key, i) => {
+                const t = COLUMN_TYPES[key];
+                return (
+                  <button key={key} type="button" autoFocus={gi === 0 && i === 0}
+                    onClick={() => { onAdd(key, tr(t.label)); close(); }}
+                    className="pick-opt text-gray-800 dark:text-gray-100">
+                    <ColumnIcon name={t.icon} size={15} className="text-gray-400 shrink-0" />
+                    <span className="truncate">{tr(t.label)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </div>
       )}
     </Popover>

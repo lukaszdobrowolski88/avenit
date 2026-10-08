@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCsv, buildCellsFromRecord } from './csv';
+import { parseCsv, buildCellsFromRecord, parseDateText } from './csv';
 
 describe('parseCsv', () => {
   it('nagłówek + rekordy', () => {
@@ -37,5 +37,21 @@ describe('buildCellsFromRecord', () => {
   });
   it('checkbox: fałszywe wartości', () => {
     expect(buildCellsFromRecord({ Zrobione: 'nie' }, cols).c).toBe(false);
+  });
+});
+
+describe('import CSV — daty w formacie z eksportu', () => {
+  it('parseDateText przyjmuje ISO i dd.mm.yyyy', () => {
+    expect(parseDateText('2026-10-12')).toBe('2026-10-12');
+    expect(parseDateText('2026-10-12T08:00:00Z')).toBe('2026-10-12');
+    expect(parseDateText('12.10.2026')).toBe('2026-10-12');
+    expect(parseDateText('1.2.2026')).toBe('2026-02-01');
+    expect(parseDateText('jutro')).toBe(null);
+  });
+  it('kolumny daty i osi czasu wracają do zapisu z bazy', () => {
+    const cols = [{ id: 'd', name: 'Termin', type: 'date' }, { id: 't', name: 'Okres', type: 'timeline' }];
+    expect(buildCellsFromRecord({ Termin: '14.10.2026', Okres: '01.01 – 05.01.2026' }, cols))
+      .toEqual({ d: '2026-10-14', t: { start: '2026-01-01', end: '2026-01-05' } });
+    expect(buildCellsFromRecord({ Termin: 'bzdura' }, cols)).toEqual({});
   });
 });

@@ -1,24 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Sparkles, Send, Loader2, User } from 'lucide-react';
+import { Sparkles, Send, User } from 'lucide-react';
 import Modal from '../../../components/Modal';
+import Spinner from '../../../components/Spinner';
+import { ChoiceList, ChoiceRow } from '../../../components/ChoiceList';
 import { askBoard } from '../lib/aiBoards';
 import { tr } from '../../../i18n';
 
 const SUGGESTIONS = [
-  'Ile elementów jest w każdym statusie?',
+  'Ile zadań jest w każdym statusie?',
   'Kto ma najwięcej przypisanych zadań?',
-  'Które elementy są po terminie?',
-  'Podsumuj krótko stan tablicy',
+  'Które zadania są po terminie?',
+  'Podsumuj krótko stan zadań',
 ];
 
-// AI Sidekick — zadaj pytanie o dane tablicy (Q&A w języku naturalnym).
+// Asystent AI tablicy — pytanie o dane w języku naturalnym. Okno jak wszystkie w aplikacji (Modal:
+// Esc, fokus w oknie, ten sam nagłówek); nazwa jak moduł „Asystent AI” w menu.
 export default function AiSidekick({ data, onClose }) {
-  const [messages, setMessages] = useState([]); // {role:'user'|'ai', text}
+  const [messages, setMessages] = useState([]); // {role:'user'|'ai', text, error?}
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef(null);
 
-  useEffect(() => { scrollRef.current?.scrollTo({ top: 999999, behavior: 'smooth' }); }, [messages, busy]);
+  useEffect(() => { scrollRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' }); }, [messages, busy]);
 
   const ask = async (q) => {
     const question = (q ?? input).trim();
@@ -30,53 +33,46 @@ export default function AiSidekick({ data, onClose }) {
       const answer = await askBoard(question, { board: data.board, columns: data.columns, items: data.items });
       setMessages(m => [...m, { role: 'ai', text: answer }]);
     } catch (e) {
-      setMessages(m => [...m, { role: 'ai', text: `⚠️ ${e.message || tr('Błąd asystenta AI.')}` }]);
+      setMessages(m => [...m, { role: 'ai', error: true, text: e.message || tr('Asystent nie odpowiedział. Spróbuj ponownie za chwilę.') }]);
     } finally { setBusy(false); }
   };
 
   return (
-    <Modal isOpen className="flex justify-end">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-[460px] h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-white"><Sparkles size={17} /></div>
-          <div className="flex-1">
-            <h2 className="font-semibold text-gray-800 dark:text-gray-100 leading-tight">{tr('AI Sidekick')}</h2>
-            <p className="text-[11px] text-gray-400">{tr('Zapytaj o dane tablicy „{name}"', { name: data.board?.name ?? '' })}</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
+    <Modal isOpen onClose={onClose} title={tr('Asystent AI')} subtitle={tr('Zapytaj o „{name}”', { name: data.board?.name ?? '' })}
+      icon={Sparkles} size="lg"
+      footer={(
+        <div className="flex items-end gap-2 w-full">
+          <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={1} aria-label={tr('Pytanie do asystenta')}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }}
+            placeholder={tr('Zapytaj o zadania…')}
+            className="flex-1 min-h-[42px] max-h-28 resize-none rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-accent-primary-light/40" />
+          <button type="button" onClick={() => ask()} disabled={busy || !input.trim()} aria-label={tr('Wyślij pytanie')}
+            className="tool-btn tool-btn--primary tool-btn--icon !h-[42px] !w-[42px] disabled:opacity-40">
+            <Send size={17} aria-hidden="true" />
+          </button>
         </div>
-
-        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
-          {messages.length === 0 && (
-            <div className="text-center py-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Zadaj pytanie o swoją tablicę:')}</p>
-              <div className="flex flex-col gap-2">
-                {SUGGESTIONS.map(s => (
-                  <button key={s} onClick={() => ask(tr(s))} className="text-sm text-left px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:bg-accent-primary/5 text-gray-700 dark:text-gray-200">{tr(s)}</button>
-                ))}
-              </div>
+      )}>
+      <div className="p-6 space-y-3 min-h-[280px]" aria-live="polite">
+        {messages.length === 0 && (
+          <>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Przykładowe pytania:')}</p>
+            <ChoiceList>
+              {SUGGESTIONS.map(s => <ChoiceRow key={s} icon={Sparkles} title={tr(s)} onClick={() => ask(tr(s))} />)}
+            </ChoiceList>
+          </>
+        )}
+        {messages.map((m, i) => (
+          <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+            <div className={`w-7 h-7 rounded-full grid place-items-center shrink-0 ${m.role === 'user' ? 'bg-[rgba(42,35,18,0.08)] text-gray-700 dark:bg-white/10 dark:text-gray-200' : 'bg-[rgb(var(--accent-primary-lighter))] text-[rgb(var(--accent-primary-darkest))]'}`} aria-hidden="true">
+              {m.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
             </div>
-          )}
-          {messages.map((m, i) => (
-            <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${m.role === 'user' ? 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-200' : 'bg-gradient-to-br from-accent-primary to-accent-secondary text-white'}`}>
-                {m.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
-              </div>
-              <div className={`max-w-[80%] text-sm rounded-2xl px-3 py-2 whitespace-pre-wrap ${m.role === 'user' ? 'bg-accent-primary text-white' : 'bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200'}`}>{m.text}</div>
-            </div>
-          ))}
-          {busy && <div className="flex gap-2"><div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary text-white flex items-center justify-center"><Sparkles size={14} /></div><div className="bg-gray-100 dark:bg-gray-700/60 rounded-2xl px-3 py-2"><Loader2 size={15} className="animate-spin text-gray-400" /></div></div>}
-        </div>
-
-        <div className="p-3 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex items-end gap-2 bg-gray-100 dark:bg-gray-700/50 rounded-xl px-3 py-2">
-            <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={1}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }}
-              placeholder={tr('Zapytaj o tablicę...')} className="flex-1 bg-transparent text-sm outline-none resize-none text-gray-800 dark:text-gray-100 max-h-24" />
-            <button onClick={() => ask()} disabled={busy || !input.trim()} className="text-accent-primary disabled:opacity-40 p-1"><Send size={18} /></button>
+            <div className={`max-w-[80%] text-sm rounded-2xl px-3.5 py-2 whitespace-pre-wrap ${m.role === 'user'
+              ? 'bg-[#2A2312] text-white dark:bg-[rgb(var(--accent-primary-light))] dark:text-[#1a160c]'
+              : m.error ? 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300' : 'bg-[rgba(42,35,18,0.05)] text-gray-800 dark:bg-white/[0.07] dark:text-gray-100'}`}>{m.text}</div>
           </div>
-        </div>
+        ))}
+        {busy && <Spinner size={18} label={tr('Asystent myśli…')} />}
+        <div ref={scrollRef} />
       </div>
     </Modal>
   );

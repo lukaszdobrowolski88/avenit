@@ -9,17 +9,24 @@ import {
 import ItemLinkCell from './cells/ItemLinkCell';
 import MirrorCell from './cells/MirrorCell';
 import { EmailCell, PhoneCell, LocationCell, VoteCell, TimeTrackingCell, MetaCell } from './cells/ExtraCells';
+import { useBoardCan } from '../lib/boardContext';
 
-// Dyspozytor komórki — dobiera edytor do typu kolumny.
-export default function BoardCell({ column, value, onChange, onUpdateColumn, people, readOnly, item, columns, me }) {
-  const common = { value, onChange, readOnly };
+// Dyspozytor komórki — dobiera edytor do typu kolumny. Uprawnienia z kontekstu tablicy: bez prawa
+// edycji zadań komórka jest tylko do odczytu, a edycja etykiet/opcji (struktura kolumny) wymaga
+// prawa do zmiany kolumn — zamiast pokazywać kontrolki kończące się błędem 403.
+export default function BoardCell({ column, value, onChange, onUpdateColumn: onUpdateColumnProp, people, readOnly: readOnlyProp, item, columns, me }) {
+  const can = useBoardCan();
+  const readOnly = !!readOnlyProp || (can ? !can.editItems : false);
+  const onUpdateColumn = can && !can.editColumns ? undefined : onUpdateColumnProp;
+  // `column` w każdej komórce — nazwa kolumny jest etykietą pola dla czytnika ekranu.
+  const common = { column, value, onChange, readOnly };
   switch (column.type) {
     case 'email': return <EmailCell {...common} />;
     case 'phone': return <PhoneCell {...common} />;
     case 'location': return <LocationCell {...common} />;
     case 'vote': return <VoteCell value={value} onChange={onChange} me={me} readOnly={readOnly} />;
     case 'time_tracking': return <TimeTrackingCell {...common} />;
-    case 'item_id': case 'created_log': case 'last_updated': return <MetaCell column={column} item={item} />;
+    case 'item_id': case 'created_log': case 'last_updated': return <MetaCell column={column} item={item} people={people} />;
     case 'progress':
       return <ProgressCell {...common} />;
     case 'formula':
@@ -38,9 +45,9 @@ export default function BoardCell({ column, value, onChange, onUpdateColumn, peo
     case 'dropdown':
       return <TagsCell column={column} value={value} onChange={onChange} onUpdateColumn={onUpdateColumn} readOnly={readOnly} />;
     case 'number':
-      return <NumberCell column={column} {...common} />;
+      return <NumberCell {...common} />;
     case 'date':
-      return <DateCell column={column} {...common} />;
+      return <DateCell {...common} />;
     case 'timeline':
       return <TimelineCell {...common} />;
     case 'checkbox':
@@ -48,7 +55,7 @@ export default function BoardCell({ column, value, onChange, onUpdateColumn, peo
     case 'link':
       return <LinkCell {...common} />;
     case 'rating':
-      return <RatingCell column={column} {...common} />;
+      return <RatingCell {...common} />;
     case 'files':
       return <FilesCell {...common} />;
     case 'long_text':

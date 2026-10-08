@@ -28,12 +28,15 @@ export function useBoardAutomations(boardId, data, { userEmail, userName } = {})
   }, [boardId, userEmail]);
 
   const updateAutomation = useCallback(async (id, updates) => {
-    const { data: row } = await supabase.from('board_automations').update(updates).eq('id', id).select().single();
+    const { data: row, error } = await supabase.from('board_automations').update(updates).eq('id', id).select().single();
+    if (error) { toast.error(error, { fallback: tr('Nie udało się zmienić automatyzacji.') }); return; }
     if (row) setAutomations(prev => prev.map(a => a.id === id ? row : a));
   }, []);
 
   const deleteAutomation = useCallback(async (id) => {
-    await supabase.from('board_automations').delete().eq('id', id);
+    // Wcześniej błąd (np. brak uprawnień) był połykany — reguła znikała z listy i wracała po odświeżeniu.
+    const { error } = await supabase.from('board_automations').delete().eq('id', id);
+    if (error) { toast.error(error, { fallback: tr('Nie udało się usunąć automatyzacji.') }); return; }
     setAutomations(prev => prev.filter(a => a.id !== id));
   }, []);
 
@@ -104,8 +107,10 @@ export function useBoardAutomations(boardId, data, { userEmail, userName } = {})
         detail.push(`err:${action.type}`);
       }
     }
+    // Status uczciwy: jeśli któraś akcja padła, przebieg nie jest „success”.
+    const failed = detail.some((d) => String(d).startsWith('err:'));
     await supabase.from('board_automation_runs').insert({
-      automation_id: automation.id, board_id: boardId, item_id: item.id, status: 'success', detail: { actions: detail },
+      automation_id: automation.id, board_id: boardId, item_id: item.id, status: failed ? 'error' : 'success', detail: { actions: detail },
     });
     await supabase.from('board_automations').update({ last_run_at: new Date().toISOString() }).eq('id', automation.id);
   };

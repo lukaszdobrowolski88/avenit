@@ -1,9 +1,20 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
 import { defaultColumnSettings, defaultCellValue } from '../lib/columnTypes';
 import { GROUP_COLORS, pickColor } from '../lib/constants';
 import { tr } from '../../../i18n';
+import { boardColor } from '../lib/palette';
+
+// Kolory etykiet/grup z palety Monday (zapisane w bazie) → paleta aplikacji, w jednym miejscu dla
+// wszystkich widoków (tabela, kanban, kalendarz, panel). Edycja etykiet zapisuje już nowe kolory.
+const normLabels = (arr) => (Array.isArray(arr) ? arr.map((l) => (l && l.color ? { ...l, color: boardColor(l.color) } : l)) : arr);
+function normColumn(c) {
+  const s = c?.settings;
+  if (!s || (!s.labels && !s.options)) return c;
+  return { ...c, settings: { ...s, ...(s.labels ? { labels: normLabels(s.labels) } : {}), ...(s.options ? { options: normLabels(s.options) } : {}) } };
+}
+const normGroup = (g) => (g?.color ? { ...g, color: boardColor(g.color) } : g);
 
 // Silnik danych pojedynczej tablicy: ładuje kolumny, grupy, elementy, widoki,
 // listę osób organizacji, oraz udostępnia wszystkie mutacje. Po każdej mutacji
@@ -225,19 +236,38 @@ export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {})
     setItems(prev => prev.map(it => it.id === itemId ? optimistic : it));
     const { error: e } = await supabase.from('board_items')
       .update({ cells: newCells }).eq('id', itemId);
-    if (e) { setError(e.message); load(); return; }
+    if (e) { setError(e.message); load(); return false; }
     const col = columns.find(c => c.id === columnId);
     const action = col && (col.type === 'status' || col.type === 'priority') ? 'status_changed'
       : col && col.type === 'people' ? 'assigned' : 'value_changed';
     logActivity(itemId, action, columnId, prevVal, value);
     if (onAutomationRef.current) onAutomationRef.current({ type: 'cell_changed', item: optimistic, column: col, prevValue: prevVal, value });
+    return true;
   }, [items, columns, logActivity, load]);
 
   const deleteItem = useCallback(async (itemId) => {
     const { error: e } = await supabase.from('board_items').delete().eq('id', itemId);
-    if (e) { setError(e.message); return; }
+    if (e) { setError(e.message); return false; }
     setItems(prev => prev.filter(it => it.id !== itemId && it.parent_item_id !== itemId));
+    return true;
   }, []);
+
+  // Przenieś WIELE elementów naraz na koniec grupy (operacje zbiorcze). Pojedyncze moveItem w pętli
+  // pracowało na nieaktualnej liście i widocznie przenosiło tylko ostatni element.
+  const moveItems = useCallback(async (itemIds, toGroupId) => {
+    const ids = new Set(itemIds);
+    const moving = items.filter(it => ids.has(it.id));
+    if (!moving.length) return 0;
+    const target = items.filter(it => it.group_id === toGroupId && !ids.has(it.id)).sort((a, b) => a.display_order - b.display_order);
+    const reindexed = [...target, ...moving.map(it => ({ ...it, group_id: toGroupId }))].map((it, i) => ({ ...it, display_order: i }));
+    const byId = new Map(reindexed.map(it => [it.id, it]));
+    setItems(prev => prev.map(it => byId.get(it.id) || it));
+    const results = await Promise.all(reindexed.map(it =>
+      supabase.from('board_items').update({ display_order: it.display_order, group_id: toGroupId }).eq('id', it.id)));
+    if (results.find(r => r?.error)) { setError(tr('Nie udało się przenieść zadań')); load(); return 0; }
+    moving.forEach(it => logActivity(it.id, 'moved', null, null, { group_id: toGroupId }));
+    return moving.length;
+  }, [items, logActivity, load]);
 
   // Przenieś element do innej grupy i/lub pozycji (Kanban/reorder między grupami).
   const moveItem = useCallback(async (itemId, toGroupId, toIndex) => {
@@ -283,8 +313,9 @@ export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {})
   const updateView = useCallback(async (viewId, updates) => {
     const { data, error: e } = await supabase.from('board_views')
       .update(updates).eq('id', viewId).select().single();
-    if (e) { setError(e.message); return; }
+    if (e) { setError(e.message); return false; }
     setViews(prev => prev.map(v => v.id === viewId ? data : v));
+    return true;
   }, []);
 
   const deleteView = useCallback(async (viewId) => {
@@ -309,12 +340,15 @@ export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {})
     await Promise.all(views.map(v => supabase.from('board_views').update({ is_default: v.id === viewId }).eq('id', v.id)));
   }, [views]);
 
+  const viewColumns = useMemo(() => columns.map(normColumn), [columns]);
+  const viewGroups = useMemo(() => groups.map(normGroup), [groups]);
+
   return {
-    board, columns, groups, items, views, people, loading, error, me: userEmail,
+    board, columns: viewColumns, groups: viewGroups, items, views, people, loading, error, me: userEmail,
     reload: load, setBoard,
     addColumn, updateColumn, deleteColumn, reorderColumns, setColumnWidthLocal,
     addGroup, updateGroup, deleteGroup, reorderGroups,
-    addItem, addSubitem, updateItem, updateCell, deleteItem, moveItem, reorderItemsInGroup,
+    addItem, addSubitem, updateItem, updateCell, deleteItem, moveItem, moveItems, reorderItemsInGroup,
     focusItemId, clearFocusItem: () => setFocusItemId(null),
     addView, updateView, deleteView, duplicateView, setDefaultView,
     registerAutomationRunner: (fn) => { onAutomationRef.current = fn; },

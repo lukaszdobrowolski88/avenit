@@ -12,6 +12,7 @@ import { getSidebar } from '../lib/appearance';
 import { useModuleColors, normalizeModuleLabel } from '../hooks/useModuleLabel';
 import { useAppModules } from '../hooks/useAppModules';
 import { groupNavLinks, dedupeIconNames, resolveActiveKey, HIDDEN_NAV_KEYS } from './navConfig';
+import { AI_ENABLED } from '../lib/features';
 
 // Komponent Tooltip zgodny z layoutem aplikacji - używa Portal
 function Tooltip({ children, text, show }) {
@@ -130,7 +131,7 @@ const STATIC_MODULES = [
   { key: 'rooms', path: '/rooms', iconName: 'DoorOpen', label: 'Rezerwacje sal', resource: 'module:rooms' },
   { key: 'automation', path: '/automation', iconName: 'Workflow', label: 'Automatyzacje', resource: 'module:automation' },
   { key: 'analytics', path: '/analytics', iconName: 'BarChart3', label: 'Analityka', resource: 'module:analytics' },
-  { key: 'ai', path: '/ai', iconName: 'Sparkles', label: 'Asystent AI', resource: 'module:ai' },
+  ...(AI_ENABLED ? [{ key: 'ai', path: '/ai', iconName: 'Sparkles', label: 'Asystent AI', resource: 'module:ai' }] : []),
   { key: 'teaching', path: '/teaching', iconName: 'BookOpen', label: 'Nauczanie', resource: 'module:teaching' },
   { key: 'prayer', path: '/prayer', iconName: 'Heart', label: 'Ściana modlitwy', setting: 'prayer' },
   { key: 'komunikator', path: '/komunikator', iconName: 'MessageCircle', label: 'Komunikator', resource: 'module:komunikator' },

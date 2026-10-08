@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button';
 import { supabase } from '../../lib/supabase';
 import CustomSelect from '../../components/CustomSelect';
-import ModuleBoard from '../Boards/ModuleBoard';
+import ModuleBoard, { hasItemDeepLink } from '../Boards/ModuleBoard';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
@@ -49,7 +49,7 @@ export default function HomeGroupsModule() {
   const { userRole, loading: roleLoading } = useUserRole();
   const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
-  const [activeTab, setActiveTab] = useState('groups');
+  const [activeTab, setActiveTab] = useState(() => (hasItemDeepLink() ? 'tasks' : 'groups'));
   const [groups, setGroups] = useState([]);
   const [leaders, setLeaders] = useState([]);
   const [members, setMembers] = useState([]);

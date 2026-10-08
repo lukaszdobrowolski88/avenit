@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -25,8 +25,15 @@ function ToolbarButton({ onClick, isActive, children, title }) {
   );
 }
 
-export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpisz tekst...', minHeight = 200 }) {
+// readOnly (opcjonalne) — sam podgląd treści: bez paska narzędzi i bez edycji.
+export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpisz tekst...', minHeight = 200, readOnly = false }) {
+  // Ostatnie HTML-e wysłane przez onChange (z czasem). Gdy rodzic w ciągu kilkunastu sekund odsyła
+  // któryś z nich jako `content` (echo zapisu, często spóźnione względem pisania), NIE nadpisujemy
+  // edytora — inaczej tekst wpisany w międzyczasie znikał, a kursor skakał na koniec. Starsze
+  // wartości traktujemy jak zmianę z zewnątrz (np. inny rekord w tym samym edytorze).
+  const emitted = useRef([]);
   const editor = useEditor({
+    editable: !readOnly,
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
@@ -36,7 +43,9 @@ export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpi
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
-      onChange?.(editor.getHTML());
+      const html = editor.getHTML();
+      emitted.current = [...emitted.current.slice(-49), { html, at: Date.now() }];
+      onChange?.(html);
     },
     editorProps: {
       attributes: {
@@ -47,16 +56,22 @@ export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpi
   });
 
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content || '', false);
-    }
+    if (!editor) return;
+    const next = content || '';
+    const echo = emitted.current.some((e) => e.html === next && Date.now() - e.at < 15000);
+    if (next === editor.getHTML() || echo) return;
+    emitted.current = [];
+    editor.commands.setContent(next, false);
   }, [content, editor]);
+
+  useEffect(() => { if (editor && editor.isEditable === readOnly) editor.setEditable(!readOnly); }, [editor, readOnly]);
 
   if (!editor) return null;
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-800">
       {/* Toolbar */}
+      {!readOnly && (
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex-wrap">
         <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="Pogrubienie">
           <Bold size={15} />
@@ -95,6 +110,7 @@ export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpi
           <Redo size={15} />
         </ToolbarButton>
       </div>
+      )}
 
       {/* Editor */}
       <div className="simple-rich-editor">

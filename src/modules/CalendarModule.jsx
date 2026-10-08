@@ -26,6 +26,7 @@ import { TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
 import { ChoiceList, ChoiceRow } from '../components/ChoiceList';
 import * as LucideIcons from 'lucide-react';
+import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
 
 // --- POMOCNICZE (czyste funkcje — testy w CalendarModule.test.js) ---
 
@@ -163,82 +164,7 @@ const dotClass = (team) => DOT[TEAMS[team]?.color] || DOT.gray;
 
 // --- HELPERY UI ---
 
-function useDropdownPosition(triggerRef, isOpen) {
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, openUpward: false });
-  useEffect(() => {
-    if (isOpen && triggerRef.current) {
-      const update = () => {
-        const rect = triggerRef.current.getBoundingClientRect();
-        const dropdownMaxHeight = 300;
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        const openUpward = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
-        setCoords({
-          top: openUpward ? rect.top + window.scrollY - 4 : rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
-          width: rect.width,
-          openUpward
-        });
-      };
-      update();
-      window.addEventListener('resize', update);
-      window.addEventListener('scroll', update, true);
-      return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
-    }
-  }, [isOpen]);
-  return coords;
-}
 
-const CustomDatePicker = ({ value, onChange, invalid = false }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(() => localDateTime(value) || new Date());
-  const triggerRef = useRef(null);
-  const coords = useDropdownPosition(triggerRef, isOpen);
-
-  useEffect(() => { const d = localDateTime(value); if (d) setViewDate(d); }, [value]);
-
-  const handleDayClick = (day) => {
-    onChange(localYmd(new Date(viewDate.getFullYear(), viewDate.getMonth(), day)));
-    setIsOpen(false);
-  };
-
-  const { days, firstDay } = getDaysInMonth(viewDate);
-  const daysArray = Array.from({ length: days }, (_, i) => i + 1);
-  const emptyDays = Array.from({ length: firstDay });
-  const shown = localDateTime(value);
-
-  return (
-    <div className="relative w-full">
-      <button type="button" ref={triggerRef} onClick={() => setIsOpen(!isOpen)} aria-invalid={invalid || undefined} className={`w-full h-[42px] px-3 bg-white dark:bg-gray-800 border rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light transition ${invalid ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'}`}>
-        <CalIcon size={16} className="text-accent-primary dark:text-accent-primary-light" aria-hidden="true" />
-        <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-          {shown ? shown.toLocaleDateString(appLocale()) : tr('Wybierz datę')}
-        </span>
-      </button>
-      {isOpen && coords.width > 0 && document.body && createPortal(
-        <div className="fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100 w-[280px]" style={{ ...(coords.openUpward ? { bottom: `calc(100vh - ${coords.top}px)` } : { top: coords.top }), left: coords.left }}>
-           <div className="flex justify-between items-center mb-4">
-             <button type="button" aria-label={tr('Poprzedni miesiąc')} onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronLeft size={18} /></button>
-             <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
-             <button type="button" aria-label={tr('Następny miesiąc')} onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronRight size={18} /></button>
-           </div>
-           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
-           <div className="grid grid-cols-7 gap-1">
-             {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
-             {daysArray.map(d => {
-               const dateStr = `${viewDate.getFullYear()}-${pad2(viewDate.getMonth() + 1)}-${pad2(d)}`;
-               return (
-                 <button type="button" key={d} onClick={(e) => { e.stopPropagation(); handleDayClick(d); }} className={`h-8 w-8 rounded-lg text-xs font-medium transition ${value === dateStr ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
-                   {d}
-                 </button>
-               )
-             })}
-           </div>
-        </div>, document.body
-      )}
-    </div>
-  );
-};
 
 const CustomTimePicker = ({ value, onChange, placeholder = tr('Wybierz'), invalid = false }) => {
   return (

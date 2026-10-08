@@ -62,44 +62,6 @@ const PROGRAM_ELEMENTS = ['Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kaza
 const MUSICAL_KEYS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
 
 // ============================================
-// CUSTOM SELECT
-// ============================================
-
-const CustomSelect = ({ value, onChange, options, compact = false }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:border-accent-primary-light transition ${compact ? 'px-2 py-1' : 'px-3 py-2'}`}
-      >
-        <span className="truncate">{options.find(o => o.value === value)?.label || value || tr('Wybierz...')}</span>
-        <ChevronDown size={14} className="text-gray-400 ml-1" />
-      </button>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-            {options.map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => { onChange(opt.value); setIsOpen(false); }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 ${value === opt.value ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary' : 'text-gray-700 dark:text-gray-300'}`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-// ============================================
 // PROGRAM MODAL (uproszczona wersja)
 // ============================================
 

@@ -8,6 +8,7 @@ import { confirmDialog } from '../../../lib/dialog';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
+import CustomDatePicker from '../../../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
 
 const STATUS_CONFIG = {
   todo: {
@@ -58,31 +59,6 @@ const sourceLabel = (label) => (FIXED_SOURCE_LABELS.includes(label) ? tr(label) 
 // CUSTOM DATE PICKER
 // ============================================
 
-function useDropdownPosition(triggerRef, isOpen) {
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, openUpward: false });
-  useEffect(() => {
-    if (isOpen && triggerRef.current) {
-      const update = () => {
-        const rect = triggerRef.current.getBoundingClientRect();
-        const dropdownMaxHeight = 300;
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        const openUpward = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
-        setCoords({
-          top: openUpward ? rect.top + window.scrollY - 4 : rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
-          width: rect.width,
-          openUpward
-        });
-      };
-      update();
-      window.addEventListener('resize', update);
-      window.addEventListener('scroll', update, true);
-      return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
-    }
-  }, [isOpen]);
-  return coords;
-}
 
 const getDaysInMonth = (date) => {
   const year = date.getFullYear();
@@ -92,69 +68,6 @@ const getDaysInMonth = (date) => {
   return { days, firstDay: firstDay === 0 ? 6 : firstDay - 1 };
 };
 
-const CustomDatePicker = ({ value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
-  const triggerRef = useRef(null);
-  const coords = useDropdownPosition(triggerRef, isOpen);
-
-  useEffect(() => { if (value) setViewDate(new Date(value)); }, [value]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClickOutside = (e) => {
-      if (triggerRef.current && !triggerRef.current.contains(e.target) && !e.target.closest('.datepicker-portal')) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  const handleDayClick = (day) => {
-    const d = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const dayStr = String(d.getDate()).padStart(2, '0');
-    onChange(`${d.getFullYear()}-${month}-${dayStr}`);
-    setIsOpen(false);
-  };
-
-  const { days, firstDay } = getDaysInMonth(viewDate);
-  const daysArray = Array.from({ length: days }, (_, i) => i + 1);
-  const emptyDays = Array.from({ length: firstDay });
-
-  return (
-    <div className="relative w-full">
-      <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary-light transition">
-        <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
-        <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-          {value ? new Date(value).toLocaleDateString(appLocale()) : tr('Wybierz datę')}
-        </span>
-      </div>
-      {isOpen && coords.width > 0 && document.body && createPortal(
-        <div className="datepicker-portal fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100 w-[280px]" style={{ ...(coords.openUpward ? { bottom: `calc(100vh - ${coords.top}px)` } : { top: coords.top }), left: coords.left }}>
-           <div className="flex justify-between items-center mb-4">
-             <button type="button" onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronLeft size={18} /></button>
-             <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString(appLocale(), { month: 'long', year: 'numeric' })}</span>
-             <button type="button" onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronRight size={18} /></button>
-           </div>
-           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
-           <div className="grid grid-cols-7 gap-1">
-             {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
-             {daysArray.map(d => {
-               const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-               return (
-                 <button type="button" key={d} onClick={(e) => { e.stopPropagation(); handleDayClick(d); }} className={`h-8 w-8 rounded-lg text-xs font-medium transition ${value === dateStr ? 'bg-accent-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
-                   {d}
-                 </button>
-               )
-             })}
-           </div>
-        </div>, document.body
-      )}
-    </div>
-  );
-};
 
 // ============================================
 // TASK MODAL

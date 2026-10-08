@@ -1,42 +1,34 @@
-import React, { useState, useMemo } from 'react';
-import { Check, Search, X, Link2, GitBranch, AlertTriangle } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Check, Link2, GitBranch } from 'lucide-react';
 import Popover from '../Popover';
-import { supabase } from '../../../../lib/supabase';
+import { fetchBoardItemsFull } from '../../lib/relationCache';
+import { toast } from '../../../../lib/toast';
 import { tr } from '../../../../i18n';
+import { CELL_TRIGGER, HoverPlus } from './BasicCells';
+import { listArrowNav } from './StatusCell';
+import '../../../../components/pickList.css';
 
-// Prosty cache elementów per-tablica (nazwy do pickera relacji).
-const itemsCache = new Map();
-async function fetchBoardItems(boardId) {
-  if (itemsCache.has(boardId)) return itemsCache.get(boardId);
-  const { data } = await supabase.from('board_items').select('id, name').eq('board_id', boardId).is('parent_item_id', null);
-  const rows = data || [];
-  itemsCache.set(boardId, rows);
-  return rows;
+// Elementy tablicy bierzemy ze wspólnego cache relacji (ten sam co kolumna Lustro) — wcześniej
+// komórka miała własny, nigdy nie odświeżany cache i nowe elementy nie pojawiały się w wyborze.
+// Błąd wczytania: jeden komunikat, nie po jednym z każdej komórki.
+let lastErrorAt = 0;
+function reportLoadError() {
+  if (Date.now() - lastErrorAt < 10000) return;
+  lastErrorAt = Date.now();
+  toast.error(tr('Nie udało się wczytać elementów do połączenia'));
 }
-export function invalidateItemsCache(boardId) { itemsCache.delete(boardId); }
 
-// Komórka relacji: łączy element z innymi elementami (connect_board=inna tablica,
-// dependency=ta sama tablica). Wartość: [{ id, name }].
-export default function ItemLinkCell({ column, value = [], onChange, currentItemId, mode = 'connect', readOnly }) {
-  const linked = value || [];
+function ItemLinkPicker({ sourceBoardId, currentItemId, linked, onChange }) {
   const [q, setQ] = useState('');
-  const [options, setOptions] = useState([]);
-  const [loaded, setLoaded] = useState(false);
+  const [state, setState] = useState({ loading: true, rows: [], error: false });
 
-  const sourceBoardId = mode === 'connect' ? column?.settings?.targetBoardId : column?.board_id;
-  const Icon = mode === 'connect' ? Link2 : GitBranch;
-
-  const loadOptions = async () => {
-    if (loaded || !sourceBoardId) return;
-    const rows = await fetchBoardItems(sourceBoardId);
-    setOptions(rows.filter(r => r.id !== currentItemId));
-    setLoaded(true);
-  };
-
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return options.filter(o => !s || (o.name || '').toLowerCase().includes(s));
-  }, [q, options]);
+  useEffect(() => {
+    let alive = true;
+    fetchBoardItemsFull(sourceBoardId)
+      .then((rows) => { if (alive) setState({ loading: false, rows: (rows || []).filter(r => r.id !== currentItemId), error: false }); })
+      .catch(() => { if (alive) setState({ loading: false, rows: [], error: true }); reportLoadError(); });
+    return () => { alive = false; };
+  }, [sourceBoardId, currentItemId]);
 
   const isLinked = (id) => linked.some(l => l.id === id);
   const toggle = (o) => {
@@ -44,59 +36,78 @@ export default function ItemLinkCell({ column, value = [], onChange, currentItem
     else onChange([...linked, { id: o.id, name: o.name || tr('Element') }]);
   };
 
-  const Chips = (
-    <div className="w-full h-full flex items-center gap-1 px-2 flex-wrap overflow-hidden">
-      {linked.length === 0
-        ? <span className="text-gray-300 dark:text-gray-600 text-xs flex items-center gap-1"><Icon size={12} /> —</span>
-        : linked.map(l => (
-          <span key={l.id} className="text-[11px] px-2 py-0.5 rounded-full bg-accent-primary/10 text-accent-primary whitespace-nowrap flex items-center gap-1">
-            <Icon size={10} /> {l.name}
-          </span>
-        ))}
-    </div>
-  );
+  const { chosen, others } = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    const match = (o) => !s || (o.name || '').toLowerCase().includes(s);
+    const byId = new Map(state.rows.map(r => [r.id, r]));
+    return {
+      // Połączone na górze — także te, których już nie ma w tablicy (da się je odpiąć).
+      chosen: linked.map(l => byId.get(l.id) || l).filter(match),
+      others: state.rows.filter(r => !isLinked(r.id) && match(r)),
+    };
+  }, [q, state.rows, linked]);
 
-  if (readOnly) return Chips;
-
-  if (mode === 'connect' && !sourceBoardId) {
+  const option = (o) => {
+    const sel = isLinked(o.id);
     return (
-      <div className="w-full h-full flex items-center px-2 text-[11px] text-amber-500 gap-1">
-        <AlertTriangle size={12} /> {tr('wskaż tablicę')}
-      </div>
+      <button key={o.id} type="button" role="option" aria-selected={sel} onClick={() => toggle(o)}
+        className="pick-opt text-gray-800 dark:text-gray-100">
+        <span className="pick-check" aria-hidden="true">{sel && <Check size={12} strokeWidth={3} />}</span>
+        <span className="min-w-0 truncate">{o.name || tr('Bez nazwy')}</span>
+      </button>
     );
-  }
+  };
 
   return (
-    <Popover width={260} trigger={Chips} onOpenChange={(o) => o && loadOptions()}>
-      {() => (
-        <div className="p-2">
-          <div className="flex items-center gap-2 px-2 py-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg mb-2">
-            <Search size={14} className="text-gray-400" />
-            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Szukaj elementu...')}
-              className="bg-transparent text-sm outline-none w-full text-gray-700 dark:text-gray-200" />
-          </div>
-          {linked.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {linked.map(l => (
-                <span key={l.id} className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5 text-xs">
-                  {l.name}<button onClick={() => onChange(linked.filter(x => x.id !== l.id))}><X size={12} className="text-gray-400 hover:text-red-500" /></button>
-                </span>
-              ))}
-            </div>
-          )}
-          <div className="max-h-56 overflow-y-auto custom-scrollbar">
-            {!loaded && <div className="text-xs text-gray-400 text-center py-3">{tr('Ładowanie…')}</div>}
-            {loaded && filtered.map(o => (
-              <button key={o.id} onClick={() => toggle(o)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-left">
-                <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-200 truncate">{o.name || tr('Bez nazwy')}</span>
-                {isLinked(o.id) && <Check size={15} className="text-accent-primary" />}
-              </button>
-            ))}
-            {loaded && filtered.length === 0 && <div className="text-xs text-gray-400 text-center py-3">{tr('Brak elementów')}</div>}
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col" onKeyDown={listArrowNav}>
+      <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Szukaj elementu...')}
+        aria-label={tr('Szukaj elementu...')} className="pick-search bg-transparent text-gray-800 dark:text-gray-100" />
+      <div role="listbox" aria-multiselectable="true" aria-label={tr('Elementy')} className="max-h-64 overflow-y-auto custom-scrollbar py-1">
+        {chosen.length > 0 && <div className="pick-section" role="presentation">{tr('Połączone')}</div>}
+        {chosen.map(option)}
+        {chosen.length > 0 && others.length > 0 && <div className="pick-section" role="presentation">{tr('Pozostałe')}</div>}
+        {others.map(option)}
+        {state.loading && <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">{tr('Ładowanie…')}</div>}
+        {state.error && <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4 px-3" role="alert">{tr('Nie udało się wczytać elementów do połączenia')}</div>}
+        {!state.loading && !state.error && chosen.length + others.length === 0 && (
+          <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">{q.trim() ? tr('Brak wyników') : tr('Brak elementów')}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Komórka relacji: łączy element z innymi elementami (connect_board=inna tablica,
+// dependency=ta sama tablica). Wartość: [{ id, name }].
+export default function ItemLinkCell({ column, value = [], onChange, currentItemId, mode = 'connect', readOnly }) {
+  const linked = Array.isArray(value) ? value : [];
+  const sourceBoardId = mode === 'connect' ? column?.settings?.targetBoardId : column?.board_id;
+  const Icon = mode === 'connect' ? Link2 : GitBranch;
+
+  // Połączone elementy jako neutralne, miękkie pigułki; pusto = pusto (bez „—” w każdym wierszu).
+  const chips = linked.map(l => (
+    <span key={l.id} className="shrink-0 max-w-full inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-xs font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap overflow-hidden">
+      <Icon size={11} className="shrink-0 opacity-70" aria-hidden="true" /><span className="truncate">{l.name}</span>
+    </span>
+  ));
+
+  if (readOnly) return <div className="w-full h-full flex items-center gap-1 px-2 overflow-hidden">{chips}</div>;
+
+  const name = column?.name || (mode === 'connect' ? tr('Połącz tablice') : tr('Zależności'));
+  return (
+    <Popover width={300} bare className="pick-pop overflow-hidden" trigger={
+      <button type="button" aria-haspopup="listbox"
+        aria-label={linked.length ? `${name}: ${linked.map(l => l.name).join(', ')}` : name}
+        className={`${CELL_TRIGGER} overflow-hidden`}>
+        {linked.length ? chips : <HoverPlus />}
+      </button>
+    }>
+      {() => (sourceBoardId ? (
+        <ItemLinkPicker sourceBoardId={sourceBoardId} currentItemId={currentItemId} linked={linked} onChange={onChange} />
+      ) : (
+        // Nieskonfigurowana kolumna: podpowiedź tylko tutaj, nie ostrzeżenie w każdym wierszu.
+        <p className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{tr('Najpierw wskaż tablicę do połączenia w ustawieniach kolumny.')}</p>
+      ))}
     </Popover>
   );
 }

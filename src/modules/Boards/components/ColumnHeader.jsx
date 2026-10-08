@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MoreHorizontal, Trash2, Pencil, ArrowLeft, ArrowRight } from 'lucide-react';
 import Popover from './Popover';
 import LabelsEditor from './LabelsEditor';
@@ -7,6 +7,20 @@ import { tr } from '../../../i18n';
 import { supabase } from '../../../lib/supabase';
 import { fetchBoardColumnsCached } from '../lib/relationCache';
 import { confirmDialog } from '../../../lib/dialog';
+
+// Pole ustawienia kolumny (jednostka, formuła): zapis na Enter, przy wyjściu z pola ORAZ przy
+// zamknięciu menu (Esc / klik obok odmontowują pole bez blur — wcześniej zmiana przepadała).
+function SettingInput({ value, onCommit, className, placeholder, label }) {
+  const [v, setV] = useState(value || '');
+  const latest = useRef({ v: value || '', saved: value || '' });
+  latest.current.v = v;
+  const commit = () => { if (latest.current.v !== latest.current.saved) { latest.current.saved = latest.current.v; onCommit(latest.current.v); } };
+  useEffect(() => () => commit(), []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <input value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} aria-label={label}
+      onKeyDown={(e) => { if (e.key === 'Enter') commit(); }} className={className} placeholder={placeholder} />
+  );
+}
 
 // Nagłówek kolumny: nazwa (edycja) + menu (ustawienia/usuń). Bez ikony typu — nagłówki jak w
 // pozostałych tabelach aplikacji (DataTable); typ kolumny widać po zawartości komórek.
@@ -36,67 +50,71 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
   const throughCol = allColumns.find(c => c.id === column?.settings?.throughColumnId && c.type === 'connect_board');
   useEffect(() => {
     if (column.type !== 'mirror' || !throughCol?.settings?.targetBoardId) { setTargetCols([]); return; }
-    fetchBoardColumnsCached(throughCol.settings.targetBoardId).then(setTargetCols);
+    fetchBoardColumnsCached(throughCol.settings.targetBoardId).then(setTargetCols).catch(() => setTargetCols([]));
   }, [column.type, throughCol?.settings?.targetBoardId]);
 
-  const commit = () => { setRenaming(false); if (name.trim() && name !== column.name) onUpdate(column.id, { name: name.trim() }); };
+  const commit = () => { setRenaming(false); if (onUpdate && name.trim() && name !== column.name) onUpdate(column.id, { name: name.trim() }); };
+  const cancel = () => { setName(column.name); setRenaming(false); };
+  // Bez prawa do zmiany ani usuwania kolumn — sam nagłówek (bez menu, które kończyło się błędem 403).
+  const canMenu = !!(onUpdate || onDelete);
 
   return (
     <div className="board-th h-full flex items-center gap-1.5 px-2 group/col text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
       {renaming ? (
-        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onBlur={commit}
-          onKeyDown={(e) => e.key === 'Enter' && commit()}
+        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onBlur={commit} aria-label={tr('Nazwa kolumny')}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { e.preventDefault(); cancel(); } }}
           className="flex-1 min-w-0 bg-white dark:bg-gray-700 rounded px-1 outline-none ring-2 ring-accent-primary/40" />
       ) : (
-        <span className="flex-1 truncate cursor-pointer" onDoubleClick={() => setRenaming(true)}>{column.name}</span>
+        <span className={`flex-1 truncate ${onUpdate ? 'cursor-pointer' : ''}`} onDoubleClick={() => onUpdate && setRenaming(true)}>{column.name}</span>
       )}
-      <Popover align="right" width={(column.type === 'status' || column.type === 'priority') ? 280 : 200} triggerClassName="shrink-0" trigger={
-        <button className="opacity-0 group-hover/col:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"><MoreHorizontal size={15} /></button>
+      {canMenu && (
+      <Popover align="right" width={(column.type === 'status' || column.type === 'priority') ? 280 : 220} triggerClassName="shrink-0" trigger={
+        <button type="button" aria-label={tr('Ustawienia kolumny {name}', { name: column.name })}
+          className="opacity-0 group-hover/col:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-[rgba(42,35,18,0.07)] dark:hover:text-gray-200 dark:hover:bg-white/10"><MoreHorizontal size={15} aria-hidden="true" /></button>
       }>
         {({ close }) => (
-          <div className="p-1.5">
-            <button onClick={() => { setRenaming(true); close(); }}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200">
-              <Pencil size={14} /> {tr('Zmień nazwę')}
-            </button>
-            {onReorder && (
-              <div className="flex gap-1">
-                <button onClick={() => { move(-1); close(); }} disabled={idx <= 0}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed">
-                  <ArrowLeft size={14} /> {tr('W lewo')}
-                </button>
-                <button onClick={() => { move(1); close(); }} disabled={idx >= sortedCols.length - 1}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed">
-                  {tr('W prawo')} <ArrowRight size={14} />
-                </button>
-              </div>
+          <div className="py-1">
+            {onUpdate && (
+              <button type="button" onClick={() => { setRenaming(true); close(); }} className="pick-opt text-gray-800 dark:text-gray-100">
+                <Pencil size={15} className="opacity-80" aria-hidden="true" /> {tr('Zmień nazwę')}
+              </button>
             )}
-            {(column.type === 'status' || column.type === 'priority') && (
-              <div className="px-2 py-1.5">
-                <label className="text-[11px] text-gray-400">{tr('Etykiety statusu')}</label>
+            {onReorder && (
+              <>
+                <button type="button" onClick={() => { move(-1); close(); }} disabled={idx <= 0} className="pick-opt text-gray-800 dark:text-gray-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                  <ArrowLeft size={15} className="opacity-80" aria-hidden="true" /> {tr('Przesuń w lewo')}
+                </button>
+                <button type="button" onClick={() => { move(1); close(); }} disabled={idx >= sortedCols.length - 1} className="pick-opt text-gray-800 dark:text-gray-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                  <ArrowRight size={15} className="opacity-80" aria-hidden="true" /> {tr('Przesuń w prawo')}
+                </button>
+              </>
+            )}
+            {onUpdate && (column.type === 'status' || column.type === 'priority') && (
+              <div className="px-3 py-2">
+                <label className="text-xs font-bold text-gray-500 uppercase">{tr('Etykiety statusu')}</label>
                 <div className="mt-1.5">
                   <LabelsEditor column={column} onUpdateColumn={onUpdate} />
                 </div>
               </div>
             )}
-            {column.type === 'number' && (
-              <div className="px-2 py-1.5">
-                <label className="text-[11px] text-gray-400">{tr('Jednostka')}</label>
-                <input defaultValue={column.settings?.unit || ''} onBlur={(e) => onUpdate(column.id, { settings: { ...column.settings, unit: e.target.value } })}
-                  className="w-full mt-1 text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" placeholder={tr('np. zł, h')} />
+            {onUpdate && column.type === 'number' && (
+              <div className="px-3 py-2">
+                <label className="text-xs font-bold text-gray-500 uppercase">{tr('Jednostka')}</label>
+                <SettingInput value={column.settings?.unit} label={tr('Jednostka')} onCommit={(unit) => onUpdate(column.id, { settings: { ...column.settings, unit } })}
+                  className="w-full mt-1 h-8 px-2.5 rounded-lg text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none" placeholder={tr('np. zł, h')} />
               </div>
             )}
-            {column.type === 'formula' && (
-              <div className="px-2 py-1.5">
-                <label className="text-[11px] text-gray-400">{tr('Wyrażenie')}</label>
-                <input defaultValue={column.settings?.expression || ''} onBlur={(e) => onUpdate(column.id, { settings: { ...column.settings, expression: e.target.value } })}
-                  className="w-full mt-1 text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none font-mono" placeholder={tr('{Budżet} * 2')} />
-                <p className="text-[10px] text-gray-400 mt-1">{tr('Odwołuj się do kolumn: {example}. Działania: + − × ÷ ( )', { example: `{${tr('Nazwa')}}` })}</p>
+            {onUpdate && column.type === 'formula' && (
+              <div className="px-3 py-2">
+                <label className="text-xs font-bold text-gray-500 uppercase">{tr('Wyrażenie')}</label>
+                <SettingInput value={column.settings?.expression} label={tr('Wyrażenie')} onCommit={(expression) => onUpdate(column.id, { settings: { ...column.settings, expression } })}
+                  className="w-full mt-1 h-8 px-2.5 rounded-lg text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none font-mono" placeholder={tr('{Budżet} * 2')} />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tr('Odwołuj się do kolumn: {example}. Działania: + − × ÷ ( )', { example: `{${tr('Nazwa')}}` })}</p>
               </div>
             )}
-            {column.type === 'connect_board' && (
-              <div className="px-2 py-1.5">
-                <label className="text-[11px] text-gray-400">{tr('Połącz z tablicą')}</label>
+            {onUpdate && column.type === 'connect_board' && (
+              <div className="px-3 py-2">
+                <label className="text-xs font-bold text-gray-500 uppercase">{tr('Połącz z tablicą')}</label>
                 <div className="mt-1">
                   <CustomSelect compact placeholder={tr('— wybierz tablicę —')} value={column.settings?.targetBoardId || ''}
                     onChange={(v) => onUpdate(column.id, { settings: { ...column.settings, targetBoardId: v || null } })}
@@ -104,10 +122,10 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
                 </div>
               </div>
             )}
-            {column.type === 'mirror' && (
-              <div className="px-2 py-1.5 space-y-1.5">
+            {onUpdate && column.type === 'mirror' && (
+              <div className="px-3 py-2 space-y-2">
                 <div>
-                  <label className="text-[11px] text-gray-400">{tr('Przez kolumnę (połączenie)')}</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase">{tr('Przez kolumnę (połączenie)')}</label>
                   <div className="mt-1">
                     <CustomSelect compact placeholder={tr('— wybierz —')} value={column.settings?.throughColumnId || ''}
                       onChange={(v) => onUpdate(column.id, { settings: { ...column.settings, throughColumnId: v || null, targetColumnId: null } })}
@@ -115,7 +133,7 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
                   </div>
                 </div>
                 <div className={!throughCol ? 'opacity-50 pointer-events-none' : ''}>
-                  <label className="text-[11px] text-gray-400">{tr('Odbij kolumnę')}</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase">{tr('Odbij kolumnę')}</label>
                   <div className="mt-1">
                     <CustomSelect compact placeholder={tr('— wybierz —')} value={column.settings?.targetColumnId || ''}
                       onChange={(v) => onUpdate(column.id, { settings: { ...column.settings, targetColumnId: v || null } })}
@@ -123,17 +141,28 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
                   </div>
                 </div>
                 {allColumns.filter(c => c.type === 'connect_board').length === 0 && (
-                  <p className="text-[10px] text-amber-500">{tr('Najpierw dodaj kolumnę „Połącz tablice".')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Najpierw dodaj kolumnę „Połącz tablice".')}</p>
                 )}
               </div>
             )}
-            <button onClick={async () => { if (await confirmDialog(tr('Usunąć kolumnę „{name}" i jej wartości?', { name: column.name }))) onDelete(column.id); close(); }}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600">
-              <Trash2 size={14} /> {tr('Usuń kolumnę')}
-            </button>
+            {onDelete && (
+              <button type="button" onClick={async () => {
+                close();
+                const ok = await confirmDialog({
+                  title: tr('Usunąć kolumnę „{name}”?', { name: column.name }),
+                  message: tr('Wartości tej kolumny znikną ze wszystkich zadań. Tej operacji nie można cofnąć.'),
+                  confirmLabel: tr('Usuń kolumnę'),
+                  danger: true,
+                });
+                if (ok) onDelete(column.id);
+              }} className="pick-opt text-red-600 dark:text-red-400 border-t border-gray-100 dark:border-white/10">
+                <Trash2 size={15} aria-hidden="true" /> {tr('Usuń kolumnę')}
+              </button>
+            )}
           </div>
         )}
       </Popover>
+      )}
     </div>
   );
 }

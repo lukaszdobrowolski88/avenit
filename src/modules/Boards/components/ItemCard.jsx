@@ -1,13 +1,23 @@
-import React from 'react';
-import { MessageSquare, Calendar, CornerDownRight, Paperclip, Star } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { MessageSquare, Calendar, CornerDownRight, Paperclip, Star, GripVertical } from 'lucide-react';
 import { Avatar } from './cells/PeopleCell';
+import { StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import { findLabel, resolveOptions } from '../lib/columnTypes';
+import { boardColor } from '../lib/palette';
+import { tr, appLocale } from '../../../i18n';
 
-// Data ISO (yyyy-mm-dd) → dd.mm.yyyy (spójnie z tabelą).
-const fmtD = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('.') : '');
+// Data ISO (yyyy-mm-dd) → „12 paź” w języku aplikacji (rok tylko, gdy inny niż bieżący).
+function fmtD(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || ''));
+  if (!m) return '';
+  const date = new Date(+m[1], +m[2] - 1, +m[3]);
+  const opts = { day: 'numeric', month: 'short', ...(date.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) };
+  try { return date.toLocaleDateString(appLocale(), opts); } catch { return `${m[3]}.${m[2]}.${m[1]}`; }
+}
 
-// Karta elementu (Kanban / Kalendarz) — pokazuje kluczowe informacje bez otwierania modala.
-export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subCount = 0, dragHandleProps }) {
+// Karta zadania (Kanban) — kluczowe informacje bez otwierania okna. Cała karta klikalna przez
+// „rozciągnięty” <button> z nazwą (Tab + Enter/Spacja działają), uchwyt przeciągania leży nad nim.
+export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subCount = 0, dragHandleProps, people: directory }) {
   const statusCols = columns.filter(c => c.type === 'status');
   const priorityCols = columns.filter(c => c.type === 'priority');
   const peopleCol = columns.find(c => c.type === 'people');
@@ -19,7 +29,10 @@ export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subC
   const progressCol = columns.find(c => c.type === 'progress');
   const filesCol = columns.find(c => c.type === 'files');
 
-  const people = peopleCol ? (item.cells?.[peopleCol.id] || []) : [];
+  // Zdjęcia z katalogu osób (aktualne), a nie z chwili przypisania zapisanej w komórce.
+  const byEmail = useMemo(() => new Map((directory || []).map(p => [String(p.email || '').toLowerCase(), p])), [directory]);
+  const people = (peopleCol ? (item.cells?.[peopleCol.id] || []) : [])
+    .map(p => ({ ...p, avatar_url: byEmail.get(String(p.email || '').toLowerCase())?.avatar_url || p.avatar_url }));
   const dateVal = dateCol ? item.cells?.[dateCol.id] : null;
   const tl = timelineCol ? item.cells?.[timelineCol.id] : null;
   const tags = dropdownCol ? resolveOptions(dropdownCol, item.cells?.[dropdownCol.id]) : [];
@@ -37,13 +50,25 @@ export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subC
     ...statusCols.map(c => findLabel(c, item.cells?.[c.id])).filter(Boolean),
   ];
   const hasFooter = dateLabel || updatesCount > 0 || subCount > 0 || filesCount > 0 || people.length > 0;
+  const name = item.name || tr('Bez nazwy');
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition cursor-pointer"
-      onClick={() => onOpen?.(item)}>
-      <div className="flex items-start gap-2">
-        {dragHandleProps && <div {...dragHandleProps} className="mt-0.5" />}
-        <p className="flex-1 text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-2 leading-snug">{item.name || 'Bez nazwy'}</p>
+    <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition focus-within:ring-2 focus-within:ring-accent-primary/40">
+      <div className="flex items-start gap-1.5">
+        {dragHandleProps && (
+          <span {...dragHandleProps} aria-label={tr('Przenieś: {name}', { name })}
+            className="relative z-10 -ml-1 mt-0.5 p-0.5 rounded cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 touch-none outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50">
+            <GripVertical size={14} aria-hidden="true" />
+          </span>
+        )}
+        {onOpen ? (
+          <button type="button" onClick={() => onOpen(item)}
+            className={`flex-1 min-w-0 text-left text-sm font-semibold line-clamp-2 leading-snug outline-none after:absolute after:inset-0 after:rounded-xl after:content-[''] ${item.name ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>
+            {name}
+          </button>
+        ) : (
+          <p className={`flex-1 min-w-0 text-sm font-semibold line-clamp-2 leading-snug ${item.name ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>{name}</p>
+        )}
       </div>
 
       {item.description && (
@@ -52,16 +77,8 @@ export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subC
 
       {(pills.length > 0 || tags.length > 0) && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {pills.map((l, i) => (
-            <span key={i} className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md font-semibold" style={{ backgroundColor: `${l.color}22`, color: l.color }}>
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: l.color }} />{l.title}
-            </span>
-          ))}
-          {tags.map(o => (
-            <span key={o.id} className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md font-medium" style={{ backgroundColor: `${o.color}22`, color: o.color }}>
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: o.color }} />{o.title}
-            </span>
-          ))}
+          {pills.map((l, i) => <StatusPill key={`${l.id || i}`} color={boardColor(l.color)} className="max-w-full truncate">{l.title}</StatusPill>)}
+          {tags.map(o => <StatusPill key={o.id} color={boardColor(o.color)} className="max-w-full truncate">{o.title}</StatusPill>)}
         </div>
       )}
 
@@ -74,8 +91,8 @@ export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subC
             </span>
           ))}
           {rating > 0 && (
-            <span className="inline-flex items-center gap-0.5 text-yellow-500">
-              <Star size={12} className="fill-yellow-400 text-yellow-400" /> {rating}
+            <span className="inline-flex items-center gap-0.5 text-gray-600 dark:text-gray-300" aria-label={tr('Ocena: {n}', { n: rating })}>
+              <Star size={12} className="fill-accent-primary-light text-accent-primary-light" aria-hidden="true" /> {rating}
             </span>
           )}
         </div>
@@ -83,25 +100,25 @@ export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subC
 
       {progress != null && progress > 0 && (
         <div className="flex items-center gap-1.5 mt-2">
-          <div className="flex-1 h-1.5 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden">
-            <div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: progress >= 100 ? '#00c875' : progress >= 50 ? '#fdab3d' : '#579bfc' }} />
+          <div className="flex-1 h-1.5 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+            <div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: progress >= 100 ? STATUS_COLORS.success : STATUS_COLORS.accent }} />
           </div>
-          <span className="text-[10px] text-gray-400 w-7 text-right">{progress}%</span>
+          <span className="text-[10px] text-gray-400 w-7 text-right tabular-nums">{progress}%</span>
         </div>
       )}
 
       {hasFooter && (
         <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-700/60">
-          <div className="flex items-center gap-2.5 text-[11px] text-gray-400 min-w-0">
-            {dateLabel && <span className="inline-flex items-center gap-1 truncate"><Calendar size={12} /> {dateLabel}</span>}
-            {subCount > 0 && <span className="inline-flex items-center gap-0.5"><CornerDownRight size={12} /> {subCount}</span>}
-            {updatesCount > 0 && <span className="inline-flex items-center gap-0.5"><MessageSquare size={12} /> {updatesCount}</span>}
-            {filesCount > 0 && <span className="inline-flex items-center gap-0.5"><Paperclip size={12} /> {filesCount}</span>}
+          <div className="flex items-center gap-2.5 text-[11px] text-gray-500 dark:text-gray-400 min-w-0">
+            {dateLabel && <span className="inline-flex items-center gap-1 truncate"><Calendar size={12} aria-hidden="true" /> {dateLabel}</span>}
+            {subCount > 0 && <span className="inline-flex items-center gap-0.5" title={tr('Podzadania')}><CornerDownRight size={12} aria-hidden="true" /> {subCount}</span>}
+            {updatesCount > 0 && <span className="inline-flex items-center gap-0.5" title={tr('Komentarze')}><MessageSquare size={12} aria-hidden="true" /> {updatesCount}</span>}
+            {filesCount > 0 && <span className="inline-flex items-center gap-0.5" title={tr('Pliki')}><Paperclip size={12} aria-hidden="true" /> {filesCount}</span>}
           </div>
           {people.length > 0 && (
             <div className="flex -space-x-2 shrink-0">
               {people.slice(0, 3).map(p => <Avatar key={p.email} person={p} size={22} />)}
-              {people.length > 3 && <div className="w-[22px] h-[22px] rounded-full bg-gray-200 dark:bg-gray-600 text-[9px] flex items-center justify-center ring-2 ring-white dark:ring-gray-800">+{people.length - 3}</div>}
+              {people.length > 3 && <div className="w-[22px] h-[22px] rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-200 text-[9px] font-semibold flex items-center justify-center ring-2 ring-white dark:ring-gray-800">+{people.length - 3}</div>}
             </div>
           )}
         </div>

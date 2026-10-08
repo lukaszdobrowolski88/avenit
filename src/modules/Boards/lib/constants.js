@@ -1,43 +1,29 @@
 // Stałe i palety kolorów dla modułu Tablice (Work OS w stylu Monday.com)
 
-// Paleta kolorów statusów/etykiet (zbliżona do Monday)
-export const STATUS_COLORS = [
-  '#00c875', // zielony
-  '#fdab3d', // pomarańczowy
-  '#e2445c', // czerwony
-  '#579bfc', // niebieski
-  '#a25ddc', // fioletowy
-  '#0086c0', // ciemnoniebieski
-  '#ff5ac4', // różowy
-  '#ff642e', // ceglasty
-  '#9cd326', // limonkowy
-  '#66ccff', // błękitny
-  '#784bd1', // indygo
-  '#037f4c', // ciemnozielony
-  '#333333', // grafitowy
-  '#c4c4c4', // szary
-];
+// Palety kolorów = paleta aplikacji (sukces/ostrzeżenie/błąd/info/musztarda/neutralny), nie Monday —
+// tablice mają wyglądać jak reszta aplikacji. Stare kolory z bazy mapuje lib/palette.js (boardColor).
+import { LABEL_COLORS, GROUP_PALETTE } from './palette';
+import { STATUS_COLORS as APP } from '../../../components/ui/DataTable';
+
+export const STATUS_COLORS = LABEL_COLORS;
 
 // Kolory grup
-export const GROUP_COLORS = [
-  '#579bfc', '#00c875', '#a25ddc', '#e2445c', '#fdab3d',
-  '#ff5ac4', '#0086c0', '#9cd326', '#784bd1', '#ff642e',
-];
+export const GROUP_COLORS = GROUP_PALETTE;
 
 // Domyślne etykiety kolumny Status
 export const DEFAULT_STATUS_LABELS = [
-  { id: 'todo', title: 'Do zrobienia', color: '#c4c4c4' },
-  { id: 'working', title: 'W trakcie', color: '#fdab3d' },
-  { id: 'stuck', title: 'Zablokowane', color: '#e2445c' },
-  { id: 'done', title: 'Gotowe', color: '#00c875' },
+  { id: 'todo', title: 'Do zrobienia', color: APP.neutral },
+  { id: 'working', title: 'W trakcie', color: APP.warning },
+  { id: 'stuck', title: 'Zablokowane', color: APP.danger },
+  { id: 'done', title: 'Gotowe', color: APP.success },
 ];
 
 // Domyślne etykiety kolumny Priorytet
 export const DEFAULT_PRIORITY_LABELS = [
-  { id: 'low', title: 'Niski', color: '#579bfc' },
-  { id: 'medium', title: 'Średni', color: '#5559df' },
-  { id: 'high', title: 'Wysoki', color: '#401694' },
-  { id: 'critical', title: 'Pilne', color: '#e2445c' },
+  { id: 'low', title: 'Niski', color: APP.neutral },
+  { id: 'medium', title: 'Średni', color: APP.info },
+  { id: 'high', title: 'Wysoki', color: APP.warning },
+  { id: 'critical', title: 'Pilne', color: APP.danger },
 ];
 
 // Nowy identyfikator (bez zależności od Date.now w środowiskach, ale tu w UI jest OK)

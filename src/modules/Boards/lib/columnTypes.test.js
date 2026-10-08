@@ -25,7 +25,7 @@ describe('cellToText', () => {
   });
 
   it('timeline/link nie crashują i formatują poprawnie', () => {
-    expect(cellToText(timeline, { start: '2026-01-01', end: '2026-01-05' })).toBe('2026-01-01 → 2026-01-05');
+    expect(cellToText(timeline, { start: '2026-01-01', end: '2026-01-05' })).toBe('01.01 – 05.01.2026');
     expect(cellToText(link, { text: 'Avenit', url: 'https://x' })).toBe('Avenit');
   });
 
