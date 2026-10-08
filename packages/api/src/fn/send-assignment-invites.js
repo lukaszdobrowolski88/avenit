@@ -6,12 +6,13 @@
 // - stempluje email_sent_at DOPIERO po realnej wysyłce maila (nie przy błędzie/braku
 //   konfiguracji) — dzięki temu nieudaną wysyłkę można ponowić,
 // - push idzie niezależnie od maila (best-effort) — na adres z grafiku ORAZ na konta aplikacji
-//   powiązane z tą samą kartoteką członka (ktoś mógł się zalogować innym adresem).
+//   powiązane z tą osobą (ktoś mógł się zalogować innym adresem — lib/assigneeIdentity.js).
 // Wysyłka przez wspólny helper lib/email.js (Resend → SendGrid → SMTP).
 import crypto from 'node:crypto';
 import { config } from '../config.js';
 import { sendEmail } from '../lib/email.js';
 import { sendPushCore } from './send-push.js';
+import { accountEmailsForAssignee } from '../lib/assigneeIdentity.js';
 
 export const name = 'send-assignment-invites';
 
@@ -22,11 +23,6 @@ const ROLE_NAMES = {
   projekcja: 'Projekcja', transmisja: 'Transmisja', foto: 'Fotograf', video: 'Wideo',
 };
 const roleName = (key, fallbackLabel) => fallbackLabel || ROLE_NAMES[key] || key;
-const MEMBER_TABLE = {
-  worship: 'worship_team', media: 'media_team', atmosfera: 'atmosfera_members',
-  kids: 'kids_teachers', mc: 'custom_mc_members',
-};
-const KEY_RE = /^[a-z0-9_]+$/;
 // Nazwy osób, ról i tytuły wydarzeń wpisują użytkownicy — w HTML maila zawsze escapowane.
 export const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -158,34 +154,10 @@ async function senderName(db, user) {
   }
 }
 
-// Adresy kont, na które wysłać push: adres z grafiku + konta aplikacji powiązane (app_users.member_id)
-// z kartoteką członka o tym adresie albo z osobą służby (tabela zespołu → member_id). Bez dopasowania
-// po imieniu — zaproszenie nie może trafić do imiennika.
-async function pushRecipients(db, email, teamType) {
-  const out = new Set([String(email).toLowerCase()]);
-  const add = (rows) => rows.forEach((r) => { if (r.email) out.add(String(r.email).toLowerCase()); });
-  try {
-    const { rows } = await db.query(
-      `SELECT DISTINCT lower(u.email) AS email
-         FROM app_users u JOIN members m ON u.member_id::text = m.id::text
-        WHERE u.email IS NOT NULL AND lower(m.email) = lower($1)`,
-      [email]
-    );
-    add(rows);
-  } catch { /* tenant bez app_users.member_id */ }
-  if (teamType && KEY_RE.test(teamType)) {
-    const table = MEMBER_TABLE[teamType] || `custom_${teamType}_members`;
-    try {
-      const { rows } = await db.query(
-        `SELECT DISTINCT lower(u.email) AS email
-           FROM "${table}" t JOIN app_users u ON u.member_id::text = t.member_id::text
-          WHERE u.email IS NOT NULL AND t.member_id IS NOT NULL AND lower(t.email) = lower($1)`,
-        [email]
-      );
-      add(rows);
-    } catch { /* tabela zespołu bez member_id */ }
-  }
-  return [...out];
+// Adresy kont, na które wysłać push: adres z grafiku + konta powiązane z tą osobą
+// (wspólna reguła z odpowiedzią z aplikacji — lib/assigneeIdentity.js).
+export async function pushRecipients(db, email, teamType, name) {
+  return accountEmailsForAssignee(db, { email, name, teamType });
 }
 
 const shortTime = (t) => (t ? String(t).slice(0, 5) : '');
@@ -317,7 +289,7 @@ export default async function handler(req, reply) {
           data: { type: 'assignment', assignmentId: single?.id ?? null, event_id: eventId ?? null, program_id: eventId ? null : programId ?? null },
         };
         let reached = false;
-        for (const userEmail of await pushRecipients(req.db, person.email, teamType)) {
+        for (const userEmail of await pushRecipients(req.db, person.email, teamType, person.name)) {
           const res = await sendPushCore(req.db, { ...payload, user_email: userEmail });
           if (res?.body?.sent > 0) reached = true;
         }
