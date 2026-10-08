@@ -27,6 +27,9 @@ import { confirmDialog } from '../lib/dialog';
 import { ChoiceList, ChoiceRow } from '../components/ChoiceList';
 import * as LucideIcons from 'lucide-react';
 import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
+import {
+  boardItemToTask, loadCalendarTaskBoard, loadMyAssignedItems, saveCalendarTask, deleteCalendarTask, isAccessError,
+} from './Boards/lib/calendarTasks';
 
 // --- POMOCNICZE (czyste funkcje — testy w CalendarModule.test.js) ---
 
@@ -95,11 +98,13 @@ const MODULE_TEAM = {
 };
 const isModuleKey = (k) => k && k !== 'general' && k !== 'program';
 
-// Jedna lista wpisów kalendarza z trzech źródeł. Klucze z prefiksem (ev_/prog_/task_) —
+// Jedna lista wpisów kalendarza z czterech źródeł. Klucze z prefiksem (ev_/prog_/task_/bi_) —
 // id programu i wydarzenia mogą być równe, a React gubił wtedy wpisy (zdublowany klucz).
 // Program podpięty do wydarzenia (events.program_id) nie jest osobnym wpisem — to plan tego
 // wydarzenia (wcześniej ta sama niedziela była w kalendarzu dwa razy).
-export function buildCalendarEntries({ programs = [], events = [], tasks = [] } = {}) {
+// tasks: zadania kalendarza (elementy tablicy „Zadania”, boardItemToTask); boardItems: elementy
+// innych tablic przypisane do mnie (fn my-board-items) — tylko do podglądu, klik → element.
+export function buildCalendarEntries({ programs = [], events = [], tasks = [], boardItems = [] } = {}) {
   const all = [];
   const linked = new Set((events || []).map((e) => e?.program_id).filter((v) => v != null).map(String));
 
@@ -135,6 +140,21 @@ export function buildCalendarEntries({ programs = [], events = [], tasks = [] } 
       status: t.status,
       // „Surowa” data i godzina lokalna do edycji (ModalAddTask).
       raw: { ...t, due_date: when.ymd, due_time: when.time, end_time: hhmm(t.end_time) },
+    });
+  });
+
+  (boardItems || []).forEach((it) => {
+    const date = localDateTime(it?.date);
+    if (!date) return;
+    all.push({
+      id: `bi_${it.id}`,
+      type: 'board_item',
+      // Tablica służby → kolor/filtr tej służby; Projekty → poza filtrami (zawsze widoczne).
+      team: MODULE_TEAM[it.module_key]?.team || 'boards',
+      title: it.name || tr('Zadanie'),
+      date,
+      status: it.status?.title || '',
+      raw: { id: it.id, title: it.name || '', description: it.board_name || '', due_time: '', end_time: '', link: it.link, board_name: it.board_name },
     });
   });
 
@@ -263,8 +283,26 @@ export const ModalSelectEventCategory = ({ date, ministries, onClose, onSelectCa
 
 // --- TASK MODAL ---
 
-const ModalAddTask = ({ initialTask, teamOptions, onClose, onSave, onDelete }) => {
+// Zadanie kalendarza = element tablicy „Zadania” — osoba przypisana trafia do kolumny „Osoby”.
+// Kilka osób (przypisanych w tablicy) pokazujemy jako jedną opcję; bez zmiany wyboru zostają wszyscy.
+const MANY = '__many__';
+function assigneeOptions(people, current, t) {
+  const opts = [{ value: '', label: t('Nie przypisano') }];
+  if (current.length > 1) opts.push({ value: MANY, label: current.map((p) => p.name || p.email).join(', ') });
+  const seen = new Set();
+  for (const p of [...current, ...(people || [])]) {
+    const key = String(p?.email || '').toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    opts.push({ value: p.email, label: p.name || p.email });
+  }
+  return opts;
+}
+
+const ModalAddTask = ({ initialTask, teamOptions, people = [], onClose, onSave, onDelete }) => {
   const t = useT();
+  const currentPeople = Array.isArray(initialTask?.people) ? initialTask.people : [];
+  const [assignee, setAssignee] = useState(() => (currentPeople.length > 1 ? MANY : (currentPeople[0]?.email || '')));
   const [task, setTask] = useState(() => ({
     title: '',
     description: '',
@@ -309,6 +347,14 @@ const ModalAddTask = ({ initialTask, teamOptions, onClose, onSave, onDelete }) =
         location: task.location || '',
         status: task.status || 'Do zrobienia'
     };
+    // Osoba: zapisujemy tylko zmieniony wybór (inaczej przypisania z tablicy zostają bez zmian).
+    const initialAssignee = currentPeople.length > 1 ? MANY : (currentPeople[0]?.email || '');
+    if (assignee !== initialAssignee && assignee !== MANY) {
+      const pool = [...currentPeople, ...people];
+      const p = assignee ? pool.find((x) => x.email === assignee) : null;
+      payload.assignee_touched = true;
+      payload.assignee = p ? { email: p.email, name: p.name || p.email, avatar_url: p.avatar_url || null } : null;
+    }
 
     if (task.id) payload.id = task.id;
 
@@ -351,6 +397,11 @@ const ModalAddTask = ({ initialTask, teamOptions, onClose, onSave, onDelete }) =
              <FieldError>{errors.end_time}</FieldError>
            </div>
         </div>
+        <div>
+          <label id="cal-task-assignee" className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Przypisana osoba')}</label>
+          <CustomSelect aria-labelledby="cal-task-assignee" value={assignee} onChange={(v) => setAssignee(v ?? '')}
+            options={assigneeOptions(people, currentPeople, t)} placeholder={t('Wybierz osobę...')} />
+        </div>
         <div><label htmlFor="cal-task-desc" className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Opis')}</label><textarea id="cal-task-desc" className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none" value={task.description || ''} onChange={e => setTask({...task, description: e.target.value})} placeholder={t('Szczegóły zadania...')} /></div>
       </div>
     </Modal>
@@ -358,8 +409,10 @@ const ModalAddTask = ({ initialTask, teamOptions, onClose, onSave, onDelete }) =
 };
 
 const EventBadge = ({ event, onClick }) => {
-  const teamConfig = TEAMS[event.team] || TEAMS.media;
+  // Zadanie z tablicy Projektów (poza kalendarzami służb) — neutralny chip.
+  const teamConfig = TEAMS[event.team] || (event.type === 'board_item' ? { color: 'gray' } : TEAMS.media);
   const colors = {
+    gray: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700",
     blue: "bg-blue-100 text-blue-700 border-blue-200",
     orange: "bg-accent-secondary-lighter text-accent-secondary border-accent-secondary-lighter",
     pink: "bg-accent-primary-lighter text-accent-primary border-accent-primary-lighter",
@@ -465,24 +518,59 @@ export default function CalendarModule({ embedded = false } = {}) {
       fetchEvents();
   }, [currentDate.getMonth(), selectedCampusId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Zadania kalendarza = elementy tablicy „Zadania” (dawna tabela `tasks` przeniesiona raz przez
+  // serwer). Ref, bo potrzebny tylko przy zapisie/usuwaniu — bez dodatkowych przerysowań.
+  const taskBoardRef = useRef(null); // { board, columns, items, groupId } | null
+  const [taskPeople, setTaskPeople] = useState([]); // lista osób do „Przypisana osoba” w oknie zadania
+  const meRef = useRef({ email: null, name: null });
+
   const fetchEvents = async () => {
-    const [progRes, taskRes, evRes] = await Promise.all([
+    const [progRes, evRes, taskRes, assigned] = await Promise.all([
       withCampusFilter(supabase.from('programs').select('id, title, date, campus_id, type_id')),
-      supabase.from('tasks').select('*'),
       withCampusFilter(supabase.from('events').select('id, title, module_key, event_type, date, time, end_time, location, description, program_id, campus_id, is_archived')),
+      loadCalendarTaskBoard().then((board) => ({ board }), (error) => ({ error })),
+      loadMyAssignedItems(),
     ]);
-    if (progRes.error || taskRes.error || evRes.error) {
-      toast.error(progRes.error || taskRes.error || evRes.error, { fallback: tr('Nie udało się wczytać całego kalendarza. Odśwież stronę.') });
+    const taskBoard = taskRes.board || null;
+    taskBoardRef.current = taskBoard;
+    const taskErr = taskRes.error && !isAccessError(taskRes.error) ? taskRes.error : null;
+    if (progRes.error || taskErr || evRes.error) {
+      toast.error(progRes.error || taskErr || evRes.error, { fallback: tr('Nie udało się wczytać całego kalendarza. Odśwież stronę.') });
     }
-    setEvents(buildCalendarEntries({ programs: progRes.data || [], events: evRes.data || [], tasks: taskRes.data || [] }));
+    const tasks = taskBoard ? taskBoard.items.map((it) => boardItemToTask(it, taskBoard.columns)) : [];
+    // Zadania tablicy kalendarza są już wyżej (edytowalne) — bez dubli z „przypisanych mi”.
+    const boardItems = (assigned || []).filter((it) => !taskBoard || String(it.board_id) !== String(taskBoard.board.id));
+    setEvents(buildCalendarEntries({ programs: progRes.data || [], events: evRes.data || [], tasks, boardItems }));
   };
+
+  // Osoby do wyboru w oknie zadania (jak picker „Osoby” w tablicy: aktywne konta) + ja (dziennik).
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data: { user } = {} } = await supabase.auth.getUser();
+        if (user?.email) meRef.current = { email: user.email, name: null };
+        const { data } = await supabase.from('app_users').select('email, full_name, name, avatar_url').eq('is_active', true).order('full_name');
+        if (!alive) return;
+        const list = (data || []).filter((u) => u.email).map((u) => ({ email: u.email, name: u.full_name || u.name || u.email, avatar_url: u.avatar_url || null }));
+        setTaskPeople(list);
+        const mine = list.find((p) => p.email === meRef.current.email);
+        if (mine) meRef.current = { email: mine.email, name: mine.name };
+      } catch { /* bez listy — wybór osoby pusty, reszta działa */ }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   // Zapis zadania — zwraca true/false, modal zamyka się tylko po sukcesie.
   const handleSaveTask = async (taskData) => {
-      const { id, ...row } = taskData;
-      const { error } = id
-        ? await supabase.from('tasks').update(row).eq('id', id)
-        : await supabase.from('tasks').insert([row]);
+      const id = taskData.id;
+      let board = taskBoardRef.current;
+      if (!board) {
+        try { board = await loadCalendarTaskBoard(); taskBoardRef.current = board; } catch { board = null; }
+      }
+      const { error } = board
+        ? await saveCalendarTask(board, taskData, { userEmail: meRef.current.email, userName: meRef.current.name })
+        : { error: { message: tr('Nie udało się zapisać zadania. Spróbuj ponownie.') } };
       if (error) {
           toast.error(error, { fallback: tr('Nie udało się zapisać zadania. Spróbuj ponownie.') });
           return false;
@@ -499,7 +587,7 @@ export default function CalendarModule({ embedded = false } = {}) {
         isDelete: true,
       });
       if (!ok) return;
-      const { error } = await supabase.from('tasks').delete().eq('id', task.id);
+      const { error } = await deleteCalendarTask(task.id);
       if (error) {
         toast.error(error, { fallback: tr('Nie udało się usunąć zadania.') });
         return;
@@ -556,9 +644,11 @@ export default function CalendarModule({ embedded = false } = {}) {
   };
 
   // Klik w kalendarzu: wydarzenie → jego strona (jeden edytor zamiast starego modala),
-  // program bez wydarzenia → edytor programu, zadanie → okno zadania.
+  // program bez wydarzenia → edytor programu, zadanie → okno zadania, zadanie z innej tablicy →
+  // ten element (moduł z ?item=… albo Projekty).
   const handleEventClick = (ev) => {
     if (ev.type === 'task') { setModals((m) => ({ ...m, addTask: ev.raw })); return; }
+    if (ev.type === 'board_item') { if (ev.raw?.link) navigate(ev.raw.link); return; }
     if (ev.type === 'program') { navigate(`/programs/${ev.raw.id}`); return; }
     navigate(`/wydarzenie/${ev.raw.id}`);
   };
@@ -1530,6 +1620,7 @@ export default function CalendarModule({ embedded = false } = {}) {
         <ModalAddTask
           initialTask={modals.addTask}
           teamOptions={taskTeamOptions}
+          people={taskPeople}
           onClose={() => setModals((m) => ({ ...m, addTask: null }))}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}

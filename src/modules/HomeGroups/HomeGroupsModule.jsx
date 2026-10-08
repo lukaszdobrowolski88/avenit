@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import Button from '../../components/Button';
 import { supabase } from '../../lib/supabase';
 import CustomSelect from '../../components/CustomSelect';
@@ -50,6 +50,8 @@ export default function HomeGroupsModule() {
   const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState(() => (hasItemDeepLink() ? 'tasks' : 'groups'));
+  const { search: locationSearch } = useLocation();
+  useEffect(() => { if (hasItemDeepLink()) setActiveTab('tasks'); }, [locationSearch]); // link z powiadomienia na tej samej stronie
   const [groups, setGroups] = useState([]);
   const [leaders, setLeaders] = useState([]);
   const [members, setMembers] = useState([]);

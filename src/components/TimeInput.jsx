@@ -90,7 +90,7 @@ export default function TimeInput({ value = '', onChange, className = '', placeh
         if (e.target.tagName === 'INPUT') setOpen(true);
         else { e.preventDefault(); setOpen((o) => !o); }
       }}
-      className={`ui-field inline-flex items-center gap-1 cursor-pointer ${disabled ? 'opacity-50 pointer-events-none' : ''} ${open ? 'border-accent-primary-light' : ''} ${className}`}
+      className={`ui-field inline-flex items-center gap-1 cursor-pointer ${disabled ? 'opacity-50 pointer-events-none' : ''} ${open ? 'ui-field--open' : ''} ${className}`}
     >
       <Clock size={compact ? 14 : 16} className="text-gray-400 mr-1 shrink-0" aria-hidden="true" />
       <input ref={hhRef} id={id} inputMode="numeric" value={hhRaw} onChange={onHour} onBlur={normalize} disabled={disabled}

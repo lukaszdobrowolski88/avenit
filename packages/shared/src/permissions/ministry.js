@@ -7,6 +7,8 @@
 //    Dzięki temu włączenie modelu nikomu nie zabiera uprawnień (zasada „najpierw luźniej”).
 //  • „służba” = moduł (app_modules.key / team_type). Leader = pełny zakres modułu
 //    (z usuwaniem i akcjami), member = współpraca (odczyt/tworzenie/edycja, bez usuwania).
+//  • Zasoby modułu (media_events, media_tasks…) znaczą też „wycinek wspólnej tabeli tej
+//    służby” — wydarzenia (events.module_key), grafik i tablice zadań modułu (moduleScope.js).
 //  • Kampus NIE jest tu uwzględniany — to osobny wymiar egzekwowany po stronie serwera
 //    w późniejszym, ostrożnym etapie (twarda izolacja kampusów). W Fazie 1 przynależność
 //    oznacza dostęp do danej służby.
@@ -18,6 +20,7 @@ for (const m of MODULES) MODULE_BY_KEY[m.key] = m;
 // Zasoby modułu własnego (kreator) — spójne z CUSTOM_MODULE_RESOURCES w catalog.js
 // i CUSTOM_TABLE_SUFFIXES w registry.js (enforcement res:custom_<key>_<suffix>:<op>).
 export const CUSTOM_MINISTRY_SUFFIXES = ['members', 'tasks', 'task_comments', 'wall', 'events', 'records'];
+export const LEADER_SCHEDULE_ACTION = 'action:programs:send_assignment';
 
 // Capability wynikające z jednej przynależności (klucz służby + rola).
 export function membershipCapabilities(ministryKey, role) {
@@ -30,6 +33,9 @@ export function membershipCapabilities(ministryKey, role) {
   for (const r of resources) for (const op of ops) caps.push(`res:${r}:${op}`);
   // Akcje modułu (wyślij/eksport/…) tylko dla lidera służby.
   if (isLeader && mod) for (const a of mod.actions || []) caps.push(`action:${ministryKey}:${a.key}`);
+  // Lider układa grafik swojej służby (wydarzenia i tablice — moduleScope.js) i wysyła z niego
+  // zaproszenia: fn send-assignment-invites wymaga action:programs:send_assignment.
+  if (isLeader) caps.push(LEADER_SCHEDULE_ACTION);
   return caps;
 }
 

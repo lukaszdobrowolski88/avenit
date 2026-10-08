@@ -2,16 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, Send } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import BoardCell from '../components/BoardCell';
-import ColumnIcon from '../components/ColumnIcon';
+import FormField, { FormFieldLabel, FORM_LABEL, FORM_INPUT } from '../components/FormField';
 import Button from '../../../components/Button';
 import Spinner from '../../../components/Spinner';
-import { getColumnType, defaultCellValue } from '../lib/columnTypes';
 import { tr } from '../../../i18n';
 
-const LABEL = 'block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1';
-const INPUT = 'w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm';
-const FIELD = 'ui-field min-h-[42px] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-stretch overflow-hidden';
+const LABEL = FORM_LABEL;
+const INPUT = FORM_INPUT;
 
 // Publiczna, anonimowa strona formularza tablicy (odpowiednik form.monday.com).
 // Renderowana bez logowania; dane przez publiczne fn (board-form-get/submit).
@@ -93,7 +90,7 @@ export default function PublicBoardForm() {
               </div>
             )}
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-5">
               <div>
                 <label htmlFor="pbf-name" className={LABEL}>{tr('Nazwa / temat')} <span className="text-red-600" aria-hidden="true">*</span></label>
                 <input id="pbf-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('Wpisz tytuł zgłoszenia')}
@@ -108,19 +105,12 @@ export default function PublicBoardForm() {
                 </div>
               )}
 
-              {columns.map(col => {
-                const t = getColumnType(col.type);
-                return (
-                  <div key={col.id}>
-                    <span className={`${LABEL} flex items-center gap-1.5`}>
-                      <ColumnIcon name={t.icon} size={12} className="text-gray-400" /> {col.name}
-                    </span>
-                    <div className={`${FIELD} group/row`}>
-                      <BoardCell column={col} value={cells[col.id] ?? defaultCellValue(col)} people={[]} onChange={(v) => setCell(col.id, v)} />
-                    </div>
-                  </div>
-                );
-              })}
+              {columns.map(col => (
+                <div key={col.id}>
+                  <FormFieldLabel column={col} id={`pbf-${col.id}`} />
+                  <FormField column={col} id={`pbf-${col.id}`} value={cells[col.id]} onChange={(v) => setCell(col.id, v)} />
+                </div>
+              ))}
             </div>
 
             <Button size="lg" icon={Send} onClick={submit} loading={busy} disabled={!name.trim()} className="mt-7 w-full">

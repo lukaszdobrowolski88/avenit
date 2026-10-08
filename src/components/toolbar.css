@@ -14,7 +14,8 @@ html.dark .tool-btn, html.dark .seg-bar { --tool-bg: rgba(255, 255, 255, 0.07); 
 }
 html.dark .tool-btn { color: rgb(var(--gray-200)); }
 .tool-btn:hover { background: var(--tool-hover); }
-.tool-btn:focus-visible, .seg-btn:focus-visible { outline: none !important; box-shadow: 0 0 0 2px rgb(var(--accent-primary-light)); }
+.tool-btn:focus-visible, .seg-btn:focus-visible, .icon-btn:focus-visible { outline: none !important; box-shadow: 0 0 0 2px #2A2312; }
+html.dark .tool-btn:focus-visible, html.dark .seg-btn:focus-visible, html.dark .icon-btn:focus-visible { box-shadow: 0 0 0 2px #FFBE0B; }
 .seg-bar { display: inline-flex; align-items: center; gap: 2px; padding: 3px; }
 .seg-btn {
   display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 9999px;
@@ -37,8 +38,22 @@ html body .tool-search > input.tool-search-input {
   background: rgba(42, 35, 18, 0.055) !important; border: 0 !important; box-shadow: none !important; outline: none; color: rgb(var(--gray-800));
 }
 html.dark body .tool-search > input.tool-search-input { background: rgba(255, 255, 255, 0.07) !important; color: rgb(var(--gray-100)); }
-html body .tool-search > input.tool-search-input:focus { box-shadow: 0 0 0 2px rgb(var(--accent-primary-light)) !important; }
+html body .tool-search > input.tool-search-input:focus { background: rgba(42, 35, 18, 0.08) !important; box-shadow: 0 0 0 3px rgba(42, 35, 18, 0.07) !important; }
+html.dark body .tool-search > input.tool-search-input:focus { background: rgba(255, 255, 255, 0.1) !important; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06) !important; }
 /* Główna akcja w pasku (np. „Dodaj zadanie”) — kurkuma marki, ta sama wysokość co reszta paska. */
 .tool-btn--primary { background: rgb(var(--accent-primary-light)); color: rgb(var(--accent-primary-darkest)); font-weight: 700; }
 .tool-btn--primary:hover { background: rgb(var(--accent-primary-light)); filter: brightness(0.96); }
 html.dark .tool-btn--primary { background: rgb(var(--accent-primary-light)); color: #1a160c; }
+
+/* Przycisk-ikona bez tła (nagłówki okien, akcje w panelu): okrągły, tło dopiero po najechaniu. */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 9999px; background: transparent; cursor: pointer;
+  color: rgb(var(--gray-600)); transition: background-color .12s, color .12s;
+}
+html.dark .icon-btn { color: rgb(var(--gray-300)); }
+.icon-btn:hover, .icon-btn[aria-expanded="true"] { background: rgba(42, 35, 18, 0.07); color: rgb(var(--gray-900)); }
+html.dark .icon-btn:hover, html.dark .icon-btn[aria-expanded="true"] { background: rgba(255, 255, 255, 0.1); color: #fff; }
+/* Przełącznik widoków przewijany palcem na wąskim ekranie — bez paska przewijania w środku pigułki. */
+.seg-bar { scrollbar-width: none; }
+.seg-bar::-webkit-scrollbar { display: none; }

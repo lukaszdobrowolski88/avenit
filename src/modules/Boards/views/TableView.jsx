@@ -17,6 +17,7 @@ import Popover from '../components/Popover';
 import EmptyState from '../../../components/EmptyState';
 import Button from '../../../components/Button';
 import { StatusPill } from '../../../components/ui/DataTable';
+import TableCards, { useNarrow } from './TableCards';
 import { summarizeColumn } from '../lib/summaries';
 import { applyView } from '../lib/viewData';
 import { resolveDragEnd } from '../lib/dnd';
@@ -26,7 +27,7 @@ import { toast } from '../../../lib/toast';
 import { tr } from '../../../i18n';
 import '../../../components/toolbar.css';
 
-const HANDLE_W = 28;
+const HANDLE_W = 46; // checkbox z odstępem od krawędzi + uchwyt przeciągania
 const NAME_MIN = 260;
 const ADDCOL_W = 44;
 
@@ -89,12 +90,12 @@ const ItemRow = React.memo(function ItemRow({ item, columns, people, me, onCell,
   return (
     <div ref={setNodeRef} style={style} role="row"
       className={`flex items-stretch border-b border-gray-100 dark:border-gray-700/60 hover:bg-gray-50/70 dark:hover:bg-gray-700/30 group/row min-h-[44px] ${isSub ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'bg-white dark:bg-gray-800'}`}>
-      <div className="flex items-center justify-center shrink-0" style={{ width: HANDLE_W }}>
+      <div className="flex items-center gap-0.5 pl-3 shrink-0" style={{ width: HANDLE_W }}>
         {isSub ? null : (
           <>
             <input type="checkbox" checked={!!selected} onChange={() => onToggleSelect(item.id)}
               aria-label={tr('Zaznacz: {name}', { name: label })}
-              className={`w-3.5 h-3.5 rounded accent-accent-primary cursor-pointer ${selected ? '' : 'opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'}`} />
+              className={`ui-check ${selected ? '' : 'opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'}`} />
             {canDrag && (
               <span className="text-gray-300 dark:text-gray-600 cursor-grab active:cursor-grabbing" {...attributes} {...listeners} aria-label={tr('Przeciągnij, by zmienić kolejność')}>
                 <GripVertical size={13} className="opacity-0 group-hover/row:opacity-100" aria-hidden="true" />
@@ -347,6 +348,7 @@ export default function TableView({ data, config = {}, onUpdateConfig, onOpenIte
   const [selected, setSelected] = useState(() => new Set());
   const [expanded, setExpanded] = useState(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const narrow = useNarrow(); // telefon: karty zamiast tabeli przewijanej w bok
 
   // Po dodaniu zadania („Dodaj zadanie” w nagłówku lub w grupie) ustaw kursor w nazwie świeżego
   // wiersza i przewiń do niego — zamiast otwierać pusty panel.
@@ -459,6 +461,10 @@ export default function TableView({ data, config = {}, onUpdateConfig, onOpenIte
             ? <Button variant="secondary" size="sm" onClick={() => onUpdateConfig({ filters: [] })}>{tr('Wyczyść filtry')}</Button>
             : undefined} />
       )}
+      {narrow ? (
+        <TableCards data={data} groups={sortedGroups} visibleItems={visibleItems} allItems={items} onOpenItem={onOpenItem}
+          updatesCountByItem={updatesCountByItem} can={can} terms={terms} />
+      ) : (
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
       {sortedGroups.map(g => (
         <GroupBlock key={g.id} group={g} columns={columns} visibleItems={visibleItems} allItems={items} people={people} me={data.me}
@@ -466,9 +472,10 @@ export default function TableView({ data, config = {}, onUpdateConfig, onOpenIte
           selected={selected} onToggleSelect={toggleSelect} expanded={expanded} onToggleExpand={toggleExpand} terms={terms} />
       ))}
       </DndContext>
+      )}
       {can.addGroups && (
         <button type="button" onClick={() => data.addGroup()}
-          className="flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-full hover:bg-[rgba(42,35,18,0.05)] dark:hover:bg-white/5">
+          className="mt-3 flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-full hover:bg-[rgba(42,35,18,0.05)] dark:hover:bg-white/5">
           <Plus size={16} aria-hidden="true" /> {tr('Dodaj grupę')}
         </button>
       )}

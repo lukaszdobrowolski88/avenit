@@ -7,6 +7,30 @@ const deny = (capability) => ({ capability, allowed: false });
 const FINANCE_RES = ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories'];
 const SETTINGS_RES = ['app_users', 'app_settings', 'app_permissions', 'app_roles', 'app_modules', 'app_module_tabs', 'campuses', 'integration_settings'];
 
+// Usuwanie dla lidera — TYLKO dane służbowe: wydarzenia i grafik, zadania kalendarza, programy,
+// tablice (board_*) oraz zasoby modułów służb (wg katalogu). BEZ finansów, ustawień, członków/
+// opieki i mailingu. Ta sama lista w migracji 091_lider_delete_grants.sql (test spójności).
+export const LIDER_DELETE_RESOURCES = [
+  'events', 'schedule_assignments', 'tasks', 'programs', 'program_songs',
+  'boards', 'board_groups', 'board_columns', 'board_items', 'board_item_updates',
+  'board_item_activity', 'board_views', 'board_automations', 'board_automation_runs', 'board_dashboards',
+  // worship
+  'songs', 'song_attachments', 'worship_events', 'worship_team',
+  // media
+  'media_events', 'media_team', 'equipment', 'media_tasks', 'media_task_comments',
+  // atmosfera
+  'atmosfera_events', 'atmosfera_members',
+  // kids
+  'kids_groups', 'kids_students', 'kids_teachers', 'kids_events', 'checkin_locations',
+  'checkin_sessions', 'checkins', 'kids_parent_notifications',
+  // homegroups
+  'home_groups', 'home_group_leaders', 'home_group_members', 'homegroups_events',
+  'home_group_tasks', 'home_group_task_comments',
+  // mlodziezowka
+  'mlodziezowka_events', 'mlodziezowka_members', 'mlodziezowka_tasks', 'custom_mc_members',
+  'mlodziezowka_leaders', 'mlodziezowka_task_comments',
+];
+
 export const BUILTIN_ROLES = [
   { key: 'superadmin', label: 'Superadmin', description: 'Pełny, nieograniczony dostęp', is_system: true, is_admin: true, display_order: 0 },
   { key: 'rada_starszych', label: 'Rada Starszych', description: 'Pełny dostęp (edytowalny)', is_system: true, is_admin: false, display_order: 1 },
@@ -32,7 +56,7 @@ export const ROLE_PRESETS = {
   ],
 
   // lider: widzi moduły służb, edytuje dane służbowe; bez finansów (zapis),
-  // bez ustawień, bez kampanii, bez usuwania hurtem.
+  // bez ustawień, bez kampanii; usuwa tylko dane służbowe (LIDER_DELETE_RESOURCES).
   lider: [
     allow('module:*'),
     deny('module:settings'), deny('module:mail'), deny('module:mailing'),
@@ -41,6 +65,7 @@ export const ROLE_PRESETS = {
     deny('module:giving'), deny('module:automation'),
     allow('tab:*:*'), deny('tab:*:finances'),
     allow('res:*:read'), allow('res:*:create'), allow('res:*:update'),
+    ...LIDER_DELETE_RESOURCES.map((r) => allow(`res:${r}:delete`)),
     // bez finansów (zapis) i ustawień (zapis)
     ...FINANCE_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),
     ...SETTINGS_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),

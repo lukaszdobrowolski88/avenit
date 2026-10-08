@@ -6,3 +6,7 @@ export {
 } from './catalog.js';
 export { can, makeResolver, fieldDenied } from './resolve.js';
 export { BUILTIN_ROLES, ROLE_PRESETS, presetGrantRows } from './presets.js';
+export {
+  MODULE_SLICES, SCOPED_TABLE_MODULE, isModuleScopedTable, sliceResource, boardModuleKey,
+  globalAllows, moduleScopedAllows, teamAllows, assignmentsPatchAllowed, allowedModules, canModuleScoped,
+} from './moduleScope.js';

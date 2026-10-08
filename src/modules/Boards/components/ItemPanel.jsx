@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, useId } from 'react';
 import {
-  MessageSquare, Activity, Send, Heart, Trash2, AtSign, CornerDownRight, Copy, Plus, Maximize2, ArrowLeft,
+  MessageSquare, Activity, Send, Heart, Trash2, AtSign, CornerDownRight, Copy, Plus, Maximize2, ArrowLeft, X,
 } from 'lucide-react';
 import BoardCell from './BoardCell';
 import ColumnIcon from './ColumnIcon';
@@ -9,12 +9,12 @@ import AddColumnMenu from './AddColumnMenu';
 import { Avatar } from './cells/PeopleCell';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
-import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
 import ActionMenu from '../../../components/ActionMenu';
+import { boardColor } from '../lib/palette';
 import '../../../components/pickList.css';
 import '../../../components/toolbar.css';
-import { getColumnType, findLabel } from '../lib/columnTypes';
+import { getColumnType, findLabel, isCellEmpty } from '../lib/columnTypes';
 import { useItemUpdates } from '../hooks/useItemUpdates';
 import { confirmDialog } from '../../../lib/dialog';
 import { toast } from '../../../lib/toast';
@@ -24,6 +24,10 @@ import { tr, appLocale } from '../../../i18n';
 const SECTION = 'text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2';
 // Komórki tabeli centrują treść (status, data, ocena…); w oknie wartości stoją do lewej.
 const ALIGN_LEFT = '[&_.h-full.justify-center]:justify-start [&_.h-full.justify-end]:justify-start [&_.text-center]:text-left [&_.text-right]:text-left';
+// Puste pole w panelu: wyciszone „Pusto” w spoczynku, edytor po najechaniu / fokusie (jak Notion).
+// Bez typów, których pusty stan i tak coś pokazuje (pole wyboru, ocena, postęp, wyliczane).
+const NO_EMPTY_HINT = new Set(['checkbox', 'rating', 'progress', 'formula', 'mirror', 'item_id', 'created_log', 'last_updated']);
+
 const REVEAL = 'opacity-0 group-hover/sub:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100';
 const asLikes = (v) => (Array.isArray(v) ? v : []);
 
@@ -386,34 +390,42 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
     }
   };
 
-  const breadcrumb = (
-    <span className="inline-flex items-center gap-1.5 min-w-0 max-w-full">
-      {group?.color && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} aria-hidden="true" />}
-      <span className="truncate">{[data.board?.name, group?.name, parent ? (parent.name || tr('Bez nazwy')) : null].filter(Boolean).join(' › ')}</span>
-    </span>
+  const crumbs = [data.board?.name, group?.name, parent ? (parent.name || tr('Bez nazwy')) : null].filter(Boolean);
+  // Nagłówek okna: ścieżka (tablica › grupa › rodzic) + akcje. Nazwa zadania jest niżej jako
+  // duży, edytowalny tytuł — wcześniej nagłówek „Zadanie” powtarzał to, co widać pod nim.
+  const header = (
+    <div className="flex items-center gap-2 pl-6 pr-4 py-3">
+      {trail.length > 0 && (
+        <button type="button" onClick={goBack} aria-label={tr('Wróć do: {name}', { name: trail[trail.length - 1]?.name || tr('Bez nazwy') })} title={tr('Wróć')}
+          className="icon-btn -ml-2">
+          <ArrowLeft size={17} aria-hidden="true" />
+        </button>
+      )}
+      <nav aria-label={tr('Położenie')} className="flex-1 min-w-0 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        {group?.color && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: boardColor(group.color) }} aria-hidden="true" />}
+        <span className="truncate">{crumbs.map((c, i) => (
+          <React.Fragment key={i}>{i > 0 && <span className="mx-1.5 text-gray-300 dark:text-gray-600" aria-hidden="true">/</span>}<span className={i === crumbs.length - 1 ? 'text-gray-700 dark:text-gray-200 font-medium' : ''}>{c}</span></React.Fragment>
+        ))}</span>
+      </nav>
+      {menuItems.length > 0 && <ActionMenu variant="ghost" label={tr('Więcej działań')} items={menuItems} />}
+      <button type="button" onClick={handleClose} aria-label={tr('Zamknij')} className="icon-btn -mr-1">
+        <X size={18} aria-hidden="true" />
+      </button>
+    </div>
   );
 
   return (
-    <Modal isOpen onClose={handleClose} size="lg" title={tr(isSub ? (terms.sub || 'Podzadanie') : (terms.column || 'Zadanie'))} subtitle={breadcrumb}>
-      <div className="p-6 space-y-6">
-        {/* Nazwa (edycja w miejscu) + akcje */}
-        <div className="flex items-start gap-2">
-          {trail.length > 0 && (
-            <button type="button" onClick={goBack} aria-label={tr('Wróć do: {name}', { name: trail[trail.length - 1]?.name || tr('Bez nazwy') })} title={tr('Wróć')}
-              className="p-1.5 -ml-1.5 mt-0.5 shrink-0 text-gray-500 hover:text-gray-800 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-              <ArrowLeft size={18} aria-hidden="true" />
-            </button>
-          )}
-          {/* textarea (nie input): długa nazwa zawija się zamiast uciekać za krawędź (telefon). */}
-          <textarea key={current.id} ref={nameRef} value={nameLocal} readOnly={!can.editItems} rows={1}
-            autoFocus={can.editItems && !current.name}
-            placeholder={tr(terms.placeholder || 'Nazwa zadania')} aria-label={tr(terms.placeholder || 'Nazwa zadania')}
-            onChange={(e) => setNameLocal(e.target.value.replace(/[\r\n]+/g, ' '))}
-            onBlur={commitName}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-            className="flex-1 min-w-0 text-xl font-bold leading-snug bg-transparent border-0 shadow-none outline-none resize-none overflow-hidden text-gray-900 dark:text-white placeholder:text-gray-400 rounded-lg px-1 -mx-1 py-0.5 focus:ring-2 focus:ring-accent-primary-light/40" />
-          {menuItems.length > 0 && <ActionMenu variant="tool" label={tr('Więcej działań')} items={menuItems} />}
-        </div>
+    <Modal isOpen onClose={handleClose} size="lg" header={header}
+      ariaLabel={current.name || tr(isSub ? (terms.sub || 'Podzadanie') : (terms.column || 'Zadanie'))}>
+      <div className="px-6 pt-5 pb-6 space-y-7">
+        {/* Nazwa (edycja w miejscu). textarea, nie input: długa nazwa zawija się (telefon). */}
+        <textarea key={current.id} ref={nameRef} value={nameLocal} readOnly={!can.editItems} rows={1}
+          autoFocus={can.editItems && !current.name}
+          placeholder={tr(terms.placeholder || 'Nazwa zadania')} aria-label={tr(terms.placeholder || 'Nazwa zadania')}
+          onChange={(e) => setNameLocal(e.target.value.replace(/[\r\n]+/g, ' '))}
+          onBlur={commitName}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+          className="block w-full text-2xl font-bold leading-tight tracking-tight bg-transparent border-0 shadow-none outline-none resize-none overflow-hidden text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600 rounded-lg px-2 -mx-2 py-1 hover:bg-gray-50 focus:bg-gray-50 dark:hover:bg-white/5 dark:focus:bg-white/5 transition-colors" />
 
         {/* Szczegóły — etykieta → wartość, te same komórki co w tabeli */}
         <section aria-labelledby={`${ids}-props`}>
@@ -421,16 +433,19 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
           {data.columns.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">{can.addColumns ? tr('Brak pól — dodaj poniżej.') : tr('Ta tablica nie ma jeszcze pól.')}</p>
           ) : (
-            <dl className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] sm:grid-cols-[10rem_minmax(0,1fr)] gap-x-3 gap-y-0.5">
+            <dl className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] sm:grid-cols-[11rem_minmax(0,1fr)] gap-x-2 gap-y-0.5">
               {data.columns.map(col => {
                 const t = getColumnType(col.type);
                 return (
                   <React.Fragment key={col.id}>
-                    <dt className="min-h-9 flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 min-w-0">
-                      <ColumnIcon name={t.icon} size={13} className="text-gray-400 shrink-0" />
+                    <dt className="min-h-10 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 min-w-0">
+                      <ColumnIcon name={t.icon} size={14} className="text-gray-400 dark:text-gray-500 shrink-0" />
                       <span className="truncate" title={col.name}>{col.name}</span>
                     </dt>
-                    <dd className={`${col.type === 'long_text' ? 'min-h-9' : 'h-9'} min-w-0 flex items-stretch rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors group/row ${ALIGN_LEFT}`}>
+                    <dd className={`relative ${col.type === 'long_text' ? 'min-h-10' : 'h-10'} min-w-0 flex items-stretch rounded-lg px-1 hover:bg-gray-50 focus-within:bg-gray-50 dark:hover:bg-white/5 dark:focus-within:bg-white/5 transition-colors group/row ${ALIGN_LEFT}`}>
+                      {!NO_EMPTY_HINT.has(col.type) && isCellEmpty(col.type, current.cells?.[col.id]) && (
+                        <span aria-hidden="true" className={`pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-400 dark:text-gray-500 transition-opacity ${can.editItems ? 'group-hover/row:opacity-0 group-focus-within/row:opacity-0' : ''}`}>{can.editItems ? tr('Pusto') : '—'}</span>
+                      )}
                       <BoardCell column={col} value={current.cells?.[col.id]} people={data.people} me={data.me} item={current} columns={data.columns}
                         onChange={(v) => data.updateCell(current.id, col.id, v)} onUpdateColumn={data.updateColumn} />
                     </dd>
@@ -503,7 +518,8 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
               {can.comment && <Composer people={data.people || []} placeholder={tr('Napisz komentarz...')} onSend={(t, m) => addUpdate(t, m)} />}
               <div className="mt-2">
                 {loading ? <Spinner center size={20} /> : roots.length === 0 ? (
-                  <EmptyState compact icon={MessageSquare} title={tr('Brak komentarzy')} />
+                  // Pod polem komentarza wystarczy cichy tekst (duży pusty stan z ikoną dominował okno).
+                  <p className="py-5 text-center text-sm text-gray-400 dark:text-gray-500">{tr('Brak komentarzy')}</p>
                 ) : roots.map(u => (
                   <UpdateItem key={u.id} u={u} replies={repliesOf(u.id)} people={data.people || []} personOf={personOf} userEmail={userEmail} can={can}
                     onLike={toggleLike} onDelete={onDeleteComment} onReply={(t, m, pid) => addUpdate(t, m, pid)} />
@@ -513,7 +529,7 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
           )}
           {tab === 'activity' && (
             loading ? <Spinner center size={20} /> : activity.length === 0 ? (
-              <EmptyState compact icon={Activity} title={tr('Brak historii aktywności')} />
+              <p className="py-5 text-center text-sm text-gray-400 dark:text-gray-500">{tr('Brak historii aktywności')}</p>
             ) : (
               <ol className="space-y-3">
                 {activity.map(a => {

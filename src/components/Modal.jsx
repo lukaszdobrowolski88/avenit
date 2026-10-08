@@ -27,7 +27,7 @@ const openStack = [];
 
 export default function Modal({
   isOpen, onClose, title, subtitle, icon: Icon, footer, size = 'md', className = '',
-  bodyClassName = '', zIndex, closeOnBackdrop = true, children,
+  bodyClassName = '', zIndex, closeOnBackdrop = true, header, ariaLabel, children,
 }) {
   const id = useId();
   // onClose przez ref: funkcja podana inline zmienia się przy każdym renderze rodzica, a ponowne
@@ -62,7 +62,9 @@ export default function Modal({
     return createPortal(<div className={`fixed inset-0 z-[100] ${className}`}>{children}</div>, document.body);
   }
 
-  const structured = Boolean(title || footer);
+  // header — własny nagłówek zamiast tytułu (np. panel zadania: ścieżka + akcje); zamykanie i
+  // przycisk X dostarcza wtedy wołający. ariaLabel nazywa okno, gdy nie ma tytułu.
+  const structured = Boolean(title || footer || header);
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={zIndex ? { zIndex } : undefined}>
       <div
@@ -75,9 +77,12 @@ export default function Modal({
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby={title ? `${id}-title` : undefined}
+        aria-label={title ? undefined : ariaLabel}
         className={`modal-panel outline-none relative w-full ${SIZES[size] || SIZES.md} max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl animate-in fade-in zoom-in-95 duration-150 ${structured ? 'flex flex-col overflow-hidden' : 'overflow-y-auto custom-scrollbar'} ${className}`}
       >
-        {title && (
+        {header ? (
+          <div className="modal-head shrink-0 border-b border-gray-200 dark:border-gray-700">{header}</div>
+        ) : title && (
           <div className="modal-head shrink-0 flex items-start gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             {Icon && (
               <div data-tone={1} className="w-9 h-9 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light flex items-center justify-center shrink-0">

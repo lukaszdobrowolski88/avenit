@@ -6,6 +6,7 @@
 // Tu zapis wymaga uprawnienia z modułu, z którego dane faktycznie pochodzą (jak w UI).
 // Dotyczy tylko nie-adminów z modelem uprawnień (resolver) — admin i tryb legacy bez zmian.
 import { ApiError, buildWhere } from './querybuilder.js';
+import { canModuleScoped } from '@avenit/shared/src/permissions/moduleScope.js';
 
 const WRITE_OPS = new Set(['insert', 'upsert', 'update', 'delete']);
 const rowsOf = (q) => (Array.isArray(q.values) ? q.values : [q.values]).filter(Boolean);
@@ -15,7 +16,6 @@ const lower = (v) => String(v ?? '').toLowerCase();
 const FIXED_CAP = {
   app_dictionaries: 'action:settings:manage_modules', // słowniki zmienia administrator (Ustawienia)
   rsvp_campaigns: 'module:rsvp',                      // kampanie zakłada obsługa RSVP
-  event_materials: 'res:events:update',               // materiały wydarzenia — kto edytuje wydarzenie
 };
 
 // Tablice zespołów zapisują w `ministry` nazwę (moduły wbudowane) albo klucz modułu (kreator).
@@ -23,7 +23,7 @@ const WALL_MODULE = { 'Nauczanie': 'teaching', 'Grupa Uwielbienia': 'worship' };
 const wallModule = (v) => WALL_MODULE[v] || v;
 
 export const SHARED_WRITE_TABLES = new Set([
-  ...Object.keys(FIXED_CAP), 'team_roles', 'team_member_roles', 'schedule_templates', 'materials_shares', 'wall_posts',
+  ...Object.keys(FIXED_CAP), 'event_materials', 'team_roles', 'team_member_roles', 'schedule_templates', 'materials_shares', 'wall_posts',
 ]);
 
 // Tabele, w których zespół zapisany jest wprost w kolumnie team_type.
@@ -81,6 +81,30 @@ export async function enforceSharedWrite(q, req, resolver) {
 
   if (FIXED_CAP[q.table]) {
     if (!resolver.can(FIXED_CAP[q.table])) throw new ApiError(403, 'Brak uprawnień do zmiany tych danych');
+    return;
+  }
+
+  // Materiały wydarzenia — kto edytuje to wydarzenie: globalnie (res:events:update) albo lider
+  // służby, do której wydarzenie należy (events.module_key; moduleScope.js).
+  if (q.table === 'event_materials') {
+    if (resolver.can('module:calendar') && resolver.can('res:events:update')) return;
+    let keys;
+    if (q.op === 'insert' || q.op === 'upsert') {
+      const ids = [...new Set(rowsOf(q).map((r) => r.event_id).filter((v) => v != null).map(String))];
+      if (!ids.length) throw new ApiError(403, 'Brak uprawnień do zmiany tych danych');
+      const { rows } = await db.query('SELECT id, module_key FROM events WHERE id::text = ANY($1::text[])', [ids]);
+      if (rows.length !== ids.length) throw new ApiError(403, 'Brak uprawnień do zmiany tych danych');
+      keys = rows.map((r) => r.module_key);
+    } else {
+      const params = [];
+      const where = whereOf(q, params);
+      const { rows } = await db.query(`SELECT DISTINCT e.module_key FROM event_materials t LEFT JOIN events e ON e.id = t.event_id${where}`, params);
+      if (!rows.length) return; // nic nie pasuje — zapis bez skutku
+      keys = rows.map((r) => r.module_key);
+    }
+    if (!keys.every((k) => canModuleScoped(resolver.can, k || null, 'events', 'update'))) {
+      throw new ApiError(403, 'Brak uprawnień do zmiany tych danych');
+    }
     return;
   }
 
