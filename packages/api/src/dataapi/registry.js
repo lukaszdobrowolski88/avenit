@@ -142,6 +142,9 @@ export const REGISTRY = {
   team_members: T(null),
   team_roles: T(null),
   team_member_roles: T(null),
+  // Zapisane składy grafiku (szablony per zespół, migracja 090). Odczyt jak team_roles;
+  // zapis tylko z dostępem do modułu zespołu (sharedWrites.js).
+  schedule_templates: T(null),
 
   // ── Kids ────────────────────────────────────────────────────────────────
   kids_groups: T('module:kids'),

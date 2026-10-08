@@ -5,7 +5,7 @@ import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import Button from '../../components/Button';
 import { supabase, getCachedUser } from '../../lib/supabase';
-import { ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX, Users, Calendar, AlertTriangle, RefreshCw, Plus, MapPin, CircleDashed } from 'lucide-react';
+import { ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX, Users, Calendar, AlertTriangle, RefreshCw, Plus, MapPin, CircleDashed, Rows, Columns, Wand2, Copy, Bookmark, Printer, BellRing, CalendarPlus } from 'lucide-react';
 import { toast } from '../../lib/toast';
 import { useCampusBadge } from '../../components/CampusBadge';
 import { useT, tr, appLocale } from '../../i18n';
@@ -13,6 +13,14 @@ import { useScheduleAssignments, patchEventAssignments, scheduleSaveErrorMessage
 import { eventIncludesTeam } from '../../lib/scheduleBridge';
 import { useModuleLabel } from '../../hooks/useModuleLabel';
 import { TH } from '../../components/ui/DataTable';
+import { useCan } from '../../components/Can';
+import { lineupOf, teamHistory, previousLineup, fillEmptyRoles, serviceStats, proposeLineups } from './schedule/lineup';
+import { buildPrintHtml, openPrintWindow } from './schedule/printSchedule';
+import ActionMenu from './schedule/ActionMenu';
+import ProposalModal from './schedule/ProposalModal';
+import TemplatesModal from './schedule/TemplatesModal';
+import ReminderSettingsModal from './schedule/ReminderSettingsModal';
+import MyServicesModal from './schedule/MyServicesModal';
 import './scheduleGrid.css';
 
 // Grafik nad WYDARZENIAMI (twardy switch z programów). Wiersze = wydarzenia danej służby:
@@ -422,6 +430,19 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const [loadError, setLoadError] = useState(false);
   useSurfaceBg(rootRef, !loading);
   const [bulkSending, setBulkSending] = useState(null); // monthKey
+  // Układ siatki: 'dates' (wiersze = wydarzenia) albo 'roles' (wiersze = role, kolumny = daty —
+  // przy kilku niedzielach w miesiącu mieści się bez przewijania). Zapamiętany per służba.
+  const viewKey = `schedule_view:${teamType}`;
+  const [viewMode, setViewMode] = useState(() => { try { return localStorage.getItem(viewKey) === 'roles' ? 'roles' : 'dates'; } catch { return 'dates'; } });
+  const changeView = (mode) => { setViewMode(mode); try { localStorage.setItem(viewKey, mode); } catch { /* prywatne okno */ } };
+  // Zapisane składy (schedule_templates); null = tabela niedostępna (np. przed migracją) → bez funkcji.
+  const [templates, setTemplates] = useState(null);
+  const [reminderRaw, setReminderRaw] = useState(null);
+  const [proposal, setProposal] = useState(null); // [{ eventId, label, picks, missing }]
+  const [templatesFor, setTemplatesFor] = useState(null); // eventId
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [myServicesOpen, setMyServicesOpen] = useState(false);
+  const canEditReminders = useCan('action:settings:manage_integrations');
   const hintShown = useRef(false);
   const expandInit = useRef(false);
   const saveSeq = useRef({}); // { [eventId]: numer ostatniego zapisu } — starsze odpowiedzi nie nadpisują nowszych
@@ -456,6 +477,13 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
         rules = ts?.value ? (typeof ts.value === 'string' ? JSON.parse(ts.value) : ts.value) : [];
       } catch { rules = []; }
       setTypeTeams(Array.isArray(rules) ? rules : []);
+
+      // Ustawienia automatycznych przypomnień (worker schedule-reminders).
+      try {
+        const { data: rs } = await supabase.from('app_settings').select('value').eq('key', 'schedule_reminders').maybeSingle();
+        setReminderRaw(rs?.value ?? null);
+      } catch { setReminderRaw(null); }
+      loadTemplates();
 
       // Wszystkie wydarzenia (grupujemy po miesiącach, jak dawniej programy).
       const { data: evData, error: evError } = await supabase
@@ -600,53 +628,69 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     return true;
   };
 
-  const updateRole = async (eventId, roleKey, roleLabel, value) => {
+  // Zapis ról jednego wydarzenia: nextByRole = { roleKey: ['Imię', …] } (pełne nowe wartości).
+  // Jeden atomowy patch grafiku + synchronizacja z silnikiem zaproszeń (schedule_assignments).
+  // Używane przez komórkę, kopiowanie z poprzedniej niedzieli, szablony i propozycję obsady.
+  // Zwraca { added, failed } (liczba dodanych osób / nieudanych zmian).
+  const applyRoles = async (eventId, nextByRole, { quiet = false, refresh = true } = {}) => {
     const ev = events.find((e) => e.id === eventId);
-    if (!ev) return;
-    const before = csvNames(ev.assignments?.[teamType]?.[roleKey]);
-    const after = csvNames(value);
-    const added = after.filter((n) => !before.includes(n));
-    const removed = before.filter((n) => !after.includes(n));
-    if (!added.length && !removed.length) return;
+    if (!ev) return { added: 0, failed: 0 };
+    const diffs = Object.entries(nextByRole).map(([roleKey, names]) => {
+      const before = csvNames(ev.assignments?.[teamType]?.[roleKey]);
+      const after = [...new Set(names)];
+      return { roleKey, after, added: after.filter((n) => !before.includes(n)), removed: before.filter((n) => !after.includes(n)) };
+    }).filter((d) => d.added.length || d.removed.length);
+    if (!diffs.length) return { added: 0, failed: 0 };
 
-    if (!await patchTeam(eventId, { [roleKey]: after.join(', ') })) return;
+    if (!await patchTeam(eventId, Object.fromEntries(diffs.map((d) => [d.roleKey, d.after.join(', ')])))) return { added: 0, failed: diffs.length };
 
     // Synchronizacja z silnikiem zaproszeń. Gdy się nie uda, cofamy zmianę w siatce —
     // inaczej „Powiadom" zaprosiłby osobę, którą właśnie zdjęto (albo pominął dodaną).
-    const failedAdd = [];
-    const failedRemove = [];
     let me = null;
     try { me = await getCachedUser(); } catch { me = null; }
-    for (const name of added) {
-      const m = members.find((x) => x.full_name === name);
-      const res = await createAssignment({
-        eventId, teamType, roleKey, roleLabel,
-        assignedName: name, assignedEmail: m?.email || null,
-        assignedByEmail: me?.email || null, assignedByName: me?.full_name || me?.email?.split('@')[0] || 'Administrator',
-        isSelfAssignment: !!(me?.email && m?.email && me.email.toLowerCase() === m.email.toLowerCase()),
-      });
-      if (!res?.success) failedAdd.push(name);
-    }
-    for (const name of removed) {
-      const res = await removeEventAssignment(eventId, teamType, roleKey, name);
-      if (!res?.success) failedRemove.push(name);
+    const corrections = {};
+    const failedNames = [];
+    for (const d of diffs) {
+      const roleLabel = columns.find((c) => c.key === d.roleKey)?.label || d.roleKey;
+      const failedAdd = [];
+      const failedRemove = [];
+      for (const name of d.added) {
+        const m = members.find((x) => x.full_name === name);
+        const res = await createAssignment({
+          eventId, teamType, roleKey: d.roleKey, roleLabel,
+          assignedName: name, assignedEmail: m?.email || null,
+          assignedByEmail: me?.email || null, assignedByName: me?.full_name || me?.email?.split('@')[0] || 'Administrator',
+          isSelfAssignment: !!(me?.email && m?.email && me.email.toLowerCase() === m.email.toLowerCase()),
+        });
+        if (!res?.success) failedAdd.push(name);
+      }
+      for (const name of d.removed) {
+        const res = await removeEventAssignment(eventId, teamType, d.roleKey, name);
+        if (!res?.success) failedRemove.push(name);
+      }
+      if (failedAdd.length || failedRemove.length) {
+        corrections[d.roleKey] = [...d.after.filter((n) => !failedAdd.includes(n)), ...failedRemove].join(', ');
+        failedNames.push(...failedAdd, ...failedRemove);
+      }
     }
 
-    if (failedAdd.length || failedRemove.length) {
-      const corrected = [...after.filter((n) => !failedAdd.includes(n)), ...failedRemove];
-      await patchTeam(eventId, { [roleKey]: corrected.join(', ') });
+    const addedNames = diffs.flatMap((d) => d.added).filter((n) => !failedNames.includes(n));
+    if (Object.keys(corrections).length) {
+      await patchTeam(eventId, corrections);
       toast.error(tr('Nie udało się zmienić przydziału: {names}. Sprawdź, czy masz uprawnienia do edycji grafiku, i spróbuj ponownie.', {
-        names: [...failedAdd, ...failedRemove].join(', '),
+        names: failedNames.join(', '),
       }));
-    } else if (added.length && !hintShown.current) {
-      const withEmail = added.some((n) => members.find((x) => x.full_name === n)?.email);
-      if (withEmail) {
+    } else if (!quiet && addedNames.length && !hintShown.current) {
+      if (addedNames.some((n) => members.find((x) => x.full_name === n)?.email)) {
         hintShown.current = true;
         toast.info(tr('Zapisano w grafiku. Aby wysłać zaproszenia, kliknij „Powiadom” w kolumnie Status.'));
       }
     }
-    await fetchAssignmentsForEvents(teamEventIds());
+    if (refresh) await fetchAssignmentsForEvents(teamEventIds());
+    return { added: addedNames.length, failed: failedNames.length };
   };
+
+  const updateRole = (eventId, roleKey, value) => applyRoles(eventId, { [roleKey]: csvNames(value) });
 
   // Notatki: zapis tylko przy realnej zmianie (dawniej każde wyjście z pola nadpisywało grafik).
   const updateNotes = async (eventId, value) => {
@@ -752,6 +796,129 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     return { team, manualAbsent, reported, blocked, rolesOf, conflicts };
   };
 
+  // ── Historia służby, statystyki i narzędzia obsady ──
+  const roleKeys = columns.map((c) => c.key);
+  const history = useMemo(
+    () => teamHistory(events.filter(includesThisTeam), teamType, roleKeys),
+    [events, includesThisTeam, teamType, roleKeys.join(',')] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const stats = useMemo(() => serviceStats(history), [history]);
+  const colLabel = (key) => columns.find((c) => c.key === key)?.label || key;
+  // Osoby przypisane do roli w zespole (Set) albo null — rola bez przypisań = każdy z zespołu.
+  const roleMembers = (roleKey) => {
+    const col = columns.find((c) => c.key === roleKey);
+    if (!col?.roleId || !memberRoles.length) return null;
+    const ids = memberRoles.filter((mr) => mr.role_id === col.roleId).map((mr) => String(mr.member_id));
+    if (!ids.length) return null;
+    return new Set(members.filter((m) => ids.includes(String(m.id))).map((m) => m.full_name));
+  };
+  const eventLabel = (ev) => `${shortDay(ev.date)} · ${ev.title || tr('Wydarzenie')}`;
+
+  const loadTemplates = async () => {
+    try {
+      const { data, error } = await supabase.from('schedule_templates').select('*').eq('team_type', teamType).order('name');
+      if (error) throw error;
+      setTemplates((data || []).map((tpl) => {
+        let lineup = tpl.lineup;
+        if (typeof lineup === 'string') { try { lineup = JSON.parse(lineup); } catch { lineup = {}; } }
+        return { ...tpl, lineup: lineup && typeof lineup === 'object' ? lineup : {} };
+      }));
+    } catch {
+      setTemplates(null);
+    }
+  };
+
+  // Wstawienie składu (poprzednia niedziela / szablon) do PUSTYCH ról, z pominięciem nieobecnych.
+  const fillFrom = async (ev, source) => {
+    const ctx = rowContext(ev);
+    const { changes, skipped } = fillEmptyRoles(lineupOf(ctx.team, roleKeys), source, {
+      blocked: ctx.blocked, allowedFor: roleMembers, teamNames: new Set(members.map((m) => m.full_name)),
+    });
+    const res = Object.keys(changes).length ? await applyRoles(ev.id, changes, { quiet: true }) : { added: 0 };
+    const absent = [...new Set(skipped.filter((x) => x.reason === 'absent').map((x) => x.name))];
+    const other = [...new Set(skipped.filter((x) => x.reason !== 'absent').map((x) => x.name))];
+    const parts = [];
+    if (res.added) parts.push(tr('Wstawiono osób: {n}.', { n: res.added }));
+    if (absent.length) parts.push(tr('Pominięto nieobecnych: {names}.', { names: absent.join(', ') }));
+    if (other.length) parts.push(tr('Pominięto (spoza zespołu albo roli): {names}.', { names: other.join(', ') }));
+    if (!parts.length) parts.push(tr('Nic do wstawienia — te role są już obsadzone.'));
+    if (res.added) toast.success(parts.join(' ')); else toast.info(parts.join(' '));
+  };
+  const copyPrevious = (ev) => {
+    const prev = previousLineup(history, ev);
+    if (prev) fillFrom(ev, prev.lineup);
+  };
+
+  const saveTemplate = async (ev, name) => {
+    const lineup = lineupOf(rowContext(ev).team, roleKeys);
+    const { error } = await supabase.from('schedule_templates').insert({ team_type: teamType, name, lineup });
+    if (error) { toast.error(tr('Nie udało się zapisać składu.')); return; }
+    toast.success(tr('Zapisano skład „{name}”.', { name }));
+    await loadTemplates();
+  };
+  const deleteTemplate = async (tpl) => {
+    const { error } = await supabase.from('schedule_templates').delete().eq('id', tpl.id);
+    if (error) { toast.error(tr('Nie udało się usunąć składu.')); return; }
+    await loadTemplates();
+  };
+
+  // Propozycja obsady (jedno wydarzenie albo cały miesiąc — tylko nadchodzące, tylko puste role).
+  const openProposal = (evs) => {
+    const targets = evs.filter((ev) => dayKey(ev.date) >= today).map((ev) => {
+      const ctx = rowContext(ev);
+      return { id: ev.id, date: ev.date, lineup: lineupOf(ctx.team, roleKeys), blocked: ctx.blocked };
+    });
+    if (!targets.length) { toast.info(tr('Propozycje dotyczą tylko nadchodzących wydarzeń.')); return; }
+    const rolesSpec = columns.map((c) => { const set = roleMembers(c.key); return { key: c.key, candidates: set ? [...set] : null }; });
+    const byId = new Map(evs.map((ev) => [ev.id, ev]));
+    setProposal(proposeLineups({ targets, roles: rolesSpec, history })
+      .filter((p) => p.picks.length || p.missing.length)
+      .map((p) => ({
+        eventId: p.eventId,
+        label: eventLabel(byId.get(p.eventId)),
+        picks: p.picks.map((x) => ({ ...x, roleLabel: colLabel(x.roleKey) })),
+        missing: p.missing.map(colLabel),
+      })));
+  };
+  const applyProposal = async (selected) => {
+    let added = 0;
+    for (const { eventId, changes } of selected) {
+      const res = await applyRoles(eventId, changes, { quiet: true, refresh: false });
+      added += res.added;
+    }
+    await fetchAssignmentsForEvents(teamEventIds());
+    setProposal(null);
+    if (added) toast.success(tr('Wstawiono osób: {n}. Sprawdź grafik i kliknij „Powiadom”.', { n: added }));
+  };
+
+  // Wydruk / PDF miesiąca w układzie „role × daty” (mieści się na A4).
+  const printMonth = (monthKey, monthEvents) => {
+    const { name, year } = monthParts(monthKey);
+    const html = buildPrintHtml({
+      title: `${teamLabel || tr('Grafik')} — ${name} ${year}`,
+      subtitle: tr('Grafik służby'),
+      events: monthEvents.map((ev) => ({
+        date: shortDay(ev.date), weekday: weekdayShort(ev.date), time: ev.time ? String(ev.time).slice(0, 5) : '',
+        title: ev.title || '', place: ev.location || '',
+      })),
+      rows: [
+        ...columns.map((c) => ({ label: c.label, cells: monthEvents.map((ev) => csvNames(ev.assignments?.[teamType]?.[c.key])) })),
+        { label: tr('Nieobecni'), kind: 'absent', cells: monthEvents.map((ev) => { const ctx = rowContext(ev); return [...new Set([...ctx.manualAbsent, ...ctx.reported.keys()])]; }) },
+        { label: tr('Notatki'), kind: 'notes', cells: monthEvents.map((ev) => { const n = ev.assignments?.[teamType]?.notatki; return n ? [n] : []; }) },
+      ],
+      footer: tr('Wygenerowano {date} · Avenit', { date: new Date().toLocaleDateString(appLocale()) }),
+    });
+    if (!openPrintWindow(html)) toast.error(tr('Przeglądarka zablokowała okno wydruku — zezwól na wyskakujące okna dla tej strony.'));
+  };
+
+  const saveReminders = async (cfg) => {
+    const { error } = await supabase.from('app_settings').upsert({ key: 'schedule_reminders', value: JSON.stringify(cfg) }, { onConflict: 'key' });
+    if (error) { toast.error(tr('Nie udało się zapisać ustawień przypomnień.')); return false; }
+    setReminderRaw(cfg);
+    toast.success(tr('Zapisano ustawienia przypomnień.'));
+    return true;
+  };
+
   if (loading) {
     return <Spinner center />;
   }
@@ -769,17 +936,25 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
 
   // ── Komórki (tabela na komputerze / karta na telefonie) ──
   const roleSelect = (ev, col, ctx) => {
+    // Podpowiedzi na liście: ile razy osoba służy w tym miesiącu + inna rola tego dnia.
+    const monthKey = dayKey(ev.date).slice(0, 7);
+    const options = getMembersForRole(col.roleId);
     const hints = new Map();
-    for (const [n, labels] of ctx.rolesOf) {
-      const others = labels.filter((l) => l !== col.label);
-      if (others.length) hints.set(n, tr('też: {roles}', { roles: others.join(', ') }));
+    for (const p of options) {
+      const name = p.full_name;
+      const n = stats.monthCount(name, monthKey);
+      const others = (ctx.rolesOf.get(name) || []).filter((l) => l !== col.label);
+      const parts = [];
+      if (n) parts.push(tr('{n}× w mies.', { n }));
+      if (others.length) parts.push(tr('też: {roles}', { roles: others.join(', ') }));
+      if (parts.length) hints.set(name, parts.join(' · '));
     }
     return (
       <PeoplePicker
         label={col.label}
-        options={getMembersForRole(col.roleId)}
+        options={options}
         value={ctx.team[col.key] || ''}
-        onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
+        onChange={(val) => updateRole(ev.id, col.key, val)}
         blocked={ctx.blocked}
         hints={hints}
         renderChip={(name) => (
@@ -839,6 +1014,23 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     ) : null;
   };
   const timeOf = (ev) => (ev.time ? String(ev.time).slice(0, 5) : '');
+  const dateLine = (ev) => `${weekdayShort(ev.date)}${timeOf(ev) ? ` · ${timeOf(ev)}` : ''}`;
+
+  // Menu ⋯ wydarzenia: propozycja obsady, kopiowanie z poprzedniego, zapisane składy.
+  const eventMenu = (ev) => {
+    const prev = previousLineup(history, ev);
+    const upcoming = dayKey(ev.date) >= today;
+    return (
+      <ActionMenu
+        label={tr('Obsada: {event}', { event: eventLabel(ev) })}
+        items={[
+          { key: 'propose', icon: Wand2, label: tr('Zaproponuj obsadę'), onClick: () => openProposal([ev]), disabled: !upcoming, hint: upcoming ? '' : tr('minione') },
+          { key: 'copy', icon: Copy, label: prev ? tr('Kopiuj skład z {date}', { date: shortDay(prev.date) }) : tr('Kopiuj skład z poprzedniego'), onClick: () => copyPrevious(ev), disabled: !prev },
+          ...(templates ? [{ key: 'tpl', icon: Bookmark, label: tr('Zapisane składy…'), hint: templates.length ? String(templates.length) : '', onClick: () => setTemplatesFor(ev.id) }] : []),
+        ]}
+      />
+    );
+  };
 
   const legend = (
     <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
@@ -856,6 +1048,112 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     </p>
   );
 
+  // Układ „role w wierszach, daty w kolumnach”.
+  const rolesTable = (monthEvents, contexts, summaries) => (
+    <GridScroller>
+      {/* Stały układ: kolumna ról 176 px, daty dzielą resztę po równo (212–340 px każda). */}
+      <table className="sg-table sg-table--fixed" style={{ minWidth: 0, width: `max(min(100%, ${176 + monthEvents.length * 340}px), ${176 + monthEvents.length * 212}px)` }}>
+        <thead>
+          <tr>
+            <TH className="sg-sticky sg-col-rolehead sg-edge-l">{tr('Rola')}</TH>
+            {monthEvents.map((ev) => {
+              const past = dayKey(ev.date) < today;
+              return (
+                <th key={ev.id} scope="col" className={`sg-vth ${past ? 'sg-vth--past' : ''}`}>
+                  <div className="flex items-start justify-between gap-1">
+                    <div className="min-w-0 text-gray-900 dark:text-gray-100">
+                      <div className="sg-date">
+                        {shortDay(ev.date)}
+                        {ev.id === nextEventId && <span className="sg-next-dot" title={tr('Najbliższe')} />}
+                      </div>
+                      <div className="sg-meta">{dateLine(ev)}</div>
+                    </div>
+                    {eventMenu(ev)}
+                  </div>
+                  <div className="mt-1">{eventTitle(ev)}</div>
+                  {campusLine(ev)}
+                  <div className="mt-2 min-h-[1px]">
+                    <EventStatus summary={summaries.get(ev.id)} conflicts={contexts.get(ev.id).conflicts} onSend={() => sendForEvents([ev.id])} />
+                  </div>
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {columns.map((col) => (
+            <tr key={col.key} className="sg-row">
+              <th scope="row" className="sg-td sg-sticky sg-col-rolehead sg-edge-l sg-rolelabel">{col.label}</th>
+              {monthEvents.map((ev) => <td key={ev.id} className="sg-td">{roleSelect(ev, col, contexts.get(ev.id))}</td>)}
+            </tr>
+          ))}
+          <tr className="sg-row">
+            <th scope="row" className="sg-td sg-sticky sg-col-rolehead sg-edge-l sg-rolelabel">{tr('Nieobecni')}</th>
+            {monthEvents.map((ev) => <td key={ev.id} className="sg-td">{absenceSelect(ev, contexts.get(ev.id))}</td>)}
+          </tr>
+          <tr className="sg-row">
+            <th scope="row" className="sg-td sg-sticky sg-col-rolehead sg-edge-l sg-rolelabel">{tr('Notatki')}</th>
+            {monthEvents.map((ev) => <td key={ev.id} className="sg-td">{notesInput(ev, contexts.get(ev.id))}</td>)}
+          </tr>
+        </tbody>
+      </table>
+    </GridScroller>
+  );
+
+  // Układ „wydarzenia w wierszach” (domyślny).
+  const datesTable = (monthEvents, contexts, summaries) => (
+    <GridScroller>
+      <table className="sg-table">
+        <thead>
+          <tr>
+            <TH className="sg-sticky sg-col-date">{t('Data')}</TH>
+            <TH className="sg-sticky sg-col-event sg-edge-l">{tr('Wydarzenie')}</TH>
+            {columns.map((col) => (
+              <TH key={col.key} className="sg-col-role">{col.label}</TH>
+            ))}
+            <TH className="sg-col-absent">{tr('Nieobecni')}</TH>
+            <TH className="sg-col-notes">{tr('Notatki')}</TH>
+            <TH className="sg-sticky sg-col-status sg-edge-r">{tr('Status')}</TH>
+          </tr>
+        </thead>
+        <tbody>
+          {monthEvents.map((ev) => {
+            const ctx = contexts.get(ev.id);
+            const past = dayKey(ev.date) < today;
+            return (
+              <tr key={ev.id} className={`sg-row ${past ? 'sg-row--past' : ''}`}>
+                <td className="sg-td sg-sticky sg-col-date text-gray-900 dark:text-gray-100">
+                  <div className="sg-date">
+                    {shortDay(ev.date)}
+                    {ev.id === nextEventId && <span className="sg-next-dot" title={tr('Najbliższe')} />}
+                  </div>
+                  <div className="sg-meta">{dateLine(ev)}</div>
+                </td>
+                <td className="sg-td sg-sticky sg-col-event sg-edge-l">
+                  <div className="sg-event-cell">
+                    <div className="min-w-0">
+                      {eventTitle(ev)}
+                      {campusLine(ev)}
+                    </div>
+                    <span className="sg-reveal">{eventMenu(ev)}</span>
+                  </div>
+                </td>
+                {columns.map((col) => (
+                  <td key={col.key} className="sg-td sg-col-role">{roleSelect(ev, col, ctx)}</td>
+                ))}
+                <td className="sg-td sg-col-absent">{absenceSelect(ev, ctx)}</td>
+                <td className="sg-td sg-col-notes">{notesInput(ev, ctx)}</td>
+                <td className="sg-td sg-sticky sg-col-status sg-edge-r">
+                  <EventStatus summary={summaries.get(ev.id)} conflicts={ctx.conflicts} onSend={() => sendForEvents([ev.id])} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </GridScroller>
+  );
+
   const renderMonth = (monthKey) => {
     const isExpanded = !!expandedMonths[monthKey];
     const monthEvents = groupedEvents[monthKey].slice().sort((a, b) => dayKey(a.date).localeCompare(dayKey(b.date)));
@@ -865,6 +1163,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     const { name, year } = monthParts(monthKey);
     const contexts = new Map(monthEvents.map((ev) => [ev.id, rowContext(ev)]));
     const conflictCount = [...contexts.values()].reduce((acc, c) => acc + c.conflicts.length, 0);
+    const hasUpcoming = monthEvents.some((ev) => dayKey(ev.date) >= today);
 
     return (
       <section key={monthKey} aria-label={`${name} ${year}`}>
@@ -874,12 +1173,24 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
             <span className="font-extrabold">{name}</span>
             <span className="font-light">{year}</span>
           </button>
-          <div className="ml-auto flex items-center gap-3 flex-wrap">
+          <div className="ml-auto flex items-center gap-2 flex-wrap">
             {conflictCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 mr-1">
                 <CalendarX size={13} strokeWidth={2.5} aria-hidden="true" />
                 {tr('Przypisani mimo nieobecności: {n}', { n: conflictCount })}
               </span>
+            )}
+            {isExpanded && hasUpcoming && (
+              <Button size="sm" variant="secondary" icon={Wand2} onClick={() => openProposal(monthEvents)}
+                title={tr('Propozycja obsady pustych ról we wszystkich nadchodzących wydarzeniach miesiąca')}>
+                {tr('Zaproponuj obsadę')}
+              </Button>
+            )}
+            {isExpanded && (
+              <button type="button" className="sg-icon-btn text-gray-600 dark:text-gray-300" onClick={() => printMonth(monthKey, monthEvents)}
+                title={tr('Drukuj / PDF')} aria-label={tr('Drukuj grafik: {month}', { month: `${name} ${year}` })}>
+                <Printer size={16} aria-hidden="true" />
+              </button>
             )}
             {toSendCount > 0 && (isExpanded ? (
               <Button size="sm" icon={Send} loading={bulkSending === monthKey} onClick={() => sendForMonth(monthKey, toSendIds)}>
@@ -903,12 +1214,15 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                       <div className="sg-date text-gray-900 dark:text-gray-100">
                         {ev.id === nextEventId && <span className="sg-next-dot" title={tr('Najbliższe')} />}
                         {shortDay(ev.date)}
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{weekdayShort(ev.date)}{timeOf(ev) ? ` · ${timeOf(ev)}` : ''}</span>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{dateLine(ev)}</span>
                       </div>
                       <div className="mt-0.5">{eventTitle(ev)}</div>
                       {campusLine(ev)}
                     </div>
-                    <EventStatus summary={summaries.get(ev.id)} conflicts={ctx.conflicts} onSend={() => sendForEvents([ev.id])} />
+                    <div className="flex items-start gap-1">
+                      <EventStatus summary={summaries.get(ev.id)} conflicts={ctx.conflicts} onSend={() => sendForEvents([ev.id])} />
+                      {eventMenu(ev)}
+                    </div>
                   </div>
                   <div className="sg-card-grid">
                     {columns.map((col) => (
@@ -928,56 +1242,14 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
           </div>
         )}
 
-        {isExpanded && !narrow && (
-          <GridScroller>
-            <table className="sg-table">
-              <thead>
-                <tr>
-                  <TH className="sg-sticky sg-col-date">{t('Data')}</TH>
-                  <TH className="sg-sticky sg-col-event sg-edge-l">{tr('Wydarzenie')}</TH>
-                  {columns.map((col) => (
-                    <TH key={col.key} className="sg-col-role">{col.label}</TH>
-                  ))}
-                  <TH className="sg-col-absent">{tr('Nieobecni')}</TH>
-                  <TH className="sg-col-notes">{tr('Notatki')}</TH>
-                  <TH className="sg-sticky sg-col-status sg-edge-r">{tr('Status')}</TH>
-                </tr>
-              </thead>
-              <tbody>
-                {monthEvents.map((ev) => {
-                  const ctx = contexts.get(ev.id);
-                  const past = dayKey(ev.date) < today;
-                  return (
-                    <tr key={ev.id} className={`sg-row ${past ? 'sg-row--past' : ''}`}>
-                      <td className="sg-td sg-sticky sg-col-date text-gray-900 dark:text-gray-100">
-                        <div className="sg-date">
-                          {shortDay(ev.date)}
-                          {ev.id === nextEventId && <span className="sg-next-dot" title={tr('Najbliższe')} />}
-                        </div>
-                        <div className="sg-meta">{weekdayShort(ev.date)}{timeOf(ev) ? ` · ${timeOf(ev)}` : ''}</div>
-                      </td>
-                      <td className="sg-td sg-sticky sg-col-event sg-edge-l">
-                        {eventTitle(ev)}
-                        {campusLine(ev)}
-                      </td>
-                      {columns.map((col) => (
-                        <td key={col.key} className="sg-td sg-col-role">{roleSelect(ev, col, ctx)}</td>
-                      ))}
-                      <td className="sg-td sg-col-absent">{absenceSelect(ev, ctx)}</td>
-                      <td className="sg-td sg-col-notes">{notesInput(ev, ctx)}</td>
-                      <td className="sg-td sg-sticky sg-col-status sg-edge-r">
-                        <EventStatus summary={summaries.get(ev.id)} conflicts={ctx.conflicts} onSend={() => sendForEvents([ev.id])} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </GridScroller>
-        )}
+        {isExpanded && !narrow && (viewMode === 'roles'
+          ? rolesTable(monthEvents, contexts, summaries)
+          : datesTable(monthEvents, contexts, summaries))}
       </section>
     );
   };
+
+  const templatesEvent = templatesFor ? events.find((e) => e.id === templatesFor) : null;
 
   return (
     <div ref={rootRef} className="sg-root">
@@ -985,9 +1257,33 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           {tr('Grafik')}
         </h2>
-        {teamEvents.length > 0 && (
-          <Button variant="secondary" size="sm" icon={Download} onClick={exportCsv}>{tr('Eksport CSV')}</Button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {!narrow && teamEvents.length > 0 && (
+            <div className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-gray-800" role="group" aria-label={tr('Układ grafiku')}>
+              <button type="button" aria-pressed={viewMode === 'dates'} onClick={() => changeView('dates')}
+                className={`sg-seg ${viewMode === 'dates' ? 'bg-white shadow-sm text-gray-900 dark:bg-gray-700 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                title={tr('Wiersze = wydarzenia')}>
+                <Rows size={15} aria-hidden="true" />{tr('Daty')}
+              </button>
+              <button type="button" aria-pressed={viewMode === 'roles'} onClick={() => changeView('roles')}
+                className={`sg-seg ${viewMode === 'roles' ? 'bg-white shadow-sm text-gray-900 dark:bg-gray-700 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                title={tr('Wiersze = role, kolumny = daty')}>
+                <Columns size={15} aria-hidden="true" />{tr('Role')}
+              </button>
+            </div>
+          )}
+          <Button variant="secondary" size="sm" icon={CalendarPlus} onClick={() => setMyServicesOpen(true)}
+            title={tr('Dodaj swoje służby do kalendarza w telefonie')}>
+            {tr('Moje służby')}
+          </Button>
+          <Button variant="secondary" size="sm" icon={BellRing} onClick={() => setReminderOpen(true)}
+            title={tr('Automatyczne przypomnienia')} aria-label={tr('Automatyczne przypomnienia')}>
+            {tr('Przypomnienia')}
+          </Button>
+          {teamEvents.length > 0 && (
+            <Button variant="secondary" size="sm" icon={Download} onClick={exportCsv}>{tr('CSV')}</Button>
+          )}
+        </div>
       </div>
 
       {members.length === 0 ? (
@@ -1010,6 +1306,25 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
           )}
         </div>
       )}
+
+      {proposal && (
+        <ProposalModal isOpen onClose={() => setProposal(null)} proposals={proposal} onApply={applyProposal} />
+      )}
+      {templatesEvent && templates && (
+        <TemplatesModal
+          isOpen
+          onClose={() => setTemplatesFor(null)}
+          eventLabel={eventLabel(templatesEvent)}
+          templates={templates}
+          roleLabel={colLabel}
+          currentLineup={lineupOf(templatesEvent.assignments?.[teamType], roleKeys)}
+          onSave={(name) => saveTemplate(templatesEvent, name)}
+          onInsert={async (tpl) => { await fillFrom(templatesEvent, tpl.lineup); setTemplatesFor(null); }}
+          onDelete={deleteTemplate}
+        />
+      )}
+      <ReminderSettingsModal isOpen={reminderOpen} onClose={() => setReminderOpen(false)} value={reminderRaw} canEdit={canEditReminders} onSave={saveReminders} />
+      <MyServicesModal isOpen={myServicesOpen} onClose={() => setMyServicesOpen(false)} />
     </div>
   );
 }

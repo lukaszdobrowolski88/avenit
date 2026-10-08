@@ -22,7 +22,7 @@ const ROLE_NAMES = {
   bas: 'Gitara Basowa', cajon: 'Cajon/Perkusja', naglospienie: 'Nagłośnienie',
   projekcja: 'Projekcja', transmisja: 'Transmisja', foto: 'Fotograf', video: 'Wideo',
 };
-const roleName = (key, fallbackLabel) => fallbackLabel || ROLE_NAMES[key] || key;
+export const roleName = (key, fallbackLabel) => fallbackLabel || ROLE_NAMES[key] || key;
 // Nazwy osób, ról i tytuły wydarzeń wpisują użytkownicy — w HTML maila zawsze escapowane.
 export const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -33,20 +33,57 @@ const C = {
 };
 const FONT = "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-export function emailHtml({ assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl, contextLabel = 'Program', teamLabel = '', timeLabel = '', place = '' }) {
+// Jeden szablon (jedna identyfikacja wizualna) dla wszystkich maili grafiku — wariant:
+//  'invite'   — zaproszenie: Potwierdzam / Nie mogę (domyślny, bez zmian),
+//  'nudge'    — ponaglenie osoby bez odpowiedzi: te same linki z TYM SAMYM tokenem,
+//  'reminder' — przypomnienie potwierdzonej osobie przed służbą: jeden przycisk do wydarzenia
+//               (detailsUrl). Bez „Nie mogę” — link z maila zmienia tylko status 'pending',
+//               więc rezygnację z potwierdzonej służby załatwia się z liderem.
+const VARIANTS = new Set(['invite', 'nudge', 'reminder']);
+const variantOf = (v) => (VARIANTS.has(v) ? v : 'invite');
+
+// Wstęp przypomnienia: „Już jutro:” / „Już za 3 dni:” (bez liczby — ogólny).
+export function reminderIntro(daysBefore) {
+  const n = Number(daysBefore);
+  if (!Number.isFinite(n) || n < 1) return 'Dziękujemy, że służysz! Przypominamy o Twojej służbie:';
+  return `Dziękujemy, że służysz! Już ${n === 1 ? 'jutro' : `za ${n} dni`}:`;
+}
+
+export function emailHtml({ assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl, contextLabel = 'Program', teamLabel = '', timeLabel = '', place = '', variant = 'invite', detailsUrl = '', daysBefore = null }) {
+  const v = variantOf(variant);
   assignedByName = escapeHtml(assignedByName);
   programDate = escapeHtml(programDate);
   programTitle = escapeHtml(programTitle);
   contextLabel = escapeHtml(contextLabel);
   acceptUrl = escapeHtml(acceptUrl);
   rejectUrl = escapeHtml(rejectUrl);
+  detailsUrl = escapeHtml(detailsUrl);
   teamLabel = escapeHtml(teamLabel);
   timeLabel = escapeHtml(timeLabel);
   place = escapeHtml(place);
   roles = (roles || []).map(escapeHtml);
   const multi = roles.length > 1;
   const when = timeLabel ? `${programDate}, godz. ${timeLabel}` : programDate;
-  const preheader = `${roles.join(', ')} — ${programDate}. Potwierdzisz?`;
+  const preheader = {
+    invite: `${roles.join(', ')} — ${programDate}. Potwierdzisz?`,
+    nudge: `${roles.join(', ')} — ${programDate}. Czekamy na Twoją odpowiedź.`,
+    reminder: `${roles.join(', ')} — ${when}. Do zobaczenia!`,
+  }[v];
+  const title = { invite: 'Zaproszenie do służby', nudge: 'Czekamy na Twoją odpowiedź', reminder: 'Przypomnienie o służbie' }[v];
+  const heading = {
+    invite: 'Zaproszenie <span style="font-weight:300;">do służby</span>',
+    nudge: 'Czekamy na <span style="font-weight:300;">Twoją odpowiedź</span>',
+    reminder: 'Przypomnienie <span style="font-weight:300;">o służbie</span>',
+  }[v];
+  const by = `<strong style="color:${C.malt};font-weight:700;">${assignedByName}</strong>`;
+  const intro = {
+    invite: `${by} zaprasza Cię do służby${multi ? ' w kilku rolach' : ''}. Daj znać, czy możesz.`,
+    nudge: `${by} zaprosił(a) Cię do służby${multi ? ' w kilku rolach' : ''} — daj znać, czy możesz.`,
+    reminder: escapeHtml(reminderIntro(daysBefore)),
+  }[v];
+  const note = v === 'reminder'
+    ? 'Jeśli coś się zmieniło, daj znać liderowi służby.'
+    : (multi ? 'Odpowiedź dotyczy wszystkich ról powyżej i od razu trafi do grafiku.' : 'Odpowiedź od razu trafi do grafiku.');
 
   const label = () => `font-family:${FONT};font-size:11px;line-height:16px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${C.mustard};`;
   const detail = (title, value) => (value ? `
@@ -58,6 +95,12 @@ export function emailHtml({ assignedByName, roles, programDate, programTitle, ac
               <td align="center" width="${width}" bgcolor="${bg}" style="width:${width};border-radius:999px;background:${bg};">
                 <a href="${href}" target="_blank" style="display:block;padding:15px 12px;font-family:${FONT};font-size:16px;line-height:20px;font-weight:800;color:${C.malt};text-decoration:none;border-radius:999px;">${text}</a>
               </td>`;
+  const actions = v === 'reminder'
+    ? `<tr>${button(detailsUrl, 'Zobacz szczegóły', C.turmeric, '100%')}
+          </tr>`
+    : `<tr>${button(acceptUrl, 'Potwierdzam', C.turmeric, '58%')}
+              <td style="width:10px;font-size:0;line-height:0;">&nbsp;</td>${button(rejectUrl, 'Nie mogę', C.paperDark, '40%')}
+          </tr>`;
 
   return `<!DOCTYPE html>
 <html lang="pl">
@@ -67,7 +110,7 @@ export function emailHtml({ assignedByName, roles, programDate, programTitle, ac
 <meta name="color-scheme" content="light only">
 <meta name="supported-color-schemes" content="light">
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-<title>Zaproszenie do służby</title>
+<title>${title}</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;600;700;800&display=swap" rel="stylesheet">
 <style>
   a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
@@ -82,8 +125,8 @@ export function emailHtml({ assignedByName, roles, programDate, programTitle, ac
       <tr><td style="padding:0 6px 16px;font-family:${FONT};font-size:15px;line-height:20px;font-weight:800;color:${C.malt};">avenit<span style="color:${C.turmeric};">.</span></td></tr>
       <tr><td class="card" style="background:#FFFFFF;border-radius:24px;padding:36px 32px 32px;">
         ${teamLabel ? `<div style="${label()}padding-bottom:10px;">${teamLabel}</div>` : ''}
-        <h1 class="h1" style="margin:0 0 12px;font-family:${FONT};font-size:30px;line-height:36px;font-weight:800;letter-spacing:-0.5px;color:${C.malt};">Zaproszenie <span style="font-weight:300;">do służby</span><span style="color:${C.turmeric};">.</span></h1>
-        <p style="margin:0 0 24px;font-family:${FONT};font-size:15px;line-height:23px;color:${C.text};"><strong style="color:${C.malt};font-weight:700;">${assignedByName}</strong> zaprasza Cię do służby${multi ? ' w kilku rolach' : ''}. Daj znać, czy możesz.</p>
+        <h1 class="h1" style="margin:0 0 12px;font-family:${FONT};font-size:30px;line-height:36px;font-weight:800;letter-spacing:-0.5px;color:${C.malt};">${heading}<span style="color:${C.turmeric};">.</span></h1>
+        <p style="margin:0 0 24px;font-family:${FONT};font-size:15px;line-height:23px;color:${C.text};">${intro}</p>
 
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.hero};border-radius:18px;">
           <tr><td style="padding:18px 20px;">
@@ -99,11 +142,9 @@ export function emailHtml({ assignedByName, roles, programDate, programTitle, ac
         </table>
 
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
-          <tr>${button(acceptUrl, 'Potwierdzam', C.turmeric, '58%')}
-              <td style="width:10px;font-size:0;line-height:0;">&nbsp;</td>${button(rejectUrl, 'Nie mogę', C.paperDark, '40%')}
-          </tr>
+          ${actions}
         </table>
-        <p style="margin:16px 0 0;font-family:${FONT};font-size:13px;line-height:19px;color:${C.muted};text-align:center;">${multi ? 'Odpowiedź dotyczy wszystkich ról powyżej i od razu trafi do grafiku.' : 'Odpowiedź od razu trafi do grafiku.'}</p>
+        <p style="margin:16px 0 0;font-family:${FONT};font-size:13px;line-height:19px;color:${C.muted};text-align:center;">${note}</p>
       </td></tr>
       <tr><td style="padding:20px 6px 0;font-family:${FONT};font-size:12px;line-height:18px;color:${C.muted};text-align:center;">Wiadomość wysłana automatycznie z aplikacji Avenit.</td></tr>
     </table>
@@ -114,19 +155,28 @@ export function emailHtml({ assignedByName, roles, programDate, programTitle, ac
 }
 
 // Wersja tekstowa (klienci bez HTML, podgląd powiadomień, filtry antyspamowe).
-export function emailText({ assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl, contextLabel = 'Program', teamLabel = '', timeLabel = '', place = '' }) {
+export function emailText({ assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl, contextLabel = 'Program', teamLabel = '', timeLabel = '', place = '', variant = 'invite', detailsUrl = '', daysBefore = null }) {
+  const v = variantOf(variant);
+  const head = { invite: 'Zaproszenie do służby', nudge: 'Czekamy na Twoją odpowiedź', reminder: 'Przypomnienie o służbie' }[v];
+  const intro = {
+    invite: `${assignedByName} zaprasza Cię do służby. Daj znać, czy możesz.`,
+    nudge: `${assignedByName} zaprosił(a) Cię do służby — daj znać, czy możesz.`,
+    reminder: reminderIntro(daysBefore),
+  }[v];
+  const actions = v === 'reminder'
+    ? [`Zobacz szczegóły: ${detailsUrl}`, '', 'Jeśli coś się zmieniło, daj znać liderowi służby.']
+    : [`Potwierdzam: ${acceptUrl}`, `Nie mogę: ${rejectUrl}`];
   return [
-    `Zaproszenie do służby${teamLabel ? ` — ${teamLabel}` : ''}`,
+    `${head}${teamLabel ? ` — ${teamLabel}` : ''}`,
     '',
-    `${assignedByName} zaprasza Cię do służby. Daj znać, czy możesz.`,
+    intro,
     '',
     `${(roles || []).length > 1 ? 'Role' : 'Rola'}: ${(roles || []).join(', ')}`,
     `Kiedy: ${programDate}${timeLabel ? `, godz. ${timeLabel}` : ''}`,
     `${contextLabel}: ${programTitle}`,
     ...(place ? [`Miejsce: ${place}`] : []),
     '',
-    `Potwierdzam: ${acceptUrl}`,
-    `Nie mogę: ${rejectUrl}`,
+    ...actions,
   ].join('\n');
 }
 
@@ -160,7 +210,11 @@ export async function pushRecipients(db, email, teamType, name) {
   return accountEmailsForAssignee(db, { email, name, teamType });
 }
 
-const shortTime = (t) => (t ? String(t).slice(0, 5) : '');
+export const shortTime = (t) => (t ? String(t).slice(0, 5) : '');
+// Data „YYYY-MM-DD” (z JSON-a / ::text) → południe lokalnie, żeby strefa serwera nie przesunęła dnia.
+export const toDate = (d) => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T12:00:00`) : new Date(d));
+export const dateLong = (d) => toDate(d).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+export const dateShort = (d) => toDate(d).toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'numeric' });
 
 export default async function handler(req, reply) {
   try {
@@ -174,10 +228,6 @@ export default async function handler(req, reply) {
     // Źródło daty/tytułu/godziny/miejsca i link push: wydarzenie (events) lub program (programs).
     // Wiersz jako JSON — kolumny (time, location, campus_id) różnią się między tenantami.
     let programDate, shortDate, programTitle, pushLink, contextLabel, timeLabel = '', place = '';
-    // Data „YYYY-MM-DD” z JSON-a → południe lokalnie, żeby strefa serwera nie przesunęła dnia.
-    const toDate = (d) => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T12:00:00`) : new Date(d));
-    const dateLong = (d) => toDate(d).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    const dateShort = (d) => toDate(d).toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'numeric' });
     if (eventId) {
       const { rows } = await req.db.query(`SELECT to_jsonb(e) AS e FROM events e WHERE id = $1`, [eventId]);
       const ev = rows[0]?.e;

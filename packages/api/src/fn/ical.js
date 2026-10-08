@@ -1,6 +1,10 @@
 // Port edge function ical: publiczny feed iCalendar per token użytkownika.
 // Oryginał: supabase/functions/ical/index.ts. GET, publiczny (token w URL).
 // Tenant rozpoznawany po subdomenie; dane z bazy tenanta (req.db).
+import crypto from 'node:crypto';
+import { accountEmailsForAssignee } from '../lib/assigneeIdentity.js';
+import { roleName } from './send-assignment-invites.js';
+
 export const name = 'ical';
 export const method = 'GET';
 export const isPublic = true;
@@ -44,7 +48,7 @@ const addHour = (t) => {
 const MODULE_PREFS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
 const MODULE_LABEL = { worship: 'Uwielbienie', media: 'Media', atmosfera: 'Atmosfera', kids: 'Dzieci', homegroups: 'Grupy Domowe', mlodziezowka: 'Młodzieżówka' };
 
-function vevent(e) {
+export function vevent(e) {
   // Całodniowe (bez godziny): DTSTART;VALUE=DATE, DTEND = dzień po ostatnim.
   const lines = ['BEGIN:VEVENT', `UID:${e.uid}`, `DTSTAMP:${e.dtstamp}`, e.allDay ? `DTSTART;VALUE=DATE:${e.dtstart}` : `DTSTART:${e.dtstart}`];
   if (e.dtend) lines.push(e.allDay ? `DTEND;VALUE=DATE:${e.dtend}` : `DTEND:${e.dtend}`);
@@ -56,6 +60,76 @@ function vevent(e) {
   lines.push('END:VEVENT');
   return lines.join('\r\n');
 }
+// ── Moje służby (grafik) ────────────────────────────────────────────────
+// Przypisania z schedule_assignments na wydarzeniach. Osoba w grafiku to wpis zespołu
+// (assigned_email/assigned_name), a kanał należy do KONTA — konto bywa założone na inny adres,
+// więc dopasowanie jak przy pushu: ten sam e-mail albo konto powiązane (lib/assigneeIdentity.js).
+// Sprawdzenie raz na unikalną osobę (e-mail, imię, zespół), nie na wiersz. Ten sam adres
+// z grafiku to ta sama osoba — gdy pasuje w jednym zespole, pasuje we wszystkich (reguły
+// powiązań bywają per zespół, np. user_id tylko w worship_team).
+export async function ownerServiceRows(db, rows, ownerEmail) {
+  const owner = String(ownerEmail || '').trim().toLowerCase();
+  if (!owner) return [];
+  const cache = new Map();
+  const mineEmails = new Set([owner]);
+  const emailOf = (r) => String(r.assigned_email || '').trim().toLowerCase();
+  const keyOf = (r) => `${emailOf(r)}\u0000${String(r.assigned_name || '').trim().toLowerCase()}\u0000${r.team_type || ''}`;
+  for (const r of rows || []) {
+    const email = emailOf(r);
+    if (mineEmails.has(email)) continue;
+    const key = keyOf(r);
+    if (cache.has(key)) continue;
+    const linked = await accountEmailsForAssignee(db, { email: r.assigned_email, name: r.assigned_name, teamType: r.team_type })
+      .catch(() => []);
+    const match = linked.includes(owner);
+    cache.set(key, match);
+    if (match && email) mineEmails.add(email);
+  }
+  return (rows || []).filter((r) => mineEmails.has(emailOf(r)) || cache.get(keyOf(r)) === true);
+}
+
+const SERVICE_STATUS = { accepted: 'potwierdzone', pending: 'czeka na odpowiedź' };
+
+// Wiersze właściciela (już odfiltrowane) → jeden VEVENT na wydarzenie ze wszystkimi rolami.
+// UID stały: id wydarzenia + skrót e-maila właściciela (dwa kanały w jednym kalendarzu się nie zleją).
+// labels: Map team_type → nazwa zespołu (app_modules); brak — MODULE_LABEL albo klucz.
+export function serviceEvents(rows, { ownerEmail = '', dtstamp, labels = new Map() } = {}) {
+  const ownerHash = crypto.createHash('sha1').update(String(ownerEmail).trim().toLowerCase()).digest('hex').slice(0, 10);
+  const byEvent = new Map();
+  for (const r of rows || []) {
+    if (r?.event_id == null || r.status === 'rejected') continue;
+    const k = String(r.event_id);
+    if (!byEvent.has(k)) byEvent.set(k, { first: r, roles: [], teams: [], statuses: [] });
+    const g = byEvent.get(k);
+    const role = String(roleName(r.role_key, r.role_label) || '').trim();
+    if (role && !g.roles.includes(role)) g.roles.push(role);
+    const team = labels.get(r.team_type) || MODULE_LABEL[r.team_type] || r.team_type || '';
+    if (team && !g.teams.includes(team)) g.teams.push(team);
+    g.statuses.push(r.status === 'accepted' ? 'accepted' : 'pending');
+  }
+  const out = [];
+  for (const [eventId, g] of byEvent) {
+    const ev = g.first;
+    const d = ymd(ev.event_date);
+    if (!d) continue;
+    const t = ev.event_time ? String(ev.event_time).slice(0, 5) : null;
+    const endDate = ev.event_end_date ? ymd(ev.event_end_date) : d;
+    const confirmed = g.statuses.every((st) => st === 'accepted');
+    const title = String(ev.event_title || '').trim() || 'Wydarzenie';
+    out.push({
+      uid: uid(`${eventId}-${ownerHash}`, 'service'),
+      summary: `Służba: ${g.roles.join(', ') || 'służba'} — ${title}`,
+      description: [g.teams.join(', '), SERVICE_STATUS[confirmed ? 'accepted' : 'pending']].filter(Boolean).join(' · '),
+      location: ev.event_location || '',
+      ...(t
+        ? { dtstart: fmtLocal(d, t), dtend: ev.event_end_time ? fmtLocal(endDate, String(ev.event_end_time).slice(0, 5)) : fmtLocal(d, addHour(t)) }
+        : { allDay: true, dtstart: d.replace(/-/g, ''), dtend: nextDay(endDate) }),
+      dtstamp, categories: ['Służba'], status: confirmed ? 'CONFIRMED' : 'TENTATIVE',
+    });
+  }
+  return out;
+}
+
 function vtodo(e) {
   const lines = ['BEGIN:VTODO', `UID:${e.uid}`, `DTSTAMP:${e.dtstamp}`];
   if (e.due) lines.push(/^\d{8}$/.test(e.due) ? `DUE;VALUE=DATE:${e.due}` : `DUE:${e.due}`);
@@ -141,6 +215,33 @@ export default async function handler(req, reply) {
           : { allDay: true, dtstart: d.replace(/-/g, ''), dtend: nextDay(ev.end_date ? ymd(ev.end_date) : d) }),
         dtstamp, categories: [label || 'Wydarzenie', ev.event_type || ''].filter(Boolean), status: 'CONFIRMED',
       }));
+    }
+  }
+
+  // Moje służby z grafiku — domyślnie WŁĄCZONE (kanały sprzed tej opcji też je dostają).
+  // Odrzucone pomijamy. Najbliższe daty najpierw, żeby limit wierszy ucinał najdalsze.
+  if (prefs.my_services !== false && ownerEmail) {
+    const { rows } = await req.db.query(
+      `SELECT sa.id, sa.event_id, sa.team_type, sa.role_key, sa.role_label, sa.assigned_name, sa.assigned_email, sa.status,
+              e.title AS event_title, e.date::text AS event_date,
+              to_jsonb(e)->>'time' AS event_time, to_jsonb(e)->>'end_time' AS event_end_time,
+              to_jsonb(e)->>'end_date' AS event_end_date, to_jsonb(e)->>'location' AS event_location
+         FROM schedule_assignments sa
+         JOIN events e ON e.id::text = sa.event_id::text
+        WHERE sa.event_id IS NOT NULL AND COALESCE(sa.status, 'pending') <> 'rejected'
+          AND e.date >= $1 AND e.date <= $2
+          AND COALESCE(e.is_archived, false) = false
+        ORDER BY abs(e.date - CURRENT_DATE), sa.event_id
+        LIMIT 2000`,
+      [fromStr, toStr]
+    ).catch((err) => { req.log?.warn?.({ err }, 'ical: my_services'); return { rows: [] }; });
+    if (rows.length) {
+      const mine = await ownerServiceRows(req.db, rows, ownerEmail);
+      if (mine.length) {
+        const { rows: mods } = await req.db.query(`SELECT key, label FROM app_modules`).catch(() => ({ rows: [] }));
+        const labels = new Map(mods.filter((m) => m.label).map((m) => [m.key, String(m.label).trim()]));
+        for (const svc of serviceEvents(mine, { ownerEmail, dtstamp, labels })) events.push(vevent(svc));
+      }
     }
   }
 

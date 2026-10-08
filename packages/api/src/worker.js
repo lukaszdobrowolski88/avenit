@@ -9,6 +9,7 @@
 //  - sms-campaign-receipts   co 5 min
 //  - sync-mail               co 5 min
 //  - chat-channels-sync      co 10 min (skład kanałów służb i grup domowych)
+//  - schedule-reminders      codziennie 18:00 Europe/Warsaw (grafik: przypomnienia + ponaglenia)
 //  - process-dunning         codziennie 08:00 (baza platform)
 import cron from 'node-cron';
 import { platformPool, getTenantPool } from './db.js';
@@ -94,6 +95,10 @@ cron.schedule('0 10 * * *', exclusive(() => forEachTenant('rsvp-reminders', 'rsv
 cron.schedule('0 6 * * *', exclusive(() => forEachTenant('rsvp-series', 'rsvp-series')));
 // Przypomnienia urodzinowe: codziennie 08:00 — funkcja sama decyduje wg configu (daily/weekly).
 cron.schedule('0 8 * * *', exclusive(() => forEachTenant('birthday-reminders', 'birthday-reminders')));
+// Grafik służb: codziennie 18:00 (czas polski — wieczór przed, nie w nocy) — przypomnienie
+// potwierdzonym na N dni przed wydarzeniem + ponaglenie osób bez odpowiedzi (app_settings
+// schedule_reminders). Strefa jawnie — kontener workera nie ma ustawionego TZ (domyślnie UTC).
+cron.schedule('0 18 * * *', exclusive(() => forEachTenant('schedule-reminders', 'schedule-reminders')), { timezone: 'Europe/Warsaw' });
 
 cron.schedule('0 8 * * *', exclusive(async () => {
   try {
