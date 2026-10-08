@@ -23,8 +23,11 @@ const WALL_MODULE = { 'Nauczanie': 'teaching', 'Grupa Uwielbienia': 'worship' };
 const wallModule = (v) => WALL_MODULE[v] || v;
 
 export const SHARED_WRITE_TABLES = new Set([
-  ...Object.keys(FIXED_CAP), 'team_roles', 'team_member_roles', 'materials_shares', 'wall_posts',
+  ...Object.keys(FIXED_CAP), 'team_roles', 'team_member_roles', 'schedule_templates', 'materials_shares', 'wall_posts',
 ]);
+
+// Tabele, w których zespół zapisany jest wprost w kolumnie team_type.
+const TEAM_TYPE_TABLES = new Set(['team_roles', 'schedule_templates']);
 
 // Zakres WHERE z filtrów żądania (update/delete). Bez filtrów — odrzucamy masowy zapis.
 function whereOf(q, params) {
@@ -32,13 +35,15 @@ function whereOf(q, params) {
   return buildWhere(q.filters, params, 't', []);
 }
 
-// team_type zespołów, których dotyczy zapis do team_roles / team_member_roles.
+// team_type zespołów, których dotyczy zapis do team_roles / team_member_roles / schedule_templates.
 async function teamTypesOf(q, db) {
-  if (q.table === 'team_roles') {
+  if (TEAM_TYPE_TABLES.has(q.table)) {
     if (q.op === 'insert' || q.op === 'upsert') return rowsOf(q).map((r) => r.team_type);
     const params = [];
-    const { rows } = await db.query(`SELECT DISTINCT t.team_type FROM team_roles t${whereOf(q, params)}`, params);
-    return rows.map((r) => r.team_type);
+    const { rows } = await db.query(`SELECT DISTINCT t.team_type FROM ${q.table} t${whereOf(q, params)}`, params);
+    // Przeniesienie wiersza do innego zespołu (team_type w zmianie) wymaga też dostępu do zespołu docelowego.
+    const moved = q.op === 'update' && rows.length ? rowsOf(q).filter((r) => 'team_type' in r).map((r) => r.team_type) : [];
+    return [...rows.map((r) => r.team_type), ...moved];
   }
   // team_member_roles: zespół wynika z roli (role_id → team_roles.team_type)
   if (q.op === 'insert' || q.op === 'upsert') {
@@ -79,11 +84,15 @@ export async function enforceSharedWrite(q, req, resolver) {
     return;
   }
 
-  if (q.table === 'team_roles' || q.table === 'team_member_roles') {
+  if (TEAM_TYPE_TABLES.has(q.table) || q.table === 'team_member_roles') {
     const types = await teamTypesOf(q, db);
     if (!types.length && (q.op === 'update' || q.op === 'delete')) return; // nic nie pasuje — zapis bez skutku
     const ok = types.every((t) => t && resolver.can(`module:${t}`));
     if (!ok) throw new ApiError(403, 'Zmiany w służbach zespołu wymagają dostępu do modułu tego zespołu');
+    // Szablon składu: autor = osoba zapisująca (gdy klient nie podał).
+    if (q.table === 'schedule_templates' && (q.op === 'insert' || q.op === 'upsert')) {
+      for (const r of rowsOf(q)) if (!r.created_by) r.created_by = req.user.email;
+    }
     return;
   }
 

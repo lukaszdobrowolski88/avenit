@@ -18,7 +18,7 @@ import { toast } from '../../lib/toast';
 import { describeUserAgent } from './components/settingsLogic';
 import ChatQuietHours from '../Komunikator/components/ChatQuietHours';
 import {
-  Church, CalendarDays, CheckSquare, PartyPopper, Music, Clapperboard, HeartHandshake, Baby, Home, Languages, Monitor,
+  Church, CalendarDays, CalendarCheck, CheckSquare, PartyPopper, Music, Clapperboard, HeartHandshake, Baby, Home, Languages, Monitor,
 } from 'lucide-react';
 
 export default function UserSettings() {
@@ -71,6 +71,7 @@ export default function UserSettings() {
   const [icalLoading, setIcalLoading] = useState(false);
   const [showIcalQrCode, setShowIcalQrCode] = useState(false);
   const [icalPreferences, setIcalPreferences] = useState({
+    my_services: true,
     programs: true,
     events: true,
     tasks: true,
@@ -389,7 +390,8 @@ export default function UserSettings() {
 
         if (data) {
           setIcalSubscription(data);
-          setIcalPreferences(data.export_preferences || icalPreferences);
+          // „Moje służby” doszły później — w starszych subskrypcjach brak klucza = włączone (jak w kanale).
+          setIcalPreferences({ my_services: true, ...(data.export_preferences || icalPreferences) });
         }
       } catch (err) {
         console.warn('iCal subscription error:', err);
@@ -966,6 +968,7 @@ export default function UserSettings() {
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[
+                  { key: 'my_services', label: t('Moje służby'), icon: CalendarCheck },
                   { key: 'programs', label: t('Nabożeństwa'), icon: Church },
                   { key: 'events', label: t('Wydarzenia'), icon: CalendarDays },
                   { key: 'tasks', label: t('Zadania'), icon: CheckSquare },

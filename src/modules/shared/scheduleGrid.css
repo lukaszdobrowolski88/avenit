@@ -167,6 +167,49 @@ html.dark .sg-divider::after { background: rgba(255, 255, 255, 0.1); }
 .sg-card-grid { display: grid; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); align-items: center; column-gap: 8px; margin-top: 6px; }
 .sg-card-grid > .sg-card-label { margin: 0 0 0 6px; padding: 4px 0; }
 
+/* Przycisk-ikona (⋯, drukuj, usuń) */
+.sg-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 9px; background: transparent; cursor: pointer;
+  transition: background-color .12s, box-shadow .12s, opacity .12s;
+}
+.sg-icon-btn:hover, .sg-icon-btn[aria-expanded="true"] { background-color: var(--sg-cell-hover, #fff); box-shadow: inset 0 0 0 1px var(--sg-cell-ring, rgb(var(--gray-300))); }
+.sg-icon-btn:focus-visible { outline: none !important; box-shadow: inset 0 0 0 2px var(--sg-accent, #FFBE0B); }
+.sg-icon-btn:disabled { opacity: .4; cursor: default; }
+
+/* Menu ⋯ w komórce wydarzenia: dyskretne, pełne na hover wiersza / fokus */
+.sg-event-cell { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; }
+.sg-reveal { opacity: .45; transition: opacity .12s; }
+.sg-row:hover .sg-reveal, .sg-reveal:focus-within { opacity: 1; }
+
+/* Układ „role w wierszach”: etykieta roli przyklejona z lewej, kolumny = wydarzenia */
+.sg-col-rolehead { left: 0; width: 176px; min-width: 176px; max-width: 176px; padding-left: 16px; }
+.sg-table--fixed { table-layout: fixed; }
+/* Nagłówek daty to treść, nie etykieta — brand-avenit.css daje każdemu th musztardę (!important)
+   i rozstrzelone litery, więc tu przywracamy zwykły tekst. */
+.sg-vth { text-align: left; vertical-align: bottom; padding: 10px 8px 8px; font-weight: 400; text-transform: none; white-space: normal; letter-spacing: normal !important; color: inherit !important; }
+.sg-vth .sg-event-title { color: rgb(var(--gray-900)) !important; }
+html.dark .sg-vth .sg-event-title { color: rgb(var(--gray-100)) !important; }
+.sg-vth .sg-meta { color: var(--sg-muted) !important; }
+th.sg-col-rolehead { vertical-align: bottom; padding-bottom: 12px; }
+.sg-vth--past > * { opacity: .55; }
+.sg-rolelabel { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sg-muted); }
+
+/* Przełącznik układu (segment) */
+.sg-seg { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 9px; font-size: 13px; font-weight: 600; transition: background-color .12s; }
+
+/* Okna: checkbox i linki kalendarza */
+.sg-native-check { width: 16px; height: 16px; accent-color: #2A2312; flex-shrink: 0; }
+html.dark .sg-native-check { accent-color: #FFBE0B; }
+.sg-cal-link {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 14px;
+  border-radius: 9999px; font-size: 14px; font-weight: 700; text-decoration: none;
+  background: #FFBE0B; color: #2A2312;
+}
+.sg-cal-link:hover { filter: brightness(.96); }
+.sg-cal-link + .sg-cal-link { background: rgb(var(--gray-100)); }
+html.dark .sg-cal-link + .sg-cal-link { background: rgba(255, 255, 255, 0.1); color: #F3F1EC; }
+
 @media (prefers-reduced-motion: reduce) {
-  .sg-cell, .sg-note, .sg-add, .sg-edge-l, .sg-edge-r, .sg-month-toggle svg { transition: none; }
+  .sg-cell, .sg-note, .sg-add, .sg-edge-l, .sg-edge-r, .sg-month-toggle svg, .sg-icon-btn, .sg-reveal { transition: none; }
 }

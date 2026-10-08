@@ -35,6 +35,44 @@ test('służby zespołu: dostęp do modułu tego zespołu', async () => {
   await enforceSharedWrite(asg, req([[{ team_type: 'worship' }]]), resolverWith('module:worship'));
 });
 
+test('szablony składu grafiku: dostęp do modułu zespołu; autor = ja', async () => {
+  const ins = { table: 'schedule_templates', op: 'insert', values: [{ team_type: 'worship', name: 'Skład A', lineup: { lider: ['Ania'] } }] };
+  await denied(enforceSharedWrite(ins, req(), resolverWith('module:media')));
+  await enforceSharedWrite(ins, req(), resolverWith('module:worship'));
+  assert.equal(ins.values[0].created_by, 'jan@kosciol.pl');
+  // podany autor nie jest nadpisywany
+  const own = { table: 'schedule_templates', op: 'upsert', values: { team_type: 'worship', name: 'B', created_by: 'ala@x.pl' } };
+  await enforceSharedWrite(own, req(), resolverWith('module:worship'));
+  assert.equal(own.values.created_by, 'ala@x.pl');
+  // kilka zespołów naraz — każdy musi być dostępny
+  const mixed = { table: 'schedule_templates', op: 'insert', values: [{ team_type: 'worship', name: 'A' }, { team_type: 'media', name: 'B' }] };
+  await denied(enforceSharedWrite(mixed, req(), resolverWith('module:worship')));
+  // brak team_type w wierszu = odmowa
+  await denied(enforceSharedWrite({ table: 'schedule_templates', op: 'insert', values: { name: 'X' } }, req(), resolverWith('module:worship')));
+});
+
+test('szablony składu: zmiana/usunięcie — zespół z wierszy w bazie (SELECT z filtrami)', async () => {
+  const filters = [{ type: 'eq', column: 'id', value: 'a1' }];
+  const upd = { table: 'schedule_templates', op: 'update', values: { name: 'Nowa nazwa' }, filters };
+  await denied(enforceSharedWrite(upd, req([[{ team_type: 'worship' }]]), resolverWith('module:media')));
+  await enforceSharedWrite(upd, req([[{ team_type: 'worship' }]]), resolverWith('module:worship'));
+  // zapytanie idzie do schedule_templates z warunkiem z filtrów
+  const seen = [];
+  const spy = { user: { email: 'jan@kosciol.pl' }, db: { query: async (sql, params) => { seen.push({ sql, params }); return { rows: [{ team_type: 'worship' }] }; } } };
+  await enforceSharedWrite({ table: 'schedule_templates', op: 'delete', filters }, spy, resolverWith('module:worship'));
+  assert.match(seen[0].sql, /FROM schedule_templates t/);
+  assert.deepEqual(seen[0].params, ['a1']);
+  await denied(enforceSharedWrite({ table: 'schedule_templates', op: 'delete', filters }, req([[{ team_type: 'worship' }]]), resolverWith()));
+  // przeniesienie do innego zespołu wymaga dostępu także do docelowego
+  const move = { table: 'schedule_templates', op: 'update', values: { team_type: 'media' }, filters };
+  await denied(enforceSharedWrite(move, req([[{ team_type: 'worship' }]]), resolverWith('module:worship')));
+  await enforceSharedWrite(move, req([[{ team_type: 'worship' }]]), resolverWith('module:worship', 'module:media'));
+  // nic nie pasuje — zapis bez skutku, bez odmowy
+  await enforceSharedWrite({ table: 'schedule_templates', op: 'delete', filters }, req([[]]), resolverWith());
+  // masowe usunięcie bez filtrów odrzucone
+  await assert.rejects(enforceSharedWrite({ table: 'schedule_templates', op: 'delete', filters: [] }, req(), resolverWith('module:worship')), (e) => e.status === 400);
+});
+
 test('masowa zmiana bez filtrów jest odrzucana', async () => {
   await assert.rejects(enforceSharedWrite({ table: 'team_roles', op: 'delete', filters: [] }, req(), resolverWith('module:worship')), (e) => e.status === 400);
 });
