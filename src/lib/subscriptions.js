@@ -5,6 +5,35 @@
 import { supabase } from './supabase';
 import { clearTenantCache } from './tenantContext';
 import { appLocale } from '../i18n';
+import { DEFAULT_PLAN_KEY } from '@avenit/shared/src/billing/catalog.js';
+
+/**
+ * Rozliczenia kościoła z API (baza platform): plan, cena, wykorzystanie (dorośli w bazie
+ * członków) i lista planów do wyboru. Dostęp tylko dla osób z dostępem do rozliczeń —
+ * pozostali dostają 403 → zwracamy null (bez komunikatów o planie).
+ */
+export async function getPlanUsage() {
+  const res = await supabase._request('/api/tenant/plan-usage');
+  if (res.status === 403 || res.status === 404) return null;
+  if (!res.ok) throw new Error(`plan-usage ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Prośba o zmianę planu (albo rozmowę o planie indywidualnym). Plan zmienia zespół Avenit
+ * od kolejnego okresu rozliczeniowego.
+ */
+export async function requestPlanChange({ planKey, billingCycle = 'monthly', message = '' }) {
+  const res = await supabase._request('/api/tenant/plan-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ planKey, billingCycle, message }),
+  });
+  let payload = null;
+  try { payload = await res.json(); } catch { /* brak JSON */ }
+  if (!res.ok) throw new Error(payload?.error || `plan-request ${res.status}`);
+  return payload;
+}
 
 /**
  * Pobiera wszystkie dostępne plany
@@ -67,7 +96,7 @@ export async function getPlanBySlug(slug) {
 /**
  * Tworzy nową subskrypcję trial
  */
-export async function createTrialSubscription(tenantId, planSlug = 'starter') {
+export async function createTrialSubscription(tenantId, planSlug = DEFAULT_PLAN_KEY) {
   try {
     const plan = await getPlanBySlug(planSlug);
     if (!plan) throw new Error('Plan not found');

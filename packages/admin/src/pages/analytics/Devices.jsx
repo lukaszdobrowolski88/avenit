@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api.js';
 import { RankTable, deviceIcon } from './common.jsx';
+import { ErrorBox, Loading } from '../../components/ui.jsx';
 
 const TYPE_LABELS = { desktop: 'Komputer', mobile: 'Telefon', tablet: 'Tablet' };
 
@@ -13,8 +14,8 @@ export default function Devices({ filters }) {
     api.analyticsDevices(filters).then(setD).catch((e) => setErr(e.message));
   }, [filters.from, filters.to, filters.site, filters.tenantId]);
 
-  if (err) return <div className="err">{err}</div>;
-  if (!d) return <div>Ładowanie…</div>;
+  if (err) return <ErrorBox error={err} />;
+  if (!d) return <Loading />;
 
   const cols = [
     { key: 'sessions', label: 'Sesje' },
@@ -25,7 +26,7 @@ export default function Devices({ filters }) {
     <div className="grid2">
       <RankTable
         title="Typ urządzenia" rows={d.deviceTypes} nameLabel="Typ" columns={cols}
-        nameRender={(r) => <>{deviceIcon(r.name)} {TYPE_LABELS[r.name] || r.name}</>}
+        nameRender={(r) => <>{deviceIcon(r.name)}{TYPE_LABELS[r.name] || r.name}</>}
       />
       <RankTable title="Przeglądarki" rows={d.browsers} nameLabel="Przeglądarka" columns={cols} />
       <RankTable title="Systemy operacyjne" rows={d.os} nameLabel="System" columns={cols} />

@@ -5,9 +5,11 @@
 import { supabase } from './supabase';
 import { getCurrentTenant, getTenantSubscription, clearTenantCache } from './tenantContext';
 import { formatPrice } from './subscriptions';
+import { splitGross } from '@avenit/shared/src/billing/adults.js';
 
 /**
- * Tworzy nową fakturę
+ * Tworzy nową fakturę. planPrice = cena planu BRUTTO (ceny Avenit zawierają VAT) — VAT
+ * wyliczamy z kwoty, nie doliczamy go drugi raz.
  */
 export async function createInvoice(tenantId, subscriptionId, planPrice, billingCycle, discountAmount = 0) {
   try {
@@ -28,10 +30,9 @@ export async function createInvoice(tenantId, subscriptionId, planPrice, billing
     if (!subscription) throw new Error('Subscription not found');
 
     const plan = subscription.subscription_plans;
-    const subtotal = planPrice - discountAmount;
+    if (plan?.is_custom && !(planPrice > 0)) throw new Error('Custom plan requires an individual price');
     const taxRate = 23;
-    const taxAmount = Math.round(subtotal * taxRate / 100);
-    const total = subtotal + taxAmount;
+    const { subtotal, taxAmount, total } = splitGross(Math.max(0, planPrice - discountAmount), taxRate);
 
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 7); // 7 dni na płatność
@@ -59,7 +60,7 @@ export async function createInvoice(tenantId, subscriptionId, planPrice, billing
           quantity: 1,
           unit_price: planPrice,
           discount: discountAmount,
-          total: subtotal
+          total
         }]),
         due_date: dueDate.toISOString().split('T')[0],
         period_start: periodStart.toISOString().split('T')[0],

@@ -39,7 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        # Oficjalny obraz postgres z kopii AWS ECR Public — Docker Hub limituje anonimowe pobrania
+        # z runnerów GitHuba (toomanyrequests), przez co test db-schema padał przed startem.
+        image: public.ecr.aws/docker/library/postgres:16
         env:
           POSTGRES_PASSWORD: ci
           POSTGRES_DB: avenit_platform

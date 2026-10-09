@@ -1,6 +1,7 @@
 // Sekcja Analityka: zakładki + wspólny pasek filtrów (stan w URL).
 import React from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { PageHeader } from '../../components/ui.jsx';
 import { useAnalyticsFilters, FilterBar } from './filters.jsx';
 import Overview from './Overview.jsx';
 import Live from './Live.jsx';
@@ -29,14 +30,14 @@ export default function AnalyticsLayout() {
 
   return (
     <div>
-      <h1 className="h1">Analityka</h1>
-      <div className="anatabs">
+      <PageHeader title="Analityka" subtitle="Ruch na avenit.pl i w aplikacji kościołów." />
+      <nav className="tabs" aria-label="Sekcje analityki">
         {TABS.map((t) => (
           <NavLink key={t.label} to={{ pathname: t.to || '.', search }} end={t.end}>
             {t.label}
           </NavLink>
         ))}
-      </div>
+      </nav>
       <FilterBar filters={filters} set={set} />
       <Routes>
         <Route index element={<Overview filters={filters} />} />

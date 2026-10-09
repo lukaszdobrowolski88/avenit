@@ -12,7 +12,9 @@
 //  - schedule-reminders      codziennie 18:00 Europe/Warsaw (grafik: przypomnienia + ponaglenia)
 //  - task-digest             codziennie 07:00 Europe/Warsaw (skrót zadań na dziś; nadrabianie przy starcie do 12:00)
 //  - board-import-legacy     przy starcie + codziennie 03:40 (stare tabele *_tasks → Tablice, raz na tenanta)
-//  - process-dunning         codziennie 08:00 (baza platform)
+//  - process-dunning         codziennie 08:00 (baza platform; zawiesza WYŁĄCZNIE za brak płatności)
+//  - usage-snapshot          1. dnia miesiąca 04:30 Europe/Warsaw (liczba dorosłych per tenant → panel admina;
+//                            przekroczenie limitu planu niczego nie blokuje)
 import cron from 'node-cron';
 import { platformPool, getTenantPool } from './db.js';
 
@@ -125,6 +127,17 @@ cron.schedule('0 8 * * *', exclusive(async () => {
     log(`dunning: błąd: ${err.message}`);
   }
 }));
+
+// Licencjonowanie = dorośli w bazie członków: comiesięczny zapis do tenant_usage_snapshots.
+cron.schedule('30 4 1 * *', exclusive(async () => {
+  try {
+    const { recordUsageSnapshots } = await import('./tenant/adults.js');
+    const r = await recordUsageSnapshots(platformPool, getTenantPool, { log });
+    log(`usage-snapshot: zapisano ${r.saved}/${r.tenants}`);
+  } catch (err) {
+    log(`usage-snapshot: błąd: ${err.message}`);
+  }
+}), { timezone: 'Europe/Warsaw' });
 
 // ── Analityka (baza platform) ────────────────────────────────────────
 // Co 10 min: domknij przeterminowane sesje + odśwież rollup dzisiejszego dnia

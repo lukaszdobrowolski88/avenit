@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../lib/api.js';
+import { Card, Table, TR, ErrorBox, Loading, EmptyState } from '../../components/ui.jsx';
 import { IdentityBadge, flag, deviceIcon } from './common.jsx';
 
 export default function Live({ filters }) {
@@ -19,37 +20,40 @@ export default function Live({ filters }) {
     return () => { alive = false; clearInterval(t); };
   }, [filters.site, filters.tenantId]);
 
-  if (err) return <div className="err">{err}</div>;
-  if (!d) return <div>Ładowanie…</div>;
+  if (err) return <ErrorBox error={err} />;
+  if (!d) return <Loading />;
 
   return (
     <div>
-      <div className="card" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span className="livedot" style={{ width: 10, height: 10 }} />
-        <span style={{ fontSize: 22, fontWeight: 700 }}>{d.onlineNow}</span>
-        <span className="muted">osób aktywnych w ciągu ostatnich 5 minut (odświeżanie co 10 s)</span>
-      </div>
-      {d.active.length === 0 && <div className="muted">Nikogo nie ma teraz na stronie ani w aplikacji.</div>}
-      {d.active.length > 0 && (
-        <table>
+      <Card className="mb">
+        <div className="row" style={{ gap: 12 }}>
+          <span className="livedot" style={{ width: 10, height: 10 }} />
+          <span className="tnum" style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em' }}>{d.onlineNow}</span>
+          <span className="muted">osób aktywnych w ciągu ostatnich 5 minut · odświeżanie co 10 s</span>
+        </div>
+      </Card>
+      {d.active.length === 0 ? (
+        <Card><EmptyState icon="globe" title="Cisza">Nikogo nie ma teraz na stronie ani w aplikacji.</EmptyState></Card>
+      ) : (
+        <Table minWidth={780}>
           <thead>
-            <tr><th>Kto</th><th>Gdzie jest teraz</th><th>Miejsce</th><th>Lokalizacja</th><th>Urządzenie</th><th>Ostatnia aktywność</th></tr>
+            <tr><th>Kto</th><th>Gdzie jest teraz</th><th>Miejsce</th><th>Lokalizacja</th><th>Urządzenie</th><th>Ostatnio</th></tr>
           </thead>
           <tbody>
             {d.active.map((v) => (
-              <tr key={v.visitorId} className="clickable" onClick={() => navigate({ pathname: `../visitors/${v.visitorId}`, search })}>
+              <TR key={v.visitorId} onClick={() => navigate({ pathname: `../visitors/${v.visitorId}`, search })}>
                 <td><IdentityBadge v={v} /></td>
-                <td><code style={{ fontSize: 13 }}>{v.path || '—'}</code></td>
+                <td><code>{v.path || '—'}</code></td>
                 <td>{v.site === 'landing' ? 'Strona WWW' : `Aplikacja${v.tenantName ? ` · ${v.tenantName}` : ''}`}</td>
-                <td>{flag(v.country)} {v.city || v.country || '—'}</td>
+                <td className="nowrap">{flag(v.country)}{v.city || v.country || ''}</td>
                 <td>{deviceIcon(v.deviceType)}</td>
-                <td className="muted">
+                <td className="muted tnum">
                   {new Date(v.lastSeenAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </td>
-              </tr>
+              </TR>
             ))}
           </tbody>
-        </table>
+        </Table>
       )}
     </div>
   );

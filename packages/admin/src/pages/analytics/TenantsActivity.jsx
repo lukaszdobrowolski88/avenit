@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api.js';
+import { Table, TR, EmptyRow, StatusBadge, ErrorBox, Loading } from '../../components/ui.jsx';
 import { fmtWhen } from './common.jsx';
 
 export default function TenantsActivity({ filters }) {
@@ -13,35 +14,32 @@ export default function TenantsActivity({ filters }) {
     api.analyticsTenants(filters).then(setD).catch((e) => setErr(e.message));
   }, [filters.from, filters.to]);
 
-  if (err) return <div className="err">{err}</div>;
-  if (!d) return <div>Ładowanie…</div>;
+  if (err) return <ErrorBox error={err} />;
+  if (!d) return <Loading />;
 
   return (
-    <table>
+    <Table minWidth={860}>
       <thead>
         <tr>
           <th>Kościół</th><th>Status</th>
-          <th style={{ textAlign: 'right' }}>Aktywni użytkownicy</th>
-          <th style={{ textAlign: 'right' }}>Sesje</th>
-          <th style={{ textAlign: 'right' }}>Odsłony</th>
-          <th>Najczęstsze moduły</th><th>Ostatnia aktywność</th>
+          <th className="num">Aktywni użytkownicy</th><th className="num">Sesje</th><th className="num">Odsłony</th>
+          <th>Najczęstsze moduły</th><th>Ostatnio</th>
         </tr>
       </thead>
       <tbody>
+        {d.tenants.length === 0 && <EmptyRow colSpan={7}>Brak aktywności w wybranym okresie.</EmptyRow>}
         {d.tenants.map((t) => (
-          <tr key={t.tenantId} className="clickable" onClick={() => navigate(`/tenants/${t.tenantId}`)}>
-            <td><b>{t.name}</b> <span className="muted">({t.subdomain})</span></td>
-            <td><span className={`badge ${t.status}`}>{t.status}</span></td>
-            <td style={{ textAlign: 'right' }}>{t.activeUsers}</td>
-            <td style={{ textAlign: 'right' }}>{t.sessions}</td>
-            <td style={{ textAlign: 'right' }}>{t.pageviews}</td>
-            <td className="muted">
-              {t.topModules.length ? t.topModules.map((m) => `${m.module} (${m.n})`).join(', ') : '—'}
-            </td>
-            <td className="muted">{fmtWhen(t.lastActivityAt)}</td>
-          </tr>
+          <TR key={t.tenantId} onClick={() => navigate(`/tenants/${t.tenantId}`)}>
+            <td><span className="primary-cell">{t.name}</span><span className="sub">{t.subdomain}</span></td>
+            <td><StatusBadge status={t.status} /></td>
+            <td className="num">{t.activeUsers}</td>
+            <td className="num">{t.sessions}</td>
+            <td className="num">{t.pageviews}</td>
+            <td className="muted small">{t.topModules.map((m) => `${m.module} (${m.n})`).join(', ')}</td>
+            <td className="muted tnum nowrap">{fmtWhen(t.lastActivityAt)}</td>
+          </TR>
         ))}
       </tbody>
-    </table>
+    </Table>
   );
 }

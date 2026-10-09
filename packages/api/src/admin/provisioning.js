@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import { platformPool, getTenantPool, closeTenantPool, invalidateTenantCache } from '../db.js';
 import { hashPassword } from '../auth/passwords.js';
 import { runSqlScript } from '../lib/sqlscript.js';
+import { DEFAULT_PLAN_KEY, TRIAL_DAYS } from '@avenit/shared/src/billing/catalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_PATH = path.resolve(__dirname, '../../db/template/tenant_schema.sql');
@@ -37,6 +38,22 @@ export function slugToDbName(slug) {
   return `avenit_tenant_${slug.replaceAll('-', '_')}`;
 }
 
+// Plan dla nowego tenanta: żądany (klucz/slug/nazwa), o ile jest aktywny; inaczej domyślny 'start'.
+export async function resolveSignupPlan(planKey, pool = platformPool) {
+  const find = async (k) => {
+    const { rows } = await pool.query(
+      `SELECT id, COALESCE(key, slug) AS key, name, trial_days, is_active FROM subscription_plans
+        WHERE key = $1 OR slug = $1 OR name ILIKE $1
+        ORDER BY COALESCE(key = $1 OR slug = $1, FALSE) DESC, sort_order LIMIT 1`,
+      [String(k)]
+    );
+    return rows[0] || null;
+  };
+  const wanted = planKey ? await find(planKey) : null;
+  if (wanted && wanted.is_active !== false) return wanted;
+  return (await find(DEFAULT_PLAN_KEY)) || wanted || null;
+}
+
 export async function provisionTenant({
   name,
   slug,
@@ -44,7 +61,7 @@ export async function provisionTenant({
   adminEmail,
   adminName,
   adminPassword,
-  planKey = 'starter',
+  planKey = DEFAULT_PLAN_KEY,
   company = {},
 }) {
   if (!SLUG_RE.test(String(slug || ''))) {
@@ -87,13 +104,10 @@ export async function provisionTenant({
       [adminEmail, adminName || 'Administrator', await hashPassword(password)]
     );
 
-    // 4. Wpis w control plane + subskrypcja trial wg planu.
-    const { rows: planRows } = await platformPool.query(
-      `SELECT id, trial_days FROM subscription_plans WHERE key = $1 OR name ILIKE $1 LIMIT 1`,
-      [planKey]
-    );
-    const plan = planRows[0] || null;
-    const trialDays = plan?.trial_days ?? 14;
+    // 4. Wpis w control plane + subskrypcja trial wg planu (bez karty). Plan nieznany albo
+    //    wycofany (np. dawny 'starter') → domyślny plan cennika ('start').
+    const plan = await resolveSignupPlan(planKey);
+    const trialDays = plan?.trial_days ?? TRIAL_DAYS;
 
     const { rows: tenantRows } = await platformPool.query(
       `INSERT INTO tenants (name, slug, subdomain, db_name, email, status, trial_ends_at,
@@ -113,8 +127,8 @@ export async function provisionTenant({
     if (plan) {
       await platformPool.query(
         `INSERT INTO tenant_subscriptions (tenant_id, plan_id, status, billing_cycle,
-                                           current_period_start, current_period_end)
-         VALUES ($1, $2, 'trialing', 'monthly', now(), now() + ($3 || ' days')::interval)`,
+                                           current_period_start, current_period_end, trial_ends_at)
+         VALUES ($1, $2, 'trialing', 'monthly', now(), now() + ($3 || ' days')::interval, now() + ($3 || ' days')::interval)`,
         [tenant.id, plan.id, String(trialDays)]
       );
     }

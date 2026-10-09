@@ -90,12 +90,16 @@ DROP TRIGGER IF EXISTS trigger_subscription_plans_updated_at ON subscription_pla
 CREATE TRIGGER trigger_subscription_plans_updated_at BEFORE UPDATE ON subscription_plans
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-INSERT INTO subscription_plans (name, slug, key, description, price_monthly, price_yearly, max_members, max_users, max_groups, max_kids, max_events, max_storage_mb, trial_days, features, sort_order) VALUES
-('Starter', 'starter', 'starter', 'Idealny dla małych kościołów rozpoczynających swoją przygodę z zarządzaniem', 4900, 49000, 50, 2, 5, 20, 10, 100, 14, '{"calendar": true, "members": true, "groups": true, "basic_reports": true}'::jsonb, 1),
-('Standard', 'standard', 'standard', 'Wszystkie podstawowe funkcje plus check-in dzieci i wydarzenia', 9900, 99000, 200, 5, 20, 100, 50, 500, 14, '{"calendar": true, "members": true, "groups": true, "kids_checkin": true, "events": true, "email": true, "basic_reports": true}'::jsonb, 2),
-('Professional', 'professional', 'professional', 'Zaawansowane funkcje dla rozwijających się kościołów', 19900, 199000, 500, 10, -1, -1, -1, 2000, 14, '{"calendar": true, "members": true, "groups": true, "kids_checkin": true, "events": true, "email": true, "finance": true, "forms": true, "advanced_reports": true, "api": true}'::jsonb, 3),
-('Enterprise', 'enterprise', 'enterprise', 'Pełna funkcjonalność dla dużych organizacji z dedykowanym wsparciem', 39900, 399000, -1, -1, -1, -1, -1, -1, 30, '{"calendar": true, "members": true, "groups": true, "kids_checkin": true, "events": true, "email": true, "finance": true, "forms": true, "advanced_reports": true, "api": true, "white_label": true, "priority_support": true, "custom_domain": true}'::jsonb, 4)
-ON CONFLICT (slug) DO NOTHING;
+-- Cennik „za dorosłych” (2026-10): limit planu = liczba DOROSŁYCH w bazie członków (max_members),
+-- wszystkie moduły w każdym planie, bez limitu użytkowników, ceny BRUTTO w groszach.
+--   limit_buffer_pct — zapas ponad limit (10%), w którym nic się nie dzieje do końca okresu,
+--   is_custom        — plan z wyceną indywidualną (Sieć): nigdy nie fakturowany po cenie katalogowej.
+-- Same plany (start/wspolnota/kosciol/kosciol_plus/siec) i wycofanie starych (starter/standard/
+-- professional/enterprise) wpisuje migracja platform/migrations/004_pricing_adults.sql — raz, żeby
+-- późniejsze zmiany z panelu admina nie były nadpisywane przy każdym deployu.
+-- (Dawny seed starych planów usunięty — na nowej bazie nie są potrzebne.)
+ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS limit_buffer_pct INTEGER DEFAULT 10;
+ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS is_custom BOOLEAN DEFAULT FALSE;
 
 -- ── TENANT_SUBSCRIPTIONS ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS tenant_subscriptions (
@@ -113,6 +117,10 @@ CREATE TABLE IF NOT EXISTS tenant_subscriptions (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+-- Cena indywidualna (grosze, BRUTTO) ustawiana przez admina platformy — ma pierwszeństwo przed
+-- ceną planu; wymagana dla planów is_custom (Sieć).
+ALTER TABLE tenant_subscriptions ADD COLUMN IF NOT EXISTS custom_price_monthly INTEGER;
+ALTER TABLE tenant_subscriptions ADD COLUMN IF NOT EXISTS custom_price_yearly INTEGER;
 CREATE INDEX IF NOT EXISTS idx_tenant_subscriptions_tenant ON tenant_subscriptions(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_subscriptions_status ON tenant_subscriptions(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tenant_subscriptions_active
@@ -422,3 +430,18 @@ CREATE TABLE IF NOT EXISTS platform_announcements (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ── TENANT_USAGE_SNAPSHOTS (comiesięczny zapis liczby dorosłych per tenant) ──
+-- Wypełnia worker (1. dnia miesiąca); tylko informacyjnie dla admina — nic nie blokuje.
+CREATE TABLE IF NOT EXISTS tenant_usage_snapshots (
+  id BIGSERIAL PRIMARY KEY,
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  period DATE NOT NULL,                 -- pierwszy dzień miesiąca
+  adults INTEGER NOT NULL,
+  plan_key VARCHAR(50),
+  plan_limit INTEGER,
+  state VARCHAR(20),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (tenant_id, period)
+);
+CREATE INDEX IF NOT EXISTS idx_tenant_usage_snapshots_tenant ON tenant_usage_snapshots(tenant_id, period DESC);

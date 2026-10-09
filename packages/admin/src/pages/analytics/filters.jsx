@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api.js';
+import { Segmented } from '../../components/ui.jsx';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const daysAgo = (n) => iso(new Date(Date.now() - n * 86_400_000));
@@ -43,36 +44,25 @@ export function FilterBar({ filters, set }) {
 
   return (
     <div className="anafilters">
-      <div className="row" style={{ gap: 6 }}>
-        {PRESETS.map((p) => (
-          <button
-            key={p.label}
-            className={activePreset?.label === p.label ? '' : 'ghost'}
-            onClick={() => set({ from: daysAgo(p.days), to: iso(new Date()) })}
-          >
-            {p.label}
-          </button>
-        ))}
-        <input
-          type="date" value={filters.from} style={{ width: 145 }}
-          onChange={(e) => e.target.value && set({ from: e.target.value })}
+      <div className="row row--wrap">
+        <Segmented
+          label="Zakres"
+          value={activePreset?.label || ''}
+          onChange={(label) => { const p = PRESETS.find((x) => x.label === label); set({ from: daysAgo(p.days), to: iso(new Date()) }); }}
+          items={PRESETS.map((p) => ({ value: p.label, label: p.label }))}
         />
+        <input type="date" value={filters.from} aria-label="Od" onChange={(e) => e.target.value && set({ from: e.target.value })} />
         <span className="muted">–</span>
-        <input
-          type="date" value={filters.to} style={{ width: 145 }}
-          onChange={(e) => e.target.value && set({ to: e.target.value })}
-        />
+        <input type="date" value={filters.to} aria-label="Do" onChange={(e) => e.target.value && set({ to: e.target.value })} />
       </div>
-      <div className="row" style={{ gap: 6 }}>
-        {[['', 'Wszystko'], ['landing', 'Strona WWW'], ['app', 'Aplikacja']].map(([v, label]) => (
-          <button key={v} className={filters.site === v ? '' : 'ghost'} onClick={() => set({ site: v })}>
-            {label}
-          </button>
-        ))}
-        <select
-          value={filters.tenantId} style={{ width: 200 }}
-          onChange={(e) => set({ tenantId: e.target.value })}
-        >
+      <div className="row row--wrap">
+        <Segmented
+          label="Miejsce"
+          value={filters.site}
+          onChange={(v) => set({ site: v })}
+          items={[{ value: '', label: 'Wszystko' }, { value: 'landing', label: 'Strona WWW' }, { value: 'app', label: 'Aplikacja' }]}
+        />
+        <select value={filters.tenantId} aria-label="Kościół" onChange={(e) => set({ tenantId: e.target.value })}>
           <option value="">Wszystkie kościoły</option>
           {tenants.map((t) => (
             <option key={t.id} value={t.id}>{t.name} ({t.subdomain})</option>

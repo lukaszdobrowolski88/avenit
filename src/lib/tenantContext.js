@@ -89,41 +89,15 @@ export async function getTenantSubscription(tenantId = null) {
   }
 }
 
-/**
- * Sprawdza czy funkcja jest dostępna w planie
- */
-export async function checkFeature(feature) {
-  const subscription = await getTenantSubscription();
-  if (!subscription) return false;
-
-  return subscription.features?.[feature] === true;
+// Cennik „za dorosłych”: każdy plan ma wszystkie moduły i bez limitu użytkowników/zasobów,
+// a przekroczenie limitu dorosłych niczego nie blokuje (tylko komunikat w Subskrypcji).
+// Dlatego nie bramkujemy funkcji ani limitów planem — zostawione dla zgodności wywołań.
+export async function checkFeature(_feature) {
+  return true;
 }
 
-/**
- * Sprawdza limit zasobów
- * @param {string} resource - Nazwa zasobu (members, users, groups, kids, events, storage_mb)
- * @param {number} currentCount - Aktualna liczba
- * @returns {Promise<{allowed: boolean, limit: number, current: number}>}
- */
-export async function checkLimit(resource, currentCount = 0) {
-  const subscription = await getTenantSubscription();
-  if (!subscription) {
-    return { allowed: false, limit: 0, current: currentCount };
-  }
-
-  const limitKey = `max_${resource}`;
-  const limit = subscription[limitKey];
-
-  // -1 oznacza brak limitu
-  if (limit === -1) {
-    return { allowed: true, limit: -1, current: currentCount };
-  }
-
-  return {
-    allowed: currentCount < limit,
-    limit,
-    current: currentCount
-  };
+export async function checkLimit(_resource, currentCount = 0) {
+  return { allowed: true, limit: -1, current: currentCount };
 }
 
 /**

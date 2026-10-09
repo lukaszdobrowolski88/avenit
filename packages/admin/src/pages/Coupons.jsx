@@ -1,56 +1,72 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
-import { Modal } from './Tenants.jsx';
+import {
+  PageHeader, Button, Badge, Table, EmptyRow, Modal, Field, Toggle, Loading, ErrorBox, useToast, AffixInput,
+} from '../components/ui.jsx';
+
+const discountLabel = (c) =>
+  c.discount_type === 'percent' ? `${c.discount_value}%`
+    : c.discount_type === 'fixed_amount' ? `${(c.discount_value / 100).toLocaleString('pl-PL', { maximumFractionDigits: 2 })} zł`
+      : `${c.discount_value} mies. gratis`;
 
 export default function Coupons() {
-  const [coupons, setCoupons] = useState([]);
+  const [coupons, setCoupons] = useState(null);
   const [edit, setEdit] = useState(null);
   const [err, setErr] = useState('');
-  const load = () => api.coupons().then((r) => setCoupons(r.coupons));
+  const [toast, showToast] = useToast();
+  const load = () => api.coupons().then((r) => setCoupons(r.coupons)).catch((e) => setErr(e.message));
   useEffect(() => { load(); }, []);
 
   const toggleActive = async (c) => {
-    setErr('');
-    try { await api.updateCoupon(c.id, { ...c, is_active: !c.is_active }); load(); }
-    catch (e) { setErr(e.message); }
+    try { await api.updateCoupon(c.id, { ...c, is_active: !c.is_active }); load(); showToast(c.is_active ? 'Kupon wyłączony' : 'Kupon włączony'); }
+    catch (e) { showToast(e.message, 'error'); }
   };
   const remove = async (c) => {
     if (!window.confirm(`Usunąć kupon ${c.code}?`)) return;
-    setErr('');
-    try { await api.deleteCoupon(c.id); load(); }
-    catch (e) { setErr(e.message); }
+    try { await api.deleteCoupon(c.id); load(); showToast('Kupon usunięty'); }
+    catch (e) { showToast(e.message, 'error'); }
   };
 
   return (
     <div>
-      <div className="toolbar">
-        <h1 className="h1">Kupony</h1>
-        <button onClick={() => setEdit({})}>+ Nowy kupon</button>
-      </div>
-      {err && <div className="err" style={{ marginBottom: 12 }}>{err}</div>}
-      <table>
-        <thead><tr><th>Kod</th><th>Nazwa</th><th>Rabat</th><th>Użycia</th><th>Ważny do</th><th>Aktywny</th><th></th></tr></thead>
-        <tbody>
-          {coupons.map((c) => (
-            <tr key={c.id}>
-              <td><b>{c.code}</b></td><td>{c.name}</td>
-              <td>{c.discount_type === 'percent' ? `${c.discount_value}%` : c.discount_type === 'fixed_amount' ? `${(c.discount_value / 100).toFixed(2)} zł` : `${c.discount_value} mc`}</td>
-              <td className="muted">{c.current_uses}{c.max_uses ? `/${c.max_uses}` : ''}</td>
-              <td className="muted">{c.valid_until ? new Date(c.valid_until).toLocaleDateString('pl-PL') : '∞'}</td>
-              <td>
-                <button className="ghost" title={c.is_active ? 'Kliknij, aby dezaktywować' : 'Kliknij, aby aktywować'}
-                  onClick={() => toggleActive(c)} style={{ padding: '2px 8px' }}>{c.is_active ? '✓' : '—'}</button>
-              </td>
-              <td className="row" style={{ gap: 6 }}>
-                <button className="ghost" onClick={() => setEdit(c)}>Edytuj</button>
-                <button className="ghost danger" onClick={() => remove(c)}>Usuń</button>
-              </td>
-            </tr>
-          ))}
-          {coupons.length === 0 && <tr><td colSpan={7} className="muted">Brak kuponów</td></tr>}
-        </tbody>
-      </table>
-      {edit && <CouponForm coupon={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />}
+      <PageHeader
+        title="Kupony"
+        subtitle="Kody rabatowe na subskrypcję."
+        actions={<Button variant="primary" icon="plus" onClick={() => setEdit({})}>Nowy kupon</Button>}
+      />
+      <ErrorBox error={err} onRetry={load} />
+      {!coupons && !err ? <Loading /> : (
+        <Table minWidth={720}>
+          <thead><tr><th>Kod</th><th>Nazwa</th><th>Rabat</th><th className="num">Użycia</th><th>Ważny do</th><th>Aktywny</th><th></th></tr></thead>
+          <tbody>
+            {(coupons || []).length === 0 && <EmptyRow colSpan={7}>Brak kuponów</EmptyRow>}
+            {(coupons || []).map((c) => {
+              const expired = c.valid_until && new Date(c.valid_until) < new Date();
+              const used = c.max_uses && c.current_uses >= c.max_uses;
+              return (
+                <tr key={c.id}>
+                  <td><span className="code-chip strong">{c.code}</span></td>
+                  <td className="primary-cell">{c.name}</td>
+                  <td>{discountLabel(c)}</td>
+                  <td className="num">{c.current_uses}{c.max_uses ? ` / ${c.max_uses}` : ''}</td>
+                  <td className="muted tnum">
+                    {c.valid_until ? new Date(c.valid_until).toLocaleDateString('pl-PL') : 'bezterminowo'}
+                    {expired && <> <Badge tone="neutral" size="sm">wygasł</Badge></>}
+                    {used && <> <Badge tone="neutral" size="sm">wykorzystany</Badge></>}
+                  </td>
+                  <td><Toggle checked={c.is_active} onChange={() => toggleActive(c)} title={c.is_active ? `Wyłącz ${c.code}` : `Włącz ${c.code}`} /></td>
+                  <td className="actions">
+                    <Button size="sm" variant="ghost" onClick={() => setEdit(c)}>Edytuj</Button>
+                    <Button size="sm" variant="ghost" icon="trash" onClick={() => remove(c)} aria-label={`Usuń ${c.code}`} title="Usuń" />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      )}
+      {edit && <CouponForm coupon={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); showToast('Zapisano kupon'); }} />}
+      {toast}
     </div>
   );
 }
@@ -73,7 +89,7 @@ function CouponForm({ coupon, onClose, onSaved }) {
     setErr('');
     const body = {
       ...f,
-      discount_value: f.discount_type === 'fixed_amount' ? Math.round(Number(f.discount_value) * 100) : Number(f.discount_value),
+      discount_value: f.discount_type === 'fixed_amount' ? Math.round(Number(String(f.discount_value).replace(',', '.')) * 100) : Number(f.discount_value),
       valid_until: f.valid_until || null,
       max_uses: f.max_uses ? Number(f.max_uses) : null,
     };
@@ -82,27 +98,32 @@ function CouponForm({ coupon, onClose, onSaved }) {
       onSaved();
     } catch (e) { setErr(e.message); }
   };
+  const affix = f.discount_type === 'percent' ? '%' : f.discount_type === 'fixed_amount' ? 'zł' : 'mies.';
   return (
-    <Modal title={coupon.id ? 'Edytuj kupon' : 'Nowy kupon'} onClose={onClose}>
-      <label>Kod</label><input value={f.code} onChange={(e) => set('code', e.target.value.toUpperCase())} placeholder="WELCOME20" />
-      <label>Nazwa</label><input value={f.name} onChange={(e) => set('name', e.target.value)} />
-      <label>Typ rabatu</label>
-      <select value={f.discount_type} onChange={(e) => set('discount_type', e.target.value)}>
-        <option value="percent">Procentowy (%)</option>
-        <option value="fixed_amount">Kwotowy (PLN)</option>
-        <option value="free_months">Darmowe miesiące</option>
-      </select>
-      <label>Wartość</label><input type="number" value={f.discount_value} onChange={(e) => set('discount_value', e.target.value)} />
-      <label>Ważny do (puste = bezterminowo)</label><input type="date" value={f.valid_until} onChange={(e) => set('valid_until', e.target.value)} />
-      <label>Limit użyć (puste = bez limitu)</label><input type="number" value={f.max_uses} onChange={(e) => set('max_uses', e.target.value)} />
-      <label className="row" style={{ marginTop: 12 }}>
-        <input type="checkbox" style={{ width: 'auto' }} checked={f.is_active} onChange={(e) => set('is_active', e.target.checked)} /> Aktywny
-      </label>
-      {err && <div className="err">{err}</div>}
-      <div className="row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
-        <button className="ghost" onClick={onClose}>Anuluj</button>
-        <button onClick={save} disabled={!f.code || !f.name}>{coupon.id ? 'Zapisz' : 'Utwórz'}</button>
+    <Modal title={coupon.id ? 'Edytuj kupon' : 'Nowy kupon'} onClose={onClose} footer={<>
+      <Button variant="ghost" onClick={onClose}>Anuluj</Button>
+      <Button variant="primary" onClick={save} disabled={!f.code || !f.name}>{coupon.id ? 'Zapisz' : 'Utwórz'}</Button>
+    </>}>
+      <div className="field-row">
+        <Field label="Kod"><input className="mono" value={f.code} onChange={(e) => set('code', e.target.value.toUpperCase())} placeholder="WELCOME20" /></Field>
+        <Field label="Nazwa"><input value={f.name} onChange={(e) => set('name', e.target.value)} /></Field>
       </div>
+      <div className="field-row">
+        <Field label="Typ rabatu">
+          <select value={f.discount_type} onChange={(e) => set('discount_type', e.target.value)}>
+            <option value="percent">Procentowy</option>
+            <option value="fixed_amount">Kwotowy (zł)</option>
+            <option value="free_months">Darmowe miesiące</option>
+          </select>
+        </Field>
+        <Field label="Wartość"><AffixInput affix={affix} inputMode="decimal" value={f.discount_value} onChange={(e) => set('discount_value', e.target.value)} /></Field>
+      </div>
+      <div className="field-row">
+        <Field label="Ważny do" hint="Puste = bezterminowo."><input type="date" value={f.valid_until} onChange={(e) => set('valid_until', e.target.value)} /></Field>
+        <Field label="Limit użyć" hint="Puste = bez limitu."><input type="number" min={1} value={f.max_uses} onChange={(e) => set('max_uses', e.target.value)} /></Field>
+      </div>
+      <Toggle checked={f.is_active} onChange={(v) => set('is_active', v)} label="Aktywny" />
+      {err && <div className="err" role="alert">{err}</div>}
     </Modal>
   );
 }
