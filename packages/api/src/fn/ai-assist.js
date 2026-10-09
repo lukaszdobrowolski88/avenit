@@ -15,7 +15,29 @@
 // na ENV (ANTHROPIC_API_KEY/OPENAI_API_KEY). Obsługa: Anthropic (Messages) oraz
 // OpenAI i kompatybilne (Chat Completions — OpenAI/OpenRouter/Groq/lokalne).
 
+//
+// Bramki (audyt 2026-10, runda 3):
+//   • serwerowy przełącznik AI_ENABLED (env, domyślnie WYŁĄCZONE — lustro src/lib/features.js);
+//     tenant może dodatkowo wyłączyć u siebie: integration_settings.ai_enabled = off/false/0,
+//   • uprawnienie action:ai:use (FN_CAPABILITY w catalog.js; domyślnie tylko administratorzy
+//     i role z '*'),
+//   • limit wywołań per IP (koszt i nadużycia klucza API).
+
 export const name = 'ai-assist';
+export const rateLimit = { max: 30, timeWindow: '10 minutes' };
+
+const OFF_VALUES = new Set(['off', 'false', '0', 'no', 'disabled']);
+const ON_VALUES = new Set(['on', 'true', '1', 'yes', 'enabled']);
+
+// Czy funkcje AI są włączone na serwerze (env) i nie wyłączone przez tenanta?
+export async function aiEnabled(db, env = process.env) {
+  if (!ON_VALUES.has(String(env.AI_ENABLED || '').trim().toLowerCase())) return false;
+  try {
+    const { rows } = await db.query(`SELECT value FROM integration_settings WHERE key = 'ai_enabled' LIMIT 1`);
+    if (rows[0] && OFF_VALUES.has(String(rows[0].value ?? '').trim().toLowerCase())) return false;
+  } catch { /* brak tabeli/ustawienia — decyduje env */ }
+  return true;
+}
 
 const MAX_TOKENS = 8000;
 const PROVIDER_DEFAULTS = {
@@ -208,6 +230,10 @@ export async function callLLM(cfg, system, userContent, opts = {}) {
 
 export default async function handler(req, reply) {
   try {
+    if (!(await aiEnabled(req.db))) {
+      return reply.code(403).send({ error: 'Funkcje AI są wyłączone.', code: 'ai_disabled' });
+    }
+
     const { task, input, context } = req.body || {};
 
     const spec = task && PROMPTS[task];
@@ -230,6 +256,9 @@ export default async function handler(req, reply) {
     }
 
     const contextText = contextToText(context);
+    if (inputText.length > 60_000 || contextText.length > 120_000) {
+      return reply.code(413).send({ error: 'Treść dla asystenta AI jest za długa.' });
+    }
     const userContent = spec.buildUser(inputText, contextText);
 
     let out;

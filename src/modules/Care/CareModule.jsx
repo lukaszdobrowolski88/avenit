@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PageHeader from '../../components/PageHeader';
 import {
   HeartPulse, Users, SlidersHorizontal, Search, StickyNote, HeartHandshake,
-  Award, Tag as TagIcon, ChevronLeft, Mail, Phone,
+  Award, Tag as TagIcon, ChevronLeft, Mail, Phone, CheckSquare,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -13,6 +13,7 @@ import MilestonesTab from './tabs/MilestonesTab';
 import TagsTab from './tabs/TagsTab';
 import CustomValuesTab from './tabs/CustomValuesTab';
 import FieldDefsTab from './tabs/FieldDefsTab';
+import PersonTasksTab from './tabs/PersonTasksTab';
 import { memberName, memberInitials } from './lib/careApi';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
@@ -29,6 +30,7 @@ const PERSON_TABS = [
   { id: 'milestones', label: 'Kamienie milowe', icon: Award },
   { id: 'tags', label: 'Tagi', icon: TagIcon },
   { id: 'custom', label: 'Pola własne', icon: SlidersHorizontal },
+  { id: 'tasks', label: 'Zadania', icon: CheckSquare },
 ];
 
 const STATUS_STYLES = {
@@ -205,6 +207,7 @@ export default function CareModule({ embedded = false }) {
                   {personTab === 'milestones' && <MilestonesTab key={selected.id} member={selected} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
                   {personTab === 'tags' && <TagsTab key={selected.id} member={selected} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
                   {personTab === 'custom' && <CustomValuesTab key={selected.id} member={selected} fields={fields} onGoToDefinitions={goToDefinitions} />}
+                  {personTab === 'tasks' && <PersonTasksTab key={selected.id} member={selected} />}
                 </div>
               </div>
             )}

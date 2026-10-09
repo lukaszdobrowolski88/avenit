@@ -1,15 +1,23 @@
 // Publiczny zapis odpowiedzi RSVP po tokenie (bez logowania).
 // GET-podobne pobranie: POST { token } bez answer → zwraca dane zaproszenia.
 // Zapis: POST { token, answer: 'yes'|'no'|'maybe', guests? }.
+// Limit wywołań per IP — token jest jedynym zabezpieczeniem, więc bez limitu dało się go
+// zgadywać seriami (audyt 2026-10, runda 3).
 export const name = 'rsvp-respond';
 export const isPublic = true;
+export const rateLimit = { max: 30, timeWindow: '10 minutes' };
 
 const VALID = ['yes', 'no', 'maybe'];
+const MAX_GUESTS = 50;
+const TOKEN_RE = /^[A-Za-z0-9_-]{8,128}$/;
 
 export default async function handler(req, reply) {
   if (!req.db) return reply.code(404).send({ error: 'Nieznany tenant' });
   const { token, answer, guests } = req.body || {};
   if (!token) return reply.code(400).send({ error: 'Brak tokenu zaproszenia' });
+  if (typeof token !== 'string' || !TOKEN_RE.test(token)) {
+    return reply.code(404).send({ error: 'Nie znaleziono zaproszenia' });
+  }
 
   try {
     if (answer && VALID.includes(answer)) {
@@ -21,7 +29,7 @@ export default async function handler(req, reply) {
       if (st[0]?.status === 'closed') {
         return reply.code(403).send({ error: 'Zapisy na to wydarzenie zostały zamknięte.' });
       }
-      const g = Math.max(0, parseInt(guests, 10) || 0);
+      const g = Math.min(MAX_GUESTS, Math.max(0, parseInt(guests, 10) || 0));
       await req.db.query(
         `UPDATE rsvp_invitations SET status = $1, guests_count = $2, responded_at = now() WHERE token = $3`,
         [answer, g, token]

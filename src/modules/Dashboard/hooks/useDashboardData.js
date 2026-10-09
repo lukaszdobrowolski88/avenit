@@ -11,11 +11,11 @@ const DEFAULT_DATA = {
   upcomingMinistry: [],
   pastMinistry: [],
   upcomingPrograms: [],
-  tasks: [],
+  tasks: [], // zadania osobiste (user_tasks) — zadania z tablic: useMyBoardTasks
   absences: [],
   prayers: [],
   stats: {
-    tasksCount: 0,
+    tasksCount: 0, // tylko osobiste; Pulpit dolicza zadania z tablic (useMyBoardTasks)
     upcomingServicesCount: 0,
     prayersCount: 0,
   },
@@ -161,86 +161,47 @@ export function useDashboardData(userEmail) {
     }
   }, [withCampusFilter]);
 
-  // Pobierz zadania użytkownika ze wszystkich źródeł - ZOPTYMALIZOWANE
-  const fetchTasks = useCallback(async (userName) => {
+  // Zadania osobiste (user_tasks): moje ORAZ przypisane mi przez kogoś (jak w aplikacji mobilnej).
+  // Serwer i tak zawęża wiersze do „moje albo przypisane mnie” (ownership.js, bez względu na
+  // wielkość liter) — filtr tu jest jawny dla czytelności. Zadania z tablic (Projekty, zakładki
+  // „Zadania” modułów, Kalendarz) czyta JEDNO źródło: useMyBoardTasks (lista + licznik na Pulpicie).
+  const fetchTasks = useCallback(async () => {
     if (!userEmail) return [];
 
     try {
-      // Zadania osobiste + zadania z tablic (niżej). Stare tabele zadań służb (home_group_tasks,
-      // media_tasks…) nie są już czytane — ich zadania żyją na tablicach (import przy wejściu
-      // w zakładkę „Zadania”) i liczyłyby się podwójnie.
-      const personalTasksResult = await supabase
+      const me = userEmail.toLowerCase();
+      const { data, error } = await supabase
         .from('user_tasks')
         .select('*')
-        .eq('user_email', userEmail)
+        .or(`user_email.ilike.${userEmail},assigned_to_email.ilike.${userEmail}`)
         .order('due_date', { ascending: true });
+      if (error) throw error;
+      const rows = data || [];
 
-      const allTasks = [];
+      // Kto przypisał (autor zadania przypisanego mnie) — imiona z kont, bez N+1.
+      const authors = [...new Set(rows
+        .filter((t) => String(t.user_email || '').toLowerCase() !== me && t.user_email)
+        .map((t) => t.user_email))];
+      const names = new Map();
+      if (authors.length) {
+        try {
+          const { data: users } = await supabase.from('app_users').select('email, full_name, name').in('email', authors);
+          (users || []).forEach((u) => names.set(String(u.email).toLowerCase(), u.full_name || u.name || u.email));
+        } catch { /* bez imion — zostaje e-mail */ }
+      }
 
-      if (personalTasksResult.data) {
-        allTasks.push(...personalTasksResult.data.map(task => ({
+      return rows.map((task) => {
+        const owner = String(task.user_email || '').toLowerCase();
+        const assignee = String(task.assigned_to_email || '').toLowerCase();
+        return {
           ...task,
           source: 'personal',
           source_label: 'Osobiste',
-        })));
-      }
-
-      // 4. Zadania z Tablic (Projekty) — elementy, w których jestem w kolumnie „Osoby".
-      try {
-        const [peopleColsRes, boardsRes, metaColsRes] = await Promise.all([
-          supabase.from('board_columns').select('id, board_id').eq('type', 'people'),
-          supabase.from('boards').select('id, name').eq('is_archived', false),
-          supabase.from('board_columns').select('id, board_id, type, settings').in('type', ['status', 'date', 'timeline']),
-        ]);
-        const peopleCols = peopleColsRes.data || [];
-        if (peopleCols.length) {
-          const boardName = new Map((boardsRes.data || []).map(b => [b.id, b.name]));
-          const colsByBoard = {};
-          peopleCols.forEach(c => { (colsByBoard[c.board_id] ||= []).push(c.id); });
-          const statusByBoard = {}, dateByBoard = {};
-          (metaColsRes.data || []).forEach(c => {
-            if (c.type === 'status' && !statusByBoard[c.board_id]) statusByBoard[c.board_id] = c;
-            if ((c.type === 'date' || c.type === 'timeline') && !dateByBoard[c.board_id]) dateByBoard[c.board_id] = c;
-          });
-          const boardIds = [...new Set(peopleCols.map(c => c.board_id))];
-          const { data: items } = await supabase.from('board_items').select('id, name, cells, board_id, description').in('board_id', boardIds);
-          const emailLc = userEmail.toLowerCase();
-          (items || []).forEach(it => {
-            const assigned = (colsByBoard[it.board_id] || []).some(colId => {
-              const v = it.cells?.[colId];
-              return Array.isArray(v) && v.some(p => (p?.email || '').toLowerCase() === emailLc);
-            });
-            if (!assigned) return;
-            let status = 'todo';
-            const sc = statusByBoard[it.board_id];
-            if (sc) {
-              const lbl = (sc.settings?.labels || []).find(l => l.id === it.cells?.[sc.id]);
-              const title = (lbl?.title || '').toLowerCase();
-              if (/gotow|zrobion|zakończ|ukończ|done|zamkni/.test(title)) status = 'done';
-              else if (/trakc|toku|progress|realiz/.test(title)) status = 'in_progress';
-            }
-            let due = null;
-            const dc = dateByBoard[it.board_id];
-            if (dc) { const dv = it.cells?.[dc.id]; due = typeof dv === 'string' ? dv : (dv?.start || null); }
-            allTasks.push({
-              id: it.id, title: it.name || 'Element', description: it.description || null,
-              due_date: due, status, source: 'board', source_label: boardName.get(it.board_id) || 'Tablica',
-              original_id: it.id, original_table: 'board_items',
-              link: `/projekty?board=${it.board_id}&item=${it.id}`,
-            });
-          });
-        }
-      } catch (e) { console.error('Error fetching board tasks:', e); }
-
-      // Sortuj wszystkie zadania według due_date
-      allTasks.sort((a, b) => {
-        if (!a.due_date && !b.due_date) return 0;
-        if (!a.due_date) return 1;
-        if (!b.due_date) return -1;
-        return new Date(a.due_date) - new Date(b.due_date);
+          // Przypisane mi przez kogoś innego → „Od: …”; moje zlecone komuś → „Dla: …”.
+          assigned_by: owner && owner !== me ? (names.get(owner) || task.user_email) : null,
+          assigned_for: assignee && assignee !== me ? (task.assigned_to_name || task.assigned_to_email) : null,
+        };
       });
-
-      return allTasks;
     } catch (error) {
       console.error('Error fetching tasks:', error);
       return [];
@@ -307,7 +268,7 @@ export function useDashboardData(userEmail) {
         fetchUpcomingMinistry(null), // Użyj emaila zamiast czekać na userName
         fetchPastMinistry(null),
         fetchUpcomingPrograms(),
-        fetchTasks(null),
+        fetchTasks(),
         fetchAbsences(),
         fetchPrayers(),
       ]);
@@ -365,7 +326,7 @@ export function useDashboardData(userEmail) {
   }, [fetchUpcomingMinistry, fetchPastMinistry]);
 
   const refreshTasks = useCallback(async () => {
-    const tasks = await fetchTasks(userNameRef.current);
+    const tasks = await fetchTasks();
     const pendingTasks = tasks.filter(t => t.status !== 'done');
     setData(prev => ({
       ...prev,

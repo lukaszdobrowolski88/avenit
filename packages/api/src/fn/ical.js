@@ -142,6 +142,24 @@ function vtodo(e) {
   return lines.join('\r\n');
 }
 
+// Status VTODO z zadania osobistego / starej tabeli tasks (iCal zna tylko kilka wartości).
+export const todoStatus = (status) => (/^(done|completed|gotowe|zrobione)$/i.test(String(status || '')) ? 'COMPLETED' : 'NEEDS-ACTION');
+
+// Właściciel kanału: konto po e-mailu (UserSettings zapisuje user_email), awaryjnie po user_id.
+// Kanał działa tylko dla istniejącego, AKTYWNEGO konta — link mógł zostać w kalendarzu osoby,
+// której konto zablokowano albo usunięto. → { id, email } albo null.
+export async function feedOwner(db, subscription) {
+  const email = String(subscription?.user_email || '').trim().toLowerCase();
+  const { rows } = email
+    ? await db.query(`SELECT id, email, COALESCE(is_active, true) AS active FROM app_users WHERE lower(email) = $1 LIMIT 1`, [email])
+    : subscription?.user_id
+      ? await db.query(`SELECT id, email, COALESCE(is_active, true) AS active FROM app_users WHERE id = $1`, [subscription.user_id])
+      : { rows: [] };
+  const u = rows[0];
+  if (!u || u.active === false || !u.email) return null;
+  return { id: u.id, email: String(u.email).toLowerCase() };
+}
+
 export default async function handler(req, reply) {
   // Token z końca ścieżki: /api/fn/ical/<token>. Fastify nie ma wildcard tu,
   // więc token przyjmujemy z query (?token=) lub z ostatniego segmentu.
@@ -154,18 +172,20 @@ export default async function handler(req, reply) {
   const subscription = subRows[0];
   if (!subscription || subscription.is_active === false) return reply.code(404).send('Subscription not found');
 
+  const owner = await feedOwner(req.db, subscription).catch(() => null);
+  if (!owner) return reply.code(403).send('Subscription owner inactive');
+  // Uprawnienia właściciela (te same co w aplikacji): moduły, do których ma dostęp.
+  const access = await callerAccess({ db: req.db, tenant: req.tenant, user: { id: owner.id, email: owner.email } }).catch(() => null);
+  if (!access) return reply.code(403).send('Subscription owner inactive');
+  const can = access.can;
+
   await req.db.query(
     `UPDATE ical_subscriptions SET last_accessed_at = now(), access_count = COALESCE(access_count,0)+1 WHERE id = $1`,
     [subscription.id]
   ).catch(() => {});
 
   const prefs = subscription.export_preferences || {};
-  // Właściciel kanału — po e-mailu (UserSettings zapisuje user_email), awaryjnie po user_id.
-  let ownerEmail = String(subscription.user_email || '').toLowerCase();
-  if (!ownerEmail && subscription.user_id) {
-    const { rows } = await req.db.query(`SELECT email FROM app_users WHERE id = $1`, [subscription.user_id]).catch(() => ({ rows: [] }));
-    ownerEmail = String(rows[0]?.email || '').toLowerCase();
-  }
+  const ownerEmail = owner.email;
   const events = [];
   const now = new Date();
   const dtstamp = fmtUtc(now);
@@ -174,8 +194,9 @@ export default async function handler(req, reply) {
   const fromStr = ymd(from);
   const toStr = ymd(to);
 
-  if (prefs.programs) {
-    const { rows } = await req.db.query(`SELECT * FROM programs WHERE date >= $1 AND date <= $2`, [fromStr, toStr]);
+  if (prefs.programs && can('module:programs')) {
+    const { rows } = await req.db.query(`SELECT * FROM programs WHERE date >= $1 AND date <= $2`, [fromStr, toStr])
+      .catch((err) => { req.log?.warn?.({ err }, 'ical: programs'); return { rows: [] }; });
     for (const p of rows) {
       const d = ymd(p.date);
       events.push(vevent({
@@ -189,9 +210,11 @@ export default async function handler(req, reply) {
   // Wydarzenia: jedna tabela `events` (date/time/end_time; dawne tabele modułów usunięte
   // migracją 077). Moduł służby wg preferencji (worship, media…), reszta wg „events”.
   // Tylko wydarzenia bez ograniczonej widoczności (albo moje) — kanał ICS nie zna kontekstu
-  // segmentów, a link może trafić do innej osoby.
-  const wantModule = MODULE_PREFS.some((k) => prefs[k]);
-  if (prefs.events || wantModule) {
+  // segmentów, a link może trafić do innej osoby. Kalendarz ogólny — module:calendar; wydarzenia
+  // służby — module:calendar albo moduł tej służby.
+  const calendarOk = can('module:calendar');
+  const wantModule = MODULE_PREFS.some((k) => prefs[k] && (calendarOk || can(`module:${k}`)));
+  if ((prefs.events && calendarOk) || wantModule) {
     const { rows } = await req.db.query(
       `SELECT id, title, description, location, date, time, end_time, end_date, event_type, module_key
          FROM events
@@ -206,7 +229,8 @@ export default async function handler(req, reply) {
     ).catch((err) => { req.log?.warn?.({ err }, 'ical: events'); return { rows: [] }; });
     for (const ev of rows) {
       const mk = ev.module_key || '';
-      if (!(MODULE_PREFS.includes(mk) ? prefs[mk] : prefs.events)) continue;
+      const isModule = MODULE_PREFS.includes(mk);
+      if (!(isModule ? prefs[mk] && (calendarOk || can(`module:${mk}`)) : prefs.events && calendarOk)) continue;
       const d = ymd(ev.date);
       const t = ev.time ? String(ev.time).slice(0, 5) : null;
       const label = MODULE_LABEL[mk];
@@ -221,8 +245,9 @@ export default async function handler(req, reply) {
   }
 
   // Moje służby z grafiku — domyślnie WŁĄCZONE (kanały sprzed tej opcji też je dostają).
-  // Odrzucone pomijamy. Najbliższe daty najpierw, żeby limit wierszy ucinał najdalsze.
-  if (prefs.my_services !== false && ownerEmail) {
+  // Własne przypisania osoby — bez dodatkowych uprawnień. Odrzucone pomijamy.
+  // Najbliższe daty najpierw, żeby limit wierszy ucinał najdalsze.
+  if (prefs.my_services !== false) {
     const { rows } = await req.db.query(
       `SELECT sa.id, sa.event_id, sa.team_type, sa.role_key, sa.role_label, sa.assigned_name, sa.assigned_email, sa.status,
               e.title AS event_title, e.date::text AS event_date,
@@ -247,37 +272,52 @@ export default async function handler(req, reply) {
     }
   }
 
-  // Zadania — tylko moje. Od przeniesienia zadań Kalendarza na tablicę (source_kind 'tasks') —
-  // elementy tablic z terminem przypisane do mnie (Kalendarz + zakładki „Zadania” służb), z tymi
-  // samymi prawami co w aplikacji. Dopóki tablica Kalendarza nie powstała — stara tabela tasks.
-  const { rows: calBoard } = prefs.tasks && ownerEmail
-    ? await req.db.query(`SELECT 1 FROM boards WHERE source_kind = 'tasks' LIMIT 1`).catch(() => ({ rows: [] }))
-    : { rows: [] };
-  if (prefs.tasks && ownerEmail && calBoard.length) {
-    const { rows: who } = await req.db.query('SELECT id FROM app_users WHERE lower(email) = $1 LIMIT 1', [ownerEmail]).catch(() => ({ rows: [] }));
-    const access = who[0]
-      ? await callerAccess({ db: req.db, tenant: req.tenant, user: { id: who[0].id, email: ownerEmail } }).catch(() => null)
-      : null;
-    const items = access
-      ? await listMyBoardItems({ db: req.db, email: ownerEmail, can: access.can, from: fromStr, to: toStr }).catch((err) => { req.log?.warn?.({ err }, 'ical: board tasks'); return []; })
-      : [];
+  // Zadania — tylko moje:
+  //  • elementy tablic z terminem przypisane do mnie (Kalendarz + zakładki „Zadania” służb + Projekty),
+  //    z tymi samymi prawami co w aplikacji (listMyBoardItems + uprawnienia właściciela);
+  //  • zadania osobiste (user_tasks) — moje albo przypisane mi;
+  //  • dopóki tablica Kalendarza nie powstała — stara tabela tasks (z module:calendar).
+  if (prefs.tasks) {
+    const items = await listMyBoardItems({ db: req.db, email: ownerEmail, can, from: fromStr, to: toStr })
+      .catch((err) => { req.log?.warn?.({ err }, 'ical: board tasks'); return []; });
     for (const t of items) {
       events.push(vtodo({
         uid: uid(t.id, 'board-item'), summary: t.name, description: t.board_name || '',
         due: String(t.date).replace(/-/g, ''), dtstamp, status: t.done ? 'COMPLETED' : 'NEEDS-ACTION',
       }));
     }
-  } else if (prefs.tasks && ownerEmail) {
-    const { rows } = await req.db.query(
-      `SELECT * FROM tasks WHERE due_date IS NOT NULL AND due_date >= $1 AND due_date <= $2
-          AND (lower(assigned_to) = $3 OR lower(created_by) = $3)`,
-      [fromStr, toStr, ownerEmail]
-    ).catch(() => ({ rows: [] }));
-    for (const t of rows) {
+
+    const { rows: personal } = await req.db.query(
+      `SELECT id, title, description, status, to_jsonb(t)->>'due_date' AS due
+         FROM user_tasks t
+        WHERE due_date IS NOT NULL
+          AND (lower(user_email) = $1 OR lower(COALESCE(to_jsonb(t)->>'assigned_to_email', '')) = $1)
+        ORDER BY due_date
+        LIMIT 2000`,
+      [ownerEmail]
+    ).catch((err) => { req.log?.warn?.({ err }, 'ical: user_tasks'); return { rows: [] }; });
+    for (const t of personal) {
+      const d = String(t.due || '').slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d < fromStr || d > toStr) continue;
       events.push(vtodo({
-        uid: uid(t.id, 'task'), summary: t.title, description: t.description || '',
-        due: ymd(t.due_date).replace(/-/g, ''), dtstamp, status: t.status,
+        uid: uid(t.id, 'user-task'), summary: t.title || 'Zadanie', description: t.description || '',
+        due: d.replace(/-/g, ''), dtstamp, status: todoStatus(t.status),
       }));
+    }
+
+    const { rows: calBoard } = await req.db.query(`SELECT 1 FROM boards WHERE source_kind = 'tasks' LIMIT 1`).catch(() => ({ rows: [] }));
+    if (!calBoard.length && calendarOk) {
+      const { rows } = await req.db.query(
+        `SELECT * FROM tasks WHERE due_date IS NOT NULL AND due_date >= $1 AND due_date <= $2
+            AND (lower(assigned_to) = $3 OR lower(created_by) = $3)`,
+        [fromStr, toStr, ownerEmail]
+      ).catch(() => ({ rows: [] }));
+      for (const t of rows) {
+        events.push(vtodo({
+          uid: uid(t.id, 'task'), summary: t.title, description: t.description || '',
+          due: ymd(t.due_date).replace(/-/g, ''), dtstamp, status: todoStatus(t.status),
+        }));
+      }
     }
   }
 

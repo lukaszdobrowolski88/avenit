@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { pickSourceBoard } from '@avenit/shared/src/lib/taskLinks.js';
 import { supabase } from '../../lib/supabase';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
@@ -94,9 +95,12 @@ export default function ModuleBoard({ sourceKind, moduleKey = null, title, headi
       }
 
       try {
-        // Najstarsza tablica źródła — ta sama, którą wybiera serwer (gdyby kiedyś powstały dwie).
-        const { data: found } = await supabase.from('boards').select('*').eq('source_kind', sourceKind)
-          .order('created_at', { ascending: true }).limit(1);
+        // Ta sama tablica, którą wybiera serwer (board-import-legacy): najpierw utworzona przez import
+        // (created_by 'system:board-import'), potem najstarsza — gdyby kiedyś powstały dwie.
+        const { data: candidates } = await supabase.from('boards').select('*').eq('source_kind', sourceKind)
+          .order('created_at', { ascending: true }).limit(10);
+        const picked = pickSourceBoard(candidates);
+        const found = picked ? [picked] : null;
         if (found && found.length) {
           if (!alive) return;
           setBoardId(found[0].id);

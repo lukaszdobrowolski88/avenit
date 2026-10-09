@@ -52,7 +52,7 @@ function fakeDb({ updatedRows = [], event = null }) {
     async query(sql, params) {
       log.push({ sql: sql.replace(/\s+/g, ' ').trim(), params });
       if (/^UPDATE schedule_assignments/.test(sql.trim())) return { rows: updatedRows };
-      if (/FROM events WHERE id::text = \$1 FOR UPDATE/.test(sql)) return { rows: event ? [event] : [] };
+      if (/FROM events WHERE id = \$1 FOR UPDATE/.test(sql)) return { rows: event ? [event] : [] };
       if (/^UPDATE events/.test(sql.trim())) return { rows: [{ id: params[0], assignments: JSON.parse(params[1]) }] };
       return { rows: [] };
     },

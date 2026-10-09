@@ -12,7 +12,6 @@ export default function Przelewy24Button({
   description = tr('Płatność za formularz'),
   sandbox = true,
   formId,
-  sessionId,
   email,
   onSuccess,
   onError,
@@ -22,20 +21,17 @@ export default function Przelewy24Button({
   const [error, setError] = useState(null);
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [transactionRegistered, setTransactionRegistered] = useState(false);
+  // sessionId nadaje serwer (przelewy24-create-payment) — po nim webhook księguje płatność.
+  const [sessionId, setSessionId] = useState(null);
 
   // Przelewy24 wymaga kwoty w groszach
   const amountInGrosze = Math.round(amount * 100);
 
-  // Generuj unikalny session ID jeśli nie podano
-  const generateSessionId = () => {
-    return `${formId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  };
-
-  const currentSessionId = sessionId || generateSessionId();
-
-  // URL zwrotny po płatności
-  const returnUrl = `${window.location.origin}/form/${formId}?payment=success&session=${currentSessionId}`;
-  const statusUrl = `${import.meta.env.VITE_API_URL || window.location.origin}/api/fn/przelewy24-webhook`;
+  // URL zwrotny po płatności. Parametr `session` (sessionId transakcji) dopisuje serwer —
+  // to on nadaje sessionId; adres powiadomień (urlStatus) też ustala serwer.
+  const returnUrl = formId
+    ? `${window.location.origin}/form/${formId}?payment=success`
+    : `${window.location.origin}${window.location.pathname}?payment=success`;
 
   // Rejestracja transakcji w Przelewy24
   const registerTransaction = async () => {
@@ -62,9 +58,8 @@ export default function Przelewy24Button({
           currency,
           description,
           email,
-          sessionId: currentSessionId,
+          ...(formId ? { formId } : {}),
           urlReturn: returnUrl,
-          urlStatus: statusUrl,
           sandbox
         }
       });
@@ -76,10 +71,12 @@ export default function Przelewy24Button({
       }
 
       // Ustaw URL do przekierowania
-      const p24Url = sandbox
+      // Adres z serwera (zna właściwe środowisko bramki); wariant z flagi — dla starszego API.
+      const p24Url = data.paymentUrl || (sandbox
         ? `https://sandbox.przelewy24.pl/trnRequest/${data.token}`
-        : `https://secure.przelewy24.pl/trnRequest/${data.token}`;
+        : `https://secure.przelewy24.pl/trnRequest/${data.token}`);
 
+      setSessionId(data.sessionId || null);
       setPaymentUrl(p24Url);
       setTransactionRegistered(true);
 
@@ -98,12 +95,14 @@ export default function Przelewy24Button({
   const redirectToPayment = () => {
     if (paymentUrl) {
       // Zapisz session ID w localStorage do weryfikacji po powrocie
-      localStorage.setItem(`p24_session_${formId}`, JSON.stringify({
-        sessionId: currentSessionId,
-        amount,
-        currency,
-        timestamp: Date.now()
-      }));
+      try {
+        localStorage.setItem(`p24_session_${formId}`, JSON.stringify({
+          sessionId,
+          amount,
+          currency,
+          timestamp: Date.now()
+        }));
+      } catch { /* prywatne okno / zablokowany storage — przekierowanie i tak działa */ }
 
       window.location.href = paymentUrl;
     }

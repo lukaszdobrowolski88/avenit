@@ -1,5 +1,9 @@
 // Wsadowa wysyłka zaproszeń do służby dla jednego wydarzenia (albo programu).
-// Wejście: { eventId | programId, teamType, teamLabel?, baseUrl }
+// Wejście: { eventId | programId, teamType, teamLabel? } (baseUrl z żądania jest ignorowany —
+// linki zawsze z domeny tenanta, jak w przypomnieniach; obcy host wyprowadziłby tokeny odpowiedzi).
+// Dostęp: action:programs:send_assignment (FN_CAPABILITY) ORAZ globalna edycja grafiku
+// (module:programs + res:schedule_assignments:update) albo — w zakresie służby — teamType
+// wskazujący służbę, której grafik osoba może zmieniać (lider Mediów wysyła tylko dla Mediów).
 // - grupuje NIEwysłane, oczekujące przypisania per OSOBA (assigned_email),
 // - jednej osobie wysyła JEDEN łączony e-mail + JEDEN push (wszystkie jej służby),
 // - nadaje wspólny token na jej przypisania (akceptacja/odrzucenie obejmuje wszystkie),
@@ -13,6 +17,10 @@ import { config } from '../config.js';
 import { sendEmail } from '../lib/email.js';
 import { sendPushCore } from './send-push.js';
 import { accountEmailsForAssignee } from '../lib/assigneeIdentity.js';
+import { rsvpBase } from './rsvp-send.js';
+import { loadGrants } from '../dataapi/registry.js';
+import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
+import { globalAllows, teamAllows } from '@avenit/shared/src/permissions/moduleScope.js';
 
 export const name = 'send-assignment-invites';
 
@@ -216,13 +224,36 @@ export const toDate = (d) => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.tes
 export const dateLong = (d) => toDate(d).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 export const dateShort = (d) => toDate(d).toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'numeric' });
 
+// Bez globalnej edycji grafiku: wymagana służba (teamType), której grafik osoba może zmieniać.
+// can: resolver.can. Zwraca komunikat błędu albo null (dozwolone).
+export function inviteAccessError(can, teamType) {
+  if (globalAllows(can, 'schedule_assignments', 'update')) return null;
+  if (!teamType) return 'Wskaż służbę — zaproszenia wysyłasz tylko dla grafiku swojej służby';
+  if (!teamAllows(can, String(teamType), 'update')) return 'Brak uprawnień do wysyłki zaproszeń tej służby';
+  return null;
+}
+
+async function checkInviteAccess(req, teamType) {
+  const { rows } = await req.db.query('SELECT id, role, is_super_admin FROM app_users WHERE id = $1', [req.user?.id]);
+  const me = rows[0];
+  if (!me) return 'Brak konta';
+  const { grants, adminRoles } = await loadGrants(req.db, req.tenant.db_name);
+  if (me.is_super_admin || adminRoles.has(me.role) || grants === null) return null; // admin / tryb legacy
+  return inviteAccessError(makeResolver(grants, { role: me.role, userId: me.id, isAdmin: false }).can, teamType);
+}
+
+// Domena tenanta (jak przypomnienia grafiku — schedule-reminders): https://<subdomena>.<APP_DOMAIN>.
+export const tenantOrigin = (tenant) => rsvpBase(tenant?.subdomain || tenant?.slug);
+
 export default async function handler(req, reply) {
   try {
-    const { programId, eventId, teamType, teamLabel: rawTeamLabel, baseUrl } = req.body || {};
+    const { programId, eventId, teamType, teamLabel: rawTeamLabel } = req.body || {};
     const scopeId = eventId || programId;
     if (!scopeId) return reply.code(400).send({ error: 'Brak programId/eventId' });
     const scopeCol = eventId ? 'event_id' : 'program_id';
-    const origin = String(baseUrl || `https://${req.headers.host}`).replace(/\/+$/, '');
+    const denied = await checkInviteAccess(req, teamType);
+    if (denied) return reply.code(403).send({ error: denied });
+    const origin = tenantOrigin(req.tenant);
     const teamLabel = String(rawTeamLabel || '').trim().slice(0, 80);
 
     // Źródło daty/tytułu/godziny/miejsca i link push: wydarzenie (events) lub program (programs).

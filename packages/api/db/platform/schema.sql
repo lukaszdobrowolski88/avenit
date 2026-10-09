@@ -220,17 +220,29 @@ CREATE TRIGGER trigger_payment_transactions_updated_at BEFORE UPDATE ON payment_
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Po zakończonej płatności: oznacz fakturę jako opłaconą i odblokuj tenanta.
+-- Tylko płatność FAKTURY tego samego tenanta, w pełnej kwocie i walucie faktury (audyt 2026-10):
+-- wcześniej każda zakończona transakcja tenanta (np. darowizna 1 zł albo 0,01 zł „za fakturę”)
+-- odblokowywała zawieszonego tenanta. Darowizny/płatności formularzy (invoice_id NULL) — nic.
 CREATE OR REPLACE FUNCTION update_invoice_on_payment()
 RETURNS TRIGGER AS $$
+DECLARE
+  inv RECORD;
 BEGIN
-  IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
-    UPDATE invoices SET status = 'paid', paid_at = NEW.completed_at,
-           payment_method = NEW.gateway, payment_id = NEW.gateway_transaction_id
-     WHERE id = NEW.invoice_id;
-    UPDATE tenant_subscriptions SET status = 'active'
-     WHERE tenant_id = NEW.tenant_id AND status = 'past_due';
-    UPDATE tenants SET status = 'active'
-     WHERE id = NEW.tenant_id AND status = 'suspended';
+  IF NEW.status = 'completed' AND OLD.status IS DISTINCT FROM 'completed' AND NEW.invoice_id IS NOT NULL THEN
+    SELECT id, tenant_id, total, currency, status INTO inv FROM invoices WHERE id = NEW.invoice_id;
+    IF FOUND
+       AND inv.tenant_id = NEW.tenant_id
+       AND NEW.amount = inv.total
+       AND upper(COALESCE(NEW.currency, 'PLN')) = upper(COALESCE(inv.currency, 'PLN'))
+       AND inv.status IN ('pending', 'overdue') THEN
+      UPDATE invoices SET status = 'paid', paid_at = NEW.completed_at,
+             payment_method = NEW.gateway, payment_id = NEW.gateway_transaction_id
+       WHERE id = inv.id;
+      UPDATE tenant_subscriptions SET status = 'active'
+       WHERE tenant_id = NEW.tenant_id AND status = 'past_due';
+      UPDATE tenants SET status = 'active'
+       WHERE id = NEW.tenant_id AND status = 'suspended';
+    END IF;
   END IF;
   RETURN NEW;
 END;

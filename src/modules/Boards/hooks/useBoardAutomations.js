@@ -3,6 +3,10 @@ import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
 import { addDays, format } from 'date-fns';
 import { tr } from '../../../i18n';
+import { taskItemLink } from '@avenit/shared/src/lib/taskLinks.js';
+import { getAppModulesSnapshot } from '../../../hooks/useAppModules';
+import { modulePaths } from '../lib/myWork';
+import { buildCreatedItem } from '../lib/automations';
 
 // Silnik automatyzacji (natychmiastowe wyzwalacze po stronie klienta) + CRUD.
 // Wyzwalacze czasowe (date_arrives / every_period) obsługuje worker packages/api.
@@ -62,9 +66,12 @@ export function useBoardAutomations(boardId, data, { userEmail, userName } = {})
   const peopleOfItem = (item) => {
     const cols = data.columns.filter(c => c.type === 'people');
     const emails = new Set();
-    cols.forEach(c => (item.cells?.[c.id] || []).forEach(p => emails.add(p.email)));
+    cols.forEach(c => (item.cells?.[c.id] || []).forEach(p => p?.email && emails.add(p.email)));
     return [...emails];
   };
+
+  // Link do zadania — wspólna reguła (zadania służby → moduł, Kalendarz → /wydarzenia, reszta → Projekty).
+  const itemLink = (itemId) => taskItemLink(data.board || { id: boardId }, itemId, modulePaths(getAppModulesSnapshot().modules));
 
   // skip: e-maile, które już dostały powiadomienie z serwera (nowo przypisani — boardNotify.js),
   // żeby automatyzacja „przypisano osobę → powiadom” nie dublowała powiadomienia.
@@ -78,13 +85,13 @@ export function useBoardAutomations(boardId, data, { userEmail, userName } = {})
           if (p.targetType === 'creator') targets = item.created_by ? [item.created_by] : [];
           else if (p.targetType === 'specific') targets = p.email ? [p.email] : [];
           else targets = peopleOfItem(item); // assignee (domyślnie)
-          targets = targets.filter((e) => !skip.has(String(e || '').toLowerCase()));
+          targets = targets.filter((e) => e && e.includes('@') && !skip.has(String(e).toLowerCase()));
           for (const email of targets) {
             await supabase.from('notifications').insert({
               user_email: email, type: 'task',
-              title: p.title || `Automatyzacja: ${automation.name || 'tablica'}`,
-              body: `${item.name || 'Element'}`,
-              link: `/projekty?board=${boardId}&item=${item.id}`,
+              title: p.title || tr('Automatyzacja: {name}', { name: automation.name || tr('tablica') }),
+              body: `${item.name || tr('Element')}`,
+              link: itemLink(item.id),
               data: { item_id: item.id, board_id: boardId, automation_id: automation.id },
             });
           }
@@ -101,10 +108,23 @@ export function useBoardAutomations(boardId, data, { userEmail, userName } = {})
           }
         } else if (action.type === 'create_update') {
           await supabase.from('board_item_updates').insert({
-            item_id: item.id, board_id: boardId, author_email: userEmail || null, author_name: userName || 'Automatyzacja',
+            item_id: item.id, board_id: boardId, author_email: userEmail || null, author_name: userName || tr('Automatyzacja'),
             body: p.text || '', mentions: [], likes: [],
           });
           detail.push('create_update');
+        } else if (action.type === 'create_item') {
+          // Nowy element na tej tablicy (nazwa, grupa, status, osoba, termin „dziś + N”). Zapis
+          // z RETURNING — serwer powiadomi przypisaną osobę; widok dostanie wiersz przez realtime.
+          // Bez data.addItem: nie przenosimy kursora do nowego wiersza i nie wywołujemy kolejnych reguł.
+          const row = buildCreatedItem({
+            params: p, boardId, groups: data.groups, items: data.items, columns: data.columns,
+            userEmail: userEmail || null, fallbackName: tr('Nowe zadanie'),
+          });
+          if (!row) throw new Error('no group');
+          const { error } = await supabase.from('board_items').insert(row).select().single();
+          if (error) throw error;
+          detail.push('create_item');
+          data.refresh?.();
         }
       } catch (e) {
         detail.push(`err:${action.type}`);

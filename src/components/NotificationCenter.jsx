@@ -1,20 +1,41 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, X, MessageSquare, AtSign, CheckSquare, Calendar, Trash2, CheckCheck } from 'lucide-react';
+import { Bell, X, MessageSquare, AtSign, CheckSquare, Calendar, CalendarCheck, CheckCheck } from 'lucide-react';
 import { useNotificationContext } from '../contexts/NotificationContext';
-import { notificationColors } from '../hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { useT } from '../i18n';
 
-// Ikony dla typów powiadomień
-const typeIcons = {
-  message: MessageSquare,
-  mention: AtSign,
-  task: CheckSquare,
-  event: Calendar,
-  system: Bell
+// Rodzaj powiadomienia → ikona + krótka etykieta (PL — tłumaczona przy rysowaniu).
+// Wzmianka w komentarzu zadania (data.item_id) to coś innego niż wzmianka w czacie.
+export function notificationKind(n) {
+  const type = n?.type;
+  if (type === 'task') return { icon: CheckSquare, label: 'Zadanie' };
+  if (type === 'mention') return { icon: AtSign, label: n?.data?.item_id ? 'Wzmianka w zadaniu' : 'Wzmianka' };
+  if (type === 'message') return { icon: MessageSquare, label: 'Wiadomość' };
+  if (type === 'assignment') return { icon: CalendarCheck, label: 'Służba' };
+  if (type === 'event') return { icon: Calendar, label: 'Wydarzenie' };
+  return { icon: Bell, label: null };
+}
+
+// Rozmowa w Komunikatorze → jedna pozycja (wzmianki z komentarzy zadań NIE są łączone).
+const chatKey = (n) => {
+  const conv = n?.data?.conversation_id;
+  if (conv) return `msg:${conv}`;
+  return n?.type === 'message' && n.link ? `msg:${n.link}` : null;
 };
+
+// Link wewnętrzny: ścieżka aplikacji (albo pełny adres tej samej domeny → ścieżka).
+export function internalPath(link) {
+  const s = String(link || '');
+  if (!s) return null;
+  if (s.startsWith('/')) return s;
+  try {
+    const u = new URL(s);
+    if (typeof window !== 'undefined' && u.origin === window.location.origin) return `${u.pathname}${u.search}${u.hash}`;
+  } catch { /* nie URL */ }
+  return null;
+}
 
 export default function NotificationCenter() {
   const t = useT();
@@ -39,8 +60,7 @@ export default function NotificationCenter() {
     const byKey = new Map();
     for (const n of notifications) {
       if (n.read) continue;
-      const conv = n.data?.conversation_id;
-      const key = (n.type === 'message' || n.type === 'mention') && (conv || n.link) ? `msg:${conv || n.link}` : null;
+      const key = chatKey(n);
       const g = key ? byKey.get(key) : null;
       if (g) { g.ids.push(n.id); g.count += 1; continue; }
       const item = { ...n, ids: [n.id], count: 1 };
@@ -70,13 +90,13 @@ export default function NotificationCenter() {
     }
   };
 
+  // Klik = przeczytane (cała zgrupowana pozycja), potem przejście do celu.
   const handleNotificationClick = (notification) => {
-    // NIE oznaczaj jako przeczytane - to zrobi się automatycznie po wejściu w konwersację
-    if (notification.link) {
-      // Użyj react-router navigate zamiast window.location
-      navigate(notification.link);
-    }
     setIsOpen(false);
+    (notification.ids || [notification.id]).forEach((nid) => { markAsRead(nid); });
+    const path = internalPath(notification.link);
+    if (path) navigate(path);
+    else if (notification.link) window.open(notification.link, '_blank', 'noopener');
   };
 
   return (
@@ -129,49 +149,54 @@ export default function NotificationCenter() {
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {unreadNotifications.map(notification => {
-                  const IconComponent = typeIcons[notification.type] || Bell;
-                  const colorClass = notificationColors[notification.type] || notificationColors.system;
+                  const kind = notificationKind(notification);
+                  const IconComponent = kind.icon;
 
                   return (
                     <div
                       key={notification.ids.join(',')}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition cursor-pointer bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/10"
-                      onClick={() => handleNotificationClick(notification)}
+                      className="flex items-start gap-1 pr-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/10"
                     >
-                      {/* Ikona */}
-                      <div className={`p-2 rounded-xl ${colorClass} flex-shrink-0`}>
-                        <IconComponent size={18} />
-                      </div>
-
-                      {/* Treść */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {notification.title}
-                            {notification.count > 1 && (
-                              <span className="font-normal text-gray-500 dark:text-gray-400"> · {t('{n} wiadomości', { n: notification.count })}</span>
-                            )}
-                          </p>
-                          <span className="w-2 h-2 bg-accent-primary-light rounded-full flex-shrink-0 mt-1.5" />
+                      <button
+                        type="button"
+                        onClick={() => handleNotificationClick(notification)}
+                        className="flex-1 min-w-0 flex items-start gap-3 pl-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-300 dark:focus-visible:ring-gray-600"
+                      >
+                        {/* Ikona */}
+                        <div className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex-shrink-0">
+                          <IconComponent size={18} aria-hidden="true" />
                         </div>
-                        {(notification.body || notification.type === 'message') && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                            {notification.body || t('📎 Załącznik')}
+
+                        {/* Treść */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {notification.title}
+                              {notification.count > 1 && (
+                                <span className="font-normal text-gray-500 dark:text-gray-400"> · {t('{n} wiadomości', { n: notification.count })}</span>
+                              )}
+                            </p>
+                            <span className="w-2 h-2 bg-accent-primary-light rounded-full flex-shrink-0 mt-1.5" aria-hidden="true" />
+                          </div>
+                          {(notification.body || notification.type === 'message') && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                              {notification.body || t('Załącznik')}
+                            </p>
+                          )}
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                            {kind.label && <span className="font-medium text-gray-500 dark:text-gray-400">{t(kind.label)} · </span>}
+                            {formatTime(notification.created_at)}
                           </p>
-                        )}
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
-                          {formatTime(notification.created_at)}
-                        </p>
-                      </div>
+                        </div>
+                      </button>
 
                       {/* Akcja usunięcia */}
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          notification.ids.forEach((id) => deleteNotification(id));
-                        }}
-                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-gray-400 hover:text-red-500 flex-shrink-0"
+                        type="button"
+                        onClick={() => notification.ids.forEach((id) => deleteNotification(id))}
+                        className="mt-3 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex-shrink-0"
                         title={t('Usuń')}
+                        aria-label={t('Usuń')}
                       >
                         <X size={14} />
                       </button>
@@ -186,7 +211,7 @@ export default function NotificationCenter() {
           {unreadNotifications.length > 0 && (
             <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                {unreadCount} nieprzeczytanych
+                {t('{n} nieprzeczytanych', { n: unreadCount })}
               </p>
             </div>
           )}

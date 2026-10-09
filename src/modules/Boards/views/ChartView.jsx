@@ -58,7 +58,9 @@ export default function ChartView({ data, config, onUpdateConfig }) {
           <h3 className="font-semibold text-gray-800 dark:text-gray-100 truncate">{col.name}</h3>
           <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums shrink-0">{tr('Razem: {n}', { n: items.length })}</span>
         </div>
-        {chartType === 'pie' ? <DonutChart data={chartData} size={220} /> : <BarChart data={chartData} height={280} />}
+        {chartType === 'pie'
+          ? <DonutChart data={chartData} size={220} title={tr('Wykres kołowy: {name}', { name: col.name })} />
+          : <BarChart data={chartData} height={280} title={tr('Wykres słupkowy: {name}', { name: col.name })} />}
       </div>
     </div>
   );

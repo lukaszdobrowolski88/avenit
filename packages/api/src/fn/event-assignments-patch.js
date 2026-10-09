@@ -11,6 +11,9 @@
 // Dostęp: jak zwykła edycja wydarzenia (canAccess update na events) ALBO — w zakresie służb —
 // każda zmieniana sekcja należy do służby, której wydarzenia osoba może edytować (lider Mediów
 // zmienia assignments.media na dowolnym wydarzeniu, ale nie assignments.worship). moduleScope.js.
+// Odpowiedź: tylko { id, assignments } (bez reszty wiersza wydarzenia — opis, segmenty widoczności
+// itd. nie są potrzebne edytorowi grafiku). Realtime: hub filtruje zmianę wg widoczności wydarzenia
+// dla każdego subskrybenta (realtime/scope.js).
 import { canAccess, loadGrants } from '../dataapi/registry.js';
 import { canPatchTeams } from '../dataapi/moduleScope.js';
 import { emitChange } from '../realtime/hub.js';
@@ -37,6 +40,9 @@ export function applyOps(assignments, ops) {
   }
   return next;
 }
+
+// Odpowiedź fn: identyfikator i grafik — bez pozostałych kolumn wydarzenia.
+export const patchResponse = (row) => ({ id: row?.id ?? null, assignments: row?.assignments || {} });
 
 export function validateOps(ops) {
   if (!Array.isArray(ops) || !ops.length || ops.length > MAX_OPS) return 'Podaj od 1 do 50 zmian (ops)';
@@ -77,7 +83,9 @@ export default async function handler(req, reply) {
   let row;
   try {
     await client.query('BEGIN');
-    const { rows } = await client.query('SELECT id, campus_id, assignments FROM events WHERE id::text = $1 FOR UPDATE', [String(eventId)]);
+    // id = $1 (bez rzutowania id::text) — wyszukiwanie po kluczu głównym z indeksu; typ parametru
+    // (uuid/int) Postgres bierze z kolumny. Nieprawidłowy identyfikator → 404 (niżej).
+    const { rows } = await client.query('SELECT id, campus_id, assignments FROM events WHERE id = $1 FOR UPDATE', [String(eventId)]);
     if (!rows[0] || (campusId != null && rows[0].campus_id != null && String(rows[0].campus_id) !== String(campusId))) {
       await client.query('ROLLBACK');
       return reply.code(404).send({ error: 'Nie znaleziono wydarzenia' });
@@ -88,6 +96,8 @@ export default async function handler(req, reply) {
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
+    // 22P02: identyfikator nie pasuje do typu kolumny (np. tekst zamiast uuid) — takiego wydarzenia nie ma.
+    if (err?.code === '22P02') return reply.code(404).send({ error: 'Nie znaleziono wydarzenia' });
     req.log?.error?.(err, '[event-assignments-patch]');
     return reply.code(500).send({ error: 'Nie udało się zapisać grafiku' });
   } finally {
@@ -95,5 +105,5 @@ export default async function handler(req, reply) {
   }
 
   try { emitChange(req.tenant.slug, 'events', 'update', [row]); } catch { /* realtime nieobowiązkowy */ }
-  return { assignments: row.assignments || {}, event: row };
+  return patchResponse(row);
 }

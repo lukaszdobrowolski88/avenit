@@ -1,5 +1,7 @@
+import { pickSourceBoard } from '@avenit/shared/src/lib/taskLinks.js';
 import { supabase } from '../../../lib/supabase';
 import { importLegacyTasks } from './legacyImport';
+import { isDoneLabel } from '@avenit/shared/src/lib/boardStatus.js';
 
 // Zadania Kalendarza = elementy Tablicy „Zadania” (boards.source_kind = 'tasks', module_key 'calendar').
 // Dawna tabela `tasks` jest raz przenoszona na tablicę przez serwer (fn board-import-legacy) i dalej
@@ -46,6 +48,7 @@ export function boardItemToTask(item, columns) {
     location: c.location ? (cells[c.location.id] || '') : '',
     status: status?.title || '',
     status_id: status?.id || null,
+    done: isDoneLabel(status),
     people,
     assignee_email: people[0]?.email || '',
   };
@@ -81,15 +84,30 @@ export function taskToBoardItem(task, columns, prevCells = {}) {
   return { name: String(task.title || '').trim(), description: task.description || null, cells };
 }
 
+// Zapis istniejącego zadania jako ŁATKA (fn board-item-patch): tylko komórki kalendarza, które się
+// zmieniły (null = usuń). Serwer scala je pod blokadą wiersza — zmiany innych osób w tablicy zostają.
+export function taskToBoardPatch(task, columns, prevCells = {}) {
+  const { name, description, cells } = taskToBoardItem(task, columns, prevCells);
+  const c = calendarColumns(columns);
+  const patch = {};
+  for (const col of [c.due, c.start, c.end, c.team, c.location, c.status, c.people]) {
+    if (!col) continue;
+    const before = prevCells?.[col.id] ?? null;
+    const after = cells[col.id] ?? null;
+    if (JSON.stringify(before) !== JSON.stringify(after)) patch[col.id] = after;
+  }
+  return { name, description, cells: patch };
+}
+
 // Kalendarzowa tablica zadań: { board, columns, items, groupId } albo null (brak dostępu/błąd).
 // Brak tablicy → jednorazowy import tabeli `tasks` na serwerze (współdzielony między montowaniami).
 let importing = null;
 export async function loadCalendarTaskBoard() {
   const findBoard = async () => {
     const { data, error } = await supabase.from('boards').select('*').eq('source_kind', CALENDAR_TASKS_SOURCE)
-      .order('created_at', { ascending: true }).limit(1);
+      .order('created_at', { ascending: true }).limit(10);
     if (error) throw error;
-    return data?.[0] || null;
+    return pickSourceBoard(data);
   };
   let board = await findBoard();
   if (!board) {
@@ -115,12 +133,11 @@ export const isAccessError = (e) => ['401', '403'].includes(String(e?.status ?? 
 export async function saveCalendarTask(taskBoard, task, { userEmail = null, userName = null } = {}) {
   const { board, columns, items, groupId } = taskBoard;
   if (task.id) {
-    // Świeże komórki z bazy — inne kolumny mogły się zmienić w tablicy od wczytania kalendarza.
-    const { data: fresh, error: readErr } = await supabase.from('board_items').select('id, cells').eq('id', task.id).maybeSingle();
-    if (readErr) return { error: readErr };
-    const base = fresh?.cells || items.find((i) => i.id === task.id)?.cells || {};
-    const { name, description, cells } = taskToBoardItem(task, columns, base);
-    const { error } = await supabase.from('board_items').update({ name, description, cells }).eq('id', task.id);
+    const base = items.find((i) => String(i.id) === String(task.id))?.cells || {};
+    const { name, description, cells } = taskToBoardPatch(task, columns, base);
+    const { error } = await supabase.functions.invoke('board-item-patch', {
+      body: { item_id: task.id, name, description, cells },
+    });
     return { error };
   }
   const { name, description, cells } = taskToBoardItem(task, columns, {});
@@ -151,4 +168,16 @@ export async function loadMyAssignedItems({ excludeBoardId } = {}) {
     if (error) return [];
     return Array.isArray(data?.items) ? data.items : [];
   } catch { return []; } // brak sieci — kalendarz bez tych wpisów
+}
+
+// Element tablicy po id → { item, board } (tablica: id, name, module_key, source_kind) albo null
+// (nie ma / brak dostępu). Do linków ?item= prowadzących do zadania z innej tablicy.
+export async function resolveTaskItem(itemId) {
+  if (itemId == null || itemId === '') return null;
+  try {
+    const { data: item, error } = await supabase.from('board_items').select('id, board_id, name').eq('id', itemId).maybeSingle();
+    if (error || !item) return null;
+    const { data: board } = await supabase.from('boards').select('id, name, module_key, source_kind').eq('id', item.board_id).maybeSingle();
+    return board ? { item, board } : null;
+  } catch { return null; }
 }

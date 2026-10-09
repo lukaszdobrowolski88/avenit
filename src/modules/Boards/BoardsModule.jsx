@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { LayoutGrid, UserCheck, BarChart3 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { tr } from '../../i18n';
@@ -11,12 +12,54 @@ import DashboardsSection from './dashboards/DashboardsSection';
 
 // Moduł Projekty/Tablice — powłoka przełączająca: sekcje (Tablice / Moja praca)
 // ↔ pojedyncza tablica. Używany jako moduł /projekty oraz zakładka board (moduleKey).
+//
+// /projekty trzyma otwartą tablicę i zadanie w adresie (?board=…&item=…): link z powiadomienia,
+// „Kopiuj link” i odświeżenie strony otwierają to samo, a przycisk Wstecz zamyka zadanie / tablicę.
+// Zakładka modułu (moduleKey) — stan lokalny (adres należy do strony modułu).
 export default function BoardsModule({ moduleKey = null, initialBoardId = null }) {
   const [user, setUser] = useState({ email: '', name: '' });
-  const [boardId, setBoardId] = useState(initialBoardId);
-  const [initialItemId, setInitialItemId] = useState(null);
+  const urlMode = !moduleKey;
+  const [params, setParams] = useSearchParams();
+  const [localBoardId, setLocalBoardId] = useState(initialBoardId);
+  const [localItemId, setLocalItemId] = useState(null);
   const [section, setSection] = useState('boards'); // boards | mywork | dashboards
-  const openBoard = (bId, itemId = null) => { setInitialItemId(itemId || null); setBoardId(bId); };
+
+  const boardId = urlMode ? (params.get('board') || null) : localBoardId;
+  const itemId = urlMode ? (params.get('item') || null) : localItemId;
+
+  // Zmiana parametrów adresu z zachowaniem pozostałych.
+  const patchParams = useCallback((patch, opts) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(patch)) {
+        if (v == null || v === '') next.delete(k); else next.set(k, String(v));
+      }
+      return next;
+    }, opts);
+  }, [setParams]);
+
+  // initialBoardId w trybie adresu — tylko gdy adres nie wskazuje tablicy.
+  useEffect(() => {
+    if (urlMode && initialBoardId && !params.get('board')) patchParams({ board: initialBoardId }, { replace: true });
+  }, [urlMode, initialBoardId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openBoard = useCallback((bId, iId = null) => {
+    if (urlMode) patchParams({ board: bId, item: iId || null });
+    else { setLocalItemId(iId || null); setLocalBoardId(bId); }
+  }, [urlMode, patchParams]);
+
+  const closeBoard = useCallback(() => {
+    if (urlMode) patchParams({ board: null, item: null });
+    else { setLocalBoardId(null); setLocalItemId(null); }
+  }, [urlMode, patchParams]);
+
+  // Otwarcie/zamknięcie zadania w tablicy → ?item= (nowy wpis historii — Wstecz zamyka zadanie).
+  const onItemChange = useCallback((id) => {
+    if (urlMode) {
+      if ((params.get('item') || null) === (id == null ? null : String(id))) return;
+      patchParams({ item: id });
+    } else setLocalItemId(id || null);
+  }, [urlMode, params, patchParams]);
 
   useEffect(() => {
     (async () => {
@@ -29,17 +72,10 @@ export default function BoardsModule({ moduleKey = null, initialBoardId = null }
     })();
   }, []);
 
-  useEffect(() => {
-    if (moduleKey) return;
-    const params = new URLSearchParams(window.location.search);
-    const b = params.get('board');
-    if (b) openBoard(b, params.get('item'));
-  }, [moduleKey]);
-
   if (boardId) {
     return (
-      <BoardView boardId={boardId} userEmail={user.email} userName={user.name} initialItemId={initialItemId}
-        onBack={() => { setBoardId(null); setInitialItemId(null); }} embedded={!!moduleKey} />
+      <BoardView boardId={boardId} userEmail={user.email} userName={user.name} initialItemId={itemId} onItemChange={onItemChange}
+        onBack={closeBoard} embedded={!!moduleKey} />
     );
   }
 

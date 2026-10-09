@@ -5,6 +5,7 @@ import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
 import { tr } from '../../../i18n';
 import { ssoOpenToAnyone } from './settingsLogic';
+import { usePermissions } from '../../../contexts/PermissionsContext';
 
 // „Bezpieczeństwo i logowanie” — JEDNO miejsce na politykę kont, podpięte pod klucze app_settings,
 // które serwer naprawdę egzekwuje (UXE-01):
@@ -39,6 +40,9 @@ function BlurInput({ id, settingKey, get, save, placeholder, fallback = '', tran
 }
 
 export default function SecuritySettings({ get, save, roles = [], campuses = [] }) {
+  // Logowanie Google/Microsoft zmienia tylko administrator (sso_* na serwerze wymaga admina).
+  const { subject } = usePermissions();
+  const canSso = !subject || !!subject.isAdmin;
   const [ssoSecret, setSsoSecret] = useState({ google: '', microsoft: '' });
   const [secretBusy, setSecretBusy] = useState(null);
 
@@ -217,7 +221,8 @@ export default function SecuritySettings({ get, save, roles = [], campuses = [] 
         </SettingRow>
       </SettingsCard>
 
-      {/* ── Logowanie kontem Google / Microsoft ── */}
+      {/* ── Logowanie kontem Google / Microsoft ── tylko administrator (serwer: sso_* = admin) */}
+      {canSso && (
       <SettingsCard title={tr('Logowanie kontem Google lub Microsoft')} description={tr('Pozwól logować się tym samym kontem, którego ktoś używa do poczty.')} icon={LogIn}>
         {openSso && (
           <div role="alert" className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 p-4">
@@ -297,6 +302,7 @@ export default function SecuritySettings({ get, save, roles = [], campuses = [] 
           </div>
         </details>
       </SettingsCard>
+      )}
     </div>
   );
 }

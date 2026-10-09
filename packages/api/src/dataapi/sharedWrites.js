@@ -7,6 +7,8 @@
 // Dotyczy tylko nie-adminów z modelem uprawnień (resolver) — admin i tryb legacy bez zmian.
 import { ApiError, buildWhere } from './querybuilder.js';
 import { canModuleScoped } from '@avenit/shared/src/permissions/moduleScope.js';
+import { accountChangeDenied, exceedsCaller, roleIsAdmin } from '../lib/admin-guard.js';
+import { getTableRule } from './registry.js';
 
 const WRITE_OPS = new Set(['insert', 'upsert', 'update', 'delete']);
 const rowsOf = (q) => (Array.isArray(q.values) ? q.values : [q.values]).filter(Boolean);
@@ -82,6 +84,13 @@ export async function enforceSharedWrite(q, req, resolver) {
   if (FIXED_CAP[q.table]) {
     if (!resolver.can(FIXED_CAP[q.table])) throw new ApiError(403, 'Brak uprawnień do zmiany tych danych');
     return;
+  }
+
+  // Upsert (ON CONFLICT DO UPDATE) nadpisałby ISTNIEJĄCY wiersz po kluczu konfliktu, a poniższe
+  // reguły sprawdzają tylko nowe wartości (autor, zespół, wydarzenie) — cudzy wpis dałoby się przejąć.
+  // Bez nadpisywania (ignoreDuplicates) to zwykłe dodanie.
+  if (q.op === 'upsert' && !q.ignoreDuplicates) {
+    throw new ApiError(403, 'Te dane zapisuj przez dodanie albo zmianę — upsert mógłby nadpisać cudzy wpis');
   }
 
   // Materiały wydarzenia — kto edytuje to wydarzenie: globalnie (res:events:update) albo lider
@@ -195,5 +204,83 @@ export function enforceCampaignStatus(q, resolver) {
     if (r.status != null && CAMPAIGN_SEND_STATUSES.has(String(r.status))) {
       throw new ApiError(403, 'Wysyłkę i planowanie maili uruchamia osoba z uprawnieniem do wysyłki');
     }
+  }
+}
+
+
+// ── Konta i ustawienia bezpieczeństwa (audyt 2026-10, runda 3) ──────────────────────────────
+// Zapis app_users przez /api/db bramkuje samo action:settings:manage_users. Osoba z tym prawem,
+// ale BEZ roli administratora, nie może przez /api/db (tak jak w fn admin-update-user):
+//   • nadać roli administracyjnej ani roli z uprawnieniem ustawień, którego sama nie ma,
+//   • ustawiać is_super_admin,
+//   • zmieniać / blokować / usuwać konta administratora ani konta o szerszych uprawnieniach.
+// Edycja własnego profilu (kolumny selfUpdateColumns z registry) działa jak dotąd.
+// app_settings: klucze sso_* (logowanie zewnętrzne + auto-provisioning) zmienia tylko administrator;
+// registration_default_role nie może wskazywać roli administratora ani szerszej niż własna.
+// Wywołujący: tylko dla nie-adminów (isAdmin = superadmin / rola is_admin) — admin bez zmian.
+const ADMIN_ONLY_SETTING = (key) => String(key ?? '').startsWith('sso_');
+const ROLE_SETTINGS = new Set(['registration_default_role']);
+
+async function settingKeysOf(q, db) {
+  const keys = rowsOf(q).filter((r) => 'key' in r).map((r) => r.key);
+  if (q.op === 'update' || q.op === 'delete') {
+    const params = [];
+    const { rows } = await db.query(`SELECT t.key FROM app_settings t${whereOf(q, params)}`, params);
+    keys.push(...rows.map((r) => r.key));
+  }
+  return keys;
+}
+
+async function enforceSettingsWrite(q, req, caller) {
+  const keys = await settingKeysOf(q, req.db);
+  if (keys.some(ADMIN_ONLY_SETTING)) throw new ApiError(403, 'Konfigurację SSO zmienia tylko administrator.');
+  if (q.op === 'delete' || !keys.some((k) => ROLE_SETTINGS.has(k))) return;
+  for (const r of rowsOf(q)) {
+    const role = r.value == null ? '' : String(r.value);
+    if (!role) continue;
+    if (await roleIsAdmin(req.db, role)) throw new ApiError(403, 'Tylko administrator może ustawić rolę administratora jako domyślną.');
+    if (await exceedsCaller(req.db, req.tenant.db_name, { role, userId: null }, caller)) {
+      throw new ApiError(403, 'Nie możesz ustawić domyślnej roli z uprawnieniami, których sam nie masz.');
+    }
+  }
+}
+
+export async function enforceAccountWrite(q, req, { isAdmin, user }) {
+  if (isAdmin || !WRITE_OPS.has(q.op) || !['app_users', 'app_settings'].includes(q.table)) return;
+  const caller = {
+    id: req.user.id, email: req.user.email, role: user?.role ?? req.user.role,
+    is_active: true, is_super_admin: !!user?.is_super_admin, role_admin: false,
+  };
+  if (q.table === 'app_settings') return enforceSettingsWrite(q, req, caller);
+
+  const rows = rowsOf(q);
+  if (rows.some((r) => 'is_super_admin' in r)) {
+    throw new ApiError(403, 'Tylko administrator może zmieniać uprawnienia super-administratora.');
+  }
+  const dbName = req.tenant.db_name;
+  if (q.op === 'upsert') {
+    // ON CONFLICT DO UPDATE nadpisałby istniejące (być może administratora) konto bez sprawdzenia.
+    throw new ApiError(403, 'Konta zakładaj albo zmieniaj osobno — upsert mógłby nadpisać konto administratora');
+  }
+  if (q.op === 'insert') {
+    for (const r of rows) {
+      const denied = await accountChangeDenied(req.db, dbName, caller, { id: null, role: null }, { newRole: 'role' in r ? r.role : undefined });
+      if (denied) throw new ApiError(403, denied);
+    }
+    return;
+  }
+  // update / delete: sprawdź każde konto objęte filtrem.
+  const params = [];
+  const { rows: targets } = await req.db.query(
+    `SELECT t.id, t.role, t.is_super_admin FROM app_users t${whereOf(q, params)}`, params
+  );
+  const selfCols = getTableRule('app_users')?.selfUpdateColumns || [];
+  const cols = rows.flatMap((r) => Object.keys(r));
+  const onlySelf = targets.every((t) => String(t.id) === String(req.user.id));
+  if (q.op === 'update' && onlySelf && cols.every((c) => selfCols.includes(c))) return; // własny profil
+  const newRole = q.op === 'update' && rows.some((r) => 'role' in r) ? rows.find((r) => 'role' in r).role : undefined;
+  for (const t of targets) {
+    const denied = await accountChangeDenied(req.db, dbName, caller, t, { newRole });
+    if (denied) throw new ApiError(403, denied);
   }
 }

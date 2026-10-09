@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronDown, ChevronRight, Plus, MessageSquare, CornerDownRight, Calendar } from 'lucide-react';
 import { Avatar } from '../components/cells/PeopleCell';
 import { StatusPill } from '../../../components/ui/DataTable';
-import { findLabel, formatDate } from '../lib/columnTypes';
+import { findLabel, formatDate, isOverdue } from '../lib/columnTypes';
 import { boardColor } from '../lib/palette';
 import { tr } from '../../../i18n';
 
@@ -23,16 +23,17 @@ export function useNarrow(query = '(max-width: 639px)') {
   return narrow;
 }
 
-function ItemCardRow({ item, statusCol, dateCol, peopleCol, subCount, updatesCount, onOpen, terms }) {
+function ItemCardRow({ item, columns, statusCol, dateCol, peopleCol, subCount, updatesCount, onOpen, terms }) {
   const label = statusCol ? findLabel(statusCol, item.cells?.[statusCol.id]) : null;
   const date = dateCol ? item.cells?.[dateCol.id] : null;
   const people = peopleCol ? (item.cells?.[peopleCol.id] || []) : [];
-  const overdue = date && date < new Date().toISOString().slice(0, 10) && !/zrobione|gotowe|done|zako/i.test(label?.title || '');
+  // Ta sama reguła co w tabeli i na kartach Kanbana: termin przed dziś (lokalnie), zadanie niezakończone.
+  const overdue = isOverdue(date, item, columns);
   return (
     <li>
       <button type="button" onClick={() => onOpen(item)}
         className="w-full text-left px-4 py-3 flex flex-col gap-2 hover:bg-gray-50 dark:hover:bg-white/5 active:bg-gray-100 dark:active:bg-white/10 transition-colors outline-none">
-        <span className={`text-[15px] font-semibold leading-snug ${item.name ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
+        <span className={`text-[15px] font-semibold leading-snug ${item.name ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
           {item.name || tr(terms.placeholder || 'Nazwa zadania')}
         </span>
         {(label || date || people.length > 0 || subCount > 0 || updatesCount > 0) && (
@@ -40,7 +41,7 @@ function ItemCardRow({ item, statusCol, dateCol, peopleCol, subCount, updatesCou
             {label && <StatusPill color={boardColor(label.color)}>{label.title}</StatusPill>}
             {date && (
               <span className={`inline-flex items-center gap-1 tabular-nums ${overdue ? 'text-red-600 dark:text-red-400 font-semibold' : ''}`}>
-                <Calendar size={13} aria-hidden="true" /> {formatDate(date)}
+                <Calendar size={13} aria-hidden="true" /> {formatDate(date)}{overdue && <span className="sr-only"> · {tr('Po terminie')}</span>}
               </span>
             )}
             {subCount > 0 && <span className="inline-flex items-center gap-1"><CornerDownRight size={13} aria-hidden="true" />{subCount}</span>}
@@ -58,7 +59,7 @@ function ItemCardRow({ item, statusCol, dateCol, peopleCol, subCount, updatesCou
   );
 }
 
-export default function TableCards({ data, groups, visibleItems, allItems, onOpenItem, updatesCountByItem = {}, can, terms }) {
+export default function TableCards({ data, groups, visibleItems, subsByParent, onOpenItem, updatesCountByItem = {}, can, terms }) {
   const { columns } = data;
   const statusCol = columns.find((c) => c.type === 'status') || columns.find((c) => c.type === 'priority');
   const dateCol = columns.find((c) => c.type === 'date');
@@ -84,17 +85,17 @@ export default function TableCards({ data, groups, visibleItems, allItems, onOpe
           <section key={g.id} aria-label={g.name}>
             <button type="button" onClick={() => data.updateGroup(g.id, { collapsed: !collapsed })} aria-expanded={!collapsed}
               className="flex items-center gap-2 mb-2 px-1 h-8 text-sm font-semibold text-gray-900 dark:text-white">
-              {collapsed ? <ChevronRight size={16} className="text-gray-400" aria-hidden="true" /> : <ChevronDown size={16} className="text-gray-400" aria-hidden="true" />}
+              {collapsed ? <ChevronRight size={16} className="text-gray-500 dark:text-gray-400" aria-hidden="true" /> : <ChevronDown size={16} className="text-gray-500 dark:text-gray-400" aria-hidden="true" />}
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: boardColor(g.color) }} aria-hidden="true" />
               {g.name}
-              <span className="text-xs font-normal text-gray-400 tabular-nums">{rows.length}</span>
+              <span className="text-xs font-normal text-gray-500 dark:text-gray-400 tabular-nums">{rows.length}</span>
             </button>
             {!collapsed && (
               <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
                 <ul className="divide-y divide-gray-100 dark:divide-gray-700/60">
                   {rows.map((it) => (
-                    <ItemCardRow key={it.id} item={it} statusCol={statusCol} dateCol={dateCol} peopleCol={peopleCol} terms={terms}
-                      subCount={allItems.filter((s) => s.parent_item_id === it.id).length}
+                    <ItemCardRow key={it.id} item={it} columns={columns} statusCol={statusCol} dateCol={dateCol} peopleCol={peopleCol} terms={terms}
+                      subCount={subsByParent?.get(it.id)?.length || 0}
                       updatesCount={updatesCountByItem[it.id] || 0} onOpen={onOpenItem} />
                   ))}
                 </ul>

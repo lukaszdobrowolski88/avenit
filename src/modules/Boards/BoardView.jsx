@@ -2,11 +2,12 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import {
   ArrowLeft, Table2, Trello, Calendar as CalIcon, GanttChartSquare, Plus, Zap, FormInput,
   BarChart3, GalleryThumbnails, Pencil, Copy, Star, Trash2, Sparkles, Gauge, FileText, Activity, MapPin,
-  Download, Upload, LayoutGrid, Save, RotateCcw,
+  Download, Upload, LayoutGrid, Save, RotateCcw, AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useBoardData } from './hooks/useBoardData';
 import { useBoardAutomations } from './hooks/useBoardAutomations';
+import { useBoardCommentCounts } from './hooks/useItemUpdates';
 import TableView from './views/TableView';
 import KanbanView from './views/KanbanView';
 import CalendarView from './views/CalendarView';
@@ -25,6 +26,7 @@ import AiSidekick from './components/AiSidekick';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import Modal from '../../components/Modal';
+import Button from '../../components/Button';
 import ActionMenu from '../../components/ActionMenu';
 import { ChoiceList, ChoiceRow } from '../../components/ChoiceList';
 import '../../components/toolbar.css';
@@ -33,6 +35,7 @@ import { AI_ENABLED } from '../../lib/features';
 import { useCan } from '../../components/Can';
 import { exportBoardCsv, buildCellsFromRecord, parseCsv } from './lib/csv';
 import { confirmDialog, promptDialog } from '../../lib/dialog';
+import { shortcutBlocked } from './lib/keyboard';
 import { toast } from '../../lib/toast';
 import { tr } from '../../i18n';
 
@@ -64,10 +67,21 @@ const LOCAL_KEY = (kind, id) => `board_${kind}:${id}`;
 const readLocal = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } };
 const writeLocal = (key, value) => { try { if (value == null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(value)); } catch { /* prywatne okno */ } };
 
-export default function BoardView({ boardId, userEmail, userName, onBack, embedded = false, heading = null, initialItemId = null, scopeEmails = undefined }) {
+// onItemChange (opcjonalnie): rodzic trzyma otwarte zadanie w adresie (?item=) — wtedy initialItemId
+// jest „sterowane”: zmiana adresu (np. przycisk Wstecz) otwiera/zamyka panel, a otwarcie/zamknięcie
+// panelu zgłasza nowe id.
+export default function BoardView({ boardId, userEmail, userName, onBack, embedded = false, heading = null, initialItemId = null, scopeEmails = undefined, onItemChange }) {
   const terms = embedded ? TERMS.task : TERMS.item;
   const raw = useBoardData(boardId, { userEmail, userName, scopeEmails });
-  const [openItem, setOpenItem] = useState(null);
+  const controlled = typeof onItemChange === 'function';
+  const [openItem, setOpenItemState] = useState(null);
+  const onItemChangeRef = useRef(onItemChange);
+  onItemChangeRef.current = onItemChange;
+  const setOpenItem = useCallback((it) => {
+    setOpenItemState(it || null);
+    onItemChangeRef.current?.(it ? it.id : null);
+  }, []);
+  const searchRef = useRef(null);
   const [activeViewId, setActiveViewId] = useState(null);
   const [showAutomations, setShowAutomations] = useState(false);
   const [showSidekick, setShowSidekick] = useState(false);
@@ -75,7 +89,8 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   const [search, setSearch] = useState(''); // szukanie LOKALNE (per-sesja) — nie zapisujemy do wspólnego widoku
   const [newViewOpen, setNewViewOpen] = useState(false);
   const fileRef = useRef(null);
-  const [updatesCount, setUpdatesCount] = useState({});
+  const comments = useBoardCommentCounts(boardId);
+  const updatesCount = comments.counts;
   const openedInitial = useRef(null); // id ostatnio otwartego z linku (?item=) — kolejny link otwiera kolejne
 
   // RBAC — jedno miejsce prawdy dla wszystkich widoków, komórek i panelu (data.can.*).
@@ -88,23 +103,24 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   const canManageViews = useCan('res:board_views:create', scope);
   const canUpdateViews = useCan('res:board_views:update', scope);
   const canManageAutomations = useCan('res:board_automations:create', scope);
-  const can = {
-    createItems: useCan('res:board_items:create', scope),
-    editItems: useCan('res:board_items:update', scope),
-    deleteItems: useCan('res:board_items:delete', scope),
-    addColumns: useCan('res:board_columns:create', scope),
-    editColumns: useCan('res:board_columns:update', scope),
-    deleteColumns: useCan('res:board_columns:delete', scope),
-    addGroups: useCan('res:board_groups:create', scope),
-    editGroups: useCan('res:board_groups:update', scope),
-    deleteGroups: useCan('res:board_groups:delete', scope),
-    manageViews: canManageViews,
-    updateViews: canUpdateViews,
-    updateBoard: canUpdateBoard,
-    comment: useCan('res:board_item_updates:create', scope),
-    likeUpdates: useCan('res:board_item_updates:update', scope),
-    deleteUpdates: useCan('res:board_item_updates:delete', scope),
-  };
+  const createItems = useCan('res:board_items:create', scope);
+  const editItems = useCan('res:board_items:update', scope);
+  const deleteItems = useCan('res:board_items:delete', scope);
+  const addColumns = useCan('res:board_columns:create', scope);
+  const editColumns = useCan('res:board_columns:update', scope);
+  const deleteColumns = useCan('res:board_columns:delete', scope);
+  const addGroups = useCan('res:board_groups:create', scope);
+  const editGroups = useCan('res:board_groups:update', scope);
+  const deleteGroups = useCan('res:board_groups:delete', scope);
+  const comment = useCan('res:board_item_updates:create', scope);
+  const likeUpdates = useCan('res:board_item_updates:update', scope);
+  const deleteUpdates = useCan('res:board_item_updates:delete', scope);
+  // Jeden obiekt na czas życia uprawnień — wiersze tabeli (memo) nie renderują się od nowa przy każdej zmianie.
+  const can = useMemo(() => ({
+    createItems, editItems, deleteItems, addColumns, editColumns, deleteColumns, addGroups, editGroups, deleteGroups,
+    manageViews: canManageViews, updateViews: canUpdateViews, updateBoard: canUpdateBoard, comment, likeUpdates, deleteUpdates,
+  }), [createItems, editItems, deleteItems, addColumns, editColumns, deleteColumns, addGroups, editGroups, deleteGroups,
+    canManageViews, canUpdateViews, canUpdateBoard, comment, likeUpdates, deleteUpdates]);
 
   // Zwinięcie grup — osobiste (patrz wyżej).
   const [collapsed, setCollapsed] = useState(() => readLocal(LOCAL_KEY('collapsed', boardId), {}));
@@ -118,16 +134,21 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
     }
     return raw.updateGroup(groupId, patch);
   }, [raw.updateGroup, boardId]);
-  const data = useMemo(() => ({ ...raw, groups, updateGroup, can }), [raw, groups, updateGroup, ...Object.values(can)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const data = useMemo(() => ({ ...raw, groups, updateGroup, can }), [raw, groups, updateGroup, can]);
   const automations = useBoardAutomations(boardId, data, { userEmail, userName });
 
-  // Deep-link: otwórz wskazany element po załadowaniu (z powiadomień/@wzmianek/Mojej pracy)
+  // Deep-link: otwórz wskazany element po załadowaniu (z powiadomień/@wzmianek/Mojej pracy).
+  // Sterowane z adresu: brak ?item= (np. Wstecz) zamyka panel.
   useEffect(() => {
-    if (initialItemId && openedInitial.current !== initialItemId && data.items.length) {
-      const it = data.items.find(i => String(i.id) === String(initialItemId));
-      if (it) { setOpenItem(it); openedInitial.current = initialItemId; }
+    if (!initialItemId) {
+      if (controlled && openedInitial.current !== null) { openedInitial.current = null; setOpenItemState(null); }
+      return;
     }
-  }, [initialItemId, data.items]);
+    if (openedInitial.current !== initialItemId && data.items.length) {
+      const it = data.items.find(i => String(i.id) === String(initialItemId));
+      if (it) { setOpenItemState(it); openedInitial.current = initialItemId; }
+    }
+  }, [initialItemId, data.items, controlled]);
 
   // Domyślny widok
   useEffect(() => {
@@ -136,37 +157,28 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
     }
   }, [data.views, activeViewId]);
 
-  // Liczniki komentarzy per element (plakietki w wierszach)
-  useEffect(() => {
-    if (!boardId) return;
-    let alive = true;
-    supabase.from('board_item_updates').select('item_id').eq('board_id', boardId).then(({ data: rows }) => {
-      if (!alive) return;
-      const map = {};
-      (rows || []).forEach(r => { map[r.item_id] = (map[r.item_id] || 0) + 1; });
-      setUpdatesCount(map);
-    });
-    return () => { alive = false; };
-  }, [boardId, data.items.length]);
-
   const activeView = useMemo(() => data.views.find(v => v.id === activeViewId), [data.views, activeViewId]);
   // Osobisty układ widoku nakładany na zapisany (wspólny) config.
   const [localCfg, setLocalCfg] = useState({});
   useEffect(() => { setLocalCfg(activeViewId ? readLocal(LOCAL_KEY('view', activeViewId), {}) : {}); }, [activeViewId]);
   const savedConfig = activeView?.config || {};
   const config = useMemo(() => ({ ...savedConfig, ...localCfg }), [savedConfig, localCfg]);
-  const hasLocalLayout = Object.keys(localCfg).length > 0;
+  // „Moje” (chip) jest zawsze osobiste — nie liczy się jako układ do zapisania dla wszystkich.
+  const hasLocalLayout = Object.keys(localCfg).some((k) => k !== 'mine');
   // Widoki filtrują po config + LOKALNYM szukaniu (search nie jest częścią zapisanego widoku).
-  const viewConfig = useMemo(() => ({ ...config, search }), [config, search]);
+  // `me` — dla filtra „Ja” i chipa „Moje” (osobiste, nie zapisują się w widoku).
+  const viewConfig = useMemo(() => ({ ...config, search, me: userEmail || null }), [config, search, userEmail]);
   const onUpdateConfig = (patch) => {
     if (!activeView) return;
     setLocalCfg((prev) => { const next = { ...prev, ...patch }; writeLocal(LOCAL_KEY('view', activeView.id), next); return next; });
   };
   const saveLayoutForAll = async () => {
     if (!activeView) return;
-    await data.updateView(activeView.id, { config: { ...savedConfig, ...localCfg } });
-    writeLocal(LOCAL_KEY('view', activeView.id), null);
-    setLocalCfg({});
+    const { mine, ...shared } = localCfg;
+    await data.updateView(activeView.id, { config: { ...savedConfig, ...shared } });
+    const keep = mine ? { mine } : null;
+    writeLocal(LOCAL_KEY('view', activeView.id), keep);
+    setLocalCfg(keep || {});
     toast.success(tr('Zapisano układ widoku dla wszystkich'));
   };
   const resetLayout = () => { if (!activeView) return; writeLocal(LOCAL_KEY('view', activeView.id), null); setLocalCfg({}); };
@@ -213,7 +225,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
     { key: 'activity', icon: Activity, label: tr('Aktywność'), onClick: () => setShowActivity(true) },
     { divider: true },
     { key: 'export', icon: Download, label: tr('Eksportuj CSV'), onClick: handleExport },
-    { key: 'import', icon: Upload, label: tr('Importuj CSV'), onClick: () => fileRef.current?.click() },
+    ...(can.createItems ? [{ key: 'import', icon: Upload, label: tr('Importuj CSV'), onClick: () => fileRef.current?.click() }] : []),
     ...(hasLocalLayout ? [
       { divider: true },
       ...(canUpdateViews ? [{ key: 'savelayout', icon: Save, label: tr('Zapisz układ dla wszystkich'), onClick: saveLayoutForAll }] : []),
@@ -238,10 +250,44 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
     ] : []),
   ];
 
+  // Skróty klawiaturowe: n — nowe zadanie (gdy wolno), / — szukaj. Nie działają podczas pisania ani
+  // przy otwartym oknie/liście. Esc zamyka okna (Modal) i czyści zaznaczenie w tabeli (TableView);
+  // w polu tekstowym okna Esc tylko kończy pisanie (ItemPanel).
+  const shortcutRef = useRef(null);
+  shortcutRef.current = {
+    add: addItemToFirstGroup,
+    canAdd: !!can.createItems && !!data.board && !['form', 'doc'].includes(activeView?.type || 'table'),
+  };
+  useEffect(() => {
+    const onKey = (e) => {
+      if (shortcutBlocked(e)) return;
+      if (e.key === 'n' || e.key === 'N') {
+        if (e.shiftKey || !shortcutRef.current?.canAdd) return;
+        e.preventDefault();
+        shortcutRef.current.add();
+      } else if (e.key === '/') {
+        const el = searchRef.current;
+        if (!el) return;
+        e.preventDefault();
+        el.focus();
+        el.select?.();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   if (data.loading) {
     return <Spinner center size={28} />;
   }
   if (!data.board) {
+    // Błąd ładowania (sieć, serwer) to nie „brak tablicy” — z możliwością ponowienia.
+    if (data.loadError === 'failed') {
+      return (
+        <EmptyState icon={AlertTriangle} title={tr('Nie udało się wczytać tablicy')} subtitle={tr('Sprawdź połączenie i spróbuj ponownie.')}
+          action={<Button variant="outline" icon={RefreshCw} onClick={() => data.reload()}>{tr('Spróbuj ponownie')}</Button>} />
+      );
+    }
     return <EmptyState icon={Table2} title={tr('Nie znaleziono tablicy')} subtitle={tr('Mogła zostać usunięta lub nie masz do niej dostępu.')} />;
   }
 
@@ -307,7 +353,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
           )}
           <ActionMenu variant="tool" label={tr('Więcej działań')} items={menuItems} />
           {can.createItems && !['form', 'doc'].includes(activeView?.type || 'table') && (
-            <button type="button" className="tool-btn tool-btn--primary" onClick={addItemToFirstGroup}>
+            <button type="button" className="tool-btn tool-btn--primary" onClick={addItemToFirstGroup} aria-keyshortcuts="n" title={tr('Skrót: N')}>
               <Plus size={15} aria-hidden="true" />{tr(terms.add)}
             </button>
           )}
@@ -316,7 +362,8 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
       <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onImportFile} className="hidden" />
 
       {!['form', 'doc'].includes(activeView?.type || 'table') && (
-        <ViewToolbar columns={data.columns} config={config} onUpdateConfig={onUpdateConfig} search={search} onSearch={setSearch} />
+        <ViewToolbar columns={data.columns} config={config} onUpdateConfig={onUpdateConfig} search={search} onSearch={setSearch}
+          people={data.people} me={userEmail || null} searchRef={searchRef} />
       )}
 
       {renderView()}
@@ -335,11 +382,12 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
       )}
 
       {openItem && (
-        <ItemPanel item={openItem} data={data} terms={terms} onClose={() => setOpenItem(null)} userEmail={userEmail} userName={userName} />
+        <ItemPanel item={openItem} data={data} terms={terms} onClose={() => setOpenItem(null)} userEmail={userEmail} userName={userName}
+          onUpdatesSync={comments.syncItem} />
       )}
 
       {showAutomations && (
-        <AutomationsPanel automations={automations.automations} columns={data.columns} people={data.people}
+        <AutomationsPanel automations={automations.automations} columns={data.columns} people={data.people} groups={data.groups}
           onAdd={automations.addAutomation} onUpdate={automations.updateAutomation} onDelete={automations.deleteAutomation}
           onClose={() => setShowAutomations(false)} />
       )}

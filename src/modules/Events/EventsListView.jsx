@@ -3,7 +3,7 @@
 // Kalendarz = osadzony CalendarModule (pokazuje też zadania i programy bez wydarzenia).
 // Archiwum jest filtrem (Aktualne / Archiwum / Wszystkie), nie osobną zakładką.
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, MapPin, Ticket, CreditCard, Archive, RotateCcw, Search, List, LayoutGrid, Tag, Plus, FilterX } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -84,9 +84,15 @@ export default function EventsListView({ onCreate } = {}) {
   const [paidOnly, setPaidOnly] = useState(false);
   const [regOnly, setRegOnly] = useState(false);
   const [archiveF, setArchiveF] = useState('current'); // current | archive | all
+  // ?item=<id> (link do zadania Kalendarza) → widok Kalendarz, który otwiera to zadanie.
+  // Bez zapisu w localStorage — to jednorazowe wejście, nie zmiana ulubionego widoku.
+  const { search: locationSearch } = useLocation();
+  const itemLink = new URLSearchParams(locationSearch).has('item');
   const [viewMode, setViewMode] = useState(() => {
+    if (itemLink) return 'calendar';
     try { return localStorage.getItem('events_view_mode') || 'cards'; } catch { return 'cards'; }
   });
+  useEffect(() => { if (itemLink) setViewMode('calendar'); }, [itemLink]);
   const setView = (m) => { setViewMode(m); try { localStorage.setItem('events_view_mode', m); } catch { /* ignore */ } };
 
   // Brak modułu = zawsze „Ogólne” (jak w formularzu), nigdy „—”.

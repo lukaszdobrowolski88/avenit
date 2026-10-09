@@ -1,9 +1,11 @@
 import React from 'react';
-import { MoreHorizontal, Trash2, Pencil } from 'lucide-react';
-import Popover from '../components/Popover';
+import { Trash2, Pencil } from 'lucide-react';
+import ActionMenu from '../../../components/ActionMenu';
+import { StatusPill } from '../../../components/ui/DataTable';
 import { BarChart, DonutChart, Battery } from './Charts';
 import { groupItemsByColumn } from '../lib/viewData';
 import { findLabel } from '../lib/columnTypes';
+import { boardColor } from '../lib/palette';
 import { tr } from '../../../i18n';
 
 // Wylicza dane widżetu z pakietu tablic.
@@ -24,7 +26,7 @@ export function computeWidget(widget, bundle) {
   if (widget.type === 'chart' || widget.type === 'battery') {
     if (!column) return { data: [] };
     const groups = groupItemsByColumn(items, column).filter(g => g.items.length > 0);
-    return { data: groups.map(g => ({ label: g.title, value: g.items.length, color: g.color })) };
+    return { data: groups.map(g => ({ label: g.title, value: g.items.length, color: g.color ? boardColor(g.color) : null })) };
   }
 
   if (widget.type === 'table') {
@@ -41,44 +43,44 @@ const SIZE_CLASS = { small: 'lg:col-span-1', medium: 'lg:col-span-2', large: 'lg
 
 export function WidgetCard({ widget, bundle, boardName, editing, onEdit, onRemove }) {
   const d = computeWidget(widget, bundle);
+  const title = widget.title || tr('Widżet');
+  const headingId = `widget-${widget.id}`;
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 ${SIZE_CLASS[widget.size] || SIZE_CLASS.small}`}>
-      <div className="flex items-start justify-between mb-2">
-        <div>
-          <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{widget.title || tr('Widżet')}</h3>
-          <p className="text-[11px] text-gray-400">{boardName}</p>
+    <section aria-labelledby={headingId} className={`bg-white dark:bg-gray-800 rounded-2xl p-4 min-w-0 ${SIZE_CLASS[widget.size] || SIZE_CLASS.small}`}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0">
+          <h3 id={headingId} className="font-semibold text-gray-800 dark:text-gray-100 text-sm truncate">{title}</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{boardName}</p>
         </div>
         {editing && (
-          <Popover align="right" width={150} trigger={<button className="text-gray-400 hover:text-gray-600 p-1"><MoreHorizontal size={16} /></button>}>
-            {({ close }) => (
-              <div className="p-1.5">
-                <button onClick={() => { onEdit(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm"><Pencil size={14} /> {tr('Edytuj')}</button>
-                <button onClick={() => { onRemove(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń')}</button>
-              </div>
-            )}
-          </Popover>
+          <ActionMenu variant="ghost" label={tr('Działania: {name}', { name: title })} items={[
+            { key: 'edit', icon: Pencil, label: tr('Edytuj'), onClick: onEdit },
+            { key: 'remove', icon: Trash2, label: tr('Usuń'), danger: true, onClick: onRemove },
+          ]} />
         )}
       </div>
 
       {widget.type === 'number' && (
         <div className="py-4 text-center">
-          <div className="text-4xl font-bold text-accent-primary">{d.value}</div>
-          <div className="text-xs text-gray-400 mt-1">{d.label}</div>
+          <div className="text-4xl font-bold text-gray-900 dark:text-white tabular-nums">{d.value}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{d.label}</div>
         </div>
       )}
-      {widget.type === 'chart' && (widget.chartType === 'pie' ? <DonutChart data={d.data} /> : <BarChart data={d.data} />)}
-      {widget.type === 'battery' && <Battery data={d.data} />}
+      {widget.type === 'chart' && (widget.chartType === 'pie'
+        ? <DonutChart data={d.data} title={title} />
+        : <BarChart data={d.data} title={title} />)}
+      {widget.type === 'battery' && <Battery data={d.data} title={title} />}
       {widget.type === 'table' && (
-        <div className="max-h-64 overflow-y-auto custom-scrollbar -mx-1">
+        <ul className="max-h-64 overflow-y-auto custom-scrollbar -mx-1 divide-y divide-gray-100 dark:divide-gray-700/50">
           {(d.rows || []).map(r => (
-            <div key={r.id} className="flex items-center gap-2 px-1 py-1.5 border-b border-gray-50 dark:border-gray-700/40 text-sm">
+            <li key={r.id} className="flex items-center gap-2 px-1 py-1.5 text-sm">
               <span className="flex-1 truncate text-gray-700 dark:text-gray-200">{r.name || tr('Bez nazwy')}</span>
-              {r.status && <span className="text-[10px] px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: r.status.color }}>{r.status.title}</span>}
-            </div>
+              {r.status && <StatusPill color={boardColor(r.status.color)} className="shrink-0">{r.status.title}</StatusPill>}
+            </li>
           ))}
-          {(!d.rows || d.rows.length === 0) && <div className="text-center text-sm text-gray-400 py-4">{tr('Brak elementów')}</div>}
-        </div>
+          {(!d.rows || d.rows.length === 0) && <li className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">{tr('Brak elementów')}</li>}
+        </ul>
       )}
-    </div>
+    </section>
   );
 }

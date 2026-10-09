@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, CheckCircle2 } from 'lucide-react';
+import { isDoneLabel } from '@avenit/shared/src/lib/boardStatus.js';
 import { uid } from '../lib/constants';
 import { LABEL_COLORS, boardColor } from '../lib/palette';
 import { STATUS_COLORS as APP } from '../../../components/ui/DataTable';
@@ -58,9 +59,12 @@ function TitleInput({ value, onCommit, autoFocus, label }) {
 
 // Edytor etykiet kolumny Status/Priorytet (field="labels") i opcji listy wyboru (field="options"):
 // dodaj / zmień nazwę / kolor z palety aplikacji (6 kolorów) / usuń z potwierdzeniem.
+// Status: etykietę można oznaczyć „Oznacza zakończenie” (done: true) — zadanie z nią jest zakończone
+// (nie „po terminie”, „Oznacz jako gotowe”). Bez flagi decyduje nazwa (Gotowe, Zrobione…).
 // Wspólny dla nagłówka kolumny, widoku Kanban i trybu edycji w komórkach Status i Lista wyboru.
 export default function LabelsEditor({ column, onUpdateColumn, field = 'labels', onRemoved }) {
   const isOptions = field === 'options';
+  const canMarkDone = !isOptions && column?.type === 'status';
   const serverItems = column?.settings?.[field] || [];
   // Zapis kolumny wraca z serwera dopiero po chwili — do tego czasu pokazujemy zmianę od razu.
   const [pending, setPending] = useState(null);
@@ -116,6 +120,18 @@ export default function LabelsEditor({ column, onUpdateColumn, field = 'labels',
               </button>
               <TitleInput value={l.title} onCommit={(t) => patch(l.id, { title: t })} autoFocus={focusId === l.id}
                 label={isOptions ? tr('Nazwa opcji') : tr('Nazwa etykiety')} />
+              {canMarkDone && (() => {
+                const done = isDoneLabel(l);
+                return (
+                  <button type="button" onClick={() => patch(l.id, { done: !done })} aria-pressed={done}
+                    aria-label={tr('Oznacza zakończenie: {name}', { name: l.title })} title={tr('Oznacza zakończenie')}
+                    className={`shrink-0 p-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/50 ${done
+                      ? 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-500/10'
+                      : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}>
+                    <CheckCircle2 size={14} aria-hidden="true" />
+                  </button>
+                );
+              })()}
               <button type="button" onClick={() => remove(l)}
                 aria-label={isOptions ? tr('Usuń opcję {name}', { name: l.title }) : tr('Usuń etykietę {name}', { name: l.title })}
                 className="shrink-0 p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/50">
@@ -139,6 +155,11 @@ export default function LabelsEditor({ column, onUpdateColumn, field = 'labels',
           </div>
         );
       })}
+      {canMarkDone && items.length > 0 && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 px-1 flex items-center gap-1">
+          <CheckCircle2 size={12} className="shrink-0" aria-hidden="true" /> {tr('Oznacza zakończenie — takie zadania nie są „po terminie”.')}
+        </p>
+      )}
       <button type="button" onClick={add}
         className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-1.5 py-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/50">
         <Plus size={15} aria-hidden="true" /> {isOptions ? tr('Dodaj opcję') : tr('Dodaj etykietę')}

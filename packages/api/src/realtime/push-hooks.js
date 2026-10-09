@@ -7,7 +7,12 @@
 //                             @wzmianka osobista → push 'mention' zawsze; @wszyscy ("*") → 'mention'
 //                             także wyciszonym, ale z poszanowaniem cichych godzin
 //   - schedule_assignments  → push do zaproszonego do służby (status 'pending')
+// Zadania osobiste (user_tasks) — przypisanie innej osobie (assigned_to_email ustawione albo
+// zmienione): wpis w skrzynce + realtime + push dla przypisanego (prepareUserTaskAssign przed
+// zapisem, notifyUserTaskAssign po zapisie — jak boardNotify dla elementów tablic).
 import { sendPushCore } from '../fn/send-push.js';
+import { buildQuery } from '../dataapi/querybuilder.js';
+import { deliverNotifications, displayNameOf } from '../dataapi/boardNotify.js';
 
 export async function notifyOnWrite({ pool, table, op, values, actingUserEmail, log }) {
   if (op !== 'insert' || !values) return;
@@ -269,4 +274,110 @@ function formatDatePl(value) {
   const s = value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return m ? `${m[3]}.${m[2]}.${m[1]}` : s;
+}
+
+// ── Zadanie osobiste przypisane innej osobie (user_tasks.assigned_to_email) ──────────────
+const lowerEmail = (v) => String(v ?? '').trim().toLowerCase();
+const taskRows = (v) => (Array.isArray(v) ? v : v ? [v] : []).filter((r) => r && typeof r === 'object');
+const MAX_TASK_ROWS = 200;
+
+// PRZED zapisem przez /api/db: null (nic do zrobienia) albo { op, values, before: Map(id → wiersz) }.
+// Odczyt stanu w zakresie zapisu (filtry + własność wierszy z ownership.js). Nigdy nie rzuca.
+export async function prepareUserTaskAssign(db, q) {
+  try {
+    if (q?.table !== 'user_tasks' || !q.values || !['insert', 'update', 'upsert'].includes(q.op)) return null;
+    const rows = taskRows(q.values);
+    if (!rows.length || rows.length > MAX_TASK_ROWS) return null;
+    if (!rows.some((r) => 'assigned_to_email' in r && lowerEmail(r.assigned_to_email))) return null;
+    const prep = { op: q.op, values: rows, before: new Map() };
+    if (q.op === 'insert') return prep;
+    const filters = q.op === 'update'
+      ? q.filters
+      : [{ type: 'in', column: 'id', value: rows.map((r) => r.id).filter((v) => v != null) }];
+    if (!filters?.length) return null;
+    const built = buildQuery({
+      table: 'user_tasks', op: 'select', select: 'id,user_email,assigned_to_email,title,due_date',
+      filters, limit: MAX_TASK_ROWS, __ownerScope: q.__ownerScope,
+    });
+    const { rows: found } = await db.query(built.sql, built.params);
+    for (const r of found) prep.before.set(String(r.id), r);
+    return prep;
+  } catch {
+    return null;
+  }
+}
+
+// Zmiany przypisania po zapisie (czyste — testy): [{ id, title, due_date, to }] — tylko gdy nowy
+// adresat jest inny niż poprzedni (bez względu na wielkość liter). Zwrócone wiersze (RETURNING)
+// mają pierwszeństwo; bez nich — zapisane wartości + stan sprzed zapisu.
+export function userTaskAssignChanges(prep, data, rowCount) {
+  if (!prep) return [];
+  const out = [];
+  const add = (row, prev) => {
+    const to = lowerEmail(row.assigned_to_email);
+    if (!to || to === lowerEmail(prev?.assigned_to_email)) return;
+    out.push({ id: row.id ?? prev?.id ?? null, title: row.title ?? prev?.title ?? '', due_date: row.due_date ?? prev?.due_date ?? null, to });
+  };
+  const returned = taskRows(data);
+  if (returned.length) {
+    for (const r of returned) {
+      const prev = r.id != null ? prep.before.get(String(r.id)) : null;
+      if (prep.op === 'update' && !prev) continue; // wiersz spoza odczytanego zakresu
+      add(r, prev);
+    }
+    return out;
+  }
+  if (!rowCount) return out;
+  if (prep.op === 'insert') {
+    for (const v of prep.values) add(v, null);
+  } else if (prep.op === 'update') {
+    const v = prep.values[0] || {};
+    if (!('assigned_to_email' in v)) return out;
+    for (const prev of prep.before.values()) add({ ...prev, ...v, id: prev.id }, prev);
+  } else {
+    for (const v of prep.values) add(v, v.id != null ? prep.before.get(String(v.id)) : null);
+  }
+  return out;
+}
+
+const dayLabel = (d) => {
+  const s = d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '').slice(0, 10);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}.${m[2]}` : '';
+};
+
+// PO zapisie, fire-and-forget: wpis w skrzynce (typ 'task') + realtime + push dla przypisanego —
+// aktywne konto, nie autor zmiany. deps (testy): { sendPush, emit }.
+export async function notifyUserTaskAssign({ db, tenant, prep, data, rowCount, actor, log, deps = {} }) {
+  try {
+    const actorEmail = lowerEmail(actor?.email);
+    const changes = userTaskAssignChanges(prep, data, rowCount).filter((c) => c.to !== actorEmail).slice(0, 50);
+    if (!changes.length) return { sent: 0 };
+    const { rows: users } = await db.query(
+      `SELECT email FROM app_users WHERE lower(email) = ANY($1::text[]) AND COALESCE(is_active, true)`,
+      [[...new Set(changes.map((c) => c.to))]]);
+    const accounts = new Map(users.map((u) => [lowerEmail(u.email), u.email]));
+    const targets = changes.filter((c) => accounts.has(c.to));
+    if (!targets.length) return { sent: 0 };
+    const name = await displayNameOf(db, actor?.email || '');
+    const entries = targets.map((c) => {
+      const title = String(c.title || '').trim() || 'Zadanie';
+      const due = dayLabel(c.due_date);
+      const payload = { user_task_id: c.id };
+      return {
+        user_email: accounts.get(c.to),
+        type: 'task',
+        title: `${name} przypisał(a) Ci zadanie`,
+        body: due ? `${title} · termin ${due}` : title,
+        link: c.id != null ? `/?task=${encodeURIComponent(String(c.id))}` : '/',
+        data: payload,
+        push: { type: 'task', ...payload },
+      };
+    });
+    // Bez okna duplikatów — o tym, czy to nowe przypisanie, decyduje porównanie przed/po.
+    return await deliverNotifications({ db, tenant, entries, deps, log, dedupeMinutes: 0 });
+  } catch (err) {
+    (log?.error ?? console.error).call(log ?? console, { err }, '[push-hooks] przypisanie zadania');
+    return { sent: 0 };
+  }
 }

@@ -1,55 +1,19 @@
-// „Moje zadania” na Pulpicie: elementy tablic (Projekty + zakładki „Zadania” modułów), w których
-// bieżący użytkownik jest w którejkolwiek kolumnie „Osoby”. Czysta logika (bez Reacta i zapytań)
-// — testy obok (myBoardTasks.test.js).
+// „Moje zadania” na Pulpicie: elementy tablic (Projekty + zakładki „Zadania” modułów + zadania
+// Kalendarza), w których bieżący użytkownik jest w którejkolwiek kolumnie „Osoby”. Czysta logika
+// (bez Reacta i zapytań) — testy obok (myBoardTasks.test.js).
 //
-// Reguła linku zgodna z powiadomieniem serwera (packages/api/src/dataapi/boardNotify.js):
-// tablica zakładki „Zadania” modułu (source_kind '<x>_tasks') → ścieżka modułu + ?item=<id>
-// (ModuleBoard otwiera element), każda inna tablica → /projekty?board=<id>&item=<id>.
+// Link do zadania i „gotowe” — JEDNA reguła z @avenit/shared (taskLinks.js / boardStatus.js),
+// ta sama co w powiadomieniach serwera, Kalendarzu i mobilce.
+import { taskItemLink, taskBoardModuleKey } from '@avenit/shared/src/lib/taskLinks.js';
+import { isDoneLabel, doneLabelOf } from '@avenit/shared/src/lib/boardStatus.js';
 
 const lower = (v) => String(v ?? '').trim().toLowerCase();
 
-const TASK_SOURCE_MODULES = { media_tasks: 'media', home_group_tasks: 'homegroups', mlodziezowka_tasks: 'mlodziezowka' };
-const FALLBACK_MODULE_PATHS = {
-  media: '/media', homegroups: '/home-groups', mlodziezowka: '/mlodziezowka',
-  atmosfera: '/atmosfera', worship: '/worship', kids: '/kids',
-};
-
-// Klucz modułu, w którego zakładce „Zadania” żyje tablica; null = zwykła tablica Projektów.
-export function taskBoardModuleKey(board) {
-  const sk = String(board?.source_kind || '');
-  if (!sk.endsWith('_tasks')) return null;
-  if (board.module_key) return String(board.module_key);
-  if (TASK_SOURCE_MODULES[sk]) return TASK_SOURCE_MODULES[sk];
-  const m = sk.match(/^custom_(.+)_tasks$/);
-  return m ? m[1] : null;
-}
-
-// modules: lista app_modules ({ key, path, label }) — z useAppModules.
-export function taskLink(board, itemId, modules = []) {
-  const key = taskBoardModuleKey(board);
-  const id = encodeURIComponent(String(itemId));
-  if (key) {
-    const mod = modules.find((m) => m?.key === key);
-    const path = typeof mod?.path === 'string' && mod.path.startsWith('/')
-      ? mod.path
-      : (FALLBACK_MODULE_PATHS[key] || `/module/${encodeURIComponent(key)}`);
-    return `${path}?item=${id}`;
-  }
-  return `/projekty?board=${encodeURIComponent(String(board.id))}&item=${id}`;
-}
-
-// Etykieta „gotowe”: id albo tytuł w stylu Gotowe / Zrobione / Ukończone / Zakończone / Done.
-const DONE_RE = /(^|[^a-z])(done|gotow|zrobion|ukoncz|zakoncz|zamkniet|complete|finish)/;
-const norm = (s) => lower(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l');
-export function isDoneLabel(label) {
-  if (!label) return false;
-  return DONE_RE.test(norm(label.id)) || DONE_RE.test(norm(label.title));
-}
-
-// Etykieta „gotowe” kolumny statusu (do szybkiego „oznacz jako gotowe”) albo null.
-export function doneLabelOf(statusCol) {
-  const labels = Array.isArray(statusCol?.settings?.labels) ? statusCol.settings.labels : [];
-  return labels.find((l) => lower(l?.id) === 'done') || labels.find(isDoneLabel) || null;
+// app_modules ({ key, path }) → { [key]: path } dla taskItemLink.
+export function modulePaths(modules = []) {
+  const out = {};
+  for (const m of modules || []) if (m?.key && typeof m.path === 'string') out[m.key] = m.path;
+  return out;
 }
 
 // Termin z kolumny daty ('YYYY-MM-DD') albo osi czasu ({ start, end } → koniec).
@@ -71,11 +35,11 @@ export const isOverdueYmd = (due, today = todayYmd()) => !!due && due < today;
 const byOrder = (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0);
 
 // boards: [{ id, name, module_key, source_kind, is_template }], columns: [{ id, board_id, type, settings,
-// display_order }], items: [{ id, board_id, name, cells, parent_item_id }].
+// display_order }], items: [{ id, board_id, name, cells, parent_item_id, event_id? }].
+// Wiersze zadań (bez filtra osób) — np. zadania wydarzenia. keep(item, peopleCols) zawęża wynik.
 // Zwraca zadania posortowane: z terminem rosnąco, bez terminu na końcu (potem po nazwie).
-export function collectMyBoardTasks({ boards = [], columns = [], items = [], email, modules = [] }) {
-  const me = lower(email);
-  if (!me) return [];
+export function boardTaskRows({ boards = [], columns = [], items = [], modules = [], keep = null }) {
+  const paths = modulePaths(modules);
   const boardById = new Map(boards.filter((b) => b && !b.is_template).map((b) => [String(b.id), b]));
   const colsByBoard = new Map();
   for (const c of [...columns].sort(byOrder)) {
@@ -91,19 +55,18 @@ export function collectMyBoardTasks({ boards = [], columns = [], items = [], ema
     if (!board) continue;
     const cols = colsByBoard.get(String(it.board_id)) || [];
     const peopleCols = cols.filter((c) => c.type === 'people');
-    const assigned = peopleCols.some((c) => {
-      const v = it.cells?.[c.id];
-      return Array.isArray(v) && v.some((p) => lower(typeof p === 'string' ? p : p?.email) === me);
-    });
-    if (!assigned) continue;
+    if (keep && !keep(it, peopleCols)) continue;
 
-    const dateCol = cols.find((c) => c.type === 'date') || cols.find((c) => c.type === 'timeline') || null;
+    const dateCol = cols.find((c) => c.type === 'date' && c.settings?.role === 'due')
+      || cols.find((c) => c.type === 'date') || cols.find((c) => c.type === 'timeline') || null;
     const statusCol = cols.find((c) => c.type === 'status') || null;
     const labels = Array.isArray(statusCol?.settings?.labels) ? statusCol.settings.labels : [];
     const statusVal = statusCol ? it.cells?.[statusCol.id] : null;
     const status = statusCol ? labels.find((l) => l?.id === statusVal) || null : null;
     const doneLabel = doneLabelOf(statusCol);
     const moduleKey = taskBoardModuleKey(board);
+    const people = peopleCols.flatMap((c) => (Array.isArray(it.cells?.[c.id]) ? it.cells[c.id] : []))
+      .filter((p) => p && typeof p === 'object' && p.email);
 
     out.push({
       id: it.id,
@@ -115,10 +78,25 @@ export function collectMyBoardTasks({ boards = [], columns = [], items = [], ema
       done: isDoneLabel(status),
       statusColId: statusCol?.id || null,
       doneLabelId: doneLabel?.id || null,       // null = brak etykiety „gotowe” (bez szybkiego odhaczania)
-      link: taskLink(board, it.id, modules),
+      people,                                   // [{ email, name, avatar_url }] ze wszystkich kolumn „Osoby”
+      eventId: it.event_id ?? null,
+      link: taskItemLink(board, it.id, paths),
     });
   }
   return out.sort(compareTasks);
+}
+
+// Elementy, w których osoba (email: jeden adres albo lista kont tej osoby) jest w kolumnie „Osoby”.
+export function collectMyBoardTasks({ boards = [], columns = [], items = [], email, modules = [] }) {
+  const mine = new Set((Array.isArray(email) ? email : [email]).map(lower).filter(Boolean));
+  if (!mine.size) return [];
+  return boardTaskRows({
+    boards, columns, items, modules,
+    keep: (it, peopleCols) => peopleCols.some((c) => {
+      const v = it.cells?.[c.id];
+      return Array.isArray(v) && v.some((p) => mine.has(lower(typeof p === 'string' ? p : p?.email)));
+    }),
+  });
 }
 
 export function compareTasks(a, b) {

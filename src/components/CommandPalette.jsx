@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import {
   Search, X, Loader2, CornerDownLeft, ArrowUp, ArrowDown,
-  Users, Music, Home, Calendar as CalendarIcon, ListOrdered, LayoutGrid, Podcast, ClipboardList,
+  Users, Music, Home, Calendar as CalendarIcon, ListOrdered, LayoutGrid, Podcast, ClipboardList, CheckSquare,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { usePermissions } from '../contexts/PermissionsContext';
@@ -12,6 +12,7 @@ import { normalizeModuleLabel } from '../hooks/useModuleLabel';
 import { HIDDEN_NAV_KEYS, MERGED_MODULE_TARGETS, KEY_ICONS, wordStartScore } from './navConfig';
 import { useT } from '../i18n';
 import { tr, appLocale } from '../i18n';
+import { boardItemResults, BOARD_ITEM_LIMIT } from './commandPaletteItems';
 
 // Globalny event do otwierania palety z dowolnego miejsca (np. przycisk w Navbarze).
 export const OPEN_EVENT = 'avenit:open-search';
@@ -215,6 +216,25 @@ const SEARCHERS = [
       }));
     },
   },
+  {
+    // Zadania / elementy tablic — bez bramki module:boards w kliencie: serwer (Data API) zwraca
+    // tylko elementy tablic, które widzę (Projekty, zadania moich służb, Kalendarz, prywatne moje).
+    module: 'boards', categoryLabel: 'Zadania', resource: null, icon: CheckSquare,
+    run: async (q, ctx) => {
+      const { data: items } = await supabase
+        .from('board_items')
+        .select('id, name, board_id')
+        .ilike('name', `%${q}%`)
+        .limit(BOARD_ITEM_LIMIT);
+      if (!items?.length) return [];
+      const ids = [...new Set(items.map((i) => i.board_id))];
+      const { data: boards } = await supabase
+        .from('boards')
+        .select('id, name, module_key, source_kind, is_archived, is_template')
+        .in('id', ids);
+      return boardItemResults(items, boards, ctx);
+    },
+  },
 ];
 
 export default function CommandPalette() {
@@ -255,6 +275,12 @@ export default function CommandPalette() {
   }, []);
 
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 30); }, [open]);
+
+  // Ścieżki modułów (app_modules.path) — linki do zadań przez wspólną regułę taskItemLink.
+  const modulePaths = useMemo(
+    () => Object.fromEntries(modules.filter((m) => m?.key && typeof m.path === 'string').map((m) => [m.key, m.path])),
+    [modules],
+  );
 
   // Nazwa modułu z menu (z bazy) — kategorie wyników mówią tym samym językiem co menu.
   const labelFor = useCallback((key, fallback) => {
@@ -318,9 +344,10 @@ export default function CommandPalette() {
     if (q.length < 2) { setGroups([]); setLoading(false); return undefined; }
     setLoading(true);
     const myId = ++reqId.current;
-    const searchers = SEARCHERS.filter((s) => can(s.resource));
+    const searchers = SEARCHERS.filter((s) => !s.resource || can(s.resource));
+    const ctx = { paths: modulePaths, labelFor };
     const timer = setTimeout(async () => {
-      const settled = await Promise.allSettled(searchers.map((s) => s.run(q)));
+      const settled = await Promise.allSettled(searchers.map((s) => s.run(q, ctx)));
       if (myId !== reqId.current) return; // nieaktualne
       const g = searchers.map((s, i) => ({
         category: s.categoryLabel ? tr(s.categoryLabel) : labelFor(s.module, s.fallback),
@@ -331,7 +358,7 @@ export default function CommandPalette() {
       setLoading(false);
     }, 220);
     return () => clearTimeout(timer);
-  }, [query, can, labelFor]);
+  }, [query, can, labelFor, modulePaths]);
 
   // Płaska lista wszystkich itemów (skoki + rekordy) do nawigacji klawiaturą.
   const flat = useMemo(() => {

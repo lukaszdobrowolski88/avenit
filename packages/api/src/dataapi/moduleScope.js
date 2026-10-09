@@ -7,6 +7,7 @@
 //    wydarzenia, team_type grafiku, tablica elementu).
 // Prawo globalne → ten plik nie jest używany (zachowanie bez zmian).
 import { ApiError } from './querybuilder.js';
+import { boardIdExpr } from './boardsScope.js';
 import { loadGrants } from './registry.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { sliceResource, teamsForModules, assignmentsPatchAllowed } from '@avenit/shared/src/permissions/moduleScope.js';
@@ -35,7 +36,9 @@ export function moduleRowScope(table, modules) {
   else if (table === 'schedule_assignments') rule = (a, push) => `${a}."team_type" = ANY($${push(teamsForModules(mods))}::text[])`;
   else if (table === 'boards') rule = (a, push) => boardsPredicate(a, push, mods);
   else if (BOARD_CHILD.has(table)) {
-    rule = (a, push) => `EXISTS (SELECT 1 FROM boards mb_ WHERE mb_."id" = ${a}."board_id" AND ${boardsPredicate('mb_', push, mods)})`;
+    // Tablica wiersza: board_id, a dla komentarzy/dziennika/przebiegów bez board_id — przez element
+    // lub automatyzację (boardsScope.boardIdExpr). Wiersz bez tablicy — poza zakresem.
+    rule = (a, push) => `EXISTS (SELECT 1 FROM boards mb_ WHERE mb_."id" = ${boardIdExpr(table, a)} AND ${boardsPredicate('mb_', push, mods)})`;
   } else return null;
   return { select: rule, update: rule, delete: rule, upsertGuard: rule };
 }

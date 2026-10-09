@@ -10,6 +10,8 @@
 //  - sync-mail               co 5 min
 //  - chat-channels-sync      co 10 min (skład kanałów służb i grup domowych)
 //  - schedule-reminders      codziennie 18:00 Europe/Warsaw (grafik: przypomnienia + ponaglenia)
+//  - task-digest             codziennie 07:00 Europe/Warsaw (skrót zadań na dziś; nadrabianie przy starcie do 12:00)
+//  - board-import-legacy     przy starcie + codziennie 03:40 (stare tabele *_tasks → Tablice, raz na tenanta)
 //  - process-dunning         codziennie 08:00 (baza platform)
 import cron from 'node-cron';
 import { platformPool, getTenantPool } from './db.js';
@@ -44,6 +46,7 @@ async function forEachTenant(jobName, moduleName) {
     try {
       await mod.runForTenant(getTenantPool(t.db_name), {
         tenantSlug: t.slug,
+        tenantDbName: t.db_name, // klucz pamięci uprawnień (loadGrants) — osobny dla każdego tenanta
         tenantSubdomain: t.subdomain || t.slug,
         tenantName: t.name,
         log: (...a) => log(`[${t.slug}]`, ...a),
@@ -99,6 +102,20 @@ cron.schedule('0 8 * * *', exclusive(() => forEachTenant('birthday-reminders', '
 // potwierdzonym na N dni przed wydarzeniem + ponaglenie osób bez odpowiedzi (app_settings
 // schedule_reminders). Strefa jawnie — kontener workera nie ma ustawionego TZ (domyślnie UTC).
 cron.schedule('0 18 * * *', exclusive(() => forEachTenant('schedule-reminders', 'schedule-reminders')), { timezone: 'Europe/Warsaw' });
+
+// Zadania: poranny skrót (zadania na dziś i zaległe) — codziennie 07:00 czasu polskiego. Raz dziennie
+// na osobę pilnuje znacznik task_digest_sends, więc nadrabianie przy starcie (wdrożenie rano) nie dubluje.
+const taskDigest = exclusive(() => forEachTenant('task-digest', 'task-digest'));
+cron.schedule('0 7 * * *', taskDigest, { timezone: 'Europe/Warsaw' });
+// Zadania: jednorazowe przeniesienie starych tabel *_tasks na Tablice dla KAŻDEGO tenanta (bez czekania,
+// aż ktoś otworzy zakładkę „Zadania”) + uzupełnienie osób/komentarzy. Idempotentne — przy starcie i co noc.
+const legacyTasksImport = exclusive(() => forEachTenant('board-import-legacy', 'board-import-legacy'));
+cron.schedule('40 3 * * *', legacyTasksImport, { timezone: 'Europe/Warsaw' });
+setTimeout(() => {
+  legacyTasksImport().catch((err) => log(`board-import-legacy start: błąd: ${err.message}`));
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', hour: '2-digit', hourCycle: 'h23' }).format(new Date()));
+  if (hour >= 7 && hour < 12) taskDigest().catch((err) => log(`task-digest start: błąd: ${err.message}`));
+}, 30_000);
 
 cron.schedule('0 8 * * *', exclusive(async () => {
   try {

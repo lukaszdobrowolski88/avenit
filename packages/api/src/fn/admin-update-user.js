@@ -1,7 +1,10 @@
 // Admin: edycja konta — spójna i bezpieczna. Synchronizuje status z is_active, zapisuje
 // totp_required, pilnuje unikalności e-maila, rewokuje sesje przy blokadzie, loguje audyt.
 // Guardy: nie zablokuj/odbierz admina sobie ani ostatniemu administratorowi.
+// Osoba z samym action:settings:manage_users (bez roli admina) nie nada roli administracyjnej
+// ani szerszej niż własna i nie zmieni konta administratora (lib/admin-guard.js).
 import { getCaller, isAdmin, isLastActiveAdmin, revokeSessions } from '../lib/user-admin.js';
+import { accountChangeDenied } from '../lib/admin-guard.js';
 import { logAccountEvent } from '../lib/account-audit.js';
 
 export const name = 'admin-update-user';
@@ -34,6 +37,9 @@ export default async function handler(req, reply) {
   const newActive = b.is_active === undefined ? target.is_active : b.is_active !== false;
   const campusId = b.campus_id === undefined ? target.campus_id : (b.campus_id || null);
   const totpRequired = b.totp_required === undefined ? target.totp_required : b.totp_required === true;
+
+  const denied = await accountChangeDenied(req.db, req.tenant.db_name, caller, target, { newRole: role });
+  if (denied) return reply.code(403).send({ error: denied });
 
   // Czy po zmianie konto nadal ma uprawnienia administratora?
   const { rows: rr } = await req.db.query('SELECT COALESCE(is_admin, false) AS a FROM app_roles WHERE key = $1', [role]);

@@ -1,118 +1,164 @@
-// Kalendarz: elementy tablic Z TERMINEM, do których jestem przypisany (kolumna „Osoby”).
-// Tylko tablice, które widzę: nie-archiwalne, nie-prywatne (albo moje/edytor — ta sama reguła co
-// /api/db, boardsScope) i z modułu, do którego mam dostęp (tablica modułu → uprawnienie modułu,
-// Projekty → module:boards).
+// Kalendarz / pulpit / iCal: elementy tablic Z TERMINEM, do których jestem przypisany (kolumna „Osoby”).
+// Tylko tablice, które widzę: nie-archiwalne, nie-szablony, nie-prywatne (albo moje/edytor — ta sama
+// reguła co /api/db, boardsScope) i z modułu, do którego mam dostęp (tablica służby → moduł służby,
+// także tablica z importu po source_kind; Projekty → module:boards).
 //
 // Body: { from?: 'YYYY-MM-DD', to?: 'YYYY-MM-DD', exclude_board_id?: uuid }
 // → { items: [{ id, board_id, board_name, module_key, module_path, source_kind, name, date, end,
-//               status: { title, color } | null, done, link }] }
-//   link: zadanie w module → <ścieżka modułu>?item=<id> (ModuleBoard otwiera je z zakładki Zadania),
-//         Projekty → /projekty?board=<id>&item=<id>.
+//               status: { title, color } | null, done, link }] }  — posortowane po terminie.
+//   link — jedna reguła taskItemLink (packages/shared/src/lib/taskLinks.js).
+//   done — isDoneLabel (packages/shared/src/lib/boardStatus.js).
+//
+// „Przypisany” = board_items.assignee_emails (text[] z triggera, migracja 094; indeks GIN) — bez
+// przeglądania cells każdego elementu. Wszystkie filtry (tablice, uprawnienia, zakres dat,
+// exclude_board_id) są w SQL PRZED limitem; termin liczony w SQL z kolumny daty tablicy.
 import { boardScope } from '../dataapi/boardsScope.js';
 import { callerAccess } from './board-import-legacy.js';
+import { taskItemLink, modulePathFor } from '@avenit/shared/src/lib/taskLinks.js';
+import { isDoneLabel } from '@avenit/shared/src/lib/boardStatus.js';
+import { boardModuleKey } from '@avenit/shared/src/permissions/moduleScope.js';
 
 export const name = 'my-board-items';
 export const method = 'POST';
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
-const LIMIT = 1500;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const LIMIT = 1500;
 
-// Termin elementu z pierwszej kolumny daty (albo osi czasu). Czyste — testy.
-export function itemDates(cells, columns) {
-  const dateCol = columns.find((c) => c.type === 'date' && c.settings?.role === 'due')
-    || columns.find((c) => c.type === 'date')
-    || columns.find((c) => c.type === 'timeline');
-  if (!dateCol) return null;
-  const v = cells?.[dateCol.id];
-  if (!v) return null;
-  if (dateCol.type === 'timeline') {
-    const start = typeof v?.start === 'string' ? v.start.slice(0, 10) : null;
-    const end = typeof v?.end === 'string' ? v.end.slice(0, 10) : null;
-    if (!start && !end) return null;
-    return { date: start || end, end: end && end !== (start || end) ? end : null };
-  }
-  const d = String(v).slice(0, 10);
-  return YMD.test(d) ? { date: d, end: null } : null;
-}
-
-// Tylko tablica zadań modułu (source_kind *_tasks) otwiera się z ?item= na stronie modułu —
-// ta sama reguła co powiadomienia (dataapi/boardNotify.js itemLink) i pulpit (myBoardTasks.js).
-export function itemLink(item, board, modulePath) {
-  if (board.module_key && modulePath && /_tasks$/.test(String(board.source_kind || ''))) return `${modulePath}${modulePath.includes('?') ? '&' : '?'}item=${item.id}`;
-  return `/projekty?board=${board.id}&item=${item.id}`;
-}
-
-// Elementy z terminem przypisane do `email` na tablicach, które ta osoba widzi.
-// can(capability) — jak w callerAccess (admin → zawsze true). Do użycia także np. w ical.js.
-export async function listMyBoardItems({ db, email, can, from = null, to = null, excludeBoardId = null }) {
-  const me = String(email || '').toLowerCase();
-  if (!me) return [];
-  const params = [me];
-  const push = (v) => { params.push(v); return params.length; };
-  const visible = boardScope('boards', { email: me }).select('b', push);
-  const { rows } = await db.query(
-    `SELECT i.id, i.board_id, i.name, i.cells
-       FROM board_items i
-       JOIN boards b ON b.id = i.board_id
-      WHERE i.parent_item_id IS NULL
-        AND coalesce(b.is_archived, false) = false
-        AND coalesce(b.is_template, false) = false
-        AND ${visible}
-        AND EXISTS (
-          SELECT 1 FROM board_columns c
-           WHERE c.board_id = i.board_id AND c.type = 'people'
+// „Przypisany do $p” — natywnie (assignee_emails) albo, w bazie sprzed migracji 094, skanem komórek.
+export function assignedPredicate(alias, p, native = true) {
+  if (native) return `${alias}.assignee_emails @> ARRAY[$${p}::text]`;
+  return `EXISTS (
+          SELECT 1 FROM board_columns c_
+           WHERE c_.board_id = ${alias}.board_id AND c_.type = 'people'
              AND EXISTS (
                SELECT 1 FROM jsonb_array_elements(
-                 CASE WHEN jsonb_typeof(i.cells -> (c.id::text)) = 'array' THEN i.cells -> (c.id::text) ELSE '[]'::jsonb END
-               ) p_ WHERE jsonb_typeof(p_) = 'object' AND lower(p_ ->> 'email') = $1))
-      LIMIT ${LIMIT}`,
-    params);
-  if (!rows.length) return [];
+                 CASE WHEN jsonb_typeof(${alias}.cells -> (c_.id::text)) = 'array' THEN ${alias}.cells -> (c_.id::text) ELSE '[]'::jsonb END
+               ) p_ WHERE lower(CASE jsonb_typeof(p_) WHEN 'object' THEN p_ ->> 'email' ELSE p_ #>> '{}' END) = $${p}))`;
+}
 
-  const boardIds = [...new Set(rows.map((r) => String(r.board_id)))].filter((id) => id !== excludeBoardId);
-  if (!boardIds.length) return [];
-  const [{ rows: boards }, { rows: cols }, { rows: mods }] = await Promise.all([
-    db.query('SELECT id, name, module_key, source_kind FROM boards WHERE id::text = ANY($1::text[])', [boardIds]),
-    db.query(`SELECT id, board_id, type, settings, display_order FROM board_columns
-               WHERE board_id::text = ANY($1::text[]) AND type IN ('date', 'timeline', 'status') ORDER BY display_order`, [boardIds]),
-    db.query('SELECT key, path, resource_key FROM app_modules').catch(() => ({ rows: [] })),
-  ]);
+// Kolumna terminu tablicy (pierwsza „data” z rolą due, potem dowolna data, potem oś czasu) i termin
+// elementu: due = dzień (YYYY-MM-DD), due_end = koniec osi czasu (albo NULL). Użycie:
+//   FROM board_items i ${DUE_COLUMN_LATERAL('i')} … SELECT ${DUE_COLUMNS('i')}
+export const DUE_COLUMN_LATERAL = (i) => `JOIN LATERAL (
+      SELECT c.id, c.type FROM board_columns c
+       WHERE c.board_id = ${i}.board_id AND c.type IN ('date', 'timeline')
+       ORDER BY (c.type = 'date' AND c.settings ->> 'role' = 'due') DESC, (c.type = 'date') DESC,
+                c.display_order NULLS LAST, c.id
+       LIMIT 1) dc ON true`;
+export const DUE_COLUMNS = (i) => `CASE WHEN dc.type = 'timeline'
+           THEN coalesce(left(${i}.cells -> (dc.id::text) ->> 'start', 10), left(${i}.cells -> (dc.id::text) ->> 'end', 10))
+           ELSE left(${i}.cells ->> (dc.id::text), 10) END AS due,
+         CASE WHEN dc.type = 'timeline' THEN left(${i}.cells -> (dc.id::text) ->> 'end', 10) END AS due_end`;
+
+// Uprawnienie potrzebne, by otworzyć element tablicy: tablica służby (module_key albo tablica
+// z importu po source_kind, Kalendarz: 'tasks') → moduł służby (app_modules.resource_key), Projekty → module:boards.
+export function boardCapability(board, modByKey = new Map()) {
+  const key = boardModuleKey(board);
+  if (!key) return 'module:boards';
+  return modByKey.get(key)?.resource_key || `module:${key}`;
+}
+
+// Zapytania (czyste — testy). Krok 1: tablice kandydujące (widoczne, aktywne, z moimi elementami).
+export function candidateBoardsSql({ email, excludeBoardId = null, native = true }) {
+  const params = [email];
+  const push = (v) => { params.push(v); return params.length; };
+  const visible = boardScope('boards', { email }).select('b', push);
+  const ex = excludeBoardId ? ` AND b.id <> $${push(excludeBoardId)}::uuid` : '';
+  const sql = `SELECT b.id, b.name, b.module_key, b.source_kind
+       FROM boards b
+      WHERE coalesce(b.is_archived, false) = false
+        AND coalesce(b.is_template, false) = false
+        AND ${visible}${ex}
+        AND EXISTS (SELECT 1 FROM board_items i WHERE i.board_id = b.id AND i.parent_item_id IS NULL AND ${assignedPredicate('i', 1, native)})`;
+  return { sql, params };
+}
+
+// Krok 2: moje elementy z terminem na dozwolonych tablicach — zakres dat przed limitem, po terminie.
+export function myItemsSql({ email, boardIds, from = null, to = null, native = true, limit = LIMIT }) {
+  const params = [email, boardIds];
+  const push = (v) => { params.push(v); return params.length; };
+  const range = [
+    from ? `coalesce(x.due_end, x.due) >= $${push(from)}` : null,
+    to ? `x.due <= $${push(to)}` : null,
+  ].filter(Boolean).map((c) => ` AND ${c}`).join('');
+  const sql = `SELECT x.* FROM (
+      SELECT i.id, i.board_id, i.name, i.cells, ${DUE_COLUMNS('i')}
+        FROM board_items i
+        ${DUE_COLUMN_LATERAL('i')}
+       WHERE i.board_id = ANY($2::uuid[]) AND i.parent_item_id IS NULL
+         AND ${assignedPredicate('i', 1, native)}
+    ) x
+   WHERE x.due ~ '^\\d{4}-\\d{2}-\\d{2}$'${range}
+   ORDER BY x.due, x.due_end NULLS FIRST, x.name, x.id
+   LIMIT ${Number(limit) || LIMIT}`;
+  return { sql, params };
+}
+
+// Etykieta statusu elementu: pierwsza kolumna statusu tablicy.
+export function statusOf(cells, statusCol) {
+  if (!statusCol) return null;
+  const v = cells?.[statusCol.id];
+  return (statusCol.settings?.labels || []).find((l) => l?.id === v) || null;
+}
+
+// Czy baza ma board_items.assignee_emails (migracja 094) — pamięć per pula. Bez kolumny (42703)
+// zapytanie wraca do skanu komórek, więc kolejność wdrożenia API i migracji nie ma znaczenia.
+let nativeKnown = new WeakMap();
+export async function queryAssigned(db, build) {
+  if (nativeKnown.get(db) !== false) {
+    try {
+      const { sql, params } = build(true);
+      return await db.query(sql, params);
+    } catch (err) {
+      if (err?.code !== '42703') throw err;
+      try { nativeKnown.set(db, false); } catch { /* db nie jest obiektem */ }
+    }
+  }
+  const { sql, params } = build(false);
+  return db.query(sql, params);
+}
+export function _resetAssignedCache() { nativeKnown = new WeakMap(); }
+
+// Elementy z terminem przypisane do `email` na tablicach, które ta osoba widzi.
+// can(capability) — jak w callerAccess (admin → zawsze true). Używane też przez ical.js.
+export async function listMyBoardItems({ db, email, can, from = null, to = null, excludeBoardId = null }) {
+  const me = String(email || '').trim().toLowerCase();
+  if (!me) return [];
+  const exclude = excludeBoardId && UUID_RE.test(String(excludeBoardId)) ? String(excludeBoardId) : null;
+
+  const { rows: candidates } = await queryAssigned(db, (native) => candidateBoardsSql({ email: me, excludeBoardId: exclude, native }));
+  if (!candidates.length) return [];
+  const { rows: mods } = await db.query('SELECT key, path, resource_key FROM app_modules').catch(() => ({ rows: [] }));
   const modByKey = new Map(mods.map((m) => [m.key, m]));
-  const boardById = new Map();
-  for (const b of boards) {
-    // Tablica modułu → dostęp do modułu; Projekty → module:boards.
-    const cap = b.module_key ? (modByKey.get(b.module_key)?.resource_key || `module:${b.module_key}`) : 'module:boards';
-    if (can(cap)) boardById.set(String(b.id), b);
-  }
-  const colsByBoard = new Map();
-  for (const c of cols) {
-    const k = String(c.board_id);
-    if (!colsByBoard.has(k)) colsByBoard.set(k, []);
-    colsByBoard.get(k).push(c);
-  }
+  const paths = Object.fromEntries(mods.filter((m) => m.path).map((m) => [m.key, m.path]));
+  const boards = candidates.filter((b) => can(boardCapability(b, modByKey)));
+  if (!boards.length) return [];
+  const boardById = new Map(boards.map((b) => [String(b.id), b]));
+  const boardIds = [...boardById.keys()];
 
-  const items = [];
-  for (const it of rows) {
+  const [{ rows }, { rows: statusCols }] = await Promise.all([
+    queryAssigned(db, (native) => myItemsSql({ email: me, boardIds, from, to, native })),
+    db.query(`SELECT id, board_id, settings FROM board_columns
+               WHERE board_id = ANY($1::uuid[]) AND type = 'status' ORDER BY display_order NULLS LAST, id`, [boardIds]),
+  ]);
+  const statusByBoard = new Map();
+  for (const c of statusCols) if (!statusByBoard.has(String(c.board_id))) statusByBoard.set(String(c.board_id), c);
+
+  return rows.filter((it) => boardById.has(String(it.board_id))).map((it) => {
     const board = boardById.get(String(it.board_id));
-    if (!board) continue;
-    const bc = colsByBoard.get(String(it.board_id)) || [];
-    const when = itemDates(it.cells, bc);
-    if (!when) continue;
-    const last = when.end || when.date;
-    if (from && last < from) continue;
-    if (to && when.date > to) continue;
-    const statusCol = bc.find((c) => c.type === 'status');
-    const label = statusCol ? (statusCol.settings?.labels || []).find((l) => l.id === it.cells?.[statusCol.id]) : null;
-    const modulePath = board.module_key ? modByKey.get(board.module_key)?.path || null : null;
-    items.push({
-      id: it.id, board_id: board.id, board_name: board.name, module_key: board.module_key || null, module_path: modulePath,
-      source_kind: board.source_kind || null, name: it.name || '', date: when.date, end: when.end,
+    const label = statusOf(it.cells, statusByBoard.get(String(it.board_id)));
+    const key = boardModuleKey(board);
+    return {
+      id: it.id, board_id: board.id, board_name: board.name, module_key: board.module_key || key || null,
+      module_path: key ? modulePathFor(key, paths) : null,
+      source_kind: board.source_kind || null, name: it.name || '',
+      date: it.due, end: it.due_end && it.due_end !== it.due ? it.due_end : null,
       status: label ? { title: label.title, color: label.color } : null,
-      done: !!label && /gotow|done|zrobion|ukończ|ukoncz/i.test(label.title || ''),
-      link: itemLink(it, board, modulePath),
-    });
-  }
-  return items;
+      done: isDoneLabel(label),
+      link: taskItemLink(board, it.id, paths),
+    };
+  });
 }
 
 export default async function handler(req, reply) {

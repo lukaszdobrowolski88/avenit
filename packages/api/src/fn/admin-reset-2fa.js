@@ -1,6 +1,7 @@
 // Admin: zresetuj 2FA użytkownika (utrata urządzenia). Czyści sekret/kody, wyłącza TOTP.
 // Jeśli totp_required=true, user skonfiguruje 2FA od nowa przy kolejnym logowaniu.
 import { getCaller, isAdmin, loadTarget } from '../lib/user-admin.js';
+import { accountChangeDenied } from '../lib/admin-guard.js';
 import { logAccountEvent } from '../lib/account-audit.js';
 
 export const name = 'admin-reset-2fa';
@@ -18,6 +19,10 @@ export default async function handler(req, reply) {
   if (target.is_super_admin && !caller.is_super_admin) {
     return reply.code(403).send({ error: 'Tylko super-administrator może zresetować 2FA super-administratorowi.' });
   }
+  // Osoba z samym manage_users (bez roli admina) nie ruszy konta administratora ani konta
+  // z szerszymi uprawnieniami ustawień (lib/admin-guard.js).
+  const denied = await accountChangeDenied(req.db, req.tenant.db_name, caller, target);
+  if (denied) return reply.code(403).send({ error: denied });
 
   await req.db.query(
     `UPDATE app_users SET totp_enabled = false, totp_secret = NULL,

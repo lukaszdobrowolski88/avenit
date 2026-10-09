@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  taskBoardModuleKey, taskLink, isDoneLabel, doneLabelOf, dueOf, isOverdueYmd, collectMyBoardTasks,
+  modulePaths, dueOf, isOverdueYmd, collectMyBoardTasks, boardTaskRows,
 } from './myBoardTasks';
 
 const labels = [
@@ -9,34 +9,9 @@ const labels = [
   { id: 'done', title: 'Gotowe', color: '#16a34a' },
 ];
 
-describe('linki do zadania', () => {
-  const modules = [{ key: 'media', path: '/media', label: 'MediaTeam' }, { key: 'chor', path: '/chor', label: 'Chór' }];
-  it('zakładka Zadania modułu → ścieżka modułu + ?item=', () => {
-    expect(taskLink({ id: 'b', source_kind: 'media_tasks', module_key: 'media' }, 'i1', modules)).toBe('/media?item=i1');
-    expect(taskLink({ id: 'b', source_kind: 'home_group_tasks' }, 'i1', [])).toBe('/home-groups?item=i1');
-    expect(taskLink({ id: 'b', source_kind: 'custom_chor_tasks', module_key: 'chor' }, 'i1', modules)).toBe('/chor?item=i1');
-    expect(taskLink({ id: 'b', source_kind: 'custom_x_tasks' }, 'i1', [])).toBe('/module/x?item=i1');
-  });
-  it('Projekty i tablice z zakładki „Tablica” → /projekty', () => {
-    expect(taskLink({ id: 'b1' }, 'i1')).toBe('/projekty?board=b1&item=i1');
-    expect(taskLink({ id: 'b1', module_key: 'chor' }, 'i1', modules)).toBe('/projekty?board=b1&item=i1');
-    expect(taskBoardModuleKey({ module_key: 'chor' })).toBeNull();
-  });
-});
-
-describe('etykieta „gotowe”', () => {
-  it('rozpoznaje typowe nazwy, także bez polskich znaków', () => {
-    expect(isDoneLabel({ id: 'done', title: 'X' })).toBe(true);
-    expect(isDoneLabel({ id: 's1', title: 'Ukończone' })).toBe(true);
-    expect(isDoneLabel({ id: 'zamkniete', title: 'Zamknięte' })).toBe(true);
-    expect(isDoneLabel({ id: 's2', title: 'Niegotowe' })).toBe(false);
-    expect(isDoneLabel({ id: 'working', title: 'W trakcie' })).toBe(false);
-    expect(isDoneLabel(null)).toBe(false);
-  });
-  it('kolumna bez etykiety „gotowe” — brak szybkiego odhaczania', () => {
-    expect(doneLabelOf({ settings: { labels } }).id).toBe('done');
-    expect(doneLabelOf({ settings: { labels: [{ id: 'a', title: 'Nowe' }] } })).toBeNull();
-    expect(doneLabelOf(null)).toBeNull();
+describe('modulePaths', () => {
+  it('app_modules → { klucz: ścieżka }', () => {
+    expect(modulePaths([{ key: 'media', path: '/media' }, { key: 'x' }, null])).toEqual({ media: '/media' });
   });
 });
 
@@ -98,6 +73,39 @@ describe('collectMyBoardTasks', () => {
     expect(c.status).toBeNull();
     expect(c.doneLabelId).toBeNull();
     expect(c.link).toBe('/projekty?board=b2&item=c');
+  });
+  it('link z jednej reguły (@avenit/shared): tablica Kalendarza → /wydarzenia?item=', () => {
+    const cal = collectMyBoardTasks({
+      boards: [{ id: 'bc', name: 'Zadania', source_kind: 'tasks', module_key: 'calendar' }],
+      columns: [{ id: 'pc', board_id: 'bc', type: 'people' }],
+      items: [{ id: 'z1', board_id: 'bc', name: 'Klucze', cells: { pc: [me] } }],
+      email: 'ja@x.pl',
+    });
+    expect(cal[0].link).toBe('/wydarzenia?item=z1');
+  });
+  it('„gotowe” z jawnej flagi etykiety ma pierwszeństwo przed nazwą', () => {
+    const flagged = [{ id: 'x', title: 'Odhaczone', done: true }, { id: 'y', title: 'Gotowe (nie)', done: false }];
+    const rowsF = collectMyBoardTasks({
+      boards: [{ id: 'bf', name: 'F' }],
+      columns: [{ id: 'pf', board_id: 'bf', type: 'people' }, { id: 'sf', board_id: 'bf', type: 'status', settings: { labels: flagged } }],
+      items: [
+        { id: 'f1', board_id: 'bf', name: 'A', cells: { pf: [me], sf: 'x' } },
+        { id: 'f2', board_id: 'bf', name: 'B', cells: { pf: [me], sf: 'y' } },
+      ],
+      email: 'ja@x.pl',
+    });
+    expect(rowsF.find((r) => r.id === 'f1').done).toBe(true);
+    expect(rowsF.find((r) => r.id === 'f2').done).toBe(false);
+    expect(rowsF[0].doneLabelId).toBe('x');
+  });
+  it('kilka kont tej samej osoby (lista e-maili) i osoby z kolumn „Osoby”', () => {
+    const r2 = collectMyBoardTasks({ boards, columns, items, email: ['inny@x.pl', 'nikt@x.pl'], modules });
+    expect(r2.map((r) => r.id)).toEqual(['d']);
+    expect(r2[0].people).toEqual([{ email: 'inny@x.pl' }]);
+  });
+  it('boardTaskRows bez filtra — wszystkie elementy (np. zadania wydarzenia)', () => {
+    const all = boardTaskRows({ boards, columns, items, modules });
+    expect(all.map((r) => r.id).sort()).toEqual(['a', 'b', 'c', 'd', 'f']);
   });
   it('bez e-maila — pusto', () => {
     expect(collectMyBoardTasks({ boards, columns, items, email: '' })).toEqual([]);

@@ -17,12 +17,14 @@ import CareLogTab from '../modules/Care/tabs/CareLogTab';
 import MilestonesTab from '../modules/Care/tabs/MilestonesTab';
 import TagsTab from '../modules/Care/tabs/TagsTab';
 import CustomValuesTab from '../modules/Care/tabs/CustomValuesTab';
+import PersonTasksTab from '../modules/Care/tabs/PersonTasksTab';
 
 // Zakładki Opieki/CRM wtopione w profil członka (jeden widok osoby zamiast osobnego modułu).
 const CARE_TABS = [
   { id: 'notes', label: 'Notatki' },
   { id: 'care', label: 'Opieka' },
   { id: 'milestones', label: 'Kamienie milowe' },
+  { id: 'tasks', label: 'Zadania' },
   { id: 'tags', label: 'Tagi' },
   { id: 'custom', label: 'Pola własne' },
 ];
@@ -279,6 +281,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
                 {careTab === 'notes' && <NotesTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
                 {careTab === 'care' && <CareLogTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
                 {careTab === 'milestones' && <MilestonesTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
+                {careTab === 'tasks' && <PersonTasksTab key={member.id} member={member} />}
                 {careTab === 'tags' && hasFormTags && (
                   <div className="mb-3">
                     <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5">

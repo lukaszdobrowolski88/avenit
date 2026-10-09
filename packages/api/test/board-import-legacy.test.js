@@ -6,7 +6,6 @@ import {
   resolveSource, pickColumns, buildLabels, rawAssignees, makeDirectory, resolveAssignees,
   isFillablePeopleCell, matchLegacyRows, calendarTeamOptions, slug,
 } from '../src/fn/board-import-legacy.js';
-import { itemDates, itemLink } from '../src/fn/my-board-items.js';
 
 test('źródło: tylko stałe nazwy i custom_<key>_tasks istniejącego modułu', () => {
   assert.equal(resolveSource('media_tasks').moduleKey, 'media');
@@ -128,17 +127,4 @@ test('kalendarz: opcje kategorii (kalendarze zadań) + wartości spoza listy', (
   assert.ok(opts.some((o) => o.id === 'groups' && o.title === 'Grupy domowe'));
   assert.equal(opts.filter((o) => o.id === 'media').length, 1);
   assert.ok(opts.some((o) => o.id === 'chor'));
-});
-
-test('przypisane mi: termin z kolumny daty / osi czasu i link do elementu', () => {
-  const cols = [{ id: 'c1', type: 'status' }, { id: 'c2', type: 'date' }];
-  assert.deepEqual(itemDates({ c2: '2026-10-11' }, cols), { date: '2026-10-11', end: null });
-  assert.equal(itemDates({ c2: 'jutro' }, cols), null);
-  assert.equal(itemDates({}, cols), null);
-  assert.deepEqual(itemDates({ t: { start: '2026-10-01', end: '2026-10-03' } }, [{ id: 't', type: 'timeline' }]), { date: '2026-10-01', end: '2026-10-03' });
-  assert.equal(itemLink({ id: 'i' }, { id: 'b', module_key: 'media', source_kind: 'media_tasks' }, '/media'), '/media?item=i');
-  // Tablica z zakładki „Tablica” modułu (nie zadania modułu) — /projekty, jak w powiadomieniach.
-  assert.equal(itemLink({ id: 'i' }, { id: 'b', module_key: 'media', source_kind: null }, '/media'), '/projekty?board=b&item=i');
-  assert.equal(itemLink({ id: 'i' }, { id: 'b', module_key: null }, null), '/projekty?board=b&item=i');
-  assert.equal(itemLink({ id: 'i' }, { id: 'b', module_key: 'x' }, null), '/projekty?board=b&item=i');
 });

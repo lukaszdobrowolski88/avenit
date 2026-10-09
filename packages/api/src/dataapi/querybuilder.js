@@ -31,7 +31,8 @@ const FILTER_SQL = {
   ilike: (c, p) => `${c} ILIKE ${p}`,
 };
 
-function buildFilter(filter, params, alias, hiddenColumns) {
+// table (opcjonalnie): rozpoznanie natywnych kolumn tablicowych w .contains().
+function buildFilter(filter, params, alias, hiddenColumns, table = null) {
   const { type, column, value } = filter;
   if (column !== undefined) assertColumnAllowed(column, hiddenColumns);
   const push = (v) => {
@@ -55,13 +56,17 @@ function buildFilter(filter, params, alias, hiddenColumns) {
       return `${col} IN (${value.map((v) => push(v)).join(', ')})`;
     }
     case 'contains': {
-      // supabase .contains(): jsonb/array @>
+      // supabase .contains(): natywna tablica PG (NATIVE_ARRAY_COLUMNS, text[]) — @> text[],
+      // np. .contains('assignee_emails', [email]); pozostałe kolumny (jsonb) — @> jsonb.
+      if (table && NATIVE_ARRAY_COLUMNS.has(`${table}.${column}`)) {
+        return `${col} @> ${push((Array.isArray(value) ? value : [value]).map((v) => String(v)))}::text[]`;
+      }
       const param = push(Array.isArray(value) || typeof value === 'object' ? JSON.stringify(value) : value);
       return `${col} @> ${param}::jsonb`;
     }
     case 'not': {
       // { type:'not', column, operator, value } — .not('col','is',null) itd.
-      const inner = buildFilter({ type: filter.operator, column, value }, params, alias, hiddenColumns);
+      const inner = buildFilter({ type: filter.operator, column, value }, params, alias, hiddenColumns, table);
       return `NOT (${inner})`;
     }
     case 'or': {
@@ -95,14 +100,15 @@ function assertColumnAllowed(column, hiddenColumns) {
   }
 }
 
-export function buildWhere(filters, params, alias, hiddenColumns) {
+export function buildWhere(filters, params, alias, hiddenColumns, table = null) {
   if (!filters?.length) return '';
-  const clauses = filters.map((f) => buildFilter(f, params, alias, hiddenColumns));
+  const clauses = filters.map((f) => buildFilter(f, params, alias, hiddenColumns, table));
   return ` WHERE ${clauses.join(' AND ')}`;
 }
 
 // ── SELECT (z embedami) ───────────────────────────────────────────────────
-function buildSelectColumns(table, parsed, alias, params) {
+// ctx: { q, params, push } — kontekst zapytania (zakresy wierszy dla złączeń, parametry).
+function buildSelectColumns(table, parsed, alias, ctx) {
   const rule = getTableRule(table);
   const hidden = rule?.hiddenColumns || [];
   const parts = [];
@@ -130,7 +136,7 @@ function buildSelectColumns(table, parsed, alias, params) {
   }
 
   for (const embed of parsed.embeds) {
-    parts.push(`${buildEmbed(table, embed, alias, params)} AS ${quoteIdent(embed.alias.trim())}`);
+    parts.push(`${buildEmbed(table, embed, alias, ctx)} AS ${quoteIdent(embed.alias.trim())}`);
   }
   return parts;
 }
@@ -159,11 +165,13 @@ function resolveRelationship(table, embed) {
 // Zawężenie odczytu propozycji budżetu (routes ustawia q.__proposalScope osobom bez prawa
 // zatwierdzania budżetu): zespoły, których zakładkę Finanse widzą, oraz własne zgłoszenia.
 // Fail-closed: pusta lista zespołów i brak e-maila => żaden wiersz.
-export function proposalScopeClause(scope, alias, params) {
-  params.push(Array.isArray(scope.teamTypes) ? scope.teamTypes.map(String) : []);
-  const pTeams = params.length;
-  params.push(scope.email || '');
-  const pEmail = params.length;
+// paramsOrPush: tablica parametrów albo funkcja push(v) => numer parametru.
+export function proposalScopeClause(scope, alias, paramsOrPush) {
+  const push = typeof paramsOrPush === 'function'
+    ? paramsOrPush
+    : (v) => { paramsOrPush.push(v); return paramsOrPush.length; };
+  const pTeams = push(Array.isArray(scope.teamTypes) ? scope.teamTypes.map(String) : []);
+  const pEmail = push(scope.email || '');
   return `(${alias}."team_type" = ANY($${pTeams}::text[]) OR ($${pEmail} <> '' AND lower(${alias}."submitted_by") = lower($${pEmail})))`;
 }
 
@@ -183,33 +191,41 @@ export function embeddedTablePairs(table, select) {
   return out;
 }
 
-function buildEmbed(parentTable, embed, parentAlias, params) {
+// Złączenie dziedziczy zakresy wierszy tabeli dociąganej (audyt 2026-10): kampus, widoczność
+// wydarzeń (segmenty), prywatne tablice, zakres służby itd. — inaczej `board_items:item_id(*)`
+// z board_item_updates czy `events:event_id(*)` z dowolnej tabeli pokazywały wiersze, których
+// osoba nie zobaczyłaby zapytaniem wprost. Zakresy ustawia routes.js (q.__embedScopes,
+// q.__embedHidden); kampus i widoczność wydarzeń liczone tu z q.__campusScope / q.__visibilityScope.
+function buildEmbed(parentTable, embed, parentAlias, ctx) {
   const rel = resolveRelationship(parentTable, embed);
   if (!getTableRule(rel.table)) {
     throw new ApiError(403, `Tabela '${rel.table}' nie jest dostępna przez API`);
   }
   const childAlias = `e_${Math.abs(hashCode(`${parentAlias}_${embed.alias}`))}`;
   const childParsed = { columns: embed.columns, embeds: embed.embeds };
-  const childCols = buildSelectColumns(rel.table, childParsed, childAlias, params);
-  const jsonObject = buildJsonRow(rel.table, childParsed, childAlias);
+  const jsonObject = buildJsonRow(rel.table, childParsed, childAlias, ctx);
+  const scope = selectScopeClauses(rel.table, childAlias, ctx.q, ctx.push, { main: false });
+  const andScope = scope.length ? ` AND ${scope.join(' AND ')}` : '';
 
   if (rel.type === 'one') {
     // `references` = kolumna w tabeli docelowej (domyślnie id), np. created_by trzymające e-mail.
     return `(SELECT ${jsonObject}
        FROM ${quoteIdent(rel.table)} ${childAlias}
-      WHERE ${childAlias}.${quoteIdent(rel.references || 'id')} = ${parentAlias}.${quoteIdent(rel.column)}
+      WHERE ${childAlias}.${quoteIdent(rel.references || 'id')} = ${parentAlias}.${quoteIdent(rel.column)}${andScope}
       LIMIT 1)`;
   }
   // to-many
   return `COALESCE((SELECT jsonb_agg(${jsonObject})
        FROM ${quoteIdent(rel.table)} ${childAlias}
-      WHERE ${childAlias}.${quoteIdent(rel.column)} = ${parentAlias}."id"), '[]'::jsonb)`;
+      WHERE ${childAlias}.${quoteIdent(rel.column)} = ${parentAlias}."id"${andScope}), '[]'::jsonb)`;
 }
 
 // JSON pojedynczego wiersza embedu (z rekurencją na kolejne embedy).
-function buildJsonRow(table, parsed, alias) {
+function buildJsonRow(table, parsed, alias, ctx) {
   const rule = getTableRule(table);
-  const hidden = rule?.hiddenColumns || [];
+  // Kolumny ukryte tabeli + kolumny bez prawa odczytu (field:<tabela>:<kolumna>:read) w złączeniu.
+  const extra = ctx.q?.__embedHidden?.[table];
+  const hidden = [...(rule?.hiddenColumns || []), ...(Array.isArray(extra) ? extra : [])];
   const hasStar = parsed.columns.includes('*');
 
   let base;
@@ -226,7 +242,7 @@ function buildJsonRow(table, parsed, alias) {
   }
   for (const sub of parsed.embeds) {
     base += ` || jsonb_build_object('${sub.alias.trim().replace(/'/g, "''")}', ${buildEmbed(
-      table, sub, alias, []
+      table, sub, alias, ctx
     )})`;
   }
   return base;
@@ -251,44 +267,31 @@ export const CAMPUS_SCOPED_TABLES = new Set([
   'member_notes', 'member_care_log', 'member_milestones', 'member_tags',
 ]);
 
-export function buildQuery(q) {
-  const table = String(q.table || '');
-  const rule = getTableRule(table);
-  if (!rule) throw new ApiError(403, `Tabela '${table}' nie jest dostępna przez API`);
-  const hidden = rule.hiddenColumns || [];
-  const alias = 't';
-  const params = [];
-  const tbl = quoteIdent(table);
+// Klauzula kampusu (Faza 4) dla tabeli kampusowej — null, gdy zakres uśpiony (campusId null).
+function campusClauseFor(table, alias, q, push) {
+  const campusId = q?.__campusScope?.campusId;
+  if (campusId == null || !CAMPUS_SCOPED_TABLES.has(table)) return null;
+  return `(${alias}."campus_id" = $${push(campusId)} OR ${alias}."campus_id" IS NULL)`;
+}
 
-  // Twarda izolacja kampusów (Faza 4). campusId != null WYŁĄCZNIE gdy osoba ma przypisany
-  // kampus i nie jest adminem (ustawiane w routes). Gdy null → klauzula NIE jest dodawana,
-  // więc SQL jest identyczny jak dotąd (obecnie 0 kampusów → w pełni uśpione).
-  const campusId = (q.__campusScope && q.__campusScope.campusId != null && CAMPUS_SCOPED_TABLES.has(table))
-    ? q.__campusScope.campusId : null;
-  const campusClause = () => {
-    params.push(campusId);
-    return `(${alias}."campus_id" = $${params.length} OR ${alias}."campus_id" IS NULL)`;
-  };
-
-  // Widoczność wydarzeń (audytorium segmentowe). Aktywne WYŁĄCZNIE dla tabeli events, SELECT,
-  // gdy routes ustawi q.__visibilityScope (czyli user nie jest adminem). Gdy segmenty są puste/null
-  // => brak ograniczeń (SQL nie ukrywa nic — zachowanie jak dotąd). Fail-closed: nie pasujesz => nie widzisz.
-  const vis = (q.__visibilityScope && table === 'events' && q.op === 'select') ? q.__visibilityScope : null;
-  const visibilityClause = () => {
-    const p = (val) => { params.push(val); return params.length; };
-    const pEmail = p(vis.email || '');
-    const pRole = p(vis.role || '');
-    const pCampus = p(vis.campusId != null ? String(vis.campusId) : null);
-    const pHome = p(Array.isArray(vis.homeGroupIds) ? vis.homeGroupIds.map(String) : []);
-    const pHasHome = p(!!(Array.isArray(vis.homeGroupIds) && vis.homeGroupIds.length));
-    const pLeadGroups = p(Array.isArray(vis.leaderGroupIds) ? vis.leaderGroupIds.map(String) : []);
-    const pHasLeader = p(!!(Array.isArray(vis.leaderGroupIds) && vis.leaderGroupIds.length));
-    const pIsCoord = p(!!vis.isCoordinator);
-    const pMemberTxt = p(vis.memberId != null ? String(vis.memberId) : null);
-    const pMemberInt = p(vis.memberId != null ? vis.memberId : null);
-    const pMin = p(Array.isArray(vis.ministries) ? vis.ministries.map(String) : []);
-    const pTags = p(Array.isArray(vis.tags) ? vis.tags.map(String) : []);
-    return `(
+// Widoczność wydarzeń (audytorium segmentowe). Gdy segmenty są puste/null => brak ograniczeń.
+// Fail-closed: nie pasujesz => nie widzisz. Używane przez SELECT/count/złączenia (querybuilder)
+// i realtime (server.js) — jeden predykat.
+export function eventVisibilityClause(vis, alias, push) {
+  const p = push;
+  const pEmail = p(vis.email || '');
+  const pRole = p(vis.role || '');
+  const pCampus = p(vis.campusId != null ? String(vis.campusId) : null);
+  const pHome = p(Array.isArray(vis.homeGroupIds) ? vis.homeGroupIds.map(String) : []);
+  const pHasHome = p(!!(Array.isArray(vis.homeGroupIds) && vis.homeGroupIds.length));
+  const pLeadGroups = p(Array.isArray(vis.leaderGroupIds) ? vis.leaderGroupIds.map(String) : []);
+  const pHasLeader = p(!!(Array.isArray(vis.leaderGroupIds) && vis.leaderGroupIds.length));
+  const pIsCoord = p(!!vis.isCoordinator);
+  const pMemberTxt = p(vis.memberId != null ? String(vis.memberId) : null);
+  const pMemberInt = p(vis.memberId != null ? vis.memberId : null);
+  const pMin = p(Array.isArray(vis.ministries) ? vis.ministries.map(String) : []);
+  const pTags = p(Array.isArray(vis.tags) ? vis.tags.map(String) : []);
+  return `(
       ${alias}.visibility_segments IS NULL
       OR jsonb_typeof(${alias}.visibility_segments) <> 'array'
       OR jsonb_array_length(${alias}.visibility_segments) = 0
@@ -315,34 +318,78 @@ export function buildQuery(q) {
              ))
       )
     )`;
-  };
+}
+
+// Zakresy ODCZYTU wierszy tabeli (SELECT, count/head, złączenia) — jedna lista dla wszystkich:
+// kampus, widoczność wydarzeń, a dla tabeli głównej propozycje budżetu i q.__ownerScope.select
+// (własność, prywatne tablice, zakres służby…), dla złączenia — q.__embedScopes[tabela].
+function selectScopeClauses(table, alias, q, push, { main }) {
+  const out = [];
+  const campus = campusClauseFor(table, alias, q, push);
+  if (campus) out.push(campus);
+  if (table === 'events' && q?.__visibilityScope) out.push(eventVisibilityClause(q.__visibilityScope, alias, push));
+  if (main) {
+    if (q.__proposalScope && table === 'budget_proposals') {
+      out.push(proposalScopeClause(q.__proposalScope, alias, push));
+    }
+    const own = q.__ownerScope?.select;
+    if (typeof own === 'function') out.push(own(alias, push));
+  } else {
+    const es = q?.__embedScopes?.[table];
+    if (typeof es === 'function') out.push(es(alias, push));
+  }
+  return out;
+}
+
+const andWhere = (where, clauses) => {
+  const list = (clauses || []).filter(Boolean);
+  if (!list.length) return where;
+  return where ? `${where} AND ${list.join(' AND ')}` : ` WHERE ${list.join(' AND ')}`;
+};
+
+// count(*) / head — te same filtry i zakresy co SELECT (audyt 2026-10: licznik pomijał kampus,
+// widoczność wydarzeń, prywatne tablice i zakres służby, więc zdradzał liczbę ukrytych wierszy).
+export function buildCountQuery(q) {
+  const table = String(q.table || '');
+  const rule = getTableRule(table);
+  if (!rule) throw new ApiError(403, `Tabela '${table}' nie jest dostępna przez API`);
+  const params = [];
+  const push = (v) => { params.push(v); return params.length; };
+  const where = buildWhere(q.filters, params, 't', rule.hiddenColumns || [], table);
+  const scoped = andWhere(where, selectScopeClauses(table, 't', q, push, { main: true }));
+  return { sql: `SELECT count(*)::int AS count FROM ${quoteIdent(table)} t${scoped}`, params };
+}
+
+export function buildQuery(q) {
+  const table = String(q.table || '');
+  const rule = getTableRule(table);
+  if (!rule) throw new ApiError(403, `Tabela '${table}' nie jest dostępna przez API`);
+  const hidden = rule.hiddenColumns || [];
+  const alias = 't';
+  const params = [];
+  const tbl = quoteIdent(table);
+  const push = (v) => { params.push(v); return params.length; };
+  const ctx = { q, params, push };
+
+  // Twarda izolacja kampusów (Faza 4). campusId != null WYŁĄCZNIE gdy osoba ma przypisany
+  // kampus i nie jest adminem (ustawiane w routes). Gdy null → klauzula NIE jest dodawana,
+  // więc SQL jest identyczny jak dotąd (obecnie 0 kampusów → w pełni uśpione).
+  const campusId = (q.__campusScope && q.__campusScope.campusId != null && CAMPUS_SCOPED_TABLES.has(table))
+    ? q.__campusScope.campusId : null;
+  const campusClause = () => campusClauseFor(table, alias, q, push);
 
   // Własność wierszy (tabele osobiste, patrz ownership.js) — ustawiane w routes.
   const own = q.__ownerScope || null;
-  const push = (v) => { params.push(v); return params.length; };
-  const ownClause = (kind) => (own && own[kind] ? own[kind](alias, push) : null);
-  const andOwn = (w, kind) => {
-    const c = ownClause(kind);
-    if (!c) return w;
-    return w ? `${w} AND ${c}` : ` WHERE ${c}`;
-  };
+  const ownClause = (kind) => (own && typeof own[kind] === 'function' ? own[kind](alias, push) : null);
+  const andOwn = (w, kind) => andWhere(w, [ownClause(kind)]);
 
   switch (q.op) {
     case 'select': {
       const parsed = parseSelect(q.select);
-      const cols = buildSelectColumns(table, parsed, alias, params);
+      const cols = buildSelectColumns(table, parsed, alias, ctx);
       const usesJsonbRow = cols.some((c) => c.endsWith('AS __row'));
-      const where = buildWhere(q.filters, params, alias, hidden);
-      let selWhere = campusId != null ? (where ? `${where} AND ${campusClause()}` : ` WHERE ${campusClause()}`) : where;
-      if (vis) {
-        const vc = visibilityClause();
-        selWhere = selWhere ? `${selWhere} AND ${vc}` : ` WHERE ${vc}`;
-      }
-      if (q.__proposalScope && table === 'budget_proposals') {
-        const pc = proposalScopeClause(q.__proposalScope, alias, params);
-        selWhere = selWhere ? `${selWhere} AND ${pc}` : ` WHERE ${pc}`;
-      }
-      selWhere = andOwn(selWhere, 'select');
+      const where = buildWhere(q.filters, params, alias, hidden, table);
+      const selWhere = andWhere(where, selectScopeClauses(table, alias, q, push, { main: true }));
       let sql = `SELECT ${cols.join(', ')} FROM ${tbl} ${alias}${selWhere}`;
       if (q.order?.length) {
         const orderParts = q.order.map((o) => {
@@ -398,9 +445,12 @@ export function buildQuery(q) {
         .split(',')
         .map((c) => quoteIdent(c.trim()))
         .join(', ');
-      // Własność wiersza: alias celu do warunku ON CONFLICT ... WHERE. Tylko wtedy, gdy jest
-      // strażnik — alias psułby RETURNING to_jsonb("tabela".*) tabel z ukrytymi kolumnami.
-      const guard = q.ignoreDuplicates ? null : ownClause('upsertGuard');
+      // Strażnik nadpisania przy konflikcie: istniejący wiersz musi spełniać zakres zapisu
+      // (własność / prywatne tablice / zakres służby — upsertGuard) i należeć do mojego kampusu.
+      // Alias celu tylko wtedy, gdy jest strażnik — alias psułby RETURNING to_jsonb("tabela".*)
+      // tabel z ukrytymi kolumnami.
+      const guardParts = q.ignoreDuplicates ? [] : [ownClause('upsertGuard'), campusId != null ? campusClause() : null].filter(Boolean);
+      const guard = guardParts.length ? guardParts.join(' AND ') : null;
       let sql = `INSERT INTO ${tbl}${guard ? ` AS ${alias}` : ''} (${columns.map(quoteIdent).join(', ')}) VALUES ${valuesSql}`;
       if (q.ignoreDuplicates) {
         sql += ` ON CONFLICT (${conflictCols}) DO NOTHING`;
@@ -427,8 +477,8 @@ export function buildQuery(q) {
         params.push(normalizeValue(values[c], table, c));
         return `${quoteIdent(c)} = $${params.length}`;
       });
-      const where = buildWhere(q.filters, params, alias, hidden);
-      const updWhere = andOwn(campusId != null ? `${where} AND ${campusClause()}` : where, 'update'); // scoped: tylko własny kampus
+      const where = buildWhere(q.filters, params, alias, hidden, table);
+      const updWhere = andOwn(andWhere(where, [campusClause()]), 'update'); // scoped: tylko własny kampus
       let sql = `UPDATE ${tbl} AS ${alias} SET ${sets.join(', ')}${updWhere}`;
       sql += returningClause(table, q);
       return { sql, params, kind: 'update' };
@@ -436,8 +486,8 @@ export function buildQuery(q) {
 
     case 'delete': {
       if (!q.filters?.length) throw new ApiError(400, 'DELETE bez filtrów jest zabroniony');
-      const where = buildWhere(q.filters, params, alias, hidden);
-      const delWhere = andOwn(campusId != null ? `${where} AND ${campusClause()}` : where, 'delete'); // scoped: tylko własny kampus
+      const where = buildWhere(q.filters, params, alias, hidden, table);
+      const delWhere = andOwn(andWhere(where, [campusClause()]), 'delete'); // scoped: tylko własny kampus
       let sql = `DELETE FROM ${tbl} AS ${alias}${delWhere}`;
       sql += returningClause(table, q);
       return { sql, params, kind: 'delete' };
@@ -473,6 +523,7 @@ const NATIVE_ARRAY_COLUMNS = new Set([
   'app_users.totp_backup_codes',
   'board_item_updates.likes',
   'board_item_updates.mentions',
+  'board_items.assignee_emails', // utrzymywane triggerem (migracja 094) — filtr .contains()
   'boards.editors',
   'members.ministries',
   'members.tags',

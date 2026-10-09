@@ -1,14 +1,9 @@
 import { useLocation } from 'react-router-dom';
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import ModuleBoard, { hasItemDeepLink } from './Boards/ModuleBoard';
 import {
-  Plus, Search, Trash2, X, FileText, Calendar, Download,
-  AlertCircle, Paperclip, User, Users,
-  LayoutGrid, List, CheckSquare, MessageSquare, Send,
-  Check, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, DollarSign, Tag, Upload,
-  MapPin, Clock, Star, Heart, Package
+  Plus, X, FileText, Calendar, Users, CheckSquare, DollarSign, Upload, Star, Package
 } from 'lucide-react';
 import FinanceTab from './shared/FinanceTab';
 import EventsTab from './shared/EventsTab';
@@ -18,7 +13,6 @@ import CustomSelect from '../components/CustomSelect';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import PageHeader from '../components/PageHeader';
 import { Sparkles } from 'lucide-react';
-import { useUserRole } from '../hooks/useUserRole';
 import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
@@ -27,58 +21,30 @@ import { toast } from '../lib/toast';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
-import EmptyState from '../components/EmptyState';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import { confirmDialog } from '../lib/dialog';
 import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
 
-const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
-
-// --- WSPÓLNE FUNKCJE UI (PORTALE) ---
-
-
+// Zadania żyją na Tablicy (ModuleBoard, zakładka „Zadania”) — stary kod mlodziezowka_tasks usunięty.
 
 export default function MlodziezowkaModule() {
   const t = useT();
-  const { userRole } = useUserRole();
   const hasTabAccess = useTabAccess();
-  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
+  const { withCampusFilter, selectedCampusId } = useCampusQuery();
   const [activeTab, setActiveTab] = useState(() => (hasItemDeepLink() ? 'tasks' : 'events'));
   const { search: locationSearch } = useLocation();
   useEffect(() => { if (hasItemDeepLink()) setActiveTab('tasks'); }, [locationSearch]); // link z powiadomienia na tej samej stronie
   const [members, setMembers] = useState([]);
   const [leaders, setLeaders] = useState([]);
-  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
 
-  const [viewMode, setViewMode] = useState('kanban');
-  const [filterScope, setFilterScope] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('active');
-
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showLeaderModal, setShowLeaderModal] = useState(false);
-  const [showTaskModal, setShowTaskModal] = useState(false);
 
   const [memberForm, setMemberForm] = useState({ id: null, full_name: '', email: '', phone: '', birth_date: '', notes: '' });
   const [leaderForm, setLeaderForm] = useState({ id: null, full_name: '', email: '', phone: '', role: '' });
-  const [taskForm, setTaskForm] = useState({
-    id: null,
-    title: '',
-    description: '',
-    due_date: '',
-    assigned_to: null,
-    status: 'Do zrobienia',
-    attachment: null
-  });
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState('');
-  const [loadingComments, setLoadingComments] = useState(false);
-
-  const [draggedTask, setDraggedTask] = useState(null);
-  const [dragOverColumn, setDragOverColumn] = useState(null);
-
   // Finance data
   const [budgetItems, setBudgetItems] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -169,109 +135,6 @@ export default function MlodziezowkaModule() {
       setLoading(false);
     }
   }
-
-  const fetchComments = async (taskId) => {
-    if (!taskId) return;
-    setLoadingComments(true);
-    try {
-      const { data, error } = await supabase
-        .from('mlodziezowka_task_comments')
-        .select('*')
-        .eq('task_id', taskId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setComments(data || []);
-    } catch (err) {
-      console.error('Błąd pobierania komentarzy:', err);
-    } finally {
-      setLoadingComments(false);
-    }
-  };
-
-  const addComment = async () => {
-    if (!newComment.trim() || !taskForm.id) return;
-
-    try {
-      const authorProfile = leaders.find(m => m.email === currentUserEmail);
-      const authorName = authorProfile ? authorProfile.full_name : (currentUserEmail || 'Nieznany');
-
-      const commentData = {
-        task_id: taskForm.id,
-        content: newComment.trim(),
-        author_email: currentUserEmail,
-        author_name: authorName
-      };
-
-      const { error } = await supabase
-        .from('mlodziezowka_task_comments')
-        .insert([commentData]);
-
-      if (error) throw error;
-
-      setNewComment('');
-      fetchComments(taskForm.id);
-    } catch (err) {
-      console.error('Błąd dodawania komentarza:', err);
-      toast.error(tr('Nie udało się dodać komentarza'));
-    }
-  };
-
-  const openTaskModal = (task) => {
-    setTaskForm(task || {
-      id: null,
-      title: '',
-      description: '',
-      due_date: '',
-      assigned_to: null,
-      status: 'Do zrobienia',
-      attachment: null
-    });
-
-    if (task && task.id) {
-      fetchComments(task.id);
-    } else {
-      setComments([]);
-    }
-
-    setShowTaskModal(true);
-  };
-
-  const getFilteredTasks = () => {
-    return tasks.filter(task => {
-      if (filterScope === 'mine') {
-        const myProfile = leaders.find(m => m.email === currentUserEmail);
-        if (!myProfile || task.assigned_to !== myProfile.id) {
-          return false;
-        }
-      }
-      if (filterStatus === 'active') {
-        if (task.status === 'Gotowe') return false;
-      } else if (filterStatus === 'completed') {
-        if (task.status !== 'Gotowe') return false;
-      }
-      return true;
-    });
-  };
-
-  const filteredTasks = getFilteredTasks();
-
-  const toggleTaskCompletion = async (task) => {
-    const newStatus = task.status === 'Gotowe' ? 'Do zrobienia' : 'Gotowe';
-    const updatedTasks = tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t);
-    setTasks(updatedTasks);
-
-    try {
-      const { error } = await supabase
-        .from('mlodziezowka_tasks')
-        .update({ status: newStatus })
-        .eq('id', task.id);
-      if (error) throw error;
-    } catch (err) {
-      console.error('Błąd zmiany statusu:', err);
-      fetchData();
-    }
-  };
 
   // Members
   const saveMember = async () => {
@@ -367,78 +230,6 @@ export default function MlodziezowkaModule() {
         console.error('Błąd usuwania lidera:', err);
         toast.error(tr('Błąd: ') + err.message);
       }
-    }
-  };
-
-  // Tasks
-  const saveTask = async () => {
-    try {
-      if (!taskForm.title.trim()) {
-        toast.error(tr('Tytuł zadania jest wymagany'));
-        return;
-      }
-      const taskData = {
-        title: taskForm.title.trim(),
-        description: taskForm.description.trim(),
-        due_date: taskForm.due_date || null,
-        assigned_to: taskForm.assigned_to || null,
-        status: taskForm.status,
-        attachment: taskForm.attachment
-      };
-
-      if (taskForm.id) {
-        const { error } = await supabase.from('mlodziezowka_tasks').update(taskData).eq('id', taskForm.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('mlodziezowka_tasks').insert([{ ...taskData, created_by: currentUserEmail }]);
-        if (error) throw error;
-      }
-
-      setShowTaskModal(false);
-      await fetchData();
-    } catch (err) {
-      console.error('Błąd zapisywania zadania:', err);
-      toast.error(tr('Błąd: ') + err.message);
-    }
-  };
-
-  const deleteTask = async (id) => {
-    if (await confirmDialog(tr('Usunąć zadanie?'))) {
-      try {
-        const { error } = await supabase.from('mlodziezowka_tasks').delete().eq('id', id);
-        if (error) throw error;
-        await fetchData();
-      } catch (err) {
-        console.error('Błąd usuwania zadania:', err);
-        toast.error(tr('Błąd: ') + err.message);
-      }
-    }
-  };
-
-  // Drag & Drop for tasks
-  const handleDragStart = (task) => setDraggedTask(task);
-  const handleDragOver = (e, status) => { e.preventDefault(); setDragOverColumn(status); };
-  const handleDragLeave = () => setDragOverColumn(null);
-  const handleDrop = async (e, newStatus) => {
-    e.preventDefault();
-    setDragOverColumn(null);
-    if (!draggedTask || draggedTask.status === newStatus) { setDraggedTask(null); return; }
-    try {
-      const { error } = await supabase.from('mlodziezowka_tasks').update({ status: newStatus }).eq('id', draggedTask.id);
-      if (error) throw error;
-      await fetchData();
-    } catch (err) { console.error('Błąd:', err); }
-    setDraggedTask(null);
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setTaskForm({ ...taskForm, attachment: { name: file.name, type: file.type, size: file.size, data: event.target.result.split(',')[1] } });
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -659,86 +450,6 @@ export default function MlodziezowkaModule() {
           canEdit={hasTabAccess('mlodziezowka', 'equipment')}
         />
       )}
-
-      {/* MODAL ZADANIA */}
-      <Modal
-        isOpen={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
-        title={taskForm.id ? tr('Edycja zadania') : tr('Nowe zadanie')}
-        size="xl"
-        closeOnBackdrop={false}
-        footer={<>
-          {taskForm.id && <Button variant="danger" className="mr-auto" onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }}>{t('Usuń zadanie')}</Button>}
-          <Button onClick={saveTask}>{tr('Zapisz zmiany')}</Button>
-        </>}
-      >
-        <div className="flex h-[65vh]">
-          <div className="w-3/5 p-6 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
-            <div className="space-y-5">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł zadania')}</label>
-                <input className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
-                <textarea className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <CustomDatePicker
-                    label={tr('Termin')}
-                    value={taskForm.due_date}
-                    onChange={val => setTaskForm({...taskForm, due_date: val})}
-                  />
-                </div>
-                <div>
-                  <CustomSelect
-                    label={tr('Status')}
-                    value={taskForm.status}
-                    onChange={val => setTaskForm({...taskForm, status: val})}
-                    options={STATUSES.map((s) => ({ value: s, label: tr(s) }))}
-                  />
-                </div>
-              </div>
-              <div>
-                <CustomSelect
-                  label={tr('Przypisana osoba (lider)')}
-                  value={taskForm.assigned_to}
-                  onChange={val => setTaskForm({...taskForm, assigned_to: val})}
-                  options={[
-                    { value: null, label: t('Nie przypisano') },
-                    ...leaders.map(m => ({ value: m.id, label: m.full_name }))
-                  ]}
-                  placeholder={tr('Wybierz osobę...')}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Załącznik')}</label>
-                <input type="file" className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-accent-primary-lightest dark:file:bg-accent-secondary-darkest/30 file:text-accent-primary dark:file:text-accent-secondary-light hover:file:bg-accent-primary-lighter dark:hover:file:bg-accent-secondary-darkest/50" onChange={handleFileUpload} />
-                {taskForm.attachment && <div className="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg"><Paperclip size={14} />{taskForm.attachment.name}</div>}
-              </div>
-            </div>
-          </div>
-
-          <div className="w-2/5 bg-gray-50/50 dark:bg-gray-800/30 p-6 flex flex-col">
-            <div className="flex items-center mb-4">
-              <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2"><MessageSquare size={18}/> {tr('Komentarze')}</h4>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
-              {!taskForm.id ? <EmptyState icon={MessageSquare} title={t('Zapisz zadanie, aby dodawać komentarze.')} compact /> : loadingComments ? <Spinner center /> : comments.length === 0 ? <EmptyState icon={MessageSquare} title={t('Brak komentarzy. Bądź pierwszy!')} compact /> : comments.map(comment => (
-                <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-bold text-xs text-accent-primary dark:text-accent-secondary-light">{comment.author_name}</span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(comment.created_at).toLocaleString(appLocale())}</span>
-                  </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
-                </div>
-              ))}
-            </div>
-            {taskForm.id && <div className="mt-auto"><div className="relative"><textarea className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200" placeholder={t('Napisz komentarz...')} rows={2} value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); }}} /><button onClick={addComment} disabled={!newComment.trim()} className="absolute right-2 bottom-2 p-2 bg-accent-primary dark:bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed"><Send size={16} /></button></div></div>}
-          </div>
-        </div>
-      </Modal>
 
       {/* MODAL CZŁONKA */}
       <Modal

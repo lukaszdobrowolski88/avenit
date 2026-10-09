@@ -4,6 +4,7 @@
 // + aktywne konto), spójny z resztą funkcji kont. Po zmianie hasła rewokuje sesje ofiary.
 import { hashPassword } from '../auth/passwords.js';
 import { getCaller, isAdmin, loadTarget, revokeSessions } from '../lib/user-admin.js';
+import { accountChangeDenied } from '../lib/admin-guard.js';
 import { validatePassword } from '../lib/password-policy.js';
 
 export const name = 'admin-set-user-password';
@@ -27,6 +28,10 @@ export default async function handler(req, reply) {
   if (target.is_super_admin && !caller.is_super_admin) {
     return reply.code(403).send({ error: 'Tylko super-administrator może zmienić hasło super-administratorowi.' });
   }
+  // Osoba z samym manage_users (bez roli admina) nie przejmie konta administratora ani konta
+  // z szerszymi uprawnieniami ustawień przez ustawienie mu hasła.
+  const denied = await accountChangeDenied(req.db, req.tenant.db_name, caller, target);
+  if (denied) return reply.code(403).send({ error: denied });
 
   // 4. Zapis (bcrypt) + rewokacja sesji ofiary + log.
   await req.db.query('UPDATE app_users SET password_hash = $1 WHERE id = $2', [await hashPassword(password), userId]);
