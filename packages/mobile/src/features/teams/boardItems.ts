@@ -103,16 +103,17 @@ export function logBoardActivity(e: ActivityEntry): void {
 }
 
 // Tablica zadań modułu (source_kind = stara tabela zadań: media_tasks, custom_<key>_tasks…).
-// Najstarsza tablica źródła — tę samą wybiera web i serwer (gdyby kiedyś powstały dwie).
+// Ta sama tablica co web i serwer: najpierw utworzona przez import, potem najstarsza.
 export async function findTasksBoardId(sourceKind: string): Promise<string | null> {
   const { data, error } = await supabase
     .from('boards')
-    .select('id')
+    .select('id, created_by')
     .eq('source_kind', sourceKind)
     .order('created_at', { ascending: true })
-    .limit(1);
+    .limit(10);
   if (error) throw fail(error, 'Nie udało się wczytać tablicy zadań.');
-  const id = ((data ?? []) as { id?: string | number }[])[0]?.id;
+  const rows = (data ?? []) as { id?: string | number; created_by?: string | null }[];
+  const id = (rows.find((b) => b.created_by === 'system:board-import') ?? rows[0])?.id;
   return id != null ? String(id) : null;
 }
 

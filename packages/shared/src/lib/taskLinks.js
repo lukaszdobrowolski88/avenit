@@ -56,3 +56,11 @@ export function parseTaskLink(link, paths = {}) {
     return null;
   } catch { return null; }
 }
+
+// Którą tablicę źródła (source_kind) uznać za „tablicę zadań” — ta sama reguła co serwer
+// (board-import-legacy): najpierw utworzona przez import, potem najstarsza. rows posortowane rosnąco po created_at.
+export const IMPORT_CREATOR = 'system:board-import';
+export function pickSourceBoard(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  return list.find((b) => b?.created_by === IMPORT_CREATOR) || list[0] || null;
+}
