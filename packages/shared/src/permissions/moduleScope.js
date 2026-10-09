@@ -155,6 +155,16 @@ export function assignmentsPatchAllowed(canFn, ops) {
   return Array.isArray(ops) && ops.length > 0 && ops.every((o) => o && teamAllows(canFn, o.team, 'update'));
 }
 
+// Moderacja komentarzy zadań (usuwanie CUDZYCH wpisów) — ta sama reguła co serwer
+// (api/dataapi/boardsScope.js enforceBoardCommentWrite): globalnie res:board_item_updates:delete
+// RAZEM z res:boards:delete (samo prawo usuwania komentarzy ma też członek — do własnych wpisów)
+// albo lider służby na tablicy swojego modułu (prawo usuwania komentarzy zadań tej służby).
+export function canModerateBoardComments(canFn, board) {
+  if (canFn('res:board_item_updates:delete') && canFn('res:boards:delete')) return true;
+  const key = boardModuleKey(board);
+  return !!key && moduleScopedAllows(canFn, key, 'board_item_updates', 'delete');
+}
+
 // Klucze modułów, w zakresie których osoba może wykonać op na tabeli (serwer → zawężenie wierszy).
 // customKeys: klucze modułów z app_modules (moduły własne).
 export function allowedModules(canFn, table, op, customKeys = []) {

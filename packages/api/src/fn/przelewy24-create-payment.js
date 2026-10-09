@@ -7,8 +7,13 @@
 //   • płatność FAKTURY: kwota, waluta i tenant WYŁĄCZNIE z faktury w bazie platform — kwota
 //     z klienta jest ignorowana; faktura musi należeć do tenanta z hosta i czekać na płatność.
 //     Wcześniej 0,01 zł z dowolnym invoiceId/tenantId opłacało cudzą fakturę i odblokowywało tenanta.
-//   • płatność formularza (bez faktury): kwota od klienta (brak serwerowego cennika formularzy),
-//     ale transakcja przypięta do tenanta z hosta i bez wpływu na faktury/status tenanta.
+//   • płatność formularza (bez faktury): kwota liczona przez SERWER z definicji formularza
+//     (forms.fields/settings w bazie tenanta: cena, cennik datowy, liczba osób, dodatki, rabaty —
+//     @avenit/shared/src/forms/formPricing.js, ta sama funkcja co podsumowanie w przeglądarce)
+//     i przesłanych danych do wyceny (przycięte do limitów formularza). Kwota od klienta liczy się
+//     TYLKO gdy formularz wprost pozwala na dowolną kwotę (settings.pricing.customAmount, np.
+//     darowizna) i mieści się w jego min/max. Formularz musi być opublikowany, otwarty i mieć
+//     włączone Przelewy24. Transakcja przypięta do tenanta z hosta, bez wpływu na faktury.
 //   • sessionId i urlStatus zawsze z serwera, urlReturn tylko na domenę tenanta; limit per IP.
 import { platformPool } from '../db.js';
 import { config } from '../config.js';
@@ -16,6 +21,7 @@ import {
   P24_API_URL, p24Checksum, p24AuthHeader, p24Configured, p24StatusUrl, safeReturnUrl,
   EMAIL_RE, UUID_RE, MAX_PAYMENT_GROSZE, newSessionId,
 } from '../lib/p24.js';
+import { formPaymentAmount } from '@avenit/shared/src/forms/formPricing.js';
 
 export const name = 'przelewy24-create-payment';
 export const isPublic = true;
@@ -49,16 +55,42 @@ export async function resolveInvoicePayment(pool, tenant, invoiceId) {
   return { invoice, amount, currency };
 }
 
-// Płatność bez faktury (formularz): kwota w groszach od klienta, w granicach rozsądku.
-export function resolveFormPayment(body) {
-  const amount = Number(body?.amount);
-  if (!Number.isSafeInteger(amount) || amount < 100 || amount > MAX_PAYMENT_GROSZE) {
-    return { status: 400, error: 'Nieprawidłowa kwota płatności' };
+// Dzisiejsza data w Polsce (progi cennika datowego „do dnia”).
+export function warsawYmd(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+}
+
+const FORM_ERRORS = {
+  invalid_amount: 'Podaj kwotę płatności',
+  amount_out_of_range: 'Kwota poza dozwolonym zakresem',
+  nothing_to_pay: 'Ten formularz nie wymaga płatności',
+  amount_too_high: 'Nieprawidłowa kwota płatności',
+};
+
+// Płatność formularza: kwota z definicji formularza w bazie tenanta (patrz nagłówek).
+// Zwraca { amount, currency, formId, description, breakdown, custom } albo { status, error }.
+export async function resolveFormPayment(db, body, { now = new Date() } = {}) {
+  const formId = String(body?.formId || '');
+  if (!UUID_RE.test(formId)) return { status: 400, error: 'Brak formularza do opłacenia' };
+  if (!db) return { status: 503, error: 'Płatność formularza chwilowo niedostępna' };
+  const { rows } = await db.query(
+    `SELECT id, title, fields, settings, status, closes_at
+       FROM forms WHERE id = $1 AND COALESCE(is_archived, false) = false AND COALESCE(is_active, true) = true LIMIT 1`,
+    [formId]
+  );
+  const form = rows[0];
+  if (!form) return { status: 404, error: 'Nie znaleziono formularza' };
+  if (form.status !== 'published') return { status: 403, error: 'Formularz nie jest dostępny' };
+  if (form.closes_at && new Date(form.closes_at) < now) return { status: 403, error: 'Formularz jest zamknięty' };
+  const pricing = form.settings?.pricing || {};
+  if (!pricing.enabled || !Array.isArray(pricing.paymentMethods) || !pricing.paymentMethods.includes('przelewy24')) {
+    return { status: 400, error: 'Ten formularz nie przyjmuje płatności Przelewy24' };
   }
-  const currency = String(body?.currency || 'PLN').toUpperCase();
-  if (!CURRENCIES.has(currency)) return { status: 400, error: 'Nieobsługiwana waluta' };
-  const formId = UUID_RE.test(String(body?.formId || '')) ? String(body.formId) : null;
-  return { amount, currency, formId };
+  const r = formPaymentAmount(form, body?.answers, { today: warsawYmd(now), clientAmount: body?.amount, maxGrosze: MAX_PAYMENT_GROSZE });
+  if (r.error) return { status: 400, error: FORM_ERRORS[r.error] || 'Nieprawidłowa kwota płatności', code: r.error };
+  if (!CURRENCIES.has(r.currency)) return { status: 400, error: 'Nieobsługiwana waluta' };
+  const description = String(pricing.przelewy24?.description || `Płatność za: ${form.title || 'formularz'}`).slice(0, 200);
+  return { amount: r.amount, currency: r.currency, formId: form.id, description, breakdown: r.breakdown, custom: r.custom };
 }
 
 // Płatność formularza: klient nie zna sessionId przed rejestracją (nadaje go serwer), więc
@@ -81,17 +113,23 @@ export default async function handler(req, reply) {
   const b = req.body || {};
   const pool = deps.platformPool;
 
-  let amount, currency, invoice = null, formId = null, description;
+  let amount, currency, invoice = null, formId = null, description, formPricing = null;
   if (b.invoiceId) {
     const r = await resolveInvoicePayment(pool, req.tenant, b.invoiceId);
     if (r.error) return reply.code(r.status).send({ error: r.error });
     ({ invoice, amount, currency } = r);
     description = `Faktura ${invoice.invoice_number}`;
   } else {
-    const r = resolveFormPayment(b);
+    let r;
+    try {
+      r = await resolveFormPayment(req.db, b);
+    } catch (err) {
+      req.log.error({ err }, 'P24: wycena formularza nieudana');
+      return reply.code(500).send({ error: 'Nie udało się przygotować płatności' });
+    }
     if (r.error) return reply.code(r.status).send({ error: r.error });
-    ({ amount, currency, formId } = r);
-    description = String(b.description || 'Płatność Avenit').slice(0, 200);
+    ({ amount, currency, formId, description } = r);
+    formPricing = { participants: r.breakdown?.participantCount ?? null, custom: !!r.custom };
   }
 
   const email = String(b.email || invoice?.buyer_email || '').trim();
@@ -147,6 +185,7 @@ export default async function handler(req, reply) {
           purpose: invoice ? 'invoice' : 'form',
           tenant_slug: req.tenant.slug,
           form_id: formId,
+          ...(formPricing ? { form_pricing: formPricing } : {}),
           token,
         }),
       ]

@@ -1,6 +1,6 @@
 import React from 'react';
 import { usePermissions } from '../contexts/PermissionsContext';
-import { boardModuleKey, isModuleScopedTable } from '@avenit/shared/src/permissions/moduleScope.js';
+import { boardModuleKey, isModuleScopedTable, canModerateBoardComments } from '@avenit/shared/src/permissions/moduleScope.js';
 
 const RES_CAP = /^res:([a-z0-9_]+):(read|create|update|delete)$/;
 
@@ -17,6 +17,13 @@ export function useCan(capability, scope) {
     return canModule(moduleKey || null, m[1], m[2]);
   }
   return can(capability);
+}
+
+// Hook: czy osoba moderuje komentarze zadań tej tablicy (usuwa cudze) — reguła jak na serwerze:
+// res:board_item_updates:delete + res:boards:delete globalnie albo lider służby na tablicy modułu.
+export function useCanModerateComments(board) {
+  const { can } = usePermissions();
+  return canModerateBoardComments(can, board);
 }
 
 // Hook: reguła „globalnie albo w zakresie służby” jako funkcja (moduleKey, table, op).

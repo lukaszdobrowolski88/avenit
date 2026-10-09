@@ -164,9 +164,10 @@ function CommentBody({ u, personOf, small = false }) {
 
 function UpdateItem({ u, replies, people, personOf, userEmail, can, onLike, onDelete, onReply }) {
   const [replying, setReplying] = useState(false);
-  // Serwer ustawia autora i pozwala usuwać tylko własne komentarze — cudzych nie pokazujemy z koszem.
-  const canDelete = (x) => !!(can.deleteUpdates && x.author_email && userEmail
-    && String(x.author_email).trim().toLowerCase() === String(userEmail).trim().toLowerCase());
+  // Serwer ustawia autora; własne komentarze usuwa autor (prawo usuwania komentarzy), cudze — tylko
+  // moderator (can.moderateComments: zarządzający tablicami albo lider służby na tablicy modułu).
+  const canDelete = (x) => !!(can.moderateComments || (can.deleteUpdates && x.author_email && userEmail
+    && String(x.author_email).trim().toLowerCase() === String(userEmail).trim().toLowerCase()));
   const del = (x) => (
     <button type="button" onClick={() => onDelete(x, x === u ? replies.length : 0)} aria-label={tr('Usuń komentarz')} title={tr('Usuń komentarz')}
       className="p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10">

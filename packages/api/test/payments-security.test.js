@@ -167,21 +167,103 @@ test('create-payment: nieudany zapis transakcji → 500 i brak linku do płatno�
   assert.equal(reply.body.paymentUrl, undefined);
 });
 
-test('create-payment (formularz): kwota w granicach, transakcja przypięta do tenanta, bez faktury', async () => {
+// Formularz w bazie tenanta (forms.fields/settings) — kwotę liczy serwer.
+const FORM_ID = 'dddddddd-0000-4000-8000-000000000004';
+const formRow = (over = {}) => ({
+  id: FORM_ID, title: 'Obóz', status: 'published', closes_at: null,
+  fields: [
+    { id: 'f_price', type: 'price', priceConfig: { basePrice: 100, pricingType: 'per_person', currency: 'PLN' } },
+    { id: 'f_qty', type: 'quantity', validation: { min: 1, max: 5 } },
+    { id: 'f_mail', type: 'email' },
+  ],
+  settings: {
+    pricing: { enabled: true, currency: 'PLN', paymentRequired: true, paymentMethods: ['przelewy24'], przelewy24: { merchantId: '1', description: 'Obóz 2026' } },
+    addons: { enabled: true, items: [
+      { id: 'a_shirt', name: 'Koszulka', price: 40, scope: 'per_person', maxQuantity: 1 },
+      { id: 'a_bus', name: 'Autokar', price: 25.5, scope: 'per_registration', maxQuantity: 2 },
+    ] },
+    discounts: { enabled: true, rules: [{ type: 'quantity', minQuantity: 3, discountType: 'percentage', value: 10, label: '10%' }], stackingMode: 'best' },
+  },
+  ...over,
+});
+const formDb = (row = formRow()) => fakePool([[/FROM forms WHERE id = \$1/, () => ({ rows: row ? [row] : [] })]]);
+const formReq = (body, db = formDb()) => ({ tenant: TENANT, db, log: quietLog, body: { formId: FORM_ID, email: 'x@y.pl', ...body } });
+
+test('resolveFormPayment: kwota z cennika formularza (osoby, dodatki, rabat) — kwota klienta ignorowana', async () => {
+  // 3 osoby × 100 = 300, rabat 10% od bazowej = 30, koszulka 40, autokar 2 × 25,50 = 51 → 361 zł
+  const r = await createPayment.resolveFormPayment(formDb(), {
+    formId: FORM_ID, amount: 100, answers: { f_qty: '3', _addons: { a_shirt: 1 }, _registrationAddons: { a_bus: 2 } },
+  });
+  assert.equal(r.amount, 36100);
+  assert.equal(r.currency, 'PLN');
+  assert.equal(r.description, 'Obóz 2026');
+  // Liczby spoza limitów formularza są przycinane: ujemne dodatki → 0, ilość ponad max → max, nieznany dodatek pominięty.
+  const cut = await createPayment.resolveFormPayment(formDb(), {
+    formId: FORM_ID, answers: { f_qty: 999, _addons: { a_shirt: -50, hack: 9 }, _registrationAddons: { a_bus: 0.5 } },
+  });
+  assert.equal(cut.amount, 45000); // 5 × 100 − 10% = 450
+});
+
+test('resolveFormPayment: grupa, cennik datowy (dzień w Polsce), błędy formularza', async () => {
+  const group = formRow({
+    fields: [{ id: 'f_price', type: 'price', priceConfig: { basePrice: 80, pricingType: 'per_person',
+      datePricing: { enabled: true, tiers: [{ until: '2026-10-09', price: 50 }] } } }],
+    settings: { ...formRow().settings, discounts: {}, groupRegistration: { enabled: true, maxParticipants: 3 } },
+  });
+  const body = { formId: FORM_ID, answers: { _contactPerson: { _addons: { a_shirt: 1 } }, _participants: [{}, {}, {}, {}, {}] } };
+  // 23:30 czasu polskiego 9.10 (21:30 UTC) — próg „do 9.10” obowiązuje; maks. 3 osoby → 3 × 50 + 40
+  const late = await createPayment.resolveFormPayment(formDb(group), body, { now: new Date('2026-10-09T21:30:00Z') });
+  assert.equal(late.amount, 19000);
+  // 00:30 czasu polskiego 10.10 (22:30 UTC 9.10) — próg minął, cena bazowa 80
+  const next = await createPayment.resolveFormPayment(formDb(group), body, { now: new Date('2026-10-09T22:30:00Z') });
+  assert.equal(next.amount, 28000);
+
+  assert.equal((await createPayment.resolveFormPayment(formDb(), { answers: {} })).status, 400, 'bez formId');
+  assert.equal((await createPayment.resolveFormPayment(formDb(null), { formId: FORM_ID })).status, 404);
+  assert.equal((await createPayment.resolveFormPayment(formDb(formRow({ status: 'draft' })), { formId: FORM_ID })).status, 403);
+  assert.equal((await createPayment.resolveFormPayment(formDb(formRow({ closes_at: '2020-01-01T00:00:00Z' })), { formId: FORM_ID })).status, 403);
+  const noP24 = formRow({ settings: { ...formRow().settings, pricing: { enabled: true, paymentMethods: ['transfer'] } } });
+  assert.equal((await createPayment.resolveFormPayment(formDb(noP24), { formId: FORM_ID })).status, 400);
+  const free = formRow({ fields: [{ id: 'f_price', type: 'price', priceConfig: { basePrice: 0 } }], settings: { ...formRow().settings, addons: {}, discounts: {} } });
+  const zero = await createPayment.resolveFormPayment(formDb(free), { formId: FORM_ID, amount: 5000 });
+  assert.equal(zero.status, 400, 'formularz bez ceny nie przyjmuje kwoty od klienta');
+});
+
+test('resolveFormPayment: dowolna kwota tylko gdy formularz pozwala (customAmount min/max)', async () => {
+  const donation = formRow({
+    fields: [],
+    settings: { ...formRow().settings, addons: {}, discounts: {}, pricing: { ...formRow().settings.pricing, customAmount: { enabled: true, min: 10, max: 500 } } },
+  });
+  assert.equal((await createPayment.resolveFormPayment(formDb(donation), { formId: FORM_ID, amount: 2500 })).amount, 2500);
+  assert.equal((await createPayment.resolveFormPayment(formDb(donation), { formId: FORM_ID, amount: 500 })).status, 400, 'poniżej min');
+  assert.equal((await createPayment.resolveFormPayment(formDb(donation), { formId: FORM_ID, amount: 50001 })).status, 400, 'powyżej max');
+  assert.equal((await createPayment.resolveFormPayment(formDb(donation), { formId: FORM_ID, amount: 12.5 })).status, 400, 'nie grosze');
+});
+
+test('create-payment (formularz): P24 i zapis dostają kwotę serwera, transakcja przypięta do tenanta', async () => {
   const bad = fakeReply();
   Object.assign(createPayment.deps, { platformPool: fakePool(), fetch: fakeFetch(() => ({ data: { token: 'T' } })) });
-  await createPayment.default({ tenant: TENANT, log: quietLog, body: { amount: 1, email: 'x@y.pl' } }, bad);
-  assert.equal(bad.statusCode, 400, '0,01 zł odrzucone');
+  await createPayment.default({ tenant: TENANT, log: quietLog, body: { amount: 5000, email: 'x@y.pl' } }, bad);
+  assert.equal(bad.statusCode, 400, 'bez formularza — brak płatności „z ręki”');
 
   const pool = fakePool([[/^INSERT INTO payment_transactions/, () => ({ rows: [{ id: 'tx-2' }] })]]);
-  Object.assign(createPayment.deps, { platformPool: pool, fetch: fakeFetch(() => ({ data: { token: 'T2' } })) });
+  const fetchFn = fakeFetch(() => ({ data: { token: 'T2' } }));
+  Object.assign(createPayment.deps, { platformPool: pool, fetch: fetchFn });
   const ok = fakeReply();
-  await createPayment.default({ tenant: TENANT, log: quietLog, body: { amount: 5000, email: 'x@y.pl', sessionId: 'inv_sess_1' } }, ok);
+  await createPayment.default(formReq({ amount: 100, description: 'Fałsz', sessionId: 'inv_sess_1', answers: { f_qty: 2 } }), ok);
   assert.equal(ok.statusCode, 200);
+  assert.equal(ok.body.amount, 20000);
+  const reg = fetchFn.calls[0].body;
+  assert.equal(reg.amount, 20000, 'kwota z cennika, nie 1 zł od klienta');
+  assert.equal(reg.description, 'Obóz 2026');
   const ins = pool.log.find((l) => l.sql.startsWith('INSERT INTO payment_transactions'));
   assert.equal(ins.params[0], TENANT.id);
   assert.equal(ins.params[1], null, 'bez faktury');
   assert.notEqual(ins.params[2], 'inv_sess_1', 'sessionId z serwera, nie od klienta');
+  assert.equal(ins.params[4], 20000);
+  const meta = JSON.parse(ins.params[6]);
+  assert.equal(meta.form_id, FORM_ID);
+  assert.deepEqual(meta.form_pricing, { participants: 2, custom: false });
 });
 
 // ── przelewy24-webhook ────────────────────────────────────────────────────────
