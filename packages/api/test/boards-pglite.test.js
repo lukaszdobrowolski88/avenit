@@ -330,8 +330,17 @@ test('import starych zadań (worker): każde źródło z wierszami raz, potem ni
   assert.equal(r1.created, 1);
   const chor = await q1(`SELECT name, module_key, created_by FROM boards WHERE source_kind = 'custom_chor_tasks'`);
   assert.deepEqual(chor, [{ name: 'Zadania — Chór', module_key: 'chor', created_by: fns.imp.IMPORT_MARKER }]);
-  const r2 = await fns.imp.runForTenant(db, { tenantSlug: 't', tenantDbName: TENANT.db_name, log: () => {} });
+  // Jedna linia kontrolna na tenanta: stare wiersze vs elementy z source_id, stan uzupełnienia.
+  const summary = logs.at(-1);
+  assert.match(summary, /^board-import-legacy: /);
+  assert.match(summary, /custom_chor_tasks: board [0-9a-f-]{36} \(imported 1, new board, backfill done\) legacy 1 \/ items 1 ok/);
+  assert.ok(!summary.includes('custom_pusty_tasks'), 'tabela bez modułu nie jest źródłem');
+  assert.match(summary, /media_tasks: board [0-9a-f-]{36} \(imported 0, backfill (done|pending)\) legacy \d+ \/ items \d+/);
+  const logs2 = [];
+  const r2 = await fns.imp.runForTenant(db, { tenantSlug: 't', tenantDbName: TENANT.db_name, log: (m) => logs2.push(m) });
   assert.deepEqual([r2.created, r2.backfilled, r2.failed], [0, 0, 0]);
+  assert.equal(logs2.length, 1, 'bez zmian — tylko linia kontrolna');
+  assert.match(logs2[0], /custom_chor_tasks: board [0-9a-f-]{36} \(imported 0, backfill done\) legacy 1 \/ items 1 ok/);
 });
 
 test('automatyzacje: termin (dni przed/po), powiadom/przypisz/utwórz, cykliczne z terminem', { skip }, async () => {
@@ -406,6 +415,48 @@ test('poranny skrót: zadania na dziś i zaległe, bez zrobionych, rezygnacja, r
   await fns.digest.runForTenant(db, ctx);
   assert.equal(mails.filter((m) => m.to.toLowerCase() === 'ola@x.pl').length, 1);
   assert.ok(mails.length >= before2);
+});
+
+test('poranny skrót: ustawienia zapisane z webu (Data API) — okno zaległych i osobista rezygnacja', { skip }, async () => {
+  const shared = await import('@avenit/shared/src/lib/taskDigest.js');
+  const mails = [];
+  const deps = { emailReady: true, sendEmail: async (m) => mails.push(m), sendPush: async () => ({ body: { sent: 0 } }) };
+  const ctx = { tenantSlug: 't', tenantSubdomain: 't', tenantDbName: TENANT.db_name, log: () => {}, deps };
+  const web = async (table, values, onConflict, actor) => {
+    const q = { table, op: 'upsert', values, onConflict, returning: '*' };
+    if (actor) q.__ownerScope = fns.own.ownerScope(table, actor);
+    const built = fns.qb.buildQuery(q);
+    return (await db.query(built.sql, built.params)).rows;
+  };
+  await db.query(`DELETE FROM task_digest_sends`);
+  // Organizacja (Ustawienia → Organizacja): okno zaległych 1 dzień — „Stare” (2 dni temu) wypada.
+  await web('app_settings', { key: 'task_digest', value: shared.serializeDigestConfig({ enabled: true, overdue_days: 1 }) }, 'key');
+  await fns.digest.runForTenant(db, ctx);
+  const ola = mails.find((m) => m.to.toLowerCase() === 'ola@x.pl');
+  assert.ok(ola && ola.html.includes('Farba') && ola.html.includes('Zadzwonić') && !ola.html.includes('Stare'));
+  assert.equal(ola.subject, 'Masz 2 zadania na dziś');
+
+  // Osoba (Mój profil): rezygnacja dopisana do istniejących kategorii — skrót nie przychodzi.
+  await db.query(`DELETE FROM task_digest_sends`);
+  mails.length = 0;
+  const actor = { id: U.ola, email: 'Ola@X.pl' };
+  await web('push_user_preferences', { user_email: 'Ola@X.pl', category_opt_outs: ['chat'] }, 'user_email', actor);
+  const [row] = await web('push_user_preferences', { user_email: 'Ola@X.pl', category_opt_outs: shared.withDigestOptOut(['chat'], true) }, 'user_email', actor);
+  assert.deepEqual(row.category_opt_outs, ['chat', 'task_digest']);
+  await fns.digest.runForTenant(db, ctx);
+  assert.ok(!mails.some((m) => m.to.toLowerCase() === 'ola@x.pl'), 'rezygnacja osobista respektowana');
+  // Ponowne włączenie — skrót wraca, inne kategorie zostają.
+  const [row2] = await web('push_user_preferences', { user_email: 'Ola@X.pl', category_opt_outs: shared.withDigestOptOut(row.category_opt_outs, false) }, 'user_email', actor);
+  assert.deepEqual(row2.category_opt_outs, ['chat']);
+  await fns.digest.runForTenant(db, ctx);
+  assert.ok(mails.some((m) => m.to.toLowerCase() === 'ola@x.pl'));
+  // Organizacja wyłącza — nikt.
+  await db.query(`DELETE FROM task_digest_sends`);
+  mails.length = 0;
+  await web('app_settings', { key: 'task_digest', value: shared.serializeDigestConfig({ enabled: false, overdue_days: 1 }) }, 'key');
+  assert.equal((await fns.digest.runForTenant(db, ctx)).users, 0);
+  assert.equal(mails.length, 0);
+  await db.query(`DELETE FROM app_settings WHERE key = 'task_digest'`);
 });
 
 test('iCal: nieaktywne konto — odmowa; zadania osobiste i elementy tablic w kanale', { skip }, async () => {

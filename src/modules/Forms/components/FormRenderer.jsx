@@ -6,6 +6,7 @@ import Przelewy24Button from './Przelewy24Button';
 import ParticipantForm from './ParticipantForm';
 import AddonSelector from './AddonSelector';
 import PriceBreakdown from './PriceBreakdown';
+import { pricingAnswers } from '@avenit/shared/src/forms/formPricing.js';
 import { calculateTotalPrice, calculatePriceBreakdown, formatPrice, checkSeatAvailability, evaluateVisibility } from '../utils/fieldTypes';
 import { tr, appLocale } from '../../../i18n';
 
@@ -903,6 +904,7 @@ export default function FormRenderer({
                     description={pricing.przelewy24.description || tr('Płatność za: {title}', { title })}
                     sandbox={pricing.przelewy24.sandbox !== false}
                     formId={settings?.formId}
+                    pricingAnswers={pricingAnswers(fields, answersForPricing)}
                     email={contactAnswers[contactFields.find(f => f.type === 'email')?.id] || answers[fields.find(f => f.type === 'email')?.id] || ''}
                     onSuccess={(data) => {
                       setPaymentCompleted(true);

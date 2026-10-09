@@ -17,6 +17,7 @@ import { confirmDialog } from '../../lib/dialog';
 import { toast } from '../../lib/toast';
 import { describeUserAgent } from './components/settingsLogic';
 import ChatQuietHours from '../Komunikator/components/ChatQuietHours';
+import TaskDigestPreference from './components/TaskDigestPreference';
 import {
   Church, CalendarDays, CalendarCheck, CheckSquare, PartyPopper, Music, Clapperboard, HeartHandshake, Baby, Home, Languages, Monitor,
 } from 'lucide-react';
@@ -929,6 +930,9 @@ export default function UserSettings() {
               </div>
             )}
           </div>
+
+          {/* PORANNY PRZEGLĄD ZADAŃ (e-mail + push; rezygnacja w push_user_preferences) */}
+          {formData.email && <TaskDigestPreference userEmail={formData.email} />}
 
           {/* CICHE GODZINY CZATU (Komunikator) */}
           {formData.email && <ChatQuietHours userEmail={formData.email} />}

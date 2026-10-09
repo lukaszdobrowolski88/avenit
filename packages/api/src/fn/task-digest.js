@@ -22,33 +22,17 @@ import { warsawNow, addDaysYmd } from './board-automations-run.js';
 import { boardVisibleTo } from '../dataapi/boardNotify.js';
 import { taskItemLink } from '@avenit/shared/src/lib/taskLinks.js';
 import { isDoneLabel } from '@avenit/shared/src/lib/boardStatus.js';
+import { DIGEST_DEFAULTS, OPT_OUT_CATEGORY, digestConfig, isDigestOptedOut } from '@avenit/shared/src/lib/taskDigest.js';
 
 export const name = 'task-digest';
 export const skipRoute = true; // tylko worker
 
-export const DIGEST_DEFAULTS = Object.freeze({ enabled: true, overdue_days: 14 });
-export const OPT_OUT_CATEGORY = 'task_digest';
+// Reguły ustawień (organizacja + rezygnacja osoby) wspólne z webem: @avenit/shared/src/lib/taskDigest.js.
+export { DIGEST_DEFAULTS, OPT_OUT_CATEGORY, digestConfig };
 const MAX_ROWS = 5000;
 const MAX_LISTED = 15; // tyle zadań na sekcję w mailu, reszta „i jeszcze N”
 
 const lower = (v) => String(v ?? '').trim().toLowerCase();
-
-// app_settings.task_digest (tekst JSON, obiekt albo 'true'/'false') → { enabled, overdue_days }.
-export function digestConfig(raw) {
-  let c = raw;
-  if (typeof c === 'string') {
-    const s = c.trim().toLowerCase();
-    if (s === 'false' || s === 'off' || s === '0') return { ...DIGEST_DEFAULTS, enabled: false };
-    if (s === 'true' || s === 'on' || s === '1') return { ...DIGEST_DEFAULTS };
-    try { c = JSON.parse(c); } catch { c = null; }
-  }
-  if (c === false) return { ...DIGEST_DEFAULTS, enabled: false };
-  if (!c || typeof c !== 'object' || Array.isArray(c)) c = {};
-  const enabled = c.enabled === false || c.enabled === 'false' ? false : DIGEST_DEFAULTS.enabled;
-  const n = Number(c.overdue_days);
-  const overdue = Number.isFinite(n) ? Math.min(90, Math.max(0, Math.round(n))) : DIGEST_DEFAULTS.overdue_days;
-  return { enabled, overdue_days: overdue };
-}
 
 // „1 zadanie”, „3 zadania”, „5 zadań”, „22 zadania”.
 export function tasksWord(n) {
@@ -274,7 +258,7 @@ export async function runForTenant(pool, ctx = {}) {
     const prefs = new Map(((await safeRows(pool,
       `SELECT lower(user_email) AS e, enabled, category_opt_outs FROM push_user_preferences WHERE lower(user_email) = ANY($1::text[])`,
       [[...accounts.keys()]], () => {}, '')) || []).map((p) => [p.e, p]));
-    const optedOut = (e) => (Array.isArray(prefs.get(e)?.category_opt_outs) ? prefs.get(e).category_opt_outs : []).includes(OPT_OUT_CATEGORY);
+    const optedOut = (e) => isDigestOptedOut(prefs.get(e)?.category_opt_outs);
     const dbKey = ctx.tenantDbName || `slug:${ctx.tenantSlug || ''}`;
     const canOf = new Map();
     const canFor = async (e) => {

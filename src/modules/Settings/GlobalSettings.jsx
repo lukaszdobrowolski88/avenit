@@ -16,6 +16,8 @@ import AppearanceSettings from './components/AppearanceSettings';
 import SecuritySettings from './components/SecuritySettings';
 import SubscriptionInfo from './components/SubscriptionInfo';
 import { Toggle } from './components/SettingsUI';
+import TaskDigestSettings from './components/TaskDigestSettings';
+import Can from '../../components/Can';
 import { resolveSettingsTab, groupDuplicateMembers, mergeFill } from './components/settingsLogic';
 import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
@@ -714,6 +716,10 @@ export default function GlobalSettings() {
               {tr('Zmiany zapisują się automatycznie po opuszczeniu pola.')}{' '}
               <button type="button" onClick={() => setActiveTab('appearance')} className="underline hover:text-accent-primary">{tr('Logo i kolory ustawisz w zakładce {tab}.', { tab: t('Wygląd') })}</button>
             </p>
+            {/* Ustawienie całej organizacji (app_settings) — zapis wymaga manage_integrations jak inne ustawienia. */}
+            <Can cap="action:settings:manage_integrations">
+              <TaskDigestSettings raw={getSetting('task_digest')} onSave={(v) => saveSetting('task_digest', v)} />
+            </Can>
           </div>
         )}
 

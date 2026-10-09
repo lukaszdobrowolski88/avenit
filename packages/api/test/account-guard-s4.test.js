@@ -214,13 +214,18 @@ test('przelewy24-create-payment (formularz): urlReturn dostaje sessionId serwera
     const FORM_ID = '11111111-2222-4333-8444-555555555555';
     const tenant = { id: 'aaaaaaaa-0000-4000-8000-000000000001', slug: 'kosciol', subdomain: 'kosciol', db_name: 'x' };
     const reply = fakeReply();
-    await createPayment.default({ tenant, log: quietLog, body: { amount: 5000, email: 'x@y.pl', formId: FORM_ID, sessionId: 'mine', urlReturn: `/form/${FORM_ID}?payment=success&session=mine` } }, reply);
+    // Formularz w bazie tenanta — kwotę (50 zł) liczy serwer z cennika.
+    const db = { async query() { return { rows: [{ id: FORM_ID, title: 'F', status: 'published', closes_at: null,
+      fields: [{ id: 'p', type: 'price', priceConfig: { basePrice: 50 } }],
+      settings: { pricing: { enabled: true, paymentMethods: ['przelewy24'] } } }] }; } };
+    await createPayment.default({ tenant, db, log: quietLog, body: { amount: 5000, email: 'x@y.pl', formId: FORM_ID, sessionId: 'mine', urlReturn: `/form/${FORM_ID}?payment=success&session=mine` } }, reply);
     assert.equal(reply.statusCode, 200);
     const u = new URL(calls[0].urlReturn);
     assert.equal(u.searchParams.get('session'), reply.body.sessionId);
     assert.notEqual(reply.body.sessionId, 'mine');
     const ins = pool.log.find((l) => /INSERT INTO payment_transactions/.test(l.sql));
     assert.equal(JSON.parse(ins.params[6]).form_id, FORM_ID);
+    assert.equal(calls[0].amount, 5000);
   } finally {
     Object.assign(config, prev);
   }

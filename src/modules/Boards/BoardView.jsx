@@ -32,7 +32,7 @@ import { ChoiceList, ChoiceRow } from '../../components/ChoiceList';
 import '../../components/toolbar.css';
 import { BoardCanContext } from './lib/boardContext';
 import { AI_ENABLED } from '../../lib/features';
-import { useCan } from '../../components/Can';
+import { useCan, useCanModerateComments } from '../../components/Can';
 import { exportBoardCsv, buildCellsFromRecord, parseCsv } from './lib/csv';
 import { confirmDialog, promptDialog } from '../../lib/dialog';
 import { shortcutBlocked } from './lib/keyboard';
@@ -115,12 +115,14 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   const comment = useCan('res:board_item_updates:create', scope);
   const likeUpdates = useCan('res:board_item_updates:update', scope);
   const deleteUpdates = useCan('res:board_item_updates:delete', scope);
+  const moderateComments = useCanModerateComments(raw.board); // usuwanie cudzych komentarzy (moderacja)
   // Jeden obiekt na czas życia uprawnień — wiersze tabeli (memo) nie renderują się od nowa przy każdej zmianie.
   const can = useMemo(() => ({
     createItems, editItems, deleteItems, addColumns, editColumns, deleteColumns, addGroups, editGroups, deleteGroups,
     manageViews: canManageViews, updateViews: canUpdateViews, updateBoard: canUpdateBoard, comment, likeUpdates, deleteUpdates,
+    moderateComments,
   }), [createItems, editItems, deleteItems, addColumns, editColumns, deleteColumns, addGroups, editGroups, deleteGroups,
-    canManageViews, canUpdateViews, canUpdateBoard, comment, likeUpdates, deleteUpdates]);
+    canManageViews, canUpdateViews, canUpdateBoard, comment, likeUpdates, deleteUpdates, moderateComments]);
 
   // Zwinięcie grup — osobiste (patrz wyżej).
   const [collapsed, setCollapsed] = useState(() => readLocal(LOCAL_KEY('collapsed', boardId), {}));

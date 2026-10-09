@@ -26,9 +26,13 @@ import { DateInput, TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
 import { tr } from '../i18n';
 
-const genToken = () => (typeof crypto !== 'undefined' && crypto.randomUUID)
-  ? crypto.randomUUID().replace(/-/g, '')
-  : (Math.random().toString(36).slice(2) + Date.now().toString(36));
+// Token z kryptograficznego źródła losowości (randomUUID nie ma poza bezpiecznym kontekstem/HTTP —
+// wtedy 16 bajtów z getRandomValues, dostępnego wszędzie). Nigdy Math.random (przewidywalny).
+const genToken = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID().replace(/-/g, '');
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+};
 
 const DEFAULT_TYPES = [
   { value: 'nabożeństwo', label: 'Nabożeństwo' },

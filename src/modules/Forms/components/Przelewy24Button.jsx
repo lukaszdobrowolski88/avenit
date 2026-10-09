@@ -12,6 +12,9 @@ export default function Przelewy24Button({
   description = tr('Płatność za formularz'),
   sandbox = true,
   formId,
+  // Dane do wyceny (liczba osób, dodatki, uczestnicy — bez danych osobowych): kwotę liczy SERWER
+  // z definicji formularza; `amount` służy tylko do wyświetlenia (i formularzy z dowolną kwotą).
+  pricingAnswers,
   email,
   onSuccess,
   onError,
@@ -23,6 +26,9 @@ export default function Przelewy24Button({
   const [transactionRegistered, setTransactionRegistered] = useState(false);
   // sessionId nadaje serwer (przelewy24-create-payment) — po nim webhook księguje płatność.
   const [sessionId, setSessionId] = useState(null);
+  // Kwota przyjęta przez serwer (grosze → zł) — ona trafia do bramki.
+  const [serverAmount, setServerAmount] = useState(null);
+  const shownAmount = serverAmount ?? amount;
 
   // Przelewy24 wymaga kwoty w groszach
   const amountInGrosze = Math.round(amount * 100);
@@ -58,7 +64,7 @@ export default function Przelewy24Button({
           currency,
           description,
           email,
-          ...(formId ? { formId } : {}),
+          ...(formId ? { formId, answers: pricingAnswers || {} } : {}),
           urlReturn: returnUrl,
           sandbox
         }
@@ -77,6 +83,7 @@ export default function Przelewy24Button({
         : `https://secure.przelewy24.pl/trnRequest/${data.token}`);
 
       setSessionId(data.sessionId || null);
+      if (Number.isFinite(Number(data.amount))) setServerAmount(Number(data.amount) / 100);
       setPaymentUrl(p24Url);
       setTransactionRegistered(true);
 
@@ -98,7 +105,7 @@ export default function Przelewy24Button({
       try {
         localStorage.setItem(`p24_session_${formId}`, JSON.stringify({
           sessionId,
-          amount,
+          amount: shownAmount,
           currency,
           timestamp: Date.now()
         }));
@@ -139,6 +146,7 @@ export default function Przelewy24Button({
             setError(null);
             setTransactionRegistered(false);
             setPaymentUrl(null);
+            setServerAmount(null);
           }}
           className="w-full py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:underline"
         >
@@ -163,7 +171,7 @@ export default function Przelewy24Button({
           {new Intl.NumberFormat(appLocale(), {
             style: 'currency',
             currency: currency
-          }).format(amount)}
+          }).format(shownAmount)}
         </span>
       </div>
 
