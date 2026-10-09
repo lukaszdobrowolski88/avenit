@@ -1,13 +1,16 @@
 // Worker: cykliczne kampanie RSVP (seria). Dla każdego szablonu (is_series)
 // z nadeszłym series_next_date tworzy nowe wystąpienie kampanii, generuje
 // zaproszenia dla zapisanej publiczności, wysyła i przesuwa termin.
+import crypto from 'node:crypto';
 import { rsvpBase, sendInvitation } from './rsvp-send.js';
 
 export const name = 'rsvp-series';
 export const skipRoute = true;
 
-function token() {
-  return 'r' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+// Token zaproszenia = jedyne zabezpieczenie publicznej odpowiedzi RSVP — kryptograficznie losowy
+// (128 bitów, base64url; pasuje do TOKEN_RE w rsvp-respond).
+export function token() {
+  return 'r' + crypto.randomBytes(16).toString('base64url');
 }
 const memberName = (m) => `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || 'Członek';
 

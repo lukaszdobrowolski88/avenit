@@ -54,6 +54,12 @@ const MODULES = [
   // Uprawnienie modułu sprawdzane w funkcji (zależy od źródła), więc bez wpisu w FN_CAPABILITY.
   'board-import-legacy',
   'my-board-items',
+  // Elementy tablic po stronie serwera: scalanie komórek pod blokadą, kolejność jednym zapytaniem,
+  // komentarze z autorem z sesji i @wzmiankami. Dostęp jak /api/db (board_items / board_item_updates
+  // + prywatne tablice + zakres służby) — liczony w funkcji, bez wpisu w FN_CAPABILITY.
+  'board-item-patch',
+  'board-items-reorder',
+  'board-comment',
   'public-form-get',
   'public-form-submit',
   'admin-set-user-password',

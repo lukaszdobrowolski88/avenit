@@ -41,9 +41,11 @@ test('szablony składu grafiku: dostęp do modułu zespołu; autor = ja', async 
   await enforceSharedWrite(ins, req(), resolverWith('module:worship'));
   assert.equal(ins.values[0].created_by, 'jan@kosciol.pl');
   // podany autor nie jest nadpisywany
-  const own = { table: 'schedule_templates', op: 'upsert', values: { team_type: 'worship', name: 'B', created_by: 'ala@x.pl' } };
+  const own = { table: 'schedule_templates', op: 'upsert', ignoreDuplicates: true, values: { team_type: 'worship', name: 'B', created_by: 'ala@x.pl' } };
   await enforceSharedWrite(own, req(), resolverWith('module:worship'));
   assert.equal(own.values.created_by, 'ala@x.pl');
+  // upsert z nadpisaniem (DO UPDATE) — odmowa: konflikt klucza przejąłby cudzy szablon
+  await denied(enforceSharedWrite({ table: 'schedule_templates', op: 'upsert', values: { id: 'x', team_type: 'worship', name: 'B' } }, req(), resolverWith('module:worship')));
   // kilka zespołów naraz — każdy musi być dostępny
   const mixed = { table: 'schedule_templates', op: 'insert', values: [{ team_type: 'worship', name: 'A' }, { team_type: 'media', name: 'B' }] };
   await denied(enforceSharedWrite(mixed, req(), resolverWith('module:worship')));

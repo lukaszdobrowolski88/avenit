@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyView, groupItemsByColumn } from './viewData';
+import { applyView, groupItemsByColumn, ME, filterHasValue, hasActiveFilters } from './viewData';
 
 const numCol = { id: 'n', type: 'number' };
 const statusCol = { id: 's', type: 'status', settings: { labels: [{ id: 'todo', title: 'Do', color: '#1' }, { id: 'done', title: 'Gotowe', color: '#2' }] } };
@@ -62,5 +62,46 @@ describe('groupItemsByColumn', () => {
     expect(byKey.todo).toEqual(['a']);
     expect(byKey.done).toEqual(['b']);
     expect(byKey.__empty__).toEqual(['c']);
+  });
+});
+
+describe('applyView — filtr osób, „Ja” i „Moje”', () => {
+  const peopleCol = { id: 'p', type: 'people' };
+  const cols = [...columns, peopleCol];
+  const items = [
+    mk('mine', { p: [{ email: 'Ja@Example.pl', name: 'Ja' }] }),
+    mk('anna', { p: [{ email: 'anna@example.pl', name: 'Anna' }] }),
+    mk('nobody', {}),
+  ];
+  it('wybrana osoba (bez wielkości liter)', () => {
+    expect(applyView(items, cols, { filters: [{ columnId: 'p', op: 'is', value: 'ANNA@example.pl' }] }).map(i => i.id)).toEqual(['anna']);
+  });
+  it('„Ja” rozwija się do bieżącego użytkownika', () => {
+    expect(applyView(items, cols, { me: 'ja@example.pl', filters: [{ columnId: 'p', op: 'is', value: ME }] }).map(i => i.id)).toEqual(['mine']);
+  });
+  it('„Ja” bez znanego użytkownika nie zawęża', () => {
+    expect(applyView(items, cols, { filters: [{ columnId: 'p', op: 'is', value: ME }] })).toHaveLength(3);
+  });
+  it('chip „Moje” = przypisane do mnie w dowolnej kolumnie Osoby', () => {
+    expect(applyView(items, cols, { mine: true, me: 'ja@example.pl' }).map(i => i.id)).toEqual(['mine']);
+    expect(applyView(items, cols, { mine: true })).toHaveLength(3);
+  });
+});
+
+describe('applyView — filtry bez wartości są pomijane', () => {
+  const items = [mk('a', { s: 'todo', t: 'x' }), mk('b', {})];
+  it('status/tekst/liczba bez wartości nie zawężają', () => {
+    expect(applyView(items, columns, { filters: [{ columnId: 's', op: 'is', value: null }] })).toHaveLength(2);
+    expect(applyView(items, columns, { filters: [{ columnId: 't', op: 'contains', value: '  ' }] })).toHaveLength(2);
+    expect(applyView(items, columns, { filters: [{ columnId: 'n', op: 'eq', value: '' }] })).toHaveLength(2);
+  });
+  it('is_empty działa bez wartości', () => {
+    expect(applyView(items, columns, { filters: [{ columnId: 's', op: 'is_empty' }] }).map(i => i.id)).toEqual(['b']);
+  });
+  it('filterHasValue / hasActiveFilters', () => {
+    expect(filterHasValue({ op: 'is', value: false })).toBe(true);
+    expect(filterHasValue({ op: 'is', value: null })).toBe(false);
+    expect(hasActiveFilters({ filters: [{ op: 'is', value: null }] })).toBe(false);
+    expect(hasActiveFilters({ mine: true })).toBe(true);
   });
 });

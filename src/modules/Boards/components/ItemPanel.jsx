@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, useId } from 'react';
 import {
-  MessageSquare, Activity, Send, Heart, Trash2, AtSign, CornerDownRight, Copy, Plus, Maximize2, ArrowLeft, X,
+  MessageSquare, Activity, Send, Heart, Trash2, AtSign, CornerDownRight, Copy, Plus, Maximize2, ArrowLeft, X, Link2,
 } from 'lucide-react';
+import { taskItemLink } from '@avenit/shared/src/lib/taskLinks.js';
+import { getAppModulesSnapshot } from '../../../hooks/useAppModules';
 import BoardCell from './BoardCell';
 import ColumnIcon from './ColumnIcon';
 import Popover from './Popover';
@@ -16,6 +18,8 @@ import '../../../components/pickList.css';
 import '../../../components/toolbar.css';
 import { getColumnType, findLabel, isCellEmpty } from '../lib/columnTypes';
 import { useItemUpdates } from '../hooks/useItemUpdates';
+import { isTypingTarget } from '../lib/keyboard';
+import ShareToChatModal, { useCanShareToChat } from '../../Komunikator/components/ShareToChatModal';
 import { confirmDialog } from '../../../lib/dialog';
 import { toast } from '../../../lib/toast';
 import { tr, appLocale } from '../../../i18n';
@@ -113,7 +117,7 @@ function Composer({ people, onSend, onCancel, autoFocus = false, placeholder }) 
         }>
           {({ close }) => <MentionList people={people} onPick={(p) => { addMention(p); close(); }} />}
         </Popover>
-        {!TOUCH && <span className="hidden sm:inline text-[11px] text-gray-400 truncate">{tr('Enter — wyślij, Shift+Enter — nowa linia')}</span>}
+        {!TOUCH && <span className="hidden sm:inline text-[11px] text-gray-500 dark:text-gray-400 truncate">{tr('Enter — wyślij, Shift+Enter — nowa linia')}</span>}
         <div className="flex items-center gap-1 ml-auto">
           {onCancel && <Button variant="ghost" size="sm" onClick={onCancel}>{tr('Anuluj')}</Button>}
           <Button size="sm" icon={Send} onClick={submit} loading={busy} disabled={!text.trim()}>{tr('Wyślij')}</Button>
@@ -160,7 +164,9 @@ function CommentBody({ u, personOf, small = false }) {
 
 function UpdateItem({ u, replies, people, personOf, userEmail, can, onLike, onDelete, onReply }) {
   const [replying, setReplying] = useState(false);
-  const canDelete = (x) => can.deleteUpdates && x.author_email && x.author_email === userEmail;
+  // Serwer ustawia autora i pozwala usuwać tylko własne komentarze — cudzych nie pokazujemy z koszem.
+  const canDelete = (x) => !!(can.deleteUpdates && x.author_email && userEmail
+    && String(x.author_email).trim().toLowerCase() === String(userEmail).trim().toLowerCase());
   const del = (x) => (
     <button type="button" onClick={() => onDelete(x, x === u ? replies.length : 0)} aria-label={tr('Usuń komentarz')} title={tr('Usuń komentarz')}
       className="p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10">
@@ -246,7 +252,16 @@ function SubitemRow({ sub, statusCol, subCount, placeholder, canEdit, canDelete,
   );
 }
 
-export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, userName }) {
+// Ścieżki modułów z app_modules (dla linku do zadania w zakładce „Zadania” modułu).
+function modulePaths() {
+  try {
+    const out = {};
+    for (const m of getAppModulesSnapshot().modules || []) if (m?.key && typeof m.path === 'string') out[m.key] = m.path;
+    return out;
+  } catch { return {}; }
+}
+
+export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, userName, onUpdatesSync }) {
   const can = data.can || {};
   const ids = useId();
   // Słownictwo kontekstu: w zakładce „Zadania” — zadania/podzadania, w Projektach — elementy.
@@ -262,12 +277,18 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
   // oglądany element, `trail` = ścieżka rodziców do powrotu. Reset przy zmianie itemu.
   const [viewItemId, setViewItemId] = useState(item.id);
   const [trail, setTrail] = useState([]);
+  const canShareToChat = useCanShareToChat();
+  const [shareOpen, setShareOpen] = useState(false);
   useEffect(() => { setViewItemId(item.id); setTrail([]); setTab('updates'); }, [item.id]);
   const current = data.items.find(i => i.id === viewItemId) || item;
   const isSub = !!current.parent_item_id;
   const { updates, activity, loading, addUpdate, toggleLike, deleteUpdate } = useItemUpdates(current, data.board?.id, { userEmail, userName });
 
   const roots = useMemo(() => updates.filter(u => !u.parent_update_id), [updates]);
+  // Licznik komentarzy w wierszu tablicy = to, co widać w panelu (także po komentarzach na żywo).
+  const syncRef = useRef(onUpdatesSync);
+  syncRef.current = onUpdatesSync;
+  useEffect(() => { if (!loading) syncRef.current?.(current.id, updates.map(u => u.id)); }, [loading, updates, current.id]);
   const repliesOf = (id) => updates.filter(u => u.parent_update_id === id);
 
   // Zdjęcia autorów z katalogu osób (data.people) — w komentarzu zapisany jest tylko e-mail i imię.
@@ -319,6 +340,14 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
     () => data.items.filter(i => i.parent_item_id === current.id).sort((a, b) => (a.display_order || 0) - (b.display_order || 0)),
     [data.items, current.id]
   );
+  // Liczba podzadań każdego podzadania — jedna mapa zamiast filtra po wszystkich zadaniach w każdym wierszu.
+  const subCountById = useMemo(() => {
+    const m = new Map();
+    for (const i of data.items) if (i.parent_item_id != null) m.set(i.parent_item_id, (m.get(i.parent_item_id) || 0) + 1);
+    return m;
+  }, [data.items]);
+  // Usunięcie z „Cofnij” (data.removeItems); stary interfejs danych — od razu.
+  const removeWithUndo = (id) => (data.removeItems ? (data.removeItems([id]), true) : data.deleteItem(id));
   const statusCol = data.columns.find(c => c.type === 'status' || c.type === 'priority');
   const [newSub, setNewSub] = useState('');
   const addSub = async () => {
@@ -327,10 +356,7 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
     const it = await data.addSubitem(current, n);
     if (it) setNewSub(''); // przy błędzie wpis zostaje do ponownej próby
   };
-  const removeSub = async (sub) => {
-    const ok = await confirmDialog({ title: tr('Usunąć „{name}”?', { name: sub.name || tr('Bez nazwy') }), message: tr('Tej operacji nie można cofnąć.'), confirmLabel: tr('Usuń'), danger: true });
-    if (ok) data.deleteItem(sub.id);
-  };
+  const removeSub = (sub) => { removeWithUndo(sub.id); };
 
   const duplicate = async () => {
     commitAll();
@@ -348,10 +374,10 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
     toast.success(tr('Utworzono kopię: {name}', { name: copyName }));
     if (trail.length) goBack(); else onClose();
   };
+  // Usunięcie bez okna potwierdzenia — komunikat ma „Cofnij” (kilka sekund).
   const remove = async () => {
-    const ok = await confirmDialog({ title: tr('Usunąć „{name}”?', { name: current.name || tr('Bez nazwy') }), message: tr('Tej operacji nie można cofnąć.'), confirmLabel: tr('Usuń'), danger: true });
-    if (!ok) return;
-    if (!await data.deleteItem(current.id)) return; // nie udało się (toast już jest) — okno zostaje
+    commitAll();
+    if (!await removeWithUndo(current.id)) return; // nie udało się (toast już jest) — okno zostaje
     if (trail.length) { setTrail(t => { const n = [...t]; const p = n.pop(); if (p) setViewItemId(p.id); return n; }); } else onClose();
   };
   const onDeleteComment = async (u, repliesCount) => {
@@ -363,7 +389,20 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
     if (ok) deleteUpdate(u.id);
   };
 
+  // Pełny adres zadania (ta sama reguła co powiadomienia: moduł / Kalendarz / Projekty).
+  const copyLink = async () => {
+    const href = new URL(taskItemLink(data.board, current.id, modulePaths()), window.location.origin).href;
+    try {
+      await navigator.clipboard.writeText(href);
+      toast.success(tr('Skopiowano link'));
+    } catch {
+      toast.info({ title: tr('Link do zadania'), message: href, duration: 12000 });
+    }
+  };
+
   const menuItems = [
+    { key: 'link', icon: Link2, label: tr('Kopiuj link'), onClick: copyLink },
+    ...(canShareToChat ? [{ key: 'chat', icon: Send, label: tr('Wyślij do czatu'), onClick: () => setShareOpen(true) }] : []),
     ...(can.createItems ? [{ key: 'dup', icon: Copy, label: tr('Duplikuj'), onClick: duplicate }] : []),
     ...(can.deleteItems ? [{ key: 'del', icon: Trash2, label: tr('Usuń'), danger: true, onClick: remove }] : []),
   ];
@@ -417,7 +456,10 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
   return (
     <Modal isOpen onClose={handleClose} size="lg" header={header}
       ariaLabel={current.name || tr(isSub ? (terms.sub || 'Podzadanie') : (terms.column || 'Zadanie'))}>
-      <div className="px-6 pt-5 pb-6 space-y-7">
+      {/* Esc w polu tekstowym kończy pisanie (pole zapisuje się przy wyjściu), a nie zamyka okna
+          z niezapisanym komentarzem; drugie Esc zamyka okno. */}
+      <div className="px-6 pt-5 pb-6 space-y-7"
+        onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && isTypingTarget(e.target)) { e.preventDefault(); e.target.blur(); } }}>
         {/* Nazwa (edycja w miejscu). textarea, nie input: długa nazwa zawija się (telefon). */}
         <textarea key={current.id} ref={nameRef} value={nameLocal} readOnly={!can.editItems} rows={1}
           autoFocus={can.editItems && !current.name}
@@ -482,7 +524,7 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {subitems.map(sub => (
                 <SubitemRow key={sub.id} sub={sub} statusCol={statusCol} placeholder={tr(terms.sub || 'Podzadanie')}
-                  subCount={data.items.filter(i => i.parent_item_id === sub.id).length}
+                  subCount={subCountById.get(sub.id) || 0}
                   canEdit={!!can.editItems} canDelete={!!can.deleteItems}
                   onRename={(id, n) => data.updateItem(id, { name: n })}
                   onCell={data.updateCell} onUpdateColumn={data.updateColumn} onDelete={removeSub} onOpen={openSubitem} />
@@ -519,7 +561,7 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
               <div className="mt-2">
                 {loading ? <Spinner center size={20} /> : roots.length === 0 ? (
                   // Pod polem komentarza wystarczy cichy tekst (duży pusty stan z ikoną dominował okno).
-                  <p className="py-5 text-center text-sm text-gray-400 dark:text-gray-500">{tr('Brak komentarzy')}</p>
+                  <p className="py-5 text-center text-sm text-gray-500 dark:text-gray-400">{tr('Brak komentarzy')}</p>
                 ) : roots.map(u => (
                   <UpdateItem key={u.id} u={u} replies={repliesOf(u.id)} people={data.people || []} personOf={personOf} userEmail={userEmail} can={can}
                     onLike={toggleLike} onDelete={onDeleteComment} onReply={(t, m, pid) => addUpdate(t, m, pid)} />
@@ -529,7 +571,7 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
           )}
           {tab === 'activity' && (
             loading ? <Spinner center size={20} /> : activity.length === 0 ? (
-              <p className="py-5 text-center text-sm text-gray-400 dark:text-gray-500">{tr('Brak historii aktywności')}</p>
+              <p className="py-5 text-center text-sm text-gray-500 dark:text-gray-400">{tr('Brak historii aktywności')}</p>
             ) : (
               <ol className="space-y-3">
                 {activity.map(a => {
@@ -550,6 +592,7 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
           )}
         </section>
       </div>
+      {shareOpen && <ShareToChatModal board={data.board} item={current} userEmail={userEmail} onClose={() => setShareOpen(false)} />}
     </Modal>
   );
 }

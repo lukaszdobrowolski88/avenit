@@ -5,8 +5,31 @@ import { boardColor } from './palette';
 import { STATUS_COLORS } from '../../../components/ui/DataTable';
 import { tr } from '../../../i18n';
 
+// Wartość filtra „Osoby” oznaczająca bieżącego użytkownika — zapisany widok z „Ja” działa dla każdego.
+export const ME = '__me__';
+const lower = (v) => String(v ?? '').trim().toLowerCase();
+
+// Filtr bez wartości (świeżo dodany, jeszcze nie wybrany) nie zawęża listy — wcześniej np. pusty
+// filtr statusu pokazywał tylko zadania BEZ statusu.
+export function filterHasValue(filter) {
+  if (!filter) return false;
+  if (filter.op === 'is_empty') return true;
+  const v = filter.value;
+  if (typeof v === 'boolean') return true;
+  if (v === null || v === undefined) return false;
+  if (Array.isArray(v)) return v.length > 0;
+  return String(v).trim() !== '';
+}
+
+// Czy w którejkolwiek kolumnie „Osoby” zadania jest dana osoba (e-mail bez wielkości liter).
+export function isAssignedTo(item, columns, email) {
+  const e = lower(email);
+  if (!e) return false;
+  return columns.some((c) => c.type === 'people' && (item.cells?.[c.id] || []).some((p) => lower(p?.email) === e));
+}
+
 // Dopasowanie pojedynczego filtra {columnId, op, value} do wartości komórki.
-function matchFilter(column, cell, filter) {
+function matchFilter(column, cell, filter, ctx = {}) {
   const { op, value } = filter;
   switch (column.type) {
     case 'status':
@@ -15,9 +38,9 @@ function matchFilter(column, cell, filter) {
       if (op === 'is_not') return cell != null && cell !== value;
       return cell === value;
     case 'people': {
-      const emails = (cell || []).map(p => p.email);
+      const emails = (cell || []).map(p => lower(p?.email));
       if (op === 'is_empty') return emails.length === 0;
-      return emails.includes(value);
+      return emails.includes(lower(value === ME ? ctx.me : value));
     }
     case 'dropdown': {
       const ids = cell || [];
@@ -36,9 +59,10 @@ function matchFilter(column, cell, filter) {
     case 'date': {
       if (op === 'is_empty') return !cell;
       if (!cell) return false;
-      if (op === 'before') return cell < value;
-      if (op === 'after') return cell > value;
-      return cell === value;
+      const d = String(cell).slice(0, 10);
+      if (op === 'before') return d < value;
+      if (op === 'after') return d > value;
+      return d === value;
     }
     default: {
       const text = cellToText(column, cell).toLowerCase();
@@ -61,11 +85,16 @@ export function applyView(items, columns, config = {}) {
     });
   }
 
-  // Filtry
+  // „Moje” — przypisane do mnie (dowolna kolumna Osoby). Bez znanego użytkownika — bez zawężania.
+  if (config.mine && config.me) out = out.filter(it => isAssignedTo(it, columns, config.me));
+
+  // Filtry (bez wartości — pomijane; „Ja” bez znanego użytkownika — pomijane)
+  const ctx = { me: config.me || null };
   for (const f of (config.filters || [])) {
     const col = colById[f.columnId];
-    if (!col) continue;
-    out = out.filter(it => matchFilter(col, it.cells?.[f.columnId], f));
+    if (!col || !filterHasValue(f)) continue;
+    if (col.type === 'people' && f.value === ME && !ctx.me && f.op !== 'is_empty') continue;
+    out = out.filter(it => matchFilter(col, it.cells?.[f.columnId], f, ctx));
   }
 
   // Sortowanie
@@ -88,6 +117,11 @@ export function applyView(items, columns, config = {}) {
     });
   }
   return out;
+}
+
+// Czy widok coś ukrywa (szukanie, „Moje”, filtry z wartością) — do komunikatu „Brak pasujących”.
+export function hasActiveFilters(config = {}) {
+  return !!config.mine || (config.filters || []).some(filterHasValue) || !!String(config.search || '').trim();
 }
 
 function sortKey(column, cell) {

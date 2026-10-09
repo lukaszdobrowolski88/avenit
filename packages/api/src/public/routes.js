@@ -10,6 +10,21 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const ID_RE = /^[0-9A-Za-z-]{1,64}$/;
 const csvNames = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
 
+// Identyfikatory porównujemy z kolumną w JEJ typie (`id = $1` — Postgres przyjmuje typ parametru
+// z kolumny: uuid albo integer zależnie od tenanta) zamiast rzutowania kolumny na tekst, które
+// omijało indeks (pełny skan, przy FOR UPDATE w transakcji). Id w złym formacie dla typu kolumny → błąd
+// 22P02/22003 → traktujemy jak brak wiersza (404).
+export const isInvalidIdError = (err) => err?.code === '22P02' || err?.code === '22003';
+
+// Limity per IP dla tras po tokenie (zgadywanie tokenów / zalewanie odpowiedziami).
+export const PUBLIC_RATE_LIMITS = {
+  assignmentRead: { max: 60, timeWindow: '10 minutes' },
+  assignmentRespond: { max: 20, timeWindow: '10 minutes' },
+  selfRespond: { max: 60, timeWindow: '10 minutes' },
+  modulePage: { max: 120, timeWindow: '1 minute' },
+};
+const limited = (key) => ({ config: { rateLimit: PUBLIC_RATE_LIMITS[key] } });
+
 // Odrzucenie: zmiany grafiku wydarzenia (events.assignments) zdejmujące osobę z jej ról.
 // Zwraca ops dla applyOps — tylko pola, w których ta osoba faktycznie jest.
 export function rejectOps(assignments, rows) {
@@ -57,7 +72,7 @@ export async function respondToAssignments(db, { action, whereSql, params }) {
     if (action === 'reject') {
       // Grafik na WYDARZENIU: events.assignments[team_type][role_key] (CSV imion).
       for (const [eventId, rows] of groupBy(updated.filter((r) => r.event_id != null), 'event_id')) {
-        const { rows: ev } = await client.query('SELECT id, assignments FROM events WHERE id::text = $1 FOR UPDATE', [eventId]);
+        const { rows: ev } = await client.query('SELECT id, assignments FROM events WHERE id = $1 FOR UPDATE', [eventId]);
         if (!ev[0]) continue;
         const ops = rejectOps(ev[0].assignments, rows);
         if (!ops.length) continue;
@@ -69,7 +84,7 @@ export async function respondToAssignments(db, { action, whereSql, params }) {
       }
       // Grafik na PROGRAMIE (stary): programs.zespol[role_key].
       for (const [programId, rows] of groupBy(updated.filter((r) => r.event_id == null && r.program_id != null), 'program_id')) {
-        const { rows: pr } = await client.query('SELECT id, zespol FROM programs WHERE id::text = $1 FOR UPDATE', [programId]);
+        const { rows: pr } = await client.query('SELECT id, zespol FROM programs WHERE id = $1 FOR UPDATE', [programId]);
         const zespol = pr[0]?.zespol;
         if (!zespol || typeof zespol !== 'object') continue;
         const next = { ...zespol };
@@ -101,7 +116,7 @@ const emitEvents = (req, events) => {
 export default async function publicPageRoutes(app) {
   // Odczyt przypisań po tokenie (wspólny token = wszystkie służby osoby na tę datę).
   // Zwraca tylko to, co potrzebne stronie akceptacji — bez e-maili i innych danych.
-  app.get('/api/public/assignment/:token', { preHandler: app.requireTenant }, async (req, reply) => {
+  app.get('/api/public/assignment/:token', { preHandler: app.requireTenant, ...limited('assignmentRead') }, async (req, reply) => {
     if (reply.sent) return;
     const token = String(req.params.token || '');
     if (!UUID_RE.test(token)) return reply.code(404).send({ error: 'Nieprawidłowy token' });
@@ -140,7 +155,7 @@ export default async function publicPageRoutes(app) {
   });
 
   // Akceptacja/odrzucenie po tokenie (obejmuje wszystkie służby osoby — wspólny token).
-  app.post('/api/public/assignment/:token/respond', { preHandler: app.requireTenant }, async (req, reply) => {
+  app.post('/api/public/assignment/:token/respond', { preHandler: app.requireTenant, ...limited('assignmentRespond') }, async (req, reply) => {
     if (reply.sent) return;
     const token = String(req.params.token || '');
     if (!UUID_RE.test(token)) return reply.code(404).send({ error: 'Nieprawidłowy token' });
@@ -165,7 +180,7 @@ export default async function publicPageRoutes(app) {
   // Ta sama odpowiedź z APLIKACJI (Pulpit → Moja służba): zalogowany, tylko własny wiersz
   // (assigned_email = e-mail sesji). Odrzucenie zdejmuje z grafiku tak samo jak link z maila —
   // członek nie ma prawa edytować wydarzenia, więc robi to serwer, nie klient.
-  app.post('/api/assignment/:id/respond', { preHandler: [app.requireUser, app.block2FAPending] }, async (req, reply) => {
+  app.post('/api/assignment/:id/respond', { preHandler: [app.requireUser, app.block2FAPending], ...limited('selfRespond') }, async (req, reply) => {
     if (reply.sent) return;
     const id = String(req.params.id || '');
     if (!ID_RE.test(id)) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
@@ -177,23 +192,24 @@ export default async function publicPageRoutes(app) {
       // Własny wiersz = konto tej osoby z grafiku — także gdy konto ma inny e-mail niż lista
       // zespołu (powiązania w lib/assigneeIdentity.js). Cudze przypisanie = 404, jak brak wiersza.
       const { rows: own } = await req.db.query(
-        'SELECT assigned_email, assigned_name, team_type, status FROM schedule_assignments WHERE id::text = $1', [id]
+        'SELECT assigned_email, assigned_name, team_type, status FROM schedule_assignments WHERE id = $1', [id]
       );
       const a = own[0];
       if (!a || !(await isAccountForAssignee(req.db, email, { email: a.assigned_email, name: a.assigned_name, teamType: a.team_type }))) {
         return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
       }
-      const result = await respondToAssignments(req.db, { action, whereSql: 'id::text = $2', params: [id] });
+      const result = await respondToAssignments(req.db, { action, whereSql: 'id = $2', params: [id] });
       if (!result.updated) return reply.send({ ok: true, status: a.status, already: true });
       emitEvents(req, result.events);
       return reply.send({ ok: true, status: result.status });
     } catch (err) {
+      if (isInvalidIdError(err)) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
       req.log?.error?.({ err }, 'assignment self respond failed');
       return reply.code(500).send({ error: 'Błąd serwera' });
     }
   });
 
-  app.get('/api/public/module-page/:slug', { preHandler: app.requireTenant }, async (req, reply) => {
+  app.get('/api/public/module-page/:slug', { preHandler: app.requireTenant, ...limited('modulePage') }, async (req, reply) => {
     if (reply.sent) return;
     const slug = String(req.params.slug || '');
     if (!/^[a-z0-9-]{1,64}$/.test(slug)) return reply.code(404).send({ error: 'Nie znaleziono' });

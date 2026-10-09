@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Hash, BarChart3, PieChart, BatteryMedium, Table2 } from 'lucide-react';
+import { Hash, BarChart3, PieChart, BatteryMedium, Table2 } from 'lucide-react';
 import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 import CustomSelect from '../../../components/CustomSelect';
+import '../../../components/toolbar.css';
+import { FORM_LABEL, FORM_INPUT } from '../components/FormField';
 import { tr } from '../../../i18n';
 import { supabase } from '../../../lib/supabase';
 import { getColumnType } from '../lib/columnTypes';
@@ -12,6 +15,9 @@ const TYPES = [
   { type: 'battery', label: 'Bateria', icon: BatteryMedium },
   { type: 'table', label: 'Tabela', icon: Table2 },
 ];
+const CHARTS = [{ k: 'bar', label: 'Słupkowy', icon: BarChart3 }, { k: 'pie', label: 'Kołowy', icon: PieChart }];
+
+const LABEL = FORM_LABEL;
 
 export default function WidgetConfigModal({ initial, boards, onSave, onClose }) {
   const [w, setW] = useState(initial || { type: 'number', title: '', boardId: boards[0]?.id, aggregation: 'count', chartType: 'bar', size: 'small' });
@@ -25,116 +31,93 @@ export default function WidgetConfigModal({ initial, boards, onSave, onClose }) 
   const set = (patch) => setW(prev => ({ ...prev, ...patch }));
   const groupable = cols.filter(c => getColumnType(c.type).groupable);
   const numberCols = cols.filter(c => c.type === 'number' || c.type === 'rating');
-  const selectedCol = cols.find(c => c.id === w.columnId);
 
   const save = () => {
     const typeLabel = TYPES.find(t => t.type === w.type)?.label;
-    const title = w.title || (typeLabel ? tr(typeLabel) : typeLabel);
+    const title = w.title || (typeLabel ? tr(typeLabel) : '');
     onSave({ id: w.id || `w_${Math.random().toString(36).slice(2, 9)}`, ...w, title });
   };
 
   return (
-    <Modal isOpen className="flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{initial ? tr('Edytuj widżet') : tr('Nowy widżet')}</h2>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
+    <Modal isOpen onClose={onClose} title={initial ? tr('Edytuj widżet') : tr('Nowy widżet')} size="md"
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button onClick={save} disabled={!w.boardId}>{tr('Zapisz')}</Button>
+      </>}>
+      <div className="p-6 space-y-4">
+        <div>
+          <label htmlFor="widget-title" className={LABEL}>{tr('Tytuł')}</label>
+          <input id="widget-title" value={w.title} onChange={(e) => set({ title: e.target.value })} placeholder={tr('np. Zadania wg statusu')} className={FORM_INPUT} />
         </div>
 
-        <div className="space-y-3">
-          <label className="block">
-            <span className="text-xs text-gray-500">{tr('Tytuł')}</span>
-            <input value={w.title} onChange={(e) => set({ title: e.target.value })} placeholder={tr('np. Zadania wg statusu')}
-              className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 outline-none" />
-          </label>
+        <div>
+          <span id="widget-type" className={LABEL}>{tr('Typ widżetu')}</span>
+          <div className="seg-bar w-full overflow-x-auto" role="group" aria-labelledby="widget-type">
+            {TYPES.map(t => (
+              <button key={t.type} type="button" className="seg-btn flex-1 justify-center" aria-pressed={w.type === t.type} onClick={() => set({ type: t.type })}>
+                <t.icon size={15} aria-hidden="true" />{tr(t.label)}
+              </button>
+            ))}
+          </div>
+        </div>
 
+        <div>
+          <label htmlFor="widget-board" className={LABEL}>{tr('Tablica')}</label>
+          <CustomSelect id="widget-board" value={w.boardId} onChange={(v) => set({ boardId: v, columnId: undefined })}
+            options={boards} mapOptionToValue={(b) => b.id} mapOptionToLabel={(b) => b.name} />
+        </div>
+
+        {(w.type === 'chart' || w.type === 'battery') && (
           <div>
-            <span className="text-xs text-gray-500">{tr('Typ widżetu')}</span>
-            <div className="grid grid-cols-4 gap-2 mt-1">
-              {TYPES.map(t => (
-                <button key={t.type} onClick={() => set({ type: t.type })}
-                  className={`flex flex-col items-center gap-1 py-2 rounded-lg border text-xs ${w.type === t.type ? 'border-accent-primary bg-accent-primary/10 text-accent-primary' : 'border-gray-200 dark:border-gray-600 text-gray-500'}`}>
-                  <t.icon size={18} /> {tr(t.label)}
+            <label htmlFor="widget-col" className={LABEL}>{tr('Grupuj wg kolumny')}</label>
+            <CustomSelect id="widget-col" placeholder={tr('— wybierz —')} value={w.columnId || ''} onChange={(v) => set({ columnId: v })}
+              options={w.type === 'battery' ? groupable.filter(c => ['status', 'priority'].includes(c.type)) : groupable}
+              mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+          </div>
+        )}
+
+        {w.type === 'chart' && (
+          <div>
+            <span id="widget-chart" className={LABEL}>{tr('Rodzaj wykresu')}</span>
+            <div className="seg-bar" role="group" aria-labelledby="widget-chart">
+              {CHARTS.map(o => (
+                <button key={o.k} type="button" className="seg-btn" aria-pressed={w.chartType === o.k} onClick={() => set({ chartType: o.k })}>
+                  <o.icon size={15} aria-hidden="true" />{tr(o.label)}
                 </button>
               ))}
             </div>
           </div>
+        )}
 
-          <label className="block">
-            <span className="text-xs text-gray-500">{tr('Tablica')}</span>
-            <div className="mt-1">
-              <CustomSelect value={w.boardId} onChange={(v) => set({ boardId: v, columnId: undefined })}
-                options={boards} mapOptionToValue={(b) => b.id} mapOptionToLabel={(b) => b.name} />
-            </div>
-          </label>
-
-          {(w.type === 'chart' || w.type === 'battery') && (
-            <label className="block">
-              <span className="text-xs text-gray-500">{tr('Grupuj wg kolumny')}</span>
-              <div className="mt-1">
-                <CustomSelect placeholder={tr('— wybierz —')} value={w.columnId || ''} onChange={(v) => set({ columnId: v })}
-                  options={w.type === 'battery' ? groupable.filter(c => ['status', 'priority'].includes(c.type)) : groupable}
-                  mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
-              </div>
-            </label>
-          )}
-
-          {w.type === 'chart' && (
+        {w.type === 'number' && (
+          <>
             <div>
-              <span className="text-xs text-gray-500">{tr('Rodzaj wykresu')}</span>
-              <div className="flex gap-2 mt-1">
-                {[{ k: 'bar', label: tr('Słupkowy'), icon: BarChart3 }, { k: 'pie', label: tr('Kołowy'), icon: PieChart }].map(o => (
-                  <button key={o.k} onClick={() => set({ chartType: o.k })}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border text-sm ${w.chartType === o.k ? 'border-accent-primary bg-accent-primary/10 text-accent-primary' : 'border-gray-200 dark:border-gray-600 text-gray-500'}`}>
-                    <o.icon size={15} /> {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {w.type === 'number' && (
-            <>
-              <label className="block">
-                <span className="text-xs text-gray-500">{tr('Agregacja')}</span>
-                <div className="mt-1">
-                  <CustomSelect value={w.aggregation} onChange={(v) => set({ aggregation: v })}
-                    options={[
-                      { value: 'count', label: tr('Liczba elementów') },
-                      { value: 'sum', label: tr('Suma kolumny liczbowej') },
-                      { value: 'avg', label: tr('Średnia kolumny liczbowej') },
-                    ]} />
-                </div>
-              </label>
-              {(w.aggregation === 'sum' || w.aggregation === 'avg') && (
-                <label className="block">
-                  <span className="text-xs text-gray-500">{tr('Kolumna liczbowa')}</span>
-                  <div className="mt-1">
-                    <CustomSelect placeholder={tr('— wybierz —')} value={w.columnId || ''} onChange={(v) => set({ columnId: v })}
-                      options={numberCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
-                  </div>
-                </label>
-              )}
-            </>
-          )}
-
-          <label className="block">
-            <span className="text-xs text-gray-500">{tr('Rozmiar')}</span>
-            <div className="mt-1">
-              <CustomSelect value={w.size} onChange={(v) => set({ size: v })}
+              <label htmlFor="widget-agg" className={LABEL}>{tr('Agregacja')}</label>
+              <CustomSelect id="widget-agg" value={w.aggregation} onChange={(v) => set({ aggregation: v })}
                 options={[
-                  { value: 'small', label: tr('Mały') },
-                  { value: 'medium', label: tr('Średni') },
-                  { value: 'large', label: tr('Duży') },
+                  { value: 'count', label: tr('Liczba elementów') },
+                  { value: 'sum', label: tr('Suma kolumny liczbowej') },
+                  { value: 'avg', label: tr('Średnia kolumny liczbowej') },
                 ]} />
             </div>
-          </label>
-        </div>
+            {(w.aggregation === 'sum' || w.aggregation === 'avg') && (
+              <div>
+                <label htmlFor="widget-num" className={LABEL}>{tr('Kolumna liczbowa')}</label>
+                <CustomSelect id="widget-num" placeholder={tr('— wybierz —')} value={w.columnId || ''} onChange={(v) => set({ columnId: v })}
+                  options={numberCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+              </div>
+            )}
+          </>
+        )}
 
-        <div className="flex justify-end gap-2 mt-5">
-          <button onClick={onClose} className="text-sm text-gray-500 px-4 py-2">{tr('Anuluj')}</button>
-          <button onClick={save} className="text-sm bg-accent-primary text-white px-4 py-2 rounded-lg">{tr('Zapisz')}</button>
+        <div>
+          <label htmlFor="widget-size" className={LABEL}>{tr('Rozmiar')}</label>
+          <CustomSelect id="widget-size" value={w.size} onChange={(v) => set({ size: v })}
+            options={[
+              { value: 'small', label: tr('Mały') },
+              { value: 'medium', label: tr('Średni') },
+              { value: 'large', label: tr('Duży') },
+            ]} />
         </div>
       </div>
     </Modal>

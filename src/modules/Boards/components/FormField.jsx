@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Star } from 'lucide-react';
 import CustomDatePicker from '../../../components/CustomDatePicker';
 import { boardColor } from '../lib/palette';
@@ -15,6 +15,36 @@ export const FORM_INPUT = 'w-full px-4 py-3 text-sm rounded-xl border border-gra
 const CHIP = 'inline-flex items-center gap-2 h-9 px-3.5 rounded-full text-sm font-medium transition-colors outline-none disabled:opacity-50 disabled:cursor-not-allowed';
 const CHIP_OFF = 'bg-[rgba(42,35,18,0.055)] hover:bg-[rgba(42,35,18,0.09)] text-gray-700 dark:bg-white/[0.07] dark:hover:bg-white/[0.12] dark:text-gray-200';
 const CHIP_ON = 'bg-[#2A2312] text-white dark:bg-[#FFBE0B] dark:text-[#2A2312]';
+
+// Liczba wpisana po polsku („1,5”) albo z kropką → number; puste / sam minus → null; śmieci → NaN.
+export function parseDecimal(text) {
+  const t = String(text ?? '').trim().replace(/\s/g, '');
+  if (t === '' || t === '-') return null;
+  if (!/^-?\d*(?:[.,]\d*)?$/.test(t)) return NaN;
+  const n = Number(t.replace(',', '.'));
+  return Number.isFinite(n) ? n : NaN;
+}
+
+// Pole liczby: type="text" + inputMode="decimal" — type="number" odrzucał przecinek dziesiętny
+// (w części przeglądarek pole robiło się puste). Tekst lokalnie, wartość jako number.
+function NumberInput({ id, value, onChange, disabled }) {
+  const [text, setText] = useState(value == null ? '' : String(value));
+  useEffect(() => {
+    // Zmiana z zewnątrz (np. wyczyszczenie po wysłaniu) — nadpisz tekst, chyba że oznacza tę samą liczbę.
+    setText((cur) => (parseDecimal(cur) === (value ?? null) ? cur : (value == null ? '' : String(value))));
+  }, [value]);
+  return (
+    <input id={id} type="text" inputMode="decimal" autoComplete="off" value={text} disabled={disabled}
+      onChange={(e) => {
+        const t = e.target.value;
+        const n = parseDecimal(t);
+        if (Number.isNaN(n)) return; // niedozwolony znak — zostaw poprzedni tekst
+        setText(t);
+        onChange(n);
+      }}
+      className={FORM_INPUT} />
+  );
+}
 
 // Wybór z etykiet (status, priorytet, lista) jako pigułki — kilka opcji widać od razu, jeden klik.
 function Chips({ options, selected, onToggle, multi, disabled, labelledBy }) {
@@ -45,10 +75,7 @@ export default function FormField({ column, value, onChange, disabled = false, i
     case 'long_text':
       return <textarea id={id} value={value || ''} onChange={(e) => onChange(e.target.value)} disabled={disabled} rows={4} maxLength={10000} className={`${FORM_INPUT} resize-y`} />;
     case 'number':
-      return (
-        <input id={id} type="number" inputMode="decimal" value={value ?? ''} disabled={disabled}
-          onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))} className={FORM_INPUT} />
-      );
+      return <NumberInput id={id} value={value} onChange={onChange} disabled={disabled} />;
     case 'link':
       return (
         <input id={id} type="url" inputMode="url" value={value?.url || ''} placeholder="https://" disabled={disabled}

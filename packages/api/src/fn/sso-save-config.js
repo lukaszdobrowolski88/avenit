@@ -1,6 +1,10 @@
 // Admin: zapis konfiguracji SSO (Google/Microsoft). Sekret klienta szyfrowany (AES-256-GCM)
 // przed zapisem do app_settings; nigdy nie wraca do klienta w jawnej postaci.
-import { getCaller, isAdmin } from '../lib/user-admin.js';
+// Tylko ADMINISTRATOR (superadmin / rola is_admin) — samo action:settings:manage_users nie wystarcza
+// (audyt 2026-10, runda 3): własna aplikacja OAuth + auto-provisioning z domyślną rolą to przejęcie
+// logowania całej organizacji.
+import { getCaller } from '../lib/user-admin.js';
+import { isFullAdmin } from '../lib/admin-guard.js';
 import { encryptPassword } from '../lib/mailcrypto.js';
 import { config } from '../config.js';
 
@@ -11,7 +15,7 @@ const SECRET = () => config.MAIL_ENCRYPTION_SECRET || config.JWT_SECRET;
 
 export default async function handler(req, reply) {
   const caller = await getCaller(req.db, req.user.id, req.tenant.db_name);
-  if (!isAdmin(caller)) return reply.code(403).send({ error: 'Brak uprawnień.' });
+  if (!isFullAdmin(caller)) return reply.code(403).send({ error: 'Konfigurację SSO zmienia tylko administrator.' });
 
   const provider = String(req.body?.provider || '');
   if (!['google', 'microsoft'].includes(provider)) return reply.code(400).send({ error: 'Nieznany dostawca.' });

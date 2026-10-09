@@ -5,15 +5,24 @@
 //
 // Body:
 //   campaign_id, recipient_id, event ('opened' | 'action_clicked' | 'dismissed'), action_id?
+//
+// Publiczne: para campaign_id + recipient_id (UUID z treści pusha) działa jak token — nieznana
+// para = 404 (bez przeliczania statystyk cudzej kampanii); limit per IP (audyt 2026-10, runda 3).
+import { isUuid } from './push-action-handler.js';
 
 export const name = 'push-event-track';
 export const isPublic = true; // wołane z service workera / mobile bez sesji
+export const rateLimit = { max: 300, timeWindow: '1 minute' };
 
 export default async function handler(req, reply) {
   try {
+    if (!req.db) return reply.code(404).send({ error: 'Nieznany tenant' });
     const { campaign_id, recipient_id, event, action_id } = req.body || {};
     if (!campaign_id || !recipient_id || !event) {
       return reply.code(400).send({ error: 'Brak campaign_id/recipient_id/event' });
+    }
+    if (!isUuid(campaign_id) || !isUuid(recipient_id) || (action_id != null && action_id !== '' && !isUuid(action_id))) {
+      return reply.code(404).send({ error: 'Nie znaleziono odbiorcy' });
     }
 
     const update = {};
@@ -39,15 +48,16 @@ export default async function handler(req, reply) {
         return reply.code(400).send({ error: 'Nieznany event' });
     }
 
+    const { rows } = await req.db.query(
+      `SELECT status FROM push_campaign_recipients WHERE id = $1 AND campaign_id = $2`,
+      [recipient_id, campaign_id]
+    );
+    const current = rows[0];
+    if (!current) return reply.code(404).send({ error: 'Nie znaleziono odbiorcy' });
+
     if (Object.keys(update).length > 0) {
       // Nie cofamy statusu (opened > delivered > sent).
       const order = { pending: 0, queued: 1, suppressed: 1, sent: 2, delivered: 3, opened: 4, action_clicked: 5, failed: -1 };
-      const { rows } = await req.db.query(
-        `SELECT status FROM push_campaign_recipients WHERE id = $1 AND campaign_id = $2`,
-        [recipient_id, campaign_id]
-      );
-      const current = rows[0];
-
       const currentRank = order[current?.status || 'pending'] ?? 0;
       const newRank = order[update.status] ?? 0;
       if (newRank >= currentRank) {
@@ -73,6 +83,6 @@ export default async function handler(req, reply) {
     return reply.send({ ok: true });
   } catch (err) {
     req.log.error({ err }, 'push-event-track');
-    return reply.code(500).send({ error: err.message });
+    return reply.code(500).send({ error: 'Błąd zapisu zdarzenia' });
   }
 }

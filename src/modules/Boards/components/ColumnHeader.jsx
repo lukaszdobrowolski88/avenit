@@ -8,6 +8,10 @@ import { supabase } from '../../../lib/supabase';
 import { fetchBoardColumnsCached } from '../lib/relationCache';
 import { confirmDialog } from '../../../lib/dialog';
 
+// Jeden wygląd nagłówków kolumn w tabeli (nazwa zadania i kolumny): 11 px, szarość 500 — gray-400
+// na białym tle przy tej wielkości nie miała kontrastu 4.5:1.
+export const COLUMN_HEADER_TEXT = 'text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400';
+
 // Pole ustawienia kolumny (jednostka, formuła): zapis na Enter, przy wyjściu z pola ORAZ przy
 // zamknięciu menu (Esc / klik obok odmontowują pole bez blur — wcześniej zmiana przepadała).
 function SettingInput({ value, onCommit, className, placeholder, label }) {
@@ -43,7 +47,8 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
 
   useEffect(() => {
     if (column.type !== 'connect_board') return;
-    supabase.from('boards').select('id, name').eq('is_archived', false).order('name').then(({ data }) => setBoards(data || []));
+    // Bez szablonów — połączenie z szablonem tablicy nie ma sensu (szablon nie ma prawdziwych zadań).
+    supabase.from('boards').select('id, name').eq('is_archived', false).eq('is_template', false).order('name').then(({ data }) => setBoards(data || []));
   }, [column.type]);
 
   // Lustro: załaduj kolumny połączonej tablicy (przez wybraną kolumnę connect_board)
@@ -59,7 +64,7 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
   const canMenu = !!(onUpdate || onDelete);
 
   return (
-    <div className="board-th h-full flex items-center gap-1.5 px-2 group/col text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+    <div className={`board-th h-full flex items-center gap-1.5 px-2 group/col ${COLUMN_HEADER_TEXT}`}>
       {renaming ? (
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onBlur={commit} aria-label={tr('Nazwa kolumny')}
           onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { e.preventDefault(); cancel(); } }}
@@ -70,7 +75,7 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
       {canMenu && (
       <Popover align="right" width={(column.type === 'status' || column.type === 'priority') ? 280 : 220} triggerClassName="shrink-0" trigger={
         <button type="button" aria-label={tr('Ustawienia kolumny {name}', { name: column.name })}
-          className="opacity-0 group-hover/col:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-[rgba(42,35,18,0.07)] dark:hover:text-gray-200 dark:hover:bg-white/10"><MoreHorizontal size={15} aria-hidden="true" /></button>
+          className="opacity-0 group-hover/col:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-1 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:bg-[rgba(42,35,18,0.07)] dark:hover:text-gray-200 dark:hover:bg-white/10"><MoreHorizontal size={15} aria-hidden="true" /></button>
       }>
         {({ close }) => (
           <div className="py-1">

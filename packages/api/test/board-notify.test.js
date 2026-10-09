@@ -3,9 +3,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  peopleEmails, hasPeopleLike, anyNewPeople, newAssignees, boardVisibleTo, taskBoardModuleKey, itemLink, accessCoversBoard,
+  peopleEmails, hasPeopleLike, anyNewPeople, newAssignees, boardVisibleTo, accessCoversBoard,
   changedItems, prepareBoardAssignNotify, notifyBoardAssignees,
 } from '../src/dataapi/boardNotify.js';
+import { taskItemLink as itemLink, taskBoardModuleKey } from '@avenit/shared/src/lib/taskLinks.js';
 
 const P = (email, name = email) => ({ email, name });
 

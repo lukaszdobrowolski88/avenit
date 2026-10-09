@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Send, Copy, Check, Globe, FormInput } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import FormField, { FormFieldLabel, FORM_LABEL, FORM_INPUT } from '../components/FormField';
@@ -7,27 +7,49 @@ import EmptyState from '../../../components/EmptyState';
 import { Toggle } from '../../Settings/components/SettingsUI';
 import { toast } from '../../../lib/toast';
 import { uid } from '../lib/constants';
+import { formColumns, selectedFieldIds, visibleFormColumns, toggleFormField } from '../lib/formSettings';
+import { isBoardOwner } from '../lib/boardList';
+import { usePermissions } from '../../../contexts/PermissionsContext';
 import { tr } from '../../../i18n';
 
-// Typy pól, które obsługuje publiczny formularz (packages/api/src/fn/board-form-get.js, ALLOWED_TYPES) —
-// podgląd pokazuje dokładnie to, co zobaczy osoba z linku, i niczego więcej nie przyjmie serwer.
-const PUBLIC_TYPES = new Set([
-  'text', 'long_text', 'number', 'date', 'timeline', 'dropdown',
-  'status', 'priority', 'checkbox', 'rating', 'link', 'progress',
-]);
+// Pola formularza = typy obsługiwane przez publiczny formularz (lib/formSettings.js, zgodne z
+// fn board-form-get) — podgląd pokazuje dokładnie to, co zobaczy osoba z linku.
 
 const SECTION = 'text-xs font-bold text-gray-500 dark:text-gray-400 uppercase';
+const DIVIDER = 'border-t border-gray-100 dark:border-gray-800';
+
+// Pole tekstowe zapisywane po zejściu z pola (i Enterze w jednowierszowym) — bez zapisu na każdy znak.
+function CommitInput({ id, value, onCommit, multiline = false, placeholder, disabled, maxLength }) {
+  const [v, setV] = useState(value || '');
+  useEffect(() => { setV(value || ''); }, [value]);
+  const commit = () => { if ((v || '') !== (value || '')) onCommit(v.trim() ? v : ''); };
+  const common = {
+    id, value: v, placeholder, disabled, maxLength,
+    onChange: (e) => setV(e.target.value),
+    onBlur: commit,
+    className: `${FORM_INPUT} ${multiline ? 'resize-y' : ''}`,
+  };
+  return multiline
+    ? <textarea {...common} rows={3} />
+    : <input {...common} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }} />;
+}
 
 // Panel „Publikuj / udostępnij” — włącza publiczny formularz i pokazuje link. Tylko dla osób
 // z prawem zmiany tablicy; przełącznik zmienia stan dopiero po udanym zapisie.
+// Włączenie formularza i jego tryb (anonimowo / e-mail) — tylko właściciel tablicy albo admin
+// (serwer odrzuca form_enabled/form_token od innych). Tytuł, opis i pola — każdy z prawem zmiany tablicy.
 function SharePanel({ data }) {
   const board = data.board || {};
+  const { subject } = usePermissions();
+  const owner = !!subject?.isAdmin || isBoardOwner(board, data.me);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const token = board.form_token;
   const enabled = !!board.form_enabled;
   const settings = board.form_settings || {};
   const link = token ? `${window.location.origin}/formularz/${token}` : '';
+  const columns = formColumns(data.columns);
+  const selected = new Set(selectedFieldIds(data.columns, settings));
 
   const save = async (patch) => {
     setBusy(true);
@@ -57,9 +79,12 @@ function SharePanel({ data }) {
       <div className={`${row} ${enabled ? 'border-b border-gray-100 dark:border-gray-800' : 'pb-1'}`}>
         <div className="min-w-0">
           <div className="font-semibold text-gray-800 dark:text-gray-100">{tr('Publiczny formularz')}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tr('Każdy z linkiem może wysłać zgłoszenie bez logowania.')}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            {tr('Każdy z linkiem może wysłać zgłoszenie bez logowania.')}
+            {!owner && <> {tr('Włącza go i ustawia właściciel tablicy.')}</>}
+          </div>
         </div>
-        <Toggle checked={enabled} onChange={toggleEnabled} disabled={busy} label={tr('Publiczny formularz')} />
+        <Toggle checked={enabled} onChange={toggleEnabled} disabled={busy || !owner} label={tr('Publiczny formularz')} />
       </div>
       {enabled && (
         <>
@@ -73,13 +98,44 @@ function SharePanel({ data }) {
           </div>
           <div className={`${row} border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200`}>
             <span>{tr('Anonimowe odpowiedzi')}</span>
-            <Toggle checked={!!settings.anonymous} onChange={(v) => setSetting('anonymous', v)} disabled={busy} label={tr('Anonimowe odpowiedzi')} />
+            <Toggle checked={!!settings.anonymous} onChange={(v) => setSetting('anonymous', v)} disabled={busy || !owner} label={tr('Anonimowe odpowiedzi')} />
           </div>
           <div className={`${row} ${settings.anonymous ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
             <span>{tr('Zbieraj e-mail wysyłającego')}</span>
-            <Toggle checked={!!settings.collectEmail && !settings.anonymous} onChange={(v) => setSetting('collectEmail', v)} disabled={busy || !!settings.anonymous} label={tr('Zbieraj e-mail wysyłającego')} />
+            <Toggle checked={!!settings.collectEmail && !settings.anonymous} onChange={(v) => setSetting('collectEmail', v)} disabled={busy || !owner || !!settings.anonymous} label={tr('Zbieraj e-mail wysyłającego')} />
           </div>
         </>
+      )}
+
+      {/* Treść formularza — tytuł i opis nad polami (podgląd i strona publiczna). */}
+      <div className={`${DIVIDER} mt-1 pt-4 space-y-3`}>
+        <div>
+          <label htmlFor="board-form-title" className={FORM_LABEL}>{tr('Tytuł formularza')}</label>
+          <CommitInput id="board-form-title" value={settings.title} placeholder={board.name} maxLength={200}
+            onCommit={(v) => setSetting('title', v)} disabled={busy} />
+        </div>
+        <div>
+          <label htmlFor="board-form-desc" className={FORM_LABEL}>{tr('Opis')}</label>
+          <CommitInput id="board-form-desc" multiline value={settings.description} maxLength={2000}
+            placeholder={tr('Kilka słów dla osoby wypełniającej')} onCommit={(v) => setSetting('description', v)} disabled={busy} />
+        </div>
+      </div>
+
+      {/* Pola formularza — które kolumny pokazać (nazwa jest zawsze). */}
+      {columns.length > 0 && (
+        <fieldset className={`${DIVIDER} mt-4 pt-4`}>
+          <legend className={`${SECTION} float-left w-full mb-1`}>{tr('Pola formularza')}</legend>
+          <p className="clear-both text-xs text-gray-500 dark:text-gray-400 mb-1">{tr('Nazwa jest zawsze wymagana. Wybierz, o co jeszcze zapytać.')}</p>
+          <ul>
+            {columns.map((c) => (
+              <li key={c.id} className="flex items-center justify-between gap-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+                <span className="truncate">{c.name}</span>
+                <Toggle checked={selected.has(String(c.id))} disabled={busy} label={tr('Pokaż pole „{name}”', { name: c.name })}
+                  onChange={() => save({ form_settings: { ...settings, fields: toggleFormField(data.columns, settings, c.id) } })} />
+              </li>
+            ))}
+          </ul>
+        </fieldset>
       )}
     </section>
   );
@@ -90,8 +146,8 @@ function SharePanel({ data }) {
 export default function FormView({ data, terms }) {
   const can = data.can || {};
   const firstGroup = [...data.groups].sort((a, b) => (a.display_order || 0) - (b.display_order || 0))[0];
-  const pick = Array.isArray(data.board?.form_settings?.fields) && data.board.form_settings.fields.length ? new Set(data.board.form_settings.fields) : null;
-  const fields = data.columns.filter(c => PUBLIC_TYPES.has(c.type) && (!pick || pick.has(c.id)));
+  const formSettings = data.board?.form_settings || {};
+  const fields = visibleFormColumns(data.columns, formSettings);
   const [name, setName] = useState('');
   const [cells, setCells] = useState({});
   const [busy, setBusy] = useState(false);
@@ -115,8 +171,10 @@ export default function FormView({ data, terms }) {
 
   const form = (
     <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white">{data.board?.form_settings?.title || data.board?.name}</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tr(terms?.kind === 'item' ? 'Wypełnij formularz — zostanie dodany nowy element do tablicy.' : 'Wypełnij formularz — powstanie nowe zadanie.')}</p>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white">{formSettings.title || data.board?.name}</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">
+        {formSettings.description || tr(terms?.kind === 'item' ? 'Wypełnij formularz — zostanie dodany nowy element do tablicy.' : 'Wypełnij formularz — powstanie nowe zadanie.')}
+      </p>
 
       <div className="mt-6 space-y-5">
         <div>

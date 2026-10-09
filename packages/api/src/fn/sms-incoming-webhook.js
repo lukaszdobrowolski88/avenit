@@ -12,6 +12,9 @@
 //   4. zapisuje do sms_inline_responses + ustawia recipient.status='replied'
 //
 // Bezpieczeństwo: query param ?secret=... vs integration_settings / SMSAPI_WEBHOOK_SECRET.
+// Bez skonfigurowanego sekretu endpoint ODRZUCA wszystko (401) — wcześniej przyjmował każde
+// żądanie, więc każdy mógł podrzucić „odpowiedzi SMS” (np. potwierdzenia RSVP) za dowolny numer.
+import crypto from 'node:crypto';
 import { getSmsConfig, normalizePhone } from '../lib/sms.js';
 
 export const name = 'sms-incoming-webhook';
@@ -20,15 +23,23 @@ export const method = 'ALL'; // SMSAPI wysyła zwykle GET-em z query, ale obsłu
 
 const REPLY_LOOKBACK_DAYS = 7;
 
+// Sekret wymagany i porównywany w stałym czasie.
+export function webhookAuthorized(expected, got) {
+  if (!expected || typeof expected !== 'string') return false;
+  if (typeof got !== 'string' || !got) return false;
+  const a = crypto.createHash('sha256').update(expected).digest();
+  const b = crypto.createHash('sha256').update(got).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 export default async function handler(req, reply) {
   try {
+    if (!req.db) return reply.code(404).send({ error: 'Nieznany tenant' });
     const config = await getSmsConfig(req.db);
 
-    if (config.webhookSecret) {
-      const got = req.query?.secret;
-      if (got !== config.webhookSecret) {
-        return reply.code(401).send({ error: 'unauthorized' });
-      }
+    if (!webhookAuthorized(config.webhookSecret, req.query?.secret)) {
+      if (!config.webhookSecret) req.log.warn('sms-incoming-webhook: brak SMSAPI_WEBHOOK_SECRET / smsapi_webhook_secret — odrzucam');
+      return reply.code(401).send({ error: 'unauthorized' });
     }
 
     // SMSAPI wysyła zwykle GET-em z query, ale obsługujemy też POST form-data / JSON.

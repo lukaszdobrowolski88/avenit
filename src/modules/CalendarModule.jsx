@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
   Calendar as CalIcon, ChevronLeft, ChevronRight,
@@ -29,7 +29,10 @@ import * as LucideIcons from 'lucide-react';
 import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
 import {
   boardItemToTask, loadCalendarTaskBoard, loadMyAssignedItems, saveCalendarTask, deleteCalendarTask, isAccessError,
+  resolveTaskItem,
 } from './Boards/lib/calendarTasks';
+import { taskItemLink } from '@avenit/shared/src/lib/taskLinks.js';
+import { isDoneLabel } from '@avenit/shared/src/lib/boardStatus.js';
 
 // --- POMOCNICZE (czyste funkcje — testy w CalendarModule.test.js) ---
 
@@ -138,14 +141,21 @@ export function buildCalendarEntries({ programs = [], events = [], tasks = [], b
       title: t.title,
       date: when.date,
       status: t.status,
+      done: !!t.done,
       // „Surowa” data i godzina lokalna do edycji (ModalAddTask).
-      raw: { ...t, due_date: when.ymd, due_time: when.time, end_time: hhmm(t.end_time) },
+      raw: calendarTaskRaw(t, when),
     });
   });
 
   (boardItems || []).forEach((it) => {
     const date = localDateTime(it?.date);
     if (!date) return;
+    // Link z jednej reguły (taskLinks.js): zadanie służby → moduł ?item=, Kalendarz → /wydarzenia?item=,
+    // reszta → Projekty. Ścieżka modułu z serwera (app_modules.path), gdy jest.
+    const paths = it.module_key && it.module_path ? { [it.module_key]: it.module_path } : {};
+    const link = it.board_id != null
+      ? taskItemLink({ id: it.board_id, module_key: it.module_key, source_kind: it.source_kind }, it.id, paths)
+      : it.link;
     all.push({
       id: `bi_${it.id}`,
       type: 'board_item',
@@ -154,11 +164,17 @@ export function buildCalendarEntries({ programs = [], events = [], tasks = [], b
       title: it.name || tr('Zadanie'),
       date,
       status: it.status?.title || '',
-      raw: { id: it.id, title: it.name || '', description: it.board_name || '', due_time: '', end_time: '', link: it.link, board_name: it.board_name },
+      done: !!it.done || isDoneLabel(it.status),
+      raw: { id: it.id, title: it.name || '', description: it.board_name || '', due_time: '', end_time: '', link, board_name: it.board_name },
     });
   });
 
   return all;
+}
+
+// Zadanie kalendarza → dane okna zadania (lokalna data i godzina, bez przesunięcia strefy).
+export function calendarTaskRaw(t, when = readTaskWhen(t)) {
+  return { ...t, due_date: when?.ymd || t?.due_date || null, due_time: when?.time || '', end_time: hhmm(t?.end_time) };
 }
 
 // --- KONFIGURACJA ZESPOŁÓW I DANYCH ---
@@ -435,7 +451,8 @@ const EventBadge = ({ event, onClick }) => {
     >
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 shrink-0" aria-hidden="true" />
       {start && <span className="opacity-70 tabular-nums shrink-0">{start}</span>}
-      <span className="truncate font-medium">{event.title}</span>
+      <span className={`truncate font-medium ${event.done ? 'line-through opacity-60' : ''}`}>{event.title}</span>
+      {event.done && <span className="sr-only">{tr('Gotowe')}</span>}
     </button>
   );
 };
@@ -541,7 +558,51 @@ export default function CalendarModule({ embedded = false } = {}) {
     // Zadania tablicy kalendarza są już wyżej (edytowalne) — bez dubli z „przypisanych mi”.
     const boardItems = (assigned || []).filter((it) => !taskBoard || String(it.board_id) !== String(taskBoard.board.id));
     setEvents(buildCalendarEntries({ programs: progRes.data || [], events: evRes.data || [], tasks, boardItems }));
+    setBoardLoads((n) => n + 1);
   };
+
+  // ?item=<id> (powiadomienie, Pulpit, wyszukiwarka, wydarzenie): zadanie Kalendarza → jego okno
+  // (i miesiąc z terminem); zadanie z innej tablicy → jego miejsce wg taskItemLink (moduł/Projekty).
+  // Parametr znika z adresu po obsłużeniu — powrót do Kalendarza nie otwiera zadania ponownie.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const itemParam = searchParams.get('item');
+  const [boardLoads, setBoardLoads] = useState(0);
+  const handledItemRef = useRef(null);
+  // Obsługa linku nie może przepaść, gdy w trakcie dojdzie kolejne wczytanie kalendarza (zmiana
+  // zależności) — przerywamy tylko po odmontowaniu.
+  const mountedRef = useRef(true);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    if (!itemParam || !boardLoads || handledItemRef.current === itemParam) return;
+    handledItemRef.current = itemParam;
+    const clearParam = () => setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('item');
+      return next;
+    }, { replace: true });
+    (async () => {
+      const board = taskBoardRef.current;
+      const local = board?.items.find((it) => String(it.id) === String(itemParam));
+      if (local) {
+        const task = boardItemToTask(local, board.columns);
+        const when = readTaskWhen(task);
+        if (when?.date) setCurrentDate(new Date(when.date.getFullYear(), when.date.getMonth(), 1));
+        setModals((m) => ({ ...m, addTask: calendarTaskRaw(task, when) }));
+        clearParam();
+        return;
+      }
+      const found = await resolveTaskItem(itemParam);
+      if (!mountedRef.current) return;
+      if (found?.board && String(found.board.id) !== String(board?.board?.id ?? '')) {
+        const paths = Object.fromEntries((allModules || []).filter((m) => m?.key && m.path).map((m) => [m.key, m.path]));
+        const link = taskItemLink(found.board, itemParam, paths);
+        // Inna tablica „Zadania” Kalendarza prowadziłaby tu z powrotem — wtedy tylko komunikat.
+        if (!/^\/(wydarzenia|calendar)\?/.test(link)) { navigate(link, { replace: true }); return; }
+      }
+      toast.info(tr('Nie znaleziono tego zadania albo nie masz do niego dostępu.'));
+      clearParam();
+    })();
+  }, [itemParam, boardLoads]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Osoby do wyboru w oknie zadania (jak picker „Osoby” w tablicy: aktywne konta) + ja (dziennik).
   useEffect(() => {

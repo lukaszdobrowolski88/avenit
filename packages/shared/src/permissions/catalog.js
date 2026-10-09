@@ -510,6 +510,15 @@ export function crudCapability(resource, op) {
   return `res:${resource}:${map[op] || op}`;
 }
 
+// Wszystkie capability CRUD wymagane dla op Data API. Upsert (ON CONFLICT DO UPDATE) zmienia
+// ISTNIEJĄCE wiersze, więc wymaga create ORAZ update (audyt 2026-10: samo create pozwalało
+// nadpisać cudzy wiersz po kluczu konfliktu). ignoreDuplicates (ON CONFLICT DO NOTHING) niczego
+// nie nadpisuje — wystarcza create.
+export function crudCapabilities(resource, op, { ignoreDuplicates = false } = {}) {
+  if (op === 'upsert' && !ignoreDuplicates) return [`res:${resource}:create`, `res:${resource}:update`];
+  return [crudCapability(resource, op)];
+}
+
 // Mapowanie endpointów fn -> capability akcji (do egzekwowania /api/fn/*).
 export const FN_CAPABILITY = {
   'finance-report-email': 'module:finance',
@@ -526,7 +535,20 @@ export const FN_CAPABILITY = {
   'send-push': 'action:push_campaigns:send',
   'push-campaign-dispatch': 'action:push_campaigns:send',
   'ical': 'action:calendar:export_ical',
+  // Automatyzacje: ręczny zapis do ścieżki / uruchomienie należnych kroków (maile, SMS, push).
+  'automation-run': 'module:automation',
+  // Wysyłka zaproszeń RSVP (push / e-mail / SMS) — obsługa RSVP, jak zapis rsvp_campaigns.
+  'rsvp-send': 'module:rsvp',
+  // Odbiór potwierdzeń dostarczenia (worker co 5 min woła runForTenant bez HTTP) — przez HTTP tylko
+  // osoba wysyłająca kampanie (wcześniej każdy zalogowany mógł uruchomić i czyścić tokeny push).
+  'push-campaign-receipts': 'action:push_campaigns:send',
+  'sms-campaign-receipts': 'action:sms_campaigns:send',
+  // Szyfrowanie haseł skrzynek — tylko przy konfiguracji Poczty.
+  'encrypt-credentials': 'module:mail',
   // Komunikator+ — funkcje czatu dla osób z dostępem do Komunikatora.
   'link-preview': 'module:komunikator',
   'translate-message': 'module:komunikator',
+  // Asystent AI (koszt + dane w promptach) — domyślnie tylko administratorzy i role z '*';
+  // dodatkowo serwerowy przełącznik AI_ENABLED (fn/ai-assist.js).
+  'ai-assist': 'action:ai:use',
 };

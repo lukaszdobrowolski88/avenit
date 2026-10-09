@@ -2,6 +2,7 @@
 // ikonę (nazwa lucide), domyślne ustawienia, domyślną wartość komórki oraz
 // możliwości (czy można po nim grupować w Kanbanie, jakie podsumowania wspiera).
 import { DEFAULT_STATUS_LABELS, DEFAULT_PRIORITY_LABELS } from './constants';
+import { isDoneLabel } from '@avenit/shared/src/lib/boardStatus.js';
 import { tr, appLocale } from '../../../i18n';
 
 // Definicje typów. `icon` = nazwa ikony lucide-react (rozwiązywana w UI).
@@ -247,6 +248,41 @@ export function isCellEmpty(type, value) {
 export function findLabel(column, labelId) {
   const labels = column?.settings?.labels || [];
   return labels.find(l => l.id === labelId) || null;
+}
+
+// ── Zakończenie i termin ─────────────────────────────────────────────
+// Dzisiejsza data jako 'YYYY-MM-DD' w czasie LOKALNYM (toISOString dawał dzień UTC — po północy
+// czasu polskiego zadania z „wczoraj” jeszcze nie były po terminie).
+export function localDateKey(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// Zadanie zakończone = w którejś kolumnie Status ma etykietę „zakończenia” (flaga done albo nazwa).
+export function isItemDone(item, columns = []) {
+  return columns.some((c) => c.type === 'status' && isDoneLabel(findLabel(c, item?.cells?.[c.id])));
+}
+
+// Termin z wartości kolumny Data ('YYYY-MM-DD…') albo Oś czasu ({start,end} → koniec).
+export function dueDateOf(value) {
+  if (!value) return null;
+  const raw = typeof value === 'object' ? (value.end || value.start) : value;
+  const d = String(raw || '').slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+}
+
+// Po terminie: termin przed dzisiejszym dniem (lokalnie) i zadanie niezakończone.
+export function isOverdue(value, item, columns = [], today = localDateKey()) {
+  const due = dueDateOf(value);
+  return !!due && due < today && !isItemDone(item, columns);
+}
+
+// Plik-obraz (miniatura): typ MIME z wgrania albo rozszerzenie nazwy/adresu.
+const IMG_EXT = /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i;
+export function isImageFile(f) {
+  if (!f) return false;
+  if (/^image\//i.test(String(f.type || ''))) return true;
+  return IMG_EXT.test(String(f.name || '')) || IMG_EXT.test(String(f.url || '').split(/[?#]/)[0]);
 }
 
 // Rozwiąż wybrane opcje dropdownu na obiekty {id,title,color}

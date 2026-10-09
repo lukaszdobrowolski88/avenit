@@ -1,12 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Plus, Pencil, Check } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Check, BarChart3, Type } from 'lucide-react';
 import { useBoardsBundle } from '../hooks/useDashboards';
 import { useCan } from '../../../components/Can';
+import EmptyState from '../../../components/EmptyState';
+import ActionMenu from '../../../components/ActionMenu';
+import Spinner from '../../../components/Spinner';
+import '../../../components/toolbar.css';
 import { WidgetCard } from './Widgets';
 import WidgetConfigModal from './WidgetConfigModal';
 import { tr } from '../../../i18n';
 
-export default function DashboardView({ dashboard, allBoards, onUpdate, onBack }) {
+export default function DashboardView({ dashboard, allBoards, onUpdate, onRename, onBack }) {
   // RBAC: edycja układu dashboardu = res:board_dashboards:update (członek ma tylko odczyt).
   const canEdit = useCan('res:board_dashboards:update');
   const [editing, setEditing] = useState(false);
@@ -25,27 +29,36 @@ export default function DashboardView({ dashboard, allBoards, onUpdate, onBack }
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
-        <button onClick={onBack} className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ArrowLeft size={20} /></button>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex-1">{dashboard.name}</h1>
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <button type="button" onClick={onBack} className="icon-btn" aria-label={tr('Wróć do listy dashboardów')} title={tr('Wróć')}>
+          <ArrowLeft size={20} aria-hidden="true" />
+        </button>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex-1 min-w-0 truncate">{dashboard.name}</h2>
         {editing && allBoards.length > 0 && (
-          <button onClick={() => setConfigWidget({})} className="flex items-center gap-1.5 bg-accent-primary text-white text-sm px-3 py-1.5 rounded-lg"><Plus size={15} /> {tr('Widżet')}</button>
+          <button type="button" className="tool-btn" onClick={() => setConfigWidget({})}><Plus size={15} aria-hidden="true" />{tr('Widżet')}</button>
         )}
         {canEdit && (
-          <button onClick={() => setEditing(e => !e)}
-            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border ${editing ? 'border-accent-primary text-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-            {editing ? <><Check size={15} /> {tr('Gotowe')}</> : <><Pencil size={15} /> {tr('Edytuj')}</>}
+          <button type="button" className={`tool-btn ${editing ? 'tool-btn--primary' : ''}`} onClick={() => setEditing(e => !e)} aria-pressed={editing}>
+            {editing ? <><Check size={15} aria-hidden="true" />{tr('Gotowe')}</> : <><Pencil size={15} aria-hidden="true" />{tr('Edytuj')}</>}
           </button>
+        )}
+        {canEdit && onRename && (
+          <ActionMenu variant="tool" label={tr('Więcej działań')} items={[
+            { key: 'rename', icon: Type, label: tr('Zmień nazwę'), onClick: () => onRename(dashboard) },
+          ]} />
         )}
       </div>
 
       {layout.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">{tr('Pusty dashboard. Dodaj pierwszy widżet z danych tablic.')}</p>
-          {canEdit && allBoards.length > 0
-            ? <button onClick={() => { setEditing(true); setConfigWidget({}); }} className="inline-flex items-center gap-2 bg-accent-primary text-white px-4 py-2 rounded-xl"><Plus size={18} /> {tr('Dodaj widżet')}</button>
-            : <p className="text-sm text-gray-400">{tr('Najpierw utwórz tablicę z danymi.')}</p>}
-        </div>
+        <EmptyState icon={BarChart3} title={tr('Pusty dashboard. Dodaj pierwszy widżet z danych tablic.')}
+          subtitle={canEdit && !allBoards.length ? tr('Najpierw utwórz tablicę z danymi.') : undefined}
+          action={canEdit && allBoards.length > 0 ? (
+            <button type="button" className="tool-btn tool-btn--primary" onClick={() => { setEditing(true); setConfigWidget({}); }}>
+              <Plus size={15} aria-hidden="true" />{tr('Dodaj widżet')}
+            </button>
+          ) : undefined} />
+      ) : bundle.loading && !Object.keys(bundle.columns || {}).length ? (
+        <Spinner center />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {layout.map(w => (

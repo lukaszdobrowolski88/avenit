@@ -9,14 +9,16 @@
 // prawa ODCZYTU tej tabeli (jak /api/db) — wcześniej każdy zalogowany mógł zasubskrybować
 // dowolną tabelę (także '*') i dostawać cudze dane. Wiersze tabel osobistych
 // (ownership.js) trafiają tylko do właściciela.
+// authorize(table) może zwrócić { filter } — async (op, rows) => rows widoczne dla tego klienta
+// (zakres służby, kampus, widoczność wydarzeń — realtime/scope.js); filtr działa na każdą zmianę.
 
 import { realtimeVisible } from '../dataapi/ownership.js';
 
-const clients = new Set(); // { socket, tenant, userId, email, isAdmin, authorize, tables:Set }
+const clients = new Set(); // { socket, tenant, userId, email, isAdmin, authorize, tables:Set, filters:Map }
 
-// ctx: { tenant, userId, email, isAdmin, authorize(table) => Promise<boolean> }
+// ctx: { tenant, userId, email, isAdmin, authorize(table) => Promise<boolean | { filter }> }
 export function registerClient(socket, ctx) {
-  const client = { socket, ...ctx, tables: new Set() };
+  const client = { socket, ...ctx, tables: new Set(), filters: new Map() };
   clients.add(client);
 
   socket.on('message', async (raw) => {
@@ -30,10 +32,16 @@ export function registerClient(socket, ctx) {
       if (msg.type === 'subscribe' && msg.table) {
         const table = String(msg.table);
         const ok = table === '*' ? !!client.isAdmin : await client.authorize(table);
-        if (ok) client.tables.add(table);
-        else socket.send(JSON.stringify({ type: 'error', table, message: 'Brak dostępu do tej tabeli' }));
+        if (ok) {
+          client.tables.add(table);
+          if (ok && typeof ok === 'object' && typeof ok.filter === 'function') client.filters.set(table, ok.filter);
+          else client.filters.delete(table);
+        } else socket.send(JSON.stringify({ type: 'error', table, message: 'Brak dostępu do tej tabeli' }));
       }
-      if (msg.type === 'unsubscribe' && msg.table) client.tables.delete(String(msg.table));
+      if (msg.type === 'unsubscribe' && msg.table) {
+        client.tables.delete(String(msg.table));
+        client.filters.delete(String(msg.table));
+      }
       if (msg.type === 'ping') socket.send(JSON.stringify({ type: 'pong' }));
     } catch {
       // błąd autoryzacji/wysyłki — subskrypcja po prostu nie powstaje
@@ -59,28 +67,42 @@ export function emitChange(tenantSlug, table, op, rows, opts = {}) {
     if (client.tenant !== tenantSlug) continue;
     if (!client.tables.has(table) && !client.tables.has('*')) continue;
     if (audience && !audience.has(String(client.email ?? '').toLowerCase())) continue;
-    for (const raw of list) {
-      // Tabela osobista: tylko wiersze tego klienta (null = tabela zwykła, bez filtra).
-      if (realtimeVisible(table, raw, client) === false) continue;
-      let row = raw;
-      if (redact && raw) {
-        try { row = redact(raw, client); } catch { row = null; }
-        if (!row) continue;
-      }
-      try {
-        client.socket.send(
-          JSON.stringify({
-            type: 'postgres_changes',
-            table,
-            eventType,
-            new: eventType === 'DELETE' ? null : row,
-            old: eventType === 'DELETE' ? row : null,
-          })
-        );
-      } catch {
-        clients.delete(client);
-        break;
-      }
+    // Filtr wierszy klienta (zakres służby / kampus / widoczność wydarzeń) — asynchronicznie;
+    // błąd filtra = nic nie wysyłamy (fail-closed). Subskrypcja '*' (admin) — bez filtra.
+    const filter = client.tables.has(table) ? client.filters?.get(table) : null;
+    if (filter) {
+      Promise.resolve()
+        .then(() => filter(op, list.filter(Boolean)))
+        .then((visible) => sendRows(client, table, eventType, visible || [], redact))
+        .catch(() => {});
+      continue;
+    }
+    sendRows(client, table, eventType, list, redact);
+  }
+}
+
+function sendRows(client, table, eventType, list, redact) {
+  for (const raw of list) {
+    // Tabela osobista: tylko wiersze tego klienta (null = tabela zwykła, bez filtra).
+    if (realtimeVisible(table, raw, client) === false) continue;
+    let row = raw;
+    if (redact && raw) {
+      try { row = redact(raw, client); } catch { row = null; }
+      if (!row) continue;
+    }
+    try {
+      client.socket.send(
+        JSON.stringify({
+          type: 'postgres_changes',
+          table,
+          eventType,
+          new: eventType === 'DELETE' ? null : row,
+          old: eventType === 'DELETE' ? row : null,
+        })
+      );
+    } catch {
+      clients.delete(client);
+      break;
     }
   }
 }

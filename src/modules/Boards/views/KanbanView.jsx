@@ -42,7 +42,7 @@ function KanbanColumn({ col, columns, people, onOpen, onAdd, addLabel, updatesCo
       <div className="flex items-center gap-2 mb-2 px-1">
         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: col.color }} aria-hidden="true" />
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate">{col.title}</h3>
-        <span className="text-xs text-gray-400 tabular-nums">{col.items.length}</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{col.items.length}</span>
       </div>
       <div ref={setNodeRef}
         className={`flex-1 rounded-xl p-2 min-h-[120px] transition-colors ${isOver ? 'bg-accent-primary/10 ring-2 ring-accent-primary/30' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
@@ -178,8 +178,8 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
       </div>
       {!boardEmpty && filteredEmpty ? (
         <EmptyState compact icon={SearchX} title={tr('Brak zadań pasujących do wyszukiwania lub filtrów')}
-          action={(config.filters?.length || 0) > 0
-            ? <Button variant="secondary" size="sm" onClick={() => onUpdateConfig({ filters: [] })}>{tr('Wyczyść filtry')}</Button>
+          action={(config.filters?.length || 0) > 0 || config.mine
+            ? <Button variant="secondary" size="sm" onClick={() => onUpdateConfig({ filters: [], mine: false })}>{tr('Wyczyść filtry')}</Button>
             : undefined} />
       ) : boardEmpty ? (
         <EmptyState compact icon={Trello} title={tr(terms?.kind !== 'item' ? 'Brak zadań' : 'Brak elementów')}

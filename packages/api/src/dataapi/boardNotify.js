@@ -1,25 +1,34 @@
-// Projekty / zakładki „Zadania”: powiadomienie o PRZYPISANIU do elementu tablicy.
+// Projekty / zakładki „Zadania”: powiadomienia o elementach tablic.
 //
-// Klient zapisuje komórki elementu w całości (board_items.cells = { columnId: wartość }), a kolumna
-// typu 'people' trzyma listę osób [{ email, name, avatar_url }]. Po zapisie przez Data API
-// porównujemy osoby przed i po: każda NOWO dodana osoba (nie autor zmiany, nie przypisana wcześniej
-// w żadnej kolumnie „Osoby” tego elementu) dostaje wpis w `notifications` (realtime) + push.
-//
-// Dwa kroki, wołane z routes.js:
-//   1. prepareBoardAssignNotify(db, q) — PRZED zapisem: stan komórek (tylko gdy zapis dotyczy
-//      board_items.cells i w nowych komórkach w ogóle są osoby; odczyt po kluczu, w tym samym
-//      zakresie co zapis — filtry + zakres prywatnych tablic).
-//   2. notifyBoardAssignees({...}) — PO zapisie, fire-and-forget: różnica, adresaci, wpisy, push.
+// 1) PRZYPISANIE do elementu. Klient zapisuje komórki elementu (board_items.cells = { columnId: wartość }),
+//    a kolumna typu 'people' trzyma listę osób [{ email, name, avatar_url }]. Po zapisie (Data API
+//    albo fn board-item-patch) porównujemy osoby przed i po: każda NOWO dodana osoba (nie autor zmiany,
+//    nie przypisana wcześniej w żadnej kolumnie „Osoby” tego elementu) dostaje wpis w `notifications`
+//    (realtime) + push.
+//      prepareBoardAssignNotify(db, q) — PRZED zapisem przez /api/db: stan komórek (tylko gdy zapis
+//        dotyczy board_items.cells i w nowych komórkach w ogóle są osoby; odczyt w zakresie zapisu).
+//      notifyBoardAssignees({...}) — PO zapisie, fire-and-forget: różnica, adresaci, wpisy, push.
+// 2) Wspólne klocki dla innych powiadomień o zadaniach (wzmianki w komentarzach — fn board-comment,
+//    automatyzacje — board-automations-run, przypisanie zadania osobistego — push-hooks):
+//      boardViewers(...)      — kto z podanych osób może dostać powiadomienie o elemencie tej tablicy
+//                               (aktywne konto, nie autor, widzi tablicę i ma prawo czytać jej elementy),
+//      deliverNotifications() — wpisy w skrzynce + realtime + push, z pominięciem duplikatów (ta sama
+//                               osoba, rodzaj i link w ostatnich minutach — np. zapis powtórzony przez
+//                               klienta albo ten sam zapis przez /api/db i fn board-item-patch).
 // Żaden błąd nie może wywrócić zapisu użytkownika — wszystko w try/catch, błędy tylko w logu.
+// Linki do zadań: jedna reguła taskItemLink (packages/shared/src/lib/taskLinks.js).
 //
 // Teksty po polsku jak pozostałe powiadomienia serwera (push-hooks.js, board-automations-run.js).
 import { buildQuery } from './querybuilder.js';
 import { canAccess } from './registry.js';
 import { emitChange } from '../realtime/hub.js';
 import { sendPushCore } from '../fn/send-push.js';
+import { taskItemLink, taskBoardModuleKey } from '@avenit/shared/src/lib/taskLinks.js';
+import { boardModuleKey } from '@avenit/shared/src/permissions/moduleScope.js';
 
 const MAX_ROWS = 200;        // górny limit elementów analizowanych w jednym zapisie
 const MAX_RECIPIENTS = 50;   // górny limit powiadomień z jednego zapisu (ochrona przed zalewem)
+export const DEDUPE_MINUTES = 10; // to samo powiadomienie (osoba + rodzaj + link) najwyżej raz w tym oknie
 
 const lower = (v) => String(v ?? '').trim().toLowerCase();
 
@@ -95,53 +104,64 @@ export function boardVisibleTo(board, email) {
   return (Array.isArray(board.editors) ? board.editors : []).some((x) => lower(x) === e);
 }
 
-// Tablica zakładki „Zadania” modułu (ModuleBoard) ma source_kind '<coś>_tasks':
-//   media_tasks → media, home_group_tasks → homegroups, mlodziezowka_tasks → mlodziezowka,
-//   custom_<key>_tasks → <key>. Zwraca klucz modułu albo null (zwykła tablica Projektów).
-const TASK_SOURCE_MODULES = { media_tasks: 'media', home_group_tasks: 'homegroups', mlodziezowka_tasks: 'mlodziezowka' };
-export function taskBoardModuleKey(board) {
-  const sk = String(board?.source_kind || '');
-  if (!sk.endsWith('_tasks')) return null;
-  if (board.module_key) return String(board.module_key);
-  if (TASK_SOURCE_MODULES[sk]) return TASK_SOURCE_MODULES[sk];
-  const m = sk.match(/^custom_(.+)_tasks$/);
-  return m ? m[1] : null;
-}
-
-// Moduł, do którego należy tablica (null = Projekty): module_key, a tablica z importu — po source_kind.
-export const boardModuleKeyOf = (board) => (board?.module_key ? String(board.module_key) : taskBoardModuleKey(board));
-
 // Czy odbiorca może czytać elementy tej tablicy — wynik canAccess(board_items, select) dla niego:
-// prawo globalne (Projekty) albo „w zakresie służby” obejmujące moduł tablicy. Brak wyniku = nie.
+// prawo globalne (Projekty) albo „w zakresie służby” obejmujące moduł tablicy (module_key, a tablica
+// z importu — po source_kind, także Kalendarz: 'tasks'). Brak wyniku = nie.
 export function accessCoversBoard(access, board) {
   if (!access?.ok) return false;
   if (!access.moduleScope) return true;
-  const key = boardModuleKeyOf(board);
-  return !!key && (access.moduleScope.modules || []).map(String).includes(key);
+  const key = boardModuleKey(board);
+  return !!key && (access.moduleScope.modules || []).map(String).includes(String(key));
 }
 
-// Zapas, gdy app_modules nie ma ścieżki (zgodne z menu bocznym).
-const FALLBACK_MODULE_PATHS = {
-  media: '/media', homegroups: '/home-groups', mlodziezowka: '/mlodziezowka',
-  atmosfera: '/atmosfera', worship: '/worship', kids: '/kids',
-};
-export function modulePath(key, paths = {}) {
-  const p = paths[key];
-  if (typeof p === 'string' && p.startsWith('/')) return p;
-  return FALLBACK_MODULE_PATHS[key] || `/module/${encodeURIComponent(key)}`;
+// Ścieżki modułów z app_modules (dla linków do zakładki „Zadania”) — tylko potrzebne klucze.
+export async function modulePathsFor(db, boards) {
+  const keys = [...new Set((boards || []).map((b) => taskBoardModuleKey(b)).filter(Boolean))];
+  if (!keys.length) return {};
+  const { rows } = await db.query(`SELECT key, path FROM app_modules WHERE key = ANY($1::text[])`, [keys]).catch(() => ({ rows: [] }));
+  return Object.fromEntries(rows.map((m) => [m.key, m.path]));
 }
 
-// Link do elementu: zakładka „Zadania” modułu otwiera element po ?item= (ModuleBoard), każda inna
-// tablica (Projekty, tablice osadzone jako zakładka „Tablica”) — /projekty?board=…&item=….
-export function itemLink(board, itemId, paths = {}) {
-  const key = taskBoardModuleKey(board);
-  if (key) return `${modulePath(key, paths)}?item=${encodeURIComponent(String(itemId))}`;
-  return `/projekty?board=${encodeURIComponent(String(board.id))}&item=${encodeURIComponent(String(itemId))}`;
+// Nazwa wyświetlana autora (pełne imię albo e-mail).
+export async function displayNameOf(db, email) {
+  if (!email) return 'Ktoś';
+  const { rows } = await db.query(
+    `SELECT COALESCE(NULLIF(full_name, ''), NULLIF(name, ''), email) AS display
+       FROM app_users WHERE lower(email) = lower($1) LIMIT 1`, [email],
+  ).catch(() => ({ rows: [] }));
+  return rows[0]?.display || email;
+}
+
+// Kto z par { email, board } może dostać powiadomienie o elemencie tablicy: istniejące, aktywne konto,
+// nie autor (bez względu na wielkość liter), widzi tablicę (prywatna — właściciel/edytorzy) i ma prawo
+// czytać jej elementy (Projekty: globalne; tablica służby: także „w zakresie służby”) — ta sama decyzja
+// co /api/db (registry.canAccess). Błąd sprawdzenia = bez powiadomienia.
+// → [{ ...para, account: { id, email, role } }] (email konta w kanonicznej pisowni).
+export async function boardViewers({ db, tenant, pairs, actorEmail = '', deps = {} }) {
+  const access = deps.canAccess || canAccess;
+  const actor = lower(actorEmail);
+  const wanted = (pairs || []).map((p) => ({ ...p, email: lower(p.email) })).filter((p) => p.email && p.email !== actor && p.board);
+  if (!wanted.length) return [];
+  const emails = [...new Set(wanted.map((p) => p.email))];
+  const { rows: users } = await db.query(
+    `SELECT id, email, role, is_super_admin FROM app_users
+      WHERE lower(email) = ANY($1::text[]) AND COALESCE(is_active, true)`, [emails],
+  );
+  const accounts = new Map(users.map((u) => [lower(u.email), u]));
+  const accessOf = new Map();
+  await Promise.all([...accounts.entries()].map(async ([e, u]) => {
+    try {
+      accessOf.set(e, await access({ pool: db, dbName: tenant?.db_name, table: 'board_items', op: 'select', user: u, allowModuleScope: true }));
+    } catch { accessOf.set(e, null); }
+  }));
+  return wanted
+    .filter((p) => accounts.has(p.email) && boardVisibleTo(p.board, p.email) && accessCoversBoard(accessOf.get(p.email), p.board))
+    .map((p) => ({ ...p, account: accounts.get(p.email) }));
 }
 
 const asRows = (v) => (Array.isArray(v) ? v : v ? [v] : []).filter((r) => r && typeof r === 'object');
 
-// ── Krok 1: przed zapisem ──────────────────────────────────────────────────
+// ── Przypisanie, krok 1: przed zapisem przez /api/db ───────────────────────
 // Zwraca null (nic do zrobienia) albo { op, values, before: Map(id → {id, board_id, name, cells}) }.
 export async function prepareBoardAssignNotify(db, q) {
   try {
@@ -207,13 +227,14 @@ export function changedItems(prep, data, rowCount) {
   return out;
 }
 
+// ── Doręczenie ─────────────────────────────────────────────────────────────
 async function insertInbox(db, rows) {
   if (!rows.length) return [];
   const build = (withData) => {
     const params = [];
     const values = rows.map((r) => {
-      const base = [r.user_email, 'task', r.title, r.body, r.link];
-      if (withData) base.push(JSON.stringify(r.data));
+      const base = [r.user_email, r.type || 'task', r.title, r.body, r.link];
+      if (withData) base.push(JSON.stringify(r.data || {}));
       const ph = base.map((v) => { params.push(v); return `$${params.length}`; });
       if (withData) ph[ph.length - 1] += '::jsonb';
       return `(${ph.join(', ')})`;
@@ -231,12 +252,69 @@ async function insertInbox(db, rows) {
   }
 }
 
-// ── Krok 2: po zapisie ─────────────────────────────────────────────────────
-// deps (testy): { sendPush, emit, canAccess }.
-export async function notifyBoardAssignees({ db, tenant, prep, data, rowCount, actor, log, deps = {} }) {
+const dedupeKey = (e) => `${lower(e.user_email)}\u0000${e.type || 'task'}\u0000${e.link || ''}`;
+
+// Wpisy, które ta sama osoba dostała niedawno (ten sam rodzaj i link) — do pominięcia.
+async function recentlyNotified(db, entries, minutes) {
+  if (!minutes || !entries.length) return new Set();
+  try {
+    const { rows } = await db.query(
+      `SELECT lower(user_email) AS user_email, type, link FROM notifications
+        WHERE lower(user_email) = ANY($1::text[]) AND link = ANY($2::text[])
+          AND created_at > now() - ($3::int * interval '1 minute')`,
+      [[...new Set(entries.map((e) => lower(e.user_email)))], [...new Set(entries.map((e) => e.link || ''))], minutes],
+    );
+    return new Set(rows.map(dedupeKey));
+  } catch {
+    return new Set(); // brak tabeli/kolumny — bez pomijania
+  }
+}
+
+// entries: [{ user_email, type ('task'|'mention'…), title, body, link, data, push? }]
+//   push — dodatkowe pola pusha (data.type itp.); domyślnie { type: entry.type, ...entry.data }.
+// Wpisy w skrzynce (dzwonek) + realtime do właścicieli wpisów; potem push do każdego.
+// Błąd skrzynki nie blokuje pushy. → { sent, entries } (entries = faktycznie doręczone).
+export async function deliverNotifications({ db, tenant, entries, deps = {}, log, dedupeMinutes = DEDUPE_MINUTES }) {
   const sendPush = deps.sendPush || sendPushCore;
   const emit = deps.emit || emitChange;
-  const access = deps.canAccess || canAccess;
+  const logErr = (err, msg) => { try { (log?.error ?? console.error).call(log ?? console, { err }, msg); } catch { /* log */ } };
+  const seen = new Set();
+  let list = (entries || []).filter((e) => {
+    if (!e?.user_email || !e.title) return false;
+    const k = dedupeKey(e);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  const recent = await recentlyNotified(db, list, dedupeMinutes);
+  list = list.filter((e) => !recent.has(dedupeKey(e)));
+  if (!list.length) return { sent: 0, entries: [] };
+
+  try {
+    const inserted = await insertInbox(db, list);
+    if (inserted.length && tenant?.slug) emit(tenant.slug, 'notifications', 'insert', inserted);
+  } catch (err) {
+    logErr(err, '[board-notify] wpis powiadomienia nie powiódł się');
+  }
+
+  let sent = 0;
+  for (const e of list) {
+    try {
+      await sendPush(db, {
+        user_email: e.user_email, title: e.title, body: e.body || e.title, link: e.link,
+        data: e.push || { type: e.type || 'task', ...(e.data || {}) },
+      });
+      sent++;
+    } catch (err) {
+      logErr(err, '[board-notify] push nie powiódł się');
+    }
+  }
+  return { sent, entries: list };
+}
+
+// ── Przypisanie, krok 2: po zapisie ────────────────────────────────────────
+// deps (testy): { sendPush, emit, canAccess }.
+export async function notifyBoardAssignees({ db, tenant, prep, data, rowCount, actor, log, deps = {} }) {
   const logErr = (err, msg) => { try { (log?.error ?? console.error).call(log ?? console, { err }, msg); } catch { /* log */ } };
   try {
     if (!prep) return { sent: 0 };
@@ -245,9 +323,9 @@ export async function notifyBoardAssignees({ db, tenant, prep, data, rowCount, a
 
     const boardIds = [...new Set(items.map((it) => String(it.board_id)))];
     const [{ rows: cols }, { rows: boards }] = await Promise.all([
-      db.query(`SELECT id, board_id FROM board_columns WHERE type = 'people' AND board_id::text = ANY($1::text[])`, [boardIds]),
+      db.query(`SELECT id, board_id FROM board_columns WHERE type = 'people' AND board_id = ANY($1::uuid[])`, [boardIds]),
       db.query(`SELECT id, name, module_key, source_kind, visibility, owner_email, created_by, editors
-                  FROM boards WHERE id::text = ANY($1::text[])`, [boardIds]),
+                  FROM boards WHERE id = ANY($1::uuid[])`, [boardIds]),
     ]);
     const peopleCols = new Map();
     for (const c of cols) {
@@ -269,73 +347,31 @@ export async function notifyBoardAssignees({ db, tenant, prep, data, rowCount, a
     }
     if (!pending.length) return { sent: 0 };
 
-    // Tylko istniejące, aktywne konta, które WIDZĄ tablicę: prywatna — właściciel/edytorzy;
-    // do tego prawo odczytu elementów (Projekty: globalne; tablica służby: także „w zakresie
-    // służby”) — ta sama decyzja co /api/db (registry.canAccess). Błąd sprawdzenia = bez powiadomienia.
-    const emails = [...new Set(pending.map((p) => p.email))];
-    const { rows: users } = await db.query(
-      `SELECT id, email, role, is_super_admin FROM app_users
-        WHERE lower(email) = ANY($1::text[]) AND COALESCE(is_active, true)`, [emails],
-    );
-    const accounts = new Map(users.map((u) => [lower(u.email), u]));
-    const accessOf = new Map();
-    await Promise.all([...accounts.entries()].map(async ([e, u]) => {
-      try {
-        accessOf.set(e, await access({ pool: db, dbName: tenant?.db_name, table: 'board_items', op: 'select', user: u, allowModuleScope: true }));
-      } catch { accessOf.set(e, null); }
-    }));
-    const targets = pending
-      .filter((p) => accounts.has(p.email) && boardVisibleTo(p.board, p.email) && accessCoversBoard(accessOf.get(p.email), p.board))
-      .slice(0, MAX_RECIPIENTS);
+    const targets = (await boardViewers({ db, tenant, pairs: pending, actorEmail: actor?.email, deps })).slice(0, MAX_RECIPIENTS);
     if (!targets.length) return { sent: 0 };
 
     // Kto przypisał + ścieżki modułów (dla linków do zakładki „Zadania”).
-    const moduleKeys = [...new Set(targets.map((t) => taskBoardModuleKey(t.board)).filter(Boolean))];
-    const [actorRes, modulesRes] = await Promise.all([
-      db.query(
-        `SELECT COALESCE(NULLIF(full_name, ''), NULLIF(name, ''), email) AS display
-           FROM app_users WHERE lower(email) = lower($1) LIMIT 1`, [actor?.email || ''],
-      ).catch(() => ({ rows: [] })),
-      moduleKeys.length
-        ? db.query(`SELECT key, path FROM app_modules WHERE key = ANY($1::text[])`, [moduleKeys]).catch(() => ({ rows: [] }))
-        : Promise.resolve({ rows: [] }),
+    // Bez e-maila autora (worker: automatyzacje) — podana nazwa, np. „Automatyzacja”.
+    const [actorName, paths] = await Promise.all([
+      actor?.email ? displayNameOf(db, actor.email) : Promise.resolve(actor?.name || 'Ktoś'),
+      modulePathsFor(db, targets.map((t) => t.board)),
     ]);
-    const actorName = actorRes.rows[0]?.display || actor?.email || 'Ktoś';
-    const paths = Object.fromEntries(modulesRes.rows.map((m) => [m.key, m.path]));
 
     const entries = targets.map((t) => {
       const itemName = String(t.item.name || '').trim() || 'Zadanie';
       const boardName = String(t.board.name || '').trim();
+      const data = { item_id: t.item.id, board_id: t.item.board_id, column_id: t.columnId };
       return {
-        user_email: accounts.get(t.email).email,
+        user_email: t.account.email,
+        type: 'task',
         title: `${actorName} przypisał(a) Cię do zadania`,
         body: boardName ? `${itemName} · ${boardName}` : itemName,
-        link: itemLink(t.board, t.item.id, paths),
-        data: { item_id: t.item.id, board_id: t.item.board_id, column_id: t.columnId },
+        link: taskItemLink(t.board, t.item.id, paths),
+        data,
+        push: { type: 'task', ...data },
       };
     });
-
-    // Wpisy w skrzynce (dzwonek) + realtime do właścicieli wpisów. Błąd skrzynki nie blokuje pushy.
-    try {
-      const inserted = await insertInbox(db, entries);
-      if (inserted.length && tenant?.slug) emit(tenant.slug, 'notifications', 'insert', inserted);
-    } catch (err) {
-      logErr(err, '[board-notify] wpis powiadomienia nie powiódł się');
-    }
-
-    let sent = 0;
-    for (const e of entries) {
-      try {
-        await sendPush(db, {
-          user_email: e.user_email, title: e.title, body: e.body, link: e.link,
-          data: { type: 'task', ...e.data },
-        });
-        sent++;
-      } catch (err) {
-        logErr(err, '[board-notify] push nie powiódł się');
-      }
-    }
-    return { sent, entries };
+    return await deliverNotifications({ db, tenant, entries, deps, log });
   } catch (err) {
     logErr(err, '[board-notify] błąd');
     return { sent: 0 };

@@ -1,20 +1,22 @@
 // POST /api/db — pojedynczy endpoint zapytań (odpowiednik PostgREST dla klienta
 // zgodnego z supabase-js). Autoryzacja per tabela/rola w registry.js.
-import { buildQuery, buildWhere, ApiError, quoteIdent, embeddedTablePairs, proposalScopeClause } from './querybuilder.js';
+import { buildQuery, buildCountQuery, ApiError, quoteIdent, embeddedTablePairs } from './querybuilder.js';
 import { canAccess, getTableRule, invalidatePermissions, requireCapability, loadGrants } from './registry.js';
-import { fieldColumns, crudCapability, MODULES } from '@avenit/shared/src/permissions/catalog.js';
+import { fieldColumns, crudCapability, crudCapabilities, MODULES } from '@avenit/shared/src/permissions/catalog.js';
+import { isModuleScopedTable } from '@avenit/shared/src/permissions/moduleScope.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { emitChange } from '../realtime/hub.js';
-import { notifyOnWrite } from '../realtime/push-hooks.js';
+import { notifyOnWrite, prepareUserTaskAssign, notifyUserTaskAssign } from '../realtime/push-hooks.js';
 import { platformDisabledModules } from '../lib/platform-modules.js';
 import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
 import { PII_TABLES, enforcePiiWrite, isPiiTable, redactPii } from './pii.js';
-import { enforceSharedWrite, enforceExpenseApproval, enforceCampaignStatus } from './sharedWrites.js';
+import { enforceSharedWrite, enforceExpenseApproval, enforceCampaignStatus, enforceAccountWrite } from './sharedWrites.js';
 import { isConversationTable, conversationScope, enforceConversationWrite, conversationAudience, conversationDeleteAudience, assertConversationFilters, pollVotesRedactor } from './komunikator.js';
 import { MODERATE_CAPABILITY, reportScope, enforceReportWrite, reportAudience, normalizeBlockWrite, assertVoteFilters, anonymousPollIds, redactVotes } from './komunikatorPlus.js';
 import { isBoardTable, boardScope, enforceBoardWrite, boardAudience } from './boardsScope.js';
 import { isMailTable, mailScope, enforceMailWrite, mailAudience } from './mailScope.js';
-import { applyModuleScope } from './moduleScope.js';
+import { applyModuleScope, moduleRowScope, andScopes } from './moduleScope.js';
+import { loadVisibilityContext } from './eventVisibility.js';
 import { filterUserContent, notifyNewReport } from '../lib/moderation.js';
 import { prepareBoardAssignNotify, notifyBoardAssignees } from './boardNotify.js';
 
@@ -54,6 +56,9 @@ export default async function dataApiRoutes(app) {
   app.post('/api/db', { preHandler: [app.requireUser, app.block2FAPending] }, async (req, reply) => {
     const q = req.body || {};
     try {
+      // Pola wewnętrzne (__ownerScope, __campusScope, __visibilityScope, __embedScopes…) ustawia
+      // wyłącznie serwer — z żądania klienta zawsze usuwamy.
+      for (const k of Object.keys(q)) if (k.startsWith('__')) delete q[k];
       if (RETIRED_TABLES.has(q.table)) {
         if (q.op === 'select') return reply.send({ data: q.single ? null : [], count: q.count ? 0 : null });
         throw new ApiError(410, 'Ta funkcja została przeniesiona — zaktualizuj aplikację.');
@@ -75,51 +80,17 @@ export default async function dataApiRoutes(app) {
       const isAdmin = user.is_super_admin || adminRoles.has(user.role);
       if (!isAdmin && user.campus_id != null) q.__campusScope = { campusId: user.campus_id };
 
+      // Złączenia w SELECT (embed) — lista par [nadrzędna, dociągana]; nieznana relacja → 400.
+      const embedPairs = q.select && q.op === 'select' ? embeddedTablePairs(q.table, q.select) : [];
+      const embedTables = [...new Set(embedPairs.map(([, child]) => child))];
+
       // Widoczność wydarzeń: kontekst zalogowanego dla egzekwowania audytorium (segmentów).
-      // Tylko dla nie-adminów i tylko przy odczycie events (admin widzi wszystko). Fail-closed:
-      // brak membera => segmenty grupowe (grupa/służba/tag/home_group) po prostu nie łapią.
-      if (!isAdmin && q.table === 'events' && q.op === 'select') {
-        const memberId = userRows[0]?.member_id ?? null;
-        let ministries = [], tags = [];
-        const homeGroupIds = new Set();
-        if (memberId != null) {
-          try {
-            const { rows: mem } = await req.db.query(
-              `SELECT home_group_id, ministries, tags FROM members WHERE id = $1`, [memberId]
-            );
-            if (mem[0]) {
-              if (mem[0].home_group_id != null) homeGroupIds.add(String(mem[0].home_group_id));
-              ministries = Array.isArray(mem[0].ministries) ? mem[0].ministries : [];
-              tags = Array.isArray(mem[0].tags) ? mem[0].tags : [];
-            }
-          } catch { /* brak kolumn/tabeli w tenancie — kontekst pusty (fail-closed) */ }
-        }
-        // Członkostwo w grupach domowych z modułu Grupy domowe (po e-mailu) — źródło niezależne
-        // od members.home_group_id. Rola per grupa (member/leader/coordinator) → grupy, w których
-        // user jest liderem/koordynatorem (leaderGroupIds), do granularnych segmentów widoczności.
-        const leaderGroupIds = new Set();
-        try {
-          const { rows: hgm } = await req.db.query(
-            `SELECT group_id, role, is_leader FROM home_group_members WHERE lower(email) = lower($1)`, [req.user.email]
-          );
-          for (const r of hgm) {
-            if (r.group_id == null) continue;
-            homeGroupIds.add(String(r.group_id));
-            if (r.role === 'leader' || r.role === 'coordinator' || r.is_leader === true) leaderGroupIds.add(String(r.group_id));
-          }
-        } catch { /* brak tabeli — pomijamy */ }
-        // Koordynator = rola nadrzędna nad liderami (globalna, z katalogu liderów home_group_leaders).
-        let isCoordinator = false;
-        try {
-          const { rows: co } = await req.db.query(
-            `SELECT 1 FROM home_group_leaders WHERE lower(email) = lower($1) AND role = 'coordinator' LIMIT 1`, [req.user.email]
-          );
-          isCoordinator = co.length > 0;
-        } catch { /* brak tabeli — pomijamy */ }
-        q.__visibilityScope = {
-          role: user.role, campusId: user.campus_id, email: req.user.email,
-          memberId, homeGroupIds: [...homeGroupIds], leaderGroupIds: [...leaderGroupIds], isCoordinator, ministries, tags,
-        };
+      // Tylko dla nie-adminów i tylko przy odczycie events — wprost albo w złączeniu (admin widzi
+      // wszystko). Fail-closed: brak membera => segmenty grupowe po prostu nie łapią.
+      if (!isAdmin && q.op === 'select' && (q.table === 'events' || embedTables.includes('events'))) {
+        q.__visibilityScope = await loadVisibilityContext(req.db, {
+          email: req.user.email, role: user.role, campus_id: user.campus_id, member_id: userRows[0]?.member_id ?? null,
+        });
       }
 
       const access = await canAccess({
@@ -129,6 +100,7 @@ export default async function dataApiRoutes(app) {
         op: q.op,
         user,
         allowModuleScope: true, // wspólne tabele służb — zawężenie niżej (applyModuleScope)
+        ignoreDuplicates: q.op === 'upsert' && !!q.ignoreDuplicates, // DO NOTHING — wystarcza create
       });
       if (!access.ok) {
         // Wyjątki self-service (mimo braku roli): własny profil w app_users,
@@ -194,6 +166,10 @@ export default async function dataApiRoutes(app) {
       if (access.ok) await enforceSharedWrite(q, req, resolver);
       if (access.ok) enforceExpenseApproval(q, resolver);
       if (access.ok) enforceCampaignStatus(q, resolver);
+      // Konta i ustawienia SSO: nie-admin z manage_users / manage_integrations nie nada roli admina,
+      // nie ruszy konta administratora ani konfiguracji SSO (sharedWrites.js). Także ścieżka
+      // samoobsługi (własny profil) — tam przepuszcza tylko kolumny selfUpdateColumns.
+      await enforceAccountWrite(q, req, { isAdmin, user });
 
       // Złączenia (embed) nie mogą omijać uprawnień: tabela dociągana wymaga dostępu do
       // SWOJEGO modułu (i floorów readRoles), jak tabela główna. Wcześniej sprawdzano tylko
@@ -201,18 +177,43 @@ export default async function dataApiRoutes(app) {
       // Członkowie. Celowo bez CRUD per zasób — złączenia w obrębie modułu (programs →
       // program_types) działają jak dotąd. Admin i tryb legacy (grants null) bez zmian.
       // Tabel osobistych nie wolno dociągać złączeniem — ominęłoby to zawężenie do właściciela
-      // (a tabel z danymi osobowymi — wymazywanie cudzych danych, jeśli nie jesteś obsługą).
-      if (q.select) {
-        for (const [, child] of embeddedTablePairs(q.table, q.select)) {
-          if (isOwnedTable(child) || (isPiiTable(child) && !piiStaff(child))) {
+      // (a tabel z danymi osobowymi — wymazywanie cudzych danych, jeśli nie jesteś obsługą;
+      // głosów w ankietach — anonimizację).
+      // Zakresy wierszy tabeli dociąganej (audyt 2026-10, runda 3): prywatne tablice, zakres służby,
+      // rozmowy, poczta, zgłoszenia, kampus i widoczność wydarzeń działają też w złączeniu
+      // (q.__embedScopes / q.__embedHidden → querybuilder) — np. board_items:item_id(*)
+      // z board_item_updates nie pokaże elementów prywatnej tablicy.
+      if (embedTables.length) {
+        const moderatorForEmbeds = isAdmin || !!resolver?.can(MODERATE_CAPABILITY);
+        q.__embedScopes = {};
+        q.__embedHidden = {};
+        for (const child of embedTables) {
+          if (isOwnedTable(child) || (isPiiTable(child) && !piiStaff(child)) || child === 'poll_votes') {
             throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
+          }
+          let scope = null;
+          if (resolver && isModuleScopedTable(child)) {
+            // Wspólne tabele służb: jak zapytanie wprost — globalnie albo w zakresie służby.
+            const childAccess = await canAccess({
+              pool: req.db, dbName: req.tenant.db_name, table: child, op: 'select', user, allowModuleScope: true,
+            });
+            if (!childAccess.ok) throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
+            if (childAccess.moduleScope) scope = moduleRowScope(child, childAccess.moduleScope.modules);
+          }
+          if (child === 'message_reports') scope = andScopes(scope, reportScope(req.user, moderatorForEmbeds));
+          if (isConversationTable(child)) scope = andScopes(scope, conversationScope(child, req.user));
+          if (isBoardTable(child)) scope = andScopes(scope, boardScope(child, req.user));
+          if (isMailTable(child)) scope = andScopes(scope, mailScope(child, req.user));
+          if (scope?.select) q.__embedScopes[child] = scope.select;
+          if (resolver) {
+            const denied = fieldColumns(child).filter((c) => !resolver.fieldReadable(child, c));
+            if (denied.length) q.__embedHidden[child] = denied;
           }
         }
       }
 
-      if (q.select && resolver) {
-        const pairs = embeddedTablePairs(q.table, q.select);
-        for (const [parent, child] of pairs) {
+      if (resolver) {
+        for (const [parent, child] of embedPairs) {
           const rule = getTableRule(child);
           if (!rule) continue; // buildQuery odrzuci nieznaną tabelę
           if (rule.readRoles && !rule.readRoles.includes(user.role)) {
@@ -221,6 +222,7 @@ export default async function dataApiRoutes(app) {
           if (
             typeof rule.resource === 'string' &&
             rule.resource.startsWith('module:') &&
+            !isModuleScopedTable(child) && // sprawdzone wyżej (globalnie albo w zakresie służby)
             !EMBED_CROSS_MODULE_ALLOW.has(`${parent}>${child}`) &&
             !resolver.can(rule.resource)
           ) {
@@ -260,10 +262,9 @@ export default async function dataApiRoutes(app) {
       if (q.table === 'module_records' && access.resolver && !user.is_super_admin) {
         const moduleKey = moduleRecordsModuleKey(q);
         if (!moduleKey) throw new ApiError(400, 'module_records: wymagany filtr/wartość module_key');
-        const cap = crudCapability(`custom_${moduleKey}_records`, q.op);
-        if (!access.resolver.can(cap)) {
-          throw new ApiError(403, `Brak uprawnienia ${cap}`);
-        }
+        const caps = crudCapabilities(`custom_${moduleKey}_records`, q.op, { ignoreDuplicates: !!q.ignoreDuplicates });
+        const missing = caps.find((c) => !access.resolver.can(c));
+        if (missing) throw new ApiError(403, `Brak uprawnienia ${missing}`);
       }
 
       if (piiRestricted) enforcePiiWrite(q, piiMe);
@@ -305,9 +306,14 @@ export default async function dataApiRoutes(app) {
       }
 
       // Projekty: prywatne tablice tylko dla właściciela i edytorów (boardsScope.js).
+      // Zapis: spójność tablicy (board_id z elementu/grupy), komentarze tylko autora, udostępnianie
+      // i formularz tylko właściciela, source_kind tylko serwer (boardsScope.js).
       if (isBoardTable(q.table)) {
         q.__ownerScope = boardScope(q.table, req.user);
-        await enforceBoardWrite(q, req);
+        const { moduleKeys } = await loadGrants(req.db, req.tenant.db_name);
+        await enforceBoardWrite(q, req, {
+          isAdmin, isSuperAdmin: !!user.is_super_admin, resolver, moduleKeys: moduleKeys || [],
+        });
       }
 
       // Prawo tylko „w zakresie służby” (events/grafik/tablice modułu): wiersze zawężone do służb
@@ -326,18 +332,17 @@ export default async function dataApiRoutes(app) {
       }
 
       // head + count: tylko liczba wierszy.
+      // Te same zakresy co SELECT (kampus, widoczność wydarzeń, tablice, służby…) — buildCountQuery.
       if (q.op === 'select' && q.head && q.count) {
-        const params = [];
-        const where = countWhere(q, params);
-        const { rows } = await req.db.query(
-          `SELECT count(*)::int AS count FROM ${quoteIdent(q.table)} t${where}`,
-          params
-        );
+        const cq = buildCountQuery(q);
+        const { rows } = await req.db.query(cq.sql, cq.params);
         return reply.send({ data: [], count: rows[0].count });
       }
 
       // Osoby w komórkach elementu tablicy PRZED zapisem — do powiadomień o przypisaniu (nie rzuca).
       const boardAssign = await prepareBoardAssignNotify(req.db, q);
+      // Zadanie osobiste przypisywane innej osobie — stan przed zapisem (nie rzuca; push-hooks.js).
+      const taskAssign = await prepareUserTaskAssign(req.db, q);
 
       const built = buildQuery(q);
       const result = await req.db.query(built.sql, built.params);
@@ -368,12 +373,8 @@ export default async function dataApiRoutes(app) {
 
       let count = null;
       if (q.op === 'select' && q.count) {
-        const params = [];
-        const where = countWhere(q, params);
-        const { rows } = await req.db.query(
-          `SELECT count(*)::int AS count FROM ${quoteIdent(q.table)} t${where}`,
-          params
-        );
+        const cq = buildCountQuery(q);
+        const { rows } = await req.db.query(cq.sql, cq.params);
         count = rows[0].count;
       }
 
@@ -428,6 +429,8 @@ export default async function dataApiRoutes(app) {
 
       // Nowo przypisani w kolumnie „Osoby” elementu tablicy: powiadomienie + push. Fire-and-forget.
       if (boardAssign) notifyBoardAssignees({ db: req.db, tenant: req.tenant, prep: boardAssign, data, rowCount: result.rowCount, actor: req.user, log: req.log });
+      // Zadanie osobiste przypisane innej osobie: wpis + push dla przypisanego. Fire-and-forget.
+      if (taskAssign) notifyUserTaskAssign({ db: req.db, tenant: req.tenant, prep: taskAssign, data, rowCount: result.rowCount, actor: req.user, log: req.log });
 
       return reply.send({ data, count });
     } catch (err) {
@@ -536,8 +539,12 @@ const MATERIALS_OWNER = { materials_files: 'uploaded_by', materials_folders: 'cr
 
 async function allowMaterialsWrite(q, req, access) {
   const ownerCol = MATERIALS_OWNER[q.table];
-  if (!ownerCol || (q.op !== 'update' && q.op !== 'delete')) return true;
+  if (!ownerCol) return true;
   if (!access.resolver) return true;
+  // Upsert z nadpisaniem (DO UPDATE) zmieniłby istniejący — być może cudzy — plik: tylko z prawem
+  // edycji wszystkich plików. Bez nadpisywania (ignoreDuplicates) to zwykłe dodanie.
+  if (q.op === 'upsert') return !!q.ignoreDuplicates || access.resolver.can(crudCapability(q.table, 'update'));
+  if (q.op !== 'update' && q.op !== 'delete') return true;
   if (access.resolver.can(crudCapability(q.table, q.op))) return true;
   if (!req.user?.email) return false;
   const f = q.filters || [];
@@ -565,21 +572,6 @@ async function allowSelfUpdate(q, req) {
     ((f[0].column === 'id' && String(f[0].value) === String(req.user.id)) ||
       (f[0].column === 'email' && f[0].value?.toLowerCase() === req.user.email?.toLowerCase()))
   );
-}
-
-// WHERE dla zliczania (count / head): filtry żądania + zawężenie propozycji budżetu.
-function countWhere(q, params) {
-  const rule = getTableRule(q.table);
-  let where = buildWhere(q.filters, params, 't', rule?.hiddenColumns || []);
-  if (q.__proposalScope && q.table === 'budget_proposals') {
-    const pc = proposalScopeClause(q.__proposalScope, 't', params);
-    where = where ? `${where} AND ${pc}` : ` WHERE ${pc}`;
-  }
-  if (q.__ownerScope?.select) {
-    const oc = q.__ownerScope.select('t', (v) => { params.push(v); return params.length; });
-    where = where ? `${where} AND ${oc}` : ` WHERE ${oc}`;
-  }
-  return where;
 }
 
 function proposalRows(q) {

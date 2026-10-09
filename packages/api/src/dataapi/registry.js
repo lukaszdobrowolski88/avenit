@@ -6,6 +6,8 @@
 //    per rola) — tak jak dotąd w UI (ProtectedRoute/Sidebar), ale egzekwowane na serwerze.
 //  - `resource: null` => tabela dostępna dla każdego zalogowanego (dane wspólne).
 //  - `writeRoles` => nadpisuje can_write (tylko wymienione role mogą pisać).
+//  - `readOnly` => zapis przez /api/db zablokowany dla WSZYSTKICH (także admina) — np. stare
+//    tabele zadań po przeniesieniu na Tablice; serwer (fn/*, worker) pisze bezpośrednio SQL-em.
 //  - `hiddenColumns` => nigdy nie wychodzą w SELECT i nie wolno ich ustawiać/filtrów.
 //  - `relationships` => dozwolone embedy (zagnieżdżone selecty) — patrz querybuilder.
 //
@@ -13,7 +15,7 @@
 // superadmin i rada_starszych mają pełny dostęp (jak w ProtectedRoute).
 
 import { can, makeResolver } from '@avenit/shared/src/permissions/resolve.js';
-import { SETTINGS_WRITE_CAPABILITY, crudCapability } from '@avenit/shared/src/permissions/catalog.js';
+import { SETTINGS_WRITE_CAPABILITY, crudCapabilities } from '@avenit/shared/src/permissions/catalog.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 import { isModuleScopedTable, allowedModules } from '@avenit/shared/src/permissions/moduleScope.js';
 
@@ -31,7 +33,7 @@ export const REGISTRY = {
   app_users: T(null, {
     hiddenColumns: ['password_hash', 'totp_secret', 'totp_backup_codes'],
     // Własny profil może edytować każdy — obsłużone w routes (self-update whitelist).
-    selfUpdateColumns: ['full_name', 'name', 'avatar_url', 'phone', 'totp_required', 'onboarding'],
+    selfUpdateColumns: ['full_name', 'name', 'avatar_url', 'phone', 'onboarding'], // bez totp_required: wymóg 2FA ustawia tylko administrator (admin-update-user)
   }),
   app_settings: T(null),
   app_dictionaries: T(null), // słowniki (statusy, kategorie) — zarządzane w Ustawieniach
@@ -99,7 +101,8 @@ export const REGISTRY = {
   automation_steps: T('module:automation'),
   automation_runs: T('module:automation'),
   rsvp_invitations: T(null),
-  tasks: T('module:calendar'),
+  // Stare zadania Kalendarza — przeniesione na Tablicę „Zadania” (source_kind 'tasks'); tylko odczyt.
+  tasks: T('module:calendar', { readOnly: true }),
   user_task_comments: T(null),
 
   // ── Członkowie ──────────────────────────────────────────────────────────
@@ -203,7 +206,7 @@ export const REGISTRY = {
   wall_posts: T(null),
   mlodziezowka_events: T('module:mlodziezowka'),
   mlodziezowka_members: T('module:mlodziezowka'),
-  mlodziezowka_tasks: T('module:mlodziezowka'),
+  mlodziezowka_tasks: T('module:mlodziezowka', { readOnly: true }), // zadania → Tablice
   custom_mc_members: T('module:mlodziezowka'),
 
   // ── Komunikator ─────────────────────────────────────────────────────────
@@ -298,8 +301,9 @@ export const REGISTRY = {
   // Formularze
   form_responses: T('module:forms'),
   // Grupy domowe (zadania)
-  home_group_tasks: T('module:homegroups'),
-  home_group_task_comments: T('module:homegroups'),
+  // Stare zadania modułów (i komentarze) przeniesione na Tablice — tylko odczyt (import/historia).
+  home_group_tasks: T('module:homegroups', { readOnly: true }),
+  home_group_task_comments: T('module:homegroups', { readOnly: true }),
   // Nauczanie / materiały
   teaching_series: T('module:teaching'),
   // Materiały/Pliki są WSPÓLNE dla wielu modułów (Pliki w finance/homegroups/media/…),
@@ -310,8 +314,8 @@ export const REGISTRY = {
   materials_shares: T(null),
   event_materials: T(null),
   // Media (zadania)
-  media_tasks: T('module:media'),
-  media_task_comments: T('module:media'),
+  media_tasks: T('module:media', { readOnly: true }),
+  media_task_comments: T('module:media', { readOnly: true }),
   // Komunikator (interakcje)
   message_reactions: T('module:komunikator'),
   message_read_receipts: T('module:komunikator'),
@@ -333,7 +337,7 @@ export const REGISTRY = {
   // (link-preview, translate-message), bez odczytu/zapisu przez /api/db.
   // Młodzieżówka
   mlodziezowka_leaders: T('module:mlodziezowka'),
-  mlodziezowka_task_comments: T('module:mlodziezowka'),
+  mlodziezowka_task_comments: T('module:mlodziezowka', { readOnly: true }),
   // Modlitwa
   // Interakcja „Modlę się" = użytkownik sam włącza/wyłącza swój udział przy danej
   // prośbie — dokładnie wzorzec event_registrations (RSVP): każdy zalogowany
@@ -392,13 +396,15 @@ const CUSTOM_TABLE_RE = /^custom_[a-z0-9_]+$/;
 // Sufiksy tabel danych modułów własnych. 'task_comments' PRZED 'tasks' (dłuższy pierwszy).
 // 'events' obsługuje custom_<key>_events (EventsTab), 'dane' — starsza konwencja.
 const CUSTOM_TABLE_SUFFIXES = ['task_comments', 'members', 'tasks', 'wall', 'events', 'dane'];
+// Zadania modułów własnych żyją na Tablicach (import board-import-legacy) — stare tabele tylko do odczytu.
+const CUSTOM_READ_ONLY_SUFFIXES = new Set(['tasks', 'task_comments']);
 
-function customModuleKey(table) {
+function customModuleParts(table) {
   const body = table.slice('custom_'.length); // <moduleKey>_<suffix>
   for (const suf of CUSTOM_TABLE_SUFFIXES) {
     if (body.endsWith('_' + suf)) {
       const key = body.slice(0, -(suf.length + 1));
-      if (key) return key;
+      if (key) return { key, suffix: suf };
     }
   }
   return null; // nieznany kształt — traktuj jak dane wspólne (resource:null)
@@ -407,8 +413,13 @@ function customModuleKey(table) {
 export function getTableRule(table) {
   if (REGISTRY[table]) return REGISTRY[table];
   if (CUSTOM_TABLE_RE.test(table)) {
-    const key = customModuleKey(table);
-    return key ? { resource: `module:${key}`, custom: true } : { resource: null, custom: true };
+    const parts = customModuleParts(table);
+    if (!parts) return { resource: null, custom: true };
+    return {
+      resource: `module:${parts.key}`,
+      custom: true,
+      ...(CUSTOM_READ_ONLY_SUFFIXES.has(parts.suffix) ? { readOnly: true } : {}),
+    };
   }
   return null;
 }
@@ -493,15 +504,20 @@ const OP_IS_WRITE = { insert: true, update: true, delete: true, upsert: true, se
 // Autoryzacja op na tabeli. op: 'select' | 'insert' | 'update' | 'delete' | 'upsert'.
 // Zwraca { ok, rule, reason, resolver } — resolver do filtrowania pól (lub null w legacy).
 //
+// ignoreDuplicates (upsert ON CONFLICT DO NOTHING): niczego nie nadpisuje — wystarcza prawo create.
+// Zwykły upsert (DO UPDATE) wymaga create ORAZ update (crudCapabilities).
+//
 // allowModuleScope (tylko /api/db, które umie zawęzić wiersze): dla wspólnych tabel służb
 // (events, schedule_assignments, board_*) brak prawa GLOBALNEGO nie kończy sprawy — gdy osoba
 // ma prawo „w zakresie służby” (np. lider Mediów: module:media + res:media_events:create), wynik
 // to { ok: true, moduleScope: { modules } } i wołający MUSI zawęzić wiersze do tych modułów
 // (moduleScope.js). Bez flagi (realtime, fn/*) — jak dotąd: tylko prawo globalne.
-export async function canAccess({ pool, dbName, table, op, user, allowModuleScope = false }) {
+export async function canAccess({ pool, dbName, table, op, user, allowModuleScope = false, ignoreDuplicates = false }) {
   const rule = getTableRule(table);
   if (!rule) return { ok: false, reason: `Tabela '${table}' nie jest dostępna przez API` };
   const isWrite = !!OP_IS_WRITE[op];
+  // Tabela tylko do odczytu — odmowa zapisu przed bypassem admina (dane historyczne).
+  if (isWrite && rule.readOnly) return { ok: false, reason: `Tabela '${table}' jest tylko do odczytu` };
   const { grants, adminRoles, legacy, moduleKeys } = await loadGrants(pool, dbName);
 
   const isAdmin = user.is_super_admin || adminRoles.has(user.role);
@@ -535,15 +551,16 @@ export async function canAccess({ pool, dbName, table, op, user, allowModuleScop
     // modułu mimo odebrania module:X w macierzy. Standardowe role mają module:X (preset/wildcard),
     // więc nic nie tracą — działa dopiero jawny deny (o to chodzi).
     // Zasób modułu → CRUD per zasób (res:<table>:<op>).
-    const cap = crudCapability(table, op);
+    const caps = crudCapabilities(table, op, { ignoreDuplicates });
     const moduleOk = resolver.can(rule.resource);
-    if (!moduleOk || !resolver.can(cap)) {
+    const missing = caps.find((c) => !resolver.can(c));
+    if (!moduleOk || missing) {
       // Ścieżka „w zakresie służby” (moduleScope.js): bramka modułu to wtedy module:<służba>.
       if (allowModuleScope && isModuleScopedTable(table)) {
         const modules = allowedModules(resolver.can, table, op, moduleKeys || []);
         if (modules.length) return { ok: true, rule, resolver, moduleScope: { modules } };
       }
-      return { ok: false, reason: !moduleOk ? `Brak dostępu do modułu ${rule.resource}` : `Brak uprawnienia ${cap}` };
+      return { ok: false, reason: !moduleOk ? `Brak dostępu do modułu ${rule.resource}` : `Brak uprawnienia ${missing}` };
     }
   } else if (isWrite && SETTINGS_WRITE_CAPABILITY[table]) {
     // Tabele app_* — zapis przez akcję manage_* (odczyt otwarty).

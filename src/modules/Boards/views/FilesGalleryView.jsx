@@ -3,9 +3,9 @@ import { Paperclip, FileText, ExternalLink, Image as ImageIcon } from 'lucide-re
 import { applyView } from '../lib/viewData';
 import EmptyState from '../../../components/EmptyState';
 import { thumbUrl } from '../../../lib/imageThumb';
+import { isImageFile } from '../lib/columnTypes';
 import { tr } from '../../../i18n';
 
-const isImage = (name = '', url = '') => /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name) || /\.(png|jpe?g|gif|webp|svg|bmp)(\?|$)/i.test(url);
 // Tylko adresy http(s) i ścieżki względne — „javascript:” w zapisanym linku nie może się wykonać.
 const safeUrl = (u) => (typeof u === 'string' && (/^https?:\/\//i.test(u) || /^\/(?!\/)/.test(u)) ? u : null);
 
@@ -41,14 +41,14 @@ export default function FilesGalleryView({ data, config, onOpenItem }) {
         return (
           <li key={f.key} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="aspect-video bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center overflow-hidden">
-              {url && isImage(f.name, url)
+              {url && isImageFile(f)
                 ? <img src={thumbUrl(url, 256)} alt={f.name || ''} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 : <FileText size={32} className="text-gray-300 dark:text-gray-600" aria-hidden="true" />}
             </div>
             <div className="p-2">
               {url ? (
                 <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs font-medium text-gray-800 dark:text-gray-100 truncate hover:underline">
-                  <ExternalLink size={11} className="shrink-0 text-gray-400" aria-hidden="true" /> <span className="truncate">{f.name || tr('plik')}</span>
+                  <ExternalLink size={11} className="shrink-0 text-gray-500 dark:text-gray-400" aria-hidden="true" /> <span className="truncate">{f.name || tr('plik')}</span>
                 </a>
               ) : (
                 <span className="block text-xs font-medium text-gray-800 dark:text-gray-100 truncate">{f.name || tr('plik')}</span>

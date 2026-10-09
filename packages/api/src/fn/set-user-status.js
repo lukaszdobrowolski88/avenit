@@ -1,6 +1,7 @@
 // Admin: zablokuj / odblokuj użytkownika. Synchronizuje is_active + status; przy blokadzie
 // rewokuje sesje (natychmiastowe wylogowanie). Guardy: nie zablokuj siebie ani ostatniego admina.
 import { getCaller, isAdmin, loadTarget, isLastActiveAdmin, revokeSessions } from '../lib/user-admin.js';
+import { accountChangeDenied } from '../lib/admin-guard.js';
 import { logAccountEvent } from '../lib/account-audit.js';
 
 export const name = 'set-user-status';
@@ -16,6 +17,10 @@ export default async function handler(req, reply) {
 
   const target = await loadTarget(req.db, userId);
   if (!target) return reply.code(404).send({ error: 'Nie znaleziono użytkownika.' });
+  // Osoba z samym manage_users (bez roli admina) nie ruszy konta administratora ani konta
+  // z szerszymi uprawnieniami ustawień (lib/admin-guard.js).
+  const denied = await accountChangeDenied(req.db, req.tenant.db_name, caller, target);
+  if (denied) return reply.code(403).send({ error: denied });
 
   if (!active) {
     // Blokada — zabezpieczenia.

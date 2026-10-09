@@ -4,15 +4,13 @@ import Button from '../../components/Button';
 import { supabase } from '../../lib/supabase';
 import CustomSelect from '../../components/CustomSelect';
 import ModuleBoard, { hasItemDeepLink } from '../Boards/ModuleBoard';
-import CustomDatePicker from '../../components/CustomDatePicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
 import { Home } from 'lucide-react';
 import {
   Plus, Search, Trash2, Users, MapPin, Calendar,
   UserPlus, BookOpen, Upload, Link as LinkIcon,
-  LayoutGrid, List, CheckSquare, MessageSquare, Send,
-  User, DollarSign, FolderOpen, Package, Pencil, AlertTriangle
+  CheckSquare, DollarSign, FolderOpen, Package, Pencil, AlertTriangle
 } from 'lucide-react';
 import FinanceTab from '../shared/FinanceTab';
 import HomeGroupsMap from './HomeGroupsMap';
@@ -24,7 +22,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
-import { tr, appLocale } from '../../i18n';
+import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
@@ -42,8 +40,6 @@ const isLeaderRow = (r) => r && (r.role === 'leader' || r.role === 'coordinator'
 // Dzień spotkania: wartość w bazie po polsku (Poniedziałek…), etykieta przez tr().
 const dayLabel = (d) => { const n = normalizeWeekday(d); return n ? tr(n) : (d || ''); };
 
-const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
-
 export default function HomeGroupsModule() {
   const t = useT();
   const { userRole, loading: roleLoading } = useUserRole();
@@ -55,7 +51,6 @@ export default function HomeGroupsModule() {
   const [groups, setGroups] = useState([]);
   const [leaders, setLeaders] = useState([]);
   const [members, setMembers] = useState([]);
-  const [tasks, setTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
@@ -72,17 +67,9 @@ export default function HomeGroupsModule() {
   const [editingItem, setEditingItem] = useState(null);
   const [showGroupMembersModal, setShowGroupMembersModal] = useState(false);
   const [showMaterialsModal, setShowMaterialsModal] = useState(false);
-  const [showTaskModal, setShowTaskModal] = useState(false);
   const [currentGroup, setCurrentGroup] = useState(null);
   const [groupMaterials, setGroupMaterials] = useState([]); // materials_files folderu bieżącej grupy
   const [materialCounts, setMaterialCounts] = useState({}); // group.id -> liczba plików
-
-  // Tasks
-  const [viewMode, setViewMode] = useState('kanban');
-  const [filterScope, setFilterScope] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('active');
-  const [draggedTask, setDraggedTask] = useState(null);
-  const [dragOverColumn, setDragOverColumn] = useState(null);
 
   // Forms
   const [groupForm, setGroupForm] = useState({
@@ -109,17 +96,6 @@ export default function HomeGroupsModule() {
   });
   const [personErrors, setPersonErrors] = useState({});
 
-  const [taskForm, setTaskForm] = useState({
-    id: null,
-    title: '',
-    description: '',
-    due_date: '',
-    assigned_to: null,
-    status: 'Do zrobienia',
-    attachment: null,
-    group_id: null
-  });
-
   const [materialForm, setMaterialForm] = useState({
     title: '',
     type: 'Dokument',
@@ -127,11 +103,6 @@ export default function HomeGroupsModule() {
   });
 
   const [uploading, setUploading] = useState(false);
-
-  // Comments
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState('');
-  const [loadingComments, setLoadingComments] = useState(false);
 
   // Finance data
   const [budgetItems, setBudgetItems] = useState([]);
@@ -622,179 +593,6 @@ export default function HomeGroupsModule() {
     setShowModal(false);
     setEditingItem(null);
   };
-
-  // Task functions
-  const openTaskModal = (task = null) => {
-    if (task) {
-      setTaskForm(task);
-      if (task.id) {
-        fetchTaskComments(task.id);
-      }
-    } else {
-      setTaskForm({
-        id: null,
-        title: '',
-        description: '',
-        due_date: '',
-        assigned_to: null,
-        status: 'Do zrobienia',
-        attachment: null,
-        group_id: null
-      });
-      setComments([]);
-    }
-    setShowTaskModal(true);
-  };
-
-  const saveTask = async () => {
-    if (!taskForm.title?.trim()) {
-      toast.error(tr('Tytuł zadania jest wymagany'));
-      return;
-    }
-
-    try {
-      const taskData = {
-        title: taskForm.title,
-        description: taskForm.description || null,
-        status: taskForm.status || 'Do zrobienia',
-        due_date: taskForm.due_date || null,
-        assigned_to: taskForm.assigned_to || null,
-        attachment: taskForm.attachment || null,
-        group_id: taskForm.group_id || null
-      };
-
-      if (taskForm.id) {
-        const { error } = await supabase.from('home_group_tasks').update(taskData).eq('id', taskForm.id);
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase.from('home_group_tasks').insert([taskData]).select();
-        if (error) throw error;
-        if (data && data[0]) {
-          setTaskForm({...taskForm, id: data[0].id});
-        }
-      }
-
-      fetchData();
-    } catch (err) {
-      console.error('Błąd zapisywania zadania:', err);
-      toast.error(err, { fallback: tr('Nie udało się zapisać zadania.') });
-    }
-  };
-
-  const deleteTask = async (id) => {
-    if (!await confirmDialog(tr('Czy na pewno chcesz usunąć to zadanie?'))) return;
-
-    try {
-      const { error } = await supabase.from('home_group_tasks').delete().eq('id', id);
-      if (error) throw error;
-      fetchData();
-    } catch (err) {
-      console.error('Błąd usuwania zadania:', err);
-      toast.error(err, { fallback: tr('Nie udało się usunąć zadania.') });
-    }
-  };
-
-  const toggleTaskCompletion = async (task) => {
-    const newStatus = task.status === 'Gotowe' ? 'Do zrobienia' : 'Gotowe';
-    const updatedTasks = tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t);
-    setTasks(updatedTasks);
-
-    try {
-      const { error } = await supabase
-        .from('home_group_tasks')
-        .update({ status: newStatus })
-        .eq('id', task.id);
-
-      if (error) throw error;
-    } catch (err) {
-      console.error('Błąd aktualizacji zadania:', err);
-      fetchData();
-    }
-  };
-
-  const handleDragStart = (task) => {
-    setDraggedTask(task);
-  };
-
-  const handleDragOver = (e, status) => {
-    e.preventDefault();
-    setDragOverColumn(status);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
-  };
-
-  const handleDrop = async (e, newStatus) => {
-    e.preventDefault();
-    setDragOverColumn(null);
-
-    if (!draggedTask || draggedTask.status === newStatus) {
-      setDraggedTask(null);
-      return;
-    }
-
-    try {
-      const { error } = await supabase.from('home_group_tasks').update({ status: newStatus }).eq('id', draggedTask.id);
-      if (error) throw error;
-      fetchData();
-    } catch (err) {
-      console.error('Błąd aktualizacji zadania:', err);
-    }
-
-    setDraggedTask(null);
-  };
-
-  const fetchTaskComments = async (taskId) => {
-    setLoadingComments(true);
-    try {
-      const { data, error } = await supabase
-        .from('home_group_task_comments')
-        .select('*')
-        .eq('task_id', taskId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setComments(data || []);
-    } catch (err) {
-      console.error('Błąd pobierania komentarzy:', err);
-    } finally {
-      setLoadingComments(false);
-    }
-  };
-
-  const addComment = async () => {
-    if (!newComment.trim() || !taskForm.id) return;
-
-    try {
-      const { error } = await supabase.from('home_group_task_comments').insert([{
-        task_id: taskForm.id,
-        content: newComment,
-        author_name: currentUserEmail || tr('Użytkownik')
-      }]);
-
-      if (error) throw error;
-
-      setNewComment('');
-      fetchTaskComments(taskForm.id);
-    } catch (err) {
-      console.error('Błąd dodawania komentarza:', err);
-      toast.error(err, { fallback: tr('Nie udało się dodać komentarza.') });
-    }
-  };
-
-  const getFilteredTasks = () => {
-    const visible = new Set(groups.map((g) => g.id));
-    return tasks.filter(task => {
-      if (task.group_id && !visible.has(task.group_id)) return false; // tylko zadania grup z wybranego kampusu
-      if (filterScope === 'mine' && task.assigned_to !== currentUserEmail) return false;
-      if (filterStatus === 'active' && task.status === 'Gotowe') return false;
-      if (filterStatus === 'completed' && task.status !== 'Gotowe') return false;
-      return true;
-    });
-  };
-
-  const filteredTasks = getFilteredTasks();
 
   // Okno „Członkowie grupy”: dodanie osoby (z bazy lub z innych grup) = nowy wiersz członkostwa,
   // więc ta sama osoba może należeć do kilku grup (wcześniej wiersz był przenoszony między grupami).
@@ -1809,138 +1607,6 @@ export default function HomeGroupsModule() {
             </div>
       </Modal>
       )}
-
-      {/* MODAL: Task */}
-      <Modal
-        isOpen={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
-        closeOnBackdrop={false}
-        size="xl"
-        title={taskForm.id ? tr('Edycja zadania') : tr('Nowe zadanie')}
-        footer={<>
-          {taskForm.id && (
-            <Button variant="danger" className="mr-auto" onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }}>
-              {tr('Usuń zadanie')}
-            </Button>
-          )}
-          <Button variant="secondary" onClick={() => setShowTaskModal(false)}>{tr('Anuluj')}</Button>
-          <Button onClick={saveTask}>
-            {tr('Zapisz zmiany')}
-          </Button>
-        </>}
-      >
-          <div className="flex h-[65vh]">
-            <div className="w-3/5 p-6 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tytuł zadania')}</label>
-                  <input
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                    value={taskForm.title}
-                    onChange={(e) => setTaskForm({...taskForm, title: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Opis')}</label>
-                  <textarea
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                    value={taskForm.description}
-                    onChange={(e) => setTaskForm({...taskForm, description: e.target.value})}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <CustomDatePicker
-                      label={tr('Termin')}
-                      value={taskForm.due_date}
-                      onChange={(val) => setTaskForm({...taskForm, due_date: val})}
-                    />
-                  </div>
-                  <div>
-                    <CustomSelect
-                      label={tr('Status')}
-                      value={taskForm.status}
-                      onChange={(val) => setTaskForm({...taskForm, status: val})}
-                      options={STATUSES.map((s) => ({ value: s, label: tr(s) }))}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <CustomSelect
-                    label={tr('Przypisana osoba')}
-                    value={taskForm.assigned_to}
-                    onChange={(val) => setTaskForm({...taskForm, assigned_to: val})}
-                    options={[
-                      { value: null, label: t('Nie przypisano') },
-                      ...leaders.map(m => ({ value: m.id, label: m.full_name }))
-                    ]}
-                    placeholder={t('Wybierz osobę...')}
-                  />
-                </div>
-                <div>
-                  <CustomSelect
-                    label={tr('Grupa')}
-                    value={taskForm.group_id}
-                    onChange={(val) => setTaskForm({...taskForm, group_id: val})}
-                    options={[
-                      { value: null, label: t('Brak') },
-                      ...groups.map(g => ({ value: g.id, label: g.name }))
-                    ]}
-                    placeholder={t('Wybierz grupę...')}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="w-2/5 bg-gray-50/50 dark:bg-gray-800/30 p-6 flex flex-col">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                  <MessageSquare size={18}/> {tr('Komentarze')}
-                </h4>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
-                {!taskForm.id ? (
-                  <EmptyState compact icon={MessageSquare} title={tr('Zapisz zadanie, aby dodawać komentarze.')} />
-                ) : loadingComments ? (
-                  <Spinner center />
-                ) : comments.length === 0 ? (
-                  <EmptyState compact icon={MessageSquare} title={tr('Brak komentarzy. Napisz pierwszy komentarz.')} />
-                ) : comments.map(comment => (
-                  <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-xs text-accent-primary dark:text-accent-primary-light">{comment.author_name}</span>
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {new Date(comment.created_at).toLocaleString(appLocale())}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
-                  </div>
-                ))}
-              </div>
-              {taskForm.id && (
-                <div className="mt-auto">
-                  <div className="relative">
-                    <textarea
-                      className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200"
-                      placeholder={t('Napisz komentarz...')}
-                      rows={2}
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); }}}
-                    />
-                    <button
-                      onClick={addComment}
-                      disabled={!newComment.trim()}
-                      className="absolute right-2 bottom-2 p-2 bg-accent-primary dark:bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Send size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-      </Modal>
 
       {/* MODAL: Add Expense */}
       <Modal

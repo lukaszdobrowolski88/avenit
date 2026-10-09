@@ -1,53 +1,53 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { useAppModules } from '../../../hooks/useAppModules';
+import { buildMyWorkRows, rowsFromFn, modulePaths } from '../lib/myWork';
 
-// Agregacja „Moja praca": elementy z wszystkich tablic, gdzie bieżący użytkownik
-// jest przypisany (kolumna typu people), wraz z terminem i statusem.
+const LIMIT = 1000;
+
+// „Moja praca”: elementy tablic przypisane do mnie — bez pobierania wszystkich elementów.
+// Główna ścieżka: board_items.assignee_emails (utrzymywane triggerem) przez Data API, więc
+// serwer stosuje te same zakresy co wszędzie (prywatne tablice, tablice służb). Zawiera też
+// elementy bez terminu. Gdy kolumny jeszcze nie ma (stara baza) — fn my-board-items (tylko
+// elementy z terminem).
 export function useMyWork(userEmail) {
-  const [rows, setRows] = useState([]);
+  const { modules } = useAppModules();
+  const paths = useMemo(() => modulePaths(modules), [modules]);
+  const [raw, setRaw] = useState(null); // { kind: 'db', items, boards, columns } | { kind: 'fn', items }
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
-    if (!userEmail) return;
+    const me = String(userEmail || '').trim().toLowerCase();
+    if (!me) return;
     setLoading(true);
+    setError(null);
     try {
-      const [boardsRes, colsRes, itemsRes] = await Promise.all([
-        supabase.from('boards').select('id, name, color').eq('is_archived', false),
-        supabase.from('board_columns').select('id, board_id, type, name, settings'),
-        supabase.from('board_items').select('id, board_id, group_id, name, cells').is('parent_item_id', null),
-      ]);
-      const boards = Object.fromEntries((boardsRes.data || []).map(b => [b.id, b]));
-      const colsByBoard = {};
-      for (const c of (colsRes.data || [])) (colsByBoard[c.board_id] = colsByBoard[c.board_id] || []).push(c);
-
-      const out = [];
-      for (const it of (itemsRes.data || [])) {
-        const cols = colsByBoard[it.board_id] || [];
-        const peopleCols = cols.filter(c => c.type === 'people');
-        const assigned = peopleCols.some(c => (it.cells?.[c.id] || []).some(p => p.email === userEmail));
-        if (!assigned) continue;
-
-        const dateCol = cols.find(c => c.type === 'date') || cols.find(c => c.type === 'timeline');
-        let due = null;
-        if (dateCol) {
-          const v = it.cells?.[dateCol.id];
-          due = dateCol.type === 'timeline' ? (v?.end || v?.start || null) : (v || null);
-        }
-        const statusCol = cols.find(c => c.type === 'status' || c.type === 'priority');
-        const statusVal = statusCol ? it.cells?.[statusCol.id] : null;
-        const statusLabel = statusCol ? (statusCol.settings?.labels || []).find(l => l.id === statusVal) : null;
-
-        out.push({
-          item: it,
-          boardId: it.board_id,
-          boardName: boards[it.board_id]?.name || 'Tablica',
-          boardColor: boards[it.board_id]?.color || '#6366f1',
-          due,
-          status: statusLabel || null,
-          done: statusLabel && /gotow|done|zrobion|ukończ/i.test(statusLabel.title),
-        });
+      const { data: items, error: e } = await supabase
+        .from('board_items')
+        .select('id, board_id, name, cells')
+        .contains('assignee_emails', [me])
+        .is('parent_item_id', null)
+        .limit(LIMIT);
+      if (!e) {
+        const ids = [...new Set((items || []).map((i) => i.board_id))];
+        if (!ids.length) { setRaw({ kind: 'db', items: [], boards: [], columns: [] }); return; }
+        const [b, c] = await Promise.all([
+          supabase.from('boards').select('id, name, color, module_key, source_kind, is_archived, is_template').in('id', ids),
+          supabase.from('board_columns').select('id, board_id, type, settings, display_order').in('board_id', ids).in('type', ['people', 'status', 'date', 'timeline']),
+        ]);
+        if (b.error || c.error) throw (b.error || c.error);
+        setRaw({ kind: 'db', items: items || [], boards: b.data || [], columns: c.data || [] });
+        return;
       }
-      setRows(out);
+      // Zapas: serwerowa lista przypisanych elementów z terminem.
+      const { data, error: fnErr } = await supabase.functions.invoke('my-board-items', { body: {} });
+      if (fnErr) throw fnErr;
+      setRaw({ kind: 'fn', items: data?.items || [] });
+    } catch (err) {
+      console.error('Moja praca:', err);
+      setError(err?.message || String(err));
+      setRaw({ kind: 'fn', items: [] });
     } finally {
       setLoading(false);
     }
@@ -55,5 +55,12 @@ export function useMyWork(userEmail) {
 
   useEffect(() => { load(); }, [load]);
 
-  return { rows, loading, reload: load };
+  const rows = useMemo(() => {
+    if (!raw) return [];
+    return raw.kind === 'db'
+      ? buildMyWorkRows({ items: raw.items, boards: raw.boards, columns: raw.columns, email: userEmail, paths })
+      : rowsFromFn(raw.items, paths);
+  }, [raw, userEmail, paths]);
+
+  return { rows, loading: loading && !raw, error, partial: raw?.kind === 'fn', reload: load };
 }

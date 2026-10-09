@@ -103,6 +103,9 @@ export const ROLE_PRESETS = {
     allow('res:board_automations:read'), allow('res:board_automation_runs:read'), allow('res:board_automation_runs:create'),
     allow('res:board_items:read'), allow('res:board_items:create'), allow('res:board_items:update'), allow('res:board_items:delete'),
     allow('res:board_item_updates:read'), allow('res:board_item_updates:create'),
+    // Własne komentarze: edycja/usunięcie i polubienia (zakres „tylko własne” pilnuje serwer —
+    // boardsScope.js; migracja 093). Cudze komentarze — tylko z res:boards:delete (lider+).
+    allow('res:board_item_updates:update'), allow('res:board_item_updates:delete'),
     allow('res:board_item_activity:read'), allow('res:board_item_activity:create'),
   ],
 };

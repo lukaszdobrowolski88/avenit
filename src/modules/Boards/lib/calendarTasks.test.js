@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../../../lib/supabase', () => ({ supabase: { from: () => ({}), functions: { invoke: async () => ({ data: null, error: null }) } } }));
 
-const { calendarColumns, boardItemToTask, taskToBoardItem, statusIdForTitle, isAccessError } = await import('./calendarTasks');
+const { calendarColumns, boardItemToTask, taskToBoardItem, taskToBoardPatch, statusIdForTitle, isAccessError } = await import('./calendarTasks');
 
 const cols = [
   { id: 'st', type: 'status', name: 'Status', settings: { labels: [{ id: 'todo', title: 'Do zrobienia' }, { id: 'done', title: 'Gotowe' }] } },
@@ -46,6 +46,17 @@ describe('boardItemToTask / taskToBoardItem', () => {
     expect(out.cells.pp).toEqual([{ email: 'b@x.pl', name: 'B' }]);
     const cleared = taskToBoardItem({ title: 'X', due_date: '2026-10-01', assignee_touched: true, assignee: null }, cols, { pp: [{ email: 'b@x.pl' }] });
     expect(cleared.cells.pp).toBeUndefined();
+  });
+  it('„gotowe” z etykiety statusu (jawna flaga albo nazwa)', () => {
+    expect(boardItemToTask(item, cols).done).toBe(true);
+    expect(boardItemToTask({ ...item, cells: { ...item.cells, st: 'todo' } }, cols).done).toBe(false);
+  });
+  it('łatka do board-item-patch: tylko zmienione komórki kalendarza, usunięte = null', () => {
+    const t = boardItemToTask(item, cols);
+    const out = taskToBoardPatch({ ...t, title: 'Próba 2', due_date: '2026-10-13', due_time: '09:30', end_time: '', location: 'Sala' }, cols, item.cells);
+    expect(out.name).toBe('Próba 2');
+    // '9:30' w bazie → '09:30' (normalizacja godziny też jest zmianą).
+    expect(out.cells).toEqual({ du: '2026-10-13', od: '09:30', do: null });
   });
   it('statusIdForTitle i błędy dostępu', () => {
     expect(statusIdForTitle(cols[0], 'gotowe')).toBe('done');

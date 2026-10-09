@@ -18,6 +18,9 @@
 // Dostęp: odczyt modułu tabeli źródłowej (np. module:media; tasks → module:calendar).
 // Źródło: wyłącznie lista dozwolonych nazw + custom_<key>_tasks dla modułu z app_modules.
 // Tabele źródłowe są tylko CZYTANE.
+// Tablica źródła: findSourceBoard — najpierw utworzona przez import (created_by = IMPORT_MARKER,
+// bez właściciela), nigdy cudza prywatna. Worker (runForTenant) robi import/uzupełnienie raz
+// dla każdego tenanta (przy starcie i codziennie) — patrz koniec pliku.
 import { getTableRule, loadGrants } from '../dataapi/registry.js';
 import { boardAudience } from '../dataapi/boardsScope.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
@@ -37,13 +40,18 @@ const EXTRA_COLORS = [C.info, C.accent, C.warning, C.success, C.danger, C.neutra
 
 // ── Źródła ────────────────────────────────────────────────────────────────
 // people: tabele, do których wskazuje assigned_to (UUID/ID członka zespołu) — jak w starych kanbanach.
+// title — nazwa tablicy, gdy tworzy ją worker (jak tytuły zakładek „Zadania” w webie).
 const FIXED_SOURCES = {
-  media_tasks: { moduleKey: 'media', comments: 'media_task_comments', people: ['media_team'] },
-  mlodziezowka_tasks: { moduleKey: 'mlodziezowka', comments: 'mlodziezowka_task_comments', people: ['mlodziezowka_leaders', 'mlodziezowka_members'] },
-  home_group_tasks: { moduleKey: 'homegroups', comments: 'home_group_task_comments', people: ['home_group_leaders'] },
+  media_tasks: { moduleKey: 'media', comments: 'media_task_comments', people: ['media_team'], title: 'Zadania Media Team' },
+  mlodziezowka_tasks: { moduleKey: 'mlodziezowka', comments: 'mlodziezowka_task_comments', people: ['mlodziezowka_leaders', 'mlodziezowka_members'], title: 'Zadania młodzieżówki' },
+  home_group_tasks: { moduleKey: 'homegroups', comments: 'home_group_task_comments', people: ['home_group_leaders'], title: 'Zadania grup domowych' },
   // Kalendarz: zadania bez komentarzy; kolumny godzin/kategorii/miejsca dla widoku kalendarza.
-  tasks: { moduleKey: 'calendar', comments: null, people: [], calendar: true },
+  tasks: { moduleKey: 'calendar', comments: null, people: [], calendar: true, title: 'Zadania' },
 };
+
+// Znacznik tablicy utworzonej przez import (boards.created_by). Tablica zakładki „Zadania” jest
+// wspólna dla służby — bez właściciela (owner_email NULL), więc nikt nie „przejmie” jej na prywatną.
+export const IMPORT_MARKER = 'system:board-import';
 
 // Zwraca opis źródła albo null (nieznana/niedozwolona nazwa). customKeys: Set kluczy z app_modules.
 export function resolveSource(source, customKeys = new Set()) {
@@ -58,7 +66,7 @@ export function resolveSource(source, customKeys = new Set()) {
   const key = m[1];
   return {
     table: s, moduleKey: key, comments: `custom_${key}_task_comments`, people: [`custom_${key}_members`],
-    capability: rule?.resource || `module:${key}`,
+    capability: rule?.resource || `module:${key}`, title: 'Zadania',
   };
 }
 
@@ -472,8 +480,9 @@ async function importBoard(client, { src, title, user, schema }) {
   const p = legacy?.p || pickColumns([]);
   const vals = (col) => (col ? rows.map((r) => r[col]) : []);
 
+  // Bez właściciela, ze znacznikiem importu (IMPORT_MARKER) — patrz findSourceBoard.
   const boardCols = ['name', 'source_kind', 'module_key', 'color', 'icon', 'owner_email', 'created_by'];
-  const boardVals = [title, src.table, src.moduleKey, C.accent, 'ListTodo', user.email || null, user.email || null];
+  const boardVals = [title, src.table, src.moduleKey, C.accent, 'ListTodo', null, IMPORT_MARKER];
   if (schema.boardMarker) { boardCols.push('legacy_backfill_at'); boardVals.push(new Date()); }
   const { rows: [board] } = await client.query(
     `INSERT INTO boards (${boardCols.join(', ')}) VALUES (${boardVals.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`, boardVals);
@@ -544,7 +553,7 @@ async function importBoard(client, { src, title, user, schema }) {
       if (loc) cells[col.location] = loc;
     }
     const itemCols = ['board_id', 'group_id', 'name', 'cells', 'display_order', 'created_by'];
-    const itemVals = [board.id, group.id, str(r[p.name]) || 'Zadanie', JSON.stringify(cells), i, createdByEmail(r, legacy) || user.email || null];
+    const itemVals = [board.id, group.id, str(r[p.name]) || 'Zadanie', JSON.stringify(cells), i, createdByEmail(r, legacy) || user?.email || null];
     if (schema.itemDescription && p.description && str(r[p.description])) { itemCols.push('description'); itemVals.push(String(r[p.description])); }
     if (p.createdAt && r[p.createdAt]) { itemCols.push('created_at'); itemVals.push(r[p.createdAt]); }
     if (schema.itemSource) { itemCols.push('source_id'); itemVals.push(String(r.id)); }
@@ -650,7 +659,14 @@ export async function callerAccess(req) {
   const { rows } = await req.db.query('SELECT id, email, role, is_super_admin FROM app_users WHERE id = $1', [req.user.id]);
   const me = rows[0];
   if (!me) return null;
-  const { grants, adminRoles, legacy } = await loadGrants(req.db, req.tenant.db_name);
+  const { isAdmin, can } = await accessFor(req.db, req.tenant.db_name, me);
+  return { me: { ...me, email: me.email || req.user.email }, isAdmin, can };
+}
+
+// can(capability) dla konta { id, role, is_super_admin } — bez zapytania o konto (worker liczy
+// to dla wielu osób naraz; granty z pamięci podręcznej loadGrants per baza).
+export async function accessFor(db, dbName, me) {
+  const { grants, adminRoles, legacy } = await loadGrants(db, dbName);
   const isAdmin = !!me.is_super_admin || adminRoles.has(me.role);
   const resolver = !isAdmin && grants !== null ? makeResolver(grants, { role: me.role, userId: me.id, isAdmin: false }) : null;
   const can = (cap) => {
@@ -658,12 +674,81 @@ export async function callerAccess(req) {
     if (grants === null) return !!(legacy || []).find((x) => x.role === me.role && x.resource === cap)?.can_read;
     return resolver.can(cap);
   };
-  return { me: { ...me, email: me.email || req.user.email }, isAdmin, can };
+  return { isAdmin, can };
 }
 
-async function schemaFlags(db) {
+
+export async function schemaFlags(db) {
   const [b, i, u] = await Promise.all([columnsOf(db, 'boards'), columnsOf(db, 'board_items'), columnsOf(db, 'board_item_updates')]);
   return { boardMarker: b.has('legacy_backfill_at'), itemSource: i.has('source_id'), itemDescription: i.has('description'), updateSource: u.has('source_id') };
+}
+
+// Tablica źródła. Kandydatki: nie-szablony z tym source_kind, które są wspólne (nie prywatne) albo
+// utworzone przez import. Pierwszeństwo: utworzona przez import (IMPORT_MARKER), z modułem źródła
+// (albo bez modułu), nie-archiwalna, najstarsza. Dzięki temu tablica założona wcześniej ręcznie
+// z tym samym source_kind — zwłaszcza prywatna — nie „przejmuje” zadań służby (i ich osób/komentarzy).
+export function sourceBoardSql() {
+  return `SELECT * FROM boards
+     WHERE source_kind = $1
+       AND coalesce(is_template, false) = false
+       AND (created_by = $2 OR coalesce(visibility, 'workspace') <> 'private')
+     ORDER BY (created_by = $2) DESC NULLS LAST,
+              (module_key IS NULL OR module_key = $3) DESC,
+              coalesce(is_archived, false) ASC,
+              created_at ASC NULLS LAST, id
+     LIMIT 1`;
+}
+export async function findSourceBoard(db, src) {
+  const { rows } = await db.query(sourceBoardSql(), [src.table, IMPORT_MARKER, src.moduleKey || null]);
+  return rows[0] || null;
+}
+
+// Import / uzupełnienie jednego źródła w jednej transakcji z blokadą doradczą per źródło (ta sama
+// w HTTP i w workerze — równoległe wywołania czekają na siebie, druga widzi już tablicę).
+// actor: konto wołającego (twórca elementów bez autora w starym wierszu) albo null (worker).
+// → { status, body, changedItems }
+export async function runLegacy(db, { src, mode = 'import', title = '', actor = null, schema = null }) {
+  const flags = schema || await schemaFlags(db);
+  const client = await db.connect();
+  let out;
+  let changedItems = [];
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`board-import-legacy:${src.table}`]);
+    const board = await findSourceBoard(client, src);
+    if (mode === 'import') {
+      if (board) {
+        out = { board_id: board.id, created: false, backfill_needed: !flags.boardMarker || !board.legacy_backfill_at };
+      } else {
+        const res = await importBoard(client, { src, title: str(title).slice(0, 120) || src.title || 'Zadania', user: actor, schema: flags });
+        out = {
+          board_id: res.board.id, created: true, imported: res.imported, people: res.people,
+          comments: res.comments, unresolved_people: res.unresolved, backfill_needed: false,
+        };
+      }
+    } else if (!board) {
+      await client.query('ROLLBACK');
+      return { status: 404, body: { error: 'Nie ma jeszcze tablicy dla tych zadań' }, changedItems };
+    } else if (flags.boardMarker && board.legacy_backfill_at) {
+      out = { board_id: board.id, changed: false, already: true, marker: true };
+    } else {
+      const s = await backfillBoard(client, { board, src, schema: flags });
+      changedItems = s.changedItems || [];
+      if (flags.boardMarker) await client.query('UPDATE boards SET legacy_backfill_at = now() WHERE id = $1', [board.id]);
+      out = {
+        board_id: board.id, changed: s.people_filled + s.comments_added > 0, people_filled: s.people_filled,
+        comments_added: s.comments_added, matched: s.matched, unmatched: s.unmatched,
+        unresolved_people: s.unresolved_people, marker: flags.boardMarker,
+      };
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release?.();
+  }
+  return { status: 200, body: out, changedItems };
 }
 
 export default async function handler(req, reply) {
@@ -686,56 +771,97 @@ export default async function handler(req, reply) {
   if (!access) return reply.code(403).send({ error: 'Brak konta' });
   if (!access.can(src.capability)) return reply.code(403).send({ error: `Brak dostępu do ${src.capability}` });
 
-  const schema = await schemaFlags(req.db);
-  const client = await req.db.connect();
-  let out;
-  let changedItems = [];
+  let res;
   try {
-    await client.query('BEGIN');
-    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`board-import-legacy:${src.table}`]);
-    const { rows: found } = await client.query(
-      'SELECT * FROM boards WHERE source_kind = $1 ORDER BY created_at ASC NULLS LAST LIMIT 1', [src.table]);
-    const board = found[0];
-    if (mode === 'import') {
-      if (board) {
-        out = { board_id: board.id, created: false, backfill_needed: !schema.boardMarker || !board.legacy_backfill_at };
-      } else {
-        const res = await importBoard(client, { src, title, user: access.me, schema });
-        out = {
-          board_id: res.board.id, created: true, imported: res.imported, people: res.people,
-          comments: res.comments, unresolved_people: res.unresolved, backfill_needed: false,
-        };
-      }
-    } else if (!board) {
-      await client.query('ROLLBACK');
-      return reply.code(404).send({ error: 'Nie ma jeszcze tablicy dla tych zadań' });
-    } else if (schema.boardMarker && board.legacy_backfill_at) {
-      out = { board_id: board.id, changed: false, already: true, marker: true };
-    } else {
-      const s = await backfillBoard(client, { board, src, schema });
-      changedItems = s.changedItems || [];
-      if (schema.boardMarker) await client.query('UPDATE boards SET legacy_backfill_at = now() WHERE id = $1', [board.id]);
-      out = {
-        board_id: board.id, changed: s.people_filled + s.comments_added > 0, people_filled: s.people_filled,
-        comments_added: s.comments_added, matched: s.matched, unmatched: s.unmatched,
-        unresolved_people: s.unresolved_people, marker: schema.boardMarker,
-      };
-    }
-    await client.query('COMMIT');
+    res = await runLegacy(req.db, { src, mode, title, actor: access.me });
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
     req.log?.error?.(err, '[board-import-legacy]');
     return reply.code(500).send({ error: 'Nie udało się przenieść zadań' });
-  } finally {
-    client.release();
   }
+  if (res.status !== 200) return reply.code(res.status).send(res.body);
 
   // Realtime: inne otwarte karty tej tablicy dostają uzupełnione osoby (prywatne tablice — tylko uprawnieni).
-  if (changedItems.length) {
+  if (res.changedItems.length) {
     try {
-      const audience = await boardAudience(req.db, 'board_items', changedItems).catch(() => new Set());
-      emitChange(req.tenant.slug, 'board_items', 'update', changedItems, audience ? { audience } : {});
+      const audience = await boardAudience(req.db, 'board_items', res.changedItems).catch(() => new Set());
+      emitChange(req.tenant.slug, 'board_items', 'update', res.changedItems, audience ? { audience } : {});
     } catch { /* realtime nieobowiązkowy */ }
   }
-  return out;
+  return res.body;
+}
+
+// ── Worker: jednorazowe przeniesienie dla każdego tenanta ─────────────────────
+// Przy starcie workera i raz dziennie (worker.js): dla każdego źródła, które ma wiersze, tablica
+// powstaje bez czekania, aż ktoś otworzy zakładkę „Zadania” (stare tabele są już tylko do odczytu),
+// a tablica zaimportowana dawniej w przeglądarce jest uzupełniana (legacy_backfill_at IS NULL).
+// Idempotentne (blokada + wybór tablicy jak w HTTP), bezpieczne równolegle z webem.
+
+// Źródła tenanta: stałe + custom_<key>_tasks modułów z app_modules (tylko istniejące tabele).
+export async function legacySources(db) {
+  let mods = [];
+  try {
+    ({ rows: mods } = await db.query('SELECT key, label FROM app_modules'));
+  } catch { mods = []; }
+  const keys = new Set(mods.map((m) => m.key).filter((k) => typeof k === 'string' && KEY_RE.test(k)));
+  const labelOf = new Map(mods.map((m) => [m.key, str(m.label)]));
+  const names = [...Object.keys(FIXED_SOURCES), ...[...keys].map((k) => `custom_${k}_tasks`)];
+  const out = [];
+  for (const n of names) {
+    const src = resolveSource(n, keys);
+    if (!src) continue;
+    if (!FIXED_SOURCES[n]) {
+      const label = labelOf.get(src.moduleKey);
+      src.title = label ? `Zadania — ${label}` : 'Zadania';
+    }
+    out.push(src);
+  }
+  const { rows: existing } = await db.query(
+    `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ANY($1::text[])`,
+    [out.map((s) => s.table)]);
+  const have = new Set(existing.map((r) => r.table_name));
+  return out.filter((s) => have.has(s.table));
+}
+
+async function hasRows(db, table) {
+  const { rows } = await db.query(`SELECT EXISTS (SELECT 1 FROM ${q(table)}) AS any`);
+  return !!rows[0]?.any;
+}
+
+export async function runForTenant(pool, ctx = {}) {
+  const log = ctx.log || (() => {});
+  const result = { created: 0, backfilled: 0, skipped: 0, failed: 0 };
+  let sources = [];
+  let schema;
+  try {
+    schema = await schemaFlags(pool);
+    sources = await legacySources(pool);
+  } catch (err) {
+    log(`board-import-legacy: pominięte (${err.message})`);
+    return result;
+  }
+  for (const src of sources) {
+    try {
+      if (!(await hasRows(pool, src.table))) { result.skipped++; continue; }
+      const imp = await runLegacy(pool, { src, mode: 'import', schema });
+      if (imp.body.created) {
+        result.created++;
+        log(`board-import-legacy: ${src.table} → nowa tablica ${imp.body.board_id} (zadań ${imp.body.imported}, osób ${imp.body.people}, komentarzy ${imp.body.comments})`);
+        continue;
+      }
+      // Bez kolumny znacznika (przed migracją 092) uzupełnienie nie zapamiętałoby wykonania — pomijamy.
+      if (imp.body.backfill_needed && schema.boardMarker) {
+        const bf = await runLegacy(pool, { src, mode: 'backfill', schema });
+        if (bf.status === 200 && !bf.body.already) {
+          result.backfilled++;
+          log(`board-import-legacy: ${src.table} → uzupełniono tablicę ${bf.body.board_id} (osób ${bf.body.people_filled}, komentarzy ${bf.body.comments_added})`);
+        }
+      } else {
+        result.skipped++;
+      }
+    } catch (err) {
+      result.failed++;
+      log(`board-import-legacy: ${src.table} błąd: ${err.message}`);
+    }
+  }
+  return result;
 }

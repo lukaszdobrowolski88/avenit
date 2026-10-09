@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, HeartHandshake, Phone, Mail, Heart, Users, Home } from 'lucide-react';
+import { Plus, Trash2, HeartHandshake, Phone, Mail, Heart, Users, Home, CalendarPlus, Save } from 'lucide-react';
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
-import { CARE_TYPES, careTypeLabel, formatDate } from '../lib/careApi';
+import CustomDatePicker from '../../../components/CustomDatePicker';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import { CARE_TYPES, careTypeLabel, formatDate, memberName } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
 import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
@@ -28,11 +31,76 @@ const CARE_COLORS = {
 
 const emptyForm = () => ({ care_type: 'wizyta', care_date: new Date().toISOString().slice(0, 10), note: '' });
 
+const pad2 = (n) => String(n).padStart(2, '0');
+const ymdIn = (days) => { const d = new Date(); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; };
+
+// Link do profilu osoby (otwiera kartotekę z zakładkami Opieki) — trafia do opisu zadania.
+export const memberProfileUrl = (memberId) => {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${origin}/members?member=${encodeURIComponent(String(memberId))}`;
+};
+
+// Zadanie „na potem” po kontakcie: osobiste (user_tasks) bieżącego użytkownika, prywatne,
+// z linkiem do profilu osoby. → payload do insertu.
+export function followUpTask({ member, entry, title, due, userEmail }) {
+  const lines = [
+    entry ? `${tr(careTypeLabel(entry.care_type))} · ${formatDate(entry.care_date)}${entry.note ? `\n${entry.note}` : ''}` : '',
+    tr('Profil: {url}', { url: memberProfileUrl(member.id) }),
+  ].filter(Boolean);
+  return {
+    title: String(title || '').trim(),
+    description: lines.join('\n\n'),
+    due_date: due || null,
+    status: 'todo',
+    is_private: true,
+    user_email: userEmail,
+  };
+}
+
+function FollowUpModal({ member, entry, onClose }) {
+  const [title, setTitle] = useState(() => tr('Odezwij się: {name}', { name: memberName(member) }));
+  const [due, setDue] = useState(() => ymdIn(7));
+  const save = async () => {
+    if (!title.trim()) return;
+    try {
+      const user = await getCachedUser();
+      if (!user?.email) throw new Error(tr('Brak sesji — zaloguj się ponownie.'));
+      const { error } = await supabase.from('user_tasks').insert(followUpTask({ member, entry, title, due, userEmail: user.email }));
+      if (error) throw error;
+      toast.success(tr('Dodano zadanie do Twoich zadań na Pulpicie'));
+      onClose();
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się utworzyć zadania.') });
+    }
+  };
+  return (
+    <Modal isOpen onClose={onClose} icon={CalendarPlus} title={tr('Utwórz zadanie')} size="md" closeOnBackdrop={false}
+      subtitle={tr('Zadanie osobiste (widzisz je tylko Ty) z linkiem do profilu osoby.')}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+        <Button icon={Save} onClick={save} disabled={!title.trim()}>{tr('Utwórz zadanie')}</Button>
+      </>}>
+      <div className="p-6 space-y-4">
+        <div>
+          <label htmlFor="care-followup-title" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł')}</label>
+          <input id="care-followup-title" autoFocus value={title} onChange={(e) => setTitle(e.target.value)}
+            className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-gray-300/60" />
+        </div>
+        <div>
+          <span className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Termin')}</span>
+          <CustomDatePicker value={due} onChange={(v) => setDue(v || '')} aria-label={tr('Termin')} />
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export default function CareLogTab({ member, campusIdForInsert, withCampusFilter }) {
   const [log, setLog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [followUp, setFollowUp] = useState(null); // wpis, z którego tworzymy zadanie
 
   const load = useCallback(async () => {
     if (!member?.id) return;
@@ -136,12 +204,16 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
                   {item.note && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">{item.note}</p>}
                   {item.created_by && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{tr('przez {name}', { name: item.created_by })}</p>}
                 </div>
-                <button onClick={() => remove(item)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0"><Trash2 size={15} /></button>
+                <button type="button" onClick={() => setFollowUp(item)} className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0"
+                  title={tr('Utwórz zadanie')} aria-label={tr('Utwórz zadanie')}><CalendarPlus size={15} /></button>
+                <button type="button" onClick={() => remove(item)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0"
+                  title={tr('Usuń')} aria-label={tr('Usuń')}><Trash2 size={15} /></button>
               </div>
             );
           })}
         </div>
       )}
+      {followUp && <FollowUpModal member={member} entry={followUp} onClose={() => setFollowUp(null)} />}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckSquare, CheckCircle, Check, Circle, Clock, Plus, Save, Trash2, Lock, AlertTriangle } from 'lucide-react';
+import { CheckSquare, CheckCircle, Check, Circle, Clock, Plus, Save, Trash2, Lock, AlertTriangle, ExternalLink } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
@@ -19,8 +19,9 @@ import { compareTasks, isOverdueYmd, todayYmd } from '../utils/myBoardTasks';
 // „Zadania” modułów — te same, które widać w modułach), oraz zadania osobiste (user_tasks — także
 // tworzone przez automatyzacje). Stare tabele *_tasks modułów nie są już źródłem: ich zadania
 // przeniesiono do tablic (ModuleBoard / legacyImport), pokazywanie ich tu dublowałoby wpisy.
-// Props bez zmian (PersonalDashboard): tasks = wynik useDashboardData (bierzemy z niego tylko
-// zadania osobiste), onRefresh = odświeżenie listy zadań osobistych.
+// Props (PersonalDashboard): tasks = zadania osobiste z useDashboardData (moje + przypisane mi),
+// boardTasks = wynik useMyBoardTasks z Pulpitu (jedno źródło listy i licznika; bez niego widżet
+// czyta tablice sam), onRefresh = odświeżenie listy zadań osobistych.
 
 const LIMIT = 8;
 
@@ -42,16 +43,31 @@ function formatDue(due) {
   return new Date(y, m - 1, d).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' });
 }
 
+// Pierwszy link do tej aplikacji w opisie (np. „Profil: https://…/members?member=12” z Opieki)
+// → ścieżka do otwarcia w aplikacji albo null.
+export function appLinkIn(text, origin = (typeof window !== 'undefined' ? window.location.origin : '')) {
+  const urls = String(text || '').match(/https?:\/\/[^\s)]+/g) || [];
+  for (const raw of urls) {
+    try {
+      const u = new URL(raw);
+      if (origin && u.origin === origin) return `${u.pathname}${u.search}${u.hash}`;
+    } catch { /* nie URL */ }
+  }
+  return null;
+}
+
 // ============================================
 // OKNO ZADANIA OSOBISTEGO (user_tasks)
 // ============================================
 
 const emptyTask = () => ({ title: '', description: '', due_date: todayYmd(), status: 'todo', is_private: false });
 
-function PersonalTaskModal({ isOpen, onClose, onSaved, initialTask, userEmail }) {
+function PersonalTaskModal({ isOpen, onClose, onSaved, initialTask, userEmail, onOpenLink }) {
   const [task, setTask] = useState(emptyTask);
   const [saving, setSaving] = useState(false);
   const isNew = !initialTask;
+  // Usuwa tylko autor zadania (serwer: ownership.js) — przypisany może je edytować i odhaczyć.
+  const isOwner = !initialTask?.user_email || String(initialTask.user_email).toLowerCase() === String(userEmail || '').toLowerCase();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -103,12 +119,25 @@ function PersonalTaskModal({ isOpen, onClose, onSaved, initialTask, userEmail })
       title={isNew ? tr('Nowe zadanie') : tr('Edytuj zadanie')}
       size="md"
       footer={<>
-        {task.id && <Button type="button" variant="danger" icon={Trash2} onClick={handleDelete} className="mr-auto">{tr('Usuń')}</Button>}
+        {task.id && isOwner && <Button type="button" variant="danger" icon={Trash2} onClick={handleDelete} className="mr-auto">{tr('Usuń')}</Button>}
         <Button type="button" variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
         <Button type="submit" form="dashboard-task-form" icon={Save} loading={saving} disabled={!task.title.trim()}>{tr('Zapisz')}</Button>
       </>}
     >
       <div className="p-6">
+        {appLinkIn(initialTask?.description) && (
+          <Button type="button" variant="outline" size="sm" icon={ExternalLink} className="mb-4"
+            onClick={() => { onClose(); onOpenLink?.(appLinkIn(initialTask.description)); }}>
+            {tr('Otwórz powiązaną stronę')}
+          </Button>
+        )}
+        {(initialTask?.assigned_by || initialTask?.assigned_for) && (
+          <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+            {initialTask.assigned_by
+              ? tr('Przypisane przez: {name}', { name: initialTask.assigned_by })
+              : tr('Przypisane do: {name}', { name: initialTask.assigned_for })}
+          </p>
+        )}
         <form id="dashboard-task-form" onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="dashboard-task-title" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł')}</label>
@@ -193,10 +222,12 @@ function PersonalTaskModal({ isOpen, onClose, onSaved, initialTask, userEmail })
 // WIDŻET
 // ============================================
 
-export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh }) {
+export default function MyTasksWidget({ tasks, boardTasks: shared = null, userEmail, userName, onRefresh }) {
   const navigate = useNavigate();
   // Dostęp do tablic (Projekty / tablice służb) rozstrzyga serwer — 403 to po prostu brak zadań.
-  const { tasks: boardTasks, loading, error, reload, markDone } = useMyBoardTasks(userEmail, { userName });
+  // Pulpit podaje wynik swojego useMyBoardTasks (jedno źródło z licznikiem); samodzielnie — własny.
+  const own = useMyBoardTasks(userEmail, { userName, enabled: !shared });
+  const { tasks: boardTasks, loading, error, reload, markDone } = shared || own;
   const [modal, setModal] = useState({ isOpen: false, task: null });
   const [expanded, setExpanded] = useState(false);
   const [pendingIds, setPendingIds] = useState(() => new Set()); // zadania w trakcie odhaczania
@@ -208,7 +239,10 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
       return {
         kind: 'personal', id: t.id, name: String(t.title || '').trim(), due: ymd(t.due_date),
         done: t.status === 'done', status: { title: tr(st.label), color: st.color },
-        sourceLabel: tr('Osobiste'), isPrivate: !!t.is_private, raw: t,
+        sourceLabel: t.assigned_by
+          ? tr('Od: {name}', { name: t.assigned_by })
+          : t.assigned_for ? tr('Dla: {name}', { name: t.assigned_for }) : tr('Osobiste'),
+        isPrivate: !!t.is_private, raw: t,
       };
     });
   const board = boardTasks.map((t) => ({
@@ -256,6 +290,7 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
       onSaved={onRefresh}
       initialTask={modal.task}
       userEmail={userEmail}
+      onOpenLink={(path) => navigate(path)}
     />
   );
 

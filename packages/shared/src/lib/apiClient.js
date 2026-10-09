@@ -621,6 +621,7 @@ export function createApiClient({
   let ws = null;
   let wsHandlers = []; // { table, event, cb, channelName }
   let wsReconnectTimer = null;
+  let wsEverOpened = false; // po ponownym połączeniu klient powinien dociągnąć zmiany, które przegapił
 
   function ensureWs() {
     if (!realtime) return null;
@@ -631,6 +632,12 @@ export function createApiClient({
     ws.onopen = () => {
       const tables = new Set(wsHandlers.map((h) => h.table));
       for (const table of tables) ws.send(JSON.stringify({ type: 'subscribe', table }));
+      // Ponowne połączenie (sen komputera, zerwana sieć) — zdarzenia z przerwy przepadły; ekrany
+      // (np. tablice zadań) nasłuchują i odświeżają dane. W RN bez window.dispatchEvent — pomijamy.
+      if (wsEverOpened && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+        try { window.dispatchEvent(new CustomEvent('avenit:realtime-reconnect')); } catch {}
+      }
+      wsEverOpened = true;
     };
     ws.onmessage = (evt) => {
       try {

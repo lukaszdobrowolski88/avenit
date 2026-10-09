@@ -11,6 +11,7 @@ import dataApiRoutes from './dataapi/routes.js';
 import storageRoutes from './storage/routes.js';
 import publicPageRoutes from './public/routes.js';
 import { registerClient } from './realtime/hub.js';
+import { realtimeRowFilter } from './realtime/scope.js';
 import { canAccess, loadGrants } from './dataapi/registry.js';
 import { isPiiTable } from './dataapi/pii.js';
 import { getTenantPool, resolveTenant } from './db.js';
@@ -138,19 +139,29 @@ export async function buildServer() {
       const header = req.headers['x-tenant'];
       if (header && header !== tenant.slug && header !== tenant.subdomain) throw new Error('Tenant niezgodny z tokenem');
       const pool = getTenantPool(tenant.db_name);
-      const { rows } = await pool.query(`SELECT id, email, role, is_super_admin FROM app_users WHERE id = $1`, [payload.sub]);
+      const { rows } = await pool.query(`SELECT id, email, role, is_super_admin, campus_id, member_id FROM app_users WHERE id = $1`, [payload.sub]);
       if (!rows[0]) throw new Error('Brak konta');
-      const user = { id: rows[0].id, email: rows[0].email || payload.email, role: rows[0].role ?? payload.role, is_super_admin: rows[0].is_super_admin };
+      const user = {
+        id: rows[0].id, email: rows[0].email || payload.email, role: rows[0].role ?? payload.role,
+        is_super_admin: rows[0].is_super_admin, campus_id: rows[0].campus_id ?? null, member_id: rows[0].member_id ?? null,
+      };
       const { adminRoles } = await loadGrants(pool, tenant.db_name);
+      const isAdmin = !!user.is_super_admin || adminRoles.has(user.role);
       registerClient(socket, {
         tenant: tenant.slug,
         userId: String(user.id),
         email: user.email,
-        isAdmin: !!user.is_super_admin || adminRoles.has(user.role),
+        isAdmin,
         // Tabele z danymi osobowymi (pii.js) wysyłałyby całe wiersze — realtime tylko dla admina.
-        authorize: async (table) =>
-          (!isPiiTable(table) || !!user.is_super_admin || adminRoles.has(user.role)) &&
-          (await canAccess({ pool, dbName: tenant.db_name, table, op: 'select', user })).ok,
+        // Prawo „w zakresie służby” (allowModuleScope) też daje subskrypcję — wtedy (oraz dla
+        // wydarzeń i tabel kampusowych) zmiany przechodzą przez filtr wierszy tego klienta.
+        authorize: async (table) => {
+          if (isPiiTable(table) && !isAdmin) return false;
+          const access = await canAccess({ pool, dbName: tenant.db_name, table, op: 'select', user, allowModuleScope: true });
+          if (!access.ok) return false;
+          const filter = realtimeRowFilter({ pool, table, user, isAdmin, moduleScope: access.moduleScope || null });
+          return filter ? { filter } : true;
+        },
       });
     } catch {
       socket.close(4401, 'unauthorized');

@@ -36,6 +36,7 @@ const BUILTIN_EVENT_TABS = [
   { id: 'sluzby', label: 'Służby', def: true },
   { id: 'uczestnicy', label: 'Uczestnicy', def: true },
   { id: 'materialy', label: 'Materiały', def: false },
+  { id: 'zadania', label: 'Zadania', def: true },
   { id: 'widocznosc', label: 'Widoczność', def: true },
 ];
 

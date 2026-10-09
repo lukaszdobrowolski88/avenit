@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Star, Paperclip, Plus, X, ExternalLink, Check } from 'lucide-react';
+import { Star, Paperclip, Plus, X, ExternalLink, Check, Upload } from 'lucide-react';
 import Popover from '../Popover';
 import { evalFormula } from '../../lib/formula';
-import { formatDate, formatDateRange, formatNumber, filesCountText } from '../../lib/columnTypes';
+import { formatDate, formatDateRange, formatNumber, filesCountText, isOverdue, isImageFile } from '../../lib/columnTypes';
 import CustomDatePicker from '../../../../components/CustomDatePicker';
+import Spinner from '../../../../components/Spinner';
 import { STATUS_COLORS } from '../../../../components/ui/DataTable';
+import { supabase } from '../../../../lib/supabase';
+import { thumbUrl } from '../../../../lib/imageThumb';
 import { toast } from '../../../../lib/toast';
 import { tr, appLocale } from '../../../../i18n';
 import '../../../../components/pickList.css';
@@ -52,15 +55,24 @@ export function normalizeUrl(raw) {
 const safeHref = (url) => normalizeUrl(url) || null;
 
 // ── Tekst (inline) ───────────────────────────────────────────────────
+// Zmiana z zewnątrz (realtime, odświeżenie) nie nadpisuje pola, w którym ktoś właśnie pisze;
+// pole bez własnych zmian przyjmuje nową wartość (i nie odsyła starej przy wyjściu).
 export function TextCell({ column, value, onChange, readOnly, align = 'left' }) {
   const [v, setV] = useState(value ?? '');
-  useEffect(() => { setV(value ?? ''); }, [value]);
+  const ref = useRef(null);
+  const dirty = useRef(false);
+  useEffect(() => {
+    if (dirty.current && document.activeElement === ref.current) return;
+    dirty.current = false;
+    setV(value ?? '');
+  }, [value]);
   if (readOnly) return <div className={`px-2 text-sm text-gray-700 dark:text-gray-200 truncate w-full text-${align}`}>{value}</div>;
   return (
     <input
+      ref={ref}
       value={v}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => { if (v !== (value ?? '')) onChange(v); }}
+      onChange={(e) => { dirty.current = true; setV(e.target.value); }}
+      onBlur={() => { if (dirty.current && v !== (value ?? '')) onChange(v); dirty.current = false; }}
       onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
       aria-label={column?.name || tr('Tekst')}
       className={`${CELL_INPUT} text-${align}`}
@@ -122,7 +134,7 @@ export function NumberCell({ column, value, onChange, readOnly }) {
         aria-label={column?.name || tr('Liczba')}
         className={`${CELL_INPUT} text-right tabular-nums`}
       />
-      {unit && shown && draft === null && <span className="text-xs text-gray-400 pr-2 shrink-0">{unit}</span>}
+      {unit && shown && draft === null && <span className="text-xs text-gray-500 dark:text-gray-400 pr-2 shrink-0">{unit}</span>}
     </div>
   );
 }
@@ -130,24 +142,44 @@ export function NumberCell({ column, value, onChange, readOnly }) {
 // ── Data ─────────────────────────────────────────────────────────────
 // Spokojnie jak w Notion: data to zwykły tekst, pusto = „+” na hover wiersza. Kliknięcie otwiera
 // ten sam kalendarz co w formularzach aplikacji (wcześniej w komórce pojawiało się całe pole).
-export function DateCell({ column, value, onChange, readOnly }) {
+// Po terminie (przed dziś, zadanie niezakończone) — data na czerwono, także w tabeli na komputerze.
+const OVERDUE_TEXT = 'text-red-600 dark:text-red-400 font-semibold';
+const OVERDUE_WRAP = '[&_.tabular-nums]:!text-red-600 dark:[&_.tabular-nums]:!text-red-400 [&_.tabular-nums]:font-semibold';
+export function DateCell({ column, value, onChange, readOnly, item, columns }) {
+  const overdue = !!item && isOverdue(value, item, columns || []);
+  const hint = overdue ? <span className="sr-only">{tr('Po terminie')}</span> : null;
   if (readOnly) {
-    return <div className="px-2 text-sm text-gray-600 dark:text-gray-300 w-full text-center tabular-nums">{value ? formatDate(String(value).slice(0, 10)) : ''}</div>;
+    return (
+      <div className={`px-2 text-sm w-full text-center tabular-nums ${overdue ? OVERDUE_TEXT : 'text-gray-600 dark:text-gray-300'}`} title={overdue ? tr('Po terminie') : undefined}>
+        {value ? formatDate(String(value).slice(0, 10)) : ''}{hint}
+      </div>
+    );
   }
   return (
-    <CustomDatePicker variant="cell" value={value ? String(value).slice(0, 10) : ''}
-      onChange={(v) => onChange(v || null)} aria-label={column?.name || tr('Data')} />
+    <div className={`w-full h-full ${overdue ? OVERDUE_WRAP : ''}`} title={overdue ? tr('Po terminie') : undefined}>
+      <CustomDatePicker variant="cell" value={value ? String(value).slice(0, 10) : ''}
+        onChange={(v) => onChange(v || null)} aria-label={column?.name || tr('Data')} />
+      {hint}
+    </div>
   );
 }
 
 // ── Oś czasu (start → koniec) ────────────────────────────────────────
 // Zakres jako tekst „12.10 – 18.10.2026” w miękkiej, neutralnej pigułce (nie nasycony pasek
 // z białym tekstem). Edycja: dwa kalendarze aplikacji, koniec nie wcześniej niż początek.
-export function TimelineCell({ column, value, onChange, readOnly }) {
+export function TimelineCell({ column, value, onChange, readOnly, item, columns }) {
   const v = value || {};
   const text = formatDateRange(v.start, v.end);
+  const overdue = !!item && isOverdue(v, item, columns || []);
   const pill = text
-    ? <span className="inline-flex max-w-full items-center px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-xs font-medium text-gray-700 dark:text-gray-200 tabular-nums whitespace-nowrap overflow-hidden">{text}</span>
+    ? (
+      <span title={overdue ? tr('Po terminie') : undefined}
+        className={`inline-flex max-w-full items-center px-2 py-0.5 rounded-full text-xs font-medium tabular-nums whitespace-nowrap overflow-hidden ${overdue
+          ? 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'
+          : 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200'}`}>
+        {text}{overdue && <span className="sr-only"> · {tr('Po terminie')}</span>}
+      </span>
+    )
     : null;
   if (readOnly) return <div className="w-full h-full flex items-center justify-center px-2">{pill}</div>;
 
@@ -302,16 +334,62 @@ export function RatingCell({ column, value, onChange, readOnly }) {
   );
 }
 
-// ── Pliki (metadane; upload w kolejnej fazie) ────────────────────────
-function FilesEditor({ files, onChange }) {
+// ── Pliki ────────────────────────────────────────────────────────────
+// Wgrywanie do magazynu (bucket public-assets, board_files/<tablica>/…) albo link http(s).
+// Zdjęcia z naszego magazynu pokazujemy jako miniatury (thumbUrl — serwer zmniejsza raz i trzyma).
+// Usunięcie z listy nie kasuje pliku z magazynu (kopia zadania może wskazywać ten sam plik).
+export async function uploadBoardFiles(boardId, fileList) {
+  const out = [];
+  for (const file of Array.from(fileList || [])) {
+    const safe = (file.name || 'plik').replace(/[^\w.\-]+/g, '_').slice(-120);
+    const path = `board_files/${boardId || 'inne'}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${safe}`;
+    const { error } = await supabase.storage.from('public-assets').upload(path, file);
+    if (error) throw error;
+    const { data } = supabase.storage.from('public-assets').getPublicUrl(path);
+    out.push({ name: file.name || safe, url: data?.publicUrl, path, type: file.type || '', size: file.size || 0 });
+  }
+  return out;
+}
+
+function FileThumb({ file, size = 28 }) {
+  const href = safeHref(file.url);
+  if (href && isImageFile(file)) {
+    return <img src={thumbUrl(href, size)} alt="" loading="lazy" decoding="async" width={size} height={size}
+      className="shrink-0 rounded-md object-cover bg-gray-100 dark:bg-white/10" style={{ width: size, height: size }} />;
+  }
+  return (
+    <span className="shrink-0 grid place-items-center rounded-md bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400" style={{ width: size, height: size }} aria-hidden="true">
+      <Paperclip size={Math.round(size / 2)} />
+    </span>
+  );
+}
+
+function FilesEditor({ files, onChange, boardId }) {
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [invalid, setInvalid] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+  const latest = useRef(files);
+  latest.current = files;
   const add = () => {
     const norm = normalizeUrl(url);
     if (!norm) { setInvalid(true); return; }
     onChange([...files, { name: name.trim() || norm, url: norm }]);
     setName(''); setUrl(''); setInvalid(false);
+  };
+  const upload = async (list) => {
+    if (!list?.length) return;
+    setUploading(true);
+    try {
+      const added = await uploadBoardFiles(boardId, list);
+      if (added.length) onChange([...(latest.current || []), ...added]);
+    } catch (e) {
+      toast.error(e, { fallback: tr('Nie udało się wgrać pliku.') });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
   };
   return (
     <div className="flex flex-col">
@@ -320,14 +398,14 @@ function FilesEditor({ files, onChange }) {
           {files.map((f, i) => {
             const href = safeHref(f.url);
             return (
-              <li key={i} className="flex items-center gap-2 px-3 min-h-[34px]">
-                <Paperclip size={13} className="shrink-0 text-gray-400" aria-hidden="true" />
+              <li key={`${f.url || f.name}:${i}`} className="flex items-center gap-2 px-3 min-h-[38px]">
+                <FileThumb file={f} />
                 {href
                   ? <a href={href} target="_blank" rel="noopener noreferrer" className={`${LINK_TEXT} flex-1 min-w-0`}>{f.name || f.url}</a>
                   : <span className="flex-1 min-w-0 truncate text-sm text-gray-500">{f.name || f.url}</span>}
                 <button type="button" onClick={() => onChange(files.filter((_, j) => j !== i))}
                   aria-label={tr('Usuń plik {name}', { name: f.name || f.url })}
-                  className="shrink-0 p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/50">
+                  className="shrink-0 p-1 rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:bg-red-500/10 outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/50">
                   <X size={13} aria-hidden="true" />
                 </button>
               </li>
@@ -335,8 +413,15 @@ function FilesEditor({ files, onChange }) {
           })}
         </ul>
       )}
-      <div className={`p-3 space-y-1.5 ${files.length ? 'border-t border-gray-100 dark:border-white/10' : ''}`}>
-        <input autoFocus value={url} onChange={(e) => { setUrl(e.target.value); setInvalid(false); }}
+      <div className={`p-3 space-y-2 ${files.length ? 'border-t border-gray-100 dark:border-white/10' : ''}`}>
+        <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => upload(e.target.files)} />
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} autoFocus
+          className="w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-lg text-sm font-medium bg-[rgba(42,35,18,0.06)] dark:bg-white/10 text-gray-800 dark:text-gray-100 hover:bg-[rgba(42,35,18,0.1)] dark:hover:bg-white/15 disabled:opacity-60 outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/50">
+          {uploading ? <Spinner size={14} /> : <Upload size={14} aria-hidden="true" />}
+          {uploading ? tr('Wgrywanie…') : tr('Wgraj plik')}
+        </button>
+        <div className="pick-section !px-0 !pt-1">{tr('albo dodaj link')}</div>
+        <input value={url} onChange={(e) => { setUrl(e.target.value); setInvalid(false); }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           placeholder="https://" inputMode="url" aria-label={tr('Adres pliku (URL)')} aria-invalid={invalid || undefined}
           className={`${POP_INPUT} ${invalid ? 'ring-2 ring-red-500/60' : ''}`} />
@@ -346,33 +431,55 @@ function FilesEditor({ files, onChange }) {
         {invalid && <p className="text-xs text-red-600 dark:text-red-400" role="alert">{tr('Dozwolone są tylko adresy http(s)')}</p>}
         <button type="button" onClick={add} disabled={!url.trim()}
           className="inline-flex items-center gap-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white disabled:opacity-40 disabled:cursor-not-allowed rounded px-1 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/50">
-          <Plus size={13} aria-hidden="true" /> {tr('Dodaj plik')}
+          <Plus size={13} aria-hidden="true" /> {tr('Dodaj link')}
         </button>
       </div>
     </div>
   );
 }
 
-export function FilesCell({ column, value = [], onChange, readOnly }) {
-  const files = Array.isArray(value) ? value : [];
-  const count = files.length ? (
+// W komórce: miniatury zdjęć (do trzech) albo spinacz z liczbą plików.
+function FilesSummary({ files }) {
+  if (!files.length) return null;
+  const images = files.filter((f) => isImageFile(f) && safeHref(f.url));
+  if (images.length) {
+    const shown = images.slice(0, 3);
+    const rest = files.length - shown.length;
+    return (
+      <span className="flex items-center gap-1 min-w-0">
+        <span className="flex -space-x-1.5">
+          {shown.map((f, i) => (
+            <img key={`${f.url}:${i}`} src={thumbUrl(safeHref(f.url), 24)} alt="" loading="lazy" decoding="async" width={24} height={24}
+              className="w-6 h-6 rounded-md object-cover ring-2 ring-white dark:ring-gray-800 bg-gray-100 dark:bg-white/10" />
+          ))}
+        </span>
+        {rest > 0 && <span className="text-xs text-gray-600 dark:text-gray-300 tabular-nums">+{rest}</span>}
+      </span>
+    );
+  }
+  return (
     <span className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 tabular-nums">
       <Paperclip size={13} aria-hidden="true" /> {files.length}
     </span>
-  ) : null;
+  );
+}
+
+export function FilesCell({ column, value = [], onChange, readOnly, item }) {
+  const files = Array.isArray(value) ? value : [];
+  const count = files.length ? <FilesSummary files={files} /> : null;
   if (readOnly) {
     return <div className="w-full h-full flex items-center justify-center" title={files.length ? filesCountText(files.length) : undefined}>{count}</div>;
   }
   const name = column?.name || tr('Pliki');
   return (
-    <Popover width={280} bare className="pick-pop overflow-hidden" trigger={
+    <Popover width={300} bare className="pick-pop overflow-hidden" trigger={
       <button type="button" aria-label={files.length ? `${name}: ${filesCountText(files.length)}` : name} className={`${CELL_TRIGGER} justify-center`}>
         {count || (
           <Paperclip size={13} aria-hidden="true" className="text-gray-300 dark:text-gray-600 opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 transition-opacity" />
         )}
       </button>
     }>
-      {() => <FilesEditor files={files} onChange={onChange} />}
+      {() => <FilesEditor files={files} onChange={onChange} boardId={item?.board_id} />}
     </Popover>
   );
 }

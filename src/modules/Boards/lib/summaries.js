@@ -1,25 +1,11 @@
-// Podsumowania kolumn per-grupa (jak stopka grupy w Monday).
-import { findLabel, isCellEmpty, formatDuration } from './columnTypes';
+// Podsumowania kolumn w stopce grupy (TableView): sumy liczb i łączny czas. Kolorowy pasek
+// statusów (bateria jak w Monday) usunięty — statusy widać w wierszach.
+import { isCellEmpty, formatDuration } from './columnTypes';
 
-// Zwraca obiekt opisujący podsumowanie kolumny dla zbioru elementów.
-// { kind: 'battery'|'number'|'count', ... }
+// { kind: 'number', sum, avg, count } | { kind: 'duration', text } | { kind: 'count', filled, total }
 export function summarizeColumn(column, items) {
   const values = items.map(it => it.cells?.[column.id]);
   switch (column.type) {
-    case 'status':
-    case 'priority': {
-      const buckets = {};
-      let total = 0;
-      for (const v of values) {
-        if (v == null) continue;
-        const l = findLabel(column, v);
-        const color = l ? l.color : '#c4c4c4';
-        buckets[color] = (buckets[color] || 0) + 1;
-        total++;
-      }
-      const segments = Object.entries(buckets).map(([color, count]) => ({ color, count, pct: total ? (count / total) * 100 : 0 }));
-      return { kind: 'battery', segments, total };
-    }
     case 'vote': {
       const sum = values.reduce((a, v) => a + (Array.isArray(v) ? v.length : 0), 0);
       return { kind: 'number', sum, avg: 0, count: items.length };
@@ -40,9 +26,4 @@ export function summarizeColumn(column, items) {
       return { kind: 'count', filled, total: values.length };
     }
   }
-}
-
-// Bateria (pasek udziału) — komponent renderujący segmenty
-export function batterySegments(summary) {
-  return summary?.segments || [];
 }

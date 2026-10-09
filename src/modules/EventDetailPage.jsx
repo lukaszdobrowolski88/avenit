@@ -4,7 +4,7 @@ import {
   ArrowLeft, Link as LinkIcon, ExternalLink, Trash2, Calendar, Clock, MapPin,
   Ticket, FileText, Users, Send, Copy, Check, X,
   Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon, ClipboardList, Eye, Search,
-  Music, Type, MoreHorizontal, User, FolderOpen, AlertTriangle, Loader2, RefreshCw,
+  Music, Type, MoreHorizontal, User, FolderOpen, AlertTriangle, Loader2, RefreshCw, CheckSquare,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
@@ -16,6 +16,7 @@ import SimpleRichEditor from '../components/SimpleRichEditor';
 import EventRSVP from '../components/EventRSVP';
 import EventTeamsTab from './Events/EventTeamsTab';
 import EventMaterialsTab from './Events/EventMaterialsTab';
+import EventTasksTab from './Events/EventTasksTab';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import { useModuleCalendar, useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
@@ -448,6 +449,8 @@ export default function EventDetailPage() {
     ...(tabOn('rejestracja', true) ? [{ id: 'rejestracja', label: tr('Rejestracja i płatność'), icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null }] : []),
     ...(tabOn('sluzby', true) ? [{ id: 'sluzby', label: tr('Służby'), icon: Users, badge: (teamTypes.length || Object.keys(ev.assignments || {}).length || (ev.team_layout?.sections?.length)) ? '●' : null }] : []),
     ...(tabOn('uczestnicy', true) ? [{ id: 'uczestnicy', label: tr('Uczestnicy'), icon: Users, badge: invites.length || null }] : []),
+    // Zadania przypięte do wydarzenia (board_items.event_id) — z tablicy zadań modułu / Kalendarza.
+    ...(tabOn('zadania', true) ? [{ id: 'zadania', label: tr('Zadania'), icon: CheckSquare }] : []),
     ...(materialsEnabled ? [{ id: 'materialy', label: tr('Materiały'), icon: FolderOpen }] : []),
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
     ...(canManage && tabOn('widocznosc', true) ? [{ id: 'widocznosc', label: tr('Widoczność'), icon: Eye }] : []),
@@ -858,6 +861,9 @@ export default function EventDetailPage() {
           onSaveLayout={(l) => save({ team_layout: l })}
         />
       )}
+
+      {/* Zadania wydarzenia — elementy tablic z event_id (lista, dodawanie, szablon modułu) */}
+      {tab === 'zadania' && <EventTasksTab event={ev} />}
 
       {/* Materiały — upload + podpinanie materiałów grup domowych (event_materials) */}
       {tab === 'materialy' && (

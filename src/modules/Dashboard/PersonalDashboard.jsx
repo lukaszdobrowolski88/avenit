@@ -3,6 +3,7 @@ import { Settings, RefreshCw, Calendar, CheckSquare, CalendarX, Heart, Users, Me
 
 import { useDashboardLayout } from './hooks/useDashboardLayout';
 import { useDashboardData } from './hooks/useDashboardData';
+import { useMyBoardTasks } from './hooks/useMyBoardTasks';
 import { WIDGET_DEFINITIONS } from './utils/layoutDefaults';
 import { widgetAllowed } from './utils/widgetAccess';
 import { usePermissions } from '../../contexts/PermissionsContext';
@@ -82,6 +83,13 @@ export default function PersonalDashboard({ user }) {
     refreshPrayers,
   } = useDashboardData(userEmail);
 
+  // Zadania z tablic — JEDNO źródło dla widżetu „Moje zadania” i licznika w powitaniu
+  // (wcześniej useDashboardData liczył je drugi raz, inną regułą „gotowe”).
+  const boardTasks = useMyBoardTasks(userEmail, { userName: userProfile?.full_name || null });
+  const openPersonal = (tasks || []).filter((tk) => tk?.source === 'personal' && tk.status !== 'done').length;
+  const openBoard = boardTasks.tasks.filter((tk) => !tk.done).length;
+  const statsAll = { ...(stats || {}), tasksCount: openPersonal + openBoard };
+
   const loading = layoutLoading || dataLoading || roleLoading;
   const brand = useBrandTheme();
 
@@ -93,7 +101,7 @@ export default function PersonalDashboard({ user }) {
       case 'ministry':
         return <MyMinistryWidget upcomingMinistry={upcomingMinistry} pastMinistry={pastMinistry} userEmail={userEmail} />;
       case 'tasks':
-        return <MyTasksWidget tasks={tasks} userEmail={userEmail} userName={userProfile?.full_name} onRefresh={refreshTasks} />;
+        return <MyTasksWidget tasks={tasks} boardTasks={boardTasks} userEmail={userEmail} userName={userProfile?.full_name} onRefresh={refreshTasks} />;
       case 'absences':
         return (
           <MyAbsencesWidget absences={absences} onRefresh={refreshAbsences} />
@@ -125,7 +133,7 @@ export default function PersonalDashboard({ user }) {
   const firstName = displayName.split(' ')[0];
 
   // Druga, cienka linia powitania w motywie Avenit — najważniejsza rzecz na dziś.
-  const tasksN = stats?.tasksCount || 0;
+  const tasksN = statsAll.tasksCount || 0;
   const servicesN = stats?.upcomingServicesCount || 0;
   const headline = tasksN > 0
     ? `${tasksN} ${plural(tasksN, tr('zadanie do zrobienia'), tr('zadania do zrobienia'), tr('zadań do zrobienia'))}`
@@ -243,7 +251,7 @@ export default function PersonalDashboard({ user }) {
         </div>
       )}
 
-      {brand && <BrandHero upcomingMinistry={upcomingMinistry} stats={stats} />}
+      {brand && <BrandHero upcomingMinistry={upcomingMinistry} stats={statsAll} />}
 
       {/* Widgets Grid */}
       {visibleWidgets.length > 0 ? (

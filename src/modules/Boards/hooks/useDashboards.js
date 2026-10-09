@@ -28,9 +28,11 @@ export function useDashboards(userEmail) {
     return data;
   }, []);
 
+  // Błędy zapisu pokazuje globalny nasłuch (lib/toast listenWriteErrors) — tu tylko nie udajemy sukcesu.
   const deleteDashboard = useCallback(async (id) => {
-    await supabase.from('board_dashboards').delete().eq('id', id);
-    setDashboards(prev => prev.filter(d => d.id !== id));
+    const { error } = await supabase.from('board_dashboards').delete().eq('id', id);
+    if (!error) setDashboards(prev => prev.filter(d => d.id !== id));
+    return !error;
   }, []);
 
   return { dashboards, loading, reload: load, createDashboard, updateDashboard, deleteDashboard };

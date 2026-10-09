@@ -1,11 +1,12 @@
 // Test dymny „Moje zadania” na Pulpicie: zadania z tablic (kolumna „Osoby”) + osobiste, sortowanie
-// po terminie, zaległe, link do elementu i szybkie „gotowe” (świeże komórki + etykieta „gotowe”).
+// po terminie, zaległe, link do elementu i szybkie „gotowe” (fn board-item-patch scala komórkę
+// statusu na serwerze — bez nadpisywania innych komórek).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
-const h = vi.hoisted(() => ({ DB: {}, writes: [], forbidden: new Set() }));
+const h = vi.hoisted(() => ({ DB: {}, writes: [], forbidden: new Set(), calls: [] }));
 
 function chain(table) {
   const state = { op: 'select', filters: [] };
@@ -37,7 +38,20 @@ function chain(table) {
   return proxy;
 }
 
-vi.mock('../../../lib/supabase', () => ({ supabase: { from: (t) => chain(t) } }));
+vi.mock('../../../lib/supabase', () => ({
+  supabase: {
+    from: (t) => chain(t),
+    functions: {
+      invoke: async (name, { body } = {}) => {
+        h.calls.push({ name, body });
+        if (name !== 'board-item-patch') return { data: null, error: null };
+        const it = h.DB.board_items.find((x) => x.id === body.item_id);
+        it.cells = { ...(it.cells || {}), ...body.cells };
+        return { data: { item: it }, error: null };
+      },
+    },
+  },
+}));
 vi.mock('../../../lib/toast', () => ({ toast: { success: () => {}, error: () => {}, info: () => {} } }));
 vi.mock('../../../lib/dialog', () => ({ confirmDialog: async () => true }));
 vi.mock('../../../hooks/useAppModules', () => ({ useAppModules: () => ({ modules: [{ key: 'media', path: '/media', label: 'MediaTeam' }] }) }));
@@ -52,6 +66,7 @@ const me = { email: 'ja@test.pl', name: 'Ja' };
 
 function seed() {
   h.writes = [];
+  h.calls = [];
   h.forbidden = new Set();
   h.DB = {
     boards: [
@@ -121,17 +136,38 @@ describe('MyTasksWidget', () => {
     expect(screen.getByTestId('where').textContent).toBe('/media?item=i1');
   });
 
-  it('„gotowe” zapisuje świeże komórki z etykietą „gotowe” i chowa zadanie', async () => {
+  it('„gotowe” wysyła tylko komórkę statusu (board-item-patch) i chowa zadanie', async () => {
     renderWidget();
     await screen.findByText('Nagłośnienie');
-    // Ktoś w międzyczasie zmienił inną komórkę — nie może zginąć.
+    // Ktoś w międzyczasie zmienił inną komórkę — serwer scala, więc nie zginie.
     h.DB.board_items[0].cells = { ...h.DB.board_items[0].cells, note: 'nowe' };
     fireEvent.click(screen.getByLabelText(/Nagłośnienie$/));
-    await waitFor(() => expect(h.writes.some((w) => w.table === 'board_items' && w.op === 'update')).toBe(true));
-    const upd = h.writes.find((w) => w.table === 'board_items' && w.op === 'update');
-    expect(upd.payload.cells).toMatchObject({ s1: 'done', note: 'nowe', d1: '2020-01-05' });
-    expect(upd.filters).toEqual([['eq', 'id', 'i1']]);
+    await waitFor(() => expect(h.calls.some((c) => c.name === 'board-item-patch')).toBe(true));
+    const call = h.calls.find((c) => c.name === 'board-item-patch');
+    expect(call.body).toEqual({ item_id: 'i1', cells: { s1: 'done' } });
+    expect(h.DB.board_items[0].cells).toMatchObject({ s1: 'done', note: 'nowe', d1: '2020-01-05' });
+    expect(h.writes.some((w) => w.table === 'board_items')).toBe(false);
     await waitFor(() => expect(screen.queryByText('Nagłośnienie')).toBeNull());
     await waitFor(() => expect(h.writes.some((w) => w.table === 'board_item_activity' && w.payload.action === 'status_changed')).toBe(true));
+  });
+
+  it('zadanie osobiste przypisane przez kogoś pokazuje, kto je przypisał', async () => {
+    renderWidget([{ id: 'u2', source: 'personal', title: 'Oddzwonić', status: 'todo', user_email: 'szef@test.pl', assigned_to_email: 'ja@test.pl', assigned_by: 'Pastor Jan' }]);
+    await screen.findByText('Oddzwonić');
+    expect(screen.getByText('Od: Pastor Jan')).toBeTruthy();
+  });
+
+  it('podany z Pulpitu wynik useMyBoardTasks — widżet nie czyta tablic drugi raz', async () => {
+    const shared = { tasks: [{ id: 'x1', kind: 'board', name: 'Z Pulpitu', boardName: 'Tablica', due: null, status: null, done: false, link: '/projekty?board=b&item=x1' }], loading: false, error: null, reload: () => {}, markDone: async () => true };
+    let boardReads = 0;
+    const orig = h.DB;
+    h.DB = new Proxy(orig, { get(t, k) { if (k === 'boards') boardReads += 1; return t[k]; } });
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <MyTasksWidget tasks={[]} boardTasks={shared} userEmail="ja@test.pl" userName="Ja" onRefresh={() => {}} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Z Pulpitu');
+    expect(boardReads).toBe(0);
   });
 });

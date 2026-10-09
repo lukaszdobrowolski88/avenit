@@ -24,7 +24,8 @@ export default function Popover({ trigger, children, className = '', width, onOp
       const popH = popRef.current?.offsetHeight || 280;
       const spaceBelow = window.innerHeight - rect.bottom;
       const openUp = spaceBelow < popH && rect.top > spaceBelow;
-      const w = width || rect.width;
+      // Szerokość nie większa niż ekran minus margines (telefon) — min(width, 100vw - 16px).
+      const w = Math.min(width || rect.width, window.innerWidth - 16);
       const rawLeft = align === 'right' ? rect.right - w : rect.left;
       // Clamp do widoku w obu osiach — inaczej popover przy prawej krawędzi (np. „+" dodaj
       // kolumnę na końcu tabeli) wychodzi poza ekran i jest obcięty.
@@ -108,7 +109,7 @@ export default function Popover({ trigger, children, className = '', width, onOp
           ref={popRef}
           data-popover=""
           onKeyDown={onPopKeyDown}
-          style={{ position: 'fixed', top: coords.top, left: coords.left, minWidth: coords.minWidth, zIndex: 200 }}
+          style={{ position: 'fixed', top: coords.top, left: coords.left, minWidth: coords.minWidth, maxWidth: 'calc(100vw - 16px)', zIndex: 200 }}
           className={bare ? className : `pick-pop ${className}`}
         >
           {typeof children === 'function' ? children({ close: () => close(true) }) : children}

@@ -11,7 +11,8 @@ import MirrorCell from './cells/MirrorCell';
 import { EmailCell, PhoneCell, LocationCell, VoteCell, TimeTrackingCell, MetaCell } from './cells/ExtraCells';
 import { useBoardCan } from '../lib/boardContext';
 
-// Dyspozytor komórki — dobiera edytor do typu kolumny. Uprawnienia z kontekstu tablicy: bez prawa
+// Dyspozytor komórki — dobiera edytor do typu kolumny. Data/oś czasu dostają zadanie i kolumny
+// (czerwony termin, gdy po terminie i niezakończone), pliki — zadanie (tablica do ścieżki wgrania). Uprawnienia z kontekstu tablicy: bez prawa
 // edycji zadań komórka jest tylko do odczytu, a edycja etykiet/opcji (struktura kolumny) wymaga
 // prawa do zmiany kolumn — zamiast pokazywać kontrolki kończące się błędem 403.
 export default function BoardCell({ column, value, onChange, onUpdateColumn: onUpdateColumnProp, people, readOnly: readOnlyProp, item, columns, me }) {
@@ -47,9 +48,9 @@ export default function BoardCell({ column, value, onChange, onUpdateColumn: onU
     case 'number':
       return <NumberCell {...common} />;
     case 'date':
-      return <DateCell {...common} />;
+      return <DateCell {...common} item={item} columns={columns} />;
     case 'timeline':
-      return <TimelineCell {...common} />;
+      return <TimelineCell {...common} item={item} columns={columns} />;
     case 'checkbox':
       return <CheckboxCell {...common} />;
     case 'link':
@@ -57,7 +58,7 @@ export default function BoardCell({ column, value, onChange, onUpdateColumn: onU
     case 'rating':
       return <RatingCell {...common} />;
     case 'files':
-      return <FilesCell {...common} />;
+      return <FilesCell {...common} item={item} columns={columns} />;
     case 'long_text':
       return <LongTextCell {...common} />;
     case 'text':

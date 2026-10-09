@@ -201,7 +201,7 @@ export default function TimelineView({ data, config, onUpdateConfig, onOpenItem,
                       <div className="h-3.5 text-[10px] font-bold text-gray-600 dark:text-gray-300 capitalize whitespace-nowrap">
                         {firstOfMonth ? d.toLocaleDateString(appLocale(), { month: 'short' }).replace('.', '') : ''}
                       </div>
-                      <div className={`text-[10px] tabular-nums mx-auto w-5 h-5 flex items-center justify-center rounded-full ${isToday ? 'bg-accent-primary text-white font-bold' : 'text-gray-400'}`}>{format(d, 'd')}</div>
+                      <div className={`text-[10px] tabular-nums mx-auto w-5 h-5 flex items-center justify-center rounded-full ${isToday ? 'bg-accent-primary text-white font-bold' : 'text-gray-500 dark:text-gray-400'}`}>{format(d, 'd')}</div>
                     </div>
                   );
                 })}
@@ -216,7 +216,7 @@ export default function TimelineView({ data, config, onUpdateConfig, onOpenItem,
                 return (
                   <div key={item.id} className="group flex items-center border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/40" style={{ height: ROW_H }}>
                     <button type="button" onClick={() => onOpenItem(item)}
-                      className={`shrink-0 sticky left-0 z-10 h-full bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800 border-r border-gray-200 dark:border-gray-700 text-left text-sm truncate px-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-primary/50 ${item.name ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 italic'}`}
+                      className={`shrink-0 sticky left-0 z-10 h-full bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800 border-r border-gray-200 dark:border-gray-700 text-left text-sm truncate px-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-primary/50 ${item.name ? 'text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400 italic'}`}
                       style={{ width: NAME_W }}>
                       {item.name || tr('Bez nazwy')}
                     </button>
