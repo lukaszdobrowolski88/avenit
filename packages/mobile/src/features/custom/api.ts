@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 // Moduły z kreatora (web: src/modules/CustomModule/**). Dane:
 //  • module_records — ogłoszenia, linki, kontakty, FAQ, ankiety (kolekcje per zakładka);
 //    serwer wymaga filtra/pola module_key (inaczej 400), uprawnienie res:custom_<key>_records:<op>,
-//  • custom_<key>_tasks / _members — zadania i osoby modułu,
+//  • tablica zadań modułu (boards.source_kind = custom_<key>_tasks), osoby w custom_<key>_members,
 //  • boards.module_key — tablice Projektów przypięte do modułu.
 
 const asList = (d: unknown) => ((d ?? []) as any[]);
@@ -73,67 +73,10 @@ export const useDeleteRecord = (moduleKey: string, collectionKey: string) => {
   });
 };
 
-// ─── Zadania modułu (custom_<key>_tasks, statusy jak web TasksTab) ───────────
-
-export const CUSTOM_TASK_STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'] as const;
-export type CustomTaskStatus = (typeof CUSTOM_TASK_STATUSES)[number];
-
-export interface CustomTask {
-  id: string;
-  title: string;
-  description: string | null;
-  status: CustomTaskStatus;
-  dueDate: string | null;
-  assignee: string | null;
-}
-
-export const useCustomTasks = (moduleKey: string) =>
-  useQuery({
-    queryKey: ['custom', moduleKey, 'tasks'],
-    queryFn: async (): Promise<CustomTask[]> => {
-      const [{ data, error }, { data: members }] = await Promise.all([
-        supabase.from(`custom_${moduleKey}_tasks`).select('*').order('created_at', { ascending: false }),
-        supabase.from(`custom_${moduleKey}_members`).select('id, full_name'),
-      ]);
-      if (error) throw error;
-      const nameOf = new Map<string, string>(asList(members).map((m) => [String(m.id), String(m.full_name)]));
-      return asList(data).map((t) => ({
-        id: String(t.id),
-        title: String(t.title ?? 'Zadanie'),
-        description: t.description ?? null,
-        status: (CUSTOM_TASK_STATUSES as readonly string[]).includes(t.status) ? t.status : 'Do zrobienia',
-        dueDate: t.due_date ? String(t.due_date).slice(0, 10) : null,
-        assignee: t.assigned_to ? nameOf.get(String(t.assigned_to)) ?? null : null,
-      }));
-    },
-  });
-
-export const useAddCustomTask = (moduleKey: string, campusId: number | null) => {
-  const qc = useQueryClient();
-  return useMutation({
-    // Bez module_key — tabela custom_<key>_tasks go nie ma (web wysyła i zapis pada).
-    mutationFn: async (title: string) => {
-      const { error } = await (supabase.from(`custom_${moduleKey}_tasks`) as any).insert({
-        title,
-        status: 'Do zrobienia',
-        campus_id: campusId,
-      });
-      if (error) throw new Error(error.message || 'Nie udało się dodać zadania.');
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['custom', moduleKey, 'tasks'] }),
-  });
-};
-
-export const useSetCustomTaskStatus = (moduleKey: string) => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: CustomTaskStatus }) => {
-      const { error } = await (supabase.from(`custom_${moduleKey}_tasks`) as any).update({ status }).eq('id', id);
-      if (error) throw new Error(error.message || 'Nie udało się zmienić statusu.');
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['custom', moduleKey, 'tasks'] }),
-  });
-};
+// ─── Zadania modułu ───
+// Zadania żyją na tablicy modułu (boards.source_kind = custom_<key>_tasks) — patrz
+// CustomTasksWidget (widgets.tsx) i teams/data.ts useTeamBoard. Stara tabela custom_<key>_tasks
+// jest na serwerze tylko do odczytu (źródło jednorazowego importu na tablicę).
 
 // ─── Tablice modułu (boards.module_key) ─────────────────────────────────────
 

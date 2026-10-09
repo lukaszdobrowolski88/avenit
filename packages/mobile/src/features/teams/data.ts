@@ -3,6 +3,7 @@ import { supabase, tenantWebBase } from '../../lib/supabase';
 import { todayYmd } from '../schedule/assignments';
 import { eventIncludesTeam, parseTypeRules } from './grafik';
 import type { TeamConfig, TeamKey } from './config';
+import { ensureTasksBoardId, logBoardActivity, patchBoardItemCells } from './boardItems';
 
 // Dane zakładek zespołu — kontrakt 1:1 z webem (src/modules/shared/*Tab.jsx).
 
@@ -596,6 +597,8 @@ export interface BoardStatusLabel {
   id: string;
   title: string;
   color: string;
+  // Jawna flaga „zrobione” z edytora etykiet (shared/lib/boardStatus.js).
+  done?: boolean;
 }
 export interface BoardTask {
   id: string;
@@ -616,7 +619,7 @@ export interface TeamBoard {
 
 // Wczytanie tablicy po id: kolumny (status/people/date), grupy, elementy.
 async function loadBoard(boardId: string): Promise<TeamBoard> {
-  const [{ data: cols }, { data: groups }, { data: items, error }] = await Promise.all([
+  const [colsRes, groupsRes, itemsRes] = await Promise.all([
     supabase.from('board_columns').select('id, name, type, settings').eq('board_id', boardId).order('display_order'),
     supabase.from('board_groups').select('id, name, display_order').eq('board_id', boardId).order('display_order'),
     supabase
@@ -625,8 +628,10 @@ async function loadBoard(boardId: string): Promise<TeamBoard> {
       .eq('board_id', boardId)
       .order('display_order'),
   ]);
-  if (error) throw error;
-  const columns = asList(cols);
+  // Błąd którejkolwiek części → błąd zakładki (z „Spróbuj ponownie”), a nie tablica bez statusów.
+  for (const r of [colsRes, groupsRes, itemsRes]) if (r.error) throw r.error;
+  const columns = asList(colsRes.data);
+  const groups = asList(groupsRes.data);
   const settingsOf = (c: any) => (typeof c?.settings === 'string' ? JSON.parse(c.settings) : c?.settings) ?? {};
   const statusCol = columns.find((c) => c.type === 'status');
   const peopleCol = columns.find((c) => c.type === 'people');
@@ -635,11 +640,12 @@ async function loadBoard(boardId: string): Promise<TeamBoard> {
     id: String(l.id),
     title: String(l.title ?? l.id),
     color: String(l.color ?? '#6E685A'),
+    ...(typeof l.done === 'boolean' ? { done: l.done } : {}),
   }));
-  const groupName = new Map<string, string>(asList(groups).map((g) => [String(g.id), String(g.name)]));
+  const groupName = new Map<string, string>(groups.map((g) => [String(g.id), String(g.name)]));
   const cellsById: Record<string, Record<string, unknown>> = {};
   // Puste wiersze (dodane na webie i nienazwane) pomijamy — na liście wyglądały jak błąd.
-  const tasks: BoardTask[] = asList(items)
+  const tasks: BoardTask[] = asList(itemsRes.data)
     .filter((it) => !it.parent_item_id && String(it.name ?? '').trim())
     .map((it) => {
       const cells = (typeof it.cells === 'string' ? JSON.parse(it.cells) : it.cells) ?? {};
@@ -658,47 +664,66 @@ async function loadBoard(boardId: string): Promise<TeamBoard> {
     boardId,
     statusColumnId: statusCol ? String(statusCol.id) : null,
     labels,
-    firstGroupId: asList(groups)[0]?.id ? String(asList(groups)[0].id) : null,
+    firstGroupId: groups[0]?.id ? String(groups[0].id) : null,
     tasks,
     cellsById,
   };
 }
 
-const EMPTY_BOARD: TeamBoard = { boardId: null, statusColumnId: null, labels: [], firstGroupId: null, tasks: [], cellsById: {} };
-
 // Tablica zespołu po source_kind (ModuleBoard na webie) albo konkretna tablica po id.
-export const useTeamBoard = (sourceKind: string | undefined, boardId?: string) =>
+// Brak tablicy źródła → serwer ją tworzy (board-import-legacy), jak web przy pierwszym otwarciu.
+// boardTitle — nazwa nowej tablicy (jak na webie, np. „Zadania Media Team”).
+export const useTeamBoard = (sourceKind: string | undefined, boardId?: string, boardTitle?: string | null) =>
   useQuery({
     queryKey: ['team', 'board', boardId ?? sourceKind],
     enabled: !!(boardId || sourceKind),
     queryFn: async (): Promise<TeamBoard> => {
       if (boardId) return loadBoard(boardId);
-      const { data: boards } = await supabase.from('boards').select('id').eq('source_kind', sourceKind!).limit(1);
-      const id = asList(boards)[0]?.id ? String(asList(boards)[0].id) : null;
-      return id ? loadBoard(id) : EMPTY_BOARD;
+      return loadBoard(await ensureTasksBoardId(sourceKind!, boardTitle));
     },
   });
 
+interface Actor {
+  email: string | null;
+  name?: string | null;
+}
+
+// Zmiana statusu: tylko komórka statusu (board-item-patch scala na serwerze) + wpis w dzienniku.
 export const useSetTaskStatus = (sourceKind: string | undefined, boardId?: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
       itemId,
-      cells,
+      boardId: itemBoardId,
       statusColumnId,
       labelId,
+      prevLabelId,
+      actor,
     }: {
       itemId: string;
-      cells: Record<string, unknown>;
+      boardId: string | null;
       statusColumnId: string;
       labelId: string;
+      prevLabelId: string | null;
+      actor: Actor;
     }) => {
-      const { error } = await (supabase.from('board_items') as any)
-        .update({ cells: { ...cells, [statusColumnId]: labelId } })
-        .eq('id', itemId);
-      if (error) throw error;
+      const { before } = await patchBoardItemCells(itemId, { [statusColumnId]: labelId });
+      const from = before ? before[statusColumnId] ?? null : prevLabelId;
+      logBoardActivity({
+        itemId,
+        boardId: itemBoardId,
+        action: 'status_changed',
+        columnId: statusColumnId,
+        from,
+        to: labelId,
+        actorEmail: actor.email,
+        actorName: actor.name,
+      });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', 'board', boardId ?? sourceKind] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['team', 'board', boardId ?? sourceKind] });
+      qc.invalidateQueries({ queryKey: ['my-work'] });
+    },
   });
 };
 
@@ -709,22 +734,29 @@ export const useAddTask = (sourceKind: string | undefined, boardId?: string) => 
       boardId,
       groupId,
       name,
-      createdBy,
+      actor,
     }: {
       boardId: string;
       groupId: string | null;
       name: string;
-      createdBy: string | null;
+      actor: Actor;
     }) => {
-      const { error } = await (supabase.from('board_items') as any).insert({
-        board_id: boardId,
-        group_id: groupId,
-        name,
-        cells: {},
-        display_order: Date.now() % 1_000_000_000,
-        created_by: createdBy,
-      });
+      const { data, error } = await (supabase.from('board_items') as any)
+        .insert({
+          board_id: boardId,
+          group_id: groupId,
+          name,
+          cells: {},
+          display_order: Date.now() % 1_000_000_000,
+          created_by: actor.email,
+        })
+        .select('id')
+        .single();
       if (error) throw error;
+      const id = (data as { id?: string | number } | null)?.id;
+      if (id != null) {
+        logBoardActivity({ itemId: String(id), boardId, action: 'created', actorEmail: actor.email, actorName: actor.name });
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['team', 'board', boardId ?? sourceKind] }),
   });

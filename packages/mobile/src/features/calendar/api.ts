@@ -1,5 +1,8 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { usePermissions } from '../../lib/permissions';
+import { loadCalendarTaskEntries, loadMyBoardEntries } from './tasks';
 
 // Kalendarz = JEDNA tabela `events` (jak web po unifikacji): module_key wskazuje kalendarz
 // modułu (NULL/'general' = ogólny), event_type typ, program_id podpięty plan. Programy i stare
@@ -25,6 +28,20 @@ export interface AgendaEvent {
   isMine: boolean;
   // Moja rola na tym wydarzeniu (grafik), gdy służę.
   myRole: string | null;
+  // Wpis-zadanie (element tablicy z terminem) zamiast wydarzenia — inny wygląd, stuknięcie
+  // otwiera ekran zadania (eventId = 0). Patrz tasks.ts.
+  task?: AgendaTask | null;
+}
+
+export interface AgendaTask {
+  itemId: string;
+  boardId: string;
+  boardName: string | null;
+  done: boolean;
+  statusTitle: string | null;
+  statusColor: string | null;
+  // Przypisane do mnie (kolumna „Osoby”).
+  mine: boolean;
 }
 
 // `date` przychodzi z API jako pełny znacznik czasu (2026-10-11T00:00:00.000Z) — bierzemy
@@ -142,7 +159,63 @@ export const reviveAgendaEvent = (e: AgendaEvent): AgendaEvent => ({
 });
 const reviveAgenda = (rows: AgendaEvent[]) => rows.map(reviveAgendaEvent);
 
+// Zadania w Kalendarzu: tablica zadań Kalendarza + moje elementy innych tablic z terminem.
+// Osobne zapytanie (inny klucz) — awaria zadań nie psuje listy wydarzeń.
+const useAgendaTasks = (params: { fromDays: number; toDays: number; userEmail: string | null }) => {
+  const { fromDays, toDays, userEmail } = params;
+  const perms = usePermissions();
+  // Import starej tabeli `tasks` (gdy tablicy jeszcze nie ma) tylko z dostępem do Kalendarza.
+  const mayImport = perms.ready && perms.moduleVisible('calendar');
+  return useQuery({
+    queryKey: ['agenda-tasks', userEmail, fromDays, toDays],
+    enabled: !!userEmail && perms.ready,
+    select: reviveAgenda,
+    queryFn: async (): Promise<AgendaEvent[]> => {
+      const now = new Date();
+      const from = new Date(now);
+      from.setDate(from.getDate() + fromDays);
+      const to = new Date(now);
+      to.setDate(to.getDate() + toDays);
+      const range = { from: ymdLocal(from), to: ymdLocal(to) };
+      const cal = await loadCalendarTaskEntries({ ...range, email: userEmail, mayImport }).catch(() => ({
+        boardId: null,
+        entries: [] as AgendaEvent[],
+      }));
+      const mine = await loadMyBoardEntries({ ...range, excludeBoardId: cal.boardId }).catch(() => [] as AgendaEvent[]);
+      return [...cal.entries, ...mine];
+    },
+  });
+};
+
 export const useAgenda = (
+  params: {
+    fromDays?: number;
+    toDays?: number;
+    userEmail?: string | null;
+    userName?: string | null;
+  } & CampusScope,
+) => {
+  const { fromDays = -60, toDays = 120, userEmail = null } = params;
+  const events = useAgendaEvents(params);
+  const tasks = useAgendaTasks({ fromDays, toDays, userEmail });
+  const evData = events.data;
+  const taskData = tasks.data;
+  const data = useMemo(() => {
+    if (!evData) return evData;
+    if (!taskData?.length) return evData;
+    return [...evData, ...taskData].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+  }, [evData, taskData]);
+  return {
+    data,
+    isLoading: events.isLoading,
+    isError: events.isError,
+    error: events.error,
+    isRefetching: events.isRefetching || tasks.isRefetching,
+    refetch: () => Promise.all([events.refetch(), tasks.refetch()]),
+  };
+};
+
+const useAgendaEvents = (
   params: {
     fromDays?: number;
     toDays?: number;

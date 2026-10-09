@@ -33,8 +33,9 @@ export default function CalendarScreen() {
   const calendarLabel = useCalendarLabel();
   const { selectedCampusId, withCampusFilter, campusIdForInsert } = useCampusQuery();
   const perms = usePermissions();
-  // Jak serwer: dodawać może rola z res:events:create (członek tylko czyta).
-  const canCreate = perms.can('res:events:create');
+  // Jak serwer: dodawać może rola z res:events:create albo lider służby — w kalendarzu
+  // SWOJEGO modułu (canModule w zakresie służby). Członek tylko czyta.
+  const canCreate = perms.canModuleAny('events', 'create');
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState<string>('all');
   const [view, setView] = useState<ViewMode>('agenda');

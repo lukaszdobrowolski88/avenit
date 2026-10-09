@@ -26,10 +26,22 @@ import {
   handleCampaignAction,
   handleRsvpInviteAction,
 } from '../src/lib/push';
-import { navigateFromDeepLink } from '../src/lib/deep-links';
+import { navigateFromDeepLink, openTask, taskFromNotificationData } from '../src/lib/deep-links';
 import { updatePresence } from '../src/lib/presence';
 
 SplashScreen.preventAutoHideAsync();
+
+// Powiadomienie o zadaniu (przypisanie, wzmianka w komentarzu) — odśwież listy zadań, tablice
+// zespołów, pulpit i dzwonek. Klucze bez dopasowania (np. ekran nieotwarty) nic nie kosztują.
+const refreshTaskQueries = (itemId?: string | null) => {
+  queryClient.invalidateQueries({ queryKey: ['my-work'] });
+  queryClient.invalidateQueries({ queryKey: ['team', 'board'] });
+  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+  queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  queryClient.invalidateQueries({ queryKey: ['agenda-tasks'] });
+  // Ekran zadania (szczegóły, komentarze, dziennik) — klucze ['task', id, …].
+  if (itemId) queryClient.invalidateQueries({ queryKey: ['task', itemId] });
+};
 
 function RootEffects() {
   const router = useRouter();
@@ -91,7 +103,16 @@ function RootEffects() {
   useEffect(() => {
     const handle = async (response: Notifications.NotificationResponse) => {
       const data = response.notification.request.content.data as
-        | { link?: string; assignmentId?: number | string; campaign_id?: string; recipient_id?: string; rsvp_token?: string }
+        | {
+            link?: string;
+            type?: string;
+            item_id?: string | number;
+            board_id?: string | number;
+            assignmentId?: number | string;
+            campaign_id?: string;
+            recipient_id?: string;
+            rsvp_token?: string;
+          }
         | null;
       const action = response.actionIdentifier;
 
@@ -131,15 +152,34 @@ function RootEffects() {
 
       // 3. Default: open default link (lub ekran zaproszeń przy RSVP).
       if (action === Notifications.DEFAULT_ACTION_IDENTIFIER || !action) {
+        // Zadanie ('task' / wzmianka w komentarzu zadania): wprost ekran zadania po item_id —
+        // link weba bywa ścieżką modułu, której apka nie zna.
+        const task = data?.rsvp_token ? null : taskFromNotificationData(data as Record<string, unknown> | null);
+        if (task) {
+          refreshTaskQueries(task.itemId);
+          openTask(router, task.itemId, task.boardId);
+          return;
+        }
         navigateFromDeepLink(router, data?.rsvp_token ? '/(app)/rsvp' : data?.link);
       }
     };
     responseSubRef.current = Notifications.addNotificationResponseReceivedListener(handle);
     const receivedSub = Notifications.addNotificationReceivedListener((n) => {
-      const convId = (n.request.content.data as { conversation_id?: string } | null)?.conversation_id;
-      if (!convId) return;
-      queryClient.invalidateQueries({ queryKey: ['messages', convId] });
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      const data = n.request.content.data as Record<string, unknown> | null;
+      const convId = typeof data?.conversation_id === 'string' ? data.conversation_id : null;
+      if (convId) {
+        queryClient.invalidateQueries({ queryKey: ['messages', convId] });
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        return;
+      }
+      // Zadanie / wzmianka w zadaniu na pierwszym planie: odśwież zadania i dzwonek.
+      const task = data?.type === 'task' || data?.type === 'mention' ? taskFromNotificationData(data) : null;
+      if (task) {
+        refreshTaskQueries(task.itemId);
+        return;
+      }
+      // Każde inne powiadomienie serwera ma zwykle wpis w skrzynce — odśwież licznik dzwonka.
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });
     Notifications.getLastNotificationResponseAsync().then((response) => {
       if (response) handle(response);

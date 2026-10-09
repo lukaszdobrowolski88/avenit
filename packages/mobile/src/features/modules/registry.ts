@@ -123,12 +123,14 @@ export interface PersonalEntry {
   route: string;
   // Krótka etykieta pod kaflem na pulpicie (sekcja „Dla Ciebie” daje kontekst „moje”).
   short: string;
-  // Pokazuj tylko, gdy moduł widoczny (np. Moje zadania wymagają Projektów).
+  // Pokazuj tylko, gdy moduł widoczny.
   requiresModule?: string;
 }
 
 export const PERSONAL_ENTRIES: PersonalEntry[] = [
-  { key: 'my-work', label: 'Moje zadania', short: 'Zadania', Icon: ClipboardCheck, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/work', requiresModule: 'boards' },
+  // Bez wymogu Projektów (module:boards): zadania z tablic służb (Media, Młodzieżówka, moduły
+  // z kreatora…) są widoczne w zakresie służby — serwer sam zawęża wiersze.
+  { key: 'my-work', label: 'Moje zadania', short: 'Zadania', Icon: ClipboardCheck, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/work' },
   { key: 'my-rsvp', label: 'Moje zaproszenia', short: 'Zaproszenia', Icon: MailCheck, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/rsvp' },
   { key: 'my-availability', label: 'Moje nieobecności', short: 'Nieobecności', Icon: CalendarOff, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/serve/availability' },
   { key: 'my-giving', label: 'Moja hojność', short: 'Hojność', Icon: Gift, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/giving' },

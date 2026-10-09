@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { plural } from '../../lib/domain';
+import { taskFromNotificationData } from '../../lib/deep-links';
 
 export type NotificationType = 'message' | 'mention' | 'task' | 'event' | 'system';
 
@@ -91,30 +93,71 @@ export const TYPE_META: Record<
   system: { tint: '#6B6557', bg: '#E3DDD0', label: 'System' },
 };
 
-// Wiadomości z jednej rozmowy jako JEDNA pozycja listy (jak w komunikatorach): ostatnia
-// wiadomość, liczba wiadomości i nieprzeczytanych. Pozostałe powiadomienia bez zmian.
+// Grupowanie listy:
+//  • wiadomości z jednej rozmowy (także @wzmianki z czatu — mają conversation_id) → JEDNA pozycja
+//    jak w komunikatorach: ostatnia wiadomość, „N wiadomości”;
+//  • powiadomienia o jednym zadaniu (przypisanie 'task', @wzmianka w komentarzu 'mention' bez
+//    conversation_id) → JEDNA pozycja zadania, „N powiadomień”; otwiera ekran zadania.
+//    Wcześniej wzmianka z zadania wpadała do grupy „wiadomości” po samym linku;
+//  • reszta bez zmian.
 export interface NotificationItem extends NotificationRow {
   ids: string[];        // wszystkie powiadomienia w grupie (do oznaczenia jako przeczytane)
   unreadIds: string[];
   count: number;
+  // Rodzaj pozycji: rozmowa, zadanie albo pojedyncze powiadomienie.
+  kind: 'chat' | 'task' | 'single';
+  // Zadanie, którego dotyczy pozycja (otwierane przez /(app)/tasks/[id]).
+  taskId: string | null;
+  taskBoardId: string | null;
+  // Podpis liczby w grupie, np. „3 wiadomości” / „2 powiadomienia”; null = bez podpisu.
+  countLabel: string | null;
 }
+
+const taskLinkOf = (task: { itemId: string; boardId: string | null }, link: string | null): string | null => {
+  if (!task.boardId && link) return link;
+  return `/projekty?board=${encodeURIComponent(task.boardId ?? '')}&item=${encodeURIComponent(task.itemId)}`;
+};
+
+const countLabelFor = (kind: NotificationItem['kind'], count: number): string | null => {
+  if (count < 2) return null;
+  if (kind === 'chat') return `${count} ${plural(count, 'wiadomość', 'wiadomości', 'wiadomości')}`;
+  return `${count} ${plural(count, 'powiadomienie', 'powiadomienia', 'powiadomień')}`;
+};
 
 export const groupNotifications = (rows: NotificationRow[]): NotificationItem[] => {
   const out: NotificationItem[] = [];
   const byKey = new Map<string, NotificationItem>();
   for (const n of rows) {
-    const conv = (n.data as { conversation_id?: string } | null)?.conversation_id;
-    const key = (n.type === 'message' || n.type === 'mention') && (conv || n.link) ? `msg:${conv || n.link}` : null;
+    const data = (n.data ?? null) as Record<string, unknown> | null;
+    const conv = typeof data?.conversation_id === 'string' ? data.conversation_id : null;
+    // Zadanie: item_id w danych albo link z ?item= (powiadomienia automatyzacji, starsze wpisy).
+    const task = n.type === 'message' ? null : taskFromNotificationData(data, n.link);
+    const isChat = !task && (n.type === 'message' || (n.type === 'mention' && !!conv)) && !!(conv || n.link);
+    const key = task ? `task:${task.itemId}` : isChat ? `msg:${conv || n.link}` : null;
     const g = key ? byKey.get(key) : undefined;
     if (g) {
       g.ids.push(n.id);
       if (!n.read) g.unreadIds.push(n.id);
       g.count += 1;
+      g.countLabel = countLabelFor(g.kind, g.count);
       if (!n.read) g.read = false;
       continue;
     }
-    // Lista przychodzi od najnowszych — pierwszy wiersz grupy = ostatnia wiadomość.
-    const item: NotificationItem = { ...n, ids: [n.id], unreadIds: n.read ? [] : [n.id], count: 1 };
+    // Lista przychodzi od najnowszych — pierwszy wiersz grupy = ostatnie zdarzenie.
+    const kind: NotificationItem['kind'] = task ? 'task' : isChat ? 'chat' : 'single';
+    const item: NotificationItem = {
+      ...n,
+      // Zadanie: link z id tablicy (ekran listy otwiera pozycję po linku → ekran zadania z boardId);
+      // ścieżka modułu z ?item= nie niesie tablicy.
+      link: task ? taskLinkOf(task, n.link) : n.link,
+      ids: [n.id],
+      unreadIds: n.read ? [] : [n.id],
+      count: 1,
+      kind,
+      taskId: task?.itemId ?? null,
+      taskBoardId: task?.boardId ?? null,
+      countLabel: null,
+    };
     out.push(item);
     if (key) byKey.set(key, item);
   }

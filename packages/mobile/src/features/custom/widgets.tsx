@@ -20,20 +20,13 @@ import { supabase } from '../../lib/supabase';
 import { formatDate } from '../../lib/domain';
 import { friendlyError } from '../../lib/errors';
 import { openOnWeb } from '../modules/useModules';
-import { AddButton, Card, Empty, Loading, SegmentChips } from '../teams/tabs/ui';
+import { AddButton, Card, Empty, Loading } from '../teams/tabs/ui';
 import { TasksTab } from '../teams/tabs/TasksTab';
-import { useTeamBoard } from '../teams/data';
 import {
-  CUSTOM_TASK_STATUSES,
-  useAddCustomTask,
-  useCustomTasks,
   useDeleteRecord,
   useModuleBoards,
   useModuleRecords,
   useSaveRecord,
-  useSetCustomTaskStatus,
-  type CustomTask,
-  type CustomTaskStatus,
   type ModuleBoard,
   type ModuleRecord,
 } from './api';
@@ -48,6 +41,8 @@ export interface WidgetCtx {
   userEmail: string | null;
   campusId: number | null;
   can: (cap: string) => boolean;
+  // Nazwa modułu (app_modules.label) — nazwa tablicy zadań tworzonej przy pierwszym otwarciu.
+  moduleName?: string | null;
 }
 
 const openUrl = (url: string) =>
@@ -333,88 +328,18 @@ export const PollWidget = ({ ctx }: { ctx: WidgetCtx }) => {
 };
 
 // ─── Zadania modułu ───
-// Web przenosi zadania modułu na Tablicę (boards.source_kind = custom_<key>_tasks) przy
-// pierwszym otwarciu. Gdy tablica już jest — pokazujemy ją (te same dane co web); dopóki
-// jej nie ma — dawną listę z custom_<key>_tasks.
+// Jak web (ModuleWidget → ModuleBoard): zadania modułu to tablica boards.source_kind =
+// custom_<key>_tasks. Gdy jej brak, serwer tworzy ją i przenosi stare zadania
+// (board-import-legacy). Stara tabela custom_<key>_tasks jest tylko do odczytu — bez zapisu.
 
-export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
-  const sourceKind = `custom_${ctx.moduleKey}_tasks`;
-  const board = useTeamBoard(sourceKind);
-  if (board.isLoading) return <Loading />;
-  if (board.data?.boardId) return <TasksTab sourceKind={sourceKind} myEmail={ctx.userEmail} />;
-  return <LegacyCustomTasks ctx={ctx} />;
-};
-
-const LegacyCustomTasks = ({ ctx }: { ctx: WidgetCtx }) => {
-  const tasks = useCustomTasks(ctx.moduleKey);
-  const add = useAddCustomTask(ctx.moduleKey, ctx.campusId);
-  const setStatus = useSetCustomTaskStatus(ctx.moduleKey);
-  const [filter, setFilter] = useState<'open' | 'all'>('open');
-  const [draft, setDraft] = useState('');
-  const list = ((tasks.data ?? []) as CustomTask[]).filter((t) => (filter === 'open' ? t.status !== 'Gotowe' : true));
-  const next = (s: CustomTaskStatus): CustomTaskStatus =>
-    CUSTOM_TASK_STATUSES[(CUSTOM_TASK_STATUSES.indexOf(s) + 1) % CUSTOM_TASK_STATUSES.length];
-  const tint: Record<CustomTaskStatus, string> = { 'Do zrobienia': '#4A463E', 'W trakcie': '#8A6606', Gotowe: '#15803d' };
-
-  return (
-    <View>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-        <TextInput
-          value={draft}
-          onChangeText={setDraft}
-          placeholder="Nowe zadanie…"
-          placeholderTextColor="#6E685A"
-          onSubmitEditing={() => {
-            if (!draft.trim() || add.isPending) return;
-            add.mutate(draft.trim(), {
-              onSuccess: () => setDraft(''),
-              onError: (e: unknown) => Alert.alert('Nie udało się dodać zadania', friendlyError(e, 'Spróbuj ponownie.')),
-            });
-          }}
-          style={[inputStyle, { flex: 1 }]}
-        />
-      </View>
-      <SegmentChips
-        options={[
-          { key: 'open', label: 'Otwarte' },
-          { key: 'all', label: 'Wszystkie' },
-        ]}
-        value={filter}
-        onChange={setFilter}
-      />
-      {tasks.isLoading ? <Loading /> : null}
-      {!tasks.isLoading && !list.length ? <Empty Icon={Users} title="Brak zadań" /> : null}
-      {list.map((t) => (
-        <Card key={t.id}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{t.title}</Text>
-              {[t.assignee, t.dueDate].filter(Boolean).length ? (
-                <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
-                  {[t.assignee, t.dueDate].filter(Boolean).join(' · ')}
-                </Text>
-              ) : null}
-            </View>
-            <Pressable
-              onPress={() =>
-                setStatus.mutate(
-                  { id: t.id, status: next(t.status) },
-                  { onError: (e: unknown) => Alert.alert('Nie udało się zmienić statusu', friendlyError(e, 'Spróbuj ponownie.')) },
-                )
-              }
-              disabled={setStatus.isPending}
-              accessibilityLabel={`Status: ${t.status}. Zmień na: ${next(t.status)}`}
-              className="active:opacity-70"
-              style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: '#F6F4EE' }}
-            >
-              <Text style={{ fontSize: 12, color: tint[t.status], fontFamily: 'Manrope_700Bold' }}>{t.status}</Text>
-            </Pressable>
-          </View>
-        </Card>
-      ))}
-    </View>
-  );
-};
+export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => (
+  <TasksTab
+    sourceKind={`custom_${ctx.moduleKey}_tasks`}
+    moduleKey={ctx.moduleKey}
+    boardTitle={ctx.moduleName ? `Zadania — ${ctx.moduleName}` : 'Zadania'}
+    myEmail={ctx.userEmail}
+  />
+);
 
 // ─── Tablice modułu (boards.module_key) ───
 
@@ -433,7 +358,7 @@ export const ModuleBoardsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
             <Text style={{ fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_600SemiBold' }}>‹ Wszystkie tablice</Text>
           </Pressable>
         ) : null}
-        <TasksTab sourceKind={undefined} boardId={current} myEmail={ctx.userEmail} />
+        <TasksTab sourceKind={undefined} boardId={current} moduleKey={ctx.moduleKey} myEmail={ctx.userEmail} />
       </View>
     );
   }

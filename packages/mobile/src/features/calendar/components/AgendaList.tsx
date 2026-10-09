@@ -1,7 +1,10 @@
 import { useMemo, useState, type ReactElement } from 'react';
 import { Pressable, ScrollView, Text, View, type RefreshControlProps } from 'react-native';
-import { ChevronRight, History, MapPin } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { CheckCircle2, ChevronRight, Circle, History, MapPin } from 'lucide-react-native';
 import { B } from '../../../components/ui/brand';
+import { StatusPill } from '../../tasks/components/bits';
+import { openTask } from '../../tasks/navigation';
 import type { AgendaEvent } from '../api';
 import {
   dayDiff,
@@ -17,7 +20,8 @@ import {
 
 // Agenda: dni jako przyklejone nagłówki (pełna data + „Dziś / Jutro / Za 3 dni”), separatory
 // miesięcy, w karcie dnia kolumna godzin (początek/koniec) i treść. Minione dni schowane
-// pod przyciskiem — lista zaczyna się od dziś.
+// pod przyciskiem — lista zaczyna się od dziś. Zadania (evt.task) mają własny wiersz
+// (kółko „zrobione” zamiast godziny) i otwierają ekran zadania.
 
 const F = {
   medium: 'Manrope_500Medium',
@@ -54,6 +58,9 @@ interface Props {
 
 export const AgendaList = ({ items, onPick, refreshControl }: Props) => {
   const calendarLabel = useCalendarLabel();
+  const router = useRouter();
+  const pick = (evt: AgendaEvent) =>
+    evt.task ? openTask(router, { itemId: evt.task.itemId, boardId: evt.task.boardId }) : onPick(evt);
   const [showPast, setShowPast] = useState(false);
   const today = new Date();
   const todayKey = dayKey(today);
@@ -118,7 +125,8 @@ export const AgendaList = ({ items, onPick, refreshControl }: Props) => {
       );
     }
     sticky.push(children.length);
-    children.push(<DayHeader key={`h-${day.key}`} date={day.date} count={day.items.length} />);
+    const tasks = day.items.filter((i) => i.task).length;
+    children.push(<DayHeader key={`h-${day.key}`} date={day.date} events={day.items.length - tasks} tasks={tasks} />);
     children.push(
       <View key={`d-${day.key}`} style={{ paddingHorizontal: 16, paddingBottom: 8, opacity: day.key < todayKey ? 0.6 : 1 }}>
         <View style={{ backgroundColor: B.card, borderRadius: 22, overflow: 'hidden' }}>
@@ -127,9 +135,13 @@ export const AgendaList = ({ items, onPick, refreshControl }: Props) => {
               Nic zaplanowanego na dziś
             </Text>
           ) : (
-            day.items.map((evt, i) => (
-              <EventRow key={evt.id} evt={evt} first={i === 0} calendar={calendarLabel(evt.moduleKey)} onPress={() => onPick(evt)} />
-            ))
+            day.items.map((evt, i) =>
+              evt.task ? (
+                <TaskRow key={evt.id} evt={evt} first={i === 0} past={day.key < todayKey} onPress={() => pick(evt)} />
+              ) : (
+                <EventRow key={evt.id} evt={evt} first={i === 0} calendar={calendarLabel(evt.moduleKey)} onPress={() => pick(evt)} />
+              ),
+            )
           )}
         </View>
       </View>,
@@ -143,10 +155,19 @@ export const AgendaList = ({ items, onPick, refreshControl }: Props) => {
   );
 };
 
-const plEvents = (n: number) => (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'wydarzenia' : 'wydarzeń');
+const few = (n: number) => n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14);
+const plEvents = (n: number) => (n === 1 ? 'wydarzenie' : few(n) ? 'wydarzenia' : 'wydarzeń');
+const plTasks = (n: number) => (n === 1 ? 'zadanie' : few(n) ? 'zadania' : 'zadań');
+
+// „3 wydarzenia · 1 zadanie” — tylko gdy jest więcej niż jedna pozycja.
+const countText = (events: number, tasks: number) => {
+  if (events + tasks < 2) return '';
+  const parts = [events ? `${events} ${plEvents(events)}` : '', tasks ? `${tasks} ${plTasks(tasks)}` : ''].filter(Boolean);
+  return ` · ${parts.join(' · ')}`;
+};
 
 // Nagłówek dnia (przyklejony): duża liczba dnia, dzień tygodnia + data, odległość od dziś.
-const DayHeader = ({ date, count }: { date: Date; count: number }) => {
+const DayHeader = ({ date, events, tasks }: { date: Date; events: number; tasks: number }) => {
   const n = dayDiff(date);
   const [weekday, ...rest] = longDay(date).split(', ');
   return (
@@ -168,7 +189,7 @@ const DayHeader = ({ date, count }: { date: Date; count: number }) => {
         <Text style={{ fontSize: 15, color: B.ink, fontFamily: F.bold, letterSpacing: -0.2 }}>{weekday}</Text>
         <Text style={{ fontSize: 12, color: B.ink3, fontFamily: F.medium }}>
           {rest.join(', ')}
-          {count > 1 ? ` · ${count} ${plEvents(count)}` : ''}
+          {countText(events, tasks)}
         </Text>
       </View>
       <View
@@ -249,6 +270,64 @@ const EventRow = ({
             </View>
           ) : null}
           <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.semibold }}>{calendar}</Text>
+        </View>
+      </View>
+      <ChevronRight size={17} color={B.ink4} style={{ alignSelf: 'center' }} />
+    </Pressable>
+  );
+};
+
+// Wiersz zadania: zamiast godziny kółko „zrobione”, przekreślenie gotowych, status i tablica.
+// Bez godziny (zwykły termin) — „Termin”; po terminie (minione, niezrobione) — ostrzeżenie.
+const TaskRow = ({
+  evt,
+  first,
+  past,
+  onPress,
+}: {
+  evt: AgendaEvent;
+  first: boolean;
+  past: boolean;
+  onPress: () => void;
+}) => {
+  const t = evt.task!;
+  const start = startTime(evt);
+  const overdue = past && !t.done;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Zadanie: ${evt.title}${t.done ? ', zrobione' : ''}`}
+      className="active:opacity-70"
+      style={{ flexDirection: 'row', gap: 12, paddingLeft: 16, paddingRight: 12, paddingVertical: 14 }}
+    >
+      {!first ? <View style={{ position: 'absolute', top: 0, left: 82, right: 0, height: 1, backgroundColor: B.line }} /> : null}
+      <View style={{ width: 54, flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+        {t.done ? <CheckCircle2 size={18} color={B.okFg} /> : <Circle size={18} color={B.ink3} />}
+        {start ? (
+          <Text style={{ fontSize: 12, lineHeight: 18, color: B.ink3, fontFamily: F.bold, fontVariant: ['tabular-nums'] }}>{start}</Text>
+        ) : null}
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text
+          numberOfLines={2}
+          style={{
+            fontSize: 16,
+            lineHeight: 21,
+            color: t.done ? B.ink4 : B.ink,
+            fontFamily: F.semibold,
+            letterSpacing: -0.3,
+            textDecorationLine: t.done ? 'line-through' : 'none',
+          }}
+        >
+          {evt.title}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+          {t.statusTitle ? <StatusPill title={t.statusTitle} color={t.statusColor} size="sm" /> : null}
+          {overdue ? <Text style={{ fontSize: 12, color: B.danger, fontFamily: F.bold }}>Po terminie</Text> : null}
+          <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 12, color: B.ink4, fontFamily: F.semibold }}>
+            Zadanie{t.boardName ? ` · ${t.boardName}` : ''}
+          </Text>
         </View>
       </View>
       <ChevronRight size={17} color={B.ink4} style={{ alignSelf: 'center' }} />

@@ -41,6 +41,13 @@ const LOOK = {
 // Zakładki prowadzące do osobnych ekranów zamiast treści w miejscu.
 const NAV_TABS = new Set<TeamTabKey>(['files', 'songs']);
 
+// Nazwy tablic zadań tworzonych przy pierwszym otwarciu zakładki — jak na webie (ModuleBoard).
+const TASK_BOARD_TITLES: Record<string, string> = {
+  media: 'Zadania Media Team',
+  mlodziezowka: 'Zadania młodzieżówki',
+  homegroups: 'Zadania grup domowych',
+};
+
 // Zespoły ze składem w tabeli zespołu i służbami (team_roles) — reszta ma prostą listę osób.
 const ROSTER_TEAMS = new Set(['worship', 'media', 'atmosfera', 'kids']);
 
@@ -107,7 +114,11 @@ export default function TeamDetailScreen() {
   const canPeopleCreate = perms.can(`res:${table}:create`);
   const canPeopleEdit = perms.can(`res:${table}:update`);
   const canPeopleDelete = perms.can(`res:${table}:delete`);
-  const canEditGrafik = perms.can('res:events:update') && perms.can('res:schedule_assignments:create');
+  // Grafik: zmiana sekcji na wydarzeniu (event-assignments-patch) + wpisy schedule_assignments.
+  // Globalnie albo w zakresie tej służby (lider) — ta sama reguła co serwer (teamAllows).
+  const canEditGrafik =
+    (perms.canModule(null, 'events', 'update') || perms.canModule(cfg.key, 'schedule_assignments', 'update')) &&
+    perms.canModule(cfg.key, 'schedule_assignments', 'create');
   const canSendInvites = perms.can('action:programs:send_assignment');
   const myRole = perms.ministries.find((m) => m.ministry_key === cfg.key && m.role === 'leader')
     ? 'Lider'
@@ -204,7 +215,7 @@ export default function TeamDetailScreen() {
       case 'schedule':
         return <GrafikTab teamKey={cfg.key} teamLabel={teamLabel} me={me} canEdit={canEditGrafik} canSend={canSendInvites} />;
       case 'tasks':
-        return <TasksTab sourceKind={cfg.boardSourceKind} myEmail={myEmail} />;
+        return <TasksTab sourceKind={cfg.boardSourceKind} moduleKey={cfg.key} boardTitle={TASK_BOARD_TITLES[cfg.key]} myEmail={myEmail} />;
       case 'members':
         return rosterTeam && cfg.memberTable ? (
           <RosterTab

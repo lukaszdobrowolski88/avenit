@@ -83,7 +83,10 @@ export default function DashboardScreen() {
 
   const ministry: UpcomingMinistryItem[] = data?.upcomingMinistry ?? [];
   const acceptedMinistry = ministry.filter((m) => m.status === 'accepted').length;
-  const todoTasks = (data?.myTasks ?? []).filter((t: { status: string }) => t.status !== 'done' && t.status !== 'Zrobione').length;
+  // Osobiste (user_tasks) + zadania z tablic przypisane do mnie (niezrobione — isDoneLabel).
+  const todoTasks =
+    (data?.myTasks ?? []).filter((t: { status: string }) => t.status !== 'done' && t.status !== 'Zrobione').length +
+    (data?.myBoardTasks ?? []).filter((t: { done: boolean }) => !t.done).length;
 
   // Najbliższe wydarzenie idzie do karty-bohatera; lista pokazuje kolejne. Dzisiejsze
   // wydarzenia, które zaczęły się ponad 3 godziny temu, już minęły.
@@ -110,7 +113,7 @@ export default function DashboardScreen() {
     ministry: (
       <MinistryWidget ministry={ministry} suggestions={data?.ministrySuggestions ?? []} history={data?.ministryHistory ?? []} />
     ),
-    tasks: <TasksWidget items={data?.myTasks ?? []} />,
+    tasks: <TasksWidget items={data?.myTasks ?? []} boardItems={data?.myBoardTasks ?? []} />,
     messages: perms.moduleVisible('komunikator') ? (
       <MessagesWidget conversations={data?.unreadConversations ?? []} totalUnread={data?.totalUnreadMessages ?? 0} />
     ) : null,

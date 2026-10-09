@@ -17,6 +17,8 @@ const CALENDAR_LABELS: Record<string, string> = {
   homegroups: 'Grupy domowe',
   youth: 'Młodzież',
   mlodziezowka: 'Młodzieżówka',
+  // Wpisy-zadania (tablica zadań Kalendarza + moje elementy tablic z terminem) — tasks.ts.
+  tasks: 'Zadania',
 };
 
 export const useCalendarLabel = () => {
