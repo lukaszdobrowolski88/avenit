@@ -3,6 +3,8 @@ import { AppState } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 // Ten sam resolver co web i API — jedno źródło prawdy dla precedencji grantów.
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
+// Wspólne tabele służb (events, grafik, board_*) — reguła „globalnie albo w zakresie służby”.
+import { allowedModules, canModuleScoped } from '@avenit/shared/src/permissions/moduleScope.js';
 import { supabase } from './supabase';
 import { useAuthSession, isStaffUser } from './auth';
 
@@ -156,6 +158,30 @@ export const usePermissions = () => {
     [data, resolver, fallback],
   );
 
+  // Wspólne tabele służb (events, schedule_assignments, board_*): prawo globalne ALBO prawo
+  // w zakresie służby moduleKey — ta sama reguła co web (canModule) i serwer (moduleScope.js).
+  // Np. lider Mediów: canModule('media', 'events', 'create') === true, ('worship', …) === false.
+  // op: 'read' | 'create' | 'update' | 'delete'. moduleKey null/'' = tylko prawo globalne.
+  // `can` obsługuje już admina, tryb awaryjny i stan „przed wczytaniem” (DENY).
+  const canModule = useCallback(
+    (moduleKey: string | null | undefined, table: string, op: string): boolean =>
+      canModuleScoped(can, moduleKey || null, table, op),
+    [can],
+  );
+
+  // Klucze służb, w zakresie których wolno wykonać op na wspólnej tabeli (bez prawa globalnego).
+  const modulesAllowing = useCallback(
+    (table: string, op: string): string[] =>
+      allowedModules(can, table, op, (data?.modules ?? []).map((mod: PermissionModule) => mod.key)),
+    [can, data],
+  );
+
+  // Czy wolno w ogóle (globalnie albo w jakiejkolwiek służbie) — np. przycisk „Nowe wydarzenie”.
+  const canModuleAny = useCallback(
+    (table: string, op: string): boolean => canModule(null, table, op) || modulesAllowing(table, op).length > 0,
+    [canModule, modulesAllowing],
+  );
+
   const leaderOf = useCallback(
     (ministryKey: string): boolean =>
       !!data?.ministries.some(
@@ -177,6 +203,9 @@ export const usePermissions = () => {
     tabs: (data?.tabs ?? []) as PermissionTab[],
     ministries: (data?.ministries ?? []) as MyPermissions['ministries'],
     can,
+    canModule,
+    canModuleAny,
+    modulesAllowing,
     moduleVisible,
     tabVisible,
     fieldWritable,

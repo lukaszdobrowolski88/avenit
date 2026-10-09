@@ -1,33 +1,48 @@
 import { useMemo, useState } from 'react';
 import { ActionSheetIOS, Alert, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Briefcase, Calendar, Plus, Users } from 'lucide-react-native';
+import { isDoneLabel } from '@avenit/shared/src/lib/boardStatus.js';
 import { useAddTask, useSetTaskStatus, useTeamBoard, type BoardStatusLabel, type BoardTask, type TeamBoard } from '../data';
 import { Card, Empty, Loading, dayLabel } from './ui';
+import { EmptyState } from '../../../components/ui/EmptyState';
 import { friendlyError } from '../../../lib/errors';
+import { usePermissions } from '../../../lib/permissions';
+import { useMyProfile } from '../../account/api';
+import { openTask } from '../../../lib/deep-links';
 
 // Zadania zespołu = tablica Projektów (boards.source_kind) jak ModuleBoard na webie.
+// moduleKey — służba, do której należy tablica: lider/członek ma prawa do zadań SWOJEJ służby
+// (canModule na board_items), nie tylko osoby z globalnym dostępem do Projektów.
 export const TasksTab = ({
   sourceKind,
   boardId,
+  moduleKey,
+  boardTitle,
   myEmail,
 }: {
   sourceKind: string | undefined;
   boardId?: string;
+  moduleKey: string | null;
+  boardTitle?: string | null;
   myEmail: string | null;
 }) => {
-  const board = useTeamBoard(sourceKind, boardId);
+  const router = useRouter();
+  const perms = usePermissions();
+  const profile = useMyProfile(myEmail);
+  const actor = { email: myEmail, name: profile.data?.full_name || profile.data?.name || null };
+  const board = useTeamBoard(sourceKind, boardId, boardTitle);
   const setStatus = useSetTaskStatus(sourceKind, boardId);
   const addTask = useAddTask(sourceKind, boardId);
   const [filter, setFilter] = useState<string>('open');
   const [draft, setDraft] = useState('');
+  const canCreate = perms.canModule(moduleKey, 'board_items', 'create');
+  const canUpdate = perms.canModule(moduleKey, 'board_items', 'update');
 
   const data: TeamBoard | undefined = board.data;
   const labels: BoardStatusLabel[] = data?.labels ?? [];
-  // „Gotowe” = etykieta done / „Zrobione” — do filtra „Otwarte”.
-  const doneIds = useMemo(
-    () => new Set(labels.filter((l) => /done|zrobion|gotow|zakończ/i.test(`${l.id} ${l.title}`)).map((l) => l.id)),
-    [labels],
-  );
+  // „Gotowe” = etykieta z flagą done albo nazwą „Zrobione/Gotowe…” — do filtra „Otwarte”.
+  const doneIds = useMemo(() => new Set(labels.filter((l) => isDoneLabel(l)).map((l) => l.id)), [labels]);
   const labelOf = (id: string | null) => labels.find((l) => l.id === id) ?? null;
 
   const tasks = useMemo(() => {
@@ -38,10 +53,17 @@ export const TasksTab = ({
   }, [data?.tasks, filter, doneIds]);
 
   const changeStatus = (task: BoardTask) => {
-    if (!data?.statusColumnId || !labels.length) return;
+    if (!canUpdate || !data?.statusColumnId || !labels.length) return;
     const apply = (labelId: string) =>
       setStatus.mutate(
-        { itemId: task.id, cells: data.cellsById[task.id] ?? {}, statusColumnId: data.statusColumnId!, labelId },
+        {
+          itemId: task.id,
+          boardId: data.boardId,
+          statusColumnId: data.statusColumnId!,
+          labelId,
+          prevLabelId: task.statusId,
+          actor,
+        },
         { onError: (e: unknown) => Alert.alert('Nie udało się zmienić statusu', friendlyError(e, 'Spróbuj ponownie.')) },
       );
     if (Platform.OS === 'ios') {
@@ -61,9 +83,9 @@ export const TasksTab = ({
 
   const submit = () => {
     const name = draft.trim();
-    if (!name || !data?.boardId) return;
+    if (!canCreate || !name || !data?.boardId) return;
     addTask.mutate(
-      { boardId: data.boardId, groupId: data.firstGroupId, name, createdBy: myEmail },
+      { boardId: data.boardId, groupId: data.firstGroupId, name, actor },
       {
         onSuccess: () => setDraft(''),
         onError: (e: unknown) => Alert.alert('Nie udało się dodać', friendlyError(e, 'Spróbuj ponownie.')),
@@ -71,51 +93,63 @@ export const TasksTab = ({
     );
   };
 
+  if (!sourceKind && !boardId) return <Empty Icon={Briefcase} title="Brak tablicy zadań" />;
   if (board.isLoading) return <Loading />;
-  if (!data?.boardId) {
-    return <Empty Icon={Briefcase} title="Zespół nie ma jeszcze tablicy zadań" hint="Tablica powstaje przy pierwszym otwarciu zakładki Zadania na webie." />;
+  // Błąd tablicy (także utworzenia jej przy pierwszym otwarciu) — widoczny, z ponowieniem.
+  if (board.isError || !data?.boardId) {
+    return (
+      <EmptyState
+        Icon={Briefcase}
+        title="Nie udało się otworzyć zadań"
+        hint={friendlyError(board.error, 'Spróbuj ponownie za chwilę.')}
+        actionLabel="Spróbuj ponownie"
+        onAction={() => board.refetch()}
+      />
+    );
   }
 
   return (
     <View>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          borderRadius: 14,
-          backgroundColor: '#ECE8DE',
-          paddingLeft: 14,
-          paddingRight: 6,
-          height: 46,
-          marginBottom: 12,
-        }}
-      >
-        <TextInput
-          value={draft}
-          onChangeText={setDraft}
-          placeholder="Nowe zadanie…"
-          placeholderTextColor="#6E685A"
-          returnKeyType="done"
-          onSubmitEditing={submit}
-          style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
-        />
-        <Pressable
-          onPress={submit}
-          disabled={!draft.trim() || addTask.isPending}
-          className="active:opacity-70"
+      {canCreate ? (
+        <View
           style={{
-            width: 34,
-            height: 34,
-            borderRadius: 17,
-            backgroundColor: draft.trim() ? '#2A2312' : '#D3CCBC',
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 8,
+            borderRadius: 14,
+            backgroundColor: '#ECE8DE',
+            paddingLeft: 14,
+            paddingRight: 6,
+            height: 46,
+            marginBottom: 12,
           }}
         >
-          <Plus size={18} color="#ffffff" strokeWidth={2.6} />
-        </Pressable>
-      </View>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder="Nowe zadanie…"
+            placeholderTextColor="#6E685A"
+            returnKeyType="done"
+            onSubmitEditing={submit}
+            style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
+          />
+          <Pressable
+            onPress={submit}
+            disabled={!draft.trim() || addTask.isPending}
+            className="active:opacity-70"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 17,
+              backgroundColor: draft.trim() ? '#2A2312' : '#D3CCBC',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Plus size={18} color="#ffffff" strokeWidth={2.6} />
+          </Pressable>
+        </View>
+      ) : null}
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
         {[{ id: 'open', title: 'Otwarte' }, { id: 'all', title: 'Wszystkie' }, ...labels].map((l) => {
@@ -137,7 +171,8 @@ export const TasksTab = ({
       {tasks.map((t) => {
         const label = labelOf(t.statusId);
         return (
-          <Card key={t.id}>
+          // Karta → szczegóły zadania (opis, komentarze, osoby); pigułka statusu — szybka zmiana.
+          <Card key={t.id} onPress={() => openTask(router, t.id, data.boardId)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{t.name}</Text>
@@ -161,6 +196,9 @@ export const TasksTab = ({
               </View>
               <Pressable
                 onPress={() => changeStatus(t)}
+                disabled={!canUpdate || !data.statusColumnId}
+                accessibilityRole={canUpdate ? 'button' : 'text'}
+                accessibilityLabel={canUpdate ? `Status: ${label?.title ?? 'brak'}. Zmień status` : `Status: ${label?.title ?? 'brak'}`}
                 className="active:opacity-70"
                 style={{
                   paddingHorizontal: 10,
@@ -170,7 +208,7 @@ export const TasksTab = ({
                 }}
               >
                 <Text style={{ fontSize: 12, color: label?.color ?? '#4A463E', fontFamily: 'Manrope_700Bold' }}>
-                  {label?.title ?? 'Ustaw status'}
+                  {label?.title ?? (canUpdate ? 'Ustaw status' : 'Bez statusu')}
                 </Text>
               </Pressable>
             </View>

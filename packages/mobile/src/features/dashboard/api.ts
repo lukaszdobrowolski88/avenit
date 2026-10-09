@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { fetchAssignments, roleText, todayYmd, type AssignmentRow } from '../schedule/assignments';
+import { fetchMyBoardTasks, type BoardTaskItem } from './board-tasks';
+
+export type { BoardTaskItem } from './board-tasks';
 
 export interface UpcomingMinistryItem {
   // Id przydziału (schedule_assignments) — do odpowiedzi „Akceptuję / Odrzucam”.
@@ -43,6 +46,8 @@ export interface DashboardStats {
   totalUnreadMessages: number;
   myPrayers: RecentPrayer[];
   myTasks: TaskItem[];
+  // Zadania z tablic przypisane do mnie (Projekty, zakładki „Zadania” służb, Kalendarz).
+  myBoardTasks: BoardTaskItem[];
   offlineUsersCount: number;
   onlineUsers: OnlineUser[];
   pendingInvitations: PendingInvitation[];
@@ -126,6 +131,7 @@ export const useDashboard = (
           totalUnreadMessages: 0,
           myPrayers: [],
           myTasks: [],
+          myBoardTasks: [],
           offlineUsersCount: 0,
           onlineUsers: [],
           pendingInvitations: [],
@@ -191,6 +197,12 @@ export const useDashboard = (
           return { data: rows, error: null };
         });
 
+      // Zadania z tablic — błąd nie psuje reszty pulpitu (widżet pokaże zadania osobiste).
+      const myBoardTasksP: Promise<BoardTaskItem[]> = fetchMyBoardTasks(userEmail).catch((e) => {
+        console.warn('[dashboard] board tasks:', e?.message);
+        return [];
+      });
+
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const offlineCountP = supabase
         .from('user_presence')
@@ -206,6 +218,7 @@ export const useDashboard = (
         { data: taskRows, error: tasksErr },
         { data: myPrayerRows, error: mpErr },
         { count: offlineUsersCount },
+        myBoardTasks,
       ] = await Promise.all([
         myAssignmentsP,
         upcoming,
@@ -214,6 +227,7 @@ export const useDashboard = (
         myTasksP,
         myPrayersP,
         offlineCountP,
+        myBoardTasksP,
       ]);
       if (mpErr) console.warn('[dashboard] my prayers:', mpErr.message);
       if (tasksErr) console.warn('[dashboard] tasks:', tasksErr.message);
@@ -392,6 +406,7 @@ export const useDashboard = (
           assigned_to_name: r.assigned_to_name ?? null,
           attachments: Array.isArray(r.attachments) ? r.attachments : [],
         })) as TaskItem[],
+        myBoardTasks,
         offlineUsersCount: offlineUsersCount ?? 0,
         onlineUsers,
         pendingInvitations,

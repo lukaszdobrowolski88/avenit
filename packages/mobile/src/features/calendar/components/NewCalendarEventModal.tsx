@@ -17,6 +17,7 @@ import { fieldStyle } from '../../../components/ui/brand';
 import { PrimaryButton } from '../../../components/ui/Sheet';
 import { showError } from '../../../lib/errors';
 import { toast } from '../../../lib/toast';
+import { usePermissions } from '../../../lib/permissions';
 import { useModules } from '../../modules/useModules';
 import {
   useCreateCalendarEvent,
@@ -81,6 +82,11 @@ export const NewCalendarEventModal = ({
   const busy = create.isPending || update.isPending;
   const calendars = useEventCalendarKeys();
   const { items } = useModules();
+  const perms = usePermissions();
+  // Dodać wydarzenie (albo przenieść je) do kalendarza wolno z prawem globalnym ALBO w zakresie
+  // służby tego kalendarza — jak serwer (moduleScope.js). „Ogólne” = tylko prawo globalne.
+  // Lider służby bez prawa globalnego nie dostaje „Ogólnych” (zapis kończył się 403).
+  const allowed = (key: string | null) => perms.canModule(key, 'events', 'create');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(toYmd(new Date()));
   const [time, setTime] = useState('');
@@ -103,25 +109,41 @@ export const NewCalendarEventModal = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  // Kalendarze modułów, które kościół ma w event_calendars i do których mam dostęp.
+  // Kalendarze modułów, które kościół ma w event_calendars, do których mam dostęp i prawo
+  // dodawania wydarzeń. Edytowane wydarzenie zostaje w swoim kalendarzu (zawsze wybieralnym).
   const options = useMemo(() => {
     const keys: string[] = calendars.data ?? [];
-    const out = [
+    const all = [
       { key: null as string | null, label: 'Ogólne' },
       ...items.filter((m) => keys.includes(m.key)).map((m) => ({ key: m.key as string | null, label: m.label })),
     ];
+    const out = all.filter((o) => allowed(o.key) || (!!editing && o.key === (editing.moduleKey ?? null)));
     // Edytowane wydarzenie z kalendarza spoza listy — zostaw je wybieralne.
-    if (editing?.moduleKey && !out.some((o) => o.key === editing.moduleKey)) {
-      out.push({ key: editing.moduleKey, label: items.find((m) => m.key === editing.moduleKey)?.label ?? editing.moduleKey });
+    if (editing && !out.some((o) => o.key === (editing.moduleKey ?? null))) {
+      const key = editing.moduleKey ?? null;
+      out.unshift({ key, label: key ? items.find((m) => m.key === key)?.label ?? key : 'Ogólne' });
     }
     return out;
-  }, [calendars.data, items, editing]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calendars.data, items, editing, perms.canModule]);
+
+  // Nowe wydarzenie: domyślnie pierwszy dozwolony kalendarz (zamiast zawsze „Ogólnych”),
+  // gdy bieżący wybór nie jest dozwolony — wybór użytkownika zostaje nietknięty.
+  useEffect(() => {
+    if (!visible || editing) return;
+    if (options.length && !options.some((o) => o.key === moduleKey)) setModuleKey(options[0].key);
+  }, [visible, editing, options, moduleKey]);
 
   const save = async () => {
     if (!title.trim()) return Alert.alert('Podaj tytuł', 'Tytuł wydarzenia jest wymagany.');
     if (time && !isValidTime(time)) return Alert.alert('Błędna godzina', 'Wybierz godzinę początku.');
     if (endTime && !isValidTime(endTime)) return Alert.alert('Błędna godzina końca', 'Wybierz godzinę końca.');
     if (time && endTime && endTime <= time) return Alert.alert('Koniec przed początkiem', 'Godzina końca musi być późniejsza niż początek.');
+    // Nowe wydarzenie albo przeniesienie do innego kalendarza — prawo dodawania w docelowym.
+    const moving = !editing || (editing.moduleKey ?? null) !== moduleKey;
+    if (moving && !allowed(moduleKey)) {
+      return Alert.alert('Brak uprawnień', 'Nie możesz dodawać wydarzeń do tego kalendarza. Wybierz inny kalendarz.');
+    }
     const payload = {
       title: title.trim(),
       moduleKey,
@@ -174,6 +196,11 @@ export const NewCalendarEventModal = ({
           <TextInput value={title} onChangeText={setTitle} placeholder="Np. spotkanie liderów" placeholderTextColor="#6E685A" style={inputStyle} />
 
           <Label>Kalendarz</Label>
+          {!editing && perms.ready && options.length === 0 ? (
+            <Text style={{ fontSize: 13, lineHeight: 18, color: '#B42318', fontFamily: 'Manrope_500Medium' }}>
+              Nie masz uprawnień do dodawania wydarzeń w żadnym kalendarzu.
+            </Text>
+          ) : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
             {options.map((o) => {
               const on = o.key === moduleKey;
@@ -228,7 +255,13 @@ export const NewCalendarEventModal = ({
           </Text>
 
           <View style={{ marginTop: 20 }}>
-            <PrimaryButton label={editing ? 'Zapisz zmiany' : 'Dodaj wydarzenie'} onPress={save} busy={busy} tone="ink" />
+            <PrimaryButton
+              label={editing ? 'Zapisz zmiany' : 'Dodaj wydarzenie'}
+              onPress={save}
+              busy={busy}
+              disabled={!editing && options.length === 0}
+              tone="ink"
+            />
           </View>
           {editing && canDelete ? (
             <Pressable

@@ -201,7 +201,8 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
   const perms = usePermissions();
   const { campusIdForInsert } = useCampusQuery();
   const ev = d.event;
-  const canEdit = perms.can('res:events:update');
+  // Lider służby edytuje wydarzenia SWOJEGO modułu (events.module_key) — jak web (canModule).
+  const canEdit = perms.canModule(ev.moduleKey, 'events', 'update');
   const canCreateProgram = perms.can('res:programs:create');
   const [editing, setEditing] = useState(false);
   // Program wydarzenia: wybór istniejącego / nowy (podpięty od razu).
@@ -538,7 +539,7 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
           onClose={() => setEditing(false)}
           userEmail={email}
           campusIdForInsert={campusIdForInsert}
-          canDelete={perms.can('res:events:delete')}
+          canDelete={perms.canModule(ev.moduleKey, 'events', 'delete')}
           onDeleted={() => goBack(router)}
           editing={{
             id: ev.eventId,

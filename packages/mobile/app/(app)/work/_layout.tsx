@@ -1,12 +1,11 @@
 import { Stack } from 'expo-router';
-import { ModuleGate } from '../../../src/components/ModuleGate';
 
+// „Moje zadania” bez bramki module:boards — zadania z tablic służb (zakładki „Zadania” modułów)
+// widzi także osoba bez dostępu do Projektów; serwer zawęża wiersze do tablic, które widzi.
 export default function WorkLayout() {
   return (
-    <ModuleGate moduleKey="boards">
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-      </Stack>
-    </ModuleGate>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+    </Stack>
   );
 }

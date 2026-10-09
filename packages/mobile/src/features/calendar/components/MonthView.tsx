@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Circle } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import type { AgendaEvent } from '../api';
 import { timeRange, useCalendarLabel } from '../meta';
+import { StatusPill } from '../../tasks/components/bits';
+import { openTask } from '../../tasks/navigation';
 
 const WEEKDAYS = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
 
@@ -40,6 +43,10 @@ interface Props {
 
 export const MonthView = ({ items, onPick }: Props) => {
   const calendarLabel = useCalendarLabel();
+  const router = useRouter();
+  // Zadanie (evt.task) → ekran zadania; wydarzenie → jak dotąd (onPick rodzica).
+  const pick = (evt: AgendaEvent) =>
+    evt.task ? openTask(router, { itemId: evt.task.itemId, boardId: evt.task.boardId }) : onPick(evt);
   const today = useMemo(() => startOfDay(new Date()), []);
   const [anchor, setAnchor] = useState<Date>(today);
   const [selected, setSelected] = useState<Date>(today);
@@ -108,11 +115,12 @@ export const MonthView = ({ items, onPick }: Props) => {
             <Pressable
               key={i}
               onPress={() => setSelected(d)}
-              style={[
+              // Pressable dostaje zwykły obiekt (tablica/funkcja stylu psuje się z NativeWind).
+              style={StyleSheet.flatten([
                 styles.cell,
                 isSelected && styles.cellSelected,
                 isToday && !isSelected && styles.cellToday,
-              ]}
+              ])}
             >
               <Text
                 style={[
@@ -125,15 +133,23 @@ export const MonthView = ({ items, onPick }: Props) => {
                 {d.getDate()}
               </Text>
               <View style={styles.dotsRow}>
-                {dots.map((e) => (
-                  <View
-                    key={e.id}
-                    style={[
-                      styles.dot,
-                      { backgroundColor: isSelected ? '#F6F4EE' : e.isMine ? '#FFBE0B' : '#6B6557' },
-                    ]}
-                  />
-                ))}
+                {/* Kropka = wydarzenie (kurkuma = moja służba), kółko = zadanie. */}
+                {dots.map((e) =>
+                  e.task ? (
+                    <View
+                      key={e.id}
+                      style={[styles.dotRing, { borderColor: isSelected ? '#F6F4EE' : '#6B6557' }]}
+                    />
+                  ) : (
+                    <View
+                      key={e.id}
+                      style={[
+                        styles.dot,
+                        { backgroundColor: isSelected ? '#F6F4EE' : e.isMine ? '#FFBE0B' : '#6B6557' },
+                      ]}
+                    />
+                  ),
+                )}
               </View>
             </Pressable>
           );
@@ -157,16 +173,46 @@ export const MonthView = ({ items, onPick }: Props) => {
         {dayItems.length === 0 ? (
           <View style={styles.emptyWrap}>
             <CalendarDays size={26} color="#6E685A" strokeWidth={1.8} />
-            <Text style={styles.emptyText}>Brak wydarzeń tego dnia</Text>
+            <Text style={styles.emptyText}>Nic zaplanowanego tego dnia</Text>
           </View>
         ) : (
           dayItems.map((evt) => {
+            if (evt.task) {
+              const t = evt.task;
+              return (
+                <Pressable
+                  key={evt.id}
+                  onPress={() => pick(evt)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Zadanie: ${evt.title}${t.done ? ', zrobione' : ''}`}
+                  className="active:opacity-70"
+                  style={{ marginBottom: 6 }}
+                >
+                  <View style={styles.taskRow}>
+                    {t.done ? <CheckCircle2 size={16} color="#1E6B34" /> : <Circle size={16} color="#6B6557" />}
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        numberOfLines={1}
+                        style={[styles.dayTitle, t.done ? { color: '#6E685A', textDecorationLine: 'line-through' } : null]}
+                      >
+                        {evt.title}
+                      </Text>
+                      <Text numberOfLines={1} style={styles.daySub}>
+                        {evt.allDay ? 'Zadanie' : `${timeRange(evt)} · Zadanie`}
+                        {t.boardName ? ` · ${t.boardName}` : ''}
+                      </Text>
+                    </View>
+                    {t.statusTitle ? <StatusPill title={t.statusTitle} color={t.statusColor} size="sm" /> : null}
+                  </View>
+                </Pressable>
+              );
+            }
             const time = timeRange(evt);
             const color = evt.isMine ? '#FFBE0B' : '#6B6557';
             return (
               <Pressable
                 key={evt.id}
-                onPress={() => onPick(evt)}
+                onPress={() => pick(evt)}
                 className="active:opacity-70"
                 style={{ marginBottom: 6 }}
               >
@@ -262,6 +308,18 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#FFBE0B',
     backgroundColor: 'transparent',
+  },
+  // Zadanie w panelu dnia: bez tła-wyróżnienia wydarzeń, obrys zamiast wypełnienia.
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E6E1D5',
+    backgroundColor: '#FFFFFF',
   },
   dayPanel: {
     marginTop: 16,

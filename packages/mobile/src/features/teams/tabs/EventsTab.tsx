@@ -45,8 +45,9 @@ export const EventsTab = ({ cfg, scope, campusIdForInsert, myEmail }: Props) => 
   const create = useCreateTeamEvent(cfg, campusIdForInsert);
   const remove = useDeleteTeamEvent(cfg);
   const toggle = useToggleGoing(myEmail);
-  const canCreate = perms.can('res:events:create');
-  const canDeleteAny = perms.can('res:events:delete');
+  // Lider służby ma prawa do wydarzeń SWOJEGO modułu (events.module_key) — jak web (canModule).
+  const canCreate = perms.canModule(cfg.key, 'events', 'create');
+  const canDeleteAny = perms.canModule(cfg.key, 'events', 'delete');
 
   const own: TeamEvent[] = events.data?.own ?? [];
   const serving: TeamEvent[] = events.data?.serving ?? [];

@@ -18,7 +18,7 @@ import {
   AtSign,
   CloudOff,
 } from 'lucide-react-native';
-import { formatRelative, plural } from '../../../src/lib/domain';
+import { formatRelative } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B, Monogram } from '../../../src/components/ui/brand';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -185,9 +185,9 @@ export default function NotificationsScreen() {
                         style={{ flex: 1, fontSize: 15, color: B.ink, letterSpacing: -0.2, fontFamily: item.read ? 'Manrope_600SemiBold' : 'Manrope_700Bold' }}
                       >
                         {item.title}
-                        {item.count > 1 ? (
+                        {item.countLabel ? (
                           <Text style={{ fontSize: 13, color: B.ink4, fontFamily: 'Manrope_600SemiBold' }}>
-                            {`  · ${item.count} ${plural(item.count, 'wiadomość', 'wiadomości', 'wiadomości')}`}
+                            {`  · ${item.countLabel}`}
                           </Text>
                         ) : null}
                       </Text>

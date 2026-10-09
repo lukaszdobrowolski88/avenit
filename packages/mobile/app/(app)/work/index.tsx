@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { CheckCircle2, CircleDot, ListTodo } from 'lucide-react-native';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -18,6 +19,9 @@ import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { friendlyError } from '../../../src/lib/errors';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useMyWork, useSetWorkStatus, type WorkItem } from '../../../src/features/work/api';
+import { useMyProfile } from '../../../src/features/account/api';
+import { usePermissions } from '../../../src/lib/permissions';
+import { openTask } from '../../../src/lib/deep-links';
 
 const todayIso = () => format(new Date(), 'yyyy-MM-dd');
 const fmtDue = (iso: string) => {
@@ -37,8 +41,23 @@ const BUCKETS: { key: BucketKey; label: string; tint: string }[] = [
 ];
 
 // Miękka karta (bez paska-akcentu); kolor tablicy pokazuje kropka przy jej nazwie.
-const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkItem) => void }) => (
-  <View
+// Karta → szczegóły zadania; pigułka statusu → szybka zmiana (gdy wolno edytować zadania tablicy).
+const ItemCard = ({
+  item,
+  canEdit,
+  onOpen,
+  onStatus,
+}: {
+  item: WorkItem;
+  canEdit: boolean;
+  onOpen: (item: WorkItem) => void;
+  onStatus: (item: WorkItem) => void;
+}) => (
+  <Pressable
+    onPress={() => onOpen(item)}
+    accessibilityRole="button"
+    accessibilityLabel={`${item.name || 'Zadanie'}, ${item.boardName}`}
+    className="active:opacity-70"
     style={{
       flexDirection: 'row',
       alignItems: 'center',
@@ -76,7 +95,7 @@ const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkIte
         ) : null}
       </View>
     </View>
-    {item.statusColumnId && item.statusLabels.length ? (
+    {canEdit && item.statusColumnId && item.statusLabels?.length ? (
       <Pressable
         onPress={() => onStatus(item)}
         accessibilityLabel={`Zmień status: ${item.name}`}
@@ -95,21 +114,40 @@ const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkIte
           {item.statusLabel ?? 'Ustaw status'}
         </Text>
       </Pressable>
+    ) : item.statusLabel ? (
+      <View
+        style={{
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 999,
+          backgroundColor: (item.statusColor ?? '#7A7466') + '22',
+        }}
+      >
+        <Text style={{ fontSize: 12, color: item.statusColor ?? '#4A463E', fontFamily: 'Manrope_700Bold' }} numberOfLines={1}>
+          {item.statusLabel}
+        </Text>
+      </View>
     ) : null}
-  </View>
+  </Pressable>
 );
 
 export default function MyWorkScreen() {
+  const router = useRouter();
   const { user } = useAuthSession();
+  const perms = usePermissions();
+  const profile = useMyProfile(user?.email ?? null);
   const { data, isLoading, isError, error, refetch, isRefetching } = useMyWork(user?.email ?? null);
   const [showDone, setShowDone] = useState(false);
   const setStatus = useSetWorkStatus(user?.email ?? null);
+  // Zadania tablicy służby edytuje lider/członek tej służby, Projektów — prawo globalne.
+  const canEdit = (item: WorkItem) => perms.canModule(item.moduleKey ?? null, 'board_items', 'update');
+  const openItem = (item: WorkItem) => openTask(router, item.id, item.boardId);
 
   const changeStatus = (item: WorkItem) => {
-    const labels = item.statusLabels;
+    const labels = item.statusLabels ?? [];
     const apply = (id: string) =>
       setStatus.mutate(
-        { item, labelId: id },
+        { item, labelId: id, actorName: profile.data?.full_name || profile.data?.name || null },
         { onError: (e: unknown) => Alert.alert('Nie udało się zmienić statusu', friendlyError(e, 'Spróbuj ponownie.')) },
       );
     if (Platform.OS === 'ios') {
@@ -216,12 +254,14 @@ export default function MyWorkScreen() {
                   <ListTodo size={28} color="#2A2312" />
                 </View>
                 <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
-                  {total === 0 ? 'Nic do zrobienia' : 'Wszystko zrobione 🎉'}
+                  {total === 0 ? 'Nic do zrobienia' : 'Wszystko zrobione'}
                 </Text>
                 <Text
                   style={{ fontSize: 13, color: '#6B6557', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
                 >
-                  Nie masz teraz przypisanych zadań na tablicach.
+                  {total === 0
+                    ? 'Nie masz teraz przypisanych zadań na tablicach.'
+                    : 'Zrobione zadania pokażesz przyciskiem „Zrobione”.'}
                 </Text>
               </View>
             ) : (
@@ -239,7 +279,7 @@ export default function MyWorkScreen() {
                       </Text>
                     </View>
                     {items.map((it: WorkItem) => (
-                      <ItemCard onStatus={changeStatus} key={it.id} item={it} />
+                      <ItemCard key={it.id} item={it} canEdit={canEdit(it)} onOpen={openItem} onStatus={changeStatus} />
                     ))}
                   </View>
                 );

@@ -107,6 +107,7 @@ export default function CustomModuleScreen() {
     userEmail: user?.email ?? null,
     campusId: campusIdForInsert,
     can: perms.can,
+    moduleName: mod?.label ?? null,
   };
 
   // Widżety jak ModuleWidget.jsx; nieobsługiwane natywnie → web.

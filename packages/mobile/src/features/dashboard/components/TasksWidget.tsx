@@ -49,7 +49,13 @@ import {
   uploadTaskAttachment,
 } from '../task-attachments';
 import { useTaskCommentsCount } from '../task-comments';
-import type { TaskAttachment, TaskItem } from '../api';
+import type { BoardTaskItem, TaskAttachment, TaskItem } from '../api';
+import { useRouter } from 'expo-router';
+import { usePermissions } from '../../../lib/permissions';
+import { normalizeModuleLabel } from '../../modules/nav';
+import { logBoardActivity, patchBoardItemCells } from '../../teams/boardItems';
+import { openTask } from '../../tasks/navigation';
+import { BoardTaskRow } from './BoardTaskRow';
 
 type Status = 'todo' | 'in_progress' | 'done';
 
@@ -801,13 +807,32 @@ const TaskFormModal = ({
   );
 };
 
-export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
+// Pozycja listy: zadanie osobiste (user_tasks, edycja w oknie) albo element tablicy (ekran zadania).
+type Row = { kind: 'personal'; t: TaskItem; due: string | null; name: string } | { kind: 'board'; b: BoardTaskItem; due: string | null; name: string };
+
+// Termin rosnąco, bez terminu na końcu, potem nazwa (jak web compareTasks).
+const compareRows = (a: Row, b: Row) => {
+  if (a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
+  if (a.due && !b.due) return -1;
+  if (!a.due && b.due) return 1;
+  return a.name.localeCompare(b.name, 'pl');
+};
+
+const LIMIT = 6;
+
+export const TasksWidget = ({ items, boardItems = [] }: { items: TaskItem[]; boardItems?: BoardTaskItem[] }) => {
   const { user } = useAuthSession();
+  const router = useRouter();
+  const qc = useQueryClient();
+  const perms = usePermissions();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<TaskFormState | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  // Zadania z tablic właśnie odhaczane / odhaczone (do odświeżenia pulpitu widać je jako gotowe).
+  const [doneBusy, setDoneBusy] = useState<string | null>(null);
+  const [doneNow, setDoneNow] = useState<Set<string>>(new Set());
   const upsert = useUpsertTask(user?.email);
   const deleteMut = useDeleteTask();
-  const todoCount = items.filter((t) => !isDone(t.status)).length;
   const myEmail = user?.email ?? null;
   const myName =
     (user?.user_metadata as { full_name?: string } | null)?.full_name ??
@@ -815,6 +840,48 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
     null;
   const taskIds = items.map((t) => t.id);
   const { data: commentCounts } = useTaskCommentsCount(taskIds);
+
+  // Otwarte zadania z tablic (zrobione — isDoneLabel — pomijamy, jak osobiste „done”).
+  const openBoard = boardItems
+    .filter((b) => !b.done || doneNow.has(b.id))
+    .map((b) => (doneNow.has(b.id) ? { ...b, done: true } : b));
+  const rows: Row[] = [
+    ...items.map((t): Row => ({ kind: 'personal', t, due: t.due_date ? t.due_date.slice(0, 10) : null, name: t.title })),
+    ...openBoard.map((b): Row => ({ kind: 'board', b, due: b.due, name: b.name })),
+  ].sort(compareRows);
+  const visibleRows = expanded ? rows : rows.slice(0, LIMIT);
+  const todoCount = items.filter((t) => !isDone(t.status)).length + openBoard.filter((b) => !b.done).length;
+
+  const whereOf = (b: BoardTaskItem) =>
+    (b.moduleKey ? normalizeModuleLabel(perms.modules.find((m) => m.key === b.moduleKey)?.label) : '') || b.boardName;
+
+  // Szybkie „gotowe”: kolumna statusu → etykieta „gotowe” (serwer scala komórki — fn board-item-patch).
+  const markBoardDone = async (b: BoardTaskItem) => {
+    if (!b.statusColId || !b.doneLabelId || doneBusy) return;
+    setDoneBusy(b.id);
+    try {
+      const { before } = await patchBoardItemCells(b.id, { [b.statusColId]: b.doneLabelId });
+      logBoardActivity({
+        itemId: b.id,
+        boardId: b.boardId,
+        action: 'status_changed',
+        columnId: b.statusColId,
+        from: before ? before[b.statusColId] ?? null : null,
+        to: b.doneLabelId,
+        actorEmail: myEmail,
+        actorName: myName,
+      });
+      setDoneNow((cur) => new Set(cur).add(b.id));
+      toast.success('Zadanie gotowe');
+      qc.invalidateQueries({ queryKey: ['task', b.id] });
+      qc.invalidateQueries({ queryKey: ['agenda-tasks'] });
+      qc.invalidateQueries({ queryKey: ['my-work'] });
+    } catch (e) {
+      showError('Nie udało się oznaczyć zadania', e, 'Spróbuj ponownie.');
+    } finally {
+      setDoneBusy(null);
+    }
+  };
 
   const openNew = () => {
     setEditing(null);
@@ -917,10 +984,25 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
         }
       >
         <View style={{ height: 6 }} />
-        {items.length === 0 ? (
+        {rows.length === 0 ? (
           <EmptyRow text="Brak zadań do zrobienia" hint="Dodaj zadanie dla siebie albo przypisz je komuś." actionLabel="Dodaj" onAction={openNew} />
         ) : (
-          items.slice(0, 5).map((t, idx, arr) => {
+          visibleRows.map((row, idx, arr) => {
+            if (row.kind === 'board') {
+              const b = row.b;
+              return (
+                <BoardTaskRow
+                  key={`b-${b.id}`}
+                  task={b}
+                  where={whereOf(b)}
+                  last={idx === arr.length - 1}
+                  busy={doneBusy === b.id}
+                  onOpen={() => openTask(router, { itemId: b.id, boardId: b.boardId })}
+                  onDone={b.statusColId && b.doneLabelId && !b.done ? () => void markBoardDone(b) : null}
+                />
+              );
+            }
+            const t = row.t;
             const meta = STATUS_META[t.status as Status] ?? STATUS_META.todo;
             const overdue = isOverdue(t.due_date);
             const done = isDone(t.status);
@@ -992,8 +1074,8 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                           fontFamily: overdue ? 'Manrope_700Bold' : 'Manrope_500Medium',
                         }}
                       >
-                        {overdue ? '⚠ ' : ''}
                         {formatDate(t.due_date, 'd MMM')}
+                        {overdue && !done ? ' · po terminie' : ''}
                       </Text>
                     ) : null}
                     {t.assigned_to_email ? (
@@ -1101,6 +1183,18 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
             );
           })
         )}
+        {rows.length > LIMIT ? (
+          <Pressable
+            onPress={() => setExpanded((v) => !v)}
+            accessibilityRole="button"
+            className="active:opacity-70"
+            style={{ paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#ECE8DE' }}
+          >
+            <Text style={{ fontSize: 13, color: D.ink2, fontFamily: F.semibold }}>
+              {expanded ? 'Zwiń' : `Pokaż wszystkie (${rows.length})`}
+            </Text>
+          </Pressable>
+        ) : null}
       </WidgetCard>
       <TaskFormModal
         visible={modalOpen}
