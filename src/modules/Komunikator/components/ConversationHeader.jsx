@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Users, Settings, Bell, BellOff, Trash2, Image, Search, MoreVertical, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Megaphone, Ban } from 'lucide-react';
+import { ArrowLeft, Users, Settings, Bell, BellOff, Trash2, Image, Search, MoreVertical, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Megaphone, Ban, Link2 } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import CallButtons from '../calls/CallButtons';
+import { useCalls } from '../calls/callContext';
+import { canInviteGuests } from '../calls/guestLogic';
 import MuteMenu, { muteUntilLabel } from './MuteMenu';
 import { getMinistryName } from '../utils/messageHelpers';
 import { channelName, isHomeGroupChannel, muteState } from '../utils/chatLogic';
@@ -51,8 +53,10 @@ export default function ConversationHeader({
   peerStatus = null, // obecność drugiej osoby (rozmowa 1:1)
   peerBlocked = false,
   onToggleBlock,
+  isAppAdmin = false,
 }) {
   const t = useT();
+  const calls = useCalls();
   const [showMenu, setShowMenu] = useState(false);
   const [muteOpen, setMuteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -114,6 +118,11 @@ export default function ConversationHeader({
     : t('Wycisz powiadomienia');
   const blockLabel = peerBlocked ? t('Odblokuj osobę') : t('Zablokuj osobę');
   const iconBtn = 'p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 group';
+  // „Zaproś gościa (link)” — gdy połączenia są włączone; serwer i tak sprawdza prawo i ochronę dzieci.
+  const canInvite = !!calls?.openGuestInvite && calls.callsEnabled !== false && !peerBlocked
+    && canInviteGuests(conversation, { isAppAdmin });
+  const inviteLabel = t('Zaproś gościa (link)');
+  const openInvite = () => calls.openGuestInvite({ ...conversation, displayName });
   const menuItem = 'flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800';
 
   return (
@@ -166,6 +175,12 @@ export default function ConversationHeader({
           {onOpenMediaGallery && (
             <button type="button" onClick={onOpenMediaGallery} className={iconBtn} title={t('Galeria mediów')} aria-label={t('Galeria mediów')}>
               <Image size={18} className="text-gray-500 group-hover:text-accent-primary transition-colors" />
+            </button>
+          )}
+
+          {canInvite && (
+            <button type="button" onClick={openInvite} className={iconBtn} title={inviteLabel} aria-label={inviteLabel}>
+              <Link2 size={18} className="text-gray-500 group-hover:text-accent-primary transition-colors" />
             </button>
           )}
 
@@ -243,6 +258,12 @@ export default function ConversationHeader({
                   <button type="button" role="menuitem" onClick={() => { onOpenMediaGallery(); setShowMenu(false); }} className={menuItem}>
                     <Image size={16} />
                     {tr('Galeria')}
+                  </button>
+                )}
+                {canInvite && (
+                  <button type="button" role="menuitem" onClick={() => { setShowMenu(false); openInvite(); }} className={menuItem}>
+                    <Link2 size={16} />
+                    {inviteLabel}
                   </button>
                 )}
                 {onSetMute && (

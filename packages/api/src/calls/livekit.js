@@ -38,15 +38,16 @@ export function createLivekit({ settings = livekitSettings(), sdk = null } = {})
     get enabled() { return settings.enabled; },
 
     // Token dostępu: tożsamość = e-mail (małymi literami), tylko ten pokój, ważny 2 h.
-    async mintToken({ identity, name, room, canPublish = true, metadata = {} }) {
+    // Gość (guests.js): tożsamość guest:<hex>, krótszy ttl, bez kanału danych.
+    async mintToken({ identity, name, room, canPublish = true, canPublishData, ttl = TOKEN_TTL, metadata = {} }) {
       const { AccessToken } = await getSdk();
       const at = new AccessToken(settings.apiKey, settings.apiSecret, {
         identity: String(identity).toLowerCase(),
         name: name || identity,
-        ttl: TOKEN_TTL,
+        ttl,
         metadata: JSON.stringify(metadata),
       });
-      at.addGrant(videoGrant(room, { canPublish }));
+      at.addGrant(videoGrant(room, { canPublish, canPublishData }));
       return at.toJwt();
     },
 
@@ -61,6 +62,16 @@ export function createLivekit({ settings = livekitSettings(), sdk = null } = {})
     async deleteRoom(room) {
       try {
         await (await roomService()).deleteRoom(room);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    // Usunięcie jednej osoby z pokoju (np. gość po wyłączeniu linku). Bez błędu, gdy jej nie ma.
+    async removeParticipant(room, identity) {
+      try {
+        await (await roomService()).removeParticipant(room, identity);
         return true;
       } catch {
         return false;

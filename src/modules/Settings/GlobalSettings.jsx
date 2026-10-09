@@ -620,7 +620,7 @@ export default function GlobalSettings() {
       ? { type: 'error', text: error.message || tr('Nie udało się wysłać') }
       : { type: 'success', text: tr('Wysłano ponownie link weryfikacyjny') });
   };
-  const ACTION_LABEL = { registered: tr('Rejestracja'), verified: tr('Potwierdzenie e-mail'), approved: tr('Zatwierdzenie'), rejected: tr('Odrzucenie'), created: tr('Utworzenie (admin)'), edited: tr('Edycja'), deleted: tr('Usunięcie'), blocked: tr('Zablokowanie'), unblocked: tr('Odblokowanie'), reset_2fa: tr('Reset weryfikacji dwuetapowej'), logged_out: tr('Wylogowanie (wszędzie)'), unlocked_login: tr('Odblokowanie logowania') };
+  const ACTION_LABEL = { registered: tr('Rejestracja'), verified: tr('Potwierdzenie e-mail'), approved: tr('Zatwierdzenie'), rejected: tr('Odrzucenie'), created: tr('Utworzenie (admin)'), edited: tr('Edycja'), deleted: tr('Usunięcie'), blocked: tr('Zablokowanie'), unblocked: tr('Odblokowanie'), reset_2fa: tr('Reset weryfikacji dwuetapowej'), logged_out: tr('Wylogowanie (wszędzie)'), unlocked_login: tr('Odblokowanie logowania'), call_link_created: tr('Link gościa do rozmowy'), call_link_revoked: tr('Wyłączenie linku gościa'), call_guest_admitted: tr('Wpuszczenie gościa do rozmowy'), call_guest_denied: tr('Odrzucenie gościa rozmowy') };
 
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
   const openNewUser = () => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setRequire2FA(false); setShowUserModal(true); };

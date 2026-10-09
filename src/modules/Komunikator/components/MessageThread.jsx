@@ -485,6 +485,7 @@ export default function MessageThread({
         peerStatus={peerEmail && !peerBlocked ? getStatus(peerEmail) : null}
         peerBlocked={peerBlocked}
         onToggleBlock={isDirect && peerEmail ? handleToggleBlockPeer : undefined}
+        isAppAdmin={isAppAdmin}
       />
 
       {/* Trwa rozmowa audio/wideo — dołącz */}

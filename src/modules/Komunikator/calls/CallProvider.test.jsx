@@ -217,6 +217,30 @@ describe('CallProvider — maszyna stanów z atrapą LiveKit', () => {
     await waitFor(() => expect(screen.getByTestId('phase').textContent).toBe('active'));
   });
 
+  it('poczekalnia gości: prośba w mojej rozmowie (realtime) → „Wpuść” → call-guest-admit, karta znika', async () => {
+    h.db.call_guest_requests = [];
+    h.fns['call-guest-admit'] = { data: { ok: true }, error: null };
+    renderApp();
+    await emit('calls', 'INSERT', ringRow());
+    await screen.findByRole('alertdialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Odbierz' }));
+    await waitFor(() => expect(screen.getByTestId('phase').textContent).toBe('active'));
+    // Prośba z innej rozmowy — nie dla mnie w tej rozmowie.
+    await emit('call_guest_requests', 'INSERT', { id: 'g0', conversation_id: 'c9', guest_name: 'Obcy', status: 'pending', created_at: new Date().toISOString() });
+    expect(screen.queryByText('Gość chce dołączyć')).toBeNull();
+    await emit('call_guest_requests', 'INSERT', { id: 'g1', conversation_id: 'c1', guest_name: 'Anna', status: 'pending', created_at: new Date().toISOString() });
+    expect(await screen.findByText('Gość chce dołączyć')).toBeTruthy();
+    expect(await screen.findByText('Gość chce dołączyć: Anna')).toBeTruthy(); // komunikat dla czytnika ekranu
+    fireEvent.click(screen.getByRole('button', { name: 'Wpuść: Anna' }));
+    await waitFor(() => expect(screen.queryByText('Gość chce dołączyć')).toBeNull());
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('call-guest-admit', expect.objectContaining({ body: { request_id: 'g1' } }));
+    // Ktoś inny odrzucił prośbę — znika też u mnie.
+    await emit('call_guest_requests', 'INSERT', { id: 'g2', conversation_id: 'c1', guest_name: 'Piotr', status: 'pending', created_at: new Date().toISOString() });
+    await screen.findByText('Piotr');
+    await emit('call_guest_requests', 'UPDATE', { id: 'g2', conversation_id: 'c1', guest_name: 'Piotr', status: 'denied' });
+    await waitFor(() => expect(screen.queryByText('Gość chce dołączyć')).toBeNull());
+  });
+
   it('połączenia wyłączone (call-config) — przycisków nie ma', async () => {
     h.fns['call-config'] = { data: { enabled: false, url: null }, error: null };
     const conversation = { id: 'c1', type: 'direct', displayName: 'Ola', posting_policy: 'everyone' };

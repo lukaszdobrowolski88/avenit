@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Minimize2, MessageSquare, Loader2, Volume2, X, MicOff, VideoOff, WifiOff, Users } from 'lucide-react';
+import { Minimize2, MessageSquare, Loader2, Volume2, X, MicOff, VideoOff, WifiOff, Users, UserPlus } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 import CallStage from './CallStage';
 import CallControls from './CallControls';
 import ParticipantTile, { QualityIcon } from './ParticipantTile';
 import { formatClock, isTypingTarget } from './callLogic';
+import { canInviteGuests } from './guestLogic';
 import { useFocusTrap } from '../../../components/ui/useFocusTrap';
 import { tr } from '../../../i18n';
 
@@ -84,6 +85,7 @@ export default function CallWindow({ calls, room }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (calls.guestInvite) return; // otwarte okno „Zaproś gościa” — Esc zamyka je, nie rozmowę
       if (e.key === 'Escape') { e.preventDefault(); calls.minimize(); return; }
       if (isTypingTarget(e.target) || roomRef.current.snapshot?.canPublish === false) return;
       const k = e.key.toLowerCase();
@@ -117,6 +119,11 @@ export default function CallWindow({ calls, room }) {
             {local && <QualityIcon quality={local.quality} size={12} />}
           </p>
         </div>
+        {calls.openGuestInvite && canInviteGuests(conv) && (
+          <button type="button" onClick={() => calls.openGuestInvite(conv)} className="p-2.5 rounded-xl hover:bg-white/10" aria-label={tr('Zaproś gościa (link)')} title={tr('Zaproś gościa (link)')}>
+            <UserPlus size={18} aria-hidden="true" />
+          </button>
+        )}
         <button type="button" onClick={calls.openChat} className="p-2.5 rounded-xl hover:bg-white/10" aria-label={tr('Przejdź do czatu')} title={tr('Przejdź do czatu')}>
           <MessageSquare size={18} aria-hidden="true" />
         </button>

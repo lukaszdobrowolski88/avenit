@@ -100,6 +100,10 @@ export function ringTimeoutDecision(call, { inRoom = 0 } = {}) {
   return call.answered_at || inRoom > 0 ? 'active' : 'missed';
 }
 
+// Tożsamość gościa z linku (guests.js) — „guest:<hex>”; e-maile nie zawierają „:” na początku.
+export const GUEST_PREFIX = 'guest:';
+export const isGuestIdentity = (identity) => String(identity ?? '').toLowerCase().startsWith(GUEST_PREFIX);
+
 // Co zrobić po wyjściu osoby z pokoju (webhook participant_left / fn call-leave).
 //  1:1 trwające → koniec dla obojga; 1:1 dzwoniące i wychodzi dzwoniący → anulowane;
 //  grupa → koniec dopiero, gdy w pokoju nikt nie został (remaining = 0).
@@ -119,14 +123,15 @@ export function canPublishIn(conv, role) {
   return !(conv?.posting_policy === 'admins' && role !== 'admin');
 }
 
-// Grant tokenu LiveKit — wyłącznie ten jeden pokój.
-export function videoGrant(room, { canPublish = true } = {}) {
+// Grant tokenu LiveKit — wyłącznie ten jeden pokój. canPublishData domyślnie jak canPublish
+// (gość: false — bez kanału danych).
+export function videoGrant(room, { canPublish = true, canPublishData } = {}) {
   return {
     room,
     roomJoin: true,
     canPublish: !!canPublish,
     canSubscribe: true,
-    canPublishData: !!canPublish,
+    canPublishData: canPublishData === undefined ? !!canPublish : !!canPublishData,
     canUpdateOwnMetadata: false,
   };
 }
