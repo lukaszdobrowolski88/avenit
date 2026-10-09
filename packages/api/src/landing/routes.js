@@ -16,14 +16,16 @@ import crypto from 'node:crypto';
 import { platformPool } from '../db.js';
 import { sendEmail } from '../lib/email.js';
 import { config } from '../config.js';
-import { leadNotificationEmail, leadConfirmationEmail } from './emails.js';
+import {
+  leadNotificationEmail, leadConfirmationEmail, detectLeadLang, sourceFromReferer, leadSpamSignals,
+} from './emails.js';
 import { getDailySalt, landingVisitorKey } from '../analytics/sessions.js';
 
 // Powiąż zgłoszenie z odwiedzającym z analityki (lejek konwersji). Klucz liczony
 // tym samym dziennym hashem co eventy z a.js (IP+UA po stronie serwera), więc
 // żadnych danych z klienta nie potrzeba. Analityka nigdy nie może zepsuć leada —
 // wołane fire-and-forget z pełnym catch.
-async function attachLeadToVisitor(req, leadId) {
+async function attachLeadToVisitor(req, leadId, platformPool) {
   const ua = String(req.headers['user-agent'] || '');
   const key = landingVisitorKey(await getDailySalt(), req.ip || '', ua);
   const { rows } = await platformPool.query(
@@ -73,10 +75,15 @@ function verifyToken(token) {
   }
   const age = Date.now() - Number(ts);
   if (age > TOKEN_MAX_AGE_MS || age < 0) return { ok: false };
-  return { ok: true, tooFast: age < TOKEN_MIN_AGE_MS };
+  return { ok: true, tooFast: age < TOKEN_MIN_AGE_MS, ageMs: age };
 }
 
-export default async function landingRoutes(app) {
+// opts.deps (testy): { pool, sendEmail, attachLead } — domyślnie produkcyjne.
+export default async function landingRoutes(app, opts = {}) {
+  const { pool, sendEmail: send, attachLead } = {
+    pool: platformPool, sendEmail, attachLead: attachLeadToVisitor, ...(opts.deps || {}),
+  };
+
   // Token formularza — strona pobiera go przy załadowaniu.
   app.get(
     '/api/public/landing-form-token',
@@ -120,7 +127,7 @@ export default async function landingRoutes(app) {
       }
 
       // (5) deduplikacja (chroni też przed podwójnym kliknięciem)
-      const { rows: dup } = await platformPool.query(
+      const { rows: dup } = await pool.query(
         `SELECT id FROM landing_leads
           WHERE lower(email) = lower($1) AND coalesce(message, '') = $2
             AND created_at > now() - interval '24 hours' LIMIT 1`,
@@ -128,35 +135,53 @@ export default async function landingRoutes(app) {
       );
       if (dup[0]) return reply.send({ ok: true });
 
-      const { rows } = await platformPool.query(
+      const userAgent = String(req.headers['user-agent'] || '').slice(0, 500);
+      const { rows } = await pool.query(
         `INSERT INTO landing_leads (name, email, phone, church, message, ip, user_agent)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, name, email, phone, church, message`,
+         RETURNING id, name, email, phone, church, message, created_at`,
         [name, email, phone || null, church || null, message || null,
-         req.ip || null, String(req.headers['user-agent'] || '').slice(0, 500) || null]
+         req.ip || null, userAgent || null]
       );
       const lead = rows[0];
 
       // Analityka: lejek konwersji (nie blokuje odpowiedzi ani maili).
-      attachLeadToVisitor(req, lead.id).catch((err) =>
-        req.log.warn({ err }, 'landing-contact: powiązanie z analityką nieudane')
-      );
+      Promise.resolve()
+        .then(() => attachLead(req, lead.id, pool))
+        .catch((err) => req.log.warn({ err }, 'landing-contact: powiązanie z analityką nieudane'));
 
-      // Powiadomienie dla admina (Reply-To = zgłaszający) + potwierdzenie dla
-      // zgłaszającego (Reply-To = adres kontaktowy). Zgłoszenie jest już w
-      // bazie, więc błędy wysyłki tylko logujemy.
+      // Kontekst do maili: język (pole lang albo strona /en/), strona źródłowa, sygnały
+      // spamu i liczba wcześniejszych zgłoszeń z tego adresu. Nic z tego nie może
+      // zablokować zapisu ani wysyłki.
+      const referer = String(req.headers.referer || req.headers.referrer || '');
+      const lang = detectLeadLang({ lang: b.lang, referer });
+      let previousLeads = 0;
       try {
-        const mail = leadNotificationEmail(lead);
-        await sendEmail({ to: config.LANDING_CONTACT_EMAIL, replyTo: lead.email, ...mail });
+        const { rows: prev } = await pool.query(
+          `SELECT count(*)::int AS n FROM landing_leads WHERE lower(email) = lower($1) AND id <> $2`,
+          [email, lead.id]
+        );
+        previousLeads = prev[0]?.n || 0;
       } catch (err) {
-        req.log.warn({ err }, 'landing-contact: powiadomienie nie wysłane');
+        req.log.warn({ err }, 'landing-contact: liczenie wcześniejszych zgłoszeń nieudane');
       }
-      try {
-        const mail = leadConfirmationEmail(lead);
-        await sendEmail({ to: lead.email, replyTo: config.LANDING_CONTACT_EMAIL, ...mail });
-      } catch (err) {
-        req.log.warn({ err }, 'landing-contact: potwierdzenie do zgłaszającego nie wysłane');
-      }
+      const meta = {
+        lang,
+        source: sourceFromReferer(referer),
+        createdAt: lead.created_at || new Date(),
+        previousLeads,
+        signals: leadSpamSignals({ lead, tokenAgeMs: token.ageMs, userAgent }),
+      };
+
+      // Powiadomienie dla właściciela (Reply-To = zgłaszający) + potwierdzenie dla
+      // zgłaszającego (Reply-To = adres kontaktowy). Zgłoszenie jest już w bazie,
+      // więc błędy wysyłki (także budowania treści) tylko logujemy.
+      const [owner, confirm] = await Promise.allSettled([
+        (async () => send({ to: config.LANDING_CONTACT_EMAIL, replyTo: lead.email, ...leadNotificationEmail(lead, meta) }))(),
+        (async () => send({ to: lead.email, replyTo: config.LANDING_CONTACT_EMAIL, ...leadConfirmationEmail(lead, { lang }) }))(),
+      ]);
+      if (owner.status === 'rejected') req.log.warn({ err: owner.reason }, 'landing-contact: powiadomienie nie wysłane');
+      if (confirm.status === 'rejected') req.log.warn({ err: confirm.reason }, 'landing-contact: potwierdzenie do zgłaszającego nie wysłane');
 
       return reply.send({ ok: true });
     }

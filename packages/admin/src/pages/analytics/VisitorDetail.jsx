@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, formatDuration } from '../../lib/api.js';
+import Icon from '../../components/Icon.jsx';
+import { Card, Stat, StatusBadge, ErrorBox, Loading } from '../../components/ui.jsx';
 import { flag, deviceIcon, fmtWhen } from './common.jsx';
 
 const EVENT_LABELS = {
@@ -19,101 +21,95 @@ export default function VisitorDetail() {
     api.analyticsVisitor(id).then(setD).catch((e) => setErr(e.message));
   }, [id]);
 
-  if (err) return <div className="err">{err}</div>;
-  if (!d) return <div>Ładowanie…</div>;
+  const back = <button className="back-link" onClick={() => navigate(-1)}><Icon name="chevronLeft" size={16} /> Wróć</button>;
+  if (err) return <>{back}<ErrorBox error={err} /></>;
+  if (!d) return <>{back}<Loading /></>;
 
   const { visitor: v, identities, sessions, leads = [] } = d;
   const who = identities[0];
 
   return (
     <div>
-      <button className="ghost" onClick={() => navigate(-1)} style={{ marginBottom: 16 }}>← Wróć</button>
-
-      <div className="cards" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
-        <div className="card">
-          <div className="label">Tożsamość</div>
-          <div className="value" style={{ fontSize: 18 }}>
-            {who ? (who.displayName || who.email) : (v.orgName || v.rdnsHost || 'Anonimowy')}
-          </div>
-          {who?.tenantName && <div className="muted" style={{ fontSize: 13 }}>{who.tenantName} ({who.subdomain})</div>}
-          {who?.email && who.displayName && <div className="muted" style={{ fontSize: 13 }}>{who.email}</div>}
-        </div>
-        <div className="card">
-          <div className="label">Lokalizacja</div>
-          <div className="value" style={{ fontSize: 18 }}>{flag(v.country)} {v.city || v.country || '—'}</div>
-          {v.orgName && <div className="muted" style={{ fontSize: 13 }}>{v.orgName}</div>}
-          {v.rdnsHost && <div className="muted" style={{ fontSize: 12 }}>{v.rdnsHost}</div>}
-        </div>
-        <div className="card">
-          <div className="label">Urządzenie</div>
-          <div className="value" style={{ fontSize: 18 }}>{deviceIcon(v.deviceType)} {v.browser || '—'}</div>
-          <div className="muted" style={{ fontSize: 13 }}>{v.os || ''}</div>
-        </div>
-        <div className="card">
-          <div className="label">Aktywność</div>
-          <div className="value" style={{ fontSize: 18 }}>{v.sessions_count} sesji · {v.pageviews_count} odsłon</div>
-          <div className="muted" style={{ fontSize: 13 }}>
-            Pierwszy raz: {fmtWhen(v.first_seen)} · Ostatnio: {fmtWhen(v.last_seen)}
-          </div>
-        </div>
+      {back}
+      <div className="stats" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))' }}>
+        <Stat
+          label="Tożsamość" small
+          value={who ? (who.displayName || who.email) : (v.orgName || v.rdnsHost || 'Anonimowy')}
+          hint={<>{who?.tenantName && <div>{who.tenantName} ({who.subdomain})</div>}{who?.email && who.displayName && <div>{who.email}</div>}</>}
+        />
+        <Stat
+          label="Lokalizacja" small
+          value={<>{flag(v.country)}{v.city || v.country || '—'}</>}
+          hint={<>{v.orgName && <div>{v.orgName}</div>}{v.rdnsHost && <div className="ellipsis">{v.rdnsHost}</div>}</>}
+        />
+        <Stat label="Urządzenie" small value={<>{deviceIcon(v.deviceType)}{v.browser || '—'}</>} hint={v.os || ''} />
+        <Stat
+          label="Aktywność" small
+          value={`${v.sessions_count} sesji · ${v.pageviews_count} odsłon`}
+          hint={`Pierwszy raz ${fmtWhen(v.first_seen)} · ostatnio ${fmtWhen(v.last_seen)}`}
+        />
       </div>
 
       {leads.length > 0 && (
-        <div className="card" style={{ marginBottom: 20, borderColor: 'var(--green)' }}>
-          <h3 style={{ marginTop: 0, marginBottom: 10 }}>📩 Zgłoszenia z formularza</h3>
-          {leads.map((l) => (
-            <div key={l.id} className="row" style={{ justifyContent: 'space-between', padding: '6px 0', fontSize: 13, borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-              <span><b>{l.name}</b> · {l.email}{l.phone ? ` · ${l.phone}` : ''}{l.church ? ` · ${l.church}` : ''}</span>
-              <span className="muted"><span className={`badge lead-${l.status || 'new'}`}>{l.status || 'new'}</span> {fmtWhen(l.createdAt)}</span>
-            </div>
-          ))}
-        </div>
+        <Card title="Zgłoszenia z formularza" className="mb">
+          <div className="list">
+            {leads.map((l) => (
+              <button key={l.id} className="list-row" onClick={() => navigate(`/leads?lead=${encodeURIComponent(l.id)}`)}>
+                <span className="ellipsis"><b>{l.name}</b> <span className="muted">{l.email}{l.phone ? ` · ${l.phone}` : ''}{l.church ? ` · ${l.church}` : ''}</span></span>
+                <span className="row nowrap"><StatusBadge status={l.status || 'new'} size="sm" /><span className="muted small tnum">{fmtWhen(l.createdAt)}</span></span>
+              </button>
+            ))}
+          </div>
+        </Card>
       )}
 
       {identities.length > 1 && (
-        <div className="card" style={{ marginBottom: 20 }}>
-          <h3 style={{ marginTop: 0, marginBottom: 10 }}>Wszystkie tożsamości</h3>
-          {identities.map((i, k) => (
-            <div key={k} className="row" style={{ justifyContent: 'space-between', padding: '6px 0', fontSize: 13, borderBottom: '1px solid var(--border)' }}>
-              <span>{i.displayName || i.email} <span className="muted">{i.role || ''}</span></span>
-              <span className="muted">{i.tenantName || ''} · {fmtWhen(i.identifiedAt)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <h3 style={{ margin: '18px 0 10px' }}>Oś czasu ({sessions.length} ostatnich sesji)</h3>
-      {sessions.map((s) => (
-        <div className="card" key={s.id} style={{ marginBottom: 14 }}>
-          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap' }}>
-            <b>{fmtWhen(s.startedAt)}</b>
-            <span className="muted" style={{ fontSize: 13 }}>
-              {s.site === 'landing' ? 'Strona WWW' : `Aplikacja${s.tenantName ? ` · ${s.tenantName}` : ''}`}
-              {' · '}{s.pageviews} odsłon
-              {s.durationSeconds != null && <> · {formatDuration(s.durationSeconds)}</>}
-              {s.referrerDomain && <> · z: {s.referrerDomain}</>}
-              {s.utmSource && <> · utm: {s.utmSource}</>}
-            </span>
-          </div>
-          <div className="timeline">
-            {s.events.map((e, k) => (
-              <div key={k} className="timeline-item">
-                <span className="muted" style={{ width: 46, flexShrink: 0 }}>
-                  {new Date(e.createdAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <span className={`evtag ev-${e.name}`}>{EVENT_LABELS[e.name] || e.name}</span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {e.name === 'module_open' && e.props?.module ? e.props.module
-                    : e.name === 'click' && e.props?.href ? e.props.href
-                    : e.name === 'click' && e.props?.t ? e.props.t
-                    : e.pageTitle || e.path || ''}
-                  {e.name === 'leave' && e.durationMs ? ` (${formatDuration(e.durationMs / 1000)})` : ''}
-                </span>
+        <Card title="Wszystkie tożsamości" className="mb">
+          <div className="list">
+            {identities.map((i, k) => (
+              <div key={k} className="list-row">
+                <span>{i.displayName || i.email} <span className="muted">{i.role || ''}</span></span>
+                <span className="muted small">{i.tenantName || ''} · {fmtWhen(i.identifiedAt)}</span>
               </div>
             ))}
           </div>
-        </div>
-      ))}
+        </Card>
+      )}
+
+      <h2 className="section-title" style={{ margin: '24px 0 12px' }}>Oś czasu <span className="muted" style={{ fontWeight: 600 }}>· {sessions.length} ostatnich sesji</span></h2>
+      <div className="stack" style={{ gap: 12 }}>
+        {sessions.map((s) => (
+          <Card key={s.id}>
+            <div className="row row--between row--wrap" style={{ marginBottom: 8 }}>
+              <b className="tnum">{fmtWhen(s.startedAt)}</b>
+              <span className="muted small">
+                {s.site === 'landing' ? 'Strona WWW' : `Aplikacja${s.tenantName ? ` · ${s.tenantName}` : ''}`}
+                {' · '}{s.pageviews} odsłon
+                {s.durationSeconds != null && <> · {formatDuration(s.durationSeconds)}</>}
+                {s.referrerDomain && <> · z: {s.referrerDomain}</>}
+                {s.utmSource && <> · utm: {s.utmSource}</>}
+              </span>
+            </div>
+            <div className="timeline">
+              {s.events.map((e, k) => (
+                <div key={k} className="timeline-item">
+                  <span className="muted tnum" style={{ width: 44, flexShrink: 0 }}>
+                    {new Date(e.createdAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className={`evtag ev-${e.name}`}>{EVENT_LABELS[e.name] || e.name}</span>
+                  <span className="ellipsis">
+                    {e.name === 'module_open' && e.props?.module ? e.props.module
+                      : e.name === 'click' && e.props?.href ? e.props.href
+                      : e.name === 'click' && e.props?.t ? e.props.t
+                      : e.pageTitle || e.path || ''}
+                    {e.name === 'leave' && e.durationMs ? ` (${formatDuration(e.durationMs / 1000)})` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

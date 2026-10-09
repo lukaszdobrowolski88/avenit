@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../lib/api.js';
+import { Button, Badge, Table, TR, EmptyRow, SearchInput, ErrorBox, Loading } from '../../components/ui.jsx';
 import { IdentityBadge, flag, deviceIcon, fmtWhen } from './common.jsx';
 
 async function exportCsv(what, filters) {
@@ -37,62 +38,52 @@ export default function Visitors({ filters }) {
     return () => { alive = false; clearTimeout(t); };
   }, [q, page, filters.from, filters.to, filters.site, filters.tenantId]);
 
-  if (err) return <div className="err">{err}</div>;
+  if (err) return <ErrorBox error={err} />;
 
   const pages = d ? Math.max(1, Math.ceil(d.total / d.pageSize)) : 1;
 
   return (
     <div>
       <div className="toolbar">
-        <input
-          placeholder="Szukaj: imię, e-mail, organizacja, miasto…"
-          value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 360 }}
-        />
+        <SearchInput className="grow" value={q} onChange={setQ} placeholder="Szukaj: imię, e-mail, organizacja, miasto…" />
         <div className="row">
-          <span className="muted">{d ? `${d.total} odwiedzających` : ''}</span>
-          <button className="ghost" onClick={() => exportCsv('visitors', filters)}>Eksport CSV</button>
+          {d && <span className="muted small tnum">{d.total} odwiedzających</span>}
+          <Button icon="download" onClick={() => exportCsv('visitors', filters)}>Eksport CSV</Button>
         </div>
       </div>
-      {!d && <div>Ładowanie…</div>}
-      {d && d.visitors.length === 0 && <div className="muted">Brak odwiedzających w wybranym okresie.</div>}
-      {d && d.visitors.length > 0 && (
-        <table>
+      {!d ? <Loading /> : (
+        <Table minWidth={860}>
           <thead>
             <tr>
               <th>Kto</th><th>Lokalizacja</th><th>Urządzenie</th>
-              <th style={{ textAlign: 'right' }}>Sesje</th>
-              <th style={{ textAlign: 'right' }}>Odsłony</th>
+              <th className="num">Sesje</th><th className="num">Odsłony</th>
               <th>Ostatnia strona</th><th>Ostatnio</th>
             </tr>
           </thead>
           <tbody>
+            {d.visitors.length === 0 && <EmptyRow colSpan={7}>Brak odwiedzających w wybranym okresie.</EmptyRow>}
             {d.visitors.map((v) => (
-              <tr
-                key={v.id} className="clickable"
-                onClick={() => navigate({ pathname: v.id, search })}
-              >
+              <TR key={v.id} onClick={() => navigate({ pathname: v.id, search })}>
                 <td>
                   <IdentityBadge v={v} />
-                  {v.hasLead && <span className="leadbadge" title="Wysłał(a) zgłoszenie z formularza">📩 zgłoszenie</span>}
+                  {v.hasLead && <> <Badge tone="success" size="sm" title="Wysłał(a) zgłoszenie z formularza">zgłoszenie</Badge></>}
                 </td>
-                <td>{flag(v.country)} {v.city || v.country || '—'}</td>
-                <td>{deviceIcon(v.deviceType)} {v.browser || '—'}{v.os ? ` · ${v.os}` : ''}</td>
-                <td style={{ textAlign: 'right' }}>{v.sessionsCount}</td>
-                <td style={{ textAlign: 'right' }}>{v.pageviewsCount}</td>
-                <td className="muted" style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {v.lastPath || '—'}
-                </td>
-                <td className="muted">{fmtWhen(v.lastSeen)}</td>
-              </tr>
+                <td className="nowrap">{flag(v.country)}{v.city || v.country || ''}</td>
+                <td className="nowrap">{deviceIcon(v.deviceType)}{v.browser || ''}{v.os ? ` · ${v.os}` : ''}</td>
+                <td className="num">{v.sessionsCount}</td>
+                <td className="num">{v.pageviewsCount}</td>
+                <td className="muted mono small" style={{ maxWidth: 220 }}><span className="ellipsis" style={{ display: 'block' }}>{v.lastPath || ''}</span></td>
+                <td className="muted tnum nowrap">{fmtWhen(v.lastSeen)}</td>
+              </TR>
             ))}
           </tbody>
-        </table>
+        </Table>
       )}
       {pages > 1 && (
         <div className="row" style={{ justifyContent: 'center', marginTop: 16 }}>
-          <button className="ghost" disabled={page <= 1} onClick={() => setPage(page - 1)}>‹ Poprzednia</button>
-          <span className="muted">{page} / {pages}</span>
-          <button className="ghost" disabled={page >= pages} onClick={() => setPage(page + 1)}>Następna ›</button>
+          <Button variant="ghost" icon="chevronLeft" disabled={page <= 1} onClick={() => setPage(page - 1)}>Poprzednia</Button>
+          <span className="muted small tnum">{page} / {pages}</span>
+          <Button variant="ghost" iconRight="chevronRight" disabled={page >= pages} onClick={() => setPage(page + 1)}>Następna</Button>
         </div>
       )}
     </div>

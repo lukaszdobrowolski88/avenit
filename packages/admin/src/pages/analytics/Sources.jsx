@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api.js';
 import { RankTable } from './common.jsx';
+import { ErrorBox, Loading, Card, Field, Button } from '../../components/ui.jsx';
 
 // Generator linków UTM — kampanie z maili/socjali od razu widoczne w statystykach.
 function UtmBuilder() {
@@ -17,26 +18,22 @@ function UtmBuilder() {
     link = u.toString();
   } catch { link = ''; }
   return (
-    <div className="card">
-      <h3 style={{ marginTop: 0, marginBottom: 4 }}>Generator linków UTM</h3>
-      <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
-        Użyj tego linku w mailingu, na Facebooku czy w ogłoszeniu — kampania pojawi się w tabelach obok.
-      </p>
-      <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-        <input style={{ flex: '2 1 220px' }} placeholder="URL" value={f.url} onChange={set('url')} />
-        <input style={{ flex: '1 1 120px' }} placeholder="source (np. facebook)" value={f.source} onChange={set('source')} />
-        <input style={{ flex: '1 1 120px' }} placeholder="medium (np. social)" value={f.medium} onChange={set('medium')} />
-        <input style={{ flex: '1 1 120px' }} placeholder="campaign (np. wiosna)" value={f.campaign} onChange={set('campaign')} />
+    <Card title="Generator linków UTM" subtitle="Użyj linku w mailingu, na Facebooku czy w ogłoszeniu — kampania pojawi się w tabelach obok.">
+      <div className="field-row">
+        <Field label="Adres"><input value={f.url} onChange={set('url')} /></Field>
+        <Field label="utm_source"><input placeholder="np. facebook" value={f.source} onChange={set('source')} /></Field>
+        <Field label="utm_medium"><input placeholder="np. social" value={f.medium} onChange={set('medium')} /></Field>
+        <Field label="utm_campaign"><input placeholder="np. wiosna" value={f.campaign} onChange={set('campaign')} /></Field>
       </div>
       {link && (f.source || f.medium || f.campaign) && (
-        <div className="row" style={{ marginTop: 10, gap: 8 }}>
-          <code style={{ flex: 1, overflow: 'auto', whiteSpace: 'nowrap', padding: '8px 10px' }}>{link}</code>
-          <button className="ghost" onClick={() => { navigator.clipboard?.writeText(link); setCopied(true); }}>
-            {copied ? 'Skopiowano ✓' : 'Kopiuj'}
-          </button>
+        <div className="row">
+          <code style={{ flex: 1, overflow: 'auto', whiteSpace: 'nowrap', padding: '8px 10px', borderRadius: 10 }}>{link}</code>
+          <Button icon={copied ? 'check' : 'copy'} onClick={() => { navigator.clipboard?.writeText(link); setCopied(true); }}>
+            {copied ? 'Skopiowano' : 'Kopiuj'}
+          </Button>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -48,8 +45,8 @@ export default function Sources({ filters }) {
     api.analyticsSources(filters).then(setD).catch((e) => setErr(e.message));
   }, [filters.from, filters.to, filters.site, filters.tenantId]);
 
-  if (err) return <div className="err">{err}</div>;
-  if (!d) return <div>Ładowanie…</div>;
+  if (err) return <ErrorBox error={err} />;
+  if (!d) return <Loading />;
 
   const cols = [
     { key: 'sessions', label: 'Sesje' },

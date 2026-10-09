@@ -72,23 +72,15 @@ export function createTenantContext(supabase, getCachedUser) {
     }
   }
 
-  async function checkFeature(feature) {
-    const subscription = await getTenantSubscription();
-    if (!subscription) return false;
-    return subscription.features?.[feature] === true;
+  // Cennik „za dorosłych”: każdy plan ma wszystkie moduły i bez limitu użytkowników/zasobów,
+  // a przekroczenie limitu dorosłych niczego nie blokuje (tylko komunikat w Subskrypcji).
+  // Dlatego nie bramkujemy funkcji ani limitów planem — zostawione dla zgodności wywołań.
+  async function checkFeature(_feature) {
+    return true;
   }
 
-  async function checkLimit(resource, currentCount = 0) {
-    const subscription = await getTenantSubscription();
-    if (!subscription) {
-      return { allowed: false, limit: 0, current: currentCount };
-    }
-
-    const limit = subscription[`max_${resource}`];
-    if (limit === -1) {
-      return { allowed: true, limit: -1, current: currentCount };
-    }
-    return { allowed: currentCount < limit, limit, current: currentCount };
+  async function checkLimit(_resource, currentCount = 0) {
+    return { allowed: true, limit: -1, current: currentCount };
   }
 
   async function isSuperAdmin() {

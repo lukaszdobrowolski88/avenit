@@ -16,6 +16,8 @@ import { provisionTenant, dropTenantDatabase } from './provisioning.js';
 import { getTenantPool } from '../db.js';
 import { isProd, config } from '../config.js';
 import { BUILTIN_ROLES, presetGrantRows } from '@avenit/shared/src/permissions/presets.js';
+import { subscriptionPrice, splitGross } from '@avenit/shared/src/billing/adults.js';
+import { tenantPlanUsage } from '../tenant/adults.js';
 
 const adminCookie = { httpOnly: true, secure: isProd, sameSite: 'lax', path: '/' };
 
@@ -112,7 +114,9 @@ export default async function adminRoutes(app) {
       platformPool.query(`SELECT status, count(*)::int AS n FROM tenants GROUP BY status`),
       platformPool.query(`SELECT status, count(*)::int AS n, COALESCE(sum(total),0)::bigint AS sum FROM invoices GROUP BY status`),
       platformPool.query(`
-        SELECT COALESCE(SUM(CASE WHEN ts.billing_cycle='yearly' THEN sp.price_yearly/12 ELSE sp.price_monthly END),0)::bigint AS mrr
+        SELECT COALESCE(SUM(CASE WHEN ts.billing_cycle='yearly'
+                 THEN COALESCE(ts.custom_price_yearly, sp.price_yearly, sp.price_monthly * 10) / 12
+                 ELSE COALESCE(ts.custom_price_monthly, sp.price_monthly) END),0)::bigint AS mrr
         FROM tenant_subscriptions ts JOIN subscription_plans sp ON ts.plan_id = sp.id
         WHERE ts.status IN ('active','trialing')`),
       platformPool.query(`SELECT count(*)::int AS n FROM tenants WHERE status='trial' AND trial_ends_at < now() + interval '7 days'`),
@@ -390,6 +394,30 @@ export default async function adminRoutes(app) {
     return reply.send({ tenant, subscription: sub.rows[0] || null, invoices: invoices.rows, modules: modules.rows, usage });
   });
 
+  // Wykorzystanie planu = liczba DOROSŁYCH w bazie członków vs limit planu (z 10% zapasem).
+  // Tylko informacja — nic nie blokuje. limit = -1 dla planu bez limitu (state 'unlimited').
+  app.get('/api/admin/tenants/:id/usage', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { rows } = await platformPool.query(`SELECT id, db_name FROM tenants WHERE id = $1`, [req.params.id]);
+    if (!rows[0]) return reply.code(404).send({ error: 'Tenant nie istnieje' });
+    let tenantDb = null;
+    try { tenantDb = getTenantPool(rows[0].db_name); } catch { tenantDb = null; }
+    const u = await tenantPlanUsage(platformPool, rows[0].id, tenantDb);
+    const history = await platformPool.query(
+      `SELECT period, adults, plan_key, plan_limit, state FROM tenant_usage_snapshots
+        WHERE tenant_id = $1 ORDER BY period DESC LIMIT 12`, [rows[0].id]
+    ).then((r) => r.rows).catch(() => []);
+    const sub = u.subscription;
+    return reply.send({
+      adults: u.adults, limit: u.limit, bufferLimit: u.bufferLimit, pct: u.pct, state: u.state,
+      plan: u.plan, suggestedPlan: u.suggestedPlan, planRetired: u.planRetired,
+      counted: u.counted, approximate: u.approximate, totalMembers: u.totalMembers,
+      billingCycle: sub?.billing_cycle || null,
+      customPriceMonthly: sub?.custom_price_monthly ?? null,
+      customPriceYearly: sub?.custom_price_yearly ?? null,
+      history,
+    });
+  });
+
   app.post('/api/admin/tenants', { preHandler: app.requireAdmin }, async (req, reply) => {
     const body = z.object({
       name: z.string().min(1), slug: z.string().min(2),
@@ -458,23 +486,44 @@ export default async function adminRoutes(app) {
     return reply.send({ tenant: rows[0] });
   });
 
+  // Zmiana planu (i opcjonalnie ceny indywidualnej). customPriceMonthly/customPriceYearly — grosze
+  // BRUTTO; null czyści, brak pola = bez zmian. Plan is_custom (Sieć) wymaga ceny indywidualnej
+  // dla wybranego cyklu (nie fakturujemy po cenie katalogowej „od”).
   app.post('/api/admin/tenants/:id/change-plan', { preHandler: app.requireAdmin }, async (req, reply) => {
-    const { planId, billingCycle = 'monthly' } = req.body || {};
+    const body = req.body || {};
+    const { planId } = body;
+    const billingCycle = body.billingCycle === 'yearly' ? 'yearly' : 'monthly';
+    const price = (v) => (v === null || v === '' ? null : Math.round(Number(v)));
+    const hasM = Object.prototype.hasOwnProperty.call(body, 'customPriceMonthly');
+    const hasY = Object.prototype.hasOwnProperty.call(body, 'customPriceYearly');
+    for (const [has, v] of [[hasM, body.customPriceMonthly], [hasY, body.customPriceYearly]]) {
+      if (has && v !== null && v !== '' && !(Number(v) > 0)) return reply.code(400).send({ error: 'Nieprawidłowa cena indywidualna' });
+    }
+    const { rows: planRows } = await platformPool.query(`SELECT id, name, is_custom FROM subscription_plans WHERE id = $1`, [planId || null]).catch(() => ({ rows: [] }));
+    if (!planRows[0]) return reply.code(400).send({ error: 'Plan nie istnieje' });
     const { rows: existing } = await platformPool.query(
-      `SELECT id FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('trialing','active','past_due') LIMIT 1`,
+      `SELECT id, custom_price_monthly, custom_price_yearly FROM tenant_subscriptions
+        WHERE tenant_id=$1 AND status IN ('trialing','active','past_due') ORDER BY created_at DESC LIMIT 1`,
       [req.params.id]
     );
+    const cpm = hasM ? price(body.customPriceMonthly) : (existing[0]?.custom_price_monthly ?? null);
+    const cpy = hasY ? price(body.customPriceYearly) : (existing[0]?.custom_price_yearly ?? null);
+    if (planRows[0].is_custom && !((billingCycle === 'yearly' ? cpy : cpm) > 0)) {
+      return reply.code(400).send({ error: `Plan ${planRows[0].name} ma wycenę indywidualną — podaj cenę indywidualną (${billingCycle === 'yearly' ? 'roczną' : 'miesięczną'})` });
+    }
     if (existing[0]) {
-      await platformPool.query(`UPDATE tenant_subscriptions SET plan_id=$1, billing_cycle=$2 WHERE id=$3`,
-        [planId, billingCycle, existing[0].id]);
+      await platformPool.query(
+        `UPDATE tenant_subscriptions SET plan_id=$1, billing_cycle=$2, custom_price_monthly=$3, custom_price_yearly=$4 WHERE id=$5`,
+        [planId, billingCycle, cpm, cpy, existing[0].id]);
     } else {
       await platformPool.query(
-        `INSERT INTO tenant_subscriptions (tenant_id, plan_id, status, billing_cycle, current_period_start, current_period_end)
-         VALUES ($1, $2, 'active', $3, now(), now() + interval '30 days')`,
-        [req.params.id, planId, billingCycle]
+        `INSERT INTO tenant_subscriptions (tenant_id, plan_id, status, billing_cycle, current_period_start, current_period_end,
+           custom_price_monthly, custom_price_yearly)
+         VALUES ($1, $2, 'active', $3, now(), now() + (CASE WHEN $3 = 'yearly' THEN interval '1 year' ELSE interval '1 month' END), $4, $5)`,
+        [req.params.id, planId, billingCycle, cpm, cpy]
       );
     }
-    await audit(req.admin.id, 'tenant.change_plan', 'tenant', req.params.id, { planId, billingCycle });
+    await audit(req.admin.id, 'tenant.change_plan', 'tenant', req.params.id, { planId, billingCycle, customPriceMonthly: cpm, customPriceYearly: cpy });
     return reply.send({ ok: true });
   });
 
@@ -641,12 +690,14 @@ export default async function adminRoutes(app) {
     const p = req.body || {};
     const { rows } = await platformPool.query(
       `INSERT INTO subscription_plans (name, slug, key, description, price_monthly, price_yearly,
-        max_members, max_users, max_groups, max_kids, max_events, max_storage_mb, trial_days, features, is_active, is_public, sort_order)
-       VALUES ($1,$2,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+        max_members, max_users, max_groups, max_kids, max_events, max_storage_mb, trial_days, features, is_active, is_public, sort_order,
+        limit_buffer_pct, is_custom)
+       VALUES ($1,$2,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
       [p.name, p.slug, p.description || null, p.price_monthly || 0, p.price_yearly || null,
        p.max_members ?? -1, p.max_users ?? -1, p.max_groups ?? -1, p.max_kids ?? -1, p.max_events ?? -1,
-       p.max_storage_mb ?? 100, p.trial_days ?? 14, JSON.stringify(p.features || {}),
-       p.is_active !== false, p.is_public !== false, p.sort_order || 0]
+       p.max_storage_mb ?? -1, p.trial_days ?? 14, JSON.stringify(p.features || { all_modules: true }),
+       p.is_active !== false, p.is_public !== false, p.sort_order || 0,
+       p.limit_buffer_pct ?? 10, p.is_custom === true]
     );
     await audit(req.admin.id, 'plan.create', 'plan', rows[0].id);
     return reply.send({ plan: rows[0] });
@@ -656,12 +707,16 @@ export default async function adminRoutes(app) {
     const { rows } = await platformPool.query(
       `UPDATE subscription_plans SET name=$1, description=$2, price_monthly=$3, price_yearly=$4,
         max_members=$5, max_users=$6, max_groups=$7, max_kids=$8, max_events=$9, max_storage_mb=$10,
-        trial_days=$11, features=$12, is_active=$13, is_public=$14, sort_order=$15 WHERE id=$16 RETURNING *`,
+        trial_days=$11, features=COALESCE($12::jsonb, features), is_active=$13, is_public=$14, sort_order=$15,
+        limit_buffer_pct=COALESCE($17, limit_buffer_pct), is_custom=COALESCE($18, is_custom)
+        WHERE id=$16 RETURNING *`,
       [p.name, p.description || null, p.price_monthly || 0, p.price_yearly || null,
        p.max_members ?? -1, p.max_users ?? -1, p.max_groups ?? -1, p.max_kids ?? -1, p.max_events ?? -1,
-       p.max_storage_mb ?? 100, p.trial_days ?? 14, JSON.stringify(p.features || {}),
-       p.is_active !== false, p.is_public !== false, p.sort_order || 0, req.params.id]
+       p.max_storage_mb ?? -1, p.trial_days ?? 14, p.features != null ? JSON.stringify(p.features) : null,
+       p.is_active !== false, p.is_public !== false, p.sort_order || 0, req.params.id,
+       p.limit_buffer_pct ?? null, typeof p.is_custom === 'boolean' ? p.is_custom : null]
     );
+    if (!rows[0]) return reply.code(404).send({ error: 'Plan nie istnieje' });
     await audit(req.admin.id, 'plan.update', 'plan', req.params.id);
     return reply.send({ plan: rows[0] });
   });
@@ -673,17 +728,56 @@ export default async function adminRoutes(app) {
        ORDER BY i.issue_date DESC LIMIT 200`);
     return reply.send({ invoices: rows });
   });
+  // Kwoty: `total` = BRUTTO (ceny Avenit są brutto; VAT wyliczany z kwoty) albo starsze `subtotal`
+  // = netto (+VAT). `from_subscription: true` — kwota z aktywnej subskrypcji tenanta wg cyklu:
+  // cena indywidualna > cena planu; plan is_custom (Sieć) bez ceny indywidualnej → 400.
   app.post('/api/admin/invoices', { preHandler: app.requireAdmin }, async (req, reply) => {
-    const p = req.body || {};
-    const subtotal = Math.round(p.subtotal || 0);
+    const p = { ...(req.body || {}) };
     const taxRate = p.tax_rate ?? 23;
-    const taxAmount = Math.round(subtotal * taxRate / 100);
+    if (p.from_subscription) {
+      const { rows: subs } = await platformPool.query(
+        `SELECT ts.id, ts.billing_cycle, ts.custom_price_monthly, ts.custom_price_yearly,
+                sp.name, sp.price_monthly, sp.price_yearly, sp.is_custom
+           FROM tenant_subscriptions ts JOIN subscription_plans sp ON ts.plan_id = sp.id
+          WHERE ts.tenant_id = $1 AND ts.status IN ('trialing','active','past_due') ORDER BY ts.created_at DESC LIMIT 1`,
+        [p.tenant_id]
+      );
+      const sub = subs[0];
+      if (!sub) return reply.code(400).send({ error: 'Tenant nie ma aktywnej subskrypcji' });
+      const price = subscriptionPrice({
+        plan: sub, billingCycle: sub.billing_cycle,
+        customPriceMonthly: sub.custom_price_monthly, customPriceYearly: sub.custom_price_yearly,
+      });
+      if (price.amount == null) {
+        return reply.code(400).send({ error: price.source === 'custom_required'
+          ? `Plan ${sub.name} ma wycenę indywidualną — ustaw cenę indywidualną tenanta` : 'Plan nie ma ceny dla tego cyklu' });
+      }
+      p.total = price.amount;
+      p.subscription_id = p.subscription_id || sub.id;
+      if (!p.items) {
+        p.items = [{ description: `Avenit — plan ${sub.name} (${sub.billing_cycle === 'yearly' ? 'rocznie' : 'miesięcznie'})`, quantity: 1, unit_price: price.amount, total: price.amount }];
+      }
+    }
+    let subtotal, taxAmount, total;
+    if (p.total != null) {
+      ({ subtotal, taxAmount, total } = splitGross(p.total, taxRate));
+    } else {
+      subtotal = Math.round(p.subtotal || 0);
+      taxAmount = Math.round(subtotal * taxRate / 100);
+      total = subtotal + taxAmount;
+    }
+    if (!p.tenant_id || !p.due_date) return reply.code(400).send({ error: 'Wymagane: tenant_id i due_date' });
+    if (!p.buyer_name) {
+      const { rows: t } = await platformPool.query(`SELECT name, company_name, email FROM tenants WHERE id = $1`, [p.tenant_id]);
+      p.buyer_name = t[0]?.company_name || t[0]?.name;
+      p.buyer_email = p.buyer_email || t[0]?.email || null;
+    }
     const { rows } = await platformPool.query(
       `INSERT INTO invoices (tenant_id, subscription_id, buyer_name, buyer_company_name, buyer_tax_id,
         buyer_address, buyer_email, subtotal, tax_rate, tax_amount, total, items, status, due_date, period_start, period_end)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,COALESCE($13,'pending'),$14,$15,$16) RETURNING *`,
       [p.tenant_id, p.subscription_id || null, p.buyer_name, p.buyer_company_name || null, p.buyer_tax_id || null,
-       p.buyer_address || null, p.buyer_email || null, subtotal, taxRate, taxAmount, subtotal + taxAmount,
+       p.buyer_address || null, p.buyer_email || null, subtotal, taxRate, taxAmount, total,
        JSON.stringify(p.items || []), p.status, p.due_date, p.period_start || null, p.period_end || null]
     );
     await audit(req.admin.id, 'invoice.create', 'invoice', rows[0].id);
@@ -695,11 +789,12 @@ export default async function adminRoutes(app) {
       [req.params.id]
     );
     if (!rows[0]) return reply.code(404).send({ error: 'Faktura nie istnieje' });
-    // Odnów okres subskrypcji (logika z useInvoices.markAsPaid).
+    // Odnów okres subskrypcji (logika z useInvoices.markAsPaid) — rok dla rozliczenia rocznego.
     if (rows[0].subscription_id) {
       await platformPool.query(
         `UPDATE tenant_subscriptions SET status='active',
-           current_period_start=now(), current_period_end=now() + interval '30 days'
+           current_period_start=now(),
+           current_period_end=now() + (CASE WHEN billing_cycle = 'yearly' THEN interval '1 year' ELSE interval '1 month' END)
          WHERE id=$1`, [rows[0].subscription_id]
       );
     }

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, formatDuration } from '../../lib/api.js';
 import { RankTable } from './common.jsx';
+import { ErrorBox, Loading } from '../../components/ui.jsx';
 
 export default function PagesTab({ filters }) {
   const [d, setD] = useState(null);
@@ -11,8 +12,8 @@ export default function PagesTab({ filters }) {
     api.analyticsPages(filters).then(setD).catch((e) => setErr(e.message));
   }, [filters.from, filters.to, filters.site, filters.tenantId]);
 
-  if (err) return <div className="err">{err}</div>;
-  if (!d) return <div>Ładowanie…</div>;
+  if (err) return <ErrorBox error={err} />;
+  if (!d) return <Loading />;
 
   return (
     <RankTable

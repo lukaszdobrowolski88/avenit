@@ -19,6 +19,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import KioskGuard from './modules/Kids/checkin/KioskGuard';
 import InstallPrompt from './components/InstallPrompt';
 import AnnouncementBanner from './components/AnnouncementBanner';
+import PlanUsageNotice from './modules/Billing/PlanUsageNotice';
 import CommandPalette from './components/CommandPalette';
 import { OnboardingProvider } from './onboarding/OnboardingContext';
 import OnboardingLayer from './onboarding/OnboardingLayer';
@@ -549,6 +550,8 @@ function AppInner() {
               <OfflineBanner />
               {/* Ogłoszenia systemowe z platformy */}
               <AnnouncementBanner />
+              {/* Limit dorosłych w planie — tylko dla osób z dostępem do rozliczeń, do zamknięcia */}
+              <PlanUsageNotice />
               <main id="tresc" tabIndex={-1} className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar outline-none focus:outline-none">
               <RouteErrorBoundary>
               <Suspense fallback={<PageLoader />}>

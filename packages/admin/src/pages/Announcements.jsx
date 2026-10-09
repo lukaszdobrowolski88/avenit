@@ -1,53 +1,66 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
-import { Modal } from './Tenants.jsx';
+import {
+  PageHeader, Button, Badge, Table, EmptyRow, Modal, Field, Toggle, Segmented, Loading, ErrorBox, useToast,
+} from '../components/ui.jsx';
 
 const LEVELS = {
-  info: { label: 'Informacja', badge: 'trial' },
-  success: { label: 'Sukces', badge: 'active' },
-  warning: { label: 'Ostrzeżenie', badge: 'pending' },
-  critical: { label: 'Krytyczne', badge: 'suspended' },
+  info: { label: 'Informacja', tone: 'info' },
+  success: { label: 'Sukces', tone: 'success' },
+  warning: { label: 'Ostrzeżenie', tone: 'warning' },
+  critical: { label: 'Krytyczne', tone: 'danger' },
 };
+const fmt = (d) => (d ? new Date(d).toLocaleDateString('pl-PL') : '');
 
 export default function Announcements() {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(null);
   const [edit, setEdit] = useState(null);
-  const load = () => api.announcements().then((r) => setItems(r.announcements));
+  const [err, setErr] = useState('');
+  const [toast, showToast] = useToast();
+  const load = () => api.announcements().then((r) => setItems(r.announcements)).catch((e) => setErr(e.message));
   useEffect(() => { load(); }, []);
 
-  const remove = async (id) => {
-    if (!confirm('Usunąć ogłoszenie?')) return;
-    await api.deleteAnnouncement(id); load();
+  const remove = async (a) => {
+    if (!confirm(`Usunąć ogłoszenie „${a.title}”?`)) return;
+    try { await api.deleteAnnouncement(a.id); load(); showToast('Ogłoszenie usunięte'); } catch (e) { showToast(e.message, 'error'); }
+  };
+  const toggle = async (a) => {
+    try { await api.updateAnnouncement(a.id, { ...a, is_active: !a.is_active }); load(); } catch (e) { showToast(e.message, 'error'); }
   };
 
   return (
     <div>
-      <div className="toolbar">
-        <h1 className="h1">Ogłoszenia systemowe</h1>
-        <button onClick={() => setEdit({})}>+ Nowe ogłoszenie</button>
-      </div>
-      <p className="muted" style={{ marginBottom: 16 }}>Aktywne ogłoszenia wyświetlają się jako baner we wszystkich kościołach.</p>
-      <table>
-        <thead><tr><th>Tytuł</th><th>Typ</th><th>Aktywne</th><th>Okres</th><th></th></tr></thead>
-        <tbody>
-          {items.length === 0 && <tr><td colSpan={5} className="muted">Brak ogłoszeń</td></tr>}
-          {items.map((a) => (
-            <tr key={a.id}>
-              <td><b>{a.title}</b>{a.body && <div className="muted" style={{ fontSize: 12 }}>{a.body.slice(0, 60)}</div>}</td>
-              <td><span className={`badge ${LEVELS[a.level]?.badge || 'trial'}`}>{LEVELS[a.level]?.label || a.level}</span></td>
-              <td>{a.is_active ? '✓' : '—'}</td>
-              <td className="muted" style={{ fontSize: 12 }}>
-                {a.starts_at ? new Date(a.starts_at).toLocaleDateString('pl-PL') : '—'} → {a.ends_at ? new Date(a.ends_at).toLocaleDateString('pl-PL') : '∞'}
-              </td>
-              <td className="row">
-                <button className="ghost" onClick={() => setEdit(a)}>Edytuj</button>
-                <button className="danger" onClick={() => remove(a.id)}>Usuń</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {edit && <Form item={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />}
+      <PageHeader
+        title="Ogłoszenia"
+        subtitle="Aktywne ogłoszenia wyświetlają się jako baner we wszystkich kościołach."
+        actions={<Button variant="primary" icon="plus" onClick={() => setEdit({})}>Nowe ogłoszenie</Button>}
+      />
+      <ErrorBox error={err} onRetry={load} />
+      {!items && !err ? <Loading /> : (
+        <Table minWidth={680}>
+          <thead><tr><th>Ogłoszenie</th><th>Typ</th><th>Okres</th><th>Aktywne</th><th></th></tr></thead>
+          <tbody>
+            {(items || []).length === 0 && <EmptyRow colSpan={5}>Brak ogłoszeń</EmptyRow>}
+            {(items || []).map((a) => (
+              <tr key={a.id}>
+                <td style={{ maxWidth: 420 }}>
+                  <span className="primary-cell">{a.title}</span>
+                  {a.body && <span className="sub ellipsis">{a.body}</span>}
+                </td>
+                <td><Badge tone={LEVELS[a.level]?.tone || 'neutral'}>{LEVELS[a.level]?.label || a.level}</Badge></td>
+                <td className="muted tnum nowrap">{a.starts_at || a.ends_at ? `${fmt(a.starts_at) || 'od teraz'} → ${fmt(a.ends_at) || 'bez końca'}` : 'zawsze'}</td>
+                <td><Toggle checked={a.is_active} onChange={() => toggle(a)} title={a.is_active ? 'Wyłącz' : 'Włącz'} /></td>
+                <td className="actions">
+                  <Button size="sm" variant="ghost" onClick={() => setEdit(a)}>Edytuj</Button>
+                  <Button size="sm" variant="ghost" icon="trash" onClick={() => remove(a)} aria-label="Usuń" title="Usuń" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
+      {edit && <Form item={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); showToast('Zapisano ogłoszenie'); }} />}
+      {toast}
     </div>
   );
 }
@@ -70,27 +83,22 @@ function Form({ item, onClose, onSaved }) {
     } catch (e) { setErr(e.message); }
   };
   return (
-    <Modal title={item.id ? 'Edytuj ogłoszenie' : 'Nowe ogłoszenie'} onClose={onClose}>
-      <label>Tytuł</label><input value={f.title} onChange={(e) => set('title', e.target.value)} />
-      <label>Treść</label>
-      <textarea value={f.body} onChange={(e) => set('body', e.target.value)} rows={3}
-        style={{ width: '100%', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 11px' }} />
-      <label>Typ</label>
-      <select value={f.level} onChange={(e) => set('level', e.target.value)}>
-        {Object.entries(LEVELS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-      </select>
-      <div className="row">
-        <div style={{ flex: 1 }}><label>Od (opcjonalnie)</label><input type="date" value={f.starts_at} onChange={(e) => set('starts_at', e.target.value)} /></div>
-        <div style={{ flex: 1 }}><label>Do (opcjonalnie)</label><input type="date" value={f.ends_at} onChange={(e) => set('ends_at', e.target.value)} /></div>
+    <Modal title={item.id ? 'Edytuj ogłoszenie' : 'Nowe ogłoszenie'} onClose={onClose} footer={<>
+      <Button variant="ghost" onClick={onClose}>Anuluj</Button>
+      <Button variant="primary" onClick={save} disabled={!f.title}>Zapisz</Button>
+    </>}>
+      <Field label="Tytuł"><input value={f.title} onChange={(e) => set('title', e.target.value)} /></Field>
+      <Field label="Treść"><textarea value={f.body} onChange={(e) => set('body', e.target.value)} rows={3} /></Field>
+      <Field label="Typ">
+        <Segmented label="Typ" value={f.level} onChange={(v) => set('level', v)}
+          items={Object.entries(LEVELS).map(([k, v]) => ({ value: k, label: v.label }))} />
+      </Field>
+      <div className="field-row">
+        <Field label="Od" hint="Opcjonalnie"><input type="date" value={f.starts_at} onChange={(e) => set('starts_at', e.target.value)} /></Field>
+        <Field label="Do" hint="Opcjonalnie"><input type="date" value={f.ends_at} onChange={(e) => set('ends_at', e.target.value)} /></Field>
       </div>
-      <label className="row" style={{ marginTop: 12 }}>
-        <input type="checkbox" style={{ width: 'auto' }} checked={f.is_active} onChange={(e) => set('is_active', e.target.checked)} /> Aktywne
-      </label>
-      {err && <div className="err">{err}</div>}
-      <div className="row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
-        <button className="ghost" onClick={onClose}>Anuluj</button>
-        <button onClick={save} disabled={!f.title}>Zapisz</button>
-      </div>
+      <Toggle checked={f.is_active} onChange={(v) => set('is_active', v)} label="Aktywne" />
+      {err && <div className="err" role="alert">{err}</div>}
     </Modal>
   );
 }

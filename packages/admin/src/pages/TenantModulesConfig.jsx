@@ -1,43 +1,50 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
-import { Modal } from './Tenants.jsx';
+import Icon from '../components/Icon.jsx';
+import { Button, Modal, Field, Table, Toggle, Badge, SectionHead, Loading, Notice, useToast, EmptyRow } from '../components/ui.jsx';
 
 // Zdalne zarządzanie modułami/zakładkami/rolami tenanta z panelu admina.
 export default function TenantModulesConfig({ tenantId }) {
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
-  const [msg, setMsg] = useState('');
   const [editMod, setEditMod] = useState(null);   // {} = nowy, obiekt = edycja
   const [editTab, setEditTab] = useState(null);    // { module_id } dla nowej
   const [cfgMod, setCfgMod] = useState(null);      // moduł do edycji configu
   const [expanded, setExpanded] = useState(() => new Set());
+  const [toast, showToast] = useToast();
 
   const load = () => api.tenantConfig(tenantId).then(setData).catch((e) => setErr(e.message));
   useEffect(() => { load(); }, [tenantId]);
-  const flash = (t) => { setMsg(t); setTimeout(() => setMsg(''), 2000); };
-  const act = async (fn, ok) => { setErr(''); try { await fn(); await load(); if (ok) flash(ok); } catch (e) { setErr(e.message); } };
+  const act = async (fn, ok) => { setErr(''); try { await fn(); await load(); if (ok) showToast(ok); } catch (e) { setErr(e.message); } };
+  const toggleOpen = (mid) => setExpanded((p) => { const n = new Set(p); n.has(mid) ? n.delete(mid) : n.add(mid); return n; });
 
-  if (!data) return <div className="muted">Ładowanie konfiguracji…</div>;
+  const head = (
+    <SectionHead
+      title="Moduły i zakładki aplikacji"
+      subtitle="Konfiguracja nawigacji tenanta: moduły, zakładki, limity w configu."
+      actions={data && <>
+        <Button size="sm" variant="ghost" icon="refresh" onClick={() => confirm('Przywrócić domyślne role i uprawnienia tego kościoła?') && act(() => api.applyPreset(tenantId), 'Przywrócono role i uprawnienia')}>
+          Domyślne role/uprawnienia
+        </Button>
+        <Button size="sm" icon="plus" onClick={() => setEditMod({})}>Moduł</Button>
+      </>}
+    />
+  );
+
+  if (!data) return <>{head}{err ? <Notice tone="danger">{err}</Notice> : <Loading>Ładowanie konfiguracji…</Loading>}</>;
   const { tenantModules, modules, tabs, roles } = data;
   const tmByKey = Object.fromEntries((tenantModules || []).map((t) => [t.module_key, t]));
   const platformEnabled = (m) => tmByKey[m.key]?.is_enabled !== false; // domyślnie włączony
 
   return (
-    <div style={{ marginTop: 24 }}>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3>Moduły i zakładki tenanta</h3>
-        <div className="row" style={{ gap: 8 }}>
-          <button className="ghost" onClick={() => act(() => api.applyPreset(tenantId), 'Przywrócono role i uprawnienia')
-            }>Przywróć domyślne role/uprawnienia</button>
-          <button onClick={() => setEditMod({})}>+ Moduł</button>
-        </div>
-      </div>
-      {msg && <div style={{ color: 'var(--green)', margin: '8px 0' }}>{msg}</div>}
-      {err && <div className="err" style={{ margin: '8px 0' }}>{err}</div>}
+    <div>
+      {head}
+      {err && <Notice tone="danger">{err}</Notice>}
 
-      <table style={{ marginTop: 8 }}>
-        <thead><tr><th>Moduł</th><th>Klucz</th><th>Systemowy</th><th>Włączony (platforma)</th><th></th></tr></thead>
+      <Table minWidth={640}>
+        <thead><tr><th>Moduł</th><th>Klucz</th><th>Włączony</th><th></th></tr></thead>
         <tbody>
+          {modules.length === 0 && <EmptyRow colSpan={4}>Brak modułów</EmptyRow>}
           {modules.map((m) => {
             const open = expanded.has(m.id);
             const mTabs = tabs.filter((t) => t.module_id === m.id);
@@ -45,58 +52,68 @@ export default function TenantModulesConfig({ tenantId }) {
               <React.Fragment key={m.id}>
                 <tr>
                   <td>
-                    <button className="ghost" style={{ padding: '2px 6px', marginRight: 4 }}
-                      onClick={() => setExpanded((p) => { const n = new Set(p); n.has(m.id) ? n.delete(m.id) : n.add(m.id); return n; })}>
-                      {open ? '▾' : '▸'}
+                    <button className="back-link" style={{ margin: 0, color: 'var(--text)' }} onClick={() => toggleOpen(m.id)} aria-expanded={open}>
+                      <Icon name={open ? 'chevronDown' : 'chevronRight'} size={16} />
+                      <span className="strong">{m.label}</span>
+                      <span className="muted small">&nbsp;{mTabs.length} zakł.</span>
                     </button>
-                    <b>{m.label}</b>
+                    {m.is_system && <> <Badge size="sm">systemowy</Badge></>}
                   </td>
-                  <td className="muted" style={{ fontFamily: 'monospace' }}>{m.key}</td>
-                  <td>{m.is_system ? '✓' : '—'}</td>
+                  <td className="mono muted">{m.key}</td>
                   <td>
-                    <button className="ghost" style={{ padding: '2px 8px' }}
-                      onClick={() => act(() => api.toggleModule(tenantId, m.key, !platformEnabled(m)), 'Zapisano')}>
-                      {platformEnabled(m) ? '✓' : '—'}
-                    </button>
+                    <Toggle checked={platformEnabled(m)} title={`${m.label}: ${platformEnabled(m) ? 'wyłącz' : 'włącz'}`}
+                      onChange={(v) => act(() => api.toggleModule(tenantId, m.key, v), 'Zapisano')} />
                   </td>
-                  <td className="row" style={{ gap: 4, justifyContent: 'flex-end' }}>
-                    <button className="ghost" onClick={() => setCfgMod(m)}>Config</button>
-                    <button className="ghost" onClick={() => setEditMod(m)}>Edytuj</button>
-                    {!m.is_system && <button className="ghost danger" onClick={() => act(() => api.deleteAppModule(tenantId, m.id), 'Usunięto')}>Usuń</button>}
+                  <td className="actions">
+                    <Button size="sm" variant="ghost" onClick={() => setCfgMod(m)}>Config</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditMod(m)}>Edytuj</Button>
+                    {!m.is_system && <Button size="sm" variant="danger" onClick={() => confirm(`Usunąć moduł „${m.label}”?`) && act(() => api.deleteAppModule(tenantId, m.id), 'Usunięto')}>Usuń</Button>}
                   </td>
                 </tr>
                 {open && (
-                  <tr><td colSpan={5} style={{ background: 'var(--bg)', padding: '8px 16px' }}>
-                    <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span className="muted">Zakładki</span>
-                      <button className="ghost" onClick={() => setEditTab({ module_id: m.id })}>+ Zakładka</button>
+                  <tr className="row-sub"><td colSpan={4} style={{ padding: '10px 14px 12px 40px' }}>
+                    <div className="row row--between" style={{ marginBottom: 6 }}>
+                      <span className="small strong muted">Zakładki</span>
+                      <Button size="sm" variant="ghost" icon="plus" onClick={() => setEditTab({ module_id: m.id })}>Zakładka</Button>
                     </div>
-                    {mTabs.length === 0 && <div className="muted" style={{ fontSize: 13 }}>Brak zakładek</div>}
-                    {mTabs.map((t) => (
-                      <div key={t.id} className="row" style={{ justifyContent: 'space-between', padding: '3px 0' }}>
-                        <span>{t.label} <span className="muted" style={{ fontFamily: 'monospace', fontSize: 12 }}>{t.key}</span>{t.is_system && ' ·sys'}</span>
-                        <div className="row" style={{ gap: 4 }}>
-                          <button className="ghost" onClick={() => setEditTab(t)}>Edytuj</button>
-                          {!t.is_system && <button className="ghost danger" onClick={() => act(() => api.deleteAppTab(tenantId, t.id), 'Usunięto')}>Usuń</button>}
+                    {mTabs.length === 0 && <div className="muted small">Brak zakładek</div>}
+                    <div className="list">
+                      {mTabs.map((t) => (
+                        <div key={t.id} className="list-row" style={{ padding: '6px 10px' }}>
+                          <span>{t.label} <span className="mono muted small">{t.key}</span>{t.is_system && <> <Badge size="sm">sys</Badge></>}</span>
+                          <span className="row">
+                            <Button size="sm" variant="ghost" onClick={() => setEditTab(t)}>Edytuj</Button>
+                            {!t.is_system && <Button size="sm" variant="danger" onClick={() => confirm(`Usunąć zakładkę „${t.label}”?`) && act(() => api.deleteAppTab(tenantId, t.id), 'Usunięto')}>Usuń</Button>}
+                          </span>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </td></tr>
                 )}
               </React.Fragment>
             );
           })}
         </tbody>
-      </table>
+      </Table>
 
-      <div className="muted" style={{ marginTop: 8, fontSize: 13 }}>Role tenanta: {roles.map((r) => r.label).join(', ') || '—'}</div>
+      <div className="muted small" style={{ marginTop: 10 }}>Role tenanta: {roles.map((r) => r.label).join(', ') || '—'}</div>
 
-      {editMod && <ModuleForm tenantId={tenantId} module={editMod} onClose={() => setEditMod(null)} onSaved={() => { setEditMod(null); load(); }} />}
-      {editTab && <TabForm tenantId={tenantId} tab={editTab} onClose={() => setEditTab(null)} onSaved={() => { setEditTab(null); load(); }} />}
-      {cfgMod && <ConfigForm tenantId={tenantId} module={cfgMod} value={tmByKey[cfgMod.key]?.config} enabled={platformEnabled(cfgMod)} onClose={() => setCfgMod(null)} onSaved={() => { setCfgMod(null); load(); }} />}
+      {editMod && <ModuleForm tenantId={tenantId} module={editMod} onClose={() => setEditMod(null)} onSaved={() => { setEditMod(null); load(); showToast('Zapisano moduł'); }} />}
+      {editTab && <TabForm tenantId={tenantId} tab={editTab} onClose={() => setEditTab(null)} onSaved={() => { setEditTab(null); load(); showToast('Zapisano zakładkę'); }} />}
+      {cfgMod && <ConfigForm tenantId={tenantId} module={cfgMod} value={tmByKey[cfgMod.key]?.config} enabled={platformEnabled(cfgMod)} onClose={() => setCfgMod(null)} onSaved={() => { setCfgMod(null); load(); showToast('Zapisano konfigurację'); }} />}
+      {toast}
     </div>
   );
 }
+
+function FormFooter({ onClose, onSave, disabled }) {
+  return <>
+    <Button variant="ghost" onClick={onClose}>Anuluj</Button>
+    <Button variant="primary" onClick={onSave} disabled={disabled}>Zapisz</Button>
+  </>;
+}
+
+const keyClean = (v) => v.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
 function ModuleForm({ tenantId, module, onClose, onSaved }) {
   const [f, setF] = useState({ key: module.key || '', label: module.label || '', icon: module.icon || 'Square', display_order: module.display_order ?? 0 });
@@ -110,16 +127,15 @@ function ModuleForm({ tenantId, module, onClose, onSaved }) {
     } catch (e) { setErr(e.message); }
   };
   return (
-    <Modal title={module.id ? 'Edytuj moduł' : 'Nowy moduł'} onClose={onClose}>
-      {!module.id && (<><label>Klucz</label><input value={f.key} onChange={(e) => setF({ ...f, key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })} placeholder="np. wolontariat" /></>)}
-      <label>Nazwa</label><input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} />
-      <label>Ikona (lucide)</label><input value={f.icon} onChange={(e) => setF({ ...f, icon: e.target.value })} />
-      <label>Kolejność</label><input type="number" value={f.display_order} onChange={(e) => setF({ ...f, display_order: e.target.value })} />
-      {err && <div className="err">{err}</div>}
-      <div className="row" style={{ justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <button className="ghost" onClick={onClose}>Anuluj</button>
-        <button onClick={save} disabled={!f.label || (!module.id && !f.key)}>Zapisz</button>
+    <Modal title={module.id ? 'Edytuj moduł' : 'Nowy moduł'} onClose={onClose}
+      footer={<FormFooter onClose={onClose} onSave={save} disabled={!f.label || (!module.id && !f.key)} />}>
+      {!module.id && <Field label="Klucz"><input value={f.key} onChange={(e) => setF({ ...f, key: keyClean(e.target.value) })} placeholder="np. wolontariat" /></Field>}
+      <Field label="Nazwa"><input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} /></Field>
+      <div className="field-row">
+        <Field label="Ikona" hint="Nazwa ikony lucide, np. Users"><input value={f.icon} onChange={(e) => setF({ ...f, icon: e.target.value })} /></Field>
+        <Field label="Kolejność"><input type="number" value={f.display_order} onChange={(e) => setF({ ...f, display_order: e.target.value })} /></Field>
       </div>
+      {err && <div className="err" role="alert">{err}</div>}
     </Modal>
   );
 }
@@ -136,16 +152,15 @@ function TabForm({ tenantId, tab, onClose, onSaved }) {
     } catch (e) { setErr(e.message); }
   };
   return (
-    <Modal title={tab.id ? 'Edytuj zakładkę' : 'Nowa zakładka'} onClose={onClose}>
-      {!tab.id && (<><label>Klucz</label><input value={f.key} onChange={(e) => setF({ ...f, key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })} /></>)}
-      <label>Nazwa</label><input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} />
-      <label>Ikona</label><input value={f.icon} onChange={(e) => setF({ ...f, icon: e.target.value })} />
-      <label>Kolejność</label><input type="number" value={f.display_order} onChange={(e) => setF({ ...f, display_order: e.target.value })} />
-      {err && <div className="err">{err}</div>}
-      <div className="row" style={{ justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <button className="ghost" onClick={onClose}>Anuluj</button>
-        <button onClick={save} disabled={!f.label || (!tab.id && !f.key)}>Zapisz</button>
+    <Modal title={tab.id ? 'Edytuj zakładkę' : 'Nowa zakładka'} onClose={onClose}
+      footer={<FormFooter onClose={onClose} onSave={save} disabled={!f.label || (!tab.id && !f.key)} />}>
+      {!tab.id && <Field label="Klucz"><input value={f.key} onChange={(e) => setF({ ...f, key: keyClean(e.target.value) })} /></Field>}
+      <Field label="Nazwa"><input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} /></Field>
+      <div className="field-row">
+        <Field label="Ikona"><input value={f.icon} onChange={(e) => setF({ ...f, icon: e.target.value })} /></Field>
+        <Field label="Kolejność"><input type="number" value={f.display_order} onChange={(e) => setF({ ...f, display_order: e.target.value })} /></Field>
       </div>
+      {err && <div className="err" role="alert">{err}</div>}
     </Modal>
   );
 }
@@ -162,15 +177,12 @@ function ConfigForm({ tenantId, module, value, enabled, onClose, onSaved }) {
     catch (e) { setErr(e.message); }
   };
   return (
-    <Modal title={`Konfiguracja: ${module.label}`} onClose={onClose}>
-      <label className="row" style={{ gap: 8 }}><input type="checkbox" style={{ width: 'auto' }} checked={en} onChange={(e) => setEn(e.target.checked)} /> Włączony (platforma)</label>
-      <label style={{ marginTop: 10 }}>Config (JSON — limity/ustawienia modułu)</label>
-      <textarea value={text} onChange={(e) => setText(e.target.value)} rows={8} style={{ fontFamily: 'monospace', width: '100%' }} />
-      {err && <div className="err">{err}</div>}
-      <div className="row" style={{ justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <button className="ghost" onClick={onClose}>Anuluj</button>
-        <button onClick={save}>Zapisz</button>
-      </div>
+    <Modal title={`Konfiguracja: ${module.label}`} onClose={onClose} footer={<FormFooter onClose={onClose} onSave={save} />}>
+      <Toggle checked={en} onChange={setEn} label="Moduł włączony" />
+      <Field label="Config (JSON)" hint="Limity i ustawienia modułu.">
+        <textarea className="mono" value={text} onChange={(e) => setText(e.target.value)} rows={10} spellCheck={false} />
+      </Field>
+      {err && <div className="err" role="alert">{err}</div>}
     </Modal>
   );
 }

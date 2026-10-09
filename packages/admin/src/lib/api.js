@@ -29,7 +29,11 @@ async function request(path, { method = 'GET', body } = {}, retry = true) {
     throw new Error('Sesja wygasła');
   }
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.error || `Błąd ${res.status}`);
+  if (!res.ok) {
+    const err = new Error(data?.error || `Błąd ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
@@ -61,8 +65,15 @@ export const api = {
   suspendTenant: (id) => request(`/api/admin/tenants/${id}/suspend`, { method: 'POST' }),
   resumeTenant: (id) => request(`/api/admin/tenants/${id}/resume`, { method: 'POST' }),
   extendTrial: (id, days) => request(`/api/admin/tenants/${id}/extend-trial`, { method: 'POST', body: { days } }),
-  changePlan: (id, planId, billingCycle) =>
-    request(`/api/admin/tenants/${id}/change-plan`, { method: 'POST', body: { planId, billingCycle } }),
+  // extra: pola opcjonalne (np. customPriceMonthly/customPriceYearly w groszach dla planu indywidualnego).
+  changePlan: (id, planId, billingCycle, extra = {}) =>
+    request(`/api/admin/tenants/${id}/change-plan`, { method: 'POST', body: { planId, billingCycle, ...extra } }),
+  // Dorośli vs limit planu: { adults, limit, bufferLimit, pct, state, plan, suggestedPlan }.
+  // null, gdy endpoint jeszcze nie istnieje (404) — panel wtedy degraduje widok.
+  tenantUsage: (id) => request(`/api/admin/tenants/${id}/usage`).catch((e) => {
+    if (e.status === 404 || e.status === 501) return null;
+    throw e;
+  }),
   toggleModule: (id, key, enabled) =>
     request(`/api/admin/tenants/${id}/modules/${key}`, { method: 'PUT', body: { is_enabled: enabled } }),
   saveModuleConfig: (id, key, body) =>
@@ -165,7 +176,7 @@ export const formatBytes = (b) => {
   return `${(b / Math.pow(1024, i)).toFixed(i ? 1 : 0)} ${u[i]}`;
 };
 
-export const formatPLN = (grosze) => `${((grosze || 0) / 100).toFixed(2)} zł`;
+export const formatPLN = (grosze) => `${((grosze || 0) / 100).toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł`; // 1 234,50 zł
 
 // Sekundy → "2 min 15 s" (czasy wizyt w analityce).
 export const formatDuration = (s) => {
