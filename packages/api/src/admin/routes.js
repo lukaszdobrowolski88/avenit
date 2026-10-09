@@ -519,8 +519,10 @@ export default async function adminRoutes(app) {
       await platformPool.query(
         `INSERT INTO tenant_subscriptions (tenant_id, plan_id, status, billing_cycle, current_period_start, current_period_end,
            custom_price_monthly, custom_price_yearly)
-         VALUES ($1, $2, 'active', $3, now(), now() + (CASE WHEN $3 = 'yearly' THEN interval '1 year' ELSE interval '1 month' END), $4, $5)`,
-        [req.params.id, planId, billingCycle, cpm, cpy]
+         VALUES ($1, $2, 'active', $3, now(), now() + $6::interval, $4, $5)`,
+        // Długość okresu wyliczona w JS — ten sam parametr ($3) w VALUES i w CASE dawał w Postgresie
+        // „inconsistent types deduced for parameter” (varchar vs text) i 500 przy pierwszym planie.
+        [req.params.id, planId, billingCycle, cpm, cpy, billingCycle === 'yearly' ? '1 year' : '1 month']
       );
     }
     await audit(req.admin.id, 'tenant.change_plan', 'tenant', req.params.id, { planId, billingCycle, customPriceMonthly: cpm, customPriceYearly: cpy });
