@@ -827,9 +827,47 @@ async function hasRows(db, table) {
   return !!rows[0]?.any;
 }
 
+// Licznik do linii kontrolnej: wiersze starej tabeli vs elementy tablicy z source_id (null = nie wiadomo).
+async function countOrNull(db, sql, params = []) {
+  try {
+    const { rows } = await db.query(sql, params);
+    return Number(rows[0]?.n ?? 0);
+  } catch {
+    return null;
+  }
+}
+
+// Stan jednego źródła do linii kontrolnej (po imporcie/uzupełnieniu).
+async function verifySource(db, src, boardId, schema) {
+  const legacy = await countOrNull(db, `SELECT count(*)::int AS n FROM ${q(src.table)}`);
+  const items = boardId && schema.itemSource
+    ? await countOrNull(db, 'SELECT count(*)::int AS n FROM board_items WHERE board_id = $1 AND source_id IS NOT NULL', [boardId])
+    : null;
+  let backfill = 'backfill n/a (no marker column)';
+  if (boardId && schema.boardMarker) {
+    const { rows } = await db.query('SELECT legacy_backfill_at FROM boards WHERE id = $1', [boardId]).catch(() => ({ rows: [] }));
+    backfill = rows[0]?.legacy_backfill_at ? 'backfill done' : 'backfill pending';
+  }
+  return { legacy, items, backfill };
+}
+
+// Jedna linia na tenanta (docker logs workera) — operator sprawdza, czy wszystko przeszło, np.:
+// „board-import-legacy: media_tasks: board <id> (imported 0, backfill done) legacy 12 / items 12 ok; tasks: empty”
+export function summaryLine(entries) {
+  if (!entries.length) return 'board-import-legacy: no legacy task tables';
+  const part = (e) => {
+    if (e.state === 'empty') return `${e.table}: empty`;
+    if (e.state === 'error') return `${e.table}: ERROR (${e.error})`;
+    const n = (v) => (v == null ? '?' : v);
+    const check = e.legacy == null || e.items == null ? 'unverified' : e.items >= e.legacy ? 'ok' : `MISSING ${e.legacy - e.items}`;
+    return `${e.table}: board ${e.boardId} (imported ${e.imported}${e.created ? ', new board' : ''}, ${e.backfill}) legacy ${n(e.legacy)} / items ${n(e.items)} ${check}`;
+  };
+  return `board-import-legacy: ${entries.map(part).join('; ')}`;
+}
+
 export async function runForTenant(pool, ctx = {}) {
   const log = ctx.log || (() => {});
-  const result = { created: 0, backfilled: 0, skipped: 0, failed: 0 };
+  const result = { created: 0, backfilled: 0, skipped: 0, failed: 0, sources: [] };
   let sources = [];
   let schema;
   try {
@@ -841,15 +879,18 @@ export async function runForTenant(pool, ctx = {}) {
   }
   for (const src of sources) {
     try {
-      if (!(await hasRows(pool, src.table))) { result.skipped++; continue; }
+      if (!(await hasRows(pool, src.table))) {
+        result.skipped++;
+        result.sources.push({ table: src.table, state: 'empty' });
+        continue;
+      }
       const imp = await runLegacy(pool, { src, mode: 'import', schema });
+      const entry = { table: src.table, state: 'ok', boardId: imp.body.board_id, created: !!imp.body.created, imported: imp.body.created ? (imp.body.imported || 0) : 0 };
       if (imp.body.created) {
         result.created++;
         log(`board-import-legacy: ${src.table} → nowa tablica ${imp.body.board_id} (zadań ${imp.body.imported}, osób ${imp.body.people}, komentarzy ${imp.body.comments})`);
-        continue;
-      }
-      // Bez kolumny znacznika (przed migracją 092) uzupełnienie nie zapamiętałoby wykonania — pomijamy.
-      if (imp.body.backfill_needed && schema.boardMarker) {
+      } else if (imp.body.backfill_needed && schema.boardMarker) {
+        // Bez kolumny znacznika (przed migracją 092) uzupełnienie nie zapamiętałoby wykonania — pomijamy.
         const bf = await runLegacy(pool, { src, mode: 'backfill', schema });
         if (bf.status === 200 && !bf.body.already) {
           result.backfilled++;
@@ -858,10 +899,14 @@ export async function runForTenant(pool, ctx = {}) {
       } else {
         result.skipped++;
       }
+      Object.assign(entry, await verifySource(pool, src, imp.body.board_id, schema));
+      result.sources.push(entry);
     } catch (err) {
       result.failed++;
+      result.sources.push({ table: src.table, state: 'error', error: err.message });
       log(`board-import-legacy: ${src.table} błąd: ${err.message}`);
     }
   }
+  log(summaryLine(result.sources));
   return result;
 }

@@ -17,7 +17,8 @@ import { userTaskAssignChanges, notifyUserTaskAssign, prepareUserTaskAssign } fr
 import { notifyTargets, isPeriodDue, warsawNow, addDaysYmd } from '../src/fn/board-automations-run.js';
 import { digestConfig, tasksWord, digestTitle, digestPush, groupDigest, digestEmailHtml, userTaskDueExpr } from '../src/fn/task-digest.js';
 import { todoStatus, feedOwner } from '../src/fn/ical.js';
-import importHandler, { sourceBoardSql, IMPORT_MARKER } from '../src/fn/board-import-legacy.js';
+import { serializeDigestConfig, withDigestOptOut, isDigestOptedOut } from '@avenit/shared/src/lib/taskDigest.js';
+import importHandler, { sourceBoardSql, IMPORT_MARKER, summaryLine } from '../src/fn/board-import-legacy.js';
 
 const U1 = '11111111-1111-4111-8111-111111111111';
 const U2 = '22222222-2222-4222-8222-222222222222';
@@ -326,6 +327,21 @@ test('automatyzacje: cykliczne raz dziennie wg czasu Warszawy', () => {
 });
 
 // ── Poranny skrót ────────────────────────────────────────────────────────────
+test('skrót: ustawienia z webu — zapis organizacji i osobista rezygnacja (wspólne reguły z serwerem)', () => {
+  // Zapis z Ustawień → czytany przez serwer bez zmian.
+  assert.equal(serializeDigestConfig({ enabled: false, overdue_days: '7' }), '{"enabled":false,"overdue_days":7}');
+  assert.deepEqual(digestConfig(serializeDigestConfig({ enabled: true, overdue_days: 0 })), { enabled: true, overdue_days: 0 });
+  assert.deepEqual(digestConfig(serializeDigestConfig({ enabled: true, overdue_days: 999 })), { enabled: true, overdue_days: 90 });
+  assert.equal(digestConfig('{"overdue_days":null}').overdue_days, 14); // puste pole = domyślnie
+  // Rezygnacja: inne kategorie zostają, bez duplikatów, null/undefined bezpieczne.
+  assert.deepEqual(withDigestOptOut(['chat'], true), ['chat', 'task_digest']);
+  assert.deepEqual(withDigestOptOut(['chat', 'task_digest'], true), ['chat', 'task_digest']);
+  assert.deepEqual(withDigestOptOut(['task_digest', 'chat'], false), ['chat']);
+  assert.deepEqual(withDigestOptOut(null, true), ['task_digest']);
+  assert.equal(isDigestOptedOut(['task_digest']), true);
+  assert.equal(isDigestOptedOut(null), false);
+});
+
 test('skrót: konfiguracja (domyślnie włączony), odmiana, push i grupy', () => {
   assert.deepEqual(digestConfig(null), { enabled: true, overdue_days: 14 });
   assert.equal(digestConfig('false').enabled, false);
@@ -389,4 +405,18 @@ test('import HTTP: 400 nieznane źródło, 403 bez konta i bez dostępu do modu�
   await importHandler({ db, tenant: { ...tenant, db_name: `${tenant.db_name}-2` }, user: { id: 'u1' }, body: { source: 'tasks' } }, reply);
   assert.equal(reply.statusCode, 403);
   assert.match(reply.body.error, /module:calendar/);
+});
+
+test('import (worker): linia kontrolna — puste, błąd, braki, brak kolumny source_id', () => {
+  assert.equal(summaryLine([]), 'board-import-legacy: no legacy task tables');
+  assert.equal(summaryLine([
+    { table: 'media_tasks', state: 'ok', boardId: 'b1', created: false, imported: 0, backfill: 'backfill done', legacy: 12, items: 12 },
+    { table: 'tasks', state: 'ok', boardId: 'b2', created: true, imported: 3, backfill: 'backfill done', legacy: 4, items: 3 },
+    { table: 'home_group_tasks', state: 'ok', boardId: 'b3', created: false, imported: 0, backfill: 'backfill n/a (no marker column)', legacy: 2, items: null },
+    { table: 'mlodziezowka_tasks', state: 'empty' },
+    { table: 'custom_x_tasks', state: 'error', error: 'boom' },
+  ]), 'board-import-legacy: media_tasks: board b1 (imported 0, backfill done) legacy 12 / items 12 ok; '
+    + 'tasks: board b2 (imported 3, new board, backfill done) legacy 4 / items 3 MISSING 1; '
+    + 'home_group_tasks: board b3 (imported 0, backfill n/a (no marker column)) legacy 2 / items ? unverified; '
+    + 'mlodziezowka_tasks: empty; custom_x_tasks: ERROR (boom)');
 });

@@ -19,7 +19,7 @@ h.perms = {
   canModule: (moduleKey, table, op) => canModuleScoped(resolver.can, moduleKey, table, op),
 };
 
-const { useCan } = await import('./Can');
+const { useCan, useCanModerateComments } = await import('./Can');
 const run = (cap, scope) => renderHook(() => useCan(cap, scope)).result.current;
 
 describe('useCan z zakresem służby', () => {
@@ -46,5 +46,31 @@ describe('useCan z zakresem służby', () => {
   it('capability spoza wspólnych tabel ignoruje zakres', () => {
     expect(run('res:members:read', { module: 'media' })).toBe(false);
     expect(run('res:media_team:delete', { module: 'media' })).toBe(true);
+  });
+});
+
+describe('useCanModerateComments (usuwanie cudzych komentarzy — jak serwer)', () => {
+  const mod = (board) => renderHook(() => useCanModerateComments(board)).result.current;
+
+  it('lider służby: tablica swojego modułu tak (też po source_kind), Projekty i cudza służba nie', () => {
+    expect(mod({ module_key: 'media' })).toBe(true);
+    expect(mod({ module_key: null, source_kind: 'media_tasks' })).toBe(true);
+    expect(mod({ module_key: 'worship' })).toBe(false);
+    expect(mod({ module_key: null, source_kind: null })).toBe(false);
+    expect(mod(null)).toBe(false);
+  });
+
+  it('członek z samym prawem usuwania komentarzy (do własnych) — nie moderuje; z res:boards:delete — wszędzie', () => {
+    const member = makeResolver(presetGrantRows(), { role: 'czlonek', userId: 'u2', isAdmin: false });
+    const prev = h.perms;
+    try {
+      h.perms = { can: (c) => (c === 'res:board_item_updates:delete' ? true : member.can(c)) };
+      expect(mod({ module_key: null })).toBe(false);
+      h.perms = { can: (c) => c === 'res:board_item_updates:delete' || c === 'res:boards:delete' };
+      expect(mod({ module_key: null })).toBe(true);
+      expect(mod({ module_key: 'worship' })).toBe(true);
+    } finally {
+      h.perms = prev;
+    }
   });
 });
