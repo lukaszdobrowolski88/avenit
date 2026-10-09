@@ -53,10 +53,12 @@
         "inLanguage": ["en", "pl", "uk"],
         "description": "Church management system: service plans, volunteer scheduling, kids check-in, home groups, email/SMS/push communication, finances and 20+ modules.",
         "offers": {
-          "@type": "Offer",
+          "@type": "AggregateOffer",
           "priceCurrency": "PLN",
-          "price": "0",
-          "description": "Free demo and trial period, no credit card required."
+          "lowPrice": "79",
+          "highPrice": "499",
+          "offerCount": "4",
+          "description": "Monthly plans from 79 zł incl. VAT, every module in every plan. Trial period with no credit card."
         },
         "publisher": { "@id": "https://avenit.pl/#org" }
       },
@@ -81,7 +83,7 @@
           {
             "@type": "Question",
             "name": "How much does the church app cost?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Pricing depends on the size of your community and the modules you choose. Starting is free: book a demo and get a trial period with no credit card required." }
+            "acceptedAnswer": { "@type": "Answer", "text": "From 79 zł a month, VAT included. The price depends on the number of adults in your member directory, and every module is in every plan: Start up to 50 adults 79 zł, Community up to 150 adults 159 zł, Church up to 400 adults 299 zł, Church+ up to 1000 adults 499 zł a month. Yearly billing gives 2 months free. Trial period with no credit card." }
           },
           {
             "@type": "Question",
@@ -509,6 +511,42 @@
     .mod[aria-checked="true"] .sw::after { transform: translateX(16px); background: var(--slod); }
     .mod[aria-checked="false"] { color: var(--pomoc); }
 
+    /* ── cennik ── */
+    .price-bar { margin-top: clamp(36px, 4.5vw, 56px); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .price-bar p { font-size: 15px; color: var(--pomoc); }
+    .seg .save { margin-left: 6px; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--kurkuma); color: var(--slod); }
+    .plans { margin-top: 24px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    .plan { background: var(--biel); border-radius: 26px; padding: 28px 26px 26px; display: flex; flex-direction: column; box-shadow: var(--cien-1); }
+    .plan h3 { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: var(--slod); }
+    .plan .size { margin-top: 4px; font-size: 15.5px; color: var(--tekst); }
+    .plan .size b { color: var(--slod); }
+    .plan .amount { margin-top: 22px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; color: var(--slod); }
+    .plan .amount b { font-size: clamp(40px, 3.6vw, 52px); font-weight: 800; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+    .plan .amount span { font-size: 15px; color: var(--pomoc); }
+    .plan .per { margin-top: 6px; min-height: 1.5em; font-size: 14px; color: var(--musztarda); font-weight: 700; }
+    .plan .extra { margin-top: 18px; font-size: 15px; color: var(--tekst); flex: 1; }
+    .plan .pill { margin-top: 22px; width: 100%; }
+    .plan.wide { grid-column: 1 / -1; background: var(--slod); color: var(--na-slodzie); flex-direction: row; align-items: center; gap: 24px 40px; flex-wrap: wrap; }
+    .plan.wide h3 { color: var(--papier); }
+    .plan.wide .size { color: var(--na-slodzie); }
+    .plan.wide .size b { color: var(--papier); }
+    .plan.wide .amount { margin: 0; color: var(--papier); }
+    .plan.wide .amount b { font-size: clamp(30px, 2.6vw, 38px); }
+    .plan.wide .amount span { color: var(--na-slodzie); }
+    .plan.wide .extra { margin: 0; color: var(--na-slodzie); flex: 1 1 280px; }
+    .plan.wide .pill { margin: 0; width: auto; }
+    .incl { margin-top: clamp(40px, 5vw, 64px); display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 2fr); gap: 24px clamp(32px, 5vw, 80px); }
+    .incl h3 { font-size: clamp(22px, 2vw, 28px); font-weight: 800; letter-spacing: -.025em; color: var(--slod); line-height: 1.2; }
+    .incl ul { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 32px; }
+    .incl li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; font-size: 16.5px; line-height: 1.5; }
+    .incl li .ico { width: 18px; height: 18px; margin-top: 3px; color: var(--slod); stroke-width: 2.2; }
+    .incl li b { color: var(--slod); }
+    .price-notes { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--linia); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 32px; font-size: 15px; color: var(--tekst); }
+    .price-notes b { display: block; color: var(--slod); font-size: 16px; margin-bottom: 2px; }
+    @media (max-width: 1100px) { .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 900px) { .incl { grid-template-columns: minmax(0, 1fr); } .price-notes { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 600px) { .plans { grid-template-columns: minmax(0, 1fr); } .incl ul { grid-template-columns: minmax(0, 1fr); } .plan.wide { flex-direction: column; align-items: flex-start; } .plan.wide .extra { flex: none; } }
+
     /* ── SChWro ── */
     .proof { background: var(--kurkuma-j); padding: clamp(72px, 9vw, 128px) 0; }
     .proof-in { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 40px clamp(32px, 5vw, 96px); align-items: center; }
@@ -661,6 +699,7 @@
         <a href="#sluzby">Ministries</a>
         <a href="#wszedzie">Phone &amp; browser</a>
         <a href="#moduly">Modules</a>
+        <a href="#cennik">Pricing</a>
         <a href="#start">Getting started</a>
         <a href="#faq">FAQ</a>
         <a href="https://app.avenit.pl" class="m-only">Sign in</a>
@@ -1118,6 +1157,85 @@
       </div>
     </section>
 
+    <!-- ═══════════ CENNIK ═══════════ -->
+    <section class="sec" id="cennik" aria-labelledby="cen-h" style="padding-top:0">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="dw h2" id="cen-h" data-rv><span>What does it cost<span class="pt">?</span></span><span class="l">You pay for the size of your church, not for modules<span class="pt">.</span></span></h2>
+          <p data-rv style="--d:.1s">Every module is in every plan, and the whole church can use the app with no user limit. We only count adults in the member directory: children, guests and archived people don’t count.</p>
+        </div>
+
+        <div class="price-bar" data-rv>
+          <div class="seg" id="billing" role="group" aria-label="Billing period">
+            <button type="button" data-bill="m" aria-pressed="true">Monthly</button>
+            <button type="button" data-bill="y" aria-pressed="false">Yearly<span class="save">2 months free</span></button>
+          </div>
+          <p>Prices in Polish złoty, VAT included. Trial period with no credit card.</p>
+        </div>
+
+        <div class="plans" aria-live="polite">
+          <div class="plan" data-rv data-m="79" data-y="790" data-ym="65.83 zł per month">
+            <h3>Start</h3>
+            <p class="size">up to <b>50</b> adults</p>
+            <p class="amount"><b class="num">79</b><span>zł / month</span></p>
+            <p class="per"></p>
+            <p class="extra">For a small church that wants to get Sunday and people in order.</p>
+            <a class="pill" href="#kontakt" data-plan="Start" data-track="cta-pricing-start">Choose Start</a>
+          </div>
+          <div class="plan" data-rv style="--d:.06s" data-m="159" data-y="1,590" data-ym="132.50 zł per month">
+            <h3>Community</h3>
+            <p class="size">up to <b>150</b> adults</p>
+            <p class="amount"><b class="num">159</b><span>zł / month</span></p>
+            <p class="per"></p>
+            <p class="extra">For a church with several ministries, home groups and a kids’ ministry.</p>
+            <a class="pill" href="#kontakt" data-plan="Community" data-track="cta-pricing-wspolnota">Choose Community</a>
+          </div>
+          <div class="plan" data-rv style="--d:.12s" data-m="299" data-y="2,990" data-ym="249.17 zł per month">
+            <h3>Church</h3>
+            <p class="size">up to <b>400</b> adults</p>
+            <p class="amount"><b class="num">299</b><span>zł / month</span></p>
+            <p class="per"></p>
+            <p class="extra">For a church with many teams, a youth group and ministry budgets.</p>
+            <a class="pill" href="#kontakt" data-plan="Church" data-track="cta-pricing-kosciol">Choose Church</a>
+          </div>
+          <div class="plan" data-rv style="--d:.18s" data-m="499" data-y="4,990" data-ym="415.83 zł per month">
+            <h3>Church+</h3>
+            <p class="size">up to <b>1000</b> adults</p>
+            <p class="amount"><b class="num">499</b><span>zł / month</span></p>
+            <p class="per"></p>
+            <p class="extra">For a large church. With priority support.</p>
+            <a class="pill" href="#kontakt" data-plan="Church+" data-track="cta-pricing-kosciolplus">Choose Church+</a>
+          </div>
+          <div class="plan wide" data-rv>
+            <div><h3>Network</h3><p class="size">over <b>1000</b> adults, multiple locations, denominations</p></div>
+            <p class="amount"><b class="num">from 899</b><span>zł / month</span></p>
+            <p class="extra">Custom quote: campuses, rollout for many churches and priority support.</p>
+            <a class="pill" href="#kontakt" data-plan="Network" data-track="cta-pricing-siec">Let’s talk</a>
+          </div>
+        </div>
+
+        <div class="incl" data-rv>
+          <h3>In every plan<span class="pt">.</span></h3>
+          <ul>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>Every module</b>, no add-on fees</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>No user limit</b>: the whole church can sign in</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>iPhone and Android</b> apps plus the browser version</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span>In <b>English, Polish and Ukrainian</b></span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>Data in the EU</b>, a separate database and nightly backups</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span>Roles and permissions, two-factor sign-in</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>0% Avenit fee</b> on online donations and payments</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span>Email support</span></li>
+          </ul>
+        </div>
+
+        <div class="price-notes" data-rv>
+          <p><b>Your church grows?</b>You get 10% headroom over the limit. We change the plan from the next billing period, nobody gets locked out on a Sunday morning.</p>
+          <p><b>SMS billed separately.</b>Connect your own SMSAPI account or buy a bundle. Push and email are included.</p>
+          <p><b>Yearly billing</b>gives you 2 months free and moving your member data at no extra cost.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- ═══════════ SChWro ═══════════ -->
     <section class="proof" aria-labelledby="proof-h">
       <div class="wrap proof-in">
@@ -1160,7 +1278,7 @@
           </details>
           <details>
             <summary>How much does the church app cost?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
-            <p>Pricing depends on the size of your community and the modules you choose. Starting is free: book a demo through the <a href="#kontakt">contact form</a> and get a trial period with no credit card required.</p>
+            <p>From 79 zł a month, VAT included. The price depends on the number of adults in your member directory, and every module is in every plan. See the <a href="#cennik">pricing</a>. To start, book a demo through the <a href="#kontakt">contact form</a> and get a trial period with no credit card required.</p>
           </details>
           <details>
             <summary>Is Avenit GDPR-compliant?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
@@ -1246,6 +1364,7 @@
           <a href="#sluzby">Ministries</a>
           <a href="#wszedzie">Phone &amp; browser</a>
           <a href="#moduly">Modules</a>
+          <a href="#cennik">Pricing</a>
           <a href="#start">Getting started</a>
           <a href="#faq">FAQ</a>
         </nav>
@@ -1411,6 +1530,28 @@
         });
       });
       countMods();
+
+      var PRICE_TXT = { month: 'zł / month', year: 'zł / year', interest: 'I am interested in the ', yearly: ' plan (annual billing)' };
+      // ── cennik: miesięcznie / rocznie + wybór planu w formularzu ──
+      var bill = Array.prototype.slice.call(document.querySelectorAll('#billing button'));
+      var plans = Array.prototype.slice.call(document.querySelectorAll('.plan[data-m]'));
+      function setBilling(mode) {
+        bill.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.bill === mode ? 'true' : 'false'); });
+        plans.forEach(function (p) {
+          var y = mode === 'y';
+          p.querySelector('.amount b').textContent = y ? p.dataset.y : p.dataset.m;
+          p.querySelector('.amount span').textContent = y ? PRICE_TXT.year : PRICE_TXT.month;
+          p.querySelector('.per').textContent = y ? p.dataset.ym : '';
+        });
+      }
+      bill.forEach(function (b) { b.addEventListener('click', function () { setBilling(b.dataset.bill); }); });
+      document.querySelectorAll('[data-plan]').forEach(function (a) {
+        a.addEventListener('click', function () {
+          var ta = document.getElementById('f-msg');
+          var yearly = bill.length && bill[1].getAttribute('aria-pressed') === 'true';
+          if (ta && !ta.value.trim()) ta.value = PRICE_TXT.interest + a.dataset.plan + (yearly ? PRICE_TXT.yearly : '') + '.';
+        });
+      });
 
       // ── pas pytań: zduplikuj dla płynnej pętli ──
       var track = document.getElementById('band-track');

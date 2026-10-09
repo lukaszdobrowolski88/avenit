@@ -53,10 +53,12 @@
         "inLanguage": "pl",
         "description": "System do zarządzania kościołem i zborem: programy nabożeństw, grafik służb, check-in dzieci, grupy domowe, komunikacja e-mail/SMS/push, finanse i ponad 20 modułów.",
         "offers": {
-          "@type": "Offer",
+          "@type": "AggregateOffer",
           "priceCurrency": "PLN",
-          "price": "0",
-          "description": "Bezpłatna prezentacja i okres próbny — bez karty płatniczej."
+          "lowPrice": "79",
+          "highPrice": "499",
+          "offerCount": "4",
+          "description": "Plany miesięczne od 79 zł brutto, wszystkie moduły w każdym planie. Okres próbny bez karty płatniczej."
         },
         "publisher": { "@id": "https://avenit.pl/#org" }
       },
@@ -81,7 +83,7 @@
           {
             "@type": "Question",
             "name": "Ile kosztuje aplikacja dla kościoła?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Cena zależy od wielkości wspólnoty i wybranych modułów. Start jest bezpłatny: umawiasz prezentację, dostajesz okres próbny bez podawania karty płatniczej." }
+            "acceptedAnswer": { "@type": "Answer", "text": "Od 79 zł brutto miesięcznie. Cena zależy od liczby dorosłych w bazie członków, a wszystkie moduły są w każdym planie: Start do 50 dorosłych 79 zł, Wspólnota do 150 dorosłych 159 zł, Kościół do 400 dorosłych 299 zł, Kościół+ do 1000 dorosłych 499 zł miesięcznie. Płatność roczna to 2 miesiące gratis. Okres próbny bez karty płatniczej." }
           },
           {
             "@type": "Question",
@@ -509,6 +511,42 @@
     .mod[aria-checked="true"] .sw::after { transform: translateX(16px); background: var(--slod); }
     .mod[aria-checked="false"] { color: var(--pomoc); }
 
+    /* ── cennik ── */
+    .price-bar { margin-top: clamp(36px, 4.5vw, 56px); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .price-bar p { font-size: 15px; color: var(--pomoc); }
+    .seg .save { margin-left: 6px; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--kurkuma); color: var(--slod); }
+    .plans { margin-top: 24px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    .plan { background: var(--biel); border-radius: 26px; padding: 28px 26px 26px; display: flex; flex-direction: column; box-shadow: var(--cien-1); }
+    .plan h3 { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: var(--slod); }
+    .plan .size { margin-top: 4px; font-size: 15.5px; color: var(--tekst); }
+    .plan .size b { color: var(--slod); }
+    .plan .amount { margin-top: 22px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; color: var(--slod); }
+    .plan .amount b { font-size: clamp(40px, 3.6vw, 52px); font-weight: 800; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+    .plan .amount span { font-size: 15px; color: var(--pomoc); }
+    .plan .per { margin-top: 6px; min-height: 1.5em; font-size: 14px; color: var(--musztarda); font-weight: 700; }
+    .plan .extra { margin-top: 18px; font-size: 15px; color: var(--tekst); flex: 1; }
+    .plan .pill { margin-top: 22px; width: 100%; }
+    .plan.wide { grid-column: 1 / -1; background: var(--slod); color: var(--na-slodzie); flex-direction: row; align-items: center; gap: 24px 40px; flex-wrap: wrap; }
+    .plan.wide h3 { color: var(--papier); }
+    .plan.wide .size { color: var(--na-slodzie); }
+    .plan.wide .size b { color: var(--papier); }
+    .plan.wide .amount { margin: 0; color: var(--papier); }
+    .plan.wide .amount b { font-size: clamp(30px, 2.6vw, 38px); }
+    .plan.wide .amount span { color: var(--na-slodzie); }
+    .plan.wide .extra { margin: 0; color: var(--na-slodzie); flex: 1 1 280px; }
+    .plan.wide .pill { margin: 0; width: auto; }
+    .incl { margin-top: clamp(40px, 5vw, 64px); display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 2fr); gap: 24px clamp(32px, 5vw, 80px); }
+    .incl h3 { font-size: clamp(22px, 2vw, 28px); font-weight: 800; letter-spacing: -.025em; color: var(--slod); line-height: 1.2; }
+    .incl ul { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 32px; }
+    .incl li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; font-size: 16.5px; line-height: 1.5; }
+    .incl li .ico { width: 18px; height: 18px; margin-top: 3px; color: var(--slod); stroke-width: 2.2; }
+    .incl li b { color: var(--slod); }
+    .price-notes { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--linia); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 32px; font-size: 15px; color: var(--tekst); }
+    .price-notes b { display: block; color: var(--slod); font-size: 16px; margin-bottom: 2px; }
+    @media (max-width: 1100px) { .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 900px) { .incl { grid-template-columns: minmax(0, 1fr); } .price-notes { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 600px) { .plans { grid-template-columns: minmax(0, 1fr); } .incl ul { grid-template-columns: minmax(0, 1fr); } .plan.wide { flex-direction: column; align-items: flex-start; } .plan.wide .extra { flex: none; } }
+
     /* ── SChWro ── */
     .proof { background: var(--kurkuma-j); padding: clamp(72px, 9vw, 128px) 0; }
     .proof-in { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 40px clamp(32px, 5vw, 96px); align-items: center; }
@@ -661,6 +699,7 @@
         <a href="#sluzby">Służby</a>
         <a href="#wszedzie">Telefon i przeglądarka</a>
         <a href="#moduly">Moduły</a>
+        <a href="#cennik">Cennik</a>
         <a href="#start">Jak zacząć</a>
         <a href="#faq">Pytania</a>
         <a href="https://app.avenit.pl" class="m-only">Zaloguj się</a>
@@ -1118,6 +1157,85 @@
       </div>
     </section>
 
+    <!-- ═══════════ CENNIK ═══════════ -->
+    <section class="sec" id="cennik" aria-labelledby="cen-h" style="padding-top:0">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="dw h2" id="cen-h" data-rv><span>Ile to kosztuje<span class="pt">?</span></span><span class="l">Płacisz za wielkość zboru, nie za moduły<span class="pt">.</span></span></h2>
+          <p data-rv style="--d:.1s">Wszystkie moduły są w każdym planie, a z aplikacji korzysta cały zbór, bez limitu użytkowników. Liczymy tylko dorosłych w bazie członków: dzieci, goście i osoby zarchiwizowane się nie liczą.</p>
+        </div>
+
+        <div class="price-bar" data-rv>
+          <div class="seg" id="billing" role="group" aria-label="Okres rozliczenia">
+            <button type="button" data-bill="m" aria-pressed="true">Miesięcznie</button>
+            <button type="button" data-bill="y" aria-pressed="false">Rocznie<span class="save">2 mies. gratis</span></button>
+          </div>
+          <p>Ceny brutto (z VAT). Okres próbny bez karty płatniczej.</p>
+        </div>
+
+        <div class="plans" aria-live="polite">
+          <div class="plan" data-rv data-m="79" data-y="790" data-ym="65,83 zł miesięcznie">
+            <h3>Start</h3>
+            <p class="size">do <b>50</b> dorosłych</p>
+            <p class="amount"><b class="num">79</b><span>zł / mies.</span></p>
+            <p class="per"></p>
+            <p class="extra">Dla małego zboru, który chce uporządkować niedzielę i ludzi.</p>
+            <a class="pill" href="#kontakt" data-plan="Start" data-track="cta-pricing-start">Wybierz Start</a>
+          </div>
+          <div class="plan" data-rv style="--d:.06s" data-m="159" data-y="1 590" data-ym="132,50 zł miesięcznie">
+            <h3>Wspólnota</h3>
+            <p class="size">do <b>150</b> dorosłych</p>
+            <p class="amount"><b class="num">159</b><span>zł / mies.</span></p>
+            <p class="per"></p>
+            <p class="extra">Dla zboru z kilkoma służbami, grupami domowymi i szkółką.</p>
+            <a class="pill" href="#kontakt" data-plan="Wspólnota" data-track="cta-pricing-wspolnota">Wybierz Wspólnotę</a>
+          </div>
+          <div class="plan" data-rv style="--d:.12s" data-m="299" data-y="2 990" data-ym="249,17 zł miesięcznie">
+            <h3>Kościół</h3>
+            <p class="size">do <b>400</b> dorosłych</p>
+            <p class="amount"><b class="num">299</b><span>zł / mies.</span></p>
+            <p class="per"></p>
+            <p class="extra">Dla kościoła z wieloma zespołami, młodzieżówką i finansami służb.</p>
+            <a class="pill" href="#kontakt" data-plan="Kościół" data-track="cta-pricing-kosciol">Wybierz Kościół</a>
+          </div>
+          <div class="plan" data-rv style="--d:.18s" data-m="499" data-y="4 990" data-ym="415,83 zł miesięcznie">
+            <h3>Kościół+</h3>
+            <p class="size">do <b>1000</b> dorosłych</p>
+            <p class="amount"><b class="num">499</b><span>zł / mies.</span></p>
+            <p class="per"></p>
+            <p class="extra">Dla dużego kościoła. Z priorytetowym wsparciem.</p>
+            <a class="pill" href="#kontakt" data-plan="Kościół+" data-track="cta-pricing-kosciolplus">Wybierz Kościół+</a>
+          </div>
+          <div class="plan wide" data-rv>
+            <div><h3>Sieć</h3><p class="size">powyżej <b>1000</b> dorosłych, wiele lokalizacji, denominacje</p></div>
+            <p class="amount"><b class="num">od 899</b><span>zł / mies.</span></p>
+            <p class="extra">Wycena indywidualna: kampusy, wdrożenie dla wielu zborów i priorytetowe wsparcie.</p>
+            <a class="pill" href="#kontakt" data-plan="Sieć" data-track="cta-pricing-siec">Porozmawiajmy</a>
+          </div>
+        </div>
+
+        <div class="incl" data-rv>
+          <h3>W każdym planie<span class="pt">.</span></h3>
+          <ul>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>Wszystkie moduły</b>, bez dopłat za kolejne</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>Bez limitu użytkowników</b>: loguje się cały zbór</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span>Aplikacja na <b>iPhone'a i Androida</b> oraz wersja w przeglądarce</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span>Po <b>polsku, angielsku i ukraińsku</b></span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>Dane w UE</b>, osobna baza i kopia co noc</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span>Role i uprawnienia, logowanie dwuskładnikowe</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>0% prowizji Avenit</b> od darowizn i wpłat online</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span>Wsparcie e-mail po polsku</span></li>
+          </ul>
+        </div>
+
+        <div class="price-notes" data-rv>
+          <p><b>Zbór urośnie?</b>Masz 10% zapasu ponad limit. Plan zmieniamy od kolejnego okresu, nikt nie zostanie zablokowany w niedzielę rano.</p>
+          <p><b>SMS-y osobno.</b>Podłączasz własne konto SMSAPI albo kupujesz pakiet. Push i e-mail są w cenie.</p>
+          <p><b>Płatność roczna</b>to 2 miesiące gratis i przeniesienie danych członków bez dodatkowej opłaty.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- ═══════════ SChWro ═══════════ -->
     <section class="proof" aria-labelledby="proof-h">
       <div class="wrap proof-in">
@@ -1160,7 +1278,7 @@
           </details>
           <details>
             <summary>Ile kosztuje aplikacja dla kościoła?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
-            <p>Cena zależy od wielkości wspólnoty i wybranych modułów. Start jest bezpłatny: umawiasz prezentację przez <a href="#kontakt">formularz kontaktowy</a>, dostajesz okres próbny bez podawania karty płatniczej.</p>
+            <p>Od 79 zł brutto miesięcznie. Cena zależy od liczby dorosłych w bazie członków, a wszystkie moduły są w każdym planie. Zobacz <a href="#cennik">cennik</a>. Na start umawiasz prezentację przez <a href="#kontakt">formularz kontaktowy</a> i dostajesz okres próbny bez podawania karty płatniczej.</p>
           </details>
           <details>
             <summary>Czy Avenit jest zgodny z RODO?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
@@ -1246,6 +1364,7 @@
           <a href="#sluzby">Służby</a>
           <a href="#wszedzie">Telefon i przeglądarka</a>
           <a href="#moduly">Moduły</a>
+          <a href="#cennik">Cennik</a>
           <a href="#start">Jak zacząć</a>
           <a href="#faq">FAQ</a>
           <a href="/blog/">Blog</a>
@@ -1415,6 +1534,28 @@
         });
       });
       countMods();
+
+      var PRICE_TXT = { month: 'zł / mies.', year: 'zł / rok', interest: 'Interesuje mnie plan ', yearly: ' (płatność roczna)' };
+      // ── cennik: miesięcznie / rocznie + wybór planu w formularzu ──
+      var bill = Array.prototype.slice.call(document.querySelectorAll('#billing button'));
+      var plans = Array.prototype.slice.call(document.querySelectorAll('.plan[data-m]'));
+      function setBilling(mode) {
+        bill.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.bill === mode ? 'true' : 'false'); });
+        plans.forEach(function (p) {
+          var y = mode === 'y';
+          p.querySelector('.amount b').textContent = y ? p.dataset.y : p.dataset.m;
+          p.querySelector('.amount span').textContent = y ? PRICE_TXT.year : PRICE_TXT.month;
+          p.querySelector('.per').textContent = y ? p.dataset.ym : '';
+        });
+      }
+      bill.forEach(function (b) { b.addEventListener('click', function () { setBilling(b.dataset.bill); }); });
+      document.querySelectorAll('[data-plan]').forEach(function (a) {
+        a.addEventListener('click', function () {
+          var ta = document.getElementById('f-msg');
+          var yearly = bill.length && bill[1].getAttribute('aria-pressed') === 'true';
+          if (ta && !ta.value.trim()) ta.value = PRICE_TXT.interest + a.dataset.plan + (yearly ? PRICE_TXT.yearly : '') + '.';
+        });
+      });
 
       // ── pas pytań: zduplikuj dla płynnej pętli ──
       var track = document.getElementById('band-track');
