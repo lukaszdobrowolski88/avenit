@@ -333,6 +333,16 @@ export const REGISTRY = {
   message_reports: T(null),
   // Zablokowane osoby — tabela osobista (ownership.js, właściciel blocker_email).
   user_blocks: T(null),
+  // Połączenia audio/wideo (migracja 096): odczyt tylko w rozmowach, w których jestem
+  // (komunikator.js — CONV_TABLES; jak message_reports bez osobnego zasobu w macierzy uprawnień),
+  // zapis wyłącznie serwer (fn call-* z module:komunikator, webhook LiveKit, worker).
+  calls: T(null, {
+    readOnly: true,
+    relationships: {
+      call_participants: { table: 'call_participants', column: 'call_id', type: 'many' },
+    },
+  }),
+  call_participants: T(null, { readOnly: true }),
   // link_previews / message_translations — celowo POZA rejestrem: tylko przez fn
   // (link-preview, translate-message), bez odczytu/zapisu przez /api/db.
   // Młodzieżówka

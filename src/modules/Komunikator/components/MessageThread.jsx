@@ -11,6 +11,7 @@ import SearchModal from './SearchModal';
 import PollComposerModal from './PollComposerModal';
 import EventShareModal from './EventShareModal';
 import SeenByModal from './SeenByModal';
+import ActiveCallBanner from '../calls/ActiveCallBanner';
 import useMessages from '../hooks/useMessages';
 import useRealtimeMessages from '../hooks/useRealtimeMessages';
 import useTypingStatus from '../hooks/useTypingStatus';
@@ -486,6 +487,9 @@ export default function MessageThread({
         onToggleBlock={isDirect && peerEmail ? handleToggleBlockPeer : undefined}
       />
 
+      {/* Trwa rozmowa audio/wideo — dołącz */}
+      <ActiveCallBanner conversation={conversation} />
+
       {/* Baner kanału ogłoszeń */}
       {isAnnouncement && (
         <div className="flex items-center gap-2 px-4 py-2 bg-gray-100/80 dark:bg-gray-800/60 border-b border-gray-200/60 dark:border-gray-700/60 text-xs text-gray-700 dark:text-gray-300">
@@ -601,6 +605,7 @@ export default function MessageThread({
                             onReport={!isOwn ? handleReport : undefined}
                             onBlockSender={!isOwn && !isDirect ? handleBlockSender : undefined}
                             hiddenAsBlocked={!isDirect && isFromBlocked(message, blocked, userEmail)}
+                            isGroupConversation={!isDirect}
                           />
                         </div>
                       </React.Fragment>

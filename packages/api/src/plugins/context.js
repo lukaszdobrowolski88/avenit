@@ -5,8 +5,8 @@ import { getTenantPool, resolveTenant } from '../db.js';
 import { verifyAccessToken, AUD_TENANT, AUD_ADMIN } from '../auth/tokens.js';
 import { config } from '../config.js';
 
-// Subdomena z Host: "schwro.avenit.pl" -> "schwro"; "admin."/"api." to nie tenanci.
-const RESERVED_SUBDOMAINS = new Set(['admin', 'api', 'www']);
+// Subdomena z Host: "schwro.avenit.pl" -> "schwro"; "admin."/"api."/"rtc." to nie tenanci.
+const RESERVED_SUBDOMAINS = new Set(['admin', 'api', 'www', 'rtc']); // rtc = LiveKit (połączenia)
 
 export function tenantSlugFromHost(host) {
   if (!host) return null;

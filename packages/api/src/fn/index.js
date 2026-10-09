@@ -91,6 +91,14 @@ const MODULES = [
   'moderate-content',
   'community-terms',
   'delete-my-account',
+  // Połączenia audio/wideo (LiveKit) — capability module:komunikator z eksportu `capability`
+  // modułu; uczestnictwo w rozmowie, posting_policy i reguły 1:1 sprawdza src/calls/service.js.
+  'call-start',
+  'call-join',
+  'call-decline',
+  'call-cancel',
+  'call-leave',
+  'call-config',
 ];
 
 export async function registerFunctions(app) {
@@ -107,8 +115,9 @@ export async function registerFunctions(app) {
     if (mod.skipRoute) continue; // np. process-dunning: worker/admin only
     const name = mod.name || modName;
     const method = (mod.method || 'POST').toLowerCase();
-    // Akcje użytkownika egzekwują capability (webhooki/publiczne bez zmian).
-    const cap = !mod.isPublic ? FN_CAPABILITY[name] : null;
+    // Akcje użytkownika egzekwują capability (webhooki/publiczne bez zmian). Moduł może podać
+    // własne `capability`, gdy nie ma wpisu we wspólnym FN_CAPABILITY (wpis w katalogu wygrywa).
+    const cap = !mod.isPublic ? (FN_CAPABILITY[name] || mod.capability || null) : null;
     const preHandler = mod.isPublic
       ? app.requireTenant
       : (cap ? [app.requireUser, app.block2FAPending, requireCapability(cap)] : [app.requireUser, app.block2FAPending]);

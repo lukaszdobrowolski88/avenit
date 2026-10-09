@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Users, Settings, Bell, BellOff, Trash2, Image, Search, MoreVertical, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Megaphone, Ban } from 'lucide-react';
 import UserAvatar from './UserAvatar';
+import CallButtons from '../calls/CallButtons';
 import MuteMenu, { muteUntilLabel } from './MuteMenu';
 import { getMinistryName } from '../utils/messageHelpers';
 import { channelName, isHomeGroupChannel, muteState } from '../utils/chatLogic';
@@ -151,6 +152,9 @@ export default function ConversationHeader({
       </div>
 
       <div className="relative flex items-center">
+        {/* Połączenia audio/wideo — widoczne na każdym ekranie (ukryte, gdy wyłączone na serwerze) */}
+        <CallButtons conversation={conversation} peerBlocked={peerBlocked} />
+
         {/* Akcje - duży ekran */}
         <div className="hidden sm:flex items-center gap-0.5">
           {onOpenSearch && (

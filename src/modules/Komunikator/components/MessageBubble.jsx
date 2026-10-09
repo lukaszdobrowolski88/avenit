@@ -9,6 +9,7 @@ import PrayerCard from './PrayerCard';
 import EventCard from './EventCard';
 import MessageText from './MessageText';
 import LinkPreviewCard from './LinkPreviewCard';
+import CallMessage from '../calls/CallMessage';
 import { SignedImage, SignedLink, SignedAudio } from './SignedAttachment';
 import { tr, useI18n } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
@@ -54,7 +55,9 @@ export default function MessageBubble({
   // Zgłoś / zablokuj (K10)
   onReport,
   onBlockSender,
-  hiddenAsBlocked = false
+  hiddenAsBlocked = false,
+  // Połączenia: rozmowa grupowa → „Rozmowa grupowa trwa — dołącz”
+  isGroupConversation = false
 }) {
   const { lang } = useI18n();
   const [showMenu, setShowMenu] = useState(false);
@@ -218,6 +221,11 @@ export default function MessageBubble({
         </span>
       </div>
     );
+  }
+
+  // Połączenie audio/wideo — karta na środku wątku (opis, czas trwania, Oddzwoń/Dołącz).
+  if (messageType === 'call') {
+    return <CallMessage message={message} currentUserEmail={currentUserEmail} isGroupConversation={isGroupConversation} />;
   }
 
   // Wiadomość od zablokowanej osoby (K10) — schowana, z możliwością podejrzenia.

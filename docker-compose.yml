@@ -62,6 +62,11 @@ services:
       P24_CRC: ${P24_CRC:-}
       P24_API_KEY: ${P24_API_KEY:-}
       P24_SANDBOX: ${P24_SANDBOX:-true}
+      # Połączenia audio/wideo (LiveKit). Puste klucze = połączenia wyłączone (503 calls_disabled).
+      LIVEKIT_URL: ${LIVEKIT_URL:-}   # puste = wss://rtc.<APP_DOMAIN>
+      LIVEKIT_HOST: http://livekit:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
     volumes:
       - storage:/srv/storage
 
@@ -98,8 +103,47 @@ services:
       VAPID_EMAIL: ${VAPID_EMAIL:-mailto:lukasz@avenit.pl}
       MAIL_ENCRYPTION_SECRET: ${MAIL_ENCRYPTION_SECRET:-}
       LANDING_CONTACT_EMAIL: ${LANDING_CONTACT_EMAIL:-lukasz@avenit.pl}
+      # Worker (call-sweep) uzgadnia stan połączeń z LiveKit (lista pokoi).
+      LIVEKIT_URL: ${LIVEKIT_URL:-}   # puste = wss://rtc.<APP_DOMAIN>
+      LIVEKIT_HOST: http://livekit:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
     volumes:
       - storage:/srv/storage
+
+  # SFU LiveKit — połączenia audio/wideo w Komunikatorze (1:1 i grupowe, do ~30 osób z wideo).
+  # Sygnalizacja (WebSocket) przez Caddy: wss://rtc.${APP_DOMAIN} → livekit:7880 (port 7880 NIE
+  # jest wystawiany na świat). Media wprost do VPS: UDP 7882 (jeden port, mux) i awaryjnie
+  # ICE/TCP 7881 — oba porty muszą być otwarte w firewallu VPS. Klucze tylko z .env (nie w repo);
+  # bez nich serwer nie wystartuje (API i tak ma połączenia wyłączone).
+  # Webhook do API podpisywany kluczem API (weryfikacja: packages/api/src/calls/routes.js).
+  livekit:
+    image: livekit/livekit-server:v1.13.9
+    restart: unless-stopped
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-}: ${LIVEKIT_API_SECRET:-}"
+      LIVEKIT_CONFIG: |
+        port: 7880
+        bind_addresses:
+          - 0.0.0.0
+        logging:
+          level: info
+        rtc:
+          tcp_port: 7881
+          udp_port: 7882
+          use_external_ip: true
+        room:
+          auto_create: true
+          empty_timeout: 30
+          departure_timeout: 20
+          max_participants: 40
+        webhook:
+          api_key: ${LIVEKIT_API_KEY:-}
+          urls:
+            - http://api:3001/api/calls/livekit-webhook
+    ports:
+      - "7881:7881/tcp"
+      - "7882:7882/udp"
 
   # Buduje statyczne SPA do wolumenów (jednorazowo przy deploy).
   frontend-build:

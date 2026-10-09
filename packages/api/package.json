@@ -24,6 +24,7 @@
     "imapflow": "^1.0.164",
     "isbot": "^5.2.1",
     "jose": "^5.9.0",
+    "livekit-server-sdk": "^2.19.1",
     "mailparser": "^3.7.0",
     "maxmind": "^4.3.29",
     "node-cron": "^3.0.3",

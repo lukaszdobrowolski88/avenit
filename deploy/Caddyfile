@@ -55,6 +55,14 @@
 		reverse_proxy api:3001
 	}
 
+	# Połączenia audio/wideo: sygnalizacja LiveKit (WebSocket + API) → usługa livekit.
+	# Media (WebRTC) idą wprost na VPS: UDP 7882 / TCP 7881 — nie przez Caddy.
+	# Cert on-demand: tls-check w API przepuszcza rtc.{$APP_DOMAIN}.
+	@rtc host rtc.{$APP_DOMAIN}
+	handle @rtc {
+		reverse_proxy livekit:7880
+	}
+
 	# Samowyrejestrowujący SW dla avenit.pl i app.avenit.pl (kasuje stary PWA,
 	# który cache'ował apkę, gdy te hosty serwowały wcześniej aplikację).
 	@killsw {

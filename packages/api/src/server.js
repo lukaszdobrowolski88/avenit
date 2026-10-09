@@ -66,7 +66,8 @@ export async function buildServer() {
     if (domain === base) return reply.code(200).send('ok');
     if (!domain.endsWith(`.${base}`)) return reply.code(403).send('no');
     const sub = domain.slice(0, -(base.length + 1));
-    if (['admin', 'api', 'www', 'app'].includes(sub)) return reply.code(200).send('ok');
+    // rtc — sygnalizacja LiveKit (połączenia audio/wideo), Caddy proxuje do usługi livekit.
+    if (['admin', 'api', 'www', 'app', 'rtc'].includes(sub)) return reply.code(200).send('ok');
     const { resolveTenant } = await import('./db.js');
     const tenant = await resolveTenant(sub).catch(() => null);
     return tenant ? reply.code(200).send('ok') : reply.code(403).send('no');
@@ -92,6 +93,9 @@ export async function buildServer() {
   await app.register(analyticsRoutes);
   await app.register(dataApiRoutes);
   await app.register(storageRoutes);
+  // Webhook LiveKit (połączenia audio/wideo) — własny parser surowego body w enkapsulacji.
+  const { default: callsRoutes } = await import('./calls/routes.js');
+  await app.register(callsRoutes);
 
   // Funkcje (port edge functions) — rejestrowane dynamicznie z katalogu fn/.
   const { registerFunctions } = await import('./fn/index.js');
