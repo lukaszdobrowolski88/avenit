@@ -25,8 +25,13 @@ const CONV_TABLES = {
   message_read_receipts: 'msg',
   poll_votes: 'msg',
   prayer_responses: 'msg',
+  // Połączenia audio/wideo (migracja 096) — tylko odczyt przez /api/db (readOnly w registry),
+  // zapis wyłącznie przez fn call-* i webhook LiveKit (src/calls).
+  calls: 'conv',
+  call_participants: 'call',
 };
 export const isConversationTable = (table) => table in CONV_TABLES;
+const CALL_TABLES = new Set(['calls', 'call_participants']);
 
 // Kanały służb (jak useMinistryChannels w webie): przynależność = wpis w tabeli zespołu.
 const MINISTRY_TABLES = {
@@ -44,6 +49,7 @@ function convExpr(table, alias) {
   const kind = CONV_TABLES[table];
   if (kind === 'self') return `${alias}."id"`;
   if (kind === 'conv') return `${alias}."conversation_id"`;
+  if (kind === 'call') return `(SELECT c_."conversation_id" FROM calls c_ WHERE c_."id" = ${alias}."call_id")`;
   return `(SELECT m_."conversation_id" FROM messages m_ WHERE m_."id" = ${alias}."message_id")`;
 }
 const memberOf = (conv, p) =>
@@ -85,6 +91,11 @@ export function conversationScope(table, user) {
   if (table === 'pinned_messages') {
     return { select: member, update: member, delete: member, upsertGuard: member };
   }
+  if (CALL_TABLES.has(table)) {
+    // Połączenia: odczyt dla uczestników rozmowy; zapis tylko serwer (fn call-*, webhook).
+    const none = () => 'FALSE';
+    return { select: member, update: none, delete: none, upsertGuard: none };
+  }
   // typing_status, reakcje, potwierdzenia, głosy, „modlę się” — widzą uczestnicy, zmienia właściciel.
   const own = (a, push) => `lower(${a}."user_email") = $${push(email)}`;
   return { select: member, update: own, delete: own, upsertGuard: own };
@@ -92,7 +103,7 @@ export function conversationScope(table, user) {
 
 // Uczestnik rozmowy → { role } albo null. Starsze rozmowy (sprzed ról) mają role = NULL —
 // to nadal uczestnik („member”); bez tego wysyłka w starych rozmowach była odrzucana.
-async function isMember(db, convId, email) {
+export async function isMember(db, convId, email) {
   const { rows } = await db.query(
     `SELECT role FROM conversation_participants WHERE conversation_id::text = $1 AND lower(user_email) = $2 LIMIT 1`,
     [String(convId), email]
@@ -100,7 +111,7 @@ async function isMember(db, convId, email) {
   return rows[0] ? { role: rows[0].role || 'member' } : null;
 }
 
-async function conversationOf(db, convId) {
+export async function conversationOf(db, convId) {
   const { rows } = await db.query(
     `SELECT id, type, ministry_key, posting_policy, created_by,
             (SELECT count(*)::int FROM conversation_participants p WHERE p.conversation_id = c.id) AS n
@@ -192,6 +203,7 @@ async function inMinistry(db, ministryKey, emails) {
 
 // Walidacja zapisu (insert/upsert/update) — mutuje q.values (nadawca/właściciel = ja).
 export async function enforceConversationWrite(q, req) {
+  if (CALL_TABLES.has(q.table) && q.op !== 'select') throw new ApiError(403, 'Połączeniami zarządza serwer');
   if (!isConversationTable(q.table) || !['insert', 'upsert', 'update'].includes(q.op) || !q.values) return;
   const db = req.db;
   const me = lower(req.user.email);
@@ -335,7 +347,7 @@ export async function enforceConversationWrite(q, req) {
 }
 
 // Uczestnicy rozmowy (e-maile małymi literami).
-async function directMembers(db, convId) {
+export async function directMembers(db, convId) {
   const { rows } = await db.query(
     `SELECT DISTINCT lower(user_email) AS e FROM conversation_participants WHERE conversation_id::text = $1`,
     [String(convId)]
@@ -352,7 +364,10 @@ export async function conversationAudience(db, table, rows) {
     const kind = CONV_TABLES[table];
     if (kind === 'self' && r.id) convIds.add(String(r.id));
     else if (kind === 'conv' && r.conversation_id) convIds.add(String(r.conversation_id));
-    else if (kind === 'msg' && r.message_id) {
+    else if (kind === 'call' && r.call_id) {
+      const { rows: c } = await db.query(`SELECT conversation_id FROM calls WHERE id::text = $1`, [String(r.call_id)]);
+      if (c[0]) convIds.add(String(c[0].conversation_id));
+    } else if (kind === 'msg' && r.message_id) {
       const { rows: m } = await db.query(`SELECT conversation_id FROM messages WHERE id::text = $1`, [String(r.message_id)]);
       if (m[0]) convIds.add(String(m[0].conversation_id));
     }

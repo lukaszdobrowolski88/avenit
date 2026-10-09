@@ -104,7 +104,7 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
 
 // Odbiorcy z wyciszeniem i cichymi godzinami. Przed migracją 088 (brak muted_until) — starsze
 // zapytanie, żeby powiadomienia nie przestały działać przy innej kolejności wdrożenia.
-async function recipientsOf(pool, conversationId, senderEmail) {
+export async function recipientsOf(pool, conversationId, senderEmail) {
   try {
     const { rows } = await pool.query(
       `SELECT cp.user_email, COALESCE(cp.muted, false) AS muted, cp.muted_until,

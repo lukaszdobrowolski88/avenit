@@ -64,6 +64,15 @@ const schema = z.object({
   SSO_MICROSOFT_CLIENT_ID: z.string().optional(),
   SSO_MICROSOFT_CLIENT_SECRET: z.string().optional(),
   SSO_MICROSOFT_TENANT: z.string().default('common'),
+
+  // Połączenia audio/wideo (LiveKit SFU, usługa `livekit` w docker-compose). Bez klucza i sekretu
+  // połączenia są wyłączone: fn call-* → 503 calls_disabled, web chowa przyciski.
+  //  LIVEKIT_URL  — publiczny adres sygnalizacji dla klientów (domyślnie wss://rtc.APP_DOMAIN),
+  //  LIVEKIT_HOST — adres wewnętrzny dla API (RoomService: kończenie pokoju, lista pokoi).
+  LIVEKIT_URL: z.string().optional(),
+  LIVEKIT_API_KEY: z.string().optional(),
+  LIVEKIT_API_SECRET: z.string().optional(),
+  LIVEKIT_HOST: z.string().default('http://livekit:7880'),
 });
 
 export const config = schema.parse(process.env);

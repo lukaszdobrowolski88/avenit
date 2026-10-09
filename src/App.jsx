@@ -22,6 +22,7 @@ import AnnouncementBanner from './components/AnnouncementBanner';
 import PlanUsageNotice from './modules/Billing/PlanUsageNotice';
 import CommandPalette from './components/CommandPalette';
 import { OnboardingProvider } from './onboarding/OnboardingContext';
+import { CallProvider } from './modules/Komunikator/calls/CallProvider';
 import OnboardingLayer from './onboarding/OnboardingLayer';
 import { I18nProvider, useI18n } from './i18n';
 import { PageTracker, identify as analyticsIdentify, trackLogin } from './lib/analytics';
@@ -531,6 +532,9 @@ function AppInner() {
         <CampusProvider>
           <NotificationProvider userEmail={session.user?.email}>
             <UnsavedChangesProvider>
+            {/* Połączenia audio/wideo (Komunikator): dzwonek i okno rozmowy na każdej trasie.
+                Poza <div key={lang}> — zmiana języka nie przerywa rozmowy. */}
+            <CallProvider userEmail={session.user?.email}>
             <SidebarProvider>
               <SkipToContent />
               <FocusMainOnRouteChange />
@@ -682,6 +686,7 @@ function AppInner() {
             </div>
           </div>
             </SidebarProvider>
+            </CallProvider>
             </UnsavedChangesProvider>
           </NotificationProvider>
         </CampusProvider>
