@@ -18,8 +18,13 @@
 //                            przekroczenie limitu planu niczego nie blokuje)
 import cron from 'node-cron';
 import { platformPool, getTenantPool } from './db.js';
+import { setRelay } from './realtime/hub.js';
+import { createRelayPublisher } from './realtime/relay.js';
 
 const log = (...args) => console.log(new Date().toISOString(), '[worker]', ...args);
+
+// Zmiany z zadań (emitChange) → API przez NOTIFY, żeby trafiły do otwartych przeglądarek.
+setRelay(createRelayPublisher(platformPool, log));
 
 async function activeTenants() {
   const { rows } = await platformPool.query(

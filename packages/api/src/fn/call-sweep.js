@@ -1,7 +1,7 @@
 // Worker (co minutę, per tenant): połączenia dzwoniące > 45 s → nieodebrane / trwające (grupa),
 // uzgodnienie z LiveKit (pokój zniknął, a webhook nie dotarł) i twardy limit długości.
-// Bez trasy HTTP. Główną ścieżką jest timer w API (z realtime) — worker to siatka bezpieczeństwa
-// po restarcie API (zmiany z workera nie idą przez realtime; klient odświeża stan sam).
+// Bez trasy HTTP. Główną ścieżką jest timer w API — worker to siatka bezpieczeństwa po restarcie
+// API; jego zmiany docierają do przeglądarek przekaźnikiem realtime (realtime/relay.js).
 import { callDeps, sweepCalls } from '../calls/service.js';
 import { expireStaleGuestRequests } from '../calls/guests.js';
 
