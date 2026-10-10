@@ -11,6 +11,7 @@ import { MediaHelp, useNow } from '../CallWindow';
 import { formatClock } from '../callLogic';
 import { mediaFailure } from '../livekit';
 import { GUEST_POLL_MS, guestErrorState, guestStateMessage } from '../guestLogic';
+import { formatMeetingWhen, formatMeetingLong } from '../../meetings/meetingLogic';
 import './guestCall.css';
 
 // Publiczna strona gościa rozmowy: /rozmowa/<token> (bez logowania, tenant z adresu).
@@ -153,6 +154,30 @@ function GuestCallView({ room, heading, startedAt, onLeave }) {
   );
 }
 
+// Spotkanie z zaproszenia e-mail: termin, prowadzący, opis i odpowiedź „czy weźmiesz udział”.
+function MeetingDetails({ meeting, onRespond }) {
+  const options = [['accepted', tr('Wezmę udział')], ['tentative', tr('Może')], ['declined', tr('Nie wezmę udziału')]];
+  return (
+    <div className="gc-meet">
+      <p className="gc-meet-when">
+        <time dateTime={meeting.starts_at}>{formatMeetingLong(meeting.starts_at)}</time>
+        <span>{formatMeetingWhen(meeting.starts_at, meeting.ends_at).split(' · ').pop()}</span>
+      </p>
+      {meeting.organizer_name && <p className="gc-sub">{tr('Prowadzi: {name}', { name: meeting.organizer_name })}</p>}
+      {meeting.description && <p className="gc-meet-desc">{meeting.description}</p>}
+      <div className="gc-rsvp" role="group" aria-label={tr('Czy weźmiesz udział?')}>
+        <span className="gc-label">{tr('Czy weźmiesz udział?')}</span>
+        <div className="gc-rsvp-row">
+          {options.map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={meeting.response === value} onClick={() => onRespond(value)}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <p className="gc-hint">{tr('Gdy nadejdzie pora, podaj imię, sprawdź kamerę i mikrofon i dołącz. Spotkanie możesz też dodać do kalendarza z e-maila z zaproszeniem.')}</p>
+    </div>
+  );
+}
+
 export default function GuestCallPage() {
   const { token } = useParams();
   const [phase, setPhase] = useState('loading'); // loading | form | waiting | connecting | call | final
@@ -192,7 +217,9 @@ export default function GuestCallPage() {
       if (!alive) return;
       if (inf) {
         setInfo(inf);
-        if (inf.kind === 'audio') setPrefs((p) => ({ ...p, cam: false }));
+        if (inf.kind === 'audio' || (!inf.kind && inf.meeting?.kind === 'audio')) setPrefs((p) => ({ ...p, cam: false }));
+        // Osobisty link ze spotkania: imię z zaproszenia (gość może je poprawić).
+        if (!stored && inf.meeting?.guest_name) setName(inf.meeting.guest_name);
       }
       if (stored) {
         reqRef.current = stored;
@@ -328,7 +355,19 @@ export default function GuestCallPage() {
   };
 
   const church = info?.church_name || '';
+  const meeting = info?.meeting || null;
   const heading = info?.title || (church ? tr('Rozmowa w {church}', { church }) : tr('Rozmowa'));
+  const rsvp = async (response) => {
+    if (!meeting || meeting.response === response) return;
+    try {
+      const res = await callFn('meeting-guest-rsvp', { token, response });
+      setInfo((i) => ({ ...i, meeting: { ...i.meeting, response: res.response } }));
+    } catch (err) {
+      const state = guestErrorState(err);
+      if (state !== 'error' && state !== 'busy') finish(state);
+      else setFormError(tr('Nie udało się zapisać odpowiedzi. Spróbuj ponownie.'));
+    }
+  };
   const togglePref = (k) => setPrefs((p) => ({ ...p, [k]: !p[k] }));
 
   if (phase === 'call') return <GuestCallView room={room} heading={heading} startedAt={startedAt} onLeave={leaveCall} />;
@@ -380,7 +419,11 @@ export default function GuestCallPage() {
       <>
         <div className="gc-head">
           <h1 className="gc-title">{heading}</h1>
-          <p className="gc-sub">{tr('Zaproszono Cię do rozmowy audio/wideo. Podaj imię, sprawdź kamerę i mikrofon, a potem poproś o dołączenie.')}</p>
+          {meeting ? (
+            <MeetingDetails meeting={meeting} onRespond={rsvp} />
+          ) : (
+            <p className="gc-sub">{tr('Zaproszono Cię do rozmowy audio/wideo. Podaj imię, sprawdź kamerę i mikrofon, a potem poproś o dołączenie.')}</p>
+          )}
         </div>
         <DevicePreview prefs={prefs} onToggle={togglePref} name={name} />
         <form className="gc-form" onSubmit={submit} noValidate>

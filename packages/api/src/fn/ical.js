@@ -6,6 +6,7 @@ import { accountEmailsForAssignee } from '../lib/assigneeIdentity.js';
 import { roleName } from './send-assignment-invites.js';
 import { listMyBoardItems } from './my-board-items.js';
 import { callerAccess } from './board-import-legacy.js';
+import { rsvpBase } from './rsvp-send.js';
 
 export const name = 'ical';
 export const method = 'GET';
@@ -269,6 +270,31 @@ export default async function handler(req, reply) {
         const labels = new Map(mods.filter((m) => m.label).map((m) => [m.key, String(m.label).trim()]));
         for (const svc of serviceEvents(mine, { ownerEmail, dtstamp, labels })) events.push(vevent(svc));
       }
+    }
+  }
+
+  // Moje spotkania online (098) — domyślnie WŁĄCZONE: uczestnik rozmowy spotkania, bez odrzuconych
+  // i odwołanych. Link w opisie prowadzi do spotkania w aplikacji.
+  if (prefs.my_meetings !== false && ownerEmail) {
+    const { rows } = await req.db.query(
+      `SELECT m.id, m.conversation_id, m.title, m.description, m.starts_at, m.ends_at
+         FROM meetings m
+         JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND lower(cp.user_email) = lower($1)
+         LEFT JOIN meeting_invites i ON i.meeting_id = m.id AND i.kind = 'member' AND i.email = lower($1)
+        WHERE m.status = 'scheduled' AND COALESCE(i.response, 'pending') <> 'declined'
+          AND m.starts_at >= $2::date AND m.starts_at <= $3::date
+        ORDER BY m.starts_at LIMIT 500`,
+      [ownerEmail, fromStr, toStr]
+    ).catch((err) => { if (err?.code !== '42P01') req.log?.warn?.({ err }, 'ical: meetings'); return { rows: [] }; });
+    const origin = rsvpBase(req.tenant?.subdomain || req.tenant?.slug);
+    for (const m of rows) {
+      const url = `${origin}/komunikator?conversation=${encodeURIComponent(m.conversation_id)}`;
+      events.push(vevent({
+        uid: `meeting-${m.id}@avenit.app`, summary: m.title || 'Spotkanie online',
+        description: [m.description, `Dołącz: ${url}`].filter(Boolean).join('\n\n'), location: url,
+        dtstart: fmtUtc(new Date(m.starts_at)), dtend: fmtUtc(new Date(m.ends_at)),
+        dtstamp, categories: ['Spotkanie online'], status: 'CONFIRMED',
+      }));
     }
   }
 

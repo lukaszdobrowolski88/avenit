@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Plus, MessageSquare, Star, Archive, Pin, MoreHorizontal, BellOff, Flag, RefreshCw } from 'lucide-react';
+import { Search, Plus, MessageSquare, Star, Archive, Pin, MoreHorizontal, BellOff, Flag, RefreshCw, CalendarPlus } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { ChannelIcon } from './ConversationHeader';
 import { muteUntilLabel } from './MuteMenu';
@@ -38,6 +38,7 @@ export default function ConversationList({
   loading,
   currentUserEmail,
   onOpenReports,       // panel „Zgłoszenia” (moderator) — K10
+  onNewMeeting,        // „Zaplanuj spotkanie” (spotkanie online z zaproszeniami)
   openReportsCount = 0,
   onSyncChannels,      // „odśwież składy kanałów” (administrator aplikacji) — K8
   syncingChannels = false
@@ -330,6 +331,17 @@ export default function ConversationList({
                   {openReportsCount > 99 ? '99+' : openReportsCount}
                 </span>
               )}
+            </button>
+          )}
+          {onNewMeeting && (
+            <button
+              type="button"
+              onClick={onNewMeeting}
+              aria-label={t('Zaplanuj spotkanie')}
+              title={t('Zaplanuj spotkanie')}
+              className="p-2.5 rounded-xl text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 hover:text-gray-900 dark:hover:text-white transition"
+            >
+              <CalendarPlus size={16} />
             </button>
           )}
           <button

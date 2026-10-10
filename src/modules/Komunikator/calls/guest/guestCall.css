@@ -136,3 +136,19 @@ html.dark .gc-msg--error { background: rgba(220, 80, 60, 0.16); color: #F7B9AE; 
 .gc-wait-sub { margin: 2px 0 0; font-size: 14px; color: var(--gc-muted); }
 
 .gc-foot { font-size: 12px; color: var(--gc-muted); text-align: center; }
+
+/* Spotkanie z zaproszenia e-mail: termin, prowadzący, odpowiedź */
+.gc-meet { display: flex; flex-direction: column; gap: 10px; }
+.gc-meet-when { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 16px; font-weight: 800; color: var(--gc-ink); }
+.gc-meet-when span { font-weight: 600; color: var(--gc-body); }
+.gc-meet-desc { margin: 0; font-size: 14px; line-height: 1.5; color: var(--gc-body); white-space: pre-line; overflow-wrap: anywhere; }
+.gc-rsvp { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.gc-rsvp-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.gc-root .gc-rsvp-row button {
+  border: 1px solid var(--gc-field-border); background: var(--gc-field); color: var(--gc-ink);
+  border-radius: 999px; padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.gc-root .gc-rsvp-row button:hover { border-color: var(--gc-ink); }
+.gc-root .gc-rsvp-row button[aria-pressed='true'] { background: var(--gc-turmeric); border-color: var(--gc-turmeric); color: #2A2312; }
+.gc-root .gc-rsvp-row button:focus-visible { outline: 2px solid var(--gc-ink); outline-offset: 2px; }

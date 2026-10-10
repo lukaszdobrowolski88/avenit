@@ -297,16 +297,19 @@ export async function startCall(ctx, user, body = {}) {
     throw new ApiError(403, 'W tym kanale połączenie może rozpocząć tylko administrator', 'POSTING_RESTRICTED');
   }
   if (others && !others.length) throw new ApiError(400, 'W tej rozmowie nie ma do kogo zadzwonić', 'NO_RECIPIENT');
+  // Spotkanie (098): odwołane — bez połączenia; start bez dzwonienia (powiadomienie „trwa”).
+  const meeting = conv.type === 'meeting';
+  if (meeting) await (await import('../meetings/service.js')).assertMeetingOpen(db, conversationId);
 
   const live = await liveCallOf(db, conversationId);
   if (live) return { ...(await joinInternal(ctx, user, live, { conv, role })), joined_existing: true };
 
   const id = randomUUID();
   const inserted = await one(db,
-    `INSERT INTO calls (id, conversation_id, room_name, kind, is_group, started_by_email, status)
-     VALUES ($1, $2, $3, $4, $5, $6, 'ringing')
+    `INSERT INTO calls (id, conversation_id, room_name, kind, is_group, started_by_email, status, answered_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, CASE WHEN $7 = 'active' THEN now() END)
      ON CONFLICT DO NOTHING RETURNING *`,
-    [id, conversationId, L.roomNameFor(ctx.tenantSlug, id), kind, conv.type !== 'direct', me]);
+    [id, conversationId, L.roomNameFor(ctx.tenantSlug, id), kind, conv.type !== 'direct', me, meeting ? 'active' : 'ringing']);
   if (!inserted) {
     // Wyścig: ktoś w tej chwili zaczął połączenie w tej rozmowie — dołączamy do niego.
     const again = await liveCallOf(db, conversationId);
@@ -324,8 +327,13 @@ export async function startCall(ctx, user, body = {}) {
   await emitRows(ctx, 'call_participants', 'insert', [part]);
   const access = await tokenFor(ctx, user, call, true);
 
-  scheduleRingTimeout(ctx, call.id);
-  Promise.resolve().then(() => ringParticipants(ctx, call)).catch((err) => warn(ctx, err, 'dzwonienie (push)'));
+  if (meeting) {
+    Promise.resolve().then(async () => (await import('../meetings/service.js')).notifyMeetingStarted(ctx, conversationId, me))
+      .catch((err) => warn(ctx, err, 'spotkanie — powiadomienie'));
+  } else {
+    scheduleRingTimeout(ctx, call.id);
+    Promise.resolve().then(() => ringParticipants(ctx, call)).catch((err) => warn(ctx, err, 'dzwonienie (push)'));
+  }
   return { call, ...access, joined_existing: false };
 }
 

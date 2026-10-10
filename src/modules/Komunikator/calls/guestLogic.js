@@ -18,6 +18,8 @@ export const GUEST_POLL_MS = 2500;
 // albo admin aplikacji.
 export function canInviteGuests(conversation, { isAppAdmin = false } = {}) {
   if (!conversation?.id) return false;
+  // Spotkanie: goście są zapraszani po e-mailu w ustawieniach spotkania (osobiste linki).
+  if (conversation.type === 'meeting') return false;
   if (conversation.type === 'direct') return true;
   return (conversation.myRole ?? conversation.my_role) === 'admin' || !!isAppAdmin;
 }
@@ -67,6 +69,7 @@ export function applyGuestRequest(map, row) {
 // Kod błędu API strony gościa → stan strony.
 export function guestErrorState(err) {
   const code = err?.code || err?.context?.code || '';
+  if (code === 'MEETING_CANCELLED') return 'cancelled';
   if (code === 'LINK_NOT_FOUND' || err?.status === 404) return 'not_found';
   if (code === 'LINK_FULL') return 'full';
   if (code === 'LINK_EXPIRED') return 'expired';
@@ -86,6 +89,7 @@ export function guestStateMessage(state) {
     case 'denied': return { title: tr('Nie wpuszczono Cię do rozmowy'), body: tr('Osoba prowadząca rozmowę odrzuciła prośbę o dołączenie.') };
     case 'left': return { title: tr('Opuściłeś(-aś) rozmowę'), body: tr('Dziękujemy za udział. Możesz zamknąć tę kartę.') };
     case 'ended': return { title: tr('Rozmowa zakończona'), body: tr('Rozmowa się zakończyła. Możesz zamknąć tę kartę.') };
+    case 'cancelled': return { title: tr('Spotkanie odwołane'), body: tr('Organizator odwołał to spotkanie. Link już nie działa.') };
     default: return { title: tr('Coś poszło nie tak'), body: tr('Nie udało się połączyć. Sprawdź internet i spróbuj ponownie.') };
   }
 }

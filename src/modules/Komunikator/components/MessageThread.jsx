@@ -12,6 +12,7 @@ import PollComposerModal from './PollComposerModal';
 import EventShareModal from './EventShareModal';
 import SeenByModal from './SeenByModal';
 import ActiveCallBanner from '../calls/ActiveCallBanner';
+import MeetingPanel from '../meetings/MeetingPanel';
 import useMessages from '../hooks/useMessages';
 import useRealtimeMessages from '../hooks/useRealtimeMessages';
 import useTypingStatus from '../hooks/useTypingStatus';
@@ -476,7 +477,7 @@ export default function MessageThread({
       <ConversationHeader
         conversation={conversation}
         onBack={onBack}
-        onOpenSettings={onOpenSettings}
+        onOpenSettings={conversation?.type === 'meeting' ? undefined : onOpenSettings}
         onSetMute={handleSetMute}
         onDelete={isDirect && isAdmin ? onDeleteConversation : undefined}
         onOpenMediaGallery={() => setShowMediaGallery(true)}
@@ -490,6 +491,9 @@ export default function MessageThread({
 
       {/* Trwa rozmowa audio/wideo — dołącz */}
       <ActiveCallBanner conversation={conversation} />
+
+      {/* Spotkanie online: termin, Dołącz, odpowiedź, uczestnicy */}
+      {conversation?.type === 'meeting' && <MeetingPanel conversation={conversation} currentUserEmail={userEmail} />}
 
       {/* Baner kanału ogłoszeń */}
       {isAnnouncement && (

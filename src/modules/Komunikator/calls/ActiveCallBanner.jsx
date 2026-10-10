@@ -28,6 +28,8 @@ export default function ActiveCallBanner({ conversation }) {
     );
   }
   if (!live || calls.callsEnabled === false) return null;
+  // Spotkanie: „Dołącz” jest na karcie spotkania (MeetingPanel).
+  if (conversation.type === 'meeting') return null;
 
   const video = live.kind === 'video';
   const busy = inCall(state);

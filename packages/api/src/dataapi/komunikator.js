@@ -31,9 +31,14 @@ const CONV_TABLES = {
   call_participants: 'call',
   // Poczekalnia gości z linku (migracja 097) — tylko odczyt, zapis wyłącznie src/calls/guests.js.
   call_guest_requests: 'conv',
+  // Spotkania (migracja 098) — tylko odczyt; zakłada/zmienia serwer (src/meetings, fn meeting-*).
+  meetings: 'conv',
 };
 export const isConversationTable = (table) => table in CONV_TABLES;
 const CALL_TABLES = new Set(['calls', 'call_participants', 'call_guest_requests']);
+// Rozmowa spotkania: skład i nazwę zmienia organizator w ustawieniach spotkania (fn meeting-update),
+// żeby zaproszenia, linki gości i czat się nie rozjechały.
+const MEETING_SERVER_MESSAGE = 'Spotkanie zmienia organizator w jego ustawieniach.';
 
 // Kanały służb (jak useMinistryChannels w webie): przynależność = wpis w tabeli zespołu.
 const MINISTRY_TABLES = {
@@ -206,6 +211,7 @@ async function inMinistry(db, ministryKey, emails) {
 // Walidacja zapisu (insert/upsert/update) — mutuje q.values (nadawca/właściciel = ja).
 export async function enforceConversationWrite(q, req) {
   if (CALL_TABLES.has(q.table) && q.op !== 'select') throw new ApiError(403, 'Połączeniami zarządza serwer');
+  if (q.table === 'meetings' && q.op !== 'select') throw new ApiError(403, MEETING_SERVER_MESSAGE, 'MEETING_SERVER');
   if (!isConversationTable(q.table) || !['insert', 'upsert', 'update'].includes(q.op) || !q.values) return;
   const db = req.db;
   const me = lower(req.user.email);
@@ -220,12 +226,14 @@ export async function enforceConversationWrite(q, req) {
         const f = (q.filters || []).find((x) => x.type === 'eq' && x.column === 'id');
         const role = f ? (await isMember(db, f.value, me))?.role : null;
         if (role !== 'admin') throw new ApiError(403, 'Ustawienia rozmowy zmienia jej administrator');
+        if ((await conversationOf(db, f.value))?.type === 'meeting') throw new ApiError(403, MEETING_SERVER_MESSAGE, 'MEETING_SERVER');
       }
       return;
     }
     for (const r of rows) {
       // Kanały służb i grup domowych zakłada i uzupełnia serwer (fn chat-channels-sync).
       if (r.type === 'ministry') throw new ApiError(403, 'Kanały służb i grup domowych tworzą się automatycznie', 'MINISTRY_CHANNEL_SERVER');
+      if (r.type === 'meeting') throw new ApiError(403, MEETING_SERVER_MESSAGE, 'MEETING_SERVER');
       r.created_by = req.user.email; // twórca = ja
     }
     return;
@@ -253,6 +261,7 @@ export async function enforceConversationWrite(q, req) {
     for (const [convId, emails] of byConv) {
       const conv = await conversationOf(db, convId);
       if (!conv) throw new ApiError(404, 'Nie znaleziono rozmowy');
+      if (conv.type === 'meeting') throw new ApiError(403, MEETING_SERVER_MESSAGE, 'MEETING_SERVER');
       const role = (await isMember(db, convId, me))?.role;
       const isCreator = conv.n === 0 && lower(conv.created_by) === me;
       // Rozmowa 1:1 (K9/K10): najwyżej dwie osoby; dopisanie drugiej osoby — także później, przez
