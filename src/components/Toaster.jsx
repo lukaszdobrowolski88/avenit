@@ -65,7 +65,14 @@ function ToastItem({ t, onClose }) {
 export default function Toaster() {
   const [toasts, setToasts] = useState([]);
   const close = useCallback((id) => setToasts((ts) => ts.filter((t) => t.id !== id)), []);
-  useEffect(() => subscribeToasts((t) => setToasts((ts) => [...ts.slice(-4), t])), []);
+  // Ten sam komunikat (np. kilka kliknięć „Dołącz” w zakończoną rozmowę) nie piętrzy się —
+  // zastępuje widoczny i odlicza od nowa.
+  useEffect(() => subscribeToasts((t) => setToasts((ts) => {
+    const rest = typeof t.message === 'string'
+      ? ts.filter((x) => !(x.type === t.type && x.message === t.message && x.title === t.title && !x.action && !t.action))
+      : ts;
+    return [...rest.slice(-4), t];
+  })), []);
   useEffect(() => listenWriteErrors(), []);
   return (
     <div

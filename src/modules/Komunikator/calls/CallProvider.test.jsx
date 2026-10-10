@@ -95,6 +95,7 @@ vi.mock('livekit-client', () => {
 const { supabase } = await import('../../../lib/supabase');
 const { CallProvider, useCalls } = await import('./CallProvider');
 const { default: CallButtons } = await import('./CallButtons');
+const { default: ActiveCallBanner } = await import('./ActiveCallBanner');
 
 const emit = (table, eventType, row) => act(async () => {
   h.handlers.filter((x) => x.table === table).forEach((x) => x.cb({ eventType, new: row, old: null, table }));
@@ -184,6 +185,18 @@ describe('CallProvider — maszyna stanów z atrapą LiveKit', () => {
     await emit('calls', 'UPDATE', ringRow());
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(h.rooms).toHaveLength(0);
+  });
+
+  it('„Dołącz” w rozmowę, która już się skończyła: baner znika, bez łączenia', async () => {
+    h.db.calls = [ringRow({ status: 'active', started_by_email: 'ola@x.pl' })];
+    h.fns['call-join'] = { data: null, error: { message: 'To połączenie już się zakończyło', status: 410, context: { code: 'CALL_ENDED' } } };
+    renderApp(<ActiveCallBanner conversation={{ id: 'c1', type: 'direct' }} />);
+    const join = await screen.findByRole('button', { name: 'Dołącz' });
+    h.db.calls = [];
+    fireEvent.click(join);
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Dołącz' })).toBeNull());
+    expect(screen.getByTestId('phase').textContent).toBe('idle');
     expect(h.rooms).toHaveLength(0);
   });
 

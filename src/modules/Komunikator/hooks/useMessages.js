@@ -446,6 +446,14 @@ export default function useMessages(conversationId, userEmail) {
     fetchMessages();
   }, [fetchMessages]);
 
+  // Po ponownym połączeniu realtime (sen komputera, zmiana sieci) — dociągnij to, co przepadło.
+  useEffect(() => {
+    if (!conversationId) return undefined;
+    const onReconnect = () => fetchMessages();
+    window.addEventListener('avenit:realtime-reconnect', onReconnect);
+    return () => window.removeEventListener('avenit:realtime-reconnect', onReconnect);
+  }, [conversationId, fetchMessages]);
+
   return {
     messages,
     loading,

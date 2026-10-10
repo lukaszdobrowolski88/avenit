@@ -7,7 +7,7 @@ import { sameEmail, emailPattern, channelName, isMutedNow } from '../utils/chatL
 import { getMinistryName } from '../utils/messageHelpers';
 import {
   callReducer, initialCallState, inCall, shouldRing, ringRemainingMs, isLiveCall,
-  isCallsDisabledError, readCallsDisabled, writeCallsDisabled, ENDED_STATUSES, OUTGOING_TIMEOUT_MS,
+  isCallsDisabledError, isCallGoneError, readCallsDisabled, writeCallsDisabled, ENDED_STATUSES, OUTGOING_TIMEOUT_MS,
 } from './callLogic';
 import { startRingtone, unlockAudio } from './ringtone';
 import { applyGuestRequest, lobbyQueue } from './guestLogic';
@@ -126,6 +126,27 @@ export function CallProvider({ userEmail, children }) {
     });
   }, []);
 
+  // Usuń rozmowę z banera (serwer odpowiedział, że już się zakończyła).
+  const dropActive = useCallback((callId) => {
+    if (!callId) return;
+    setActiveCalls((prev) => {
+      const key = Object.keys(prev).find((k) => prev[k]?.id === callId);
+      if (!key) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
+  // Aktualny stan jednej rozmowy z serwera (po rozłączeniu — zmiana mogła nie dojść przez realtime).
+  const refreshCall = useCallback(async (callId) => {
+    if (!callId) return;
+    try {
+      const { data } = await supabase.from('calls').select('*').eq('id', callId).maybeSingle();
+      if (data) upsertActive(data);
+    } catch { /* sieć — kolejne odświeżenie poprawi */ }
+  }, [upsertActive]);
+
   // ── Kończenie ──────────────────────────────────────────────────────────────
   const finish = useCallback(async ({ notify = null } = {}) => {
     opRef.current += 1;
@@ -135,7 +156,8 @@ export function CallProvider({ userEmail, children }) {
     setStartedAt(null);
     await roomRef.current.disconnect();
     if (notify) toast.info(notify);
-  }, []);
+    if (cur.call?.id) refreshCall(cur.call.id);
+  }, [refreshCall]);
 
   handleRemoteDisconnect.current = () => {
     if (!inCall(stateRef.current)) return;
@@ -259,6 +281,21 @@ export function CallProvider({ userEmail, children }) {
       window.removeEventListener('avenit:realtime-reconnect', onReconnect);
     };
   }, [userEmail, loadActive, onCallRow, announce]);
+
+  // Siatka bezpieczeństwa dla banerów „Trwa połączenie”: zmiany z workera (nieodebrane po
+  // restarcie API, uzgodnienie z LiveKit) nie idą przez realtime. Gdy coś „trwa” — sprawdzaj
+  // co 30 s i po powrocie do karty.
+  const hasActive = Object.keys(activeCalls).length > 0;
+  useEffect(() => {
+    if (!userEmail || !hasActive) return undefined;
+    const timer = setInterval(loadActive, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') loadActive(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [userEmail, hasActive, loadActive]);
 
   // Poczekalnia gości bieżącej rozmowy — wczytanie przy wejściu do rozmowy (później realtime).
   const lobbyConversationId = inCall(state) ? String(state.conversation?.id || state.call?.conversation_id || '') : '';
@@ -393,6 +430,12 @@ export function CallProvider({ userEmail, children }) {
       data = await callFn('call-join', { call_id: callId });
     } catch (err) {
       if (op === opRef.current) dispatch({ type: 'RESET' });
+      if (isCallGoneError(err)) {
+        dropActive(callId);
+        loadActive();
+        toast.info(tr('To połączenie już się zakończyło'));
+        return;
+      }
       handleApiError(err, tr('Nie udało się dołączyć do rozmowy. Mogła się już zakończyć.'));
       return;
     }
@@ -404,7 +447,7 @@ export function CallProvider({ userEmail, children }) {
       if (op === opRef.current) { dispatch({ type: 'RESET' }); await roomRef.current.disconnect(); }
       toast.error(err, { fallback: tr('Nie udało się połączyć z rozmową. Sprawdź internet i spróbuj ponownie.') });
     }
-  }, [connectWith, handleApiError]);
+  }, [connectWith, handleApiError, dropActive, loadActive]);
 
   const acceptCall = useCallback(async (kind) => {
     const cur = stateRef.current;
