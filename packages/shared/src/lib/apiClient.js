@@ -118,28 +118,39 @@ export function createApiClient({
     return h;
   }
 
+  // Odświeżenie tokena. Wylogowanie TYLKO, gdy serwer jednoznacznie odrzuci refresh token
+  // (400/401/403). Brak sieci przy starcie aplikacji, uśpienie telefonu w trakcie żądania czy
+  // chwilowy błąd serwera (np. deploy, 5xx/429) zostawiają sesję — kolejne żądanie spróbuje
+  // ponownie. Wcześniej każdy błąd = wylogowanie (mobilka logowała się od nowa po wyjściu).
   let refreshPromise = null;
   async function tryRefresh() {
     if (!session?.refresh_token) return false;
     if (!refreshPromise) {
       refreshPromise = (async () => {
         try {
-          const res = await doFetch(`${base}/api/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...(tenant ? { 'X-Tenant': tenant } : {}) },
-            credentials: 'include',
-            body: JSON.stringify({ refresh_token: session.refresh_token }),
-          });
-          if (!res.ok) throw new Error('refresh failed');
-          const data = await res.json();
+          let res;
+          try {
+            res = await doFetch(`${base}/api/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...(tenant ? { 'X-Tenant': tenant } : {}) },
+              credentials: 'include',
+              body: JSON.stringify({ refresh_token: session.refresh_token }),
+            });
+          } catch {
+            return false; // sieć — sesja zostaje
+          }
+          if (res.status === 400 || res.status === 401 || res.status === 403) {
+            await saveSession(null, 'SIGNED_OUT');
+            return false;
+          }
+          if (!res.ok) return false; // 5xx / 429 — sesja zostaje
+          const data = await res.json().catch(() => null);
+          if (!data?.access_token || !data?.refresh_token) return false;
           await saveSession(
             { access_token: data.access_token, refresh_token: data.refresh_token, user: data.user },
             'TOKEN_REFRESHED'
           );
           return true;
-        } catch {
-          await saveSession(null, 'SIGNED_OUT');
-          return false;
         } finally {
           refreshPromise = null;
         }
