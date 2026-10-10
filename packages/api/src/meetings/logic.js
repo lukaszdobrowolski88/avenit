@@ -94,11 +94,55 @@ export function nameFromEmail(email) {
 }
 
 export const normalizeResponse = (v) => (RESPONSES.includes(v) ? v : null);
+export const normalizeTitle = (v) => oneLine(v, TITLE_MAX);
 
 // Nazwa pliku z tytułu (bez znaków niedozwolonych w nazwach plików).
 export function oneLineFilename(title) {
   const s = oneLine(title, 60).replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
   return s || 'spotkanie';
+}
+
+// ── Termin wydarzenia (data + godzina w strefie kościoła) ↔ chwila UTC ─────
+function tzOffsetMs(ts, tz) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(new Date(ts));
+  const g = (t) => Number(parts.find((x) => x.type === t).value);
+  return Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second')) - ts;
+}
+// „2026-10-12” + „18:30” w strefie kościoła → Date (UTC). null przy niepełnych danych.
+export function zonedToUtc(dateStr, timeStr, tz = TZ) {
+  const dm = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr || ''));
+  const tm = /^(\d{1,2}):(\d{2})/.exec(String(timeStr || ''));
+  if (!dm || !tm) return null;
+  const guess = Date.UTC(+dm[1], +dm[2] - 1, +dm[3], +tm[1], +tm[2]);
+  let ts = guess - tzOffsetMs(guess, tz);
+  const again = tzOffsetMs(ts, tz);
+  if (guess - again !== ts) ts = guess - again; // przejście czasu letniego/zimowego
+  return new Date(ts);
+}
+// Chwila → { date: 'YYYY-MM-DD', time: 'HH:MM' } w strefie kościoła.
+export function utcToZoned(at, tz = TZ) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  }).formatToParts(new Date(at));
+  const g = (t) => parts.find((x) => x.type === t).value;
+  return { date: `${g('year')}-${g('month')}-${g('day')}`, time: `${g('hour')}:${g('minute')}` };
+}
+// Wydarzenie (date, time, end_time, end_date) → { starts_at, ends_at } (ISO) albo null bez godziny.
+// Brak końca (albo koniec przed początkiem) — godzina trwania.
+export function eventTimes(ev) {
+  const starts = zonedToUtc(ev?.date, ev?.time);
+  if (!starts) return null;
+  let ends = ev?.end_time ? zonedToUtc(ev.end_date || ev.date, ev.end_time) : null;
+  if (!ends || ends <= starts) ends = new Date(starts.getTime() + DEFAULT_DURATION * 60_000);
+  return { starts_at: starts.toISOString(), ends_at: ends.toISOString() };
+}
+// Opis wydarzenia (zwykły tekst albo HTML) → tekst do spotkania i maila.
+export function plainText(v, max = DESCRIPTION_MAX) {
+  const s = String(v ?? '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|h\d)>/gi, '\n').replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  return multiLine(s, max) || null;
 }
 
 // ── Termin po polsku (strefa kościoła) ──────────────────────────────────────

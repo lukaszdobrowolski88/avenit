@@ -173,6 +173,8 @@ before(async () => {
     CREATE TABLE messages (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), conversation_id uuid REFERENCES conversations(id) ON DELETE CASCADE,
       sender_email text NOT NULL, content text NOT NULL, message_type text DEFAULT 'text', metadata jsonb DEFAULT '{}'::jsonb,
       mentions jsonb DEFAULT '[]'::jsonb, attachments jsonb DEFAULT '[]', created_at timestamptz DEFAULT now());
+    CREATE TABLE events (id serial PRIMARY KEY, title text NOT NULL, description text, date date, time text, end_time text, end_date date,
+      location text, module_key text, campus_id int, created_by text, is_archived boolean DEFAULT false, visibility_segments jsonb);
   `);
   await db.query(`INSERT INTO app_settings (key, value) VALUES ('org_name', 'Społeczność Testowa')`);
   await db.query(`INSERT INTO app_users (email, full_name, role, member_id, is_super_admin, is_active) VALUES
@@ -182,7 +184,7 @@ before(async () => {
   await db.query(`INSERT INTO members (id, email, birth_date, household_id) VALUES
     (1, 'jan@x.pl', '1980-01-01', 10), (2, 'ola@x.pl', '1990-01-01', 11), (3, 'kid@x.pl', '2015-05-05', 12),
     (4, 'boss@x.pl', '1970-01-01', 13), (5, 'obcy@x.pl', '1970-01-01', 14), (6, 'stary@x.pl', '1970-01-01', 15)`);
-  for (const f of ['096_calls.sql', '097_call_guest_links.sql', '098_meetings.sql']) {
+  for (const f of ['096_calls.sql', '097_call_guest_links.sql', '098_meetings.sql', '099_event_format.sql']) {
     const sql = fs.readFileSync(new URL(`../db/tenant-migrations/${f}`, import.meta.url), 'utf8');
     await pg.exec(sql);
     await pg.exec(sql); // idempotentna

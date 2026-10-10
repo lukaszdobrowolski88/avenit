@@ -6,6 +6,8 @@ import { fieldColumns, crudCapability, crudCapabilities, MODULES } from '@avenit
 import { isModuleScopedTable } from '@avenit/shared/src/permissions/moduleScope.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { emitChange } from '../realtime/hub.js';
+import { meetingCtxFromRequest } from '../meetings/service.js';
+import { syncEventsAfterWrite, syncRegistrationsAfterWrite } from '../meetings/events.js';
 import { notifyOnWrite, prepareUserTaskAssign, notifyUserTaskAssign } from '../realtime/push-hooks.js';
 import { platformDisabledModules } from '../lib/platform-modules.js';
 import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
@@ -405,6 +407,13 @@ export default async function dataApiRoutes(app) {
         // Głosy w ankietach anonimowych — e-mail tylko dla głosującego (także w realtime).
         const redact = q.table === 'poll_votes' ? await pollVotesRedactor(req.db, changed).catch(() => null) : null;
         emitChange(req.tenant.slug, q.table, q.op, changed, { audience, ...(redact ? { redact } : {}) });
+        // Wydarzenia online/hybrydowe (099): spotkanie uzgadniane po każdym zapisie wydarzenia
+        // i zapisu na nie — w tle, niezależnie od formularza (web, mobilka).
+        if (q.table === 'events' || q.table === 'event_registrations') {
+          const ctx = meetingCtxFromRequest(req);
+          if (q.table === 'events') syncEventsAfterWrite(ctx, q.op, changed, req.user.email);
+          else syncRegistrationsAfterWrite(ctx, q.op, changed, req.user.email);
+        }
       }
 
       // Push: nowa wiadomość / zaproszenie do służby. Fire-and-forget — nie blokuje

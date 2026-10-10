@@ -188,6 +188,7 @@ export default async function handler(req, reply) {
   const prefs = subscription.export_preferences || {};
   const ownerEmail = owner.email;
   const events = [];
+  const emittedEvents = new Set(); // wydarzenia już w kanale — spotkanie wydarzenia nie dubluje wpisu
   const now = new Date();
   const dtstamp = fmtUtc(now);
   const from = new Date(now); from.setFullYear(from.getFullYear() - 1);
@@ -217,7 +218,8 @@ export default async function handler(req, reply) {
   const wantModule = MODULE_PREFS.some((k) => prefs[k] && (calendarOk || can(`module:${k}`)));
   if ((prefs.events && calendarOk) || wantModule) {
     const { rows } = await req.db.query(
-      `SELECT id, title, description, location, date, time, end_time, end_date, event_type, module_key
+      `SELECT id, title, description, location, date, time, end_time, end_date, event_type, module_key,
+              to_jsonb(events)->>'format' AS format
          FROM events
         WHERE date >= $1 AND date <= $2
           AND COALESCE(is_archived, false) = false
@@ -235,8 +237,14 @@ export default async function handler(req, reply) {
       const d = ymd(ev.date);
       const t = ev.time ? String(ev.time).slice(0, 5) : null;
       const label = MODULE_LABEL[mk];
+      emittedEvents.add(String(ev.id));
+      // Online/hybrydowe (099): link do wydarzenia, gdzie jest „Dołącz”.
+      const online = ev.format === 'online' || ev.format === 'hybrid';
+      const evUrl = online ? `${rsvpBase(req.tenant?.subdomain || req.tenant?.slug)}/wydarzenie/${encodeURIComponent(ev.id)}` : '';
       events.push(vevent({
-        uid: uid(ev.id, 'event'), summary: ev.title || 'Wydarzenie', description: ev.description || '', location: ev.location || '',
+        uid: uid(ev.id, 'event'), summary: ev.title || 'Wydarzenie',
+        description: [ev.description || '', online ? `Spotkanie online: ${evUrl}` : ''].filter(Boolean).join('\n\n'),
+        location: ev.format === 'online' ? evUrl : (ev.location || ''),
         ...(t
           ? { dtstart: fmtLocal(d, t), dtend: ev.end_time ? fmtLocal(ev.end_date ? ymd(ev.end_date) : d, String(ev.end_time).slice(0, 5)) : fmtLocal(d, addHour(t)) }
           : { allDay: true, dtstart: d.replace(/-/g, ''), dtend: nextDay(ev.end_date ? ymd(ev.end_date) : d) }),
@@ -277,7 +285,7 @@ export default async function handler(req, reply) {
   // i odwołanych. Link w opisie prowadzi do spotkania w aplikacji.
   if (prefs.my_meetings !== false && ownerEmail) {
     const { rows } = await req.db.query(
-      `SELECT m.id, m.conversation_id, m.title, m.description, m.starts_at, m.ends_at
+      `SELECT m.id, m.conversation_id, m.title, m.description, m.starts_at, m.ends_at, m.event_id
          FROM meetings m
          JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND lower(cp.user_email) = lower($1)
          LEFT JOIN meeting_invites i ON i.meeting_id = m.id AND i.kind = 'member' AND i.email = lower($1)
@@ -288,9 +296,10 @@ export default async function handler(req, reply) {
     ).catch((err) => { if (err?.code !== '42P01') req.log?.warn?.({ err }, 'ical: meetings'); return { rows: [] }; });
     const origin = rsvpBase(req.tenant?.subdomain || req.tenant?.slug);
     for (const m of rows) {
+      if (m.event_id && emittedEvents.has(String(m.event_id))) continue;
       const url = `${origin}/komunikator?conversation=${encodeURIComponent(m.conversation_id)}`;
       events.push(vevent({
-        uid: `meeting-${m.id}@avenit.app`, summary: m.title || 'Spotkanie online',
+        uid: m.event_id ? uid(m.event_id, 'event') : `meeting-${m.id}@avenit.app`, summary: m.title || 'Spotkanie online',
         description: [m.description, `Dołącz: ${url}`].filter(Boolean).join('\n\n'), location: url,
         dtstart: fmtUtc(new Date(m.starts_at)), dtend: fmtUtc(new Date(m.ends_at)),
         dtstamp, categories: ['Spotkanie online'], status: 'CONFIRMED',

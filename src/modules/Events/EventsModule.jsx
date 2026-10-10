@@ -19,6 +19,7 @@ import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT, tr } from '../../i18n';
 import EventsListView from './EventsListView';
 import { DateInput } from '../../components/pickers';
+import { EventFormatPicker, hasPlace, isOnlineFormat } from './eventFormat';
 
 // Domyślne moduły-kalendarze w pickerze (gdy admin nic nie skonfiguruje w Ustawieniach).
 const DEFAULT_EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
@@ -95,6 +96,7 @@ export function CreateEventModal({ onClose, initial = null }) {
     time: initial?.time || '',
     end_time: initial?.end_time || '',
     location: '',
+    format: initial?.format || 'in_person',
     visKeys: [],
   }));
   const [errors, setErrors] = useState({});
@@ -132,7 +134,8 @@ export function CreateEventModal({ onClose, initial = null }) {
         date: form.date,
         time: form.time || null,
         end_time: form.end_time || null,
-        location: form.location || null,
+        location: hasPlace(form.format) ? (form.location || null) : null,
+        format: form.format || 'in_person',
         created_by: user?.email || null,
         campus_id: campusIdForInsert,
       };
@@ -209,10 +212,21 @@ export function CreateEventModal({ onClose, initial = null }) {
           </div>
         </div>
         <div>
-          <label htmlFor="new-event-location" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Lokalizacja')}</label>
-          <input id="new-event-location" value={form.location} onChange={(e) => setField('location', e.target.value)} placeholder={t('Miejsce')}
-            className={inputCls(false)} />
+          <span className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Forma')}</span>
+          <EventFormatPicker value={form.format} onChange={(f) => setField('format', f)} />
+          {isOnlineFormat(form.format) && (
+            <p className="mt-1.5 ml-1 text-xs text-gray-500 dark:text-gray-400">
+              {form.time ? t('Utworzy się spotkanie online z czatem — dołączy każdy, kto widzi wydarzenie.') : t('Ustaw godzinę, żeby utworzyć spotkanie online.')}
+            </p>
+          )}
         </div>
+        {hasPlace(form.format) && (
+          <div>
+            <label htmlFor="new-event-location" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Lokalizacja')}</label>
+            <input id="new-event-location" value={form.location} onChange={(e) => setField('location', e.target.value)} placeholder={t('Miejsce')}
+              className={inputCls(false)} />
+          </div>
+        )}
         <p className="text-xs text-gray-500 dark:text-gray-400">{t('Szczegóły (typ, opis, płatność, rejestracja, widoczność, pola własne) ustawisz na stronie wydarzenia.')}</p>
       </div>
     </Modal>

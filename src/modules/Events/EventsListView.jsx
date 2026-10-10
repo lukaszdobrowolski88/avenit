@@ -16,6 +16,7 @@ import Button from '../../components/Button';
 import { toast } from '../../lib/toast';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../components/ui/DataTable';
 import { tr, appLocale } from '../../i18n';
+import { EventFormatBadge, isOnlineFormat, hasPlace } from './eventFormat';
 
 const CalendarModule = lazy(() => import('../CalendarModule'));
 
@@ -103,7 +104,7 @@ export default function EventsListView({ onCreate } = {}) {
     setLoading(true);
     try {
       let q = supabase.from('events').select(
-        'id, title, module_key, event_type, date, time, end_time, location, is_paid, registration_required, registration_deadline, is_archived'
+        'id, title, module_key, event_type, date, time, end_time, location, is_paid, registration_required, registration_deadline, is_archived, format'
       );
       q = withCampusFilter(q);
       const { data, error } = await q;
@@ -284,12 +285,13 @@ export default function EventsListView({ onCreate } = {}) {
                       {e.is_paid && <StatusPill color={STATUS_COLORS.warning} className="shrink-0">{tr('płatne')}</StatusPill>}
                       {e.registration_required && <StatusPill color={STATUS_COLORS.info} className="shrink-0">{tr('rejestracja')}</StatusPill>}
                       {e.is_archived && <StatusPill color={STATUS_COLORS.accent} className="shrink-0">{tr('archiwum')}</StatusPill>}
+                      {isOnlineFormat(e.format) && <EventFormatBadge format={e.format} className="shrink-0" />}
                     </div>
                   </TD>
                   <TD muted className="hidden sm:table-cell">{typeLabel(e)}</TD>
                   <TD muted className="hidden md:table-cell">{moduleLabel(e.module_key)}</TD>
                   <TD muted className="hidden lg:table-cell">
-                    {e.location ? <span className="inline-flex items-center gap-1"><MapPin size={12} className="text-gray-400" aria-hidden="true" />{e.location}</span> : null}
+                    {e.location && hasPlace(e.format) ? <span className="inline-flex items-center gap-1"><MapPin size={12} className="text-gray-400" aria-hidden="true" />{e.location}</span> : null}
                   </TD>
                   <TD align="right" className="whitespace-nowrap">
                     <ArchiveButton e={e} compact />
@@ -322,8 +324,9 @@ export default function EventsListView({ onCreate } = {}) {
                   {/* Tytuł + pełna data + oznaczenia */}
                   <h4 className="font-bold text-gray-800 dark:text-gray-100 truncate">{e.title || tr('Bez tytułu')}</h4>
                   {d && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{d.toLocaleDateString(appLocale(), { weekday: 'short' })} {fmtDate(e.date)}{e.time ? `, ${fmtTime(e.time)}${e.end_time ? ` - ${fmtTime(e.end_time)}` : ''}` : ''}</p>}
-                  {(e.is_paid || e.registration_required || e.is_archived) && (
+                  {(e.is_paid || e.registration_required || e.is_archived || isOnlineFormat(e.format)) && (
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {isOnlineFormat(e.format) && <EventFormatBadge format={e.format} />}
                       {e.is_paid && <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">{tr('płatne')}</span>}
                       {e.registration_required && <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">{tr('rejestracja')}</span>}
                       {e.is_archived && <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">{tr('archiwum')}</span>}
@@ -332,7 +335,7 @@ export default function EventsListView({ onCreate } = {}) {
 
                   {/* Meta */}
                   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-xs text-gray-500 dark:text-gray-400">
-                    {e.location && <span className="flex items-center gap-1"><MapPin size={13} aria-hidden="true" /> {e.location}</span>}
+                    {e.location && hasPlace(e.format) && <span className="flex items-center gap-1"><MapPin size={13} aria-hidden="true" /> {e.location}</span>}
                     <span className="flex items-center gap-1"><Tag size={13} aria-hidden="true" /> {moduleLabel(e.module_key)}</span>
                   </div>
 

@@ -18,6 +18,7 @@ import { useCan } from '../../components/Can';
 import { useT } from '../../i18n';
 import { tr, appLocale } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { EventFormatPicker, EventFormatBadge, hasPlace, isOnlineFormat } from '../Events/eventFormat';
 import { confirmDialog } from '../../lib/dialog';
 import { eventIncludesTeam } from '../../lib/scheduleBridge';
 import CustomDatePicker from '../../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
@@ -183,6 +184,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
     start_time: event?.start_date?.includes('T') ? event.start_date.split('T')[1].substring(0,5) : '',
     end_time: event?.end_time || '',
     location: event?.location || '',
+    format: event?.format || 'in_person',
     max_participants: event?.max_participants || '',
     event_type: event?.event_type || config.defaultType,
     // Widoczność (moduł homegroups): zbiór kluczy — 'all_members', 'all_leaders', 'all_coords',
@@ -216,7 +218,8 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
       // Zapis jako jawne UTC sprawia, że odczytana godzina zawsze równa się wpisanej.
       start_date: form.start_date ? `${form.start_date}T${form.start_time || '00:00'}:00.000Z` : null,
       end_time: form.end_time || null,
-      location: form.location,
+      location: hasPlace(form.format) ? form.location : null,
+      format: form.format || 'in_person',
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,
       event_type: form.event_type || config.defaultType,
       home_group_id: null, // ustawiane niżej z wybranych kluczy (pierwsza konkretna grupa — do filtra/badge)
@@ -271,9 +274,21 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Lokalizacja')}</label>
-            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Sala główna, Kościół...')} value={form.location || ''} onChange={e => setForm({...form, location: e.target.value})} />
+            <span className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Forma')}</span>
+            <EventFormatPicker value={form.format} onChange={(f) => setForm({ ...form, format: f })} />
+            {isOnlineFormat(form.format) && (
+              <p className="mt-1.5 ml-1 text-xs text-gray-500 dark:text-gray-400">
+                {form.start_time ? t('Utworzy się spotkanie online z czatem — dołączy każdy, kto widzi wydarzenie.') : t('Ustaw godzinę, żeby utworzyć spotkanie online.')}
+              </p>
+            )}
           </div>
+
+          {hasPlace(form.format) && (
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Lokalizacja')}</label>
+              <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Sala główna, Kościół...')} value={form.location || ''} onChange={e => setForm({...form, location: e.target.value})} />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -770,7 +785,8 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                         {ev.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{ev.description}</p>}
                         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-xs text-gray-500 dark:text-gray-400">
                           {timeStr && <span className="flex items-center gap-1"><Clock size={13} /> {timeStr}{ev.end_time ? ` - ${ev.end_time}` : ''}</span>}
-                          {ev.location && <span className="flex items-center gap-1"><MapPin size={13} /> {ev.location}</span>}
+                          {isOnlineFormat(ev.format) && <EventFormatBadge format={ev.format} />}
+                          {ev.location && hasPlace(ev.format) && <span className="flex items-center gap-1"><MapPin size={13} /> {ev.location}</span>}
                           {ev.max_participants && <span className="flex items-center gap-1"><Users size={13} /> {tr('max.')} {ev.max_participants}</span>}
                           {isHomeGroups && visBadge(ev) && <span className="flex items-center gap-1 text-accent-primary"><Home size={13} /> {visBadge(ev)}</span>}
                         </div>

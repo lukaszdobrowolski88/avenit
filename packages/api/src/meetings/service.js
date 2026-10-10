@@ -42,7 +42,29 @@ export const MESSAGES = {
   notInvited: 'Nie masz zaproszenia na to spotkanie.',
   unknownMembers: 'Nie znaleziono kont: ',
   guestLimit: 'Wysłano dziś zbyt wiele zaproszeń e-mail. Spróbuj jutro albo zaproś mniej gości.',
+  fromEvent: 'To spotkanie jest częścią wydarzenia — termin, osoby i odwołanie zmienisz na stronie wydarzenia.',
 };
+
+// Odbicie spotkania z Komunikatora w Kalendarzu: wydarzenie online widoczne dla uczestników
+// spotkania (segment 'meeting'). Termin w strefie kościoła.
+export const MEETING_SEGMENTS = JSON.stringify([{ type: 'meeting', label: 'Uczestnicy spotkania' }]);
+export function eventFieldsOf(meeting) {
+  const s = M.utcToZoned(meeting.starts_at);
+  const e = M.utcToZoned(meeting.ends_at);
+  return { title: meeting.title, description: meeting.description || null, date: s.date, time: s.time, end_time: e.time, end_date: e.date !== s.date ? e.date : null };
+}
+async function mirrorEvent(db, meeting, { archive = false } = {}) {
+  if (!meeting?.event_id || meeting.source !== 'meeting') return;
+  if (archive) {
+    await db.query(`UPDATE events SET is_archived = true WHERE id::text = $1`, [meeting.event_id]);
+    return;
+  }
+  const f = eventFieldsOf(meeting);
+  await db.query(
+    `UPDATE events SET title = $2, description = $3, date = $4::date, time = $5, end_time = $6, end_date = $7::date
+      WHERE id::text = $1`,
+    [meeting.event_id, f.title, f.description, f.date, f.time, f.end_time, f.end_date]);
+}
 
 // ── Kontekst ────────────────────────────────────────────────────────────────
 export function meetingDeps(extra = {}) {
@@ -53,7 +75,10 @@ export function meetingCtxFromRequest(req) {
   return {
     db: req.db,
     tenantSlug: req.tenant?.slug,
-    tenant: { name: req.tenant?.name || '', slug: req.tenant?.slug, subdomain: req.tenant?.subdomain || req.tenant?.slug, blocked: !!req.tenantBlocked },
+    tenant: {
+      name: req.tenant?.name || '', slug: req.tenant?.slug, subdomain: req.tenant?.subdomain || req.tenant?.slug,
+      dbName: req.tenant?.db_name, blocked: !!req.tenantBlocked,
+    },
     log: req.log,
     deps: meetingDeps(),
   };
@@ -75,7 +100,7 @@ const originOf = (ctx) => rsvpBase(ctx.tenant?.subdomain || ctx.tenantSlug);
 export const guestJoinUrl = (ctx, token) => `${originOf(ctx)}${linkPath(token)}`;
 
 // Transakcja, gdy pula ją daje (pg.Pool / atrapa w testach); inaczej zapytania po kolei.
-async function withTx(db, fn) {
+export async function withTx(db, fn) {
   if (typeof db.connect !== 'function') return fn(db);
   const client = await db.connect();
   try {
@@ -103,7 +128,7 @@ export async function namesOf(db, emails) {
   return out;
 }
 
-async function activeAccounts(db, emails) {
+export async function activeAccounts(db, emails) {
   const list = [...new Set((emails || []).map(lower).filter(Boolean))];
   if (!list.length) return new Map();
   const { rows } = await db.query(
@@ -120,7 +145,7 @@ async function meetingByConversation(db, conversationId) {
   if (!UUID_RE.test(String(conversationId ?? ''))) return null;
   return one(db, `SELECT * FROM meetings WHERE conversation_id = $1`, [String(conversationId)]);
 }
-async function invitesOf(db, meetingId) {
+export async function invitesOf(db, meetingId) {
   return (await db.query(`SELECT * FROM meeting_invites WHERE meeting_id = $1 ORDER BY kind, created_at`, [meetingId])).rows;
 }
 
@@ -162,6 +187,8 @@ export async function meetingView(db, meeting, me, { manage = null } = {}) {
     ends_at: meeting.ends_at,
     kind: meeting.kind,
     status: meeting.status,
+    event_id: meeting.event_id || null,
+    source: meeting.source || 'meeting',
     guests_auto_admit: !!meeting.guests_auto_admit,
     organizer: { email: meeting.organizer_email, name: names.get(lower(meeting.organizer_email)) || meeting.organizer_email },
     can_manage: !!canEdit,
@@ -180,7 +207,7 @@ export async function meetingView(db, meeting, me, { manage = null } = {}) {
 }
 
 // ── Zapis ───────────────────────────────────────────────────────────────────
-async function addParticipants(db, conversationId, entries) {
+export async function addParticipants(db, conversationId, entries) {
   if (!entries.length) return [];
   const { rows } = await db.query(
     `INSERT INTO conversation_participants (conversation_id, user_email, role)
@@ -190,7 +217,7 @@ async function addParticipants(db, conversationId, entries) {
   return rows;
 }
 
-async function createGuestInvite(db, meeting, guest, me) {
+export async function createGuestInvite(db, meeting, guest, me) {
   const invite = await one(db,
     `INSERT INTO meeting_invites (meeting_id, kind, email, name, invited_by_email)
      VALUES ($1, 'guest', $2, $3, $4) ON CONFLICT (meeting_id, email) DO NOTHING RETURNING *`,
@@ -206,7 +233,7 @@ async function createGuestInvite(db, meeting, guest, me) {
     .then((row) => ({ invite: row, link }));
 }
 
-async function revokeGuestLinks(ctx, db, where, params) {
+export async function revokeGuestLinks(ctx, db, where, params) {
   const { rows } = await db.query(
     `UPDATE call_guest_links SET revoked_at = now(), revoked_by_email = 'meeting'
       WHERE revoked_at IS NULL AND ${where} RETURNING id`, params);
@@ -236,7 +263,7 @@ async function assertGuestsAllowed(db, people) {
   if ((await minorEmails(db, people)).size > 0) throw new ApiError(403, MESSAGES.minorsGuests, 'GUESTS_MINORS');
 }
 
-async function systemMessage(ctx, conversationId, sender, content) {
+export async function systemMessage(ctx, conversationId, sender, content) {
   try {
     const msg = await one(ctx.db,
       `INSERT INTO messages (conversation_id, sender_email, content, message_type) VALUES ($1, $2, $3, 'system') RETURNING *`,
@@ -252,7 +279,7 @@ async function systemMessage(ctx, conversationId, sender, content) {
 }
 
 // Powiadomienia członków (dzwonek + push). type 'meeting', link do rozmowy spotkania.
-async function notifyMembers(ctx, meeting, emails, { title, body }) {
+export async function notifyMembers(ctx, meeting, emails, { title, body }) {
   const list = [...new Set((emails || []).map(lower).filter(Boolean))];
   if (!list.length) return;
   const deliver = ctx.deps?.deliver || deliverNotifications;
@@ -275,7 +302,7 @@ async function notifyMembers(ctx, meeting, emails, { title, body }) {
 
 // Maile do gości: invite/update/reminder z .ics REQUEST, cancel z .ics CANCEL. Stempel wysyłki
 // dopiero po udanej wysyłce. Błąd jednego adresu nie zatrzymuje pozostałych.
-async function emailGuests(ctx, meeting, guests, variant) {
+export async function emailGuests(ctx, meeting, guests, variant) {
   if (!guests.length || typeof ctx.deps?.sendEmail !== 'function') return { sent: 0, failed: 0 };
   const names = await namesOf(ctx.db, [meeting.organizer_email]);
   const organizerName = names.get(lower(meeting.organizer_email)) || meeting.organizer_email;
@@ -320,12 +347,12 @@ async function emailGuests(ctx, meeting, guests, variant) {
 }
 
 // Wysyłka w tle (odpowiedź fn nie czeka na dostawcę poczty); w testach — await (deps.inline).
-function background(ctx, fn) {
+export function background(ctx, fn) {
   const p = Promise.resolve().then(fn).catch((err) => warn(ctx, err, 'zadanie w tle'));
   return ctx.deps?.inline ? p : undefined;
 }
 
-async function emitMeeting(ctx, meeting) {
+export async function emitMeeting(ctx, meeting) {
   await emitRows(ctx, 'meetings', 'update', [meeting]);
 }
 
@@ -363,10 +390,15 @@ export async function createMeeting(ctx, user, body = {}) {
       `INSERT INTO conversations (type, name, posting_policy, created_by) VALUES ('meeting', $1, 'everyone', $2) RETURNING *`,
       [input.title, me]);
     const parts = await addParticipants(tx, conv.id, [{ email: me, role: 'admin' }, ...members.map((e) => ({ email: e, role: 'member' }))]);
+    const f = eventFieldsOf(input);
+    const event = await one(tx,
+      `INSERT INTO events (title, description, date, time, end_time, end_date, format, visibility_segments, created_by)
+       VALUES ($1, $2, $3::date, $4, $5, $6::date, 'online', $7::jsonb, $8) RETURNING id::text AS id`,
+      [f.title, f.description, f.date, f.time, f.end_time, f.end_date, MEETING_SEGMENTS, me]);
     const meeting = await one(tx,
-      `INSERT INTO meetings (conversation_id, title, description, starts_at, ends_at, kind, organizer_email, guests_auto_admit)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [conv.id, input.title, input.description, input.starts_at, input.ends_at, input.kind, me, input.guests_auto_admit]);
+      `INSERT INTO meetings (conversation_id, title, description, starts_at, ends_at, kind, organizer_email, guests_auto_admit, event_id, source)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'meeting') RETURNING *`,
+      [conv.id, input.title, input.description, input.starts_at, input.ends_at, input.kind, me, input.guests_auto_admit, event.id]);
     await tx.query(
       `INSERT INTO meeting_invites (meeting_id, kind, email, response, responded_at, invited_by_email)
        SELECT $1, 'member', t.e, CASE WHEN t.e = $2 THEN 'accepted' ELSE 'pending' END,
@@ -404,6 +436,7 @@ export async function updateMeeting(ctx, user, body = {}) {
   const me = lower(user?.email);
   const current = await loadForManager(db, me, body);
   if (current.status === 'cancelled') throw new ApiError(410, MESSAGES.cancelled, 'MEETING_CANCELLED');
+  if (current.source === 'event') throw new ApiError(409, MESSAGES.fromEvent, 'MEETING_FROM_EVENT');
   const input = M.normalizeMeetingInput(body, { current });
   const timeChanged = input.starts_at !== new Date(current.starts_at).toISOString() || input.ends_at !== new Date(current.ends_at).toISOString();
   const titleChanged = input.title !== current.title;
@@ -472,6 +505,7 @@ export async function updateMeeting(ctx, user, body = {}) {
       const r = await createGuestInvite(tx, meeting, g, me);
       if (r) newGuests.push({ ...r.invite, token: r.link.token });
     }
+    await mirrorEvent(tx, meeting);
     return { meeting, conv, parts, removedParts, newGuests };
   });
 
@@ -512,24 +546,35 @@ export async function cancelMeeting(ctx, user, body = {}) {
   const { db } = ctx;
   const me = lower(user?.email);
   const current = await loadForManager(db, me, body);
-  if (current.status === 'cancelled') return { meeting: await meetingView(db, current, me, { manage: true }) };
+  if (current.source === 'event' && current.status === 'scheduled') throw new ApiError(409, MESSAGES.fromEvent, 'MEETING_FROM_EVENT');
+  const meeting = await cancelMeetingInternal(ctx, current, me);
+  return { meeting: await meetingView(db, meeting, me, { manage: true }) };
+}
+
+// Odwołanie (Komunikator, zmiana wydarzenia na stacjonarne, usunięcie/archiwizacja wydarzenia).
+// Idempotentne — zwraca aktualny wiersz.
+export async function cancelMeetingInternal(ctx, current, actor, { note = null } = {}) {
+  const { db } = ctx;
+  if (current.status === 'cancelled') return current;
   const meeting = await one(db,
     `UPDATE meetings SET status = 'cancelled', cancelled_at = now(), sequence = sequence + 1, updated_at = now()
       WHERE id = $1 AND status = 'scheduled' RETURNING *`, [current.id]);
-  if (!meeting) return { meeting: await meetingView(db, current, me, { manage: true }) };
+  if (!meeting) return (await meetingById(db, current.id)) || current;
   await revokeGuestLinks(ctx, db, `meeting_id = $1`, [meeting.id]);
+  await mirrorEvent(db, meeting, { archive: true });
   await emitMeeting(ctx, meeting);
-  const byName = (await namesOf(db, [me])).get(me) || me;
-  await systemMessage(ctx, meeting.conversation_id, me, `${byName} odwołał(a) spotkanie`);
-  await audit(db, me, 'meeting_cancelled', `spotkanie ${meeting.id}`);
+  const me = lower(actor);
+  const byName = (await namesOf(db, [me])).get(me) || me || 'Organizator';
+  await systemMessage(ctx, meeting.conversation_id, me || meeting.organizer_email, note || `${byName} odwołał(a) spotkanie`);
+  await audit(db, me || meeting.organizer_email, 'meeting_cancelled', `spotkanie ${meeting.id}`);
   const invites = await invitesOf(db, meeting.id);
   const members = invites.filter((i) => i.kind === 'member' && i.email !== me && i.response !== 'declined').map((i) => i.email);
   const guests = invites.filter((i) => i.kind === 'guest' && i.response !== 'declined' && i.email_sent_at);
   await background(ctx, async () => {
-    await notifyMembers(ctx, meeting, members, { title: `Odwołane: ${meeting.title}`, body: `${byName} odwołał(a) spotkanie zaplanowane na ${M.formatShort(meeting.starts_at)}` });
+    await notifyMembers(ctx, meeting, members, { title: `Odwołane: ${meeting.title}`, body: `Spotkanie online zaplanowane na ${M.formatShort(meeting.starts_at)} zostało odwołane` });
     await emailGuests(ctx, meeting, guests, 'cancel');
   });
-  return { meeting: await meetingView(db, meeting, me, { manage: true }) };
+  return meeting;
 }
 
 // meeting-respond { meeting_id, response: 'accepted'|'tentative'|'declined' } → { meeting }

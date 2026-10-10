@@ -310,6 +310,10 @@ export function eventVisibilityClause(vis, alias, push) {
           OR (seg->>'type' = 'member' AND $${pMemberTxt}::text IS NOT NULL AND jsonb_exists(seg->'values', $${pMemberTxt}::text))
           OR (seg->>'type' = 'ministry' AND jsonb_exists_any(seg->'values', $${pMin}::text[]))
           OR (seg->>'type' = 'tag' AND jsonb_exists_any(seg->'values', $${pTags}::text[]))
+          OR (seg->>'type' = 'meeting' AND $${pEmail} <> '' AND EXISTS (
+                SELECT 1 FROM meetings mt_ JOIN conversation_participants mcp_ ON mcp_.conversation_id = mt_.conversation_id
+                WHERE mt_.event_id = ${alias}.id::text AND lower(mcp_.user_email) = lower($${pEmail})
+             ))
           OR (seg->>'type' = 'invited' AND EXISTS (
                 SELECT 1 FROM rsvp_invitations ri JOIN rsvp_campaigns rc ON rc.id = ri.campaign_id
                 WHERE rc.event_id = ${alias}.id

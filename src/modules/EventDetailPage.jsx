@@ -25,6 +25,8 @@ import { useCan } from '../components/Can';
 import { DateInput, TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
 import { tr } from '../i18n';
+import OnlineMeetingCard from './Events/OnlineMeetingCard';
+import { EventFormatPicker, EventFormatBadge, JoinEventButton, hasPlace, isOnlineFormat, joinWindowOpen } from './Events/eventFormat';
 
 // Token z kryptograficznego źródła losowości (randomUUID nie ma poza bezpiecznym kontekstem/HTTP —
 // wtedy 16 bajtów z getRandomValues, dostępnego wszędzie). Nigdy Math.random (przewidywalny).
@@ -484,7 +486,8 @@ export default function EventDetailPage() {
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
             <span className="inline-flex items-center gap-1"><Calendar size={14} aria-hidden="true" /> {fmtDate(ev.date) || '—'}</span>
             <span className="inline-flex items-center gap-1"><Clock size={14} aria-hidden="true" /> {ev.time || '—'}{ev.end_time ? `–${ev.end_time}` : ''}</span>
-            {ev.location && <span className="inline-flex items-center gap-1"><MapPin size={14} aria-hidden="true" /> {ev.location}</span>}
+            {ev.location && hasPlace(ev.format) && <span className="inline-flex items-center gap-1"><MapPin size={14} aria-hidden="true" /> {ev.location}</span>}
+            <EventFormatBadge format={ev.format} />
             <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs">{moduleTitle}</span>
             {canManage && saveState !== 'idle' && (
               <span role="status" aria-live="polite" className={`inline-flex items-center gap-1 text-xs ${saveState === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
@@ -500,6 +503,9 @@ export default function EventDetailPage() {
             )}
           </div>
         </div>
+        {isOnlineFormat(ev.format) && joinWindowOpen(ev) && (
+          <JoinEventButton eventId={ev.id} title={ev.title} className="mt-2 shrink-0" />
+        )}
         {canManage && (
           <button onClick={del} className="mt-1 p-2 shrink-0 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={tr('Usuń wydarzenie')} aria-label={tr('Usuń wydarzenie')}><Trash2 size={18} /></button>
         )}
@@ -546,10 +552,22 @@ export default function EventDetailPage() {
           </p>
         )}
         <div className="mt-3">
-          <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Lokalizacja')}</label>
-          <input value={ev.location || ''} onChange={(e) => setEv({ ...ev, location: e.target.value })} onBlur={(e) => save({ location: e.target.value })} placeholder={tr('Sala główna, Kościół…')} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+          <span id="ev-format-l" className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Forma')}</span>
+          <EventFormatPicker value={ev.format || 'in_person'} onChange={(f) => save({ format: f })} disabled={!canManage} size="sm" />
         </div>
+        {hasPlace(ev.format) && (
+          <div className="mt-3">
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Lokalizacja')}</label>
+            <input value={ev.location || ''} onChange={(e) => setEv({ ...ev, location: e.target.value })} onBlur={(e) => save({ location: e.target.value })} placeholder={tr('Sala główna, Kościół…')} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+          </div>
+        )}
       </Card>
+
+      {/* Spotkanie online (wydarzenie online/hybrydowe) — „Dołącz”, czat spotkania */}
+      <OnlineMeetingCard
+        ev={ev}
+        wideAudience={!Array.isArray(ev.visibility_segments) || !ev.visibility_segments.length || ev.visibility_segments.some((s) => s?.type === 'everyone')}
+      />
 
       {/* Szczegóły (rich text) */}
       <Card icon={FileText} title={tr('Szczegóły wydarzenia')}>
