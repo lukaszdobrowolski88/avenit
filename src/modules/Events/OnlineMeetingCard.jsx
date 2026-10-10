@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Video, MessageSquare, AlertTriangle, Clock, Users } from 'lucide-react';
+import { Video, MessageSquare, AlertTriangle, Clock, Users, Mail, X, Check } from 'lucide-react';
+import { toast } from '../../lib/toast';
+import { parseGuestInput } from '../Komunikator/meetings/meetingLogic';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { tr } from '../../i18n';
@@ -10,7 +12,90 @@ import { JoinEventButton, isOnlineFormat } from './eventFormat';
 // Karta „Spotkanie online” na stronie wydarzenia online/hybrydowego: stan spotkania, „Dołącz”,
 // czat spotkania. Spotkanie zakłada serwer po zapisie wydarzenia (chwilę po zmianie formatu/godziny),
 // więc karta odświeża się po zmianie tych pól i na realtime tabeli meetings.
-export default function OnlineMeetingCard({ ev, wideAudience = false }) {
+const RESPONSE = { accepted: 'Bierze udział', tentative: 'Może', declined: 'Nie bierze udziału', pending: 'Bez odpowiedzi' };
+
+// Goście spoza aplikacji (e-mail): osobisty link + plik kalendarza. Adres osoby z kontem trafia
+// do uczestników spotkania (serwer). Tylko dla osób, które mogą edytować wydarzenie.
+function EventGuests({ eventId }) {
+  const [guests, setGuests] = useState(null);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const call = useCallback(async (body = {}) => {
+    const res = await callFn('event-meeting-guests', { event_id: eventId, ...body });
+    setGuests(res.guests || []);
+    return res;
+  }, [eventId]);
+  useEffect(() => { call().catch(() => setGuests([])); }, [call]);
+
+  const add = async () => {
+    const { emails, invalid } = parseGuestInput(text);
+    if (invalid.length) { setError(tr('Nieprawidłowy adres e-mail: {email}', { email: invalid[0] })); return; }
+    if (!emails.length) return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await call({ add: emails.map((email) => ({ email })) });
+      setText('');
+      if (res.added) toast.success(tr('Zaproszenia wysłane: {n}', { n: res.added }));
+      if (res.members_added) toast.info(tr('Osoby z kontem w aplikacji dodano jako uczestników: {n}', { n: res.members_added }));
+    } catch (err) {
+      setError(err?.context?.error || err?.message || tr('Nie udało się wysłać zaproszeń.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const remove = async (g) => {
+    try {
+      await call({ remove: [g.id] });
+      toast.success(tr('Zaproszenie wycofane'));
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się wycofać zaproszenia.') });
+    }
+  };
+
+  const field = 'w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm';
+  return (
+    <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{tr('Goście spoza aplikacji')}</h3>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-2">{tr('Każdy dostanie e-mail z osobistym linkiem i plikiem do kalendarza. Konto nie jest potrzebne.')}</p>
+      <div className="flex gap-2">
+        <div className="relative flex-1 min-w-0">
+          <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+          <input type="email" multiple inputMode="email" value={text} onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+            placeholder={tr('adres@przyklad.pl')} aria-label={tr('Adresy e-mail gości')} className={field} />
+        </div>
+        <button type="button" onClick={add} disabled={busy || !text.trim()}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400">
+          {tr('Zaproś')}
+        </button>
+      </div>
+      {error && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {guests && guests.length > 0 && (
+        <ul className="mt-3 space-y-1" aria-label={tr('Zaproszeni goście')}>
+          {guests.map((g) => (
+            <li key={g.id} className="flex items-center gap-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 px-3 py-2 text-sm">
+              <span className="flex-1 min-w-0 truncate text-gray-900 dark:text-white">
+                {g.name} <span className="text-gray-500 dark:text-gray-400">· {g.email}</span>
+              </span>
+              <span className="shrink-0 inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                {g.email_sent && <Check size={12} aria-label={tr('E-mail wysłany')} />} {tr(RESPONSE[g.response] || RESPONSE.pending)}
+              </span>
+              <button type="button" onClick={() => remove(g)} aria-label={tr('Wycofaj zaproszenie: {name}', { name: g.email })} title={tr('Wycofaj zaproszenie')}
+                className="shrink-0 p-1 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-gray-700">
+                <X size={14} aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export default function OnlineMeetingCard({ ev, wideAudience = false, canManage = false }) {
   const calls = useCalls();
   const [state, setState] = useState(null); // odpowiedź event-meeting
   const [error, setError] = useState(false);
@@ -95,6 +180,7 @@ export default function OnlineMeetingCard({ ev, wideAudience = false }) {
             {tr('Wydarzenie widzi cały kościół. Rozmowa wideo działa wygodnie do ok. 30 osób z kamerami — przy większym gronie rozważ transmisję.')}
           </p>
         )}
+        {canManage && <EventGuests eventId={ev.id} />}
       </div>
     );
   }

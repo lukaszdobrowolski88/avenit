@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as M from '../src/meetings/logic.js';
 import { createMeeting, updateMeeting, cancelMeeting, getMeeting } from '../src/meetings/service.js';
-import { syncEventMeeting, syncEventsAfterWrite, syncRegistrationsAfterWrite, eventMeeting } from '../src/meetings/events.js';
+import { syncEventMeeting, syncEventsAfterWrite, syncRegistrationsAfterWrite, eventMeeting, eventMeetingGuests, sweepOrphanEventMeetings } from '../src/meetings/events.js';
 import { eventVisibilityClause } from '../src/dataapi/querybuilder.js';
 import { loadVisibilityContext } from '../src/dataapi/eventVisibility.js';
 
@@ -109,14 +109,16 @@ before(async () => {
     CREATE TABLE rsvp_campaigns (id serial PRIMARY KEY, event_id int);
     CREATE TABLE rsvp_invitations (id serial PRIMARY KEY, campaign_id int, member_id int, email text);
   `);
-  await db.query(`INSERT INTO app_roles (key, is_admin) VALUES ('superadmin', true), ('czlonek', false), ('gosc', false)`);
+  await db.query(`INSERT INTO app_roles (key, is_admin) VALUES ('superadmin', true), ('czlonek', false), ('gosc', false), ('lider', false)`);
   await db.query(`INSERT INTO permission_grants (role, capability, allowed) VALUES
-    ('czlonek', 'module:calendar', true), ('czlonek', 'res:events:read', true)`);
+    ('czlonek', 'module:calendar', true), ('czlonek', 'res:events:read', true),
+    ('lider', 'module:calendar', true), ('lider', 'res:events:read', true), ('lider', 'res:events:update', true)`);
   await db.query(`INSERT INTO app_users (email, full_name, role, member_id, is_super_admin) VALUES
     ('jan@x.pl', 'Jan Kowalski', 'czlonek', 1, false), ('ola@x.pl', 'Ola Nowak', 'czlonek', 2, false),
-    ('boss@x.pl', 'Pastor', 'superadmin', 3, true), ('bez@x.pl', 'Bez modułu', 'gosc', 4, false), ('obcy@x.pl', 'Obcy', 'czlonek', 5, false)`);
+    ('boss@x.pl', 'Pastor', 'superadmin', 3, true), ('bez@x.pl', 'Bez modułu', 'gosc', 4, false), ('obcy@x.pl', 'Obcy', 'czlonek', 5, false),
+    ('lider@x.pl', 'Lider', 'lider', 6, false)`);
   await db.query(`INSERT INTO members (id, email, birth_date) VALUES (1, 'jan@x.pl', '1980-01-01'), (2, 'ola@x.pl', '1990-01-01'),
-    (3, 'boss@x.pl', '1970-01-01'), (4, 'bez@x.pl', '1970-01-01'), (5, 'obcy@x.pl', '1970-01-01')`);
+    (3, 'boss@x.pl', '1970-01-01'), (4, 'bez@x.pl', '1970-01-01'), (5, 'obcy@x.pl', '1970-01-01'), (6, 'lider@x.pl', '1970-01-01')`);
   for (const f of ['096_calls.sql', '097_call_guest_links.sql', '098_meetings.sql', '099_event_format.sql']) {
     const sql = fs.readFileSync(new URL(`../db/tenant-migrations/${f}`, import.meta.url), 'utf8');
     await pg.exec(sql);
@@ -262,4 +264,45 @@ test('spotkanie wydarzenia: w Komunikatorze bez edycji/odwołania (zmienia się 
   assert.deepEqual([view.meeting.source, view.meeting.event_id], ['event', id]);
   await assert.rejects(updateMeeting(h.ctx, U('jan'), { meeting_id: m.id, title: 'x' }), (e) => e.status === 409 && e.code === 'MEETING_FROM_EVENT');
   await assert.rejects(cancelMeeting(h.ctx, U('jan'), { meeting_id: m.id }), (e) => e.code === 'MEETING_FROM_EVENT');
+});
+
+test('sprzątanie: spotkanie usuniętego wydarzenia (usunięcie bez zwróconego wiersza) zostaje odwołane', { skip: skipDb }, async () => {
+  const h = harness();
+  const id = await newEvent({ title: 'Do usunięcia', date: future(6).date, time: '18:00', format: 'online', created_by: 'jan@x.pl' });
+  await syncEventMeeting(h.ctx, id, 'jan@x.pl');
+  const keep = await newEvent({ title: 'Zostaje', date: future(6).date, time: '19:00', format: 'hybrid', created_by: 'jan@x.pl' });
+  await syncEventMeeting(h.ctx, keep, 'jan@x.pl');
+  await db.query(`DELETE FROM events WHERE id::text = $1`, [id]); // bez hooka — jak delete z przeglądarki
+  const n = await sweepOrphanEventMeetings(h.ctx);
+  assert.ok(n >= 1);
+  assert.equal((await q1(`SELECT status FROM meetings WHERE event_id = $1`, [id]))[0].status, 'cancelled');
+  assert.equal((await q1(`SELECT status FROM meetings WHERE event_id = $1`, [keep]))[0].status, 'scheduled', 'działające wydarzenie bez zmian');
+  const msg = await q1(`SELECT content FROM messages WHERE conversation_id = (SELECT conversation_id FROM meetings WHERE event_id = $1) ORDER BY created_at DESC LIMIT 1`, [id]);
+  assert.match(msg[0].content, /Wydarzenie usunięte/);
+  assert.equal(await sweepOrphanEventMeetings(h.ctx), 0, 'drugi przebieg — nic');
+});
+
+test('goście wydarzenia e-mailem: tylko edytujący wydarzenie; konto → uczestnik, adres → gość z linkiem; usunięcie gościa', { skip: skipDb }, async () => {
+  const h = harness();
+  const id = await newEvent({ title: 'Webinar', date: future(7).date, time: '20:00', format: 'online', created_by: 'lider@x.pl' });
+  await assert.rejects(eventMeetingGuests(h.ctx, U('ola'), { event_id: id, add: ['g@y.pl'] }), (e) => e.status === 403 && e.code === 'EVENT_FORBIDDEN');
+  const out = await eventMeetingGuests(h.ctx, U('lider'), { event_id: id, add: [{ email: 'Gosia@Y.pl', name: 'Gosia' }, 'obcy@x.pl'] });
+  assert.equal(out.added, 1);
+  assert.equal(out.members_added, 1);
+  assert.deepEqual(out.guests.map((g) => [g.email, g.name, g.response, g.email_sent]), [['gosia@y.pl', 'Gosia', 'pending', true]]);
+  assert.equal(h.emails.length, 1);
+  assert.equal(h.emails[0].subject, 'Zaproszenie: Webinar');
+  assert.ok(h.notified.some((n) => n.user_email === 'obcy@x.pl' && n.type === 'meeting'));
+  const [m] = await q1(`SELECT * FROM meetings WHERE event_id = $1`, [id]);
+  assert.ok((await q1(`SELECT 1 FROM conversation_participants WHERE conversation_id = $1 AND user_email = 'obcy@x.pl'`, [m.conversation_id])).length);
+  await assert.rejects(eventMeetingGuests(h.ctx, U('lider'), { event_id: id, add: ['zly-adres'] }), (e) => e.code === 'BAD_EMAIL');
+  // Usunięcie gościa: link wyłączony, mail z odwołaniem.
+  h.emails.length = 0;
+  const left = await eventMeetingGuests(h.ctx, U('lider'), { event_id: id, remove: [out.guests[0].id] });
+  assert.deepEqual(left.guests, []);
+  assert.equal((await q1(`SELECT count(*)::int AS n FROM call_guest_links WHERE meeting_id = $1 AND revoked_at IS NULL`, [m.id]))[0].n, 0);
+  assert.equal(h.emails[0].subject, 'Odwołane: Webinar');
+  // Stacjonarne — nie ma do czego zapraszać.
+  const plain = await newEvent({ title: 'Na miejscu', date: future(7).date, time: '10:00', created_by: 'lider@x.pl' });
+  await assert.rejects(eventMeetingGuests(h.ctx, U('lider'), { event_id: plain, add: ['g@y.pl'] }), (e) => e.code === 'NOT_ONLINE');
 });

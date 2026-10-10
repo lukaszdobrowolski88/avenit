@@ -122,6 +122,7 @@ const MODULES = [
   'meeting-guest-rsvp',
   // Wydarzenia online/hybrydowe (099): stan spotkania wydarzenia i „Dołącz” wg widoczności wydarzenia.
   'event-meeting',
+  'event-meeting-guests',
 ];
 
 export async function registerFunctions(app) {
