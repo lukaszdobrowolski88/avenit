@@ -46,30 +46,72 @@ function leaveOnUnload(body) {
   } catch { /* ignore */ }
 }
 
-// Podgląd kamery i mikrofonu przed wejściem (strumień zwalniany przy wyjściu z ekranu).
-export function DevicePreview({ prefs, onToggle, name }) {
-  const videoRef = useRef(null);
+// Kamera i mikrofon gościa — JEDEN strumień na całą wizytę (podgląd, poczekalnia, rozmowa).
+// Wcześniej każdy przełącznik i każde przejście ekranu pobierało urządzenia od nowa, a przy wejściu
+// do rozmowy jeszcze raz — Safari pytał o zgodę kilka razy. Przełączniki tylko wyłączają ścieżkę
+// (track.enabled); kamerę dociągamy dopiero, gdy gość ją włączy, a przy wejściu z wyłączoną kamerą
+// zatrzymujemy ją (gaśnie lampka). active=false — zwolnienie wszystkiego.
+export function useGuestMedia(prefs, active) {
   const [stream, setStream] = useState(null);
   const [failure, setFailure] = useState(null);
+  const streamRef = useRef(null);
+  const busyRef = useRef(false);
+
+  const stopAll = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setStream(null);
+  }, []);
 
   useEffect(() => {
+    if (!active) { stopAll(); return; }
     const md = typeof navigator !== 'undefined' ? navigator.mediaDevices : null;
-    if (!md?.getUserMedia || (!prefs.cam && !prefs.mic)) { setStream(null); return undefined; }
-    let cancelled = false;
-    let own = null;
-    md.getUserMedia({ video: prefs.cam ? { facingMode: 'user' } : false, audio: !!prefs.mic })
+    if (!md?.getUserMedia || busyRef.current) return;
+    const cur = streamRef.current;
+    const live = (kind) => cur?.getTracks().some((t) => t.kind === kind && t.readyState !== 'ended');
+    const needAudio = prefs.mic && !live('audio');
+    const needVideo = prefs.cam && !live('video');
+    if (!needAudio && !needVideo) return;
+    busyRef.current = true;
+    md.getUserMedia({ audio: needAudio, video: needVideo ? { facingMode: 'user' } : false })
       .then((s) => {
-        if (cancelled) { s.getTracks().forEach((t) => t.stop()); return; }
-        own = s;
-        setStream(s);
+        const next = new MediaStream([...(streamRef.current?.getTracks().filter((t) => t.readyState !== 'ended') || []), ...s.getTracks()]);
+        streamRef.current = next;
+        setStream(next);
         setFailure(null);
       })
-      .catch((err) => { if (!cancelled) { setStream(null); setFailure(mediaFailure(null, err)); } });
-    return () => {
-      cancelled = true;
-      own?.getTracks().forEach((t) => t.stop());
-    };
-  }, [prefs.cam, prefs.mic]);
+      .catch((err) => setFailure(mediaFailure(null, err)))
+      .finally(() => { busyRef.current = false; });
+  }, [active, prefs.mic, prefs.cam, stopAll]);
+
+  // Przełączniki: bez ponownego pobierania urządzeń.
+  useEffect(() => {
+    streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = !!prefs.mic; });
+    streamRef.current?.getVideoTracks().forEach((t) => { t.enabled = !!prefs.cam; });
+  }, [prefs.mic, prefs.cam, stream]);
+
+  useEffect(() => () => stopAll(), [stopAll]);
+
+  // Ścieżki do rozmowy. Wyłączona kamera — zatrzymana (lampka gaśnie), mikrofon zostaje (wyciszony).
+  const takeTracks = useCallback(() => {
+    const s = streamRef.current;
+    const audio = s?.getAudioTracks().find((t) => t.readyState !== 'ended') || null;
+    let video = s?.getVideoTracks().find((t) => t.readyState !== 'ended') || null;
+    if (audio) audio.enabled = true; // wyciszenie przejmuje LiveKit (setMicrophoneEnabled(false))
+    if (video && !prefs.cam) { video.stop(); video = null; }
+    if (video) video.enabled = true;
+    // Ścieżki należą teraz do rozmowy — LiveKit zatrzyma je po wyjściu.
+    streamRef.current = null;
+    setStream(null);
+    return { audio, video };
+  }, [prefs.cam]);
+
+  return { stream, failure, takeTracks };
+}
+
+// Podgląd kamery i mikrofonu przed wejściem (strumień z useGuestMedia).
+export function DevicePreview({ prefs, onToggle, name, stream = null, failure = null }) {
+  const videoRef = useRef(null);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -203,6 +245,10 @@ export default function GuestCallPage() {
 
   const onDisconnectedRef = useRef(null);
   const room = useCallRoom({ onDisconnected: () => onDisconnectedRef.current?.() });
+  // Urządzenia tylko na ekranach przed rozmową (formularz, poczekalnia) — jedno pytanie o zgodę.
+  const media = useGuestMedia(prefs, phase === 'form' || phase === 'waiting');
+  const mediaRef = useRef(media);
+  mediaRef.current = media;
   const roomRef = useRef(room);
   roomRef.current = room;
 
@@ -234,9 +280,11 @@ export default function GuestCallPage() {
   }, [token, finish]);
 
   const connect = useCallback(async (res) => {
+    // Ścieżki z podglądu przejmuje rozmowa (przed zmianą ekranu — inaczej zostałyby zwolnione).
+    const tracks = mediaRef.current.takeTracks();
     setPhase('connecting');
     try {
-      await roomRef.current.connect({ url: res.url, token: res.token, video: prefsRef.current.cam, audio: prefsRef.current.mic, canPublish: true });
+      await roomRef.current.connect({ url: res.url, token: res.token, video: prefsRef.current.cam, audio: prefsRef.current.mic, canPublish: true, tracks });
       if (phaseRef.current !== 'connecting') return;
       setStartedAt(Date.now());
       setPhase('call');
@@ -397,7 +445,7 @@ export default function GuestCallPage() {
         <div className="gc-head">
           <h1 className="gc-title">{heading}</h1>
         </div>
-        <DevicePreview prefs={prefs} onToggle={togglePref} name={name} />
+        <DevicePreview prefs={prefs} onToggle={togglePref} name={name} stream={media.stream} failure={media.failure} />
         <div className="gc-wait" role="status" aria-live="polite">
           <span className="gc-wait-dot" aria-hidden="true" />
           <div>
@@ -425,7 +473,7 @@ export default function GuestCallPage() {
             <p className="gc-sub">{tr('Zaproszono Cię do rozmowy audio/wideo. Podaj imię, sprawdź kamerę i mikrofon, a potem poproś o dołączenie.')}</p>
           )}
         </div>
-        <DevicePreview prefs={prefs} onToggle={togglePref} name={name} />
+        <DevicePreview prefs={prefs} onToggle={togglePref} name={name} stream={media.stream} failure={media.failure} />
         <form className="gc-form" onSubmit={submit} noValidate>
           <label className="gc-label" htmlFor="gc-name">{tr('Twoje imię')}</label>
           <input

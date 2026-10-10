@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 
 // ── Atrapy: baza (Data API), funkcje serwera, realtime, LiveKit, dzwonek ──────────
-const h = vi.hoisted(() => ({ rooms: [], handlers: [], db: {}, fns: {} }));
+const h = vi.hoisted(() => ({ rooms: [], handlers: [], db: {}, fns: {}, bothFails: false }));
 
 vi.mock('../../../lib/supabase', () => {
   const result = (table, single) => {
@@ -72,6 +72,11 @@ vi.mock('livekit-client', () => {
         getTrackPublication: () => undefined,
         setMicrophoneEnabled: vi.fn(async function setMic(v) { this.isMicrophoneEnabled = v; }),
         setCameraEnabled: vi.fn(async function setCam(v) { this.isCameraEnabled = v; }),
+        // Jedno getUserMedia na oba urządzenia (jedno okienko zgody w Safari).
+        enableCameraAndMicrophone: vi.fn(async function both() {
+          if (h.bothFails) throw Object.assign(new Error('NotAllowed'), { name: 'NotAllowedError' });
+          this.isMicrophoneEnabled = true; this.isCameraEnabled = true;
+        }),
         setScreenShareEnabled: vi.fn(async () => {}),
       };
       this.connect = vi.fn(async () => {});
@@ -224,10 +229,26 @@ describe('CallProvider — maszyna stanów z atrapą LiveKit', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Połączenie wideo' }));
     await waitFor(() => expect(screen.getByTestId('phase').textContent).toBe('outgoing'));
     expect(supabase.functions.invoke).toHaveBeenCalledWith('call-start', expect.objectContaining({ body: { conversation_id: 'c1', kind: 'video' } }));
-    expect(h.rooms[0].localParticipant.setCameraEnabled).toHaveBeenCalledWith(true);
+    // Wideo: jedno pytanie o kamerę i mikrofon naraz (nie dwa osobne okienka zgody).
+    expect(h.rooms[0].localParticipant.enableCameraAndMicrophone).toHaveBeenCalledTimes(1);
+    expect(h.rooms[0].localParticipant.setCameraEnabled).not.toHaveBeenCalled();
+    expect(h.rooms[0].localParticipant.setMicrophoneEnabled).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Anuluj połączenie' })).toBeTruthy();
     await act(async () => { h.rooms[0].emit('participantConnected', { identity: 'ola@x.pl', name: 'Ola' }); });
     await waitFor(() => expect(screen.getByTestId('phase').textContent).toBe('active'));
+  });
+
+  it('wideo, gdy jednego urządzenia brak: osobno mikrofon i kamera (działa chociaż jedno)', async () => {
+    h.bothFails = true;
+    h.fns['call-start'] = { data: { token: 'tok', url: 'wss://rtc.test', room: 'r', can_publish: true, call: ringRow({ id: 'k8', started_by_email: 'ja@x.pl' }) }, error: null };
+    const conversation = { id: 'c1', type: 'direct', displayName: 'Ola Nowak', participants: [], posting_policy: 'everyone' };
+    renderApp(<CallButtons conversation={conversation} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Połączenie wideo' }));
+    await waitFor(() => expect(screen.getByTestId('phase').textContent).toBe('outgoing'));
+    const lp = h.rooms[0].localParticipant;
+    expect(lp.setMicrophoneEnabled).toHaveBeenCalledWith(true);
+    expect(lp.setCameraEnabled).toHaveBeenCalledWith(true);
+    h.bothFails = false;
   });
 
   it('poczekalnia gości: prośba w mojej rozmowie (realtime) → „Wpuść” → call-guest-admit, karta znika', async () => {
