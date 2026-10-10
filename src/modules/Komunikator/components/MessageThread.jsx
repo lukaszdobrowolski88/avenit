@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { Loader, MessageSquare, Upload, ChevronDown, Megaphone, Ban } from 'lucide-react';
+import { Loader, MessageSquare, Upload, ChevronDown, Megaphone, Ban, AlertTriangle, RefreshCw } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import ConversationHeader from './ConversationHeader';
@@ -75,7 +75,7 @@ export default function MessageThread({
   const initialUnreadRef = useRef(conversation?.unreadCount || 0);
 
   const {
-    messages, loading, loadingMore, hasMore, quoted,
+    messages, loading, loadingMore, hasMore, quoted, error: loadError, refetch,
     sendMessage, editMessage, deleteMessage, loadMore, loadSince, loadUntil,
     addMessage, applyRemoteUpdate, removeMessageLocal, forwardMessage
   } = useMessages(conversation?.id, userEmail);
@@ -521,6 +521,19 @@ export default function MessageThread({
               <Loader size={24} className="animate-spin text-gray-600 dark:text-gray-300" />
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Ładowanie wiadomości...')}</p>
+          </div>
+        ) : messages.length === 0 && loadError ? (
+          // Nieudane wczytanie (np. chwilowy restart serwera) — wcześniej wyglądało jak „Brak wiadomości”.
+          <div className="flex flex-col items-center justify-center h-full text-center" role="alert">
+            <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+              <AlertTriangle size={32} className="text-gray-500 dark:text-gray-400" aria-hidden="true" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{tr('Nie udało się wczytać wiadomości')}</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mb-4">{tr('Sprawdź internet i spróbuj ponownie.')}</p>
+            <button type="button" onClick={() => refetch()}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400">
+              <RefreshCw size={15} aria-hidden="true" /> {tr('Spróbuj ponownie')}
+            </button>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">

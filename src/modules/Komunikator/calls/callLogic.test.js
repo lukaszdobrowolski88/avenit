@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  callReducer, initialCallState, shouldRing, isCallsDisabledError, callMessageView,
+  callReducer, initialCallState, shouldRing, isCallsDisabledError, isCallGoneError, callMessageView,
   formatCallDuration, formatClock, arrangeTiles, paginate, pageSizeFor, gridColumns, readCallsDisabled, writeCallsDisabled,
 } from './callLogic';
 
@@ -62,6 +62,12 @@ describe('dzwonek', () => {
 });
 
 describe('błędy i pamięć „wyłączone”', () => {
+  it('410 CALL_ENDED = rozmowa już się zakończyła', () => {
+    expect(isCallGoneError({ status: 410, context: { code: 'CALL_ENDED' } })).toBe(true);
+    expect(isCallGoneError({ code: 'CALL_ENDED' })).toBe(true);
+    expect(isCallGoneError({ status: 500 })).toBe(false);
+    expect(isCallGoneError(null)).toBe(false);
+  });
   it('503 calls_disabled', () => {
     expect(isCallsDisabledError({ status: 503, context: { code: 'calls_disabled' } })).toBe(true);
     expect(isCallsDisabledError({ status: 503, message: 'calls_disabled' })).toBe(true);
@@ -98,6 +104,12 @@ describe('wiadomość „połączenie”', () => {
     expect(live).toMatchObject({ live: true, title: 'Rozmowa grupowa trwa', canCallBack: false });
     const ended = callMessageView(msg({ call_id: 'k', status: 'active', is_group: true }), 'ja@x.pl', t, { live: false });
     expect(ended).toMatchObject({ live: false, title: 'Rozmowa grupowa' });
+  });
+  it('ostateczny status wiadomości wygrywa z nieaktualnym „trwa” dostawcy', () => {
+    const v = callMessageView(msg({ call_id: 'k', kind: 'video', status: 'missed', started_by_email: 'ja@x.pl' }), 'ja@x.pl', t, { live: true });
+    expect(v).toMatchObject({ live: false, tone: 'missed', canCallBack: true });
+    // Bez statusu w metadanych dostawca nadal rozstrzyga.
+    expect(callMessageView(msg({ call_id: 'k' }), 'ja@x.pl', t, { live: true }).live).toBe(true);
   });
   it('czas trwania i zegar', () => {
     expect(formatCallDuration(42, t)).toBe('42 s');

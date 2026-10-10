@@ -622,16 +622,80 @@ export function createApiClient({
   let wsHandlers = []; // { table, event, cb, channelName }
   let wsReconnectTimer = null;
   let wsEverOpened = false; // po ponownym połączeniu klient powinien dociągnąć zmiany, które przegapił
+  // Sprawdzanie, czy gniazdo żyje: po uśpieniu komputera albo zmianie sieci WebSocket potrafi
+  // zostać „otwarty”, choć nic już nie przychodzi (bez onclose) — wtedy ekrany pokazywały stary
+  // stan (np. „Trwa połączenie — dołącz” po nieodebranym połączeniu). Ping co 25 s; brak pong
+  // w 10 s = gniazdo martwe → nowe połączenie (i zdarzenie reconnect, które dociąga zmiany).
+  const WS_PING_MS = 25000;
+  const WS_PONG_TIMEOUT_MS = 10000;
+  let wsPingTimer = null;
+  let wsPongTimer = null;
+  let wsWakeBound = false;
+
+  function stopHeartbeat() {
+    clearInterval(wsPingTimer);
+    clearTimeout(wsPongTimer);
+    wsPingTimer = null;
+    wsPongTimer = null;
+  }
+
+  function scheduleReconnect(delay = 3000) {
+    if (!wsHandlers.length || wsReconnectTimer) return;
+    wsReconnectTimer = setTimeout(() => {
+      wsReconnectTimer = null;
+      ensureWs();
+    }, delay);
+  }
+
+  // Porzuć martwe gniazdo od razu (close() na zerwanym połączeniu potrafi czekać długo na onclose).
+  function dropSocket(sock) {
+    if (!sock) return;
+    sock.onopen = null;
+    sock.onmessage = null;
+    sock.onclose = null;
+    sock.onerror = null;
+    try { sock.close(); } catch {}
+    if (ws === sock) ws = null;
+    stopHeartbeat();
+    scheduleReconnect(0);
+  }
+
+  function pingNow() {
+    const sock = ws;
+    if (!sock || sock.readyState !== 1 || wsPongTimer) return;
+    try { sock.send(JSON.stringify({ type: 'ping' })); } catch { dropSocket(sock); return; }
+    wsPongTimer = setTimeout(() => { wsPongTimer = null; dropSocket(sock); }, WS_PONG_TIMEOUT_MS);
+  }
+
+  // Powrót do karty / sieci: sprawdź gniazdo od razu, zamiast czekać na kolejny ping.
+  function bindWake() {
+    if (wsWakeBound || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+    wsWakeBound = true;
+    const wake = () => {
+      if (!wsHandlers.length) return;
+      if (ws && ws.readyState === 1) pingNow();
+      else if (!ws) ensureWs();
+    };
+    window.addEventListener('online', wake);
+    window.addEventListener('focus', wake);
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wake(); });
+    }
+  }
 
   function ensureWs() {
     if (!realtime) return null;
     if (ws && (ws.readyState === 0 || ws.readyState === 1)) return ws;
     const origin = storageOrigin().replace(/^http/, 'ws');
     if (!origin || !session?.access_token) return null;
-    ws = new WebSocket(`${origin}/api/realtime?token=${encodeURIComponent(session.access_token)}`);
-    ws.onopen = () => {
+    const sock = new WebSocket(`${origin}/api/realtime?token=${encodeURIComponent(session.access_token)}`);
+    ws = sock;
+    bindWake();
+    sock.onopen = () => {
       const tables = new Set(wsHandlers.map((h) => h.table));
-      for (const table of tables) ws.send(JSON.stringify({ type: 'subscribe', table }));
+      for (const table of tables) sock.send(JSON.stringify({ type: 'subscribe', table }));
+      stopHeartbeat();
+      wsPingTimer = setInterval(pingNow, WS_PING_MS);
       // Ponowne połączenie (sen komputera, zerwana sieć) — zdarzenia z przerwy przepadły; ekrany
       // (np. tablice zadań) nasłuchują i odświeżają dane. W RN bez window.dispatchEvent — pomijamy.
       if (wsEverOpened && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
@@ -639,9 +703,10 @@ export function createApiClient({
       }
       wsEverOpened = true;
     };
-    ws.onmessage = (evt) => {
+    sock.onmessage = (evt) => {
       try {
         const msg = JSON.parse(evt.data);
+        if (msg.type === 'pong') { clearTimeout(wsPongTimer); wsPongTimer = null; return; }
         if (msg.type !== 'postgres_changes') return;
         for (const h of wsHandlers) {
           if (h.table !== msg.table && h.table !== '*') continue;
@@ -650,16 +715,12 @@ export function createApiClient({
         }
       } catch {}
     };
-    ws.onclose = () => {
-      ws = null;
-      if (wsHandlers.length && !wsReconnectTimer) {
-        wsReconnectTimer = setTimeout(() => {
-          wsReconnectTimer = null;
-          ensureWs();
-        }, 3000);
-      }
+    sock.onclose = () => {
+      if (ws === sock) ws = null;
+      stopHeartbeat();
+      scheduleReconnect(3000);
     };
-    return ws;
+    return sock;
   }
 
   const noopChannel = {

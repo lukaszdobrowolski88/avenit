@@ -12,6 +12,20 @@ import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
 
+// Czy menu „⋯” zmieści się pod przyciskiem w przewijanej liście (inaczej otwieramy je nad nim).
+const MENU_HEIGHT = 140;
+function opensUpward(button) {
+  try {
+    const r = button.getBoundingClientRect();
+    let bottom = window.innerHeight;
+    for (let el = button.parentElement; el; el = el.parentElement) {
+      const oy = window.getComputedStyle(el).overflowY;
+      if (oy === 'auto' || oy === 'scroll') { bottom = Math.min(bottom, el.getBoundingClientRect().bottom); break; }
+    }
+    return bottom - r.bottom < MENU_HEIGHT && r.top > MENU_HEIGHT;
+  } catch { return false; }
+}
+
 export default function ConversationList({
   conversations,
   selectedId,
@@ -32,6 +46,7 @@ export default function ConversationList({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'unread' | 'starred' | 'archived' (jak w aplikacji)
   const [menuFor, setMenuFor] = useState(null); // id rozmowy z otwartym menu „⋯”
+  const [menuUp, setMenuUp] = useState(false); // menu nad przyciskiem (wiersz przy dolnej krawędzi listy)
   const menuRef = useRef(null);
 
   // Zamknij menu „⋯” po kliknięciu poza nim albo klawiszem Escape
@@ -141,7 +156,8 @@ export default function ConversationList({
     const menuItemClass = 'flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 focus-visible:bg-gray-50 dark:focus-visible:bg-gray-800 outline-none transition text-left';
 
     return (
-      <div key={conv.id} className="relative group">
+      // Otwarte menu: wiersz ponad kolejnymi (bez z-index następne wiersze malowały się NA menu).
+      <div key={conv.id} className={`relative group ${menuOpen ? 'z-20' : ''}`}>
         {/* Wiersz rozmowy = przycisk (klawiatura: Tab + Enter) */}
         <button
           type="button"
@@ -182,7 +198,8 @@ export default function ConversationList({
                 )}
               </div>
               {last && (
-                <span className={`text-[10px] flex-shrink-0 ${hasUnread ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-400 dark:text-gray-500 font-medium'}`}>
+                <span className={`text-[10px] flex-shrink-0 transition-opacity ${hasUnread ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-400 dark:text-gray-500 font-medium'}
+                  ${canManage ? (menuOpen ? 'lg:opacity-0' : 'lg:group-hover:opacity-0 lg:group-focus-within:opacity-0') : ''}`}>
                   {formatMessageDate(last.created_at)}
                 </span>
               )}
@@ -215,7 +232,11 @@ export default function ConversationList({
           <div ref={menuOpen ? menuRef : undefined} className="absolute right-2 top-1/2 -translate-y-1/2">
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); setMenuFor(menuOpen ? null : conv.id); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!menuOpen) setMenuUp(opensUpward(e.currentTarget));
+                setMenuFor(menuOpen ? null : conv.id);
+              }}
               aria-label={t('Więcej działań: {name}', { name: displayName })}
               title={t('Więcej działań')}
               aria-haspopup="menu"
@@ -226,7 +247,7 @@ export default function ConversationList({
               <MoreHorizontal size={16} />
             </button>
             {menuOpen && (
-              <div role="menu" className="absolute right-0 top-full mt-1 z-30 w-56 bg-white dark:bg-gray-900 border border-gray-200/70 dark:border-gray-700/70 rounded-xl shadow-xl py-1">
+              <div role="menu" className={`absolute right-0 ${menuUp ? 'bottom-full mb-1' : 'top-full mt-1'} z-30 w-56 bg-white dark:bg-gray-900 border border-gray-200/70 dark:border-gray-700/70 rounded-xl shadow-xl py-1`}>
                 <button type="button" role="menuitem" onClick={(e) => runMenuAction(e, onTogglePin, conv.id)} className={menuItemClass}>
                   <Pin size={15} className={conv.pinned ? 'text-accent-primary fill-current' : 'text-gray-400'} />
                   {conv.pinned ? t('Odepnij') : t('Przypnij na górze')}

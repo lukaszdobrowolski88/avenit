@@ -121,6 +121,12 @@ export function isCallsDisabledError(err) {
   return err.status === 503 && (code === 'calls_disabled' || /calls_disabled/i.test(msg) || /calls_disabled/i.test(String(err.context?.error || '')));
 }
 
+// Serwer: rozmowa już się zakończyła (410 CALL_ENDED) — baner / „Dołącz” były nieaktualne.
+export function isCallGoneError(err) {
+  if (!err) return false;
+  return err.status === 410 || (err.code || err.context?.code) === 'CALL_ENDED';
+}
+
 // ── Pamięć „połączenia wyłączone” (żeby nie pokazywać martwych przycisków po 503) ──
 const DISABLED_KEY = 'avenit.calls.disabled';
 const DISABLED_TTL_MS = 6 * 3600 * 1000;
@@ -171,7 +177,10 @@ export function callMessageView(message, myEmail, t, { live: liveOverride = null
   const status = String(meta.status || 'ended');
   const caller = meta.started_by_email || meta.started_by || message?.sender_email || null;
   const mine = !!caller && sameEmail(caller, myEmail);
-  const live = liveOverride != null ? !!liveOverride : LIVE_STATUSES.has(status);
+  // Wiadomość z ostatecznym statusem (nieodebrane, zakończone…) wygrywa z (nieaktualnym) stanem
+  // dostawcy — inaczej „Trwa połączenie — Dołącz” wisiało przy dawno nieodebranym połączeniu.
+  const final = !!meta.status && ENDED_STATUSES.has(status);
+  const live = final ? false : liveOverride != null ? !!liveOverride : LIVE_STATUSES.has(status);
   const isGroup = !!(meta.is_group ?? meta.group);
   const duration = Number(meta.duration_sec) || 0;
   let title;
