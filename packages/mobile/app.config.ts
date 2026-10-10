@@ -15,7 +15,7 @@ const suffix = isPreview ? '.preview' : isDev ? '.dev' : '';
 const config: ExpoConfig = {
   name: isPreview ? 'Avenit (preview)' : isDev ? 'Avenit (dev)' : 'Avenit',
   slug: 'avenit',
-  version: '1.0.0',
+  version: '1.0.1',
   orientation: 'portrait',
   scheme: ['avenit', 'schtomy'],
   icon: './assets/icon.png',
