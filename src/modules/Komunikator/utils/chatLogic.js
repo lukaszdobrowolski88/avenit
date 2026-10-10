@@ -58,9 +58,10 @@ export function matchesFilter(c, filter = 'all', myEmail = null) {
 
 // Sekcje listy (ta sama kolejność w webie i w aplikacji). Przypięte zbierają wszystkie typy.
 // „Kanały” = kanały służb i grup domowych (type='ministry', skład synchronizuje serwer).
-export const SECTION_ORDER = ['pinned', 'announcement', 'direct', 'group', 'ministry'];
+export const SECTION_ORDER = ['pinned', 'meeting', 'announcement', 'direct', 'group', 'ministry'];
 export const SECTION_TITLES = {
   pinned: 'Przypięte',
+  meeting: 'Spotkania',
   announcement: 'Ogłoszenia',
   direct: 'Prywatne',
   group: 'Grupy',

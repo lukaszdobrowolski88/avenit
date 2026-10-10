@@ -10,6 +10,7 @@
 //  - sync-mail               co 5 min
 //  - chat-channels-sync      co 10 min (skład kanałów służb i grup domowych)
 //  - call-sweep              co 1 min (połączenia: nieodebrane po 45 s, uzgodnienie z LiveKit)
+//  - meeting-reminders       co 1 min (spotkania online: przypomnienie 10 min przed startem)
 //  - schedule-reminders      codziennie 18:00 Europe/Warsaw (grafik: przypomnienia + ponaglenia)
 //  - task-digest             codziennie 07:00 Europe/Warsaw (skrót zadań na dziś; nadrabianie przy starcie do 12:00)
 //  - board-import-legacy     przy starcie + codziennie 03:40 (stare tabele *_tasks → Tablice, raz na tenanta)
@@ -91,6 +92,8 @@ cron.schedule('*/15 * * * *', exclusive(() => forEachTenant('board-automations',
 // Połączenia audio/wideo: dzwonienie > 45 s → nieodebrane, uzgodnienie z LiveKit — co minutę
 // (główna ścieżka to timer w API; to siatka bezpieczeństwa np. po restarcie API).
 cron.schedule('* * * * *', exclusive(() => forEachTenant('call-sweep', 'call-sweep')));
+// Spotkania online: przypomnienie 10 min przed startem (członkowie — push, goście — e-mail).
+cron.schedule('* * * * *', exclusive(() => forEachTenant('meeting-reminders', 'meeting-reminders')));
 // Komunikator+: kanały służb i grup domowych — skład z zespołów/grup (dopisz/usuń/role), co 10 min.
 cron.schedule('*/10 * * * *', exclusive(() => forEachTenant('chat-channels-sync', 'chat-channels-sync')));
 

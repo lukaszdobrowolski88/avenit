@@ -26,7 +26,7 @@ export async function sendEmail({ to, subject, html, text, from, fromName, reply
         ...(text ? { text } : {}),
         ...(replyTo ? { reply_to: replyTo } : {}),
         ...(attachments?.length
-          ? { attachments: attachments.map((a) => ({ filename: a.filename, content: a.contentBase64 })) }
+          ? { attachments: attachments.map((a) => ({ filename: a.filename, content: a.contentBase64, ...(a.type ? { content_type: a.type } : {}) })) }
           : {}),
       }),
     });

@@ -172,6 +172,8 @@ export function CallProvider({ userEmail, children }) {
     try {
       const conversation = await conversationInfo(call.conversation_id, me);
       if (!conversation || !conversation.isParticipant) return;
+      // Spotkanie (098): bez dzwonka — zaproszeni dostają powiadomienie „Spotkanie trwa”.
+      if (conversation.type === 'meeting') return;
       // 1:1 już odebrana (na innym urządzeniu) — nie dzwonimy. Grupa dzwoni całe 45 s.
       if ((call.is_group === false || conversation.type === 'direct') && call.status === 'active') return;
       // Rozmowa wyciszona: bez dzwonka (zostaje baner „Trwa rozmowa — dołącz”).

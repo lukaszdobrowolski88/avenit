@@ -110,6 +110,16 @@ const MODULES = [
   'call-guest-request',
   'call-guest-status',
   'call-guest-leave',
+  // Spotkania online z zaproszeniami (migracja 098, src/meetings): członkowie po koncie, goście po
+  // e-mailu (osobisty link); meeting-guest-rsvp publiczne (strona gościa) z limitem per IP.
+  'meeting-create',
+  'meeting-update',
+  'meeting-cancel',
+  'meeting-respond',
+  'meeting-get',
+  'meeting-list',
+  'meeting-ics',
+  'meeting-guest-rsvp',
 ];
 
 export async function registerFunctions(app) {

@@ -162,7 +162,8 @@ export async function createGuestLink(ctx, user, body = {}) {
   if (!me || !UUID_RE.test(conversationId)) throw new ApiError(400, 'Wskaż rozmowę', 'BAD_REQUEST');
   const { conv } = await linkManageAccess(db, me, conversationId);
   const active = await one(db,
-    `SELECT count(*)::int AS n FROM call_guest_links WHERE conversation_id = $1 AND revoked_at IS NULL AND expires_at > now()`,
+    `SELECT count(*)::int AS n FROM call_guest_links
+      WHERE conversation_id = $1 AND revoked_at IS NULL AND expires_at > now() AND meeting_id IS NULL`,
     [conversationId]);
   if ((active?.n ?? 0) >= MAX_ACTIVE_LINKS) throw new ApiError(409, MESSAGES.tooMany, 'TOO_MANY_LINKS');
   const ttl = ttlSeconds(body.expires_in);
@@ -208,6 +209,7 @@ export async function listGuestLinks(ctx, user, body = {}) {
   if (!canManage) return { links: [], can_manage: false, can_create: false, reason, message };
   const { rows } = await db.query(
     `SELECT * FROM call_guest_links WHERE conversation_id = $1 AND revoked_at IS NULL AND expires_at > now()
+        AND meeting_id IS NULL
       ORDER BY created_at DESC LIMIT $2`, [conversationId, MAX_ACTIVE_LINKS]);
   return { links: rows.map(publicLink), can_manage: true, can_create: canCreate, reason, message };
 }
@@ -322,7 +324,7 @@ export async function denyGuest(ctx, user, body = {}) {
 }
 
 // ── Strona gościa (publiczne fn) ────────────────────────────────────────────
-async function churchName(db, fallback) {
+export async function churchName(db, fallback) {
   try {
     const r = await one(db, `SELECT value FROM app_settings WHERE key = 'org_name' LIMIT 1`, []);
     const v = typeof r?.value === 'string' ? r.value.replace(/^"|"$/g, '').trim() : '';
@@ -357,6 +359,9 @@ export async function guestInfo(ctx, body = {}) {
   assertGuestTenant(ctx);
   const { db } = ctx;
   const link = await linkByToken(db, body.token);
+  // Osobisty link ze spotkania (098): odwołane spotkanie ma własny komunikat.
+  const meeting = link.meeting_id ? await (await import('../meetings/service.js')).guestMeetingInfo(db, link) : null;
+  if (meeting?.status === 'cancelled') throw new ApiError(410, 'Organizator odwołał to spotkanie.', 'MEETING_CANCELLED');
   assertLinkUsable(link);
   if (await hasMinor(db, link.conversation_id)) throw new ApiError(410, MESSAGES.unavailable, 'LINK_UNAVAILABLE');
   let title = null;
@@ -372,6 +377,7 @@ export async function guestInfo(ctx, body = {}) {
     kind: live?.kind || null,
     auto_admit: !!link.auto_admit,
     expires_at: link.expires_at,
+    ...(meeting ? { meeting, title: meeting.title } : {}),
   };
 }
 
@@ -415,7 +421,8 @@ export async function guestRequest(ctx, body = {}) {
   const { db } = ctx;
   const link = await linkByToken(db, body.token);
   assertLinkUsable(link);
-  const name = normalizeGuestName(body.name);
+  // Link ze spotkania ma imię z zaproszenia — gość może je poprawić.
+  const name = normalizeGuestName(body.name) || normalizeGuestName(link.guest_name);
   if (!name) throw new ApiError(400, MESSAGES.badName, 'BAD_NAME');
   if (await hasMinor(db, link.conversation_id)) throw new ApiError(410, MESSAGES.unavailable, 'LINK_UNAVAILABLE');
   await expireStaleGuestRequests(ctx, { linkId: link.id }).catch((err) => warn(ctx, err, 'wygaszanie próśb'));

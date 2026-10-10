@@ -196,7 +196,7 @@ before(async () => {
   await conv(C_TEAM, 'group', 'Zespół uwielbienia', [['jan@x.pl', 'admin'], ['ola@x.pl', 'member'], ['boss@x.pl', null]]);
   await conv(C_KIDS_GROUP, 'group', 'Młodzież', [['jan@x.pl', 'admin'], ['kid@x.pl', 'member']]);
   await conv(C_OTHER, 'group', 'Inna', [['obcy@x.pl', 'admin']]);
-  for (const f of ['096_calls.sql', '097_call_guest_links.sql']) {
+  for (const f of ['096_calls.sql', '097_call_guest_links.sql', '098_meetings.sql']) {
     const sql = fs.readFileSync(new URL(`../db/tenant-migrations/${f}`, import.meta.url), 'utf8');
     await pg.exec(sql);
     await pg.exec(sql); // idempotentna

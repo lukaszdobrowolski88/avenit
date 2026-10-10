@@ -6,6 +6,8 @@ import MessageThread from './components/MessageThread';
 import NewConversationModal from './components/NewConversationModal';
 import GroupSettingsModal from './components/GroupSettingsModal';
 import ReportsPanel, { countOpenReports } from './components/ReportsPanel';
+import MeetingModal from './meetings/MeetingModal';
+import { useCalls } from './calls/callContext';
 import useConversations from './hooks/useConversations';
 import useMinistryChannels from './hooks/useMinistryChannels';
 import useChatPolicy from './hooks/useChatPolicy';
@@ -103,6 +105,10 @@ export default function KomunikatorModule() {
   const [pendingOpenId, setPendingOpenId] = useState(null);
   const urlRefetchRef = useRef(null); // rozmowa z linku, dla której już odświeżyliśmy listę
   const [showNewModal, setShowNewModal] = useState(false);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  // Spotkania wymagają połączeń (LiveKit) — bez nich przycisk „Zaplanuj spotkanie” jest ukryty.
+  const calls = useCalls();
+  const meetingsOn = !!calls && calls.callsEnabled !== false;
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [showList, setShowList] = useState(true);
@@ -136,7 +142,7 @@ export default function KomunikatorModule() {
     if (!conversationId || !notifications || notifications.length === 0) return;
     const convIdStr = String(conversationId);
     notifications
-      .filter(n => !n.read && (n.type === 'message' || n.type === 'mention') && n.data?.conversation_id && String(n.data.conversation_id) === convIdStr)
+      .filter(n => !n.read && (n.type === 'message' || n.type === 'mention' || n.type === 'meeting') && n.data?.conversation_id && String(n.data.conversation_id) === convIdStr)
       .forEach(n => markNotificationAsRead(n.id));
   }, [notifications, markNotificationAsRead]);
 
@@ -265,6 +271,7 @@ export default function KomunikatorModule() {
           loading={loading}
           currentUserEmail={userEmail}
           onOpenReports={canModerate ? () => setShowReports(true) : undefined}
+          onNewMeeting={meetingsOn ? () => setShowMeetingModal(true) : undefined}
           openReportsCount={openReports}
           onSyncChannels={isAppAdmin ? handleSyncChannels : undefined}
           syncingChannels={syncingChannels}
@@ -304,6 +311,16 @@ export default function KomunikatorModule() {
         currentUserEmail={userEmail}
         dmPolicy={chatPolicy}
       />
+
+      {/* Zaplanuj spotkanie online — po zapisaniu otwieramy rozmowę spotkania */}
+      {showMeetingModal && (
+        <MeetingModal
+          isOpen
+          onClose={() => setShowMeetingModal(false)}
+          currentUserEmail={userEmail}
+          onSaved={(m) => { if (m?.conversation_id) { refetch({ light: true }); openConversationById(m.conversation_id); } }}
+        />
+      )}
 
       {/* Modal ustawień grupy */}
       <GroupSettingsModal

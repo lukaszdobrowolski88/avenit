@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Users, Settings, Bell, BellOff, Trash2, Image, Search, MoreVertical, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Megaphone, Ban, Link2 } from 'lucide-react';
+import { ArrowLeft, Users, Settings, Bell, BellOff, Trash2, Image, Search, MoreVertical, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Megaphone, Ban, Link2, CalendarClock } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import CallButtons from '../calls/CallButtons';
 import { useCalls } from '../calls/callContext';
@@ -32,6 +32,7 @@ export function ChannelIcon({ conversation, size = 'md' }) {
   const icon = size === 'lg' ? 28 : 20;
   let Icon = Users;
   if (conversation?.type === 'announcement') Icon = Megaphone;
+  else if (conversation?.type === 'meeting') Icon = CalendarClock;
   else if (isHomeGroupChannel(conversation)) Icon = Home;
   else if (conversation?.type === 'ministry') Icon = ministryIcons[conversation.ministry_key] || Users;
   return (
@@ -85,6 +86,7 @@ export default function ConversationHeader({
     if (isHomeGroup) return tr('Kanał grupy domowej • {n} członków', { n });
     if (conversation.type === 'ministry') return tr('Kanał służby • {n} członków', { n });
     if (conversation.type === 'announcement') return tr('Kanał ogłoszeń • {n} uczestników', { n });
+    if (conversation.type === 'meeting') return tr('Spotkanie online • {n} uczestników', { n });
     return tr('{n} uczestników', { n });
   };
 
