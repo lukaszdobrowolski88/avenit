@@ -51,18 +51,50 @@ export async function storeRefreshToken(pool, table, userColumn, userId, hash, u
   );
 }
 
+// Rotacja: stary token unieważniony, nowy zapisany; stary pamięta następcę (replaced_by_hash).
+//
+// Telefon potrafi uśpić aplikację w trakcie odświeżania — serwer rotuje token, ale odpowiedź
+// z nowym nie dociera albo nie zdąży się zapisać. Przy kolejnym starcie aplikacja przysyła
+// STARY token, już unieważniony → dawniej 401 i wylogowanie przy każdym wyjściu z aplikacji.
+//
+// Odzyskanie: stary token, którego BEZPOŚREDNI następca nadal jest nieużyty (aktywny) — klient
+// go nie dostał. Następca zostaje unieważniony, wydajemy nowy, a stary wskazuje teraz na nowego
+// (kilka zgubionych odpowiedzi z rzędu też się odzyskuje). Gdy następca był już użyty (klient
+// go dostał i rotował dalej) — odrzucenie jak dotąd (powtórka starego tokenu). Wylogowanie
+// i „wyloguj inne urządzenia” unieważniają bez następcy — sesja się kończy.
 export async function rotateRefreshToken(pool, table, userColumn, oldToken, userAgent) {
   const oldHash = hashRefreshToken(oldToken);
+  const next = newRefreshToken();
   const { rows } = await pool.query(
+    `UPDATE ${table} SET revoked_at = now(), replaced_by_hash = $2
+      WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > now()
+      RETURNING ${userColumn} AS user_id`,
+    [oldHash, next.hash]
+  );
+  if (rows[0]) {
+    await storeRefreshToken(pool, table, userColumn, rows[0].user_id, next.hash, userAgent);
+    return { userId: rows[0].user_id, token: next.token };
+  }
+  return recoverLostRotation(pool, table, userColumn, oldHash, next, userAgent);
+}
+
+async function recoverLostRotation(pool, table, userColumn, oldHash, next, userAgent) {
+  const { rows } = await pool.query(
+    `SELECT replaced_by_hash FROM ${table}
+      WHERE token_hash = $1 AND revoked_at IS NOT NULL AND replaced_by_hash IS NOT NULL AND expires_at > now()`,
+    [oldHash]);
+  const successor = rows[0]?.replaced_by_hash;
+  if (!successor) return null;
+  // Następca nieużyty → unieważniony (bez następcy — ślepa uliczka), wydajemy nowy.
+  const { rows: took } = await pool.query(
     `UPDATE ${table} SET revoked_at = now()
       WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > now()
       RETURNING ${userColumn} AS user_id`,
-    [oldHash]
-  );
-  if (!rows[0]) return null;
-  const { token, hash } = newRefreshToken();
-  await storeRefreshToken(pool, table, userColumn, rows[0].user_id, hash, userAgent);
-  return { userId: rows[0].user_id, token };
+    [successor]);
+  if (!took[0]) return null;
+  await pool.query(`UPDATE ${table} SET replaced_by_hash = $2 WHERE token_hash = $1`, [oldHash, next.hash]);
+  await storeRefreshToken(pool, table, userColumn, took[0].user_id, next.hash, userAgent);
+  return { userId: took[0].user_id, token: next.token, recovered: true };
 }
 
 export async function revokeRefreshToken(pool, table, token) {
