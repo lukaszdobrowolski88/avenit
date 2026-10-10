@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, Video, PhoneCall, Users, ChevronDown, CalendarPlus, Pencil, XCircle, Ban } from 'lucide-react';
+import { CalendarClock, Video, PhoneCall, Users, ChevronDown, CalendarPlus, Pencil, XCircle, Ban, CalendarDays } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
@@ -219,7 +220,13 @@ export default function MeetingPanel({ conversation, currentUserEmail }) {
           <button type="button" onClick={toCalendar} className={ghost}>
             <CalendarPlus size={14} aria-hidden="true" /> {tr('Do kalendarza')}
           </button>
-          {meeting.can_manage && (
+          {meeting.event_id && (
+            <Link to={`/wydarzenie/${encodeURIComponent(meeting.event_id)}`} className={ghost}>
+              <CalendarDays size={14} aria-hidden="true" /> {tr('Otwórz wydarzenie')}
+            </Link>
+          )}
+          {/* Spotkanie wydarzenia: termin, osoby i odwołanie zmienia się w wydarzeniu. */}
+          {meeting.can_manage && meeting.source !== 'event' && (
             <>
               <button type="button" onClick={openEdit} disabled={busy} className={ghost}>
                 <Pencil size={14} aria-hidden="true" /> {tr('Edytuj')}

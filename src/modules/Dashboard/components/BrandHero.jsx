@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, MapPin, CalendarDays } from 'lucide-react';
+import { ArrowUpRight, MapPin, CalendarDays, Video } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr, appLocale } from '../../../i18n';
+import { hasPlace, isOnlineFormat, joinWindowOpen, formatLabel } from '../../Events/eventFormat';
 
 // Pulpit w motywie „Avenit” — to samo co karta „Najbliższe” i liczniki w aplikacji mobilnej
 // (NextUpCard / Greeting): karta-bohater w jasnej kurkumie z najbliższym wydarzeniem i ciemna
@@ -41,7 +42,7 @@ export default function BrandHero({ upcomingMinistry = [], stats = {} }) {
     let active = true;
     supabase
       .from('events')
-      .select('id, title, date, time, location')
+      .select('id, title, date, time, end_time, end_date, location, format')
       .gte('date', ymd(new Date()))
       .order('date', { ascending: true })
       .order('time', { ascending: true })
@@ -86,8 +87,13 @@ export default function BrandHero({ upcomingMinistry = [], stats = {} }) {
             <>
               <p className="text-[28px] md:text-[32px] leading-[1.1] font-extrabold tracking-[-0.03em] line-clamp-2">{next.title}</p>
               <div className="flex flex-wrap items-center gap-3 mt-2.5">
-                {next.location && (
+                {next.location && hasPlace(next.format) && (
                   <span className="flex items-center gap-1.5 text-sm font-medium brand-hero-muted"><MapPin size={14} />{next.location}</span>
+                )}
+                {isOnlineFormat(next.format) && (
+                  <span className="brand-hero-pill inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold">
+                    <Video size={13} aria-hidden="true" /> {joinWindowOpen(next) ? tr('Online · dołącz') : formatLabel(next.format)}
+                  </span>
                 )}
                 {myRole && (
                   <span className="brand-hero-pill px-3 py-1 rounded-full text-xs font-semibold">{tr('Służysz')} · {myRole}</span>

@@ -7,6 +7,7 @@ import Spinner from '../../../components/Spinner';
 import EmptyState from '../../../components/EmptyState';
 import Button from '../../../components/Button';
 import { TONE } from '../../../lib/brandTone';
+import { EventFormatBadge, JoinEventButton, hasPlace, isOnlineFormat, joinWindowOpen } from '../../Events/eventFormat';
 
 // Kolory znaczników wg kategorii wydarzenia (spójne z modułem Kalendarz).
 const CATEGORY_STYLES = {
@@ -45,7 +46,7 @@ export default function UpcomingEventsWidget() {
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const { data, error } = await supabase
           .from('events')
-          .select('id, title, category, date, time, location')
+          .select('id, title, category, date, time, end_time, end_date, location, format')
           .gte('date', today)
           .order('date', { ascending: true })
           .limit(6);
@@ -82,10 +83,10 @@ export default function UpcomingEventsWidget() {
           const when = formatWhen(ev.date, ev.time);
           const style = CATEGORY_STYLES[(ev.category || '').toLowerCase()] || CATEGORY_STYLES.default;
           return (
+            <div key={ev.id} className="flex items-center gap-2">
             <button
-              key={ev.id}
-              onClick={() => navigate('/calendar')}
-              className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group text-left"
+              onClick={() => navigate(`/wydarzenie/${ev.id}`)}
+              className="flex-1 min-w-0 flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group text-left"
             >
               {/* Data */}
               {/* Najbliższe wydarzenie w słodzie z kurkumą (motyw Avenit), kolejne na papierze. */}
@@ -98,7 +99,8 @@ export default function UpcomingEventsWidget() {
                 <p className="font-medium text-gray-800 dark:text-white truncate text-sm">{ev.title}</p>
                 <div className="flex items-center gap-3 mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
                   {ev.category && <span className="truncate">{ev.category}</span>}
-                  {ev.location && (
+                  {isOnlineFormat(ev.format) && <EventFormatBadge format={ev.format} className="shrink-0" />}
+                  {ev.location && hasPlace(ev.format) && (
                     <span className="flex items-center gap-1 truncate"><MapPin size={11} />{ev.location}</span>
                   )}
                 </div>
@@ -110,6 +112,9 @@ export default function UpcomingEventsWidget() {
               )}
               <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-accent-primary-light transition-colors shrink-0" />
             </button>
+            {/* Wydarzenie online, które trwa albo zaraz się zacznie — „Dołącz” wprost z Pulpitu. */}
+            {joinWindowOpen(ev) && <JoinEventButton eventId={ev.id} title={ev.title} className="shrink-0" />}
+            </div>
           );
         })}
       </div>

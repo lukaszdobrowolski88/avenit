@@ -26,6 +26,7 @@ import { TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
 import { ChoiceList, ChoiceRow } from '../components/ChoiceList';
 import * as LucideIcons from 'lucide-react';
+import { EventFormatBadge, isOnlineFormat, formatLabel } from './Events/eventFormat';
 import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
 import {
   boardItemToTask, loadCalendarTaskBoard, loadMyAssignedItems, saveCalendarTask, deleteCalendarTask, isAccessError,
@@ -452,6 +453,9 @@ const EventBadge = ({ event, onClick }) => {
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 shrink-0" aria-hidden="true" />
       {start && <span className="opacity-70 tabular-nums shrink-0">{start}</span>}
       <span className={`truncate font-medium ${event.done ? 'line-through opacity-60' : ''}`}>{event.title}</span>
+      {isOnlineFormat(event.raw?.format) && (
+        <LucideIcons.Video size={12} className="shrink-0 opacity-70" aria-label={formatLabel(event.raw.format)} />
+      )}
       {event.done && <span className="sr-only">{tr('Gotowe')}</span>}
     </button>
   );
@@ -544,7 +548,7 @@ export default function CalendarModule({ embedded = false } = {}) {
   const fetchEvents = async () => {
     const [progRes, evRes, taskRes, assigned] = await Promise.all([
       withCampusFilter(supabase.from('programs').select('id, title, date, campus_id, type_id')),
-      withCampusFilter(supabase.from('events').select('id, title, module_key, event_type, date, time, end_time, location, description, program_id, campus_id, is_archived')),
+      withCampusFilter(supabase.from('events').select('id, title, module_key, event_type, date, time, end_time, location, description, program_id, campus_id, is_archived, format')),
       loadCalendarTaskBoard().then((board) => ({ board }), (error) => ({ error })),
       loadMyAssignedItems(),
     ]);
@@ -1458,6 +1462,7 @@ export default function CalendarModule({ embedded = false } = {}) {
                              <div className="text-[10px] lg:text-xs text-gray-500 flex gap-2 lg:gap-3 mt-0.5 flex-wrap">
                                  <span className="truncate">{teamLabel(ev.team)}</span>
                                  {ev.raw?.due_time && <span>• {ev.raw.due_time}{ev.raw?.end_time ? ` - ${ev.raw.end_time}` : ''}</span>}
+                                 {isOnlineFormat(ev.raw?.format) && <EventFormatBadge format={ev.raw.format} />}
                              </div>
                          </div>
                      </div>
