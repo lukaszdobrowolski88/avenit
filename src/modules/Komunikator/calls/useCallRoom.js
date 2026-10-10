@@ -127,7 +127,9 @@ export default function useCallRoom({ onRemoteJoined, onRemoteLeft, onDisconnect
   // Połącz z pokojem i włącz mikrofon (+ kamerę dla wideo). Błąd urządzenia nie przerywa
   // rozmowy — można słuchać i włączyć mikrofon po nadaniu uprawnień.
   // audio: false — wejście z wyciszonym mikrofonem (strona gościa: wybór w podglądzie).
-  const connect = useCallback(async ({ url, token, video = false, audio = true, canPublish = true }) => {
+  // tracks: { audio, video } — gotowe ścieżki (MediaStreamTrack) z podglądu: publikujemy je zamiast
+  // ponownego getUserMedia (Safari pytał o zgodę drugi raz przy każdym wejściu).
+  const connect = useCallback(async ({ url, token, video = false, audio = true, canPublish = true, tracks = null }) => {
     const lk = await loadLivekit();
     lkRef.current = lk;
     const room = new lk.Room(roomOptions(lk));
@@ -158,20 +160,7 @@ export default function useCallRoom({ onRemoteJoined, onRemoteLeft, onDisconnect
     await room.connect(url, token, { autoSubscribe: true });
     if (roomRef.current !== room) return room; // rozłączono w trakcie łączenia
 
-    if (canPublishRef.current && audio !== false) {
-      try {
-        await room.localParticipant.setMicrophoneEnabled(true);
-      } catch (err) {
-        mediaErrorRef.current = { source: 'microphone', failure: mediaFailure(lk, err) };
-      }
-    }
-    if (video && canPublishRef.current) {
-      try {
-        await room.localParticipant.setCameraEnabled(true);
-      } catch (err) {
-        mediaErrorRef.current = mediaErrorRef.current || { source: 'camera', failure: mediaFailure(lk, err) };
-      }
-    }
+    if (canPublishRef.current) await publishLocal(lk, room, { video, audio, tracks });
     // Już obecne osoby (dołączenie do trwającej rozmowy) — ich dźwięk.
     room.remoteParticipants?.forEach?.((p) => {
       p.audioTrackPublications?.forEach?.((pub) => { if (pub.track) attachAudio(pub.track); });
@@ -179,6 +168,44 @@ export default function useCallRoom({ onRemoteJoined, onRemoteLeft, onDisconnect
     refresh();
     return room;
   }, [refresh, cleanup, setMediaError]);
+
+  // Mikrofon i kamera: gotowe ścieżki z podglądu albo JEDNO pytanie o oba urządzenia naraz
+  // (enableCameraAndMicrophone) — wcześniej mikrofon i kamera osobno = dwa okienka zgody w Safari.
+  const publishLocal = async (lk, room, { video, audio, tracks }) => {
+    const lp = room.localParticipant;
+    const S = lk.Track?.Source || {};
+    const fail = (source, err) => { mediaErrorRef.current = mediaErrorRef.current || { source, failure: mediaFailure(lk, err) }; };
+    if (tracks && (tracks.audio || tracks.video)) {
+      if (tracks.audio && tracks.audio.readyState !== 'ended') {
+        try {
+          await lp.publishTrack(tracks.audio, { source: S.Microphone || 'microphone' });
+          if (audio === false) await lp.setMicrophoneEnabled(false);
+        } catch (err) { fail('microphone', err); }
+      } else if (audio !== false) {
+        try { await lp.setMicrophoneEnabled(true); } catch (err) { fail('microphone', err); }
+      }
+      if (video && tracks.video && tracks.video.readyState !== 'ended') {
+        try { await lp.publishTrack(tracks.video, { source: S.Camera || 'camera' }); } catch (err) { fail('camera', err); }
+      } else if (video) {
+        try { await lp.setCameraEnabled(true); } catch (err) { fail('camera', err); }
+      }
+      return;
+    }
+    if (video && audio !== false && typeof lp.enableCameraAndMicrophone === 'function') {
+      try {
+        await lp.enableCameraAndMicrophone();
+        return;
+      } catch {
+        // Jedno z urządzeń niedostępne — próbujemy osobno, żeby działało chociaż drugie.
+      }
+    }
+    if (audio !== false) {
+      try { await lp.setMicrophoneEnabled(true); } catch (err) { fail('microphone', err); }
+    }
+    if (video) {
+      try { await lp.setCameraEnabled(true); } catch (err) { fail('camera', err); }
+    }
+  };
 
   const disconnect = useCallback(async () => {
     const room = roomRef.current;
