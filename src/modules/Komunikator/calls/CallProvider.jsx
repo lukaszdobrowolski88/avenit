@@ -282,9 +282,8 @@ export function CallProvider({ userEmail, children }) {
     };
   }, [userEmail, loadActive, onCallRow, announce]);
 
-  // Siatka bezpieczeństwa dla banerów „Trwa połączenie”: zmiany z workera (nieodebrane po
-  // restarcie API, uzgodnienie z LiveKit) nie idą przez realtime. Gdy coś „trwa” — sprawdzaj
-  // co 30 s i po powrocie do karty.
+  // Siatka bezpieczeństwa dla banerów „Trwa połączenie” (przegapione zdarzenie realtime, np.
+  // przy zerwanym gnieździe). Gdy coś „trwa” — sprawdzaj co 30 s i po powrocie do karty.
   const hasActive = Object.keys(activeCalls).length > 0;
   useEffect(() => {
     if (!userEmail || !hasActive) return undefined;

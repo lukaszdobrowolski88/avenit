@@ -52,6 +52,11 @@ export function registerClient(socket, ctx) {
   return client;
 }
 
+// Worker ustawia przekaźnik (createRelayPublisher) — wtedy emitChange nie rozsyła lokalnie,
+// tylko przekazuje zmianę do API. W API zostaje null.
+let relay = null;
+export function setRelay(fn) { relay = typeof fn === 'function' ? fn : null; }
+
 const OP_TO_EVENT = { insert: 'INSERT', upsert: 'INSERT', update: 'UPDATE', delete: 'DELETE' };
 
 // opts.audience: Set e-maili (małymi literami), do których wolno wysłać zmianę — np. uczestnicy
@@ -59,6 +64,8 @@ const OP_TO_EVENT = { insert: 'INSERT', upsert: 'INSERT', update: 'UPDATE', dele
 // opts.redact(row, client): wiersz w wersji dla danego odbiorcy (np. ankieta anonimowa — e-mail
 // głosującego tylko dla niego samego); null = nie wysyłaj temu odbiorcy.
 export function emitChange(tenantSlug, table, op, rows, opts = {}) {
+  // Proces bez gniazd (worker): zmiana idzie przekaźnikiem do API (relay.js).
+  if (relay) { relay(tenantSlug, table, op, rows, opts); return; }
   const eventType = OP_TO_EVENT[op] || 'UPDATE';
   const list = rows?.length ? rows : [null];
   const audience = opts.audience || null;
