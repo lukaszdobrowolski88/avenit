@@ -29,9 +29,11 @@ const CONV_TABLES = {
   // zapis wyłącznie przez fn call-* i webhook LiveKit (src/calls).
   calls: 'conv',
   call_participants: 'call',
+  // Poczekalnia gości z linku (migracja 097) — tylko odczyt, zapis wyłącznie src/calls/guests.js.
+  call_guest_requests: 'conv',
 };
 export const isConversationTable = (table) => table in CONV_TABLES;
-const CALL_TABLES = new Set(['calls', 'call_participants']);
+const CALL_TABLES = new Set(['calls', 'call_participants', 'call_guest_requests']);
 
 // Kanały służb (jak useMinistryChannels w webie): przynależność = wpis w tabeli zespołu.
 const MINISTRY_TABLES = {

@@ -10,6 +10,8 @@ import {
   isCallsDisabledError, readCallsDisabled, writeCallsDisabled, ENDED_STATUSES, OUTGOING_TIMEOUT_MS,
 } from './callLogic';
 import { startRingtone, unlockAudio } from './ringtone';
+import { applyGuestRequest, lobbyQueue } from './guestLogic';
+import { callFn } from './callApi';
 import useCallRoom from './useCallRoom';
 import CallLayer from './CallLayer';
 
@@ -21,18 +23,6 @@ export { useCalls, useCallRoomContext } from './callContext';
 // (tabela calls), rozmowa w toku (LiveKit), okno pełne / mini, trwające rozmowy per rozmowa
 // czatu (baner „Trwa rozmowa — dołącz”).
 
-// ── API (funkcje serwera) — błędy obsługujemy sami (silent: bez globalnego toastu) ──
-async function callFn(name, body) {
-  const { data, error } = await supabase.functions.invoke(name, { body, silent: true });
-  if (error) {
-    const err = new Error(error.message || 'HTTP error');
-    err.status = error.status;
-    err.context = error.context;
-    err.code = error.context?.code || null;
-    throw err;
-  }
-  return data || {};
-}
 
 async function userInfo(email) {
   if (!email) return { email: null, name: '', avatar: null };
@@ -53,7 +43,7 @@ async function userInfo(email) {
 async function conversationInfo(id, me) {
   const [{ data: conv }, { data: mine }] = await Promise.all([
     supabase.from('conversations').select('id, name, type, avatar_url, ministry_key').eq('id', id).maybeSingle(),
-    supabase.from('conversation_participants').select('muted, muted_until').eq('conversation_id', id)
+    supabase.from('conversation_participants').select('muted, muted_until, role').eq('conversation_id', id)
       .ilike('user_email', emailPattern(me)).limit(1).maybeSingle(),
   ]);
   if (!conv) return null;
@@ -68,7 +58,7 @@ async function conversationInfo(id, me) {
       avatar = u.avatar;
     }
   }
-  return { id: conv.id, type: conv.type, name: name || tr('Rozmowa'), avatar, muted: isMutedNow(mine || {}), isParticipant: !!mine };
+  return { id: conv.id, type: conv.type, name: name || tr('Rozmowa'), avatar, muted: isMutedNow(mine || {}), isParticipant: !!mine, myRole: mine?.role || null };
 }
 
 const normConversation = (c) => (c ? {
@@ -76,6 +66,7 @@ const normConversation = (c) => (c ? {
   type: c.type || null,
   name: c.displayName || c.name || (c.type === 'ministry' ? channelName(c, getMinistryName) : '') || tr('Rozmowa'),
   avatar: c.displayAvatar || c.avatar || c.avatar_url || null,
+  myRole: c.myRole ?? c.my_role ?? null,
 } : null);
 
 export function CallProvider({ userEmail, children }) {
@@ -85,6 +76,8 @@ export function CallProvider({ userEmail, children }) {
   const [callsEnabled, setCallsEnabledState] = useState(() => !readCallsDisabled());
   const [announcement, setAnnouncement] = useState('');
   const [startedAt, setStartedAt] = useState(null); // początek MOJEGO udziału (zegar w oknie)
+  const [guestRequests, setGuestRequests] = useState({}); // poczekalnia gości: id → wiersz (oczekujące)
+  const [guestInvite, setGuestInvite] = useState(null);   // rozmowa, dla której otwarto „Zaproś gościa”
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -238,6 +231,17 @@ export function CallProvider({ userEmail, children }) {
         const row = payload?.new;
         if (row?.id) onCallRow(row, { fresh: payload.eventType === 'INSERT' });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'call_guest_requests' }, (payload) => {
+        const row = payload?.new;
+        if (!row?.id) return;
+        setGuestRequests((prev) => applyGuestRequest(prev, row));
+        // Nowy gość w poczekalni mojej bieżącej rozmowy — komunikat dla czytnika ekranu.
+        const cur = stateRef.current;
+        if (row.status === 'pending' && payload.eventType === 'INSERT' && inCall(cur)
+          && String(cur.conversation?.id || cur.call?.conversation_id) === String(row.conversation_id)) {
+          announce(tr('Gość chce dołączyć: {name}', { name: row.guest_name || '' }));
+        }
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'call_participants' }, (payload) => {
         const row = payload?.new;
         const cur = stateRef.current;
@@ -254,7 +258,32 @@ export function CallProvider({ userEmail, children }) {
       supabase.removeChannel(chan);
       window.removeEventListener('avenit:realtime-reconnect', onReconnect);
     };
-  }, [userEmail, loadActive, onCallRow]);
+  }, [userEmail, loadActive, onCallRow, announce]);
+
+  // Poczekalnia gości bieżącej rozmowy — wczytanie przy wejściu do rozmowy (później realtime).
+  const lobbyConversationId = inCall(state) ? String(state.conversation?.id || state.call?.conversation_id || '') : '';
+  const loadGuestRequests = useCallback(async (conversationId) => {
+    if (!conversationId) return;
+    try {
+      const { data, error } = await supabase.from('call_guest_requests')
+        .select('id, conversation_id, guest_name, status, created_at')
+        .eq('conversation_id', conversationId).eq('status', 'pending')
+        .order('created_at', { ascending: true }).limit(50);
+      if (error || !Array.isArray(data)) return;
+      setGuestRequests((prev) => {
+        const next = Object.fromEntries(Object.entries(prev).filter(([, r]) => String(r.conversation_id) !== String(conversationId)));
+        for (const r of data) next[r.id] = r;
+        return next;
+      });
+    } catch { /* tenant bez migracji 097 — bez poczekalni */ }
+  }, []);
+  useEffect(() => {
+    if (!lobbyConversationId) return undefined;
+    loadGuestRequests(lobbyConversationId);
+    const onReconnect = () => loadGuestRequests(lobbyConversationId);
+    window.addEventListener('avenit:realtime-reconnect', onReconnect);
+    return () => window.removeEventListener('avenit:realtime-reconnect', onReconnect);
+  }, [lobbyConversationId, loadGuestRequests]);
 
   // Odblokowanie dźwięku przy pierwszym geście (dzwonek później zagra także w tle).
   useEffect(() => {
@@ -440,6 +469,29 @@ export function CallProvider({ userEmail, children }) {
     await startCall(info || { id: conversationId }, kind);
   }, [startCall]);
 
+  // ── Goście z linku ─────────────────────────────────────────────────────────
+  const decideGuest = useCallback(async (requestId, admit) => {
+    const row = Object.values(guestRequests).find((r) => r.id === requestId) || null;
+    setGuestRequests((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
+    try {
+      await callFn(admit ? 'call-guest-admit' : 'call-guest-deny', { request_id: requestId });
+      if (admit && row?.guest_name) announce(tr('Wpuszczono: {name}', { name: row.guest_name }));
+    } catch (err) {
+      const closed = err?.code === 'REQUEST_CLOSED' || err?.status === 404;
+      if (!closed && row) setGuestRequests((prev) => applyGuestRequest(prev, row));
+      if (closed) toast.info(tr('Ta osoba już nie czeka na wejście.'));
+      else toast.error(err, { fallback: admit ? tr('Nie udało się wpuścić gościa.') : tr('Nie udało się odrzucić prośby.') });
+    }
+  }, [guestRequests, announce]);
+  const admitGuest = useCallback((requestId) => decideGuest(requestId, true), [decideGuest]);
+  const denyGuest = useCallback((requestId) => decideGuest(requestId, false), [decideGuest]);
+  const openGuestInvite = useCallback((conversation) => {
+    const conv = normConversation(conversation);
+    if (conv?.id) setGuestInvite(conv);
+  }, []);
+  const closeGuestInvite = useCallback(() => setGuestInvite(null), []);
+  const lobby = useMemo(() => (lobbyConversationId ? lobbyQueue(guestRequests, lobbyConversationId) : []), [guestRequests, lobbyConversationId]);
+
   const minimize = useCallback(() => dispatch({ type: 'MINIMIZE' }), []);
   const restore = useCallback(() => dispatch({ type: 'RESTORE' }), []);
   const openChat = useCallback(() => {
@@ -469,7 +521,13 @@ export function CallProvider({ userEmail, children }) {
     minimize,
     restore,
     openChat,
-  }), [userEmail, state, callsEnabled, activeCalls, activeCallFor, isCallLive, startedAt, startCall, acceptCall, declineCall, joinCall, leaveCall, callBack, minimize, restore, openChat]);
+    lobby,
+    admitGuest,
+    denyGuest,
+    guestInvite,
+    openGuestInvite,
+    closeGuestInvite,
+  }), [userEmail, state, callsEnabled, activeCalls, activeCallFor, isCallLive, startedAt, startCall, acceptCall, declineCall, joinCall, leaveCall, callBack, minimize, restore, openChat, lobby, admitGuest, denyGuest, guestInvite, openGuestInvite, closeGuestInvite]);
 
   return (
     <CallsContext.Provider value={value}>

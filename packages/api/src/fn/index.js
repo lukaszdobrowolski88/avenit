@@ -99,6 +99,17 @@ const MODULES = [
   'call-cancel',
   'call-leave',
   'call-config',
+  // Goście z linku (migracja 097, src/calls/guests.js): linki i poczekalnia — z sesją
+  // (module:komunikator); strona gościa /rozmowa/<token> — publiczne z limitem per IP.
+  'call-link-create',
+  'call-link-list',
+  'call-link-revoke',
+  'call-guest-admit',
+  'call-guest-deny',
+  'call-guest-info',
+  'call-guest-request',
+  'call-guest-status',
+  'call-guest-leave',
 ];
 
 export async function registerFunctions(app) {

@@ -62,7 +62,7 @@ export async function runCallFn(req, reply, action) {
 const one = async (db, sql, params) => (await db.query(sql, params)).rows[0] || null;
 const warn = (ctx, err, msg) => ctx.log?.warn?.({ err }, `calls: ${msg}`);
 
-function assertEnabled(ctx) {
+export function assertEnabled(ctx) {
   if (!ctx.deps?.livekit?.enabled) throw new ApiError(503, CALLS_DISABLED.error, CALLS_DISABLED.code);
 }
 
@@ -107,7 +107,7 @@ async function profileOf(db, email) {
 }
 
 // ── Realtime ────────────────────────────────────────────────────────────────
-async function emitRows(ctx, table, op, rows) {
+export async function emitRows(ctx, table, op, rows) {
   const list = (rows || []).filter(Boolean);
   if (!ctx.tenantSlug || !list.length || typeof ctx.deps?.emit !== 'function') return;
   try {
@@ -135,6 +135,51 @@ async function peopleInRoomDb(db, callId) {
   const r = await one(db,
     `SELECT count(*)::int AS n FROM call_participants WHERE call_id = $1 AND joined_at IS NOT NULL AND left_at IS NULL`, [callId]);
   return r?.n ?? 0;
+}
+
+// ── Goście z linku (migracja 097, guests.js) ────────────────────────────────
+// Goście NIE trafiają do call_participants (tam są tylko konta) — ich obecność w pokoju trzyma
+// call_guest_requests (joined_at/left_at). Wiersz do realtime bez secret_hash.
+export const publicGuestRow = (row) => {
+  if (!row) return row;
+  const { secret_hash: _s, ...rest } = row;
+  return rest;
+};
+
+export async function guestsInRoom(db, callId) {
+  try {
+    const r = await one(db,
+      `SELECT count(*)::int AS n FROM call_guest_requests WHERE call_id = $1 AND joined_at IS NOT NULL AND left_at IS NULL`, [callId]);
+    return r?.n ?? 0;
+  } catch {
+    return 0; // tenant bez migracji 097
+  }
+}
+
+// Gość wszedł do pokoju / wyszedł (webhook LiveKit).
+async function guestRoomUpdate(ctx, call, identity, joined) {
+  try {
+    const row = joined
+      ? await one(ctx.db,
+        `UPDATE call_guest_requests SET joined_at = now(), left_at = NULL, call_id = $2, updated_at = now()
+          WHERE identity = $1 AND status = 'admitted' RETURNING *`, [identity, call.id])
+      : await one(ctx.db,
+        `UPDATE call_guest_requests SET left_at = now(), updated_at = now()
+          WHERE identity = $1 AND joined_at IS NOT NULL AND left_at IS NULL RETURNING *`, [identity]);
+    if (row) await emitRows(ctx, 'call_guest_requests', 'update', [publicGuestRow(row)]);
+    return row;
+  } catch (err) {
+    if (err?.code !== '42P01') warn(ctx, err, 'gość w pokoju');
+    return null;
+  }
+}
+
+// 1:1 z gościem: wyjście jednej strony nie kończy rozmowy, dopóki w pokoju jest druga strona
+// i gość (bez gości — jak dotąd: odłożenie kończy rozmowę obojgu).
+async function keepDirectForGuests(db, call) {
+  if (call.is_group || call.status !== 'active') return false;
+  if ((await guestsInRoom(db, call.id)) === 0) return false;
+  return (await peopleInRoomDb(db, call.id)) > 0;
 }
 
 // ── Wiadomość w czacie ──────────────────────────────────────────────────────
@@ -339,6 +384,7 @@ export async function leaveCall(ctx, user, body = {}) {
     [call.id, me]);
   if (part) await emitRows(ctx, 'call_participants', 'update', [part]);
   // Grupa: koniec dopiero po zamknięciu pokoju (webhook room_finished / worker).
+  if (await keepDirectForGuests(ctx.db, call)) return { ok: true, call };
   const decision = L.decisionOnLeave(call, me, { remaining: null });
   if (decision) {
     const done = await finishCall(ctx, call.id, decision);
@@ -495,8 +541,15 @@ export async function handleLivekitEvent(ctx, event) {
         await ctx.deps?.livekit?.deleteRoom?.(call.room_name);
         return { action: 'closed_stale_room' };
       }
-      const part = await upsertParticipant(db, call.id, identity, { response: 'accepted', joined: true });
-      await emitRows(ctx, 'call_participants', 'upsert', [part]);
+      const guest = L.isGuestIdentity(identity);
+      if (guest) {
+        await guestRoomUpdate(ctx, call, identity, true);
+      } else {
+        const part = await upsertParticipant(db, call.id, identity, { response: 'accepted', joined: true });
+        await emitRows(ctx, 'call_participants', 'upsert', [part]);
+      }
+      // Wejście gościa też „odbiera” (wpuszcza go ktoś z rozmowy) — inaczej 1:1 z gościem po 45 s
+      // stałoby się „nieodebranym” i zamknęło pokój.
       if (identity !== lower(call.started_by_email) && call.status === 'ringing') {
         const updated = call.is_group
           ? await one(db, `UPDATE calls SET answered_at = now(), updated_at = now() WHERE id = $1 AND status = 'ringing' AND answered_at IS NULL RETURNING *`, [call.id])
@@ -504,16 +557,22 @@ export async function handleLivekitEvent(ctx, event) {
         if (updated) await emitRows(ctx, 'calls', 'update', [updated]);
         return { action: 'answered' };
       }
-      return { action: 'joined' };
+      return { action: guest ? 'guest_joined' : 'joined' };
     }
     case 'participant_left':
     case 'participant_connection_aborted': {
       if (!identity) return { ignored: 'no_identity' };
+      // Gość wychodzi — rozmowa trwa dalej (kończą ją wyłącznie osoby z rozmowy / pusty pokój).
+      if (L.isGuestIdentity(identity)) {
+        await guestRoomUpdate(ctx, call, identity, false);
+        return { action: 'guest_left' };
+      }
       const part = await one(db,
         `UPDATE call_participants SET left_at = now() WHERE call_id = $1 AND user_email = $2 AND left_at IS NULL RETURNING *`,
         [call.id, identity]);
       if (part) await emitRows(ctx, 'call_participants', 'update', [part]);
       const remaining = call.is_group ? await peopleInRoomDb(db, call.id) : null;
+      if (await keepDirectForGuests(db, call)) return { action: 'left' };
       const decision = L.decisionOnLeave(call, identity, { remaining });
       if (decision && (await finishCall(ctx, call.id, decision))) return { action: decision };
       return { action: 'left' };

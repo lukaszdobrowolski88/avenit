@@ -41,6 +41,8 @@ import PublicFormPage from './modules/Forms/pages/PublicFormPage';
 import PublicModulePage from './modules/CustomModule/pages/PublicModulePage';
 import PublicBoardForm from './modules/Boards/pages/PublicBoardForm';
 import AssignmentResponsePage from './modules/AssignmentResponse/AssignmentResponsePage';
+// Strona gościa rozmowy audio/wideo (/rozmowa/:token) — leniwie, z własnym <Suspense> w gałęzi.
+const GuestCallPage = lazy(() => import('./modules/Komunikator/calls/guest/GuestCallPage'));
 
 // Moduły uwierzytelnionej apki — code-splitting (React.lazy): każdy trafia do
 // osobnego chunku ładowanego dopiero przy wejściu w trasę. Skraca bundle logowania
@@ -379,6 +381,21 @@ function AppInner() {
           <Route path="/regulamin" element={<LegalPage kind="terms" />} />
           <Route path="*" element={<Navigate to="/polityka-prywatnosci" replace />} />
         </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Gość rozmowy audio/wideo z linku „zaproś gościa” — bez logowania (także dla zalogowanych:
+  // link otwiera stronę gościa, a nie aplikację).
+  if (window.location.pathname.startsWith('/rozmowa/')) {
+    return (
+      <BrowserRouter>
+        <Suspense fallback={<div className="h-screen flex items-center justify-center"><Spinner size={32} /></div>}>
+          <Routes>
+            <Route path="/rozmowa/:token" element={<GuestCallPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     );
   }

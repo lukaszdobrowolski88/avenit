@@ -126,7 +126,8 @@ export default function useCallRoom({ onRemoteJoined, onRemoteLeft, onDisconnect
 
   // Połącz z pokojem i włącz mikrofon (+ kamerę dla wideo). Błąd urządzenia nie przerywa
   // rozmowy — można słuchać i włączyć mikrofon po nadaniu uprawnień.
-  const connect = useCallback(async ({ url, token, video = false, canPublish = true }) => {
+  // audio: false — wejście z wyciszonym mikrofonem (strona gościa: wybór w podglądzie).
+  const connect = useCallback(async ({ url, token, video = false, audio = true, canPublish = true }) => {
     const lk = await loadLivekit();
     lkRef.current = lk;
     const room = new lk.Room(roomOptions(lk));
@@ -157,7 +158,7 @@ export default function useCallRoom({ onRemoteJoined, onRemoteLeft, onDisconnect
     await room.connect(url, token, { autoSubscribe: true });
     if (roomRef.current !== room) return room; // rozłączono w trakcie łączenia
 
-    if (canPublishRef.current) {
+    if (canPublishRef.current && audio !== false) {
       try {
         await room.localParticipant.setMicrophoneEnabled(true);
       } catch (err) {

@@ -343,6 +343,9 @@ export const REGISTRY = {
     },
   }),
   call_participants: T(null, { readOnly: true }),
+  // Goście z linku (migracja 097): poczekalnia czytana przez uczestników rozmowy (jak calls),
+  // zapis tylko serwer (src/calls/guests.js). call_guest_links celowo POZA rejestrem (token = sekret).
+  call_guest_requests: T(null, { readOnly: true, hiddenColumns: ['secret_hash'] }),
   // link_previews / message_translations — celowo POZA rejestrem: tylko przez fn
   // (link-preview, translate-message), bez odczytu/zapisu przez /api/db.
   // Młodzieżówka
