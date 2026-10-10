@@ -566,6 +566,7 @@ export default function EventDetailPage() {
       {/* Spotkanie online (wydarzenie online/hybrydowe) — „Dołącz”, czat spotkania */}
       <OnlineMeetingCard
         ev={ev}
+        canManage={canManage}
         wideAudience={!Array.isArray(ev.visibility_segments) || !ev.visibility_segments.length || ev.visibility_segments.some((s) => s?.type === 'everyone')}
       />
 

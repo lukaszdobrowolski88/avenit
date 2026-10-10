@@ -252,14 +252,14 @@ export async function revokeGuestLinks(ctx, db, where, params) {
   return expired;
 }
 
-async function guestQuotaLeft(db, me) {
+export async function guestQuotaLeft(db, me) {
   const r = await one(db,
     `SELECT count(*)::int AS n FROM meeting_invites
       WHERE kind = 'guest' AND invited_by_email = $1 AND created_at > now() - interval '1 day'`, [me]);
   return M.GUEST_EMAILS_PER_DAY - (r?.n ?? 0);
 }
 
-async function assertGuestsAllowed(db, people) {
+export async function assertGuestsAllowed(db, people) {
   if ((await minorEmails(db, people)).size > 0) throw new ApiError(403, MESSAGES.minorsGuests, 'GUESTS_MINORS');
 }
 

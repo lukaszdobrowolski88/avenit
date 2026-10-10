@@ -86,7 +86,7 @@ export default function ConversationHeader({
     if (isHomeGroup) return tr('Kanał grupy domowej • {n} członków', { n });
     if (conversation.type === 'ministry') return tr('Kanał służby • {n} członków', { n });
     if (conversation.type === 'announcement') return tr('Kanał ogłoszeń • {n} uczestników', { n });
-    if (conversation.type === 'meeting') return tr('Spotkanie online • {n} uczestników', { n });
+    if (conversation.type === 'meeting') return n === 1 ? tr('Spotkanie online • 1 uczestnik') : tr('Spotkanie online • {n} uczestników', { n });
     return tr('{n} uczestników', { n });
   };
 

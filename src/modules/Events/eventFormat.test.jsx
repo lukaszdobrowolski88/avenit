@@ -89,6 +89,27 @@ describe('OnlineMeetingCard — strona wydarzenia', () => {
     expect(screen.getByText(/do ok. 30 osób z kamerami/)).toBeTruthy();
   });
 
+  it('edytujący: goście spoza aplikacji — zaproszenie e-mailem i wycofanie', async () => {
+    let guests = [];
+    h.fn = async (name, body) => {
+      if (name === 'event-meeting') return { status: 'scheduled', meeting: { id: 'm1', conversation_id: 'c9', kind: 'video', participant: true, invited: 1 } };
+      if (body.add) { guests = body.add.map((g, i) => ({ id: `g${i}`, email: g.email, name: 'Gosia', response: 'pending', email_sent: true })); return { guests, added: guests.length, members_added: 0 }; }
+      if (body.remove) { guests = []; return { guests, added: 0, members_added: 0 }; }
+      return { guests };
+    };
+    render(wrap(<OnlineMeetingCard ev={{ id: '7', format: 'online', title: 'Webinar', date: '2026-10-12', time: '19:00' }} canManage />));
+    const input = await screen.findByLabelText('Adresy e-mail gości');
+    fireEvent.change(input, { target: { value: 'x@y' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Zaproś' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Nieprawidłowy adres/);
+    fireEvent.change(input, { target: { value: 'gosia@wp.pl' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Zaproś' }));
+    expect(await screen.findByText(/gosia@wp\.pl/)).toBeTruthy();
+    expect(callFn).toHaveBeenCalledWith('event-meeting-guests', { event_id: '7', add: [{ email: 'gosia@wp.pl' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Wycofaj zaproszenie: gosia@wp.pl' }));
+    await waitFor(() => expect(screen.queryByText(/gosia@wp\.pl/)).toBeNull());
+  });
+
   it('stacjonarne — karta się nie pokazuje', () => {
     h.fn = async () => ({ status: 'none' });
     const { container } = render(wrap(<OnlineMeetingCard ev={{ id: '1', format: 'in_person' }} />));

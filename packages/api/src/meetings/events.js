@@ -21,7 +21,7 @@ import { liveCallOf } from '../calls/service.js';
 import * as M from './logic.js';
 import {
   withTx, activeAccounts, invitesOf, addParticipants, createGuestInvite, systemMessage, notifyMembers,
-  emailGuests, background, emitMeeting, namesOf, cancelMeetingInternal,
+  emailGuests, background, emitMeeting, namesOf, cancelMeetingInternal, guestQuotaLeft, assertGuestsAllowed,
 } from './service.js';
 import { emitRows } from '../calls/service.js';
 
@@ -313,3 +313,106 @@ export async function eventMeeting(ctx, user, body = {}) {
   };
 }
 
+
+// ── Sprzątanie (worker, co minutę) ──────────────────────────────────────────
+// Spotkanie wydarzenia, którego wydarzenie zniknęło (usunięcie z przeglądarki nie zwraca wiersza,
+// więc hook po zapisie go nie widzi), zostało zarchiwizowane albo zmienione na stacjonarne —
+// odwołane. Siatka bezpieczeństwa dla każdego zapisu, który ominął syncEventMeeting.
+export async function sweepOrphanEventMeetings(ctx) {
+  const { rows } = await ctx.db.query(
+    `SELECT m.* FROM meetings m
+      WHERE m.source = 'event' AND m.status = 'scheduled' AND m.event_id IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM events e WHERE e.id::text = m.event_id
+             AND e.format IN ('online', 'hybrid') AND COALESCE(e.is_archived, false) = false)
+      LIMIT 100`);
+  for (const m of rows) {
+    const ev = await loadEvent(ctx.db, m.event_id).catch(() => null);
+    await cancelMeetingInternal(ctx, m, null, {
+      note: !ev || ev.is_archived ? 'Wydarzenie usunięte — spotkanie online odwołane' : 'Wydarzenie zmieniono na stacjonarne — spotkanie online odwołane',
+    }).catch((err) => warn(ctx, err, `sprzątanie ${m.id}`));
+  }
+  return rows.length;
+}
+
+// ── Goście wydarzenia po e-mailu (organizator / edytujący wydarzenie) ───────
+async function assertEventManager(ctx, user, eventId) {
+  const { ev, me } = await visibleEventFor(ctx, user, eventId);
+  const u = await one(ctx.db, `SELECT id, email, role, is_super_admin, campus_id, member_id FROM app_users WHERE lower(email) = $1 LIMIT 1`, [me]);
+  const access = await canAccess({ pool: ctx.db, dbName: ctx.tenant?.dbName, table: 'events', op: 'update', user: u, allowModuleScope: true });
+  if (!access.ok || (access.moduleScope?.modules && !access.moduleScope.modules.includes(ev.module_key))) {
+    throw new ApiError(403, 'Gości zaprasza osoba, która może edytować to wydarzenie', 'EVENT_FORBIDDEN');
+  }
+  return { ev, me };
+}
+
+const guestRow = (i) => ({ id: i.id, email: i.email, name: i.name || M.nameFromEmail(i.email), response: i.response, email_sent: !!i.email_sent_at });
+
+// event-meeting-guests { event_id, add?: [{ email, name } | email], remove?: [invite_id] } → { guests, added, members_added }
+// Adres osoby z kontem → uczestnik spotkania (po koncie, z powiadomieniem); inny → gość z osobistym linkiem.
+export async function eventMeetingGuests(ctx, user, body = {}) {
+  const { db } = ctx;
+  const { ev, me } = await assertEventManager(ctx, user, body.event_id);
+  if (!ONLINE_FORMATS.has(ev.format)) throw new ApiError(409, 'Najpierw ustaw formę wydarzenia na online albo hybrydową', 'NOT_ONLINE');
+  let meeting = await meetingOfEvent(db, ev.id);
+  if (!meeting && M.eventTimes(ev)) { await syncEventMeeting(ctx, ev.id, me); meeting = await meetingOfEvent(db, ev.id); }
+  if (!meeting) throw new ApiError(409, 'Ustaw godzinę wydarzenia, żeby utworzyć spotkanie online', 'NEEDS_TIME');
+  if (meeting.status !== 'scheduled') throw new ApiError(410, 'Spotkanie online tego wydarzenia zostało odwołane', 'MEETING_CANCELLED');
+
+  const add = M.parseGuests(body.add);
+  const remove = Array.isArray(body.remove) ? body.remove.map(String) : [];
+  let added = [];
+  let membersAdded = [];
+  if (add.length) {
+    const accounts = await activeAccounts(db, add.map((g) => g.email));
+    const guests = add.filter((g) => !accounts.has(g.email));
+    if (guests.length) {
+      const people = (await db.query(`SELECT DISTINCT lower(user_email) AS e FROM conversation_participants WHERE conversation_id = $1`, [meeting.conversation_id])).rows.map((r) => r.e);
+      await assertGuestsAllowed(db, people);
+      if (guests.length > (await guestQuotaLeft(db, me))) throw new ApiError(429, 'Wysłano dziś zbyt wiele zaproszeń e-mail. Spróbuj jutro albo zaproś mniej gości.', 'GUEST_QUOTA');
+      const have = (await db.query(`SELECT count(*)::int AS n FROM meeting_invites WHERE meeting_id = $1 AND kind = 'guest'`, [meeting.id])).rows[0].n;
+      if (have + guests.length > M.MAX_GUESTS) throw new ApiError(400, `Na spotkanie można zaprosić najwyżej ${M.MAX_GUESTS} gości`, 'TOO_MANY_GUESTS');
+    }
+    const out = await withTx(db, async (tx) => {
+      const g = [];
+      const parts = [];
+      for (const x of add) {
+        if (accounts.has(x.email)) {
+          const p = await addParticipants(tx, meeting.conversation_id, [{ email: x.email, role: 'member' }]);
+          const inv = await one(tx,
+            `INSERT INTO meeting_invites (meeting_id, kind, email, invited_by_email) VALUES ($1, 'member', $2, $3)
+             ON CONFLICT (meeting_id, email) DO NOTHING RETURNING *`, [meeting.id, x.email, me]);
+          if (inv) membersAdded.push(x.email);
+          parts.push(...p);
+        } else {
+          const r = await createGuestInvite(tx, meeting, x, me);
+          if (r) g.push({ ...r.invite, token: r.link.token });
+        }
+      }
+      return { g, parts };
+    });
+    added = out.g;
+    if (out.parts.length) await emitRows(ctx, 'conversation_participants', 'insert', out.parts);
+    await background(ctx, async () => {
+      if (membersAdded.length) {
+        await notifyMembers(ctx, meeting, membersAdded, { title: `Zaproszenie: ${meeting.title}`, body: `Spotkanie online — ${M.formatShort(meeting.starts_at)}` });
+      }
+      if (added.length) await emailGuests(ctx, meeting, added, 'invite');
+    });
+  }
+  if (remove.length) {
+    const { rows: gone } = await db.query(
+      `SELECT * FROM meeting_invites WHERE meeting_id = $1 AND kind = 'guest' AND id::text = ANY($2::text[])`, [meeting.id, remove]);
+    if (gone.length) {
+      await db.query(`UPDATE call_guest_links SET revoked_at = now(), revoked_by_email = $2 WHERE invite_id = ANY($1::uuid[]) AND revoked_at IS NULL`, [gone.map((g) => g.id), me]);
+      await db.query(`DELETE FROM meeting_invites WHERE id = ANY($1::uuid[])`, [gone.map((g) => g.id)]);
+      await background(ctx, () => emailGuests(ctx, meeting, gone.filter((g) => g.email_sent_at), 'cancel'));
+    }
+  }
+  if (add.length || remove.length) {
+    const touched = await one(db, `UPDATE meetings SET updated_at = now() WHERE id = $1 RETURNING *`, [meeting.id]);
+    await emitMeeting(ctx, touched || meeting);
+  }
+  const guests = (await invitesOf(db, meeting.id)).filter((i) => i.kind === 'guest').map(guestRow);
+  return { guests, added: added.length, members_added: membersAdded.length };
+}
