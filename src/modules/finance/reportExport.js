@@ -166,7 +166,7 @@ export function csvString(model, sections) {
   const row = (...cells) => lines.push(cells.map(csvEsc).join(';'));
   row('Raport finansowy', model.range.label);
   row('');
-  if (model.filterLabel) row('Filtr', model.filterLabel);
+  if (model.filterLabel) row('Wyłączone z raportu', model.filterLabel);
   if (on('summary')) {
     row('');
     row('Podsumowanie', 'Kwota');
@@ -231,7 +231,7 @@ function buildWorkbook(XLSX, model, sections) {
   const on = (k) => sectionOn(sections, k);
   const wb = XLSX.utils.book_new();
   const summary = [['Raport finansowy', model.range.label]];
-  if (model.filterLabel) summary.push(['Filtr', model.filterLabel]);
+  if (model.filterLabel) summary.push(['Wyłączone z raportu', model.filterLabel]);
   if (on('summary')) summary.push([], ['Podsumowanie', 'Kwota (zł)'], ['Przychody', model.totals.income], ['Wydatki', model.totals.expense], ['Bilans', model.totals.balance]);
   if (on('incomeExpense') || on('cashflow')) summary.push([], ['Okres', 'Przychody', 'Wydatki', 'Bilans', 'Skumulowany'], ...model.buckets.map((b) => [b.label, b.income, b.expense, b.balance, b.cumulative]));
   const groupRows = (title, items, key) => {

@@ -32,7 +32,8 @@ import TagPicker, { TagChips } from './finance/TagPicker';
 import FinanceDictionaries from './finance/FinanceDictionaries';
 import FinanceProjects from './finance/FinanceProjects';
 import { NEW_OPTION, buildAreaOptions, projectOptions, projectById, nameTaken } from './finance/dictionaries';
-import { REPORT_SECTIONS, MAIL_SECTION_KEYS, defaultSections, loadSections, saveSections, enabledKeys, EMPTY_REPORT_FILTERS, applyReportFilters, hasReportFilters } from './finance/reportSections';
+import { REPORT_SECTIONS, MAIL_SECTION_KEYS, defaultSections, loadSections, saveSections, enabledKeys, NONE, EMPTY_REPORT_EXCLUDE, applyReportExclusions, hasExclusions, describeExclusions, loadExclusions, saveExclusions } from './finance/reportSections';
+import ExcludePicker from './finance/ExcludePicker';
 
 
 
@@ -423,30 +424,48 @@ const FinanceModule = () => {
   const setSection = (key, on) => setReportSections((prev) => { const next = { ...prev, [key]: on }; saveSections(next); return next; });
   const setAllSections = (next) => { setReportSections(next); saveSections(next); };
   const sec = (key) => reportSections[key] !== false;
-  // Filtry raportu: projekt / służba-obszar / kategoria / tag.
-  const [reportFilters, setReportFilters] = useState(EMPTY_REPORT_FILTERS);
-  const reportFilterLabel = [
-    reportFilters.projectId && `${tr('Projekt')}: ${projectById(projects, reportFilters.projectId)?.name || '—'}`,
-    reportFilters.area && `${tr('Służba / obszar')}: ${reportFilters.area}`,
-    reportFilters.costCategory && `${tr('Kategoria')}: ${reportFilters.costCategory}`,
-    reportFilters.tag && `${tr('Tag')}: ${reportFilters.tag}`,
-  ].filter(Boolean).join(' · ');
+  // Co wliczyć do raportu: odznaczone projekty / obszary / kategorie / tagi są wykluczane
+  // (np. wszystkie projekty albo jeden, reszta zostaje). Zapamiętane w przeglądarce.
+  const [reportExclude, setReportExcludeState] = useState(loadExclusions);
+  const setReportExclude = (next) => { setReportExcludeState(next); saveExclusions(next); };
+  const setExcluded = (dim, list) => setReportExclude({ ...reportExclude, [dim]: list });
+  // Listy wartości: słowniki + to, co faktycznie jest w danych zakresu (także stare nazwy).
+  const reportExcludeOptions = useMemo(() => {
+    const uniq = (arr) => [...new Set(arr.filter((v) => v != null && v !== '').map(String))];
+    const none = (label) => ({ value: NONE, label: tr(label), muted: true });
+    const expRows = [...reportExpense, ...reportBudget.filter((b) => b.kind !== 'income')];
+    const incRows = [...reportIncome.map((i) => ({ category: i.type })), ...reportBudget.filter((b) => b.kind === 'income')];
+    const allRows = [...reportIncome, ...reportExpense, ...reportBudget];
+    const projIds = uniq([...projects.map((p) => p.id), ...allRows.map((r) => r.project_id)]);
+    return {
+      projects: [...projIds.map((id) => ({ value: id, label: projectById(projects, id)?.name || '—', color: projectById(projects, id)?.color })), none('(bez projektu)')],
+      areas: uniq([...buildAreaOptions(serviceOptions, areas).map((o) => o.value), ...expRows.map((r) => r.category)]).map((v) => ({ value: v, label: v })),
+      costCategories: [...uniq([...expenseCategories.map((c) => c.name), ...expRows.map((r) => r.cost_category)]).map((v) => ({ value: v, label: v, color: categoryColor(v) })), none('(bez kategorii)')],
+      incomeCategories: [...uniq([...incomeCategories.map((c) => c.name), ...incRows.map((r) => r.category)]).map((v) => ({ value: v, label: tr(v), color: categoryColor(v, 'income') })), none('(bez kategorii)')],
+      tags: [...uniq([...tagPalette.map((t) => t.name), ...allRows.flatMap((r) => (Array.isArray(r.tags) ? r.tags : []))]).map((v) => ({ value: v, label: v, color: tagColor(v) })), none('(bez tagów)')],
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportIncome, reportExpense, reportBudget, projects, areas, serviceOptions, categories, tagPalette]);
+  const reportFilterLabel = describeExclusions(reportExclude, {
+    tr, projectName: (id) => projectById(projects, id)?.name || '—',
+    totals: Object.fromEntries(Object.entries(reportExcludeOptions).map(([d, o]) => [d, o.length])),
+  });
 
   const reportModel = useMemo(() => {
     const m = buildReportModel({
       range: reportRange,
-      income: applyReportFilters(reportIncome, reportFilters, 'income'),
-      expense: applyReportFilters(reportExpense, reportFilters, 'expense'),
-      budget: applyReportFilters(reportBudget, reportFilters, 'budget'),
+      income: applyReportExclusions(reportIncome, reportExclude, 'income'),
+      expense: applyReportExclusions(reportExpense, reportExclude, 'expense'),
+      budget: applyReportExclusions(reportBudget, reportExclude, 'budget'),
       expenseCategories, incomeCategories, projects,
-      // Porównanie r/r ma sens tylko dla całości (bez filtrów).
-      prevIncome: hasReportFilters(reportFilters) ? null : reportPrev.income,
-      prevExpense: hasReportFilters(reportFilters) ? null : reportPrev.expense,
+      // Porównanie r/r ma sens tylko dla całości (bez wykluczeń).
+      prevIncome: hasExclusions(reportExclude) ? null : reportPrev.income,
+      prevExpense: hasExclusions(reportExclude) ? null : reportPrev.expense,
     });
     m.filterLabel = reportFilterLabel;
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportRange, reportIncome, reportExpense, reportBudget, categories, projects, reportPrev, reportFilters]);
+  }, [reportRange, reportIncome, reportExpense, reportBudget, categories, projects, reportPrev, reportExclude, reportFilterLabel]);
 
   // ── Pobieranie raportu (CSV / XLSX / PDF) ────────────────────────────────
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
@@ -508,7 +527,7 @@ const FinanceModule = () => {
           from: reportRange.from, to: reportRange.to, periodLabel: reportRange.label, recipients: list, attachments,
           // Treść maila = te same sekcje i filtry co na ekranie.
           sections: enabledKeys(reportSections).filter((k) => MAIL_SECTION_KEYS.includes(k)),
-          filters: hasReportFilters(reportFilters) ? reportFilters : null, filterLabel: reportFilterLabel || null,
+          exclude: hasExclusions(reportExclude) ? reportExclude : null, filterLabel: reportFilterLabel || null,
         },
       });
       if (error) throw error;
@@ -2489,24 +2508,22 @@ const FinanceModule = () => {
             </div>
           </div>
 
-          {/* Filtry raportu: projekt / służba-obszar / kategoria / tag */}
+          {/* Co wliczyć: odznaczenie wyklucza (wszystkie projekty, jeden projekt, kategorię, tag…) */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 print:hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <CustomSelect label={tr('Projekt')} value={reportFilters.projectId} onChange={(v) => setReportFilters((f) => ({ ...f, projectId: v }))}
-                options={[{ value: '', label: tr('Wszystkie') }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
-              <CustomSelect label={tr('Służba / obszar')} value={reportFilters.area} onChange={(v) => setReportFilters((f) => ({ ...f, area: v }))}
-                options={[{ value: '', label: tr('Wszystkie') }, ...buildAreaOptions(serviceOptions, areas, reportFilters.area)]} />
-              <CustomSelect label={tr('Kategoria wydatków')} value={reportFilters.costCategory} onChange={(v) => setReportFilters((f) => ({ ...f, costCategory: v }))}
-                options={[{ value: '', label: tr('Wszystkie') }, ...expenseCategories.map((c) => ({ value: c.name, label: c.name }))]} />
-              <CustomSelect label={tr('Tag')} value={reportFilters.tag} onChange={(v) => setReportFilters((f) => ({ ...f, tag: v }))}
-                options={[{ value: '', label: tr('Wszystkie') }, ...tagPalette.map((tg) => ({ value: tg.name, label: tg.name }))]} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <ExcludePicker label={tr('Projekty')} options={reportExcludeOptions.projects} excluded={reportExclude.projects} onChange={(l) => setExcluded('projects', l)} />
+              <ExcludePicker label={tr('Służby / obszary')} options={reportExcludeOptions.areas} excluded={reportExclude.areas} onChange={(l) => setExcluded('areas', l)} />
+              <ExcludePicker label={tr('Kategorie wydatków')} options={reportExcludeOptions.costCategories} excluded={reportExclude.costCategories} onChange={(l) => setExcluded('costCategories', l)} />
+              <ExcludePicker label={tr('Kategorie wpływów')} options={reportExcludeOptions.incomeCategories} excluded={reportExclude.incomeCategories} onChange={(l) => setExcluded('incomeCategories', l)} />
+              <ExcludePicker label={tr('Tagi')} options={reportExcludeOptions.tags} excluded={reportExclude.tags} onChange={(l) => setExcluded('tags', l)} />
             </div>
-            {hasReportFilters(reportFilters) && (
+            {hasExclusions(reportExclude) ? (
               <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                <span className="text-gray-600 dark:text-gray-300">{reportFilterLabel}</span>
-                {(reportFilters.area || reportFilters.costCategory) && <span className="text-xs text-gray-500 dark:text-gray-400">{tr('Filtr służby/kategorii obejmuje tylko wydatki — wpływy są pomijane.')}</span>}
-                <button onClick={() => setReportFilters(EMPTY_REPORT_FILTERS)} className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('Wyczyść filtry')}</button>
+                <span className="text-gray-600 dark:text-gray-300">{tr('Wyłączone z raportu')}: {reportFilterLabel}</span>
+                <button onClick={() => setReportExclude(EMPTY_REPORT_EXCLUDE)} className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('Uwzględnij wszystko')}</button>
               </div>
+            ) : (
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{tr('Raport obejmuje wszystko. Odznacz w listach to, czego ma nie uwzględniać.')}</p>
             )}
           </div>
 
@@ -2519,7 +2536,7 @@ const FinanceModule = () => {
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{tr('Raport finansowy')}</h2>
                   {orgName && <p className="text-sm text-gray-500 dark:text-gray-400">{orgName}</p>}
-                  {reportFilterLabel && <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-0.5">{reportFilterLabel}</p>}
+                  {reportFilterLabel && <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-0.5">{tr('Wyłączone z raportu')}: {reportFilterLabel}</p>}
                 </div>
               </div>
               <div className="sm:text-right text-sm">
@@ -3023,7 +3040,7 @@ const FinanceModule = () => {
         <div className="p-6">
           <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2"><Calendar size={15} /> {tr('Zakres')}: <span className="font-semibold text-gray-900 dark:text-white">{reportRange.label}</span></div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Raport z wybranymi sekcjami trafi na wskazane adresy.')}</p>
-          {reportFilterLabel && <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300">{tr('Filtr')}: <span className="font-semibold text-gray-900 dark:text-white">{reportFilterLabel}</span></div>}
+          {reportFilterLabel && <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300">{tr('Wyłączone z raportu')}: <span className="font-semibold text-gray-900 dark:text-white">{reportFilterLabel}</span></div>}
           <div className="mb-4 flex flex-wrap gap-1.5">
             {REPORT_SECTIONS.filter((x) => x.mail && sec(x.key)).map((x) => (
               <span key={x.key} className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{tr(x.label)}</span>

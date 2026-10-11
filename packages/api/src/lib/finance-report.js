@@ -1,7 +1,7 @@
 // Wspólny builder raportu finansowego (serwer): pobranie danych + mail-safe HTML + CSV.
 // Używany przez fn/finance-report-email.js (na żądanie) i fn/finance-report-schedule.js (cron).
 // HTML celowo bez SVG — Gmail/Outlook wycinają SVG; słupki robione na <div> z bgcolor + width%.
-// Sekcje (`sections`) i filtry (`filters`) odpowiadają wyborowi w zakładce Raporty
+// Sekcje (`sections`) i wykluczenia (`exclude`) odpowiadają wyborowi w zakładce Raporty
 // (src/modules/finance/reportSections.js); brak sekcji = wszystkie.
 
 export const pln = (n) => Number(n || 0).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł';
@@ -18,12 +18,21 @@ export function normalizeSections(input) {
   return set.size ? set : new Set(MAIL_SECTIONS);
 }
 
-/** Filtry z wejścia: tylko znane pola, krótkie teksty. */
-export function normalizeFilters(input) {
+// Wykluczenia z zakładki Raporty (src/modules/finance/reportSections.js — te same reguły).
+const NONE = '__none__';
+const DIMS = ['projects', 'areas', 'costCategories', 'incomeCategories', 'tags'];
+
+/** Wykluczenia z wejścia: tylko znane wymiary, krótkie teksty, ograniczona liczba. */
+export function normalizeExclude(input) {
   if (!input || typeof input !== 'object') return null;
-  const s = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v).slice(0, 200) : '');
-  const f = { projectId: s(input.projectId), area: s(input.area), costCategory: s(input.costCategory), tag: s(input.tag) };
-  return f.projectId || f.area || f.costCategory || f.tag ? f : null;
+  const out = {};
+  let any = false;
+  for (const d of DIMS) {
+    const list = Array.isArray(input[d]) ? input[d] : [];
+    out[d] = [...new Set(list.filter((v) => typeof v === 'string' || typeof v === 'number').map((v) => String(v).slice(0, 200)))].slice(0, 500);
+    if (out[d].length) any = true;
+  }
+  return any ? out : null;
 }
 
 const tagsOf = (r) => {
@@ -31,16 +40,22 @@ const tagsOf = (r) => {
   if (typeof r.tags === 'string') { try { const v = JSON.parse(r.tags); return Array.isArray(v) ? v : []; } catch { return []; } }
   return [];
 };
+const val = (v) => (v == null || v === '' ? NONE : String(v));
 
-/** Te same reguły co applyReportFilters po stronie klienta. */
-export function applyFilters(rows, filters, kind) {
-  if (!filters) return rows;
+/** Wiersze po wykluczeniach. kind: 'income' | 'expense' | 'budget'. */
+export function applyExclusions(rows, ex, kind) {
+  if (!ex) return rows;
+  const s = Object.fromEntries(DIMS.map((d) => [d, new Set(ex[d] || [])]));
   return rows.filter((r) => {
-    if (filters.projectId && String(r.project_id || '') !== String(filters.projectId)) return false;
-    if (filters.tag && !tagsOf(r).includes(filters.tag)) return false;
-    if (kind === 'income') return !(filters.area || filters.costCategory);
-    if (filters.area && r.category !== filters.area) return false;
-    if (filters.costCategory && r.cost_category !== filters.costCategory) return false;
+    if (s.projects.size && s.projects.has(val(r.project_id))) return false;
+    if (s.tags.size) {
+      const tags = tagsOf(r).filter(Boolean);
+      if (tags.length ? tags.some((t) => s.tags.has(String(t))) : s.tags.has(NONE)) return false;
+    }
+    const isIncome = kind === 'income' || (kind === 'budget' && r.kind === 'income');
+    if (isIncome) return !(s.incomeCategories.size && s.incomeCategories.has(val(kind === 'income' ? r.type : r.category)));
+    if (s.areas.size && s.areas.has(val(r.category))) return false;
+    if (s.costCategories.size && s.costCategories.has(val(r.cost_category))) return false;
     return true;
   });
 }
@@ -171,7 +186,7 @@ export function buildReportHtml({ org, label, income, expenses, allExpenses = ex
   <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:680px;margin:0 auto;color:#1f2937">
     <h2 style="color:#111827;margin-bottom:2px">Raport finansowy</h2>
     <p style="color:#6b7280;margin-top:0">${esc(org)} · <strong>${esc(label)}</strong></p>
-    ${filterLabel ? `<p style="color:#374151;margin-top:0;font-size:13px">Filtr: ${esc(filterLabel)}</p>` : ''}
+    ${filterLabel ? `<p style="color:#374151;margin-top:0;font-size:13px">Wyłączone z raportu: ${esc(filterLabel)}</p>` : ''}
     ${parts.join('\n')}
     <p style="color:#9ca3af;font-size:12px;margin-top:20px">Wygenerowano automatycznie z modułu Finanse (Avenit).</p>
   </div>`;
@@ -192,13 +207,13 @@ export function buildReportCsv({ label, income, expenses }) {
 }
 
 /** Pełny raport (HTML + CSV + sumy) dla zakresu, z opcjonalnymi sekcjami i filtrami. */
-export async function buildFinanceReport(db, { from, to, year, label, sections = null, filters = null, filterLabel = null }) {
+export async function buildFinanceReport(db, { from, to, year, label, sections = null, exclude = null, filterLabel = null }) {
   const rows = await fetchReportRows(db, from, to, year);
-  const f = normalizeFilters(filters);
-  const income = applyFilters(rows.income, f, 'income');
-  const expenses = applyFilters(rows.expenses, f, 'expense');
-  const allExpenses = applyFilters(rows.allExpenses, f, 'expense');
-  const budget = applyFilters(rows.budget, f, 'budget');
+  const f = normalizeExclude(exclude);
+  const income = applyExclusions(rows.income, f, 'income');
+  const expenses = applyExclusions(rows.expenses, f, 'expense');
+  const allExpenses = applyExclusions(rows.allExpenses, f, 'expense');
+  const budget = applyExclusions(rows.budget, f, 'budget');
   const sectionSet = normalizeSections(sections);
   const fl = f ? String(filterLabel || '').slice(0, 300) : '';
   return {

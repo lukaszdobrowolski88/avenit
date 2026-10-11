@@ -49,26 +49,65 @@ export function saveSections(sections) {
 // Lista kluczy włączonych sekcji (do maila / harmonogramu).
 export const enabledKeys = (sections) => Object.keys(sections || {}).filter((k) => sections[k]);
 
-// Filtry raportu (projekt / obszar / kategoria / tag) nakładane na transakcje przed budową modelu.
-export const EMPTY_REPORT_FILTERS = { projectId: '', area: '', costCategory: '', tag: '' };
+// Wykluczenia w raporcie: domyślnie wszystko wliczone; odznaczenie wartości ją wyklucza.
+// Wymiary: projekty, służby/obszary (wydatki), kategorie wydatków, kategorie wpływów, tagi.
+// NONE = „bez projektu / bez kategorii / bez tagów”.
+export const NONE = '__none__';
+export const EXCLUDE_DIMENSIONS = ['projects', 'areas', 'costCategories', 'incomeCategories', 'tags'];
+export const EMPTY_REPORT_EXCLUDE = { projects: [], areas: [], costCategories: [], incomeCategories: [], tags: [] };
 
-export function applyReportFilters(rows, filters, kind) {
-  const f = filters || EMPTY_REPORT_FILTERS;
+export const hasExclusions = (ex) => !!ex && EXCLUDE_DIMENSIONS.some((d) => (ex[d] || []).length > 0);
+
+const val = (v) => (v == null || v === '' ? NONE : String(v));
+
+/**
+ * Wiersze po wykluczeniach. kind: 'income' | 'expense' | 'budget'.
+ * Projekt i tagi dotyczą wszystkich; służba/obszar i kategoria wydatków — wydatków (i planu
+ * wydatków); kategoria wpływów — wpływów (i planu przychodów). Wiersz z wykluczonym tagiem
+ * wypada (nawet gdy ma też inne tagi); bez tagów wypada, gdy wykluczono „bez tagów”.
+ */
+export function applyReportExclusions(rows, ex, kind) {
+  if (!hasExclusions(ex)) return rows || [];
+  const s = Object.fromEntries(EXCLUDE_DIMENSIONS.map((d) => [d, new Set((ex[d] || []).map(String))]));
   return (rows || []).filter((r) => {
-    if (f.projectId && String(r.project_id || '') !== String(f.projectId)) return false;
-    if (f.tag && !(Array.isArray(r.tags) && r.tags.includes(f.tag))) return false;
-    if (kind === 'expense') {
-      if (f.area && r.category !== f.area) return false;
-      if (f.costCategory && r.cost_category !== f.costCategory) return false;
-    } else if (kind === 'income') {
-      // Wpływy nie mają obszaru wydatków; kategoria kosztu → kategoria wpływu nie ma sensu.
-      if (f.area || f.costCategory) return false;
-    } else if (kind === 'budget') {
-      if (f.area && r.category !== f.area) return false;
-      if (f.costCategory && r.cost_category !== f.costCategory) return false;
+    if (s.projects.size && s.projects.has(val(r.project_id))) return false;
+    if (s.tags.size) {
+      const tags = Array.isArray(r.tags) ? r.tags.filter(Boolean) : [];
+      if (tags.length ? tags.some((t) => s.tags.has(String(t))) : s.tags.has(NONE)) return false;
+    }
+    const isIncome = kind === 'income' || (kind === 'budget' && r.kind === 'income');
+    if (isIncome) {
+      const cat = kind === 'income' ? r.type : r.category;
+      if (s.incomeCategories.size && s.incomeCategories.has(val(cat))) return false;
+    } else {
+      if (s.areas.size && s.areas.has(val(r.category))) return false;
+      if (s.costCategories.size && s.costCategories.has(val(r.cost_category))) return false;
     }
     return true;
   });
 }
 
-export const hasReportFilters = (f) => !!(f && (f.projectId || f.area || f.costCategory || f.tag));
+/** Opis wykluczeń (po „Wyłączone z raportu:”) do nagłówka raportu, PDF, plików i maila. */
+export function describeExclusions(ex, { tr = (x) => x, projectName = (id) => id, totals = {} } = {}) {
+  if (!hasExclusions(ex)) return '';
+  const LABEL = { projects: 'Projekty', areas: 'Służby / obszary', costCategories: 'Kategorie wydatków', incomeCategories: 'Kategorie wpływów', tags: 'Tagi' };
+  const NONE_LABEL = { projects: '(bez projektu)', areas: '(bez obszaru)', costCategories: '(bez kategorii)', incomeCategories: '(bez kategorii)', tags: '(bez tagów)' };
+  return EXCLUDE_DIMENSIONS.filter((d) => (ex[d] || []).length).map((d) => {
+    const list = ex[d];
+    if (totals[d] && list.length >= totals[d]) return `${tr(LABEL[d])}: ${tr('wyłączone')}`;
+    const names = list.map((v) => (v === NONE ? tr(NONE_LABEL[d]) : d === 'projects' ? projectName(v) : v));
+    return `${tr(LABEL[d])}: ${names.join(', ')}`;
+  }).join(' · ');
+}
+
+const EXCLUDE_KEY = 'finance.report.exclude.v1';
+export function loadExclusions() {
+  try {
+    const raw = window.localStorage.getItem(EXCLUDE_KEY);
+    const saved = raw ? JSON.parse(raw) : null;
+    return Object.fromEntries(EXCLUDE_DIMENSIONS.map((d) => [d, Array.isArray(saved?.[d]) ? saved[d].map(String) : []]));
+  } catch { return { ...EMPTY_REPORT_EXCLUDE }; }
+}
+export function saveExclusions(ex) {
+  try { window.localStorage.setItem(EXCLUDE_KEY, JSON.stringify(ex)); } catch { /* ignoruj */ }
+}

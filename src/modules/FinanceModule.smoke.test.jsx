@@ -152,4 +152,16 @@ describe('FinanceModule (dymny)', () => {
     fireEvent.click(screen.getByLabelText('Największe wydatki'));
     await waitFor(() => expect(screen.queryAllByRole('heading', { name: 'Największe wydatki' })).toHaveLength(0));
   });
+
+  it('raport: odznaczenie projektu wyklucza go, „Uwzględnij wszystko” przywraca', async () => {
+    renderModule();
+    clickTab('Raporty');
+    await waitFor(() => expect(screen.getByText('Raport finansowy')).toBeTruthy());
+    fireEvent.click(screen.getByText('Projekty', { selector: 'span' }).parentElement.querySelector('button'));
+    fireEvent.click(await screen.findByLabelText('Remont dachu'));
+    await waitFor(() => expect(screen.getAllByText(/Wyłączone z raportu/).length).toBeGreaterThan(0));
+    expect(document.body.textContent).toMatch(/Projekty: Remont dachu/);
+    fireEvent.click(screen.getByText('Uwzględnij wszystko'));
+    await waitFor(() => expect(screen.queryAllByText(/Wyłączone z raportu/)).toHaveLength(0));
+  });
 });
