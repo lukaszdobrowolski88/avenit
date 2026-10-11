@@ -59,7 +59,8 @@ test('preset lider: bez module:finance i bez zapisu w ŻADNEJ tabeli finansów',
   for (const res of MODULES.find((m) => m.key === 'finance').resources) {
     for (const op of ['create', 'update', 'delete']) assert.equal(r.can(`res:${res}:${op}`), false, `${res}:${op}`);
   }
-  assert.equal(r.can('module:media'), true, 'służby dalej dostępne');
+  assert.equal(r.can('module:programs'), true, 'moduły wspólne dostępne');
+  assert.equal(r.can('module:media'), false, 'służby tylko z przynależności');
   assert.ok(ROLE_PRESETS.lider.some((g) => g.capability === 'module:finance' && g.allowed === false));
 });
 

@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
-import { presetGrantRows, LIDER_DELETE_RESOURCES } from '@avenit/shared/src/permissions/presets.js';
+import { presetGrantRows, LIDER_DELETE_RESOURCES, LIDER_SHARED_DELETE_RESOURCES, LIDER_MODULES, LIDER_DENIED_MODULES } from '@avenit/shared/src/permissions/presets.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 import { MODULES } from '@avenit/shared/src/permissions/catalog.js';
 import {
@@ -247,21 +247,50 @@ test('lider służby może wysłać zaproszenia z grafiku; członek służby nie
 });
 
 // ── Preset lidera ↔ migracja 091 ──
-test('preset lider: usuwanie danych służbowych, nie finansów/ustawień/członków/mailingu', () => {
+test('preset lider: z roli usuwa tylko dane wspólne; dane służby — lider TEJ służby', () => {
   const lider = canOf('lider', 'u-l');
-  for (const r of ['events', 'schedule_assignments', 'board_columns', 'board_items', 'programs', 'program_songs', 'media_team', 'songs', 'kids_events']) {
+  for (const r of ['events', 'schedule_assignments', 'board_columns', 'board_items', 'programs', 'program_songs', 'equipment']) {
     assert.equal(lider(`res:${r}:delete`), true, r);
   }
-  for (const r of ['finance_transactions', 'expenses', 'budget_items', 'members', 'member_notes', 'member_care_log', 'email_campaigns', 'mail_campaigns', 'app_users', 'app_settings', 'donations']) {
+  for (const r of ['media_team', 'songs', 'kids_events', 'home_groups', 'finance_transactions', 'expenses', 'budget_items', 'members', 'member_notes', 'app_users', 'donations']) {
     assert.equal(lider(`res:${r}:delete`), false, r);
   }
   const forbidden = new Set(['finance', 'settings', 'members', 'mailing', 'mail', 'giving', 'sms_campaigns', 'push_campaigns', 'automation']);
   const catalogRes = new Map();
   for (const m of MODULES) for (const r of m.resources) catalogRes.set(r, m.key);
-  for (const r of LIDER_DELETE_RESOURCES) {
+  for (const r of LIDER_SHARED_DELETE_RESOURCES) {
     assert.ok(catalogRes.has(r), `${r} w katalogu`);
     assert.ok(!forbidden.has(catalogRes.get(r)), `${r} (${catalogRes.get(r)}) poza danymi służbowymi`);
   }
+});
+
+test('lider jednej służby, członek drugiej: usuwa i widzi finanse tylko w swojej', () => {
+  const rows = presetGrantRows().map((g) => ({ ...g }));
+  for (const g of ministryGrants([{ ministry_key: 'media', role: 'leader' }, { ministry_key: 'worship', role: 'member' }])) {
+    rows.push({ role: null, user_id: 'u-m', capability: g.capability, allowed: g.allowed });
+  }
+  const can = makeResolver(rows, { role: 'lider', userId: 'u-m', isAdmin: false }).can;
+  assert.equal(can('module:media'), true);
+  assert.equal(can('module:worship'), true);
+  assert.equal(can('module:homegroups'), false);
+  assert.equal(can('res:media_team:delete'), true);
+  assert.equal(can('tab:media:finances'), true);
+  assert.equal(can('res:worship_team:update'), true);
+  assert.equal(can('res:worship_team:delete'), false);
+  assert.equal(can('res:songs:delete'), false);
+  assert.equal(can('tab:worship:finances'), false);
+});
+
+test('migracja 103 = preset lidera (moduły, zakazy, usuwanie danych służb)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../db/tenant-migrations/103_lider_own_ministries.sql'), 'utf8');
+  const caps = [...sql.matchAll(/\('((?:module|res):[a-z_*]+(?::delete)?)'\)/g)].map((m) => m[1]);
+  const mod = caps.filter((c) => c.startsWith('module:'));
+  assert.deepEqual(mod.sort(), [...LIDER_MODULES, ...LIDER_DENIED_MODULES].map((m) => `module:${m}`).sort());
+  const del = caps.filter((c) => c.startsWith('res:'));
+  const ministryDel = LIDER_DELETE_RESOURCES.filter((r) => !LIDER_SHARED_DELETE_RESOURCES.includes(r));
+  assert.deepEqual(del.sort(), ministryDel.map((r) => `res:${r}:delete`).sort());
+  assert.match(sql, /capability = 'module:\*' AND allowed/, 'tylko tenanty ze starym presetem');
+  assert.match(sql, /ON CONFLICT \(role, capability\) WHERE user_id IS NULL DO NOTHING/, 'decyzje admina zostają');
 });
 
 test('migracja 091 = LIDER_DELETE_RESOURCES (spójność presetu i migracji)', () => {
