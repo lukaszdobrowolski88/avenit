@@ -20,6 +20,9 @@ function nextRunDate(frequency, from, dayOfMonth) {
   return d.toISOString().slice(0, 10);
 }
 
+// Tagi planu (jsonb) → tekst JSON tablicy dla nowej transakcji.
+const tagsJson = (tags) => JSON.stringify(Array.isArray(tags) ? tags.filter((t) => typeof t === 'string') : []);
+
 export async function runForTenant(pool, ctx = {}) {
   const log = ctx.log || (() => {});
   const today = new Date().toISOString().slice(0, 10);
@@ -45,19 +48,19 @@ export async function runForTenant(pool, ctx = {}) {
     try {
       if (p.kind === 'income') {
         await pool.query(
-          `INSERT INTO income_transactions (date, amount, type, source, notes, team_type, tags)
-           VALUES (CURRENT_DATE, $1, $2, $3, $4, $5, '[]'::jsonb)`,
-          [p.amount, p.category || 'Inne', p.title, `Cykliczne (automat) — ${p.title}`, p.team_type || null]
+          `INSERT INTO income_transactions (date, amount, type, source, notes, team_type, tags, project_id)
+           VALUES (CURRENT_DATE, $1, $2, $3, $4, $5, $6::jsonb, $7)`,
+          [p.amount, p.category || 'Inne', p.title, `Cykliczne (automat) — ${p.title}`, p.team_type || null, tagsJson(p.tags), p.project_id || null]
         );
       } else {
         await pool.query(
           `INSERT INTO expense_transactions
              (payment_date, amount, contractor, category, cost_category, description,
-              detailed_description, team_type, status, is_paid, documents, tags)
-           VALUES (CURRENT_DATE, $1, $2, $3, $4, $5, $6, $7, 'approved', true, '[]'::jsonb, '[]'::jsonb)`,
+              detailed_description, team_type, status, is_paid, documents, tags, project_id)
+           VALUES (CURRENT_DATE, $1, $2, $3, $4, $5, $6, $7, 'approved', true, '[]'::jsonb, $8::jsonb, $9)`,
           [
             p.amount, p.contractor || 'Cykliczne', p.category || null, p.cost_category || null,
-            p.title, `Cykliczne (automat) — ${p.title}`, p.team_type || null,
+            p.title, `Cykliczne (automat) — ${p.title}`, p.team_type || null, tagsJson(p.tags), p.project_id || null,
           ]
         );
       }

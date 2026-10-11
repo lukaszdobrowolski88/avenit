@@ -47,6 +47,7 @@ export const RESOURCE_LABELS = {
   expenses: 'Wydatki', expense_categories: 'Kategorie finansów', finance_tags: 'Tagi finansów',
   finance_recurring: 'Transakcje cykliczne', finance_vendors: 'Kontrahenci',
   finance_report_schedules: 'Harmonogramy raportów',
+  finance_areas: 'Obszary budżetu', finance_projects: 'Projekty finansowe',
   budget_audit: 'Historia zmian budżetu', budget_versions: 'Wersje budżetu',
   // Nauczanie
   teachings: 'Nauczania', teaching_speakers: 'Mówcy',
@@ -208,7 +209,7 @@ export const MODULES = [
   },
   {
     key: 'finance', label: 'Finanse',
-    resources: ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories', 'finance_tags', 'finance_recurring', 'finance_vendors', 'finance_report_schedules', 'budget_audit', 'budget_versions', 'budget_items', 'income_transactions', 'expense_transactions'],
+    resources: ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories', 'finance_tags', 'finance_recurring', 'finance_vendors', 'finance_report_schedules', 'finance_areas', 'finance_projects', 'budget_audit', 'budget_versions', 'budget_items', 'income_transactions', 'expense_transactions'],
     tabs: [],
     actions: [
       { key: 'approve', label: 'Zatwierdź wydatek' },

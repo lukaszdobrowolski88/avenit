@@ -6,8 +6,18 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 
 const DB = {
-  budget_items: [{ id: 'b1', year: new Date().getFullYear(), kind: 'expense', category: 'MediaTeam', description: 'Mikrofon', planned_amount: '2000.00', period_type: 'year' }],
-  income_transactions: [{ id: 'i1', date: `${new Date().getFullYear()}-02-01`, amount: '150.00', type: 'Kolekta', source: 'Niedziela', tags: [] }],
+  budget_items: [
+    { id: 'b1', year: new Date().getFullYear(), kind: 'expense', category: 'MediaTeam', description: 'Mikrofon', planned_amount: '2000.00', period_type: 'year' },
+    { id: 'b2', year: new Date().getFullYear(), kind: 'expense', category: 'Administracja', description: 'Czynsz za salę', planned_amount: '12000.00', period_type: 'year', cost_category: 'Czynsz', project_id: 'p1', tags: ['budynek'] },
+  ],
+  income_transactions: [
+    { id: 'i1', date: `${new Date().getFullYear()}-02-01`, amount: '150.00', type: 'Kolekta', source: 'Niedziela', tags: [] },
+    { id: 'i2', date: `${new Date().getFullYear()}-02-05`, amount: '700.00', type: 'Darowizny', source: 'Zbiórka na dach', tags: ['budynek'], project_id: 'p1' },
+  ],
+  finance_areas: [{ id: 'a1', name: 'Administracja', is_active: true, color: '#8A6606' }],
+  finance_projects: [{ id: 'p1', name: 'Remont dachu', status: 'active', budget_amount: '5000', color: '#1e40af' }],
+  expense_categories: [{ id: 'c1', name: 'Czynsz', kind: 'expense', is_active: true, color: '#166534' }],
+  finance_tags: [{ id: 't1', name: 'budynek', color: '#9a3412' }],
   expense_transactions: [
     { id: 'e1', payment_date: `${new Date().getFullYear()}-02-02`, amount: '100.00', category: 'MediaTeam', description: 'Mikrofon', contractor: null, responsible_person: null, status: 'approved', tags: [], documents: [] },
     { id: 'e2', payment_date: `${new Date().getFullYear()}-02-03`, amount: '50.00', category: 'MediaTeam', description: 'Mikrofon', contractor: 'Sklep', responsible_person: 'Jan', status: 'rejected', tags: [], documents: [] },
@@ -110,5 +120,36 @@ describe('FinanceModule (dymny)', () => {
     clickTab('Raporty');
     await waitFor(() => expect(screen.getByText('Raport finansowy')).toBeTruthy());
     expect(document.body.textContent).not.toMatch(/NaN/);
+  });
+
+  it('budżet pokazuje własny obszar, kategorię, projekt i tag; grupowanie po projekcie', async () => {
+    renderModule();
+    await waitFor(() => expect(screen.getAllByText('Czynsz za salę').length).toBeGreaterThan(0));
+    expect(screen.getAllByText('Administracja').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('budynek').length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByLabelText('Grupuj wydatki wg'), { target: { value: 'project' } });
+    await waitFor(() => expect(screen.getAllByText(/Remont dachu/).length).toBeGreaterThan(0));
+    expect(screen.getAllByText(/Bez projektu/).length).toBeGreaterThan(0);
+  });
+
+  it('zakładki Projekty i Kategorie i tagi renderują się z danymi', async () => {
+    renderModule();
+    clickTab('Projekty');
+    await waitFor(() => expect(screen.getAllByText('Remont dachu').length).toBeGreaterThan(0));
+    expect(document.body.textContent).not.toMatch(/NaN/);
+    clickTab('Kategorie i tagi');
+    await waitFor(() => expect(screen.getByText('Służby i obszary budżetu')).toBeTruthy());
+    expect(screen.getAllByText('Administracja').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Czynsz').length).toBeGreaterThan(0);
+  });
+
+  it('raport: wyłączenie sekcji ukrywa ją z widoku', async () => {
+    renderModule();
+    clickTab('Raporty');
+    await waitFor(() => expect(screen.getByText('Raport finansowy')).toBeTruthy());
+    expect(screen.getAllByText('Największe wydatki').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByTitle('Wybierz, co ma się znaleźć w raporcie'));
+    fireEvent.click(screen.getByLabelText('Największe wydatki'));
+    await waitFor(() => expect(screen.queryAllByRole('heading', { name: 'Największe wydatki' })).toHaveLength(0));
   });
 });

@@ -3,7 +3,7 @@ import EmptyState from '../components/EmptyState';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
-import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Download, Printer, Repeat, CheckCircle, XCircle, Clock, Copy, AlertTriangle, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Settings, Banknote, CreditCard, FolderOpen, Mail, CalendarClock } from 'lucide-react';
+import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Download, Printer, Repeat, CheckCircle, XCircle, Clock, Copy, AlertTriangle, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Settings, Banknote, CreditCard, FolderOpen, Mail, CalendarClock, FolderKanban, Tags, SlidersHorizontal } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
@@ -27,6 +27,11 @@ import {
   fmtMoney, fmtPct, fmtDate, parseLocalDate, localDateStr, nextPeriodStart, missingFields, planBudgetCopy, humanSaveError,
 } from './finance/money';
 import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
+import TagPicker, { TagChips } from './finance/TagPicker';
+import FinanceDictionaries from './finance/FinanceDictionaries';
+import FinanceProjects from './finance/FinanceProjects';
+import { NEW_OPTION, buildAreaOptions, projectOptions, projectById, nameTaken } from './finance/dictionaries';
+import { REPORT_SECTIONS, MAIL_SECTION_KEYS, defaultSections, loadSections, saveSections, enabledKeys, EMPTY_REPORT_FILTERS, applyReportFilters, hasReportFilters } from './finance/reportSections';
 
 
 
@@ -77,13 +82,23 @@ const SYSTEM_MODULE_KEYS = new Set([
   'programs', 'boards', 'rooms', 'attendance', 'rsvp', 'finance', 'care',
 ]);
 
+// Zapasowa lista służb (gdyby app_modules się nie wczytało). WARTOŚĆ = team_type modułu.
+const FALLBACK_SERVICES = [
+  { value: 'Grupa Uwielbienia', label: 'Grupa Uwielbienia' },
+  { value: 'MediaTeam', label: 'MediaTeam' },
+  { value: 'AtmosferaTeam', label: 'AtmosferaTeam' },
+  { value: 'Grupy domowe', label: 'Grupy domowe' },
+  { value: 'małe Avenit', label: 'małe Avenit' },
+  { value: 'Mlodziezowka', label: 'Młodzieżówka' },
+];
+
 // Puste formularze — „Dodaj…” zawsze startuje od nich (bez id poprzednio edytowanego rekordu).
-const EMPTY_BUDGET = { kind: 'expense', category: '', description: '', planned_amount: '', period_type: 'year' };
-const EMPTY_INCOME = { date: '', amount: '', type: 'Kolekta', source: '', notes: '', tags: [] };
+const EMPTY_BUDGET = { kind: 'expense', category: '', description: '', planned_amount: '', period_type: 'year', cost_category: '', project_id: '', tags: [] };
+const EMPTY_INCOME = { date: '', amount: '', type: 'Kolekta', source: '', notes: '', tags: [], project_id: '' };
 const EMPTY_EXPENSE = {
   payment_date: '', amount: '', contractor: '', category: '', cost_category: '', description: '',
   detailed_description: '', responsible_person: '', invoice_number: '', due_date: '', is_paid: true,
-  submit_for_approval: false, documents: [], tags: [],
+  submit_for_approval: false, documents: [], tags: [], project_id: '',
 };
 // Wartość „Opis kosztu” oznaczająca wydatek spoza pozycji budżetu (opis wpisywany ręcznie).
 const OFF_BUDGET = '__off_budget__';
@@ -110,8 +125,8 @@ const FinanceModule = () => {
         const opts = (data || [])
           .filter((m) => m.label && !SYSTEM_MODULE_KEYS.has(m.key))
           .map((m) => ({ value: TEAM_TYPE_BY_KEY[m.key] || m.label, label: m.label }));
-        setServiceOptions(opts);
-      } catch { /* zostaje fallback w dropdownie */ }
+        setServiceOptions(opts.length ? opts : FALLBACK_SERVICES);
+      } catch { setServiceOptions(FALLBACK_SERVICES); }
     })();
   }, []);
   const [incomeTransactions, setIncomeTransactions] = useState([]);
@@ -136,14 +151,17 @@ const FinanceModule = () => {
   // Otwieranie/zamykanie modali: „Dodaj” = czysty formularz, zamknięcie czyści stan edycji
   // (wcześniej „Dodaj” po anulowanej edycji robiło UPDATE starego rekordu).
   const openCreateBudget = () => { setBudgetForm(EMPTY_BUDGET); setFormErrors({}); setShowBudgetModal(true); };
-  const openEditBudget = (item) => { setBudgetForm({ ...item, planned_amount: String(num(item.planned_amount)) }); setFormErrors({}); setShowBudgetModal(true); };
+  const openEditBudget = (item) => {
+    setBudgetForm({ ...EMPTY_BUDGET, ...item, planned_amount: String(num(item.planned_amount)), cost_category: item.cost_category || '', project_id: item.project_id || '', tags: Array.isArray(item.tags) ? item.tags : [], description: item.description || '' });
+    setFormErrors({}); setShowBudgetModal(true);
+  };
   const closeBudgetModal = () => { if (saving) return; setShowBudgetModal(false); setBudgetForm(EMPTY_BUDGET); setFormErrors({}); };
-  const openCreateIncome = () => { setIncomeForm({ ...EMPTY_INCOME, date: localDateStr() }); setNewTag(''); setFormErrors({}); setShowIncomeModal(true); };
-  const openEditIncome = (tx) => { setIncomeForm({ ...EMPTY_INCOME, ...tx, amount: String(num(tx.amount)), source: tx.source || '', notes: tx.notes || '', tags: tx.tags || [] }); setNewTag(''); setFormErrors({}); setShowIncomeModal(true); };
+  const openCreateIncome = (projectId = '') => { setIncomeForm({ ...EMPTY_INCOME, date: localDateStr(), project_id: typeof projectId === 'string' || typeof projectId === 'number' ? projectId : '' }); setFormErrors({}); setShowIncomeModal(true); };
+  const openEditIncome = (tx) => { setIncomeForm({ ...EMPTY_INCOME, ...tx, amount: String(num(tx.amount)), source: tx.source || '', notes: tx.notes || '', tags: tx.tags || [], project_id: tx.project_id || '' }); setFormErrors({}); setShowIncomeModal(true); };
   const closeIncomeModal = () => { if (saving) return; setShowIncomeModal(false); setIncomeForm(EMPTY_INCOME); setFormErrors({}); };
-  const openCreateExpense = () => {
-    setExpenseForm({ ...EMPTY_EXPENSE, payment_date: localDateStr(), is_paid: canApprove, submit_for_approval: !canApprove });
-    setExpenseOffBudget(false); setNewTag(''); setFormErrors({}); setShowExpenseModal(true);
+  const openCreateExpense = (projectId = '') => {
+    setExpenseForm({ ...EMPTY_EXPENSE, payment_date: localDateStr(), is_paid: canApprove, submit_for_approval: !canApprove, project_id: typeof projectId === 'string' || typeof projectId === 'number' ? projectId : '' });
+    setExpenseOffBudget(false); setFormErrors({}); setShowExpenseModal(true);
   };
   const openEditExpense = (tx) => {
     // Opis, którego nie ma wśród pozycji budżetu tej służby = wydatek spoza budżetu.
@@ -154,41 +172,31 @@ const FinanceModule = () => {
       description: linked ? linked.description : (tx.description || ''),
       detailed_description: tx.detailed_description || '', cost_category: tx.cost_category || '', category: linked ? linked.category : (tx.category || ''),
       invoice_number: tx.invoice_number || '', due_date: tx.due_date || '', documents: tx.documents || [], tags: tx.tags || [],
+      project_id: tx.project_id || '',
     });
     setExpenseOffBudget(!linked && !!tx.description);
-    setNewTag(''); setFormErrors({}); setShowExpenseModal(true);
+    setFormErrors({}); setShowExpenseModal(true);
   };
   const closeExpenseModal = () => { if (saving) return; setShowExpenseModal(false); setExpenseForm(EMPTY_EXPENSE); setExpenseOffBudget(false); setFormErrors({}); };
 
   const [uploadingFile, setUploadingFile] = useState(false);
   const [expandedBudgetItems, setExpandedBudgetItems] = useState({}); // For expandable expense lists
 
-  const [newTag, setNewTag] = useState('');
 
   // Filtry dla wpływów
-  const [incomeFilters, setIncomeFilters] = useState({
-    type: '',
-    source: '',
-    tag: '',
-    dateFrom: '',
-    dateTo: ''
-  });
+  const EMPTY_INCOME_FILTERS = { type: '', source: '', tag: '', project: '', dateFrom: '', dateTo: '' };
+  const [incomeFilters, setIncomeFilters] = useState(EMPTY_INCOME_FILTERS);
 
   // Filtry dla wydatków
-  const [expenseFilters, setExpenseFilters] = useState({
-    category: '',
-    cost_category: '',
-    contractor: '',
-    responsible: '',
-    tag: '',
-    dateFrom: '',
-    dateTo: ''
-  });
+  const EMPTY_EXPENSE_FILTERS = { category: '', cost_category: '', contractor: '', responsible: '', tag: '', project: '', dateFrom: '', dateTo: '' };
+  const [expenseFilters, setExpenseFilters] = useState(EMPTY_EXPENSE_FILTERS);
 
   // ── Kategorie (własne) + paleta tagów ─────────────────────────────────────
   const [categories, setCategories] = useState([]); // expense_categories: {id,name,kind,color,icon,is_active}
   const [tagPalette, setTagPalette] = useState([]); // finance_tags: {id,name,color}
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [areas, setAreas] = useState([]);           // finance_areas: własne obszary budżetu
+  const [projects, setProjects] = useState([]);     // finance_projects
+  const [dataVersion, setDataVersion] = useState(0); // zmiana słowników → odśwież dane zakładek
   const incomeCategories = categories.filter((c) => c.kind === 'income' && c.is_active !== false);
   const expenseCategories = categories.filter((c) => c.kind === 'expense' && c.is_active !== false);
   const tagColor = (name) => tagPalette.find((t) => String(t.name || '').toLowerCase() === String(name).toLowerCase())?.color || '#6b7280';
@@ -205,7 +213,48 @@ const FinanceModule = () => {
       setTagPalette(data || []);
     } catch { /* brak palety → domyślny kolor */ }
   };
-  useEffect(() => { fetchCategories(); fetchTagPalette(); }, []);
+  const fetchAreas = async () => {
+    try { const { data } = await supabase.from('finance_areas').select('*').order('sort_order').order('name'); setAreas(data || []); }
+    catch { setAreas([]); /* tenant przed migracją 101 */ }
+  };
+  const fetchProjects = async () => {
+    try { const { data } = await supabase.from('finance_projects').select('*').order('name'); setProjects(data || []); }
+    catch { setProjects([]); }
+  };
+  useEffect(() => { fetchCategories(); fetchTagPalette(); fetchAreas(); fetchProjects(); }, []);
+  const projectColor = (id) => projectById(projects, id)?.color || '#6b7280';
+  const categoryColor = (name, kind = 'expense') => categories.find((c) => c.kind === kind && c.name === name)?.color || STATUS_COLORS.neutral;
+
+  // „+ Dodaj nowy…” prosto z listy wyboru: pyta o nazwę, zapisuje w słowniku i zwraca ją.
+  const createArea = async () => {
+    const name = String(await promptDialog(tr('Nazwa nowego obszaru (np. Administracja, Wynajem budynku)')) || '').trim();
+    if (!name) return null;
+    const existing = [...serviceOptions.map((o) => ({ name: o.value })), ...areas].find((a) => nameTaken([a], name));
+    if (existing) return existing.name;
+    const { error } = await supabase.from('finance_areas').insert([{ name, is_active: true, sort_order: areas.length }]);
+    if (error) { toast.error(humanSaveError(error, tr)); return null; }
+    toast.success(tr('Dodano obszar „{name}”', { name }));
+    fetchAreas();
+    return name;
+  };
+  const createCategory = async (kind) => {
+    const name = String(await promptDialog(kind === 'income' ? tr('Nazwa nowej kategorii wpływów') : tr('Nazwa nowej kategorii wydatków')) || '').trim();
+    if (!name) return null;
+    const existing = categories.find((c) => c.kind === kind && nameTaken([c], name));
+    if (existing) return existing.name;
+    const PALETTE = ['#8A6606', '#166534', '#1e40af', '#9a3412', '#0f766e', '#7c2d12', '#57534e', '#6b21a8'];
+    const { error } = await supabase.from('expense_categories').insert([{ name, kind, color: PALETTE[categories.length % PALETTE.length], is_active: true }]);
+    if (error) { toast.error(humanSaveError(error, tr)); return null; }
+    toast.success(tr('Dodano kategorię „{name}”', { name }));
+    fetchCategories();
+    return name;
+  };
+  // onChange listy z opcją „+ Dodaj nowy…”: zwykła wartość od razu, nowa — po utworzeniu.
+  const pickOrCreate = (create, apply) => async (val) => {
+    if (val !== NEW_OPTION) { apply(val); return; }
+    const name = await create();
+    if (name) apply(name);
+  };
 
   // Dodaje nowe tagi do palety (żeby dostały kolor i podpowiadały się później).
   const ensureTagsInPalette = async (tags) => {
@@ -221,35 +270,6 @@ const FinanceModule = () => {
     } catch { /* kolizja nazwy = już jest, ignoruj */ }
   };
 
-  // Menedżer kategorii (CRUD na expense_categories, rodzaj income/expense).
-  const [catForm, setCatForm] = useState({ name: '', kind: 'expense', color: '#8A6606' });
-  const [vendorName, setVendorName] = useState('');
-  const saveCategory = async () => {
-    if (!catForm.name.trim()) { toast.error(tr('Podaj nazwę kategorii')); return; }
-    try {
-      const { error } = await supabase.from('expense_categories').insert([{ name: catForm.name.trim(), kind: catForm.kind, color: catForm.color, is_active: true }]);
-      if (error) throw error;
-      toast.success(tr('Dodano kategorię „{name}”', { name: catForm.name.trim() }));
-      setCatForm({ name: '', kind: catForm.kind, color: '#8A6606' });
-      fetchCategories();
-    } catch (e) { toast.error(humanSaveError(e, tr)); }
-  };
-  const toggleCategoryActive = async (c) => {
-    try {
-      const { error } = await supabase.from('expense_categories').update({ is_active: !(c.is_active !== false) }).eq('id', c.id);
-      if (error) throw error;
-      fetchCategories();
-    } catch (e) { toast.error(humanSaveError(e, tr)); }
-  };
-  const deleteCategory = async (c) => {
-    if (!await confirmDialog(tr('Usunąć kategorię „{name}”? Istniejące transakcje zachowają swoją nazwę kategorii.', { name: c.name }))) return;
-    try {
-      const { error } = await supabase.from('expense_categories').delete().eq('id', c.id);
-      if (error) throw error;
-      fetchCategories();
-    } catch (e) { toast.error(humanSaveError(e, tr)); }
-  };
-
   // E-mail zalogowanego (do audytu akceptacji/zgłoszeń).
   const [currentUserEmail, setCurrentUserEmail] = useState('');
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setCurrentUserEmail(data?.user?.email || '')).catch(() => {}); }, []);
@@ -257,7 +277,7 @@ const FinanceModule = () => {
   // ── Transakcje cykliczne (finance_recurring) ──────────────────────────────
   const [recurringItems, setRecurringItems] = useState([]);
   const [showRecurringModal, setShowRecurringModal] = useState(false);
-  const emptyRecurring = { kind: 'expense', title: '', amount: '', category: '', team_type: '', contractor: '', frequency: 'monthly', day_of_month: '', next_run_date: '', end_date: '', is_active: true };
+  const emptyRecurring = { kind: 'expense', title: '', amount: '', category: '', team_type: '', contractor: '', frequency: 'monthly', day_of_month: '', next_run_date: '', end_date: '', is_active: true, cost_category: '', project_id: '', tags: [] };
   const [recurringForm, setRecurringForm] = useState(emptyRecurring);
   const fetchRecurring = async () => {
     try { const { data } = await supabase.from('finance_recurring').select('*').order('next_run_date', { ascending: true }); setRecurringItems(data || []); } catch { /* brak tabeli przed migracją */ }
@@ -276,6 +296,8 @@ const FinanceModule = () => {
       category: recurringForm.category || null, team_type: recurringForm.team_type || null, contractor: recurringForm.contractor || null,
       frequency: recurringForm.frequency, day_of_month: recurringForm.day_of_month ? parseInt(recurringForm.day_of_month) : null,
       next_run_date: recurringForm.next_run_date || null, end_date: recurringForm.end_date || null, is_active: recurringForm.is_active,
+      cost_category: recurringForm.kind === 'expense' ? (recurringForm.cost_category || null) : null,
+      project_id: recurringForm.project_id || null, tags: recurringForm.tags || [],
     };
     setSaving(true);
     try {
@@ -284,7 +306,7 @@ const FinanceModule = () => {
         : await supabase.from('finance_recurring').insert([payload]);
       if (error) throw error;
       toast.success(recurringForm.id ? tr('Zapisano zmiany planu') : tr('Dodano plan cykliczny'));
-      setShowRecurringModal(false); setRecurringForm(emptyRecurring); setFormErrors({}); fetchRecurring();
+      setShowRecurringModal(false); setRecurringForm(emptyRecurring); setFormErrors({}); fetchRecurring(); ensureTagsInPalette(payload.tags);
     } catch (e) { toast.error(humanSaveError(e, tr)); }
     finally { setSaving(false); }
   };
@@ -308,17 +330,6 @@ const FinanceModule = () => {
   const [vendors, setVendors] = useState([]);
   const fetchVendors = async () => { try { const { data } = await supabase.from('finance_vendors').select('*').order('name'); setVendors(data || []); } catch { /* brak tabeli */ } };
   useEffect(() => { fetchVendors(); }, []);
-  const addVendor = async (name) => {
-    const n = String(name || '').trim(); if (!n) return;
-    try { const { error } = await supabase.from('finance_vendors').insert([{ name: n }]); if (error) throw error; fetchVendors(); }
-    catch (e) { toast.error(humanSaveError(e, tr)); }
-  };
-  const deleteVendor = async (v) => {
-    if (!await confirmDialog(tr('Usunąć kontrahenta „{name}” z listy podpowiedzi? Wydatki zachowają jego nazwę.', { name: v.name }))) return;
-    try { const { error } = await supabase.from('finance_vendors').delete().eq('id', v.id); if (error) throw error; fetchVendors(); }
-    catch (e) { toast.error(humanSaveError(e, tr)); }
-  };
-
   // Sumy poprzedniego roku (do porównania rok-do-roku w Raportach).
   const [prevYearTotals, setPrevYearTotals] = useState({ income: 0, expense: 0 });
   useEffect(() => {
@@ -403,11 +414,36 @@ const FinanceModule = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, reportRange.from, reportRange.to, reportRange.year, selectedCampusId]);
 
-  const reportModel = useMemo(() => buildReportModel({
-    range: reportRange, income: reportIncome, expense: reportExpense,
-    budget: reportBudget, expenseCategories,
-    prevIncome: reportPrev.income, prevExpense: reportPrev.expense,
-  }), [reportRange, reportIncome, reportExpense, reportBudget, expenseCategories, reportPrev]);
+  // Sekcje raportu (co ma się w nim znaleźć) — zapamiętane w przeglądarce, steruje też eksportem i mailem.
+  const [reportSections, setReportSections] = useState(loadSections);
+  const [showSectionsMenu, setShowSectionsMenu] = useState(false);
+  const setSection = (key, on) => setReportSections((prev) => { const next = { ...prev, [key]: on }; saveSections(next); return next; });
+  const setAllSections = (next) => { setReportSections(next); saveSections(next); };
+  const sec = (key) => reportSections[key] !== false;
+  // Filtry raportu: projekt / służba-obszar / kategoria / tag.
+  const [reportFilters, setReportFilters] = useState(EMPTY_REPORT_FILTERS);
+  const reportFilterLabel = [
+    reportFilters.projectId && `${tr('Projekt')}: ${projectById(projects, reportFilters.projectId)?.name || '—'}`,
+    reportFilters.area && `${tr('Służba / obszar')}: ${reportFilters.area}`,
+    reportFilters.costCategory && `${tr('Kategoria')}: ${reportFilters.costCategory}`,
+    reportFilters.tag && `${tr('Tag')}: ${reportFilters.tag}`,
+  ].filter(Boolean).join(' · ');
+
+  const reportModel = useMemo(() => {
+    const m = buildReportModel({
+      range: reportRange,
+      income: applyReportFilters(reportIncome, reportFilters, 'income'),
+      expense: applyReportFilters(reportExpense, reportFilters, 'expense'),
+      budget: applyReportFilters(reportBudget, reportFilters, 'budget'),
+      expenseCategories, incomeCategories, projects,
+      // Porównanie r/r ma sens tylko dla całości (bez filtrów).
+      prevIncome: hasReportFilters(reportFilters) ? null : reportPrev.income,
+      prevExpense: hasReportFilters(reportFilters) ? null : reportPrev.expense,
+    });
+    m.filterLabel = reportFilterLabel;
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportRange, reportIncome, reportExpense, reportBudget, categories, projects, reportPrev, reportFilters]);
 
   // ── Pobieranie raportu (CSV / XLSX / PDF) ────────────────────────────────
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
@@ -422,8 +458,8 @@ const FinanceModule = () => {
     setShowDownloadMenu(false);
     const base = `raport-finansowy-${slugForRange(reportRange)}`;
     try {
-      if (fmt === 'csv') download(toCsvBlob(reportModel), `${base}.csv`);
-      else if (fmt === 'xlsx') download(await toXlsxBlob(reportModel), `${base}.xlsx`);
+      if (fmt === 'csv') download(toCsvBlob(reportModel, reportSections), `${base}.csv`);
+      else if (fmt === 'xlsx') download(await toXlsxBlob(reportModel, reportSections), `${base}.xlsx`);
       else if (fmt === 'pdf') {
         if (!reportSectionRef.current) return;
         setDownloadingPdf(true);
@@ -449,6 +485,7 @@ const FinanceModule = () => {
   const sendReportEmail = async () => {
     const list = reportRecipients.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
     if (list.length === 0) { toast.error(tr('Podaj adresy e-mail')); return; }
+    if (!MAIL_SECTION_KEYS.some((k) => sec(k))) { toast.error(tr('Wybierz co najmniej jedną sekcję raportu.')); return; }
     setSendingReport(true);
     try {
       const slug = slugForRange(reportRange);
@@ -458,13 +495,18 @@ const FinanceModule = () => {
         attachments.push({ filename: `raport-${slug}.pdf`, contentBase64: await blobToBase64(pdf), type: 'application/pdf' });
       }
       if (reportAttachments.xlsx) {
-        attachments.push({ filename: `raport-${slug}.xlsx`, contentBase64: await blobToBase64(await toXlsxBlob(reportModel)), type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        attachments.push({ filename: `raport-${slug}.xlsx`, contentBase64: await blobToBase64(await toXlsxBlob(reportModel, reportSections)), type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       }
       if (reportAttachments.csv) {
-        attachments.push({ filename: `raport-${slug}.csv`, contentBase64: await blobToBase64(toCsvBlob(reportModel)), type: 'text/csv' });
+        attachments.push({ filename: `raport-${slug}.csv`, contentBase64: await blobToBase64(toCsvBlob(reportModel, reportSections)), type: 'text/csv' });
       }
       const { data, error } = await supabase.functions.invoke('finance-report-email', {
-        body: { from: reportRange.from, to: reportRange.to, periodLabel: reportRange.label, recipients: list, attachments },
+        body: {
+          from: reportRange.from, to: reportRange.to, periodLabel: reportRange.label, recipients: list, attachments,
+          // Treść maila = te same sekcje i filtry co na ekranie.
+          sections: enabledKeys(reportSections).filter((k) => MAIL_SECTION_KEYS.includes(k)),
+          filters: hasReportFilters(reportFilters) ? reportFilters : null, filterLabel: reportFilterLabel || null,
+        },
       });
       if (error) throw error;
       toast.success(tr('Raport wysłany') + ` (${data?.sent || list.length})`);
@@ -476,7 +518,7 @@ const FinanceModule = () => {
   // ── Harmonogram automatycznych raportów (finance_report_schedules) ─────────
   const [schedules, setSchedules] = useState([]);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const emptySchedule = { cadence: 'monthly', recipients: '', include_csv: true, is_active: true };
+  const emptySchedule = { cadence: 'monthly', recipients: '', include_csv: true, is_active: true, sections: MAIL_SECTION_KEYS };
   const [scheduleForm, setScheduleForm] = useState(emptySchedule);
   const [editingScheduleId, setEditingScheduleId] = useState(null);
   const fetchSchedules = async () => {
@@ -492,7 +534,10 @@ const FinanceModule = () => {
     const payload = {
       cadence: scheduleForm.cadence, recipients, include_csv: !!scheduleForm.include_csv,
       is_active: !!scheduleForm.is_active, next_run_date: nextRunFor(scheduleForm.cadence),
+      // Wszystkie sekcje = NULL (nowe sekcje w przyszłości też trafią do maila).
+      sections: MAIL_SECTION_KEYS.every((k) => scheduleForm.sections.includes(k)) ? null : scheduleForm.sections,
     };
+    if (payload.sections && payload.sections.length === 0) { toast.error(tr('Wybierz co najmniej jedną sekcję raportu.')); return; }
     setSaving(true);
     try {
       const { error } = editingScheduleId
@@ -515,7 +560,8 @@ const FinanceModule = () => {
   };
   const openEditSchedule = (s) => {
     setEditingScheduleId(s.id);
-    setScheduleForm({ cadence: s.cadence || 'monthly', recipients: (s.recipients || []).join(', '), include_csv: s.include_csv !== false, is_active: s.is_active !== false });
+    setScheduleForm({ cadence: s.cadence || 'monthly', recipients: (s.recipients || []).join(', '), include_csv: s.include_csv !== false, is_active: s.is_active !== false,
+      sections: Array.isArray(s.sections) ? s.sections.filter((k) => MAIL_SECTION_KEYS.includes(k)) : MAIL_SECTION_KEYS });
     setShowScheduleModal(true);
   };
 
@@ -617,7 +663,7 @@ const FinanceModule = () => {
 
   // Fetch budget items (także na Wydatkach — formularz wydatku wybiera pozycję budżetu)
   useEffect(() => {
-    if (activeTab === 'budget' || activeTab === 'expenses') {
+    if (activeTab === 'budget' || activeTab === 'expenses' || activeTab === 'projects') {
       fetchBudgetItems();
     }
   }, [activeTab, selectedYear, selectedCampusId]);
@@ -826,7 +872,7 @@ const FinanceModule = () => {
 
   const saveBudgetItem = async () => {
     const isIncome = (budgetForm.kind || 'expense') === 'income';
-    const missing = missingFields(budgetForm, [['category', isIncome ? tr('kategorię wpływu') : tr('służbę')], ['planned_amount', tr('planowaną kwotę')]]);
+    const missing = missingFields(budgetForm, [['category', isIncome ? tr('kategorię wpływu') : tr('służbę lub obszar')], ['planned_amount', tr('planowaną kwotę')]]);
     if (missing.length) {
       setFormErrors({ category: !budgetForm.category, planned_amount: !budgetForm.planned_amount });
       toast.error(tr('Uzupełnij: {fields}', { fields: missing.join(', ') }));
@@ -846,7 +892,10 @@ const FinanceModule = () => {
             team_type: budgetForm.category,
             description: budgetForm.description,
             planned_amount: parseFloat(budgetForm.planned_amount),
-            period_type: budgetForm.period_type || 'year'
+            period_type: budgetForm.period_type || 'year',
+            cost_category: isIncome ? null : (budgetForm.cost_category || null),
+            project_id: budgetForm.project_id || null,
+            tags: budgetForm.tags || [],
           })
           .eq('id', budgetForm.id);
 
@@ -876,6 +925,9 @@ const FinanceModule = () => {
           description: budgetForm.description,
           planned_amount: parseFloat(budgetForm.planned_amount),
           period_type: budgetForm.period_type || 'year',
+          cost_category: isIncome ? null : (budgetForm.cost_category || null),
+          project_id: budgetForm.project_id || null,
+          tags: budgetForm.tags || [],
           campus_id: campusIdForInsert
         }]).select();
 
@@ -884,6 +936,7 @@ const FinanceModule = () => {
       }
 
       toast.success(budgetForm.id ? tr('Zapisano zmiany pozycji') : tr('Dodano pozycję {amount}', { amount: fmtMoney(budgetForm.planned_amount) }));
+      ensureTagsInPalette(budgetForm.tags);
       setShowBudgetModal(false);
       setBudgetForm(EMPTY_BUDGET);
       setFormErrors({});
@@ -943,6 +996,7 @@ const FinanceModule = () => {
         year: selectedYear, kind: it.kind || 'expense', category: it.category, team_type: it.team_type || it.category,
         description: it.description, planned_amount: it.planned_amount,
         period_type: it.period_type || 'year', period_value: it.period_value || null,
+        cost_category: it.cost_category || null, project_id: it.project_id || null, tags: Array.isArray(it.tags) ? it.tags : [],
         campus_id: campusIdForInsert,
       }));
       const { error } = await supabase.from('budget_items').insert(rows);
@@ -973,7 +1027,8 @@ const FinanceModule = () => {
             type: incomeForm.type,
             source: incomeForm.source,
             notes: incomeForm.notes,
-            tags: incomeForm.tags
+            tags: incomeForm.tags,
+            project_id: incomeForm.project_id || null,
           })
           .eq('id', incomeForm.id);
 
@@ -986,7 +1041,8 @@ const FinanceModule = () => {
           type: incomeForm.type,
           source: incomeForm.source,
           notes: incomeForm.notes,
-          tags: incomeForm.tags
+          tags: incomeForm.tags,
+          project_id: incomeForm.project_id || null,
         }]);
 
         if (error) throw error;
@@ -998,6 +1054,7 @@ const FinanceModule = () => {
       setIncomeForm(EMPTY_INCOME);
       setFormErrors({});
       fetchIncomeTransactions();
+      setDataVersion((v) => v + 1);
       ensureTagsInPalette(tags);
     } catch (error) {
       console.error('Error saving income:', error);
@@ -1074,7 +1131,7 @@ const FinanceModule = () => {
   const saveExpense = async () => {
     // Wymagane: data, kwota, służba i opis (z budżetu albo własny — „poza budżetem”).
     const missing = missingFields(expenseForm, [
-      ['payment_date', tr('datę dokumentu')], ['amount', tr('kwotę')], ['category', tr('służbę')],
+      ['payment_date', tr('datę dokumentu')], ['amount', tr('kwotę')], ['category', tr('służbę lub obszar')],
       ['description', expenseOffBudget ? tr('opis wydatku') : tr('pozycję budżetu')],
     ]);
     if (missing.length) {
@@ -1097,6 +1154,7 @@ const FinanceModule = () => {
       due_date: expenseForm.due_date || null,
       documents: expenseForm.documents,
       tags: expenseForm.tags,
+      project_id: expenseForm.project_id || null,
     };
 
     setSaving(true);
@@ -1131,6 +1189,7 @@ const FinanceModule = () => {
       setExpenseOffBudget(false);
       setFormErrors({});
       fetchExpenseTransactions();
+      setDataVersion((v) => v + 1);
       ensureTagsInPalette(tags);
       ensureVendor(contractor);
     } catch (error) {
@@ -1157,17 +1216,6 @@ const FinanceModule = () => {
     }
   };
 
-  const addTag = (form, setForm) => {
-    if (newTag.trim() && !form.tags.includes(newTag.trim())) {
-      setForm({ ...form, tags: [...form.tags, newTag.trim()] });
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tag, form, setForm) => {
-    setForm({ ...form, tags: form.tags.filter(t => t !== tag) });
-  };
-
   // Realizacja pozycji = zatwierdzone/opłacone wydatki tej służby z tym opisem (bez wielkości liter/spacji).
   const calculateRealization = (category, description) => realizationFor({ category, description }, expenseTransactions);
 
@@ -1182,6 +1230,7 @@ const FinanceModule = () => {
     if (incomeFilters.type && transaction.type !== incomeFilters.type) return false;
     if (incomeFilters.source && !String(transaction.source || '').toLowerCase().includes(incomeFilters.source.toLowerCase())) return false;
     if (incomeFilters.tag && (!transaction.tags || !transaction.tags.includes(incomeFilters.tag))) return false;
+    if (incomeFilters.project && String(transaction.project_id || '') !== String(incomeFilters.project)) return false;
     if (incomeFilters.dateFrom && transaction.date < incomeFilters.dateFrom) return false;
     if (incomeFilters.dateTo && transaction.date > incomeFilters.dateTo) return false;
     return true;
@@ -1194,6 +1243,7 @@ const FinanceModule = () => {
     if (expenseFilters.contractor && !String(transaction.contractor || '').toLowerCase().includes(expenseFilters.contractor.toLowerCase())) return false;
     if (expenseFilters.responsible && !String(transaction.responsible_person || '').toLowerCase().includes(expenseFilters.responsible.toLowerCase())) return false;
     if (expenseFilters.tag && (!transaction.tags || !transaction.tags.includes(expenseFilters.tag))) return false;
+    if (expenseFilters.project && String(transaction.project_id || '') !== String(expenseFilters.project)) return false;
     if (expenseFilters.dateFrom && transaction.payment_date < expenseFilters.dateFrom) return false;
     if (expenseFilters.dateTo && transaction.payment_date > expenseFilters.dateTo) return false;
     return true;
@@ -1218,11 +1268,18 @@ const FinanceModule = () => {
   // da się zapisać także bez pozycji budżetowej („poza budżetem”).
   const budgetCategories = [...new Set(budgetItems.filter((i) => i.kind !== 'income').map(item => item.category).filter(Boolean))].map(cat => ({ value: cat, label: cat }));
   const expenseCategoryOptions = [
-    ...budgetCategories,
-    ...serviceOptions.filter((o) => !budgetCategories.some((b) => b.value === o.value)),
-    ...(expenseForm.category && !budgetCategories.some((b) => b.value === expenseForm.category) && !serviceOptions.some((o) => o.value === expenseForm.category)
-      ? [{ value: expenseForm.category, label: expenseForm.category }] : []),
+    ...buildAreaOptions([...budgetCategories, ...serviceOptions], areas, expenseForm.category),
+    { value: NEW_OPTION, label: tr('+ Dodaj nowy obszar…') },
   ];
+  // Listy wyboru z opcją „+ Dodaj nowy…” (obszar budżetu / kategoria).
+  const areaSelectOptions = (current) => [...buildAreaOptions(serviceOptions, areas, current), { value: NEW_OPTION, label: tr('+ Dodaj nowy obszar…') }];
+  const categorySelectOptions = (kind, current, withEmpty = true) => {
+    const list = kind === 'income' ? incomeCategories : expenseCategories;
+    const opts = list.map((c) => ({ value: c.name, label: c.name }));
+    if (kind === 'income' && opts.length === 0) ['Kolekta', 'Darowizny', 'Inne'].forEach((v) => opts.push({ value: v, label: tr(v) }));
+    if (current && !opts.some((o) => o.value === current)) opts.push({ value: current, label: current });
+    return [...(withEmpty ? [{ value: '', label: tr('— brak —') }] : []), ...opts, { value: NEW_OPTION, label: tr('+ Dodaj nową kategorię…') }];
+  };
   const budgetDescriptionsFor = (category) => budgetItems
     .filter((item) => item.kind !== 'income' && normKey(item.category) === normKey(category) && item.description)
     .map((item) => ({ value: item.description, label: `${item.description} · ${fmtMoney(item.planned_amount)}` }));
@@ -1230,6 +1287,28 @@ const FinanceModule = () => {
   // Budżet dzieli się na planowane WYDATKI i PRZYCHODY (kolumna kind).
   const [budgetPeriod, setBudgetPeriod] = useState('all'); // filtr okresu: all|year|quarter|month
   const inPeriod = (i) => budgetPeriod === 'all' || (i.period_type || 'year') === budgetPeriod;
+  // Grupowanie planu wydatków: wg służby/obszaru (domyślnie), kategorii albo projektu.
+  const [budgetGroupBy, setBudgetGroupBy] = useState('area');
+  const budgetGroupKey = (i) => {
+    if (budgetGroupBy === 'cost_category') return i.cost_category || tr('Bez kategorii');
+    if (budgetGroupBy === 'project') return projectById(projects, i.project_id)?.name || tr('Bez projektu');
+    return i.category;
+  };
+  const budgetGroupLabel = { area: tr('Służba / obszar'), cost_category: tr('Kategoria'), project: tr('Projekt') }[budgetGroupBy];
+  // Metadane pozycji (kategoria / projekt / tagi; pomija wymiar, po którym grupujemy).
+  const itemMeta = (item, showArea = false) => {
+    const proj = projectById(projects, item.project_id);
+    const hasAny = (showArea && item.category) || (item.cost_category && budgetGroupBy !== 'cost_category') || (proj && budgetGroupBy !== 'project') || (item.tags || []).length;
+    if (!hasAny) return null;
+    return (
+      <div className="flex flex-wrap items-center gap-1 mt-1">
+        {showArea && item.category && <StatusPill color={STATUS_COLORS.neutral}>{item.category}</StatusPill>}
+        {item.cost_category && budgetGroupBy !== 'cost_category' && <StatusPill color={categoryColor(item.cost_category)}>{item.cost_category}</StatusPill>}
+        {proj && budgetGroupBy !== 'project' && <span className="px-1.5 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1" style={{ background: `${proj.color || '#6b7280'}22`, color: proj.color || '#6b7280' }}><FolderKanban size={10} />{proj.name}</span>}
+        <TagChips tags={item.tags} colorOf={tagColor} />
+      </div>
+    );
+  };
   const expenseBudgetItems = budgetItems.filter((i) => i.kind !== 'income' && inPeriod(i));
   const incomeBudgetItems = budgetItems.filter((i) => i.kind === 'income' && inPeriod(i));
   const totalPlannedIncome = incomeBudgetItems.reduce((s, i) => s + Number(i.planned_amount || 0), 0);
@@ -1245,15 +1324,15 @@ const FinanceModule = () => {
         actions={
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowCategoryModal(true)}
+              onClick={() => setActiveTab('dictionaries')}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 text-sm font-medium shadow-sm hover:bg-white dark:hover:bg-gray-900 backdrop-blur-sm shrink-0"
-              title={tr('Zarządzaj kategoriami')}
-              aria-label={tr('Zarządzaj kategoriami')}
+              title={tr('Kategorie, obszary i tagi')}
+              aria-label={tr('Kategorie, obszary i tagi')}
             >
-              <Tag size={15} /> <span className="hidden sm:inline">{tr('Kategorie')}</span>
+              <Tags size={15} /> <span className="hidden sm:inline">{tr('Kategorie i tagi')}</span>
             </button>
             {/* Raporty mają własny wybór okresu — rok modułu ukrywamy, żeby nie było dwóch selektorów. */}
-            {activeTab !== 'reports' && (
+            {!['reports', 'projects', 'dictionaries'].includes(activeTab) && (
               <CustomSelect
                 value={selectedYear}
                 onChange={(val) => setSelectedYear(parseInt(val))}
@@ -1268,8 +1347,10 @@ const FinanceModule = () => {
           { id: 'budget', label: t('Budżet'), icon: DollarSign },
           { id: 'income', label: t('Wpływy'), icon: TrendingUp, tour: 'fin-income-tab' },
           { id: 'expenses', label: t('Wydatki'), icon: Receipt },
+          { id: 'projects', label: tr('Projekty'), icon: FolderKanban },
           { id: 'recurring', label: tr('Cykliczne'), icon: Repeat },
           { id: 'reports', label: t('Raporty'), icon: BarChart3 },
+          { id: 'dictionaries', label: tr('Kategorie i tagi'), icon: Tags },
           { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
@@ -1283,6 +1364,11 @@ const FinanceModule = () => {
               {tr('Budżet')} {selectedYear}
             </h2>
             <div className="flex items-center gap-2 flex-wrap">
+              <select value={budgetGroupBy} onChange={(e) => setBudgetGroupBy(e.target.value)} aria-label={tr('Grupuj wydatki wg')} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200">
+                <option value="area">{tr('Grupuj: służba / obszar')}</option>
+                <option value="cost_category">{tr('Grupuj: kategoria')}</option>
+                <option value="project">{tr('Grupuj: projekt')}</option>
+              </select>
               <select value={budgetPeriod} onChange={(e) => setBudgetPeriod(e.target.value)} aria-label={tr('Okres pozycji')} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200">
                 <option value="all">{tr('Wszystkie okresy')}</option>
                 <option value="year">{tr('Roczny')}</option>
@@ -1316,8 +1402,11 @@ const FinanceModule = () => {
               </button>
               <button
                 onClick={() => exportToCsv(`budzet-${selectedYear}.csv`, budgetItems, [
-                  { label: 'Służba', value: 'category' }, { label: 'Opis', value: 'description' },
+                  { label: 'Służba / obszar', value: 'category' }, { label: 'Opis', value: 'description' },
                   { label: 'Rodzaj', value: (r) => (r.kind === 'income' ? 'przychód' : 'wydatek') },
+                  { label: 'Kategoria', value: (r) => r.cost_category || '' },
+                  { label: 'Projekt', value: (r) => projectById(projects, r.project_id)?.name || '' },
+                  { label: 'Tagi', value: (r) => (r.tags || []).join(', ') },
                   { label: 'Okres', value: (r) => ({ year: 'roczny', quarter: 'kwartalny', month: 'miesięczny' }[r.period_type || 'year'] || r.period_type) },
                   { label: 'Plan', value: (r) => num(r.planned_amount) },
                   { label: 'Realizacja', value: (r) => (r.kind === 'income' ? calculateIncomeRealization(r.category) : calculateRealization(r.category, r.description)) },
@@ -1377,7 +1466,7 @@ const FinanceModule = () => {
                     return (
                       <TR key={it.id}>
                         <TD className="font-semibold text-gray-900 dark:text-white">{it.category}</TD>
-                        <TD muted>{it.description}</TD>
+                        <TD muted>{it.description}{itemMeta({ ...it, cost_category: null })}</TD>
                         <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                           <span className="inline-flex items-center gap-1.5 justify-end">
                             {fmtMoney(planned)}
@@ -1448,8 +1537,9 @@ const FinanceModule = () => {
                   <div key={item.id} className="rounded-2xl border border-gray-200 dark:border-gray-700 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{item.category}</div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{budgetGroupBy === 'area' ? item.category : budgetGroupKey(item)}</div>
                         {item.description && <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{item.description}</div>}
+                        {itemMeta(item, budgetGroupBy !== 'area')}
                       </div>
                       <div className="flex gap-1 shrink-0">
                         <button onClick={() => openEditBudget(item)} className="p-2 text-gray-500 dark:text-gray-400 rounded-lg" aria-label={tr('Edytuj pozycję {name}', { name: item.category })}><Edit2 size={16} /></button>
@@ -1474,7 +1564,7 @@ const FinanceModule = () => {
               <DataTable flush>
                 <THead>
                   <tr>
-                    <TH>{t('Służba')}</TH>
+                    <TH>{budgetGroupLabel}</TH>
                     <TH>{t('Opis kosztu')}</TH>
                     <TH align="right">{tr('Plan (zł)')}</TH>
                     <TH align="right">{tr('Realizacja (zł)')}</TH>
@@ -1487,10 +1577,11 @@ const FinanceModule = () => {
                   {(() => {
                     // Group items by category
                     const groupedItems = expenseBudgetItems.reduce((acc, item) => {
-                      if (!acc[item.category]) {
-                        acc[item.category] = [];
+                      const key = budgetGroupKey(item);
+                      if (!acc[key]) {
+                        acc[key] = [];
                       }
-                      acc[item.category].push(item);
+                      acc[key].push(item);
                       return acc;
                     }, {});
 
@@ -1528,10 +1619,10 @@ const FinanceModule = () => {
                                 className="font-semibold text-gray-900 dark:text-white"
                                 rowSpan={totalRowSpan}
                               >
-                                {item.category}
+                                {category}
                               </TD>
                             )}
-                            <TD muted>{item.description}</TD>
+                            <TD muted>{item.description}{itemMeta(item, budgetGroupBy !== 'area')}</TD>
                             <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                               <span className="inline-flex items-center gap-1.5 justify-end">
                                 {fmtMoney(planned)}
@@ -1765,8 +1856,9 @@ const FinanceModule = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => exportToCsv(`wplywy-${selectedYear}.csv`, filteredIncomeTransactions, [
-                  { label: 'Data', value: 'date' }, { label: 'Typ', value: 'type' }, { label: 'Źródło', value: 'source' },
+                  { label: 'Data', value: 'date' }, { label: 'Kategoria', value: 'type' }, { label: 'Źródło', value: 'source' },
                   { label: 'Kwota', value: (r) => num(r.amount) }, { label: 'Notatka', value: 'notes' },
+                  { label: 'Projekt', value: (r) => projectById(projects, r.project_id)?.name || '' },
                   { label: 'Tagi', value: (r) => (r.tags || []).join(', ') },
                 ])}
                 className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
@@ -1777,7 +1869,7 @@ const FinanceModule = () => {
               </button>
               <button
                 data-tour="fin-income-add"
-                onClick={openCreateIncome}
+                onClick={() => openCreateIncome()}
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
@@ -1800,9 +1892,9 @@ const FinanceModule = () => {
           {incomeTransactions.length > 0 && (
           <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">{t('Filtry')}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
               <CustomSelect
-                label={tr('Typ')}
+                label={tr('Kategoria')}
                 value={incomeFilters.type}
                 onChange={(val) => setIncomeFilters({...incomeFilters, type: val})}
                 options={[
@@ -1831,6 +1923,13 @@ const FinanceModule = () => {
                 ]}
                 placeholder={t('Wszystkie')}
               />
+              <CustomSelect
+                label={tr('Projekt')}
+                value={incomeFilters.project}
+                onChange={(val) => setIncomeFilters({ ...incomeFilters, project: val })}
+                options={[{ value: '', label: tr('Wszystkie') }, ...projects.map((p) => ({ value: p.id, label: p.name }))]}
+                placeholder={t('Wszystkie')}
+              />
               <CustomDatePicker
                 label={tr('Data od')}
                 value={incomeFilters.dateFrom}
@@ -1842,9 +1941,9 @@ const FinanceModule = () => {
                 onChange={(val) => setIncomeFilters({...incomeFilters, dateTo: val})}
               />
             </div>
-            {(incomeFilters.type || incomeFilters.source || incomeFilters.tag || incomeFilters.dateFrom || incomeFilters.dateTo) && (
+            {(incomeFilters.type || incomeFilters.source || incomeFilters.tag || incomeFilters.project || incomeFilters.dateFrom || incomeFilters.dateTo) && (
               <button
-                onClick={() => setIncomeFilters({ type: '', source: '', tag: '', dateFrom: '', dateTo: '' })}
+                onClick={() => setIncomeFilters(EMPTY_INCOME_FILTERS)}
                 className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light hover:underline"
               >
                 {tr('Wyczyść filtry')}
@@ -1861,13 +1960,13 @@ const FinanceModule = () => {
                 icon={TrendingUp}
                 title={tr('Brak wpływów na rok {year}', { year: selectedYear })}
                 subtitle={tr('Zapisz kolektę, darowiznę lub inny wpływ.')}
-                action={<Button onClick={openCreateIncome}><Plus size={16} /> {tr('Dodaj pierwszy wpływ')}</Button>}
+                action={<Button onClick={() => openCreateIncome()}><Plus size={16} /> {tr('Dodaj pierwszy wpływ')}</Button>}
               />
             ) : (
               <EmptyState
                 icon={TrendingUp}
                 title={tr('Brak wpływów pasujących do filtrów')}
-                action={<Button variant="secondary" onClick={() => setIncomeFilters({ type: '', source: '', tag: '', dateFrom: '', dateTo: '' })}>{tr('Wyczyść filtry')}</Button>}
+                action={<Button variant="secondary" onClick={() => setIncomeFilters(EMPTY_INCOME_FILTERS)}>{tr('Wyczyść filtry')}</Button>}
               />
             )
           ) : (
@@ -1875,7 +1974,7 @@ const FinanceModule = () => {
                 <THead>
                   <tr>
                     <TH>{tr('Data')}</TH>
-                    <TH>{tr('Typ')}</TH>
+                    <TH>{tr('Kategoria')}</TH>
                     <TH>{t('Źródło')}</TH>
                     <TH align="right">{t('Kwota')}</TH>
                     <TH>{t('Notatka')}</TH>
@@ -1890,12 +1989,15 @@ const FinanceModule = () => {
                         {fmtDate(transaction.date)}
                       </TD>
                       <TD>
-                        <StatusPill color={STATUS_COLORS.neutral}>
+                        <StatusPill color={categoryColor(transaction.type, 'income')}>
                           {tr(transaction.type || 'Inne')}
                         </StatusPill>
                       </TD>
                       <TD>
                         {transaction.source}
+                        {projectById(projects, transaction.project_id) && (
+                          <div className="mt-1"><span className="px-1.5 py-0.5 rounded-full text-[11px] font-medium inline-flex items-center gap-1" style={{ background: `${projectColor(transaction.project_id)}22`, color: projectColor(transaction.project_id) }}><FolderKanban size={10} />{projectById(projects, transaction.project_id).name}</span></div>
+                        )}
                       </TD>
                       <TD align="right" numeric className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
                         {fmtMoney(transaction.amount)}
@@ -1956,8 +2058,9 @@ const FinanceModule = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => exportToCsv(`wydatki-${selectedYear}.csv`, filteredExpenseTransactions, [
-                  { label: 'Data', value: 'payment_date' }, { label: 'Kategoria', value: 'category' },
-                  { label: 'Kategoria kosztu', value: 'cost_category' }, { label: 'Opis', value: 'description' },
+                  { label: 'Data', value: 'payment_date' }, { label: 'Służba / obszar', value: 'category' },
+                  { label: 'Kategoria', value: 'cost_category' }, { label: 'Opis', value: 'description' },
+                  { label: 'Projekt', value: (r) => projectById(projects, r.project_id)?.name || '' },
                   { label: 'Kontrahent', value: 'contractor' }, { label: 'Kwota', value: (r) => num(r.amount) },
                   { label: 'Status', value: (r) => (EXPENSE_STATUS[r.status || 'approved'] || {}).label || r.status }, { label: 'Nr faktury', value: 'invoice_number' },
                   { label: 'Termin', value: 'due_date' }, { label: 'Opłacone', value: (r) => (r.is_paid === false ? 'nie' : 'tak') },
@@ -1971,7 +2074,7 @@ const FinanceModule = () => {
                 <Download size={16} /> CSV
               </button>
               <button
-                onClick={openCreateExpense}
+                onClick={() => openCreateExpense()}
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
@@ -1996,7 +2099,7 @@ const FinanceModule = () => {
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">{t('Filtry')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
               <CustomSelect
-                label={tr('Służba')}
+                label={tr('Służba / obszar')}
                 value={expenseFilters.category}
                 onChange={(val) => setExpenseFilters({...expenseFilters, category: val})}
                 options={[
@@ -2006,7 +2109,7 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label={tr('Rodzaj kosztu')}
+                label={tr('Kategoria')}
                 value={expenseFilters.cost_category}
                 onChange={(val) => setExpenseFilters({...expenseFilters, cost_category: val})}
                 options={[
@@ -2036,7 +2139,7 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <CustomSelect
                 label={tr('Tag')}
                 value={expenseFilters.tag}
@@ -2045,6 +2148,13 @@ const FinanceModule = () => {
                   { value: '', label: tr('Wszystkie') },
                   ...uniqueExpenseTags.map(t => ({ value: t, label: t }))
                 ]}
+                placeholder={t('Wszystkie')}
+              />
+              <CustomSelect
+                label={tr('Projekt')}
+                value={expenseFilters.project}
+                onChange={(val) => setExpenseFilters({ ...expenseFilters, project: val })}
+                options={[{ value: '', label: tr('Wszystkie') }, ...projects.map((p) => ({ value: p.id, label: p.name }))]}
                 placeholder={t('Wszystkie')}
               />
               <CustomDatePicker
@@ -2058,9 +2168,9 @@ const FinanceModule = () => {
                 onChange={(val) => setExpenseFilters({...expenseFilters, dateTo: val})}
               />
             </div>
-            {(expenseFilters.category || expenseFilters.cost_category || expenseFilters.contractor || expenseFilters.responsible || expenseFilters.tag || expenseFilters.dateFrom || expenseFilters.dateTo) && (
+            {(expenseFilters.category || expenseFilters.cost_category || expenseFilters.contractor || expenseFilters.responsible || expenseFilters.tag || expenseFilters.project || expenseFilters.dateFrom || expenseFilters.dateTo) && (
               <button
-                onClick={() => setExpenseFilters({ category: '', cost_category: '', contractor: '', responsible: '', tag: '', dateFrom: '', dateTo: '' })}
+                onClick={() => setExpenseFilters(EMPTY_EXPENSE_FILTERS)}
                 className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light hover:underline"
               >
                 {tr('Wyczyść filtry')}
@@ -2077,13 +2187,13 @@ const FinanceModule = () => {
                 icon={Receipt}
                 title={tr('Brak wydatków na rok {year}', { year: selectedYear })}
                 subtitle={canApprove ? tr('Zapisz fakturę, rachunek lub inny koszt.') : tr('Zgłoś wydatek lub wniosek o zwrot — trafi do akceptacji.')}
-                action={<Button onClick={openCreateExpense}><Plus size={16} /> {canApprove ? tr('Dodaj pierwszy wydatek') : tr('Zgłoś wydatek')}</Button>}
+                action={<Button onClick={() => openCreateExpense()}><Plus size={16} /> {canApprove ? tr('Dodaj pierwszy wydatek') : tr('Zgłoś wydatek')}</Button>}
               />
             ) : (
               <EmptyState
                 icon={Receipt}
                 title={tr('Brak wydatków pasujących do filtrów')}
-                action={<Button variant="secondary" onClick={() => setExpenseFilters({ category: '', cost_category: '', contractor: '', responsible: '', tag: '', dateFrom: '', dateTo: '' })}>{tr('Wyczyść filtry')}</Button>}
+                action={<Button variant="secondary" onClick={() => setExpenseFilters(EMPTY_EXPENSE_FILTERS)}>{tr('Wyczyść filtry')}</Button>}
               />
             )
           ) : (
@@ -2091,7 +2201,7 @@ const FinanceModule = () => {
                 <THead>
                   <tr>
                     <TH>{tr('Data')}</TH>
-                    <TH>{tr('Kategoria')}</TH>
+                    <TH>{tr('Służba / kategoria')}</TH>
                     <TH>{tr('Opis')}</TH>
                     <TH>{t('Kontrahent')}</TH>
                     <TH align="right">{t('Kwota')}</TH>
@@ -2113,19 +2223,19 @@ const FinanceModule = () => {
                               {transaction.category}
                             </StatusPill>
                           )}
-                          {transaction.cost_category && (() => {
-                            const cc = expenseCategories.find((c) => c.name === transaction.cost_category);
-                            const col = cc?.color || STATUS_COLORS.neutral;
-                            return (
-                              <StatusPill color={col}>
-                                {transaction.cost_category}
-                              </StatusPill>
-                            );
-                          })()}
+                          {transaction.cost_category && (
+                            <StatusPill color={categoryColor(transaction.cost_category)}>
+                              {transaction.cost_category}
+                            </StatusPill>
+                          )}
                         </div>
                       </TD>
                       <TD>
                         {transaction.description || ''}
+                        {projectById(projects, transaction.project_id) && (
+                          <div className="mt-1"><span className="px-1.5 py-0.5 rounded-full text-[11px] font-medium inline-flex items-center gap-1" style={{ background: `${projectColor(transaction.project_id)}22`, color: projectColor(transaction.project_id) }}><FolderKanban size={10} />{projectById(projects, transaction.project_id).name}</span></div>
+                        )}
+                        <TagChips tags={transaction.tags} colorOf={tagColor} className="mt-1" />
                       </TD>
                       <TD muted>
                         {transaction.contractor}
@@ -2240,6 +2350,8 @@ const FinanceModule = () => {
                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {FREQ[r.frequency] || r.frequency}
                         {r.category ? ` · ${r.category}` : ''}
+                        {r.cost_category ? ` · ${r.cost_category}` : ''}
+                        {projectById(projects, r.project_id) ? ` · ${projectById(projects, r.project_id).name}` : ''}
                         {r.next_run_date ? ` · ${tr('następna')}: ${fmtDate(r.next_run_date)}` : ''}
                       </div>
                       {r.is_active && !r.next_run_date && (
@@ -2254,7 +2366,7 @@ const FinanceModule = () => {
                     <button onClick={() => toggleRecurring(r)} className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 shrink-0">
                       {r.is_active ? tr('Wstrzymaj') : tr('Wznów')}
                     </button>
-                    <button onClick={() => { setRecurringForm({ ...emptyRecurring, ...r, amount: String(num(r.amount)), title: r.title || '', category: r.category || '', team_type: r.team_type || '', contractor: r.contractor || '', day_of_month: r.day_of_month || '', next_run_date: r.next_run_date || '', end_date: r.end_date || '' }); setFormErrors({}); setShowRecurringModal(true); }} className="p-2 text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg shrink-0" title={tr('Edytuj')} aria-label={tr('Edytuj plan {name}', { name: r.title })}><Edit2 size={16} /></button>
+                    <button onClick={() => { setRecurringForm({ ...emptyRecurring, ...r, amount: String(num(r.amount)), title: r.title || '', category: r.category || '', team_type: r.team_type || '', contractor: r.contractor || '', day_of_month: r.day_of_month || '', next_run_date: r.next_run_date || '', end_date: r.end_date || '', cost_category: r.cost_category || '', project_id: r.project_id || '', tags: Array.isArray(r.tags) ? r.tags : [] }); setFormErrors({}); setShowRecurringModal(true); }} className="p-2 text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg shrink-0" title={tr('Edytuj')} aria-label={tr('Edytuj plan {name}', { name: r.title })}><Edit2 size={16} /></button>
                     <button onClick={() => deleteRecurring(r)} className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg shrink-0" title={tr('Usuń')} aria-label={tr('Usuń plan {name}', { name: r.title })}><Trash2 size={16} /></button>
                   </div>
                 );
@@ -2262,6 +2374,34 @@ const FinanceModule = () => {
             </div>
           )}
         </section>
+      )}
+
+      {/* PROJECTS TAB */}
+      {activeTab === 'projects' && (
+        <FinanceProjects
+          projects={projects}
+          reloadProjects={fetchProjects}
+          tagColor={tagColor}
+          dataVersion={dataVersion}
+          currentUserEmail={currentUserEmail}
+          onAddExpense={(id) => openCreateExpense(id)}
+          onAddIncome={(id) => openCreateIncome(id)}
+        />
+      )}
+
+      {/* DICTIONARIES TAB — obszary, kategorie, tagi, kontrahenci */}
+      {activeTab === 'dictionaries' && (
+        <FinanceDictionaries
+          serviceOptions={serviceOptions}
+          areas={areas}
+          categories={categories}
+          tagPalette={tagPalette}
+          vendors={vendors}
+          reload={{
+            areas: fetchAreas, categories: fetchCategories, tags: fetchTagPalette, vendors: fetchVendors,
+            data: () => { fetchRecurring(); setDataVersion((v) => v + 1); },
+          }}
+        />
       )}
 
       {/* REPORTS TAB */}
@@ -2303,6 +2443,32 @@ const FinanceModule = () => {
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
+                <button onClick={() => setShowSectionsMenu((v) => !v)} aria-expanded={showSectionsMenu} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Wybierz, co ma się znaleźć w raporcie')}>
+                  <SlidersHorizontal size={16} /> {tr('Sekcje')} <span className="text-xs text-gray-400 tabular-nums">{enabledKeys(reportSections).length}/{REPORT_SECTIONS.length}</span>
+                </button>
+                {showSectionsMenu && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowSectionsMenu(false)} />
+                    <div className="absolute right-0 mt-1 w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-20 p-3">
+                      <div className="text-xs font-semibold text-gray-500 uppercase mb-2">{tr('Elementy raportu')}</div>
+                      <div className="space-y-1 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+                        {REPORT_SECTIONS.map((sct) => (
+                          <label key={sct.key} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer py-1 px-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="checkbox" checked={sec(sct.key)} onChange={(e) => setSection(sct.key, e.target.checked)} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" />
+                            {tr(sct.label)}
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 mt-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                        <button onClick={() => setAllSections(Object.fromEntries(REPORT_SECTIONS.map((x) => [x.key, true])))} className="text-xs text-accent-primary hover:underline">{tr('Zaznacz wszystko')}</button>
+                        <button onClick={() => setAllSections(defaultSections())} className="text-xs text-gray-500 hover:underline">{tr('Domyślne')}</button>
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-2">{tr('Wybór dotyczy widoku, PDF, Excela, CSV i treści maila.')}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="relative">
                 <button onClick={() => setShowDownloadMenu((v) => !v)} disabled={downloadingPdf} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm disabled:opacity-60">
                   <Download size={16} /> {downloadingPdf ? tr('Generowanie…') : tr('Pobierz')} <ChevronDown size={14} />
                 </button>
@@ -2329,6 +2495,27 @@ const FinanceModule = () => {
             </div>
           </div>
 
+          {/* Filtry raportu: projekt / służba-obszar / kategoria / tag */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 print:hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <CustomSelect label={tr('Projekt')} value={reportFilters.projectId} onChange={(v) => setReportFilters((f) => ({ ...f, projectId: v }))}
+                options={[{ value: '', label: tr('Wszystkie') }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
+              <CustomSelect label={tr('Służba / obszar')} value={reportFilters.area} onChange={(v) => setReportFilters((f) => ({ ...f, area: v }))}
+                options={[{ value: '', label: tr('Wszystkie') }, ...buildAreaOptions(serviceOptions, areas, reportFilters.area)]} />
+              <CustomSelect label={tr('Kategoria wydatków')} value={reportFilters.costCategory} onChange={(v) => setReportFilters((f) => ({ ...f, costCategory: v }))}
+                options={[{ value: '', label: tr('Wszystkie') }, ...expenseCategories.map((c) => ({ value: c.name, label: c.name }))]} />
+              <CustomSelect label={tr('Tag')} value={reportFilters.tag} onChange={(v) => setReportFilters((f) => ({ ...f, tag: v }))}
+                options={[{ value: '', label: tr('Wszystkie') }, ...tagPalette.map((tg) => ({ value: tg.name, label: tg.name }))]} />
+            </div>
+            {hasReportFilters(reportFilters) && (
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                <span className="text-gray-600 dark:text-gray-300">{reportFilterLabel}</span>
+                {(reportFilters.area || reportFilters.costCategory) && <span className="text-xs text-gray-500 dark:text-gray-400">{tr('Filtr służby/kategorii obejmuje tylko wydatki — wpływy są pomijane.')}</span>}
+                <button onClick={() => setReportFilters(EMPTY_REPORT_FILTERS)} className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('Wyczyść filtry')}</button>
+              </div>
+            )}
+          </div>
+
           {/* Treść raportu (źródło PDF) */}
           <div ref={reportSectionRef} className="space-y-6 bg-gray-50 dark:bg-gray-950 rounded-2xl p-1">
             {/* Nagłówek raportu — tytuł, organizacja, logo, zakres, data wygenerowania */}
@@ -2338,6 +2525,7 @@ const FinanceModule = () => {
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{tr('Raport finansowy')}</h2>
                   {orgName && <p className="text-sm text-gray-500 dark:text-gray-400">{orgName}</p>}
+                  {reportFilterLabel && <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-0.5">{reportFilterLabel}</p>}
                 </div>
               </div>
               <div className="sm:text-right text-sm">
@@ -2346,7 +2534,7 @@ const FinanceModule = () => {
                 <p className="text-xs text-gray-400 mt-0.5">{tr('Wygenerowano')}: {new Date().toLocaleString(appLocale(), { dateStyle: 'short', timeStyle: 'short' })}</p>
               </div>
             </div>
-            {(() => {
+            {sec('summary') && (() => {
               const { income: tIncome, expense: tExpense, balance: tBalance } = reportModel.totals;
               // Realizacja budżetu = wydatki vs PLAN WYDATKÓW (plan przychodów to inna wielkość).
               const totalPlanned = reportModel.kpis.plannedExpense;
@@ -2403,7 +2591,7 @@ const FinanceModule = () => {
             })()}
 
             {/* KPI — szybkie wskaźniki okresu */}
-            {(() => {
+            {sec('kpis') && (() => {
               const k = reportModel.kpis;
               const Tile = ({ icon, label, value, sub, tone }) => (
                 <div className={`rounded-2xl border p-4 ${tone === 'warn' ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'}`}>
@@ -2423,47 +2611,98 @@ const FinanceModule = () => {
             })()}
 
             {/* Wpływy vs Wydatki */}
+            {sec('incomeExpense') && (
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-accent-primary" />{tr('Wpływy vs Wydatki')}</h3>
               <IncomeExpenseBarChart buckets={reportModel.buckets} tr={tr} />
             </div>
+            )}
 
             {/* Przepływ gotówki */}
+            {sec('cashflow') && (
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-accent-primary" />{tr('Przepływ gotówki (skumulowany)')}</h3>
               <CashFlowAreaChart buckets={reportModel.buckets} tr={tr} />
               <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">{tr('Saldo na koniec okresu')}: <span className={`font-bold tabular-nums ${reportModel.totals.balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(reportModel.buckets.at(-1)?.cumulative)}</span></div>
             </div>
+            )}
 
-            {/* Donuty kategorii */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><PieChart size={20} className="text-accent-primary" />{tr('Wydatki wg kategorii kosztu')}</h3>
-                <CategoryDonut data={reportModel.byCostCategory} tr={tr} />
-              </div>
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><PieChart size={20} className="text-accent-primary" />{tr('Wydatki wg służby')}</h3>
-                <CategoryDonut data={reportModel.byServiceCategory} tr={tr} />
-              </div>
-            </div>
-
-            {/* Wpływy wg typu + Wpływy wg źródła */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><Users size={20} className="text-accent-primary" />{tr('Wpływy wg typu')}</h3>
-                <CategoryDonut data={reportModel.byIncomeType} tr={tr} />
-              </div>
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-accent-primary" />{tr('Wpływy wg źródła')}</h3>
-                <CategoryDonut data={reportModel.byIncomeSource} tr={tr} />
-              </div>
-            </div>
-
-            {/* Największe wydatki + Status wydatków */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><Receipt size={20} className="text-accent-primary" />{tr('Największe wydatki')}</h3>
-                {reportModel.topExpenses.length > 0 ? (
+            {/* Sekcje w parach (dwie kolumny na szerokim ekranie); wyłączona sekcja znika, druga zajmuje całą szerokość. */}
+            {(() => {
+              const card = (key, icon, title, body) => (sec(key) ? (
+                <div key={key} className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">{icon}{title}</h3>
+                  {body}
+                </div>
+              ) : null);
+              const pair = (id, a, b) => {
+                const items = [a, b].filter(Boolean);
+                if (!items.length) return null;
+                return <div key={id} className={`grid grid-cols-1 ${items.length === 2 ? 'lg:grid-cols-2' : ''} gap-6`}>{items}</div>;
+              };
+              return [
+                pair('p-exp',
+                  card('byCostCategory', <PieChart size={20} className="text-accent-primary" />, tr('Wydatki wg kategorii'), <CategoryDonut data={reportModel.byCostCategory} tr={tr} />),
+                  card('byArea', <PieChart size={20} className="text-accent-primary" />, tr('Wydatki wg służby / obszaru'), <CategoryDonut data={reportModel.byServiceCategory} tr={tr} />)),
+                pair('p-inc',
+                  card('byIncomeType', <Users size={20} className="text-accent-primary" />, tr('Wpływy wg kategorii'), <CategoryDonut data={reportModel.byIncomeType} tr={tr} />),
+                  card('byIncomeSource', <TrendingUp size={20} className="text-accent-primary" />, tr('Wpływy wg źródła'), <CategoryDonut data={reportModel.byIncomeSource} tr={tr} />)),
+                card('byProject', <FolderKanban size={20} className="text-accent-primary" />, tr('Projekty'),
+                  reportModel.byProject.length > 0 ? (
+                    <DataTable>
+                      <THead>
+                        <tr>
+                          <TH>{tr('Projekt')}</TH>
+                          <TH align="right">{tr('Plan')}</TH>
+                          <TH align="right">{tr('Wydano')}</TH>
+                          <TH align="center">{tr('Realizacja')}</TH>
+                          <TH align="right">{tr('Zebrano')}</TH>
+                          <TH align="right">{tr('Bilans')}</TH>
+                        </tr>
+                      </THead>
+                      <tbody>
+                        {reportModel.byProject.map((p) => (
+                          <TR key={p.id}>
+                            <TD className="font-medium text-gray-900 dark:text-white"><span className="inline-flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: p.color || '#6b7280' }} />{p.name}</span></TD>
+                            <TD align="right" numeric className="whitespace-nowrap">{p.planned > 0 ? fmtMoney(p.planned) : '—'}</TD>
+                            <TD align="right" numeric className="whitespace-nowrap">{fmtMoney(p.spent)}</TD>
+                            <TD align="center" numeric>{p.planned > 0 ? fmtPct(p.pct, 0) : '—'}</TD>
+                            <TD align="right" numeric className="whitespace-nowrap text-emerald-700 dark:text-emerald-400">{fmtMoney(p.raised)}</TD>
+                            <TD align="right" numeric className={`font-semibold whitespace-nowrap ${p.balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(p.balance)}</TD>
+                          </TR>
+                        ))}
+                      </tbody>
+                    </DataTable>
+                  ) : <EmptyState icon={FolderKanban} title={tr('Brak transakcji przypisanych do projektów w tym okresie')} compact />),
+                card('byTag', <Tags size={20} className="text-accent-primary" />, tr('Tagi'),
+                  reportModel.byTag.length > 0 ? (
+                    <>
+                      <DataTable>
+                        <THead>
+                          <tr>
+                            <TH>{tr('Tag')}</TH>
+                            <TH align="right">{tr('Wydatki')}</TH>
+                            <TH align="right">{tr('Wpływy')}</TH>
+                            <TH align="right">{tr('Transakcje')}</TH>
+                          </tr>
+                        </THead>
+                        <tbody>
+                          {reportModel.byTag.map((tg) => (
+                            <TR key={tg.name}>
+                              <TD><TagChips tags={[tg.name]} colorOf={tagColor} /></TD>
+                              <TD align="right" numeric className="whitespace-nowrap">{fmtMoney(tg.expense)}</TD>
+                              <TD align="right" numeric className="whitespace-nowrap text-emerald-700 dark:text-emerald-400">{fmtMoney(tg.income)}</TD>
+                              <TD align="right" numeric>{tg.count}</TD>
+                            </TR>
+                          ))}
+                        </tbody>
+                      </DataTable>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{tr('Transakcja z kilkoma tagami liczy się w każdym z nich.')}</p>
+                    </>
+                  ) : <EmptyState icon={Tags} title={tr('Brak otagowanych transakcji w tym okresie')} compact />),
+                pair('p-top',
+                  card('topExpenses', <Receipt size={20} className="text-accent-primary" />, tr('Największe wydatki'), (
+                reportModel.topExpenses.length > 0 ? (
                   <div className="space-y-1.5">
                     {reportModel.topExpenses.map((e, idx) => (
                       <div key={idx} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
@@ -2476,11 +2715,10 @@ const FinanceModule = () => {
                       </div>
                     ))}
                   </div>
-                ) : <EmptyState icon={Receipt} title={t('Brak danych o wydatkach')} compact />}
-              </div>
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><CheckCircle size={20} className="text-accent-primary" />{tr('Status wydatków')}</h3>
-                {reportModel.expenseStatus.length > 0 ? (
+                ) : <EmptyState icon={Receipt} title={t('Brak danych o wydatkach')} compact />
+                  )),
+                  card('expenseStatus', <CheckCircle size={20} className="text-accent-primary" />, tr('Status wydatków'), (
+                reportModel.expenseStatus.length > 0 ? (
                   <div className="space-y-3">
                     {(() => {
                       const STc = { draft: ['Szkic', '#9ca3af'], submitted: ['Do akceptacji', '#eda100'], approved: ['Zatwierdzone', '#2a78d6'], rejected: ['Odrzucone', '#e34948'], paid: ['Opłacone', '#0ca30c'] };
@@ -2497,18 +2735,20 @@ const FinanceModule = () => {
                       });
                     })()}
                   </div>
-                ) : <EmptyState icon={CheckCircle} title={t('Brak danych o wydatkach')} compact />}
-              </div>
-            </div>
+                ) : <EmptyState icon={CheckCircle} title={t('Brak danych o wydatkach')} compact />
+                  ))),
+              ];
+            })()}
 
             {/* Realizacja budżetu */}
+            {sec('budgetExecution') && (
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><DollarSign size={20} className="text-accent-primary" />{tr('Realizacja budżetu wg służb')} ({reportRange.year})</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><DollarSign size={20} className="text-accent-primary" />{tr('Realizacja budżetu wg służb i obszarów')} ({reportRange.year})</h3>
               {reportModel.budgetExecution.length > 0 ? (
                 <DataTable>
                   <THead>
                     <tr>
-                      <TH>{t('Służba')}</TH>
+                      <TH>{tr('Służba / obszar')}</TH>
                       <TH align="right">{t('Planowany')}</TH>
                       <TH align="right">{t('Zrealizowany')}</TH>
                       <TH align="center">{t('Realizacja')}</TH>
@@ -2532,9 +2772,10 @@ const FinanceModule = () => {
                 </DataTable>
               ) : <EmptyState icon={DollarSign} title={tr('Brak planu wydatków na rok {year}', { year: reportRange.year })} compact />}
             </div>
+            )}
 
             {/* Nieopłacone zobowiązania / faktury */}
-            {reportModel.unpaidInvoices.length > 0 && (
+            {sec('unpaid') && reportModel.unpaidInvoices.length > 0 && (
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><AlertTriangle size={20} className="text-amber-500" />{tr('Nieopłacone zobowiązania')} <span className="text-sm font-normal text-gray-400">({reportModel.unpaidInvoices.length})</span></h3>
                 <DataTable>
@@ -2566,11 +2807,58 @@ const FinanceModule = () => {
             )}
 
             {/* Porównanie rok do roku */}
-            {reportModel.yoy && (
+            {sec('yoy') && reportModel.yoy && (
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-accent-primary" />{tr('Porównanie rok do roku')} ({reportRange.year - 1} → {reportRange.year})</h3>
                 <YoYBars yoy={reportModel.yoy} prevLabel={reportRange.year - 1} nowLabel={reportRange.year} tr={tr} />
               </div>
+            )}
+
+            {/* Listy transakcji (domyślnie wyłączone — do wydruku szczegółowego) */}
+            {sec('incomeList') && (
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><ArrowUpRight size={20} className="text-green-600" />{tr('Lista wpływów')} <span className="text-sm font-normal text-gray-400">({reportModel.raw.income.length})</span></h3>
+                {reportModel.raw.income.length === 0 ? <EmptyState icon={TrendingUp} title={tr('Brak wpływów w tym okresie')} compact /> : (
+                  <DataTable>
+                    <THead><tr><TH>{tr('Data')}</TH><TH>{tr('Kategoria')}</TH><TH>{tr('Źródło')}</TH><TH>{tr('Projekt')}</TH><TH align="right">{tr('Kwota')}</TH></tr></THead>
+                    <tbody>
+                      {reportModel.raw.income.map((r) => (
+                        <TR key={r.id}>
+                          <TD numeric className="whitespace-nowrap">{fmtDate(r.date)}</TD>
+                          <TD>{tr(r.type || 'Inne')}</TD>
+                          <TD muted>{r.source}<TagChips tags={r.tags} colorOf={tagColor} className="mt-1" /></TD>
+                          <TD muted>{projectById(projects, r.project_id)?.name || ''}</TD>
+                          <TD align="right" numeric className="font-semibold whitespace-nowrap">{fmtMoney(r.amount)}</TD>
+                        </TR>
+                      ))}
+                    </tbody>
+                  </DataTable>
+                )}
+              </div>
+            )}
+            {sec('expenseList') && (
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><ArrowDownRight size={20} className="text-red-600" />{tr('Lista wydatków')} <span className="text-sm font-normal text-gray-400">({reportModel.raw.expense.length})</span></h3>
+                {reportModel.raw.expense.length === 0 ? <EmptyState icon={Receipt} title={tr('Brak wydatków w tym okresie')} compact /> : (
+                  <DataTable>
+                    <THead><tr><TH>{tr('Data')}</TH><TH>{tr('Służba / kategoria')}</TH><TH>{tr('Opis')}</TH><TH>{tr('Projekt')}</TH><TH align="right">{tr('Kwota')}</TH></tr></THead>
+                    <tbody>
+                      {reportModel.raw.expense.map((r) => (
+                        <TR key={r.id}>
+                          <TD numeric className="whitespace-nowrap">{fmtDate(r.payment_date)}</TD>
+                          <TD muted>{[r.category, r.cost_category].filter(Boolean).join(' · ')}</TD>
+                          <TD>{r.description || r.contractor}<TagChips tags={r.tags} colorOf={tagColor} className="mt-1" /></TD>
+                          <TD muted>{projectById(projects, r.project_id)?.name || ''}</TD>
+                          <TD align="right" numeric className={`font-semibold whitespace-nowrap ${isCountedExpense(r) ? '' : 'text-gray-400'}`}>{fmtMoney(r.amount)}{!isCountedExpense(r) && <div className="text-[11px] font-normal">{tr((EXPENSE_STATUS[r.status] || {}).label || r.status)}</div>}</TD>
+                        </TR>
+                      ))}
+                    </tbody>
+                  </DataTable>
+                )}
+              </div>
+            )}
+            {enabledKeys(reportSections).length === 0 && (
+              <EmptyState icon={SlidersHorizontal} title={tr('Wszystkie sekcje raportu są wyłączone')} subtitle={tr('Włącz je przyciskiem „Sekcje”.')} />
             )}
           </div>
         </section>
@@ -2582,80 +2870,6 @@ const FinanceModule = () => {
           <MaterialsTab moduleKey="finance" canEdit={true} />
         </section>
       )}
-
-      {/* MODAL: Budget Item */}
-      <Modal
-        isOpen={showCategoryModal}
-        onClose={() => setShowCategoryModal(false)}
-        title={tr('Kategorie finansów')}
-      >
-        <div className="p-6">
-          {/* Dodawanie nowej kategorii */}
-          <div className="flex flex-wrap items-end gap-2 mb-5 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
-            <div className="flex-1 min-w-[140px]">
-              <label htmlFor="fin-cat-name" className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
-              <input id="fin-cat-name" value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
-                onKeyDown={(e) => { if (e.key === 'Enter') saveCategory(); }}
-                placeholder={tr('np. Sprzęt, Kolekta')} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white" />
-            </div>
-            <div>
-              <label htmlFor="fin-cat-kind" className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Rodzaj')}</label>
-              <select id="fin-cat-kind" value={catForm.kind} onChange={(e) => setCatForm({ ...catForm, kind: e.target.value })}
-                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white">
-                <option value="expense">{tr('Wydatek')}</option>
-                <option value="income">{tr('Wpływ')}</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="fin-cat-color" className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kolor')}</label>
-              <input id="fin-cat-color" type="color" value={catForm.color} onChange={(e) => setCatForm({ ...catForm, color: e.target.value })}
-                className="w-10 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer p-0.5" />
-            </div>
-            <button onClick={saveCategory} className="px-4 py-2 rounded-lg bg-accent-primary text-white text-sm font-medium shrink-0">{tr('Dodaj')}</button>
-          </div>
-
-          {/* Listy kategorii */}
-          {['income', 'expense'].map((kind) => (
-            <div key={kind} className="mb-4">
-              <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{kind === 'income' ? tr('Kategorie wpływów') : tr('Kategorie wydatków')}</div>
-              <div className="space-y-1.5">
-                {categories.filter((c) => c.kind === kind).length === 0 && (
-                  <EmptyState icon={Tag} title={tr('Brak kategorii')} compact />
-                )}
-                {categories.filter((c) => c.kind === kind).map((c) => (
-                  <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700">
-                    <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: c.color || '#6b7280' }} />
-                    <span className={`text-sm flex-1 ${c.is_active === false ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'}`}>{c.name}</span>
-                    <button onClick={() => toggleCategoryActive(c)} className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
-                      {c.is_active === false ? tr('Włącz') : tr('Wyłącz')}
-                    </button>
-                    <button onClick={() => deleteCategory(c)} className="text-red-600 hover:text-red-700 dark:text-red-400 p-1" title={tr('Usuń')} aria-label={tr('Usuń kategorię {name}', { name: c.name })}><Trash2 size={15} /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {/* Kontrahenci */}
-          <div className="mt-2 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Kontrahenci')}</div>
-            <div className="flex gap-2 mb-2">
-              <input value={vendorName} aria-label={tr('Kontrahenci')} onChange={(e) => setVendorName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }}
-                placeholder={tr('np. Sklep muzyczny')} className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none text-gray-800 dark:text-gray-100" />
-              <button onClick={() => { if (vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }} className="px-3 rounded-lg bg-accent-primary text-white text-sm shrink-0">{tr('Dodaj')}</button>
-            </div>
-            <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
-              {vendors.length === 0 && <EmptyState icon={Users} title={tr('Brak kontrahentów (dodają się też automatycznie z wydatków).')} compact />}
-              {vendors.map((v) => (
-                <div key={v.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
-                  <span className="text-sm flex-1 truncate text-gray-800 dark:text-gray-100">{v.name}</span>
-                  <button onClick={() => deleteVendor(v)} className="text-red-600 hover:text-red-700 dark:text-red-400 p-1" title={tr('Usuń')} aria-label={tr('Usuń kontrahenta {name}', { name: v.name })}><Trash2 size={14} /></button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Modal>
 
       <Modal
         isOpen={showRecurringModal}
@@ -2698,16 +2912,40 @@ const FinanceModule = () => {
               ]}
             />
           </div>
-          <CustomSelect
-            label={recurringForm.kind === 'income' ? tr('Typ wpływu') : tr('Służba (budżet)')}
-            value={recurringForm.category}
-            onChange={(val) => setRecurringForm({ ...recurringForm, category: val, team_type: recurringForm.kind === 'expense' ? val : recurringForm.team_type })}
-            options={[{ value: '', label: tr('— brak —') },
-              ...(recurringForm.kind === 'income'
-                ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
-                : (serviceOptions.length ? serviceOptions : []))]}
-            placeholder={tr('Wybierz')}
-          />
+          {recurringForm.kind === 'income' ? (
+            <CustomSelect
+              label={tr('Kategoria wpływu')}
+              value={recurringForm.category}
+              onChange={pickOrCreate(() => createCategory('income'), (val) => setRecurringForm((f) => ({ ...f, category: val })))}
+              options={categorySelectOptions('income', recurringForm.category)}
+              placeholder={tr('Wybierz')}
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <CustomSelect
+                label={tr('Służba / obszar')}
+                value={recurringForm.category}
+                onChange={pickOrCreate(createArea, (val) => setRecurringForm((f) => ({ ...f, category: val, team_type: val })))}
+                options={[{ value: '', label: tr('— brak —') }, ...areaSelectOptions(recurringForm.category)]}
+                placeholder={tr('Wybierz')}
+              />
+              <CustomSelect
+                label={tr('Kategoria')}
+                value={recurringForm.cost_category}
+                onChange={pickOrCreate(() => createCategory('expense'), (val) => setRecurringForm((f) => ({ ...f, cost_category: val })))}
+                options={categorySelectOptions('expense', recurringForm.cost_category)}
+                placeholder={tr('Wybierz')}
+              />
+            </div>
+          )}
+          {projects.length > 0 && (
+            <CustomSelect
+              label={tr('Projekt')}
+              value={recurringForm.project_id}
+              onChange={(val) => setRecurringForm({ ...recurringForm, project_id: val })}
+              options={projectOptions(projects, recurringForm.project_id, tr)}
+            />
+          )}
           {recurringForm.kind === 'expense' && (
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
@@ -2726,6 +2964,10 @@ const FinanceModule = () => {
               <DateInput value={recurringForm.end_date} onChange={(e) => setRecurringForm({ ...recurringForm, end_date: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
             </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tagi')}</label>
+            <TagPicker value={recurringForm.tags} onChange={(tags) => setRecurringForm((f) => ({ ...f, tags }))} palette={tagPalette} colorOf={tagColor} />
           </div>
         </div>
       </Modal>
@@ -2750,11 +2992,11 @@ const FinanceModule = () => {
             ))}
           </div>
           <CustomSelect
-            label={tr('Służba')}
+            label={tr('Służba / obszar')}
             value={proposalForm.team_type}
             onChange={(val) => setProposalForm({ ...proposalForm, team_type: val })}
-            options={serviceOptions.length ? serviceOptions : []}
-            placeholder={tr('Wybierz służbę')}
+            options={buildAreaOptions(serviceOptions, areas, proposalForm.team_type)}
+            placeholder={tr('Wybierz służbę lub obszar')}
           />
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
@@ -2786,7 +3028,14 @@ const FinanceModule = () => {
       >
         <div className="p-6">
           <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2"><Calendar size={15} /> {tr('Zakres')}: <span className="font-semibold text-gray-900 dark:text-white">{reportRange.label}</span></div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Podsumowanie okresu (przychody, wydatki, bilans, wykresy, kategorie) trafi na wskazane adresy.')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Raport z wybranymi sekcjami trafi na wskazane adresy.')}</p>
+          {reportFilterLabel && <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300">{tr('Filtr')}: <span className="font-semibold text-gray-900 dark:text-white">{reportFilterLabel}</span></div>}
+          <div className="mb-4 flex flex-wrap gap-1.5">
+            {REPORT_SECTIONS.filter((x) => x.mail && sec(x.key)).map((x) => (
+              <span key={x.key} className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{tr(x.label)}</span>
+            ))}
+            <button type="button" onClick={() => { setShowReportEmailModal(false); setShowSectionsMenu(true); }} className="text-xs text-accent-primary hover:underline">{tr('Zmień sekcje')}</button>
+          </div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
           <textarea
             rows={3}
@@ -2827,6 +3076,7 @@ const FinanceModule = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">{s.cadence === 'monthly' ? tr('Co miesiąc') : s.cadence === 'quarterly' ? tr('Co kwartał') : tr('Co rok')}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{(s.recipients || []).join(', ')}</p>
+                    {Array.isArray(s.sections) && <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{tr('Sekcje')}: {s.sections.map((k) => tr(REPORT_SECTIONS.find((x) => x.key === k)?.label || k)).join(', ')}</p>}
                     {s.next_run_date && <p className="text-[11px] text-gray-500 dark:text-gray-400">{tr('Następna wysyłka')}: {fmtDate(s.next_run_date)}</p>}
                   </div>
                   <button onClick={() => toggleSchedule(s)} className={`text-xs px-2 py-1 rounded-lg ${s.is_active !== false ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'}`}>{s.is_active !== false ? tr('Aktywny') : tr('Wstrzymany')}</button>
@@ -2846,6 +3096,19 @@ const FinanceModule = () => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
               <textarea rows={2} value={scheduleForm.recipients} onChange={(e) => setScheduleForm((f) => ({ ...f, recipients: e.target.value }))} placeholder={tr('skarbnik@parafia.pl, zarzad@parafia.pl')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Sekcje w mailu')}</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                {REPORT_SECTIONS.filter((x) => x.mail).map((x) => (
+                  <label key={x.key} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                    <input type="checkbox" checked={scheduleForm.sections.includes(x.key)}
+                      onChange={(e) => setScheduleForm((f) => ({ ...f, sections: e.target.checked ? [...f.sections, x.key] : f.sections.filter((k) => k !== x.key) }))}
+                      className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" />
+                    {tr(x.label)}
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="flex items-center gap-5">
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"><input type="checkbox" checked={!!scheduleForm.include_csv} onChange={(e) => setScheduleForm((f) => ({ ...f, include_csv: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" /> {tr('Załącz CSV')}</label>
@@ -2950,28 +3213,21 @@ const FinanceModule = () => {
             <CustomSelect
               label={`${tr('Kategoria wpływu')} *`}
               value={budgetForm.category}
-              onChange={(val) => setBudgetForm({ ...budgetForm, category: val })}
-              options={incomeCategories.length > 0
-                ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
-                : [{ value: 'Kolekta', label: tr('Kolekta') }, { value: 'Darowizny', label: tr('Darowizny') }, { value: 'Inne', label: tr('Inne') }]}
+              onChange={pickOrCreate(() => createCategory('income'), (val) => setBudgetForm((f) => ({ ...f, category: val })))}
+              options={categorySelectOptions('income', budgetForm.category, false)}
               placeholder={tr('Wybierz kategorię')}
             />
           ) : (
-            <CustomSelect
-              label={`${tr('Służba')} *`}
-              value={budgetForm.category}
-              onChange={(val) => setBudgetForm({...budgetForm, category: val})}
-              options={serviceOptions.length > 0 ? serviceOptions : [
-                // Fallback (gdyby app_modules się nie wczytało). WARTOŚĆ = team_type modułu.
-                { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
-                { value: 'MediaTeam', label: tr('MediaTeam') },
-                { value: 'AtmosferaTeam', label: 'AtmosferaTeam' },
-                { value: 'Grupy domowe', label: tr('Grupy domowe') },
-                { value: 'małe Avenit', label: tr('małe Avenit') },
-                { value: 'Mlodziezowka', label: tr('Młodzieżówka') }
-              ]}
-              placeholder={t('Wybierz służbę')}
-            />
+            <div>
+              <CustomSelect
+                label={`${tr('Służba / obszar')} *`}
+                value={budgetForm.category}
+                onChange={pickOrCreate(createArea, (val) => setBudgetForm((f) => ({ ...f, category: val })))}
+                options={areaSelectOptions(budgetForm.category)}
+                placeholder={tr('Wybierz służbę lub obszar')}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tr('Nie ma na liście? Wybierz „+ Dodaj nowy obszar…” — np. Administracja, Wynajem budynku.')}</p>
+            </div>
           )}
           {formErrors.category && <p className="text-xs text-red-700 dark:text-red-400 -mt-2">{tr('Wybierz z listy.')}</p>}
           {budgetForm.id && (budgetForm.kind || 'expense') !== 'income' && (
@@ -3015,6 +3271,27 @@ const FinanceModule = () => {
               ]}
             />
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(budgetForm.kind || 'expense') !== 'income' && (
+              <CustomSelect
+                label={tr('Kategoria')}
+                value={budgetForm.cost_category || ''}
+                onChange={pickOrCreate(() => createCategory('expense'), (val) => setBudgetForm((f) => ({ ...f, cost_category: val })))}
+                options={categorySelectOptions('expense', budgetForm.cost_category)}
+                placeholder={tr('Wybierz kategorię')}
+              />
+            )}
+            <CustomSelect
+              label={tr('Projekt')}
+              value={budgetForm.project_id || ''}
+              onChange={(val) => setBudgetForm({ ...budgetForm, project_id: val })}
+              options={projectOptions(projects, budgetForm.project_id, tr)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tagi')}</label>
+            <TagPicker value={budgetForm.tags || []} onChange={(tags) => setBudgetForm((f) => ({ ...f, tags }))} palette={tagPalette} colorOf={tagColor} />
+          </div>
         </div>
       </Modal>
 
@@ -3053,18 +3330,20 @@ const FinanceModule = () => {
               placeholder="0,00"
             />
           </div>
-          <CustomSelect
-            label={tr('Typ wpływu')}
-            value={incomeForm.type}
-            onChange={(val) => setIncomeForm({...incomeForm, type: val})}
-            options={incomeCategories.length > 0
-              ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
-              : [
-                { value: 'Kolekta', label: tr('Kolekta') },
-                { value: 'Darowizny', label: tr('Darowizny') },
-                { value: 'Inne', label: tr('Inne') },
-              ]}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CustomSelect
+              label={tr('Kategoria wpływu')}
+              value={incomeForm.type}
+              onChange={pickOrCreate(() => createCategory('income'), (val) => setIncomeForm((f) => ({ ...f, type: val })))}
+              options={categorySelectOptions('income', incomeForm.type, false)}
+            />
+            <CustomSelect
+              label={tr('Projekt')}
+              value={incomeForm.project_id || ''}
+              onChange={(val) => setIncomeForm({ ...incomeForm, project_id: val })}
+              options={projectOptions(projects, incomeForm.project_id, tr)}
+            />
+          </div>
           <div>
             <label htmlFor="fin-income-source" className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Źródło')} <span className="text-red-600" aria-hidden="true">*</span></label>
             <input
@@ -3090,40 +3369,7 @@ const FinanceModule = () => {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
-            <div className="flex gap-2 mb-2">
-              <input
-                list="fin-tags"
-                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                placeholder={t('Dodaj tag')}
-                onKeyPress={(e) => e.key === 'Enter' && addTag(incomeForm, setIncomeForm)}
-              />
-              <datalist id="fin-tags">
-                {tagPalette.map((tg) => <option key={tg.id} value={tg.name} />)}
-              </datalist>
-              <button
-                onClick={() => addTag(incomeForm, setIncomeForm)}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {incomeForm.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
-                  style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
-                >
-                  <Tag size={12} />
-                  {tag}
-                  <button onClick={() => removeTag(tag, incomeForm, setIncomeForm)}>
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
-            </div>
+            <TagPicker value={incomeForm.tags} onChange={(tags) => setIncomeForm((f) => ({ ...f, tags }))} palette={tagPalette} colorOf={tagColor} />
           </div>
         </div>
       </Modal>
@@ -3175,16 +3421,16 @@ const FinanceModule = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <CustomSelect
-                label={`${tr('Służba')} *`}
+                label={`${tr('Służba / obszar')} *`}
                 value={expenseForm.category}
-                onChange={(val) => {
-                  setExpenseForm({ ...expenseForm, category: val, description: '' });
+                onChange={pickOrCreate(createArea, (val) => {
+                  setExpenseForm((f) => ({ ...f, category: val, description: '' }));
                   setExpenseOffBudget(budgetDescriptionsFor(val).length === 0);
-                }}
+                })}
                 options={expenseCategoryOptions}
-                placeholder={tr('Wybierz służbę')}
+                placeholder={tr('Wybierz służbę lub obszar')}
               />
-              {formErrors.category && <p className="text-xs text-red-700 dark:text-red-400 mt-1">{tr('Wybierz służbę.')}</p>}
+              {formErrors.category && <p className="text-xs text-red-700 dark:text-red-400 mt-1">{tr('Wybierz służbę lub obszar.')}</p>}
             </div>
             {expenseForm.category && (
               <div>
@@ -3193,7 +3439,17 @@ const FinanceModule = () => {
                   value={expenseOffBudget ? OFF_BUDGET : expenseForm.description}
                   onChange={(val) => {
                     if (val === OFF_BUDGET) { setExpenseOffBudget(true); setExpenseForm({ ...expenseForm, description: '' }); }
-                    else { setExpenseOffBudget(false); setExpenseForm({ ...expenseForm, description: val }); }
+                    else {
+                      // Kategoria, projekt i tagi z pozycji budżetu — o ile nie wybrano ich już ręcznie.
+                      const bi = budgetItems.find((b) => b.kind !== 'income' && normKey(b.category) === normKey(expenseForm.category) && b.description === val);
+                      setExpenseOffBudget(false);
+                      setExpenseForm({
+                        ...expenseForm, description: val,
+                        cost_category: expenseForm.cost_category || bi?.cost_category || '',
+                        project_id: expenseForm.project_id || bi?.project_id || '',
+                        tags: expenseForm.tags?.length ? expenseForm.tags : (Array.isArray(bi?.tags) ? bi.tags : []),
+                      });
+                    }
                   }}
                   options={[...budgetDescriptionsFor(expenseForm.category), { value: OFF_BUDGET, label: tr('Inny wydatek (poza budżetem)') }]}
                   placeholder={tr('Wybierz pozycję')}
@@ -3298,14 +3554,22 @@ const FinanceModule = () => {
             </div>
           </div>
 
-          {/* Rodzaj kosztu (własna kategoria, niezależna od budżetu) */}
-          <CustomSelect
-            label={tr('Rodzaj kosztu (opcjonalnie)')}
-            value={expenseForm.cost_category}
-            onChange={(val) => setExpenseForm({...expenseForm, cost_category: val})}
-            options={[{ value: '', label: tr('— brak —') }, ...expenseCategories.map((c) => ({ value: c.name, label: c.name }))]}
-            placeholder={t('Wybierz kategorię kosztu')}
-          />
+          {/* Kategoria (rodzaj kosztu, niezależny od służby) + projekt */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CustomSelect
+              label={tr('Kategoria (opcjonalnie)')}
+              value={expenseForm.cost_category}
+              onChange={pickOrCreate(() => createCategory('expense'), (val) => setExpenseForm((f) => ({ ...f, cost_category: val })))}
+              options={categorySelectOptions('expense', expenseForm.cost_category)}
+              placeholder={tr('Wybierz kategorię')}
+            />
+            <CustomSelect
+              label={tr('Projekt (opcjonalnie)')}
+              value={expenseForm.project_id || ''}
+              onChange={(val) => setExpenseForm({ ...expenseForm, project_id: val })}
+              options={projectOptions(projects, expenseForm.project_id, tr)}
+            />
+          </div>
 
           {canApprove && (
             <div className="flex flex-wrap gap-4">
@@ -3335,40 +3599,7 @@ const FinanceModule = () => {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
-            <div className="flex gap-2 mb-2">
-              <input
-                list="fin-tags"
-                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                placeholder={t('Dodaj tag')}
-                onKeyPress={(e) => e.key === 'Enter' && addTag(expenseForm, setExpenseForm)}
-              />
-              <datalist id="fin-tags">
-                {tagPalette.map((tg) => <option key={tg.id} value={tg.name} />)}
-              </datalist>
-              <button
-                onClick={() => addTag(expenseForm, setExpenseForm)}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {expenseForm.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
-                  style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
-                >
-                  <Tag size={12} />
-                  {tag}
-                  <button onClick={() => removeTag(tag, expenseForm, setExpenseForm)}>
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
-            </div>
+            <TagPicker value={expenseForm.tags} onChange={(tags) => setExpenseForm((f) => ({ ...f, tags }))} palette={tagPalette} colorOf={tagColor} />
           </div>
         </div>
       </Modal>

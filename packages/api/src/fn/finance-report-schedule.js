@@ -75,7 +75,7 @@ export async function runForTenant(pool, ctx = {}) {
     try {
       const recipients = [...new Set((s.recipients || []).map((e) => String(e).trim().toLowerCase()).filter((e) => EMAIL_RE.test(e)))];
       const period = completedPeriod(s.cadence, today);
-      const report = await buildFinanceReport(pool, period);
+      const report = await buildFinanceReport(pool, { ...period, sections: s.sections || null });
 
       const attachments = s.include_csv === false ? [] : [{
         filename: `raport-finansowy-${period.year}.csv`,
