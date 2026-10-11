@@ -22,6 +22,10 @@ import { loadVisibilityContext } from './eventVisibility.js';
 import { filterUserContent, notifyNewReport } from '../lib/moderation.js';
 import { prepareBoardAssignNotify, notifyBoardAssignees } from './boardNotify.js';
 import { financeTeamTypes, applyTeamFinanceScope, TEAM_FINANCE_OPS, isBudgetWrite, budgetRowsBefore, writeBudgetAudit } from './financeScope.js';
+import { isPrayerTable, prayerViewer, prayerScope, enforcePrayerWrite, redactPrayerRows } from './prayerScope.js';
+import { isSecretSetting, settingsSecretScope } from './settingsScope.js';
+import { redactAccounts } from './accountFields.js';
+import { seesAllHomeGroupContacts, myHomeGroupIds, redactHomeGroupMembers } from './homeGroupContacts.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -195,7 +199,8 @@ export default async function dataApiRoutes(app) {
         q.__embedScopes = {};
         q.__embedHidden = {};
         for (const child of embedTables) {
-          if (isOwnedTable(child) || (isPiiTable(child) && !piiStaff(child)) || child === 'poll_votes') {
+          if (isOwnedTable(child) || (isPiiTable(child) && !piiStaff(child)) || child === 'poll_votes' ||
+              (child === 'home_group_members' && !seesAllHomeGroupContacts(resolver))) {
             throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
           }
           let scope = null;
@@ -300,6 +305,23 @@ export default async function dataApiRoutes(app) {
         await assertTaskCommentTarget(q, req);
       }
 
+      // Prośby o modlitwę: „tylko dla liderów”, anonimowość i autorstwo (prayerScope.js) — także
+      // na ścieżce samoobsługi (własna prośba członka), stąd bez warunku access.ok.
+      const prayerCtx = isPrayerTable(q.table) ? prayerViewer({ isAdmin, resolver, email: req.user.email }) : null;
+      if (prayerCtx) {
+        const scope = prayerScope(q.table, prayerCtx);
+        if (scope) q.__ownerScope = { ...scope, select: scope.select || q.__ownerScope?.select };
+        enforcePrayerWrite(q, prayerCtx, req.user.id);
+      }
+
+      // Sekrety w app_settings (np. sso_*_client_secret_enc) czyta tylko serwer — nigdy /api/db.
+      if (q.table === 'app_settings') {
+        if (q.op === 'select') q.__ownerScope = settingsSecretScope();
+        else if (rowsOfValues(q).some((r) => isSecretSetting(r.key))) {
+          throw new ApiError(403, 'Sekrety integracji zapisuje serwer (Ustawienia → Bezpieczeństwo)');
+        }
+      }
+
       // Komunikator: tylko uczestnicy rozmowy, nadawca = ja, kanał ogłoszeń dla administratorów
       // (komunikator.js) — dla każdego, także admina aplikacji (prywatna korespondencja).
       if (isConversationTable(q.table)) {
@@ -368,6 +390,12 @@ export default async function dataApiRoutes(app) {
         const anon = await anonymousPollIds(req.db, data.map((r) => r?.message_id));
         data = redactVotes(data, anon, req.user.email);
       }
+
+      if (prayerCtx && q.op === 'select' && Array.isArray(data)) data = redactPrayerRows(data, prayerCtx);
+      if (q.table === 'home_group_members' && q.op === 'select' && Array.isArray(data) && data.length && !seesAllHomeGroupContacts(resolver)) {
+        redactHomeGroupMembers(data, { groupIds: await myHomeGroupIds(req.db, req.user.email), email: req.user.email });
+      }
+      if (q.table === 'app_users' && q.op === 'select' && resolver) redactAccounts(Array.isArray(data) ? data : [data], resolver, req.user);
 
       // Egzekwowanie pól przy odczycie: usuń kolumny bez prawa odczytu.
       if (access.resolver && q.op === 'select') {
@@ -593,6 +621,8 @@ async function allowSelfUpdate(q, req) {
       (f[0].column === 'email' && f[0].value?.toLowerCase() === req.user.email?.toLowerCase()))
   );
 }
+
+const rowsOfValues = (q) => (Array.isArray(q.values) ? q.values : [q.values]).filter(Boolean);
 
 function proposalRows(q) {
   return (Array.isArray(q.values) ? q.values : [q.values]).filter(Boolean);

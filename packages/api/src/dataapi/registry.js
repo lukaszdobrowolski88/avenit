@@ -31,7 +31,7 @@ export const REGISTRY = {
   // Tabele app_* / campuses: odczyt otwarty (config + własne uprawnienia potrzebne
   // wszystkim). Zapis bramkowany akcją manage_* (SETTINGS_WRITE_CAPABILITY) w canAccess.
   app_users: T(null, {
-    hiddenColumns: ['password_hash', 'totp_secret', 'totp_backup_codes'],
+    hiddenColumns: ['password_hash', 'totp_secret', 'totp_backup_codes', 'backup_codes', 'verify_token_hash'],
     // Własny profil może edytować każdy — obsłużone w routes (self-update whitelist).
     selfUpdateColumns: ['full_name', 'name', 'avatar_url', 'phone', 'onboarding'], // bez totp_required: wymóg 2FA ustawia tylko administrator (admin-update-user)
   }),

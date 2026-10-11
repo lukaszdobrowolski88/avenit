@@ -39,6 +39,10 @@ export const LIDER_DELETE_RESOURCES = [
 // Rola daje tylko moduły wspólne; służby — z ministry_memberships (lider albo członek danej
 // służby; lider jednej może być członkiem innej). Wrażliwe moduły jawnie zabronione.
 export const LIDER_MODULES = ['dashboard', 'programs', 'calendar', 'teaching', 'sermons', 'prayer', 'komunikator', 'boards', 'serve'];
+// Treści dla członków, które lider ma jak każdy członek (migracja 104): Grupy domowe — odczyt
+// (swoja grupa, kalendarz grup). Edycja grup tylko z przynależności do służby Grup domowych.
+export const LIDER_READONLY_MODULES = ['homegroups'];
+const READONLY_RES = MODULES.filter((m) => LIDER_READONLY_MODULES.includes(m.key)).flatMap((m) => m.resources);
 export const LIDER_DENIED_MODULES = [
   'settings', 'mail', 'mailing', 'sms_campaigns', 'push_campaigns', 'giving', 'automation', 'finance',
   'members', 'care', 'forms', 'analytics', 'attendance', 'rsvp', 'rooms', 'ai',
@@ -82,6 +86,7 @@ export const ROLE_PRESETS = {
   // analityki. Finanse własnej służby — przez tab:<moduł>:finances lidera służby (financeScope.js).
   lider: [
     ...LIDER_MODULES.map((m) => allow(`module:${m}`)),
+    ...LIDER_READONLY_MODULES.map((m) => allow(`module:${m}`)),
     ...LIDER_DENIED_MODULES.map((m) => deny(`module:${m}`)),
     allow('tab:*:*'), deny('tab:*:finances'),
     allow('res:*:read'), allow('res:*:create'), allow('res:*:update'),
@@ -89,6 +94,8 @@ export const ROLE_PRESETS = {
     // bez finansów (zapis) i ustawień (zapis)
     ...FINANCE_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),
     ...SETTINGS_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),
+    // Grupy domowe tylko do odczytu (edycja — lider/członek służby Grup domowych z przynależności)
+    ...READONLY_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`)]),
     // akcje: programy i kalendarz (akcje służb — z przynależności lidera służby)
     allow('action:programs:*'), allow('action:calendar:*'),
   ],
