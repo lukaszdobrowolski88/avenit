@@ -8,6 +8,7 @@ import EmptyState from '../../../components/EmptyState';
 import Button from '../../../components/Button';
 import { TONE } from '../../../lib/brandTone';
 import { EventFormatBadge, JoinEventButton, hasPlace, isOnlineFormat, joinWindowOpen } from '../../Events/eventFormat';
+import { isEventOver, localYmd } from '../../../lib/eventTime';
 
 // Kolory znaczników wg kategorii wydarzenia (spójne z modułem Kalendarz).
 const CATEGORY_STYLES = {
@@ -43,15 +44,17 @@ export default function UpcomingEventsWidget() {
     let active = true;
     (async () => {
       try {
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const today = localYmd(); // YYYY-MM-DD lokalnie (toISOString dawał datę UTC)
         const { data, error } = await supabase
           .from('events')
           .select('id, title, category, date, time, end_time, end_date, location, format')
           .gte('date', today)
           .order('date', { ascending: true })
-          .limit(6);
+          .order('time', { ascending: true })
+          .limit(12);
         if (error) throw error;
-        if (active) setEvents(data || []);
+        // Bez dzisiejszych, które już się skończyły.
+        if (active) setEvents((data || []).filter((e) => !isEventOver(e)).slice(0, 6));
       } catch (err) {
         console.error('Error fetching upcoming events:', err);
       } finally {
