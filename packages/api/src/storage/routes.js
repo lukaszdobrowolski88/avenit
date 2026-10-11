@@ -160,14 +160,19 @@ async function canSignMessengerFile(req, filePath) {
         [convId, email]);
       return rows.length > 0;
     }
-    // Starsza ścieżka — szukamy wiadomości z tym plikiem w moich rozmowach.
+    // Starsza ścieżka — plik musi występować WYŁĄCZNIE w wiadomościach moich rozmów. Samo „jest
+    // w mojej rozmowie” nie wystarcza (runda 4): treści attachments nikt nie waliduje, więc
+    // wklejenie cudzej ścieżki do własnej rozmowy dawało podpis cudzego pliku.
     const like = `%/${MESSENGER_BUCKET}/${filePath.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     const { rows } = await req.db.query(
-      `SELECT 1 FROM messages m
-         JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND lower(cp.user_email) = $2
-        WHERE m.attachments::text LIKE $1 LIMIT 1`,
+      `SELECT count(*)::int AS n,
+              count(*) FILTER (WHERE EXISTS (
+                SELECT 1 FROM conversation_participants cp
+                 WHERE cp.conversation_id = m.conversation_id AND lower(cp.user_email) = $2))::int AS mine
+         FROM messages m
+        WHERE m.attachments::text LIKE $1`,
       [like, email]);
-    return rows.length > 0;
+    return rows[0]?.n > 0 && rows[0].n === rows[0].mine;
   } catch {
     return false;
   }
@@ -211,6 +216,99 @@ async function canUseBucket(req, bucket) {
   } catch {
     return false;
   }
+}
+
+// Uprawnienia wołającego: admin aplikacji albo resolver capability (null = legacy → jak admin).
+async function callerAccess(req) {
+  const { rows } = await req.db.query(`SELECT is_super_admin, role FROM app_users WHERE id = $1`, [req.user.id]);
+  const role = rows[0]?.role ?? req.user.role;
+  const { grants, adminRoles } = await loadGrants(req.db, req.tenant.db_name);
+  if (rows[0]?.is_super_admin || adminRoles.has(role) || grants === null) return { isAdmin: true, can: () => true };
+  const resolver = makeResolver(grants, { role, userId: req.user.id, isAdmin: false });
+  return { isAdmin: false, can: (c) => resolver.can(c) };
+}
+
+// Obsługa bucketu niewrażliwego (audyt 2026-10, runda 4): kto poza administratorem i autorem pliku
+// może pliki nadpisywać, usuwać i listować. Brak wpisu / pusta lista = tylko administrator (i autor).
+const BUCKET_STAFF = {
+  materials: ['res:materials_files:delete'],
+  'kids-materials': ['module:kids'],
+  equipment: ['res:equipment:delete'],
+  programs: ['res:programs:update'],
+  'form-uploads': ['module:forms'],
+  'public-assets': [],
+};
+
+async function isBucketStaff(req, bucket) {
+  try {
+    const me = await callerAccess(req);
+    if (me.isAdmin) return true;
+    if (bucket === MESSENGER_BUCKET) return false; // cudze załączniki czatu — tylko administrator
+    const caps = SENSITIVE[bucket] || BUCKET_STAFF[bucket] || [];
+    return caps.some((c) => me.can(c));
+  } catch {
+    return false;
+  }
+}
+
+// Kto wgrał plik (rejestr storage_objects, migracja 105) — e-mail małymi literami albo null.
+async function uploaderOf(req, bucket, filePath) {
+  try {
+    const { rows } = await req.db.query(
+      `SELECT lower(uploaded_by) AS u FROM storage_objects WHERE bucket = $1 AND path = $2`, [bucket, filePath]);
+    return rows[0]?.u ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function isUploader(req, bucket, filePath) {
+  const me = String(req.user?.email || '').toLowerCase();
+  return !!me && (await uploaderOf(req, bucket, filePath)) === me;
+}
+
+async function recordUpload(req, bucket, filePath) {
+  try {
+    await req.db.query(
+      `INSERT INTO storage_objects (bucket, path, uploaded_by) VALUES ($1, $2, $3)
+       ON CONFLICT (bucket, path) DO UPDATE SET uploaded_by = EXCLUDED.uploaded_by, updated_at = now()`,
+      [bucket, filePath, String(req.user?.email || '').toLowerCase()]);
+  } catch (err) {
+    req.log?.warn?.({ err }, 'storage_objects: zapis autora pliku nie powiódł się');
+  }
+}
+
+// Czy wolno wgrać plik (nowy albo nadpisać istniejący). Zwraca komunikat odmowy albo null.
+export async function uploadDenied(req, bucket, filePath, { overwrite }) {
+  if (bucket === 'finance') {
+    return (await canUploadFinance(req, { overwrite })) ? null : 'Brak uprawnień do dodawania dokumentów finansowych';
+  }
+  if (bucket === MESSENGER_BUCKET) {
+    const me = await callerAccess(req).catch(() => null);
+    if (!me) return 'Brak uprawnień';
+    if (!me.isAdmin) {
+      if (isPublicMessengerPath(filePath)) {
+        if (!me.can('module:mailing')) return 'Grafiki mailingu dodaje obsługa mailingu';
+      } else {
+        if (!me.can('module:komunikator')) return 'Brak dostępu do Komunikatora';
+        const convId = conversationIdFromPath(filePath);
+        if (convId) {
+          const email = String(req.user?.email || '').toLowerCase();
+          const { rows } = await req.db.query(
+            `SELECT 1 FROM conversation_participants WHERE conversation_id::text = $1 AND lower(user_email) = $2 LIMIT 1`,
+            [convId, email]);
+          if (!rows.length) return 'Załącznik dodajesz tylko w swojej rozmowie';
+        }
+      }
+      if (overwrite && !(await isUploader(req, bucket, filePath))) return 'Nie możesz podmienić cudzego pliku';
+    }
+    return null;
+  }
+  if (SENSITIVE[bucket]) return (await canUseBucket(req, bucket)) ? null : 'Brak uprawnień do tego bucketu';
+  if (overwrite && !(await isBucketStaff(req, bucket)) && !(await isUploader(req, bucket, filePath))) {
+    return 'Nie możesz podmienić cudzego pliku';
+  }
+  return null;
 }
 
 // Wrzucanie do bucketu finance: pełne Finanse albo lider służby (zakładka Finanse swojej
@@ -271,14 +369,17 @@ export default async function storageRoutes(app) {
       assertBucket(bucket);
       if (!filePath) return reply.code(400).send({ error: 'Brak ścieżki pliku' });
 
-      const target = safeJoin(req.tenant.slug, bucket, filePath);
+      const rel = cleanRelPath(filePath);
+      if (!rel) return reply.code(400).send({ error: 'Nieprawidłowa ścieżka' });
+      const target = safeJoin(req.tenant.slug, bucket, rel);
       const upsert = String(req.headers['x-upsert'] || 'false') === 'true';
-      if (bucket === 'finance' && !(await canUploadFinance(req, { overwrite: upsert }))) {
-        return reply.code(403).send({ error: 'Brak uprawnień do dodawania dokumentów finansowych' });
-      }
-      if (!upsert && fs.existsSync(target)) {
+      const exists = fs.existsSync(target);
+      if (!upsert && exists) {
         return reply.code(409).send({ error: 'Plik już istnieje', code: 'Duplicate' });
       }
+      // finance: jak dotąd sam nagłówek upsert = nadpisanie; reszta — faktyczne nadpisanie pliku.
+      const denied = await uploadDenied(req, bucket, rel, { overwrite: bucket === 'finance' ? upsert : exists });
+      if (denied) return reply.code(403).send({ error: denied });
       await fsp.mkdir(path.dirname(target), { recursive: true });
 
       if (req.isMultipart?.()) {
@@ -290,6 +391,7 @@ export default async function storageRoutes(app) {
         await fsp.writeFile(target, req.body);
       }
       await shrinkImage(bucket, target);
+      await recordUpload(req, bucket, rel);
       return reply.send({ path: filePath, fullPath: `${bucket}/${filePath}`, id: filePath });
     }
   );
@@ -298,14 +400,31 @@ export default async function storageRoutes(app) {
   app.delete('/api/storage/:bucket', { preHandler: app.requireUser }, async (req, reply) => {
     const { bucket } = req.params;
     assertBucket(bucket);
-    if (!(await canUseBucket(req, bucket))) return reply.code(403).send({ error: 'Brak uprawnień do usuwania tych plików' });
-    const paths = req.body?.paths || [];
+    // Usuwa administrator / obsługa bucketu, a pozostali — tylko pliki, które sami wgrali
+    // (rejestr storage_objects). Załączniki czatu: administrator albo autor (runda 4).
+    const staff = SENSITIVE[bucket] && bucket !== MESSENGER_BUCKET
+      ? await canUseBucket(req, bucket)
+      : await isBucketStaff(req, bucket);
+    const paths = Array.isArray(req.body?.paths) ? req.body.paths : [];
+    if (!staff && SENSITIVE[bucket] && bucket !== MESSENGER_BUCKET) {
+      return reply.code(403).send({ error: 'Brak uprawnień do usuwania tych plików' });
+    }
     const removed = [];
     for (const p of paths) {
-      const target = safeJoin(req.tenant.slug, bucket, String(p));
+      const rel = cleanRelPath(p);
+      if (!rel) continue;
+      if (!staff && !(await isUploader(req, bucket, rel))) {
+        return reply.code(403).send({ error: 'Możesz usuwać tylko pliki, które sam dodałeś' });
+      }
+    }
+    for (const p of paths) {
+      const rel = cleanRelPath(p);
+      if (!rel) continue;
+      const target = safeJoin(req.tenant.slug, bucket, rel);
       try {
         await fsp.unlink(target);
         removed.push(p);
+        await req.db.query(`DELETE FROM storage_objects WHERE bucket = $1 AND path = $2`, [bucket, rel]).catch(() => {});
       } catch {
         // brak pliku — ignoruj (semantyka supabase remove)
       }
@@ -317,7 +436,9 @@ export default async function storageRoutes(app) {
   app.post('/api/storage/:bucket/list', { preHandler: app.requireUser }, async (req, reply) => {
     const { bucket } = req.params;
     assertBucket(bucket);
-    if (!(await canUseBucket(req, bucket))) return reply.code(403).send({ error: 'Brak uprawnień do przeglądania tych plików' });
+    // Listowanie zdradza nazwy cudzych plików (także z odpowiedzi formularzy, czatów) — tylko
+    // administrator i obsługa bucketu (żaden ekran aplikacji nie listuje bucketów).
+    if (!(await isBucketStaff(req, bucket))) return reply.code(403).send({ error: 'Brak uprawnień do przeglądania tych plików' });
     const prefix = String(req.body?.prefix || '');
     const dir = safeJoin(req.tenant.slug, bucket, prefix);
     try {
@@ -376,6 +497,12 @@ export default async function storageRoutes(app) {
     }
     // Podpisany link do prywatnego pliku nie powinien trafiać do cache pośredników.
     if (req.query?.sig) reply.header('Cache-Control', 'private, max-age=300');
+    // Pliki użytkowników na domenie aplikacji (audyt 2026-10, runda 4): SVG z <script> otwarty
+    // wprost wykonywał JS w originie aplikacji (przejęcie sesji). Bez zgadywania typu i z
+    // piaskownicą CSP — obrazki w <img> działają jak dotąd, skrypty w plikach nie. PDF bez CSP
+    // (przeglądarkowy podgląd PDF nie działa w piaskownicy).
+    reply.header('X-Content-Type-Options', 'nosniff');
+    if (mimeFor(filePath) !== 'application/pdf') reply.header('Content-Security-Policy', STORAGE_CSP);
     const target = safeJoin(req.tenant.slug, bucket, filePath);
     if (!fs.existsSync(target) || !fs.statSync(target).isFile()) {
       return reply.code(404).send({ error: 'Nie znaleziono pliku' });
@@ -396,7 +523,9 @@ export default async function storageRoutes(app) {
   });
 }
 
-function mimeFor(file) {
+export const STORAGE_CSP = "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox";
+
+export function mimeFor(file) {
   const ext = path.extname(file).toLowerCase();
   const map = {
     '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif',
