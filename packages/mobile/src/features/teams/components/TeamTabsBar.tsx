@@ -34,8 +34,9 @@ export const TeamTabsBar = ({
       horizontal
       showsHorizontalScrollIndicator={false}
       // Bez flexGrow: 0 poziomy ScrollView w kolumnie rozciąga się w pionie i zostawia
-      // pustą przerwę między zakładkami a treścią.
-      style={{ flexGrow: 0 }}
+      // pustą przerwę między zakładkami a treścią; bez flexShrink: 0 długa treść pod spodem
+      // (np. grafik) ściska pasek i ucina dół zakładek.
+      style={{ flexGrow: 0, flexShrink: 0 }}
       contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 4 }}
     >
       {tabs.map(({ key, label, Icon }) => {

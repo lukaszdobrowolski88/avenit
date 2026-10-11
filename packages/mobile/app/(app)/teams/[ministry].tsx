@@ -313,6 +313,7 @@ export default function TeamDetailScreen() {
         <TeamTabsBar tabs={tabs} active={active} onChange={onTab} />
 
         <ScrollView
+          style={{ flex: 1 }}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 130 }}
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={B.ink} />}
