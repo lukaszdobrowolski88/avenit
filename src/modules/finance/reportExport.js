@@ -181,7 +181,6 @@ export function csvString(model, sections) {
   const row = (...cells) => lines.push(cells.map(csvEsc).join(';'));
   row('Raport finansowy', model.range.label);
   row('');
-  if (model.filterLabel) row('Wyłączone z raportu', model.filterLabel);
   if (on('summary')) {
     row('');
     row('Podsumowanie', 'Kwota');
@@ -246,7 +245,6 @@ function buildWorkbook(XLSX, model, sections) {
   const on = (k) => sectionOn(sections, k);
   const wb = XLSX.utils.book_new();
   const summary = [['Raport finansowy', model.range.label]];
-  if (model.filterLabel) summary.push(['Wyłączone z raportu', model.filterLabel]);
   if (on('summary')) summary.push([], ['Podsumowanie', 'Kwota (zł)'], ['Przychody', model.totals.income], ['Wydatki', model.totals.expense], ['Bilans', model.totals.balance]);
   if (on('incomeExpense') || on('cashflow')) summary.push([], ['Okres', 'Przychody', 'Wydatki', 'Bilans', 'Skumulowany'], ...model.buckets.map((b) => [b.label, b.income, b.expense, b.balance, b.cumulative]));
   const groupRows = (title, items, key) => {
@@ -313,6 +311,27 @@ const H2C_OPTS = {
     clonedDoc.body.classList.remove('dark');
     clonedDoc.documentElement.style.backgroundColor = '#ffffff';
     clonedDoc.querySelectorAll('.pdf-exclude').forEach((n) => { n.style.display = 'none'; });
+    // html2canvas rysuje tekst kilka pikseli niżej niż przeglądarka — w elementach z ucinaniem
+    // (`truncate` = overflow:hidden) obcinało to dół liter i całe drugie linie (podpisy legend,
+    // „Liczba transakcji”, opisy wydatków). W kopii do zrzutu tekst może się zawinąć zamiast uciąć.
+    // Tailwindowe `img { display:block }` też przesuwa tekst w html2canvas — przywracamy inline.
+    const st = clonedDoc.createElement('style');
+    st.textContent = `
+      .truncate { overflow: visible !important; text-overflow: clip !important; white-space: normal !important; }
+      [class*="overflow-hidden"] { overflow: visible !important; }
+      img { display: inline-block !important; }
+      /* Cyfry o stałej szerokości: przeglądarka układa słowa według nich, a html2canvas rysuje
+         zwykłymi — stąd „191  584,11   zł”. W kopii do zrzutu cyfry proporcjonalne. */
+      .tabular-nums, [class*="tabular-nums"] { font-variant-numeric: normal !important; }
+      * { font-feature-settings: normal !important; }
+    `;
+    clonedDoc.head.appendChild(st);
+    // Twarde i wąskie spacje z formatowania kwot (1 234,56 zł) html2canvas rysuje za szeroko
+    // („191  584,11   zł”) — w kopii zamieniamy je na zwykłe spacje.
+    const walker = clonedDoc.createTreeWalker(clonedDoc.body, 4 /* NodeFilter.SHOW_TEXT */);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (/[\u00A0\u202F\u2009]/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/[\u00A0\u202F\u2009]/g, ' ');
+    }
   },
 };
 

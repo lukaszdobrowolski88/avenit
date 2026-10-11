@@ -471,16 +471,18 @@ const FinanceModule = () => {
       prevIncome: hasExclusions(reportExclude) ? null : reportPrev.income,
       prevExpense: hasExclusions(reportExclude) ? null : reportPrev.expense,
     });
-    m.filterLabel = reportFilterLabel;
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportRange, reportIncome, reportExpense, reportBudget, categories, projects, reportPrev, reportExclude, reportFilterLabel, serviceOptions]);
+  }, [reportRange, reportIncome, reportExpense, reportBudget, categories, projects, reportPrev, reportExclude, serviceOptions]);
 
   // ── Pobieranie / druk raportu (okno: format, orientacja, sekcje) ─────────
   // PDF i druk to zrzut widoku, więc na czas generowania podmieniamy sekcje na wybrane
   // w oknie (exportSections), a potem wracamy do tego, co jest na ekranie.
   const [showExportModal, setShowExportModal] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // Poziomy PDF: na czas zrzutu raport układa się szerzej (wykresy przeliczają szerokość),
+  // inaczej bloki skalowane do szerokiej strony robią się wysokie i strony są w połowie puste.
+  const [exportWidth, setExportWidth] = useState(null);
   const doExport = async ({ format, orientation, sections }) => {
     const base = `raport-finansowy-${slugForRange(reportRange)}`;
     setExporting(true);
@@ -489,6 +491,7 @@ const FinanceModule = () => {
       else if (format === 'xlsx') download(await toXlsxBlob(reportModel, sections), `${base}.xlsx`);
       else {
         setExportSections(sections);
+        if (orientation === 'l') setExportWidth(1800);
         // Dwie klatki + chwila na przeliczenie rozmiarów wykresów (ResponsiveContainer).
         await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
         await new Promise((r) => setTimeout(r, 350));
@@ -498,7 +501,7 @@ const FinanceModule = () => {
       }
       setShowExportModal(false);
     } catch (e) { toast.error(tr('Błąd eksportu: ') + (e.message || e)); }
-    finally { setExportSections(null); setExporting(false); }
+    finally { setExportSections(null); setExportWidth(null); setExporting(false); }
   };
 
   // ── Raport finansowy mailem (na żądanie) ──────────────────────────────────
@@ -529,7 +532,7 @@ const FinanceModule = () => {
           from: reportRange.from, to: reportRange.to, periodLabel: reportRange.label, recipients: list, attachments,
           // Treść maila = te same sekcje i filtry co na ekranie.
           sections: enabledKeys(reportSections).filter((k) => MAIL_SECTION_KEYS.includes(k)),
-          exclude: hasExclusions(reportExclude) ? reportExclude : null, filterLabel: reportFilterLabel || null,
+          exclude: hasExclusions(reportExclude) ? reportExclude : null,
         },
       });
       if (error) throw error;
@@ -2516,7 +2519,7 @@ const FinanceModule = () => {
           </div>
 
           {/* Treść raportu (źródło PDF) */}
-          <div ref={reportSectionRef} className="space-y-6 bg-gray-50 dark:bg-gray-950 rounded-2xl p-1">
+          <div ref={reportSectionRef} className="space-y-6 bg-gray-50 dark:bg-gray-950 rounded-2xl p-1" style={exportWidth ? { width: exportWidth, maxWidth: 'none' } : undefined}>
             {/* Nagłówek raportu — tytuł, organizacja, logo, zakres, data wygenerowania */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 px-6 py-5">
               <div className="flex items-center gap-4">
@@ -2524,7 +2527,6 @@ const FinanceModule = () => {
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{tr('Raport finansowy')}</h2>
                   {orgName && <p className="text-sm text-gray-500 dark:text-gray-400">{orgName}</p>}
-                  {reportFilterLabel && <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mt-0.5">{tr('Wyłączone z raportu')}: {reportFilterLabel}</p>}
                 </div>
               </div>
               <div className="sm:text-right text-sm">
@@ -2730,7 +2732,7 @@ const FinanceModule = () => {
                         const pct = (s.amount / total) * 100;
                         return (
                           <div key={s.status}>
-                            <div className="flex justify-between text-sm mb-1"><span className="text-gray-700 dark:text-gray-300">{tr(lbl)} <span className="text-gray-500">({s.count})</span>{(s.status === 'submitted' || s.status === 'draft' || s.status === 'rejected') && <span className="text-xs text-gray-500"> · {tr('poza bilansem')}</span>}</span><span className="font-semibold text-gray-900 dark:text-white tabular-nums">{fmtMoney(s.amount)}</span></div>
+                            <div className="flex justify-between text-sm mb-2"><span className="text-gray-700 dark:text-gray-300">{tr(lbl)} <span className="text-gray-500">({s.count})</span>{(s.status === 'submitted' || s.status === 'draft' || s.status === 'rejected') && <span className="text-xs text-gray-500"> · {tr('poza bilansem')}</span>}</span><span className="font-semibold text-gray-900 dark:text-white tabular-nums">{fmtMoney(s.amount)}</span></div>
                             <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2"><div className="h-2 rounded-full" style={{ width: `${pct}%`, background: col }} /></div>
                           </div>
                         );
@@ -2759,13 +2761,14 @@ const FinanceModule = () => {
                   </THead>
                   <tbody>
                     {reportModel.budgetExecution.map((b) => {
-                      const progressColor = b.pct < 80 ? 'from-green-500 to-green-600' : b.pct <= 100 ? 'from-yellow-500 to-yellow-600' : 'from-red-500 to-red-600';
+                      // Pełny kolor zamiast gradientu Tailwinda (zmienne CSS) — html2canvas nie rysuje takiego gradientu w PDF.
+                      const progressColor = b.pct < 80 ? 'bg-green-500' : b.pct <= 100 ? 'bg-yellow-500' : 'bg-red-500';
                       return (
                         <TR key={b.category}>
                           <TD className="font-medium text-gray-900 dark:text-white">{b.category}</TD>
                           <TD align="right" numeric className="whitespace-nowrap">{fmtMoney(b.planned)}</TD>
                           <TD align="right" numeric className="whitespace-nowrap">{fmtMoney(b.realized)}</TD>
-                          <TD><div className="flex items-center gap-2"><div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2"><div className={`h-2 rounded-full bg-gradient-to-r ${progressColor}`} style={{ width: `${Math.min(b.pct, 100)}%` }} /></div><span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white w-14 text-right">{fmtPct(b.pct, 0)}</span></div></TD>
+                          <TD><div className="flex items-center gap-2"><div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2"><div className={`h-2 rounded-full ${progressColor}`} style={{ width: `${Math.min(b.pct, 100)}%` }} /></div><span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white w-14 text-right">{fmtPct(b.pct, 0)}</span></div></TD>
                           <TD align="right" numeric className={`font-semibold whitespace-nowrap ${b.remaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(b.remaining)}</TD>
                         </TR>
                       );
@@ -3023,7 +3026,6 @@ const FinanceModule = () => {
         onClose={() => setShowExportModal(false)}
         viewSections={reportSections}
         rangeLabel={reportRange.label}
-        exclusionLabel={reportFilterLabel}
         busy={exporting}
         onGenerate={doExport}
       />
@@ -3041,7 +3043,6 @@ const FinanceModule = () => {
         <div className="p-6">
           <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2"><Calendar size={15} /> {tr('Zakres')}: <span className="font-semibold text-gray-900 dark:text-white">{reportRange.label}</span></div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Raport z wybranymi sekcjami trafi na wskazane adresy.')}</p>
-          {reportFilterLabel && <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300">{tr('Wyłączone z raportu')}: <span className="font-semibold text-gray-900 dark:text-white">{reportFilterLabel}</span></div>}
           <div className="mb-4 flex flex-wrap gap-1.5">
             {REPORT_SECTIONS.filter((x) => x.mail && sec(x.key)).map((x) => (
               <span key={x.key} className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{tr(x.label)}</span>

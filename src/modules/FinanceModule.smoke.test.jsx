@@ -174,11 +174,14 @@ describe('FinanceModule (dymny)', () => {
     expect(await screen.findByText('Pobierz / drukuj raport')).toBeTruthy();
     expect(screen.getByText('Orientacja strony')).toBeTruthy();
     expect(screen.getByText('Listy transakcji')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Excel/ }));
+    // Bez dopisku o wykluczeniach w oknie.
+    expect(document.body.textContent).not.toMatch(/Wyłączone z raportu: Projekty/);
+    fireEvent.click(screen.getByRole('radio', { name: 'Excel' }));
     expect(screen.queryByText('Orientacja strony')).toBeNull();
-    fireEvent.click(screen.getByText('Odznacz wszystko'));
-    const go = screen.getByRole('button', { name: /Pobierz \(0\)/ });
+    fireEvent.click(screen.getByText('Nic'));
+    const go = screen.getByRole('button', { name: /^Pobierz$/ });
     expect(go.disabled).toBe(true);
+    expect(screen.getByText('Wybierz co najmniej jedną sekcję raportu.')).toBeTruthy();
   });
 
   it('budżet: realizacja planowanych przychodów z wpływów bez wchodzenia w zakładkę Wpływy', async () => {
