@@ -13,6 +13,7 @@ import * as programEmail from '../src/fn/send-program-email.js';
 import { storagePath } from '../src/storage/files.js';
 import { accountChangeDenied, exceedsCaller, isFullAdmin } from '../src/lib/admin-guard.js';
 import adminUpdateUser from '../src/fn/admin-update-user.js';
+import adminCreateUser from '../src/fn/admin-create-user.js';
 import adminSetPassword from '../src/fn/admin-set-user-password.js';
 import ssoSaveConfig from '../src/fn/sso-save-config.js';
 import * as aiAssist from '../src/fn/ai-assist.js';
@@ -405,3 +406,48 @@ test('public/routes: bez id::text; zły format id dla typu kolumny → 404', asy
   assert.equal(last.statusCode, 429);
   await app.close();
 });
+
+// ── admin-create-user (2026-10-11: 500 przy każdym koncie + 403 dla rady starszych) ───────────
+function createDb(caller, onInsert) {
+  return fakeDb({
+    grants: GRANTS,
+    handlers: [
+      [/FROM app_users u LEFT JOIN app_roles r ON u.role = r.key WHERE u.id = \$1/, () => ({ rows: [caller] })],
+      [/FROM app_roles WHERE key = \$1/, (p) => ({ rows: [{ a: p[0] === 'admin' }] })],
+      [/^SELECT id FROM app_users WHERE lower\(email\)/, () => ({ rows: [] })],
+      [/^INSERT INTO app_users/, (p) => { onInsert?.(p); return { rows: [{ id: 'new1' }] }; }],
+    ],
+  });
+}
+const newUser = (role) => ({ email: 'nowy@k.pl', full_name: 'Dmitri Roslov', role, is_active: false });
+
+test('admin-create-user: rada starszych („*”, bez is_admin) zakłada konto; full_name i name osobnymi parametrami', async () => {
+  let params = null;
+  const rada = { id: 'r1', email: 'r@k.pl', role: 'rada_starszych', is_active: true, is_super_admin: false, role_admin: false };
+  const reply = fakeReply();
+  await adminCreateUser({ db: createDb(rada, (p) => { params = p; }), user: { id: 'r1', email: 'r@k.pl' }, tenant: { db_name: nextDbName(), subdomain: 'k' }, body: newUser('koordynator'), log: quietLog }, reply);
+  assert.equal(reply.statusCode, 200, JSON.stringify(reply.body));
+  assert.equal(params.length, 9);
+  assert.equal(params[1], 'Dmitri Roslov');
+  assert.equal(params[2], 'Dmitri Roslov');
+  assert.equal(params[3], 'koordynator');
+});
+
+test('admin-create-user: członek → 403; kadry nie nada roli admina ani szerszej od własnej (bez INSERT)', async () => {
+  const czlonek = { id: 'c1', email: 'c@k.pl', role: 'czlonek', is_active: true, is_super_admin: false, role_admin: false };
+  const kadry = { id: 'k1', email: 'k@k.pl', role: 'kadry', is_active: true, is_super_admin: false, role_admin: false };
+  for (const [caller, role] of [[czlonek, 'czlonek'], [kadry, 'admin'], [kadry, 'rada_starszych']]) {
+    let inserted = false;
+    const reply = fakeReply();
+    await adminCreateUser({ db: createDb(caller, () => { inserted = true; }), user: { id: caller.id, email: caller.email }, tenant: { db_name: nextDbName(), subdomain: 'k' }, body: newUser(role), log: quietLog }, reply);
+    assert.equal(reply.statusCode, 403, `${caller.role} → ${role}`);
+    assert.equal(inserted, false);
+  }
+  // kadry zakłada zwykłe konto — OK
+  let ok = false;
+  const reply = fakeReply();
+  await adminCreateUser({ db: createDb(kadry, () => { ok = true; }), user: { id: 'k1', email: 'k@k.pl' }, tenant: { db_name: nextDbName(), subdomain: 'k' }, body: newUser('czlonek'), log: quietLog }, reply);
+  assert.equal(reply.statusCode, 200);
+  assert.equal(ok, true);
+});
+

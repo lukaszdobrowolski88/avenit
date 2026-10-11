@@ -4,20 +4,18 @@
 import crypto from 'node:crypto';
 import { hashPassword } from '../auth/passwords.js';
 import { config } from '../config.js';
+import { getCaller, isAdmin } from '../lib/user-admin.js';
+import { accountChangeDenied } from '../lib/admin-guard.js';
 
 export const name = 'admin-create-user';
 export const isPublic = false;
 
 export default async function handler(req, reply) {
-  // 1. Uprawnienia wywołującego (z żywej bazy — is_super_admin lub app_roles.is_admin).
-  const { rows: me } = await req.db.query(
-    `SELECT u.is_super_admin, COALESCE(r.is_admin, false) AS role_admin
-       FROM app_users u LEFT JOIN app_roles r ON u.role = r.key
-      WHERE u.id = $1`,
-    [req.user.id]
-  );
-  const caller = me[0];
-  if (!caller || !(caller.is_super_admin || caller.role_admin)) {
+  // 1. Uprawnienia wywołującego — jak edycja kont (admin-update-user): superadmin, rola is_admin
+  // albo action:settings:manage_users (np. rada starszych z „*”, która ma is_admin=false;
+  // wcześniej dostawała tu 403, choć interfejs pokazywał jej „Dodaj użytkownika”).
+  const caller = await getCaller(req.db, req.user.id, req.tenant.db_name);
+  if (!isAdmin(caller)) {
     return reply.code(403).send({ error: 'Brak uprawnień do tworzenia kont.' });
   }
 
@@ -29,6 +27,11 @@ export default async function handler(req, reply) {
 
   const full_name = String(req.body?.full_name || '');
   const role = String(req.body?.role || '') || 'czlonek';
+  // Bez eskalacji: osoba bez roli administratora nie nada roli admina ani roli z uprawnieniami
+  // ustawień, których sama nie ma (lib/admin-guard.js — ta sama reguła co przy edycji konta).
+  const denied = await accountChangeDenied(req.db, req.tenant.db_name, caller,
+    { id: null, role: null, is_super_admin: false, role_admin: false }, { newRole: role });
+  if (denied) return reply.code(403).send({ error: denied });
   const isActive = req.body?.is_active !== false;
   const campusId = req.body?.campus_id || null;
   const totpRequired = req.body?.totp_required === true;
@@ -38,8 +41,10 @@ export default async function handler(req, reply) {
   const { rows } = await req.db.query(
     `INSERT INTO app_users
        (email, full_name, name, role, is_active, status, email_verified, password_hash, campus_id, totp_required, invited_at)
-     VALUES ($1,$2,$2,$3,$4,$5,true,$6,$7,$8, CASE WHEN $4 THEN now() ELSE NULL END) RETURNING id`,
-    [email, full_name, role, isActive, isActive ? 'active' : 'blocked', await hashPassword(randomPw), campusId, totpRequired]
+     VALUES ($1, $2, $3, $4, $5, $6, true, $7, $8, $9, CASE WHEN $5 THEN now() ELSE NULL END) RETURNING id`,
+    // full_name i name to osobne parametry: kolumny mają różne typy (text / varchar), a jeden
+    // parametr w obu dawał „inconsistent types deduced for parameter $2” → 500 przy każdym koncie.
+    [email, full_name, full_name, role, isActive, isActive ? 'active' : 'blocked', await hashPassword(randomPw), campusId, totpRequired]
   );
 
   // Zaproszenie: token 7-dniowy + e-mail „ustaw hasło" (dla aktywnych — mają się logować).
