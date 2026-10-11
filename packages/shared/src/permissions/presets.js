@@ -11,9 +11,9 @@ const deny = (capability) => ({ capability, allowed: false });
 const FINANCE_RES = MODULES.find((m) => m.key === 'finance').resources;
 const SETTINGS_RES = ['app_users', 'app_settings', 'app_permissions', 'app_roles', 'app_modules', 'app_module_tabs', 'campuses', 'integration_settings'];
 
-// Usuwanie dla lidera — TYLKO dane służbowe: wydarzenia i grafik, zadania kalendarza, programy,
-// tablice (board_*) oraz zasoby modułów służb (wg katalogu). BEZ finansów, ustawień, członków/
-// opieki i mailingu. Ta sama lista w migracji 091_lider_delete_grants.sql (test spójności).
+// HISTORYCZNA lista usuwania lidera z migracji 091_lider_delete_grants.sql (test spójności).
+// Od migracji 103 lider usuwa z ROLI tylko dane wspólne (LIDER_SHARED_DELETE_RESOURCES);
+// dane konkretnej służby usuwa lider TEJ służby — z przynależności (ministry.js).
 export const LIDER_DELETE_RESOURCES = [
   'events', 'schedule_assignments', 'tasks', 'programs', 'program_songs',
   'boards', 'board_groups', 'board_columns', 'board_items', 'board_item_updates',
@@ -35,11 +35,28 @@ export const LIDER_DELETE_RESOURCES = [
   'mlodziezowka_leaders', 'mlodziezowka_task_comments',
 ];
 
+// Model lidera (decyzja 2026-10-11, migracja 103): lider prowadzi PRZYPISANE służby.
+// Rola daje tylko moduły wspólne; służby — z ministry_memberships (lider albo członek danej
+// służby; lider jednej może być członkiem innej). Wrażliwe moduły jawnie zabronione.
+export const LIDER_MODULES = ['dashboard', 'programs', 'calendar', 'teaching', 'sermons', 'prayer', 'komunikator', 'boards', 'serve'];
+export const LIDER_DENIED_MODULES = [
+  'settings', 'mail', 'mailing', 'sms_campaigns', 'push_campaigns', 'giving', 'automation', 'finance',
+  'members', 'care', 'forms', 'analytics', 'attendance', 'rsvp', 'rooms', 'ai',
+];
+// Usuwanie z roli — tylko dane wspólne (wydarzenia, grafik, zadania, programy, tablice) oraz
+// wyposażenie (wspólne dla wszystkich służb, w katalogu pod media).
+export const LIDER_SHARED_DELETE_RESOURCES = [
+  'events', 'schedule_assignments', 'tasks', 'programs', 'program_songs',
+  'boards', 'board_groups', 'board_columns', 'board_items', 'board_item_updates',
+  'board_item_activity', 'board_views', 'board_automations', 'board_automation_runs', 'board_dashboards',
+  'equipment',
+];
+
 export const BUILTIN_ROLES = [
   { key: 'superadmin', label: 'Superadmin', description: 'Pełny, nieograniczony dostęp', is_system: true, is_admin: true, display_order: 0 },
   { key: 'rada_starszych', label: 'Rada Starszych', description: 'Pełny dostęp (edytowalny)', is_system: true, is_admin: false, display_order: 1 },
   { key: 'koordynator', label: 'Koordynator', description: 'Zarządza modułami i danymi (bez ról/uprawnień)', is_system: true, is_admin: false, display_order: 2 },
-  { key: 'lider', label: 'Lider', description: 'Prowadzi służby (bez finansów i ustawień)', is_system: true, is_admin: false, display_order: 3 },
+  { key: 'lider', label: 'Lider', description: 'Prowadzi przypisane służby (bez finansów, ustawień i danych osobowych)', is_system: true, is_admin: false, display_order: 3 },
   { key: 'czlonek', label: 'Członek', description: 'Podstawowy dostęp', is_system: true, is_admin: false, display_order: 4 },
 ];
 
@@ -59,25 +76,21 @@ export const ROLE_PRESETS = {
     deny('action:settings:manage_roles'),
   ],
 
-  // lider: widzi moduły służb, edytuje dane służbowe; bez finansów (zapis),
-  // bez ustawień, bez kampanii; usuwa tylko dane służbowe (LIDER_DELETE_RESOURCES).
+  // lider: prowadzi PRZYPISANE służby (ministry_memberships). Rola daje moduły wspólne
+  // (programy, wydarzenia, nauczanie, modlitwa, komunikator, tablice, dostępność), edycję danych
+  // i usuwanie danych wspólnych. Bez finansów, ustawień, kampanii, członków, opieki, formularzy,
+  // analityki. Finanse własnej służby — przez tab:<moduł>:finances lidera służby (financeScope.js).
   lider: [
-    allow('module:*'),
-    deny('module:settings'), deny('module:mail'), deny('module:mailing'),
-    deny('module:sms_campaigns'), deny('module:push_campaigns'),
-    // „bez finansów” obejmuje darowizny; automatyzacje wysyłają maile/SMS jak kampanie.
-    deny('module:giving'), deny('module:automation'),
-    // Pełne Finanse tylko dla rady/skarbnika. Lider służby widzi finanse SWOJEJ służby przez
-    // tab:<moduł>:finances (serwer zawęża wiersze po team_type — dataapi/financeScope.js).
-    deny('module:finance'),
+    ...LIDER_MODULES.map((m) => allow(`module:${m}`)),
+    ...LIDER_DENIED_MODULES.map((m) => deny(`module:${m}`)),
     allow('tab:*:*'), deny('tab:*:finances'),
     allow('res:*:read'), allow('res:*:create'), allow('res:*:update'),
-    ...LIDER_DELETE_RESOURCES.map((r) => allow(`res:${r}:delete`)),
+    ...LIDER_SHARED_DELETE_RESOURCES.map((r) => allow(`res:${r}:delete`)),
     // bez finansów (zapis) i ustawień (zapis)
     ...FINANCE_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),
     ...SETTINGS_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),
-    // akcje: tylko służbowe
-    allow('action:programs:*'), allow('action:calendar:*'), allow('action:kids:*'),
+    // akcje: programy i kalendarz (akcje służb — z przynależności lidera służby)
+    allow('action:programs:*'), allow('action:calendar:*'),
   ],
 
   // czlonek: minimum — kalendarz/programy (odczyt), modlitwa, komunikator, RSVP, własne zadania.

@@ -56,19 +56,16 @@ test('preset koordynator: pełny CRUD, ale bez zarządzania uprawnieniami', () =
   assert.equal(can(g, sub, 'action:settings:manage_roles'), false);
 });
 
-test('preset lider: bez finansów (zapis) i bez ustawień', () => {
+test('preset lider: przypisane służby — bez finansów, ustawień i danych osobowych', () => {
   const g = rows(presetGrantRows());
   const sub = { role: 'lider' };
-  assert.equal(can(g, sub, 'res:members:read'), true);
-  assert.equal(can(g, sub, 'res:members:create'), true);
+  // Moduły wspólne tak; wrażliwe i dodatkowe (decyzja 2026-10-11, migracja 103) nie.
+  for (const m of ['programs', 'calendar', 'teaching', 'prayer', 'komunikator', 'boards', 'serve']) assert.equal(can(g, sub, `module:${m}`), true, m);
+  for (const m of ['members', 'care', 'forms', 'analytics', 'attendance', 'rsvp', 'rooms', 'ai', 'settings', 'giving', 'automation', 'finance']) assert.equal(can(g, sub, `module:${m}`), false, m);
+  // Służby nie z roli — z przynależności.
+  for (const m of ['worship', 'media', 'homegroups']) assert.equal(can(g, sub, `module:${m}`), false, m);
   assert.equal(can(g, sub, 'res:finance_transactions:update'), false);
-  assert.equal(can(g, sub, 'module:settings'), false);
   assert.equal(can(g, sub, 'tab:media:finances'), false);
-  // Growth suite (2026-10-04): Frekwencja/Sale/Służba tak, Dawanie i Automatyzacje nie.
-  assert.equal(can(g, sub, 'module:attendance'), true);
-  assert.equal(can(g, sub, 'module:rooms'), true);
-  assert.equal(can(g, sub, 'module:giving'), false);
-  assert.equal(can(g, sub, 'module:automation'), false);
 });
 
 test('growth suite: koordynator ma Dawanie, członek nie', () => {
