@@ -30,7 +30,8 @@ const config: ExpoConfig = {
     // tło = papier, jak ekran logowania — przejście bez błysku.
     backgroundColor: '#F6F4EE',
   },
-  // Prośby o uprawnienia per język telefonu (en = recenzent Apple). Lokalizacje decydują też,
+  // Prośby o uprawnienia per język telefonu (en = recenzent Apple) — klucze pod "ios" (SDK 55+
+  // tłumaczy też zasoby Androida; płaskie klucze iOS łamały lint wydania). Lokalizacje decydują też,
   // jakie języki App Store pokazuje przy apce — bez nich byłby sam angielski. Ukraiński dopisz,
   // gdy interfejs mobilki będzie przetłumaczony (dziś t() obejmuje tylko część ekranów).
   locales: {
