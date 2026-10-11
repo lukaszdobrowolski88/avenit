@@ -8067,6 +8067,9 @@ const en = {
   'Okno drukowania — można też wybrać „Zapisz jako PDF”.': 'Print dialog — you can also choose “Save as PDF”.',
   'Arkusze z danymi; wykresy zastępują tabele z liczbami.': 'Data sheets; charts are replaced by tables of figures.',
   'Prosty plik tekstowy z liczbami.': 'A plain text file with the figures.',
+  'Pokaż wydatki tej pozycji': 'Show expenses for this item',
+  '(bez opisu)': '(no description)',
+  'z': 'of',
 };
 
 const uk = {
@@ -16132,6 +16135,9 @@ const uk = {
   'Okno drukowania — można też wybrać „Zapisz jako PDF”.': 'Вікно друку — можна також вибрати «Зберегти як PDF».',
   'Arkusze z danymi; wykresy zastępują tabele z liczbami.': 'Аркуші з даними; графіки замінюються таблицями з числами.',
   'Prosty plik tekstowy z liczbami.': 'Простий текстовий файл із числами.',
+  'Pokaż wydatki tej pozycji': 'Показати витрати цієї позиції',
+  '(bez opisu)': '(без опису)',
+  'z': 'з',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
