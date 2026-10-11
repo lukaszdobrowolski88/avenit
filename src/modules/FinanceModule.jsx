@@ -13,6 +13,7 @@ import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import PageHeader from '../components/PageHeader';
 import { useT } from '../i18n';
+import { isProtectedFileUrl, openProtectedFile } from '../lib/protectedFiles';
 import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { computeRange, shiftRangeYears, MONTHS_PL, yearOptions } from './finance/reportRange';
@@ -110,6 +111,8 @@ const FinanceModule = () => {
   // Zatwierdzanie/odrzucanie/opłacanie wydatków i decyzje o propozycjach budżetu —
   // serwer odrzuca je (403) bez tego uprawnienia, więc UI ich nie proponuje.
   const canApprove = can('action:finance:approve');
+  // Pobieranie, druk i wysyłka raportów (dane poza aplikację) — prawo eksportu; serwer egzekwuje maila i harmonogram.
+  const canExport = can('action:finance:export');
   // Blokada przycisków „Zapisz” w trakcie zapisu (brak podwójnych rekordów).
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('budget');
@@ -609,7 +612,6 @@ const FinanceModule = () => {
         if (data?.[0]?.id) await supabase.from('budget_items').delete().eq('id', data[0].id);
         throw stErr;
       }
-      await logBudgetAudit('created', { id: data?.[0]?.id, kind: p.kind, category: p.category || p.team_type, description: p.description, planned_amount: num(p.amount) });
       supabase.functions.invoke('budget-proposal-notify', { body: { proposalId: p.id, event: 'decided' } }).catch(() => {});
       fetchProposals(); fetchBudgetItems();
       toast.success(tr('Zatwierdzono do budżetu {year}', { year: targetYear }));
@@ -844,15 +846,6 @@ const FinanceModule = () => {
   // Zmiany kwoty danej pozycji (do oznaczenia „zmieniono" w tabeli).
   const itemChanges = (id) => budgetAudit.filter((a) => a.item_id === id && a.action === 'updated'
     && a.before && a.after && Number(a.before.planned_amount) !== Number(a.after.planned_amount));
-  const logBudgetAudit = async (action, item, before) => {
-    try {
-      await supabase.from('budget_audit').insert([{
-        year: selectedYear, item_id: item.id || null, action,
-        category: item.category || null, description: item.description || null,
-        before: before || null, after: action === 'deleted' ? null : item, actor: currentUserEmail || null,
-      }]);
-    } catch { /* brak tabeli/uprawnień — pomiń */ }
-  };
   const fetchBudgetHistory = async () => {
     try { const { data } = await supabase.from('budget_audit').select('*').eq('year', selectedYear).order('created_at', { ascending: false }).limit(50); setBudgetAudit(data || []); } catch { setBudgetAudit([]); }
     try { const { data } = await supabase.from('budget_versions').select('id, label, created_by, created_at, snapshot').eq('year', selectedYear).order('created_at', { ascending: false }); setBudgetVersions(data || []); } catch { setBudgetVersions([]); }
@@ -911,7 +904,6 @@ const FinanceModule = () => {
             if (moveErr) toast.error(tr('Pozycja zapisana, ale nie udało się przenieść przypisanych wydatków.'));
           }
         }
-        await logBudgetAudit('updated', { id: budgetForm.id, kind: budgetForm.kind, category: budgetForm.category, description: budgetForm.description, planned_amount: parseFloat(budgetForm.planned_amount) }, before);
       } else {
         // Insert new item
         const { data, error } = await supabase.from('budget_items').insert([{
@@ -932,7 +924,6 @@ const FinanceModule = () => {
         }]).select();
 
         if (error) throw error;
-        await logBudgetAudit('created', { id: data?.[0]?.id, kind: budgetForm.kind, category: budgetForm.category, description: budgetForm.description, planned_amount: parseFloat(budgetForm.planned_amount) });
       }
 
       toast.success(budgetForm.id ? tr('Zapisano zmiany pozycji') : tr('Dodano pozycję {amount}', { amount: fmtMoney(budgetForm.planned_amount) }));
@@ -954,14 +945,13 @@ const FinanceModule = () => {
     if (!await confirmDialog(tr('Usunąć pozycję budżetu „{name}”? Przypisane wydatki zostaną, ale przestaną się wliczać do jej realizacji.', { name: label }))) return;
 
     try {
-      const before = target || null;
+      // Ślad usunięcia w historii budżetu zapisuje serwer.
       const { error } = await supabase
         .from('budget_items')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-      if (before) await logBudgetAudit('deleted', before, before);
       fetchBudgetItems();
     } catch (error) {
       console.error('Error deleting budget item:', error);
@@ -2270,6 +2260,8 @@ const FinanceModule = () => {
                                 href={doc.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                // Faktury czytane tylko przez podpisany, wygasający link (bucket finance).
+                                onClick={(e) => { if (isProtectedFileUrl(doc.url)) { e.preventDefault(); openProtectedFile(doc.url); } }}
                                 className="text-xs text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-accent-primary flex items-center gap-1 justify-center"
                               >
                                 <FileText size={12} />
@@ -2468,6 +2460,7 @@ const FinanceModule = () => {
                   </>
                 )}
               </div>
+              {canExport && (<>
               <div className="relative">
                 <button onClick={() => setShowDownloadMenu((v) => !v)} disabled={downloadingPdf} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm disabled:opacity-60">
                   <Download size={16} /> {downloadingPdf ? tr('Generowanie…') : tr('Pobierz')} <ChevronDown size={14} />
@@ -2492,6 +2485,7 @@ const FinanceModule = () => {
               <button onClick={doPrint} disabled={printing} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm disabled:opacity-60" title={tr('Drukuj / zapisz PDF')}>
                 <Printer size={16} /> {printing ? tr('Przygotowuję…') : tr('Drukuj')}
               </button>
+              </>)}
             </div>
           </div>
 

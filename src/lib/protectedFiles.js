@@ -2,10 +2,10 @@ import { supabase } from './supabase';
 import { toast } from './toast';
 import { tr } from '../i18n';
 
-// Pliki z bucketów czytanych tylko przez podpisany link (deklaracje członkowskie). W bazie
+// Pliki z bucketów czytanych tylko przez podpisany link (deklaracje członkowskie, faktury). W bazie
 // trzymamy zwykły adres /storage/<bucket>/<ścieżka> — przy otwarciu prosimy serwer o podpis
 // (sprawdza uprawnienia) i otwieramy plik w nowej karcie.
-const SIGNED_BUCKETS = new Set(['membership-declarations']);
+const SIGNED_BUCKETS = new Set(['membership-declarations', 'finance']); // finance: faktury i paragony
 
 export function isProtectedFileUrl(url) {
   const m = String(url || '').match(/\/storage\/([^/?#]+)\//);

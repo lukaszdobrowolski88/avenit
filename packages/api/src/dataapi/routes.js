@@ -2,7 +2,7 @@
 // zgodnego z supabase-js). Autoryzacja per tabela/rola w registry.js.
 import { buildQuery, buildCountQuery, ApiError, quoteIdent, embeddedTablePairs } from './querybuilder.js';
 import { canAccess, getTableRule, invalidatePermissions, requireCapability, loadGrants } from './registry.js';
-import { fieldColumns, crudCapability, crudCapabilities, MODULES } from '@avenit/shared/src/permissions/catalog.js';
+import { fieldColumns, crudCapability, crudCapabilities } from '@avenit/shared/src/permissions/catalog.js';
 import { isModuleScopedTable } from '@avenit/shared/src/permissions/moduleScope.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { emitChange } from '../realtime/hub.js';
@@ -21,6 +21,7 @@ import { applyModuleScope, moduleRowScope, andScopes } from './moduleScope.js';
 import { loadVisibilityContext } from './eventVisibility.js';
 import { filterUserContent, notifyNewReport } from '../lib/moderation.js';
 import { prepareBoardAssignNotify, notifyBoardAssignees } from './boardNotify.js';
+import { financeTeamTypes, applyTeamFinanceScope, TEAM_FINANCE_OPS, isBudgetWrite, budgetRowsBefore, writeBudgetAudit } from './financeScope.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -37,18 +38,6 @@ const RETIRED_TABLES = new Set([
   'mlodziezowka_events', // migracja 078
 ]);
 
-// Propozycje budżetu: team_type, pod którym zakładka Finanse zespołu (shared/FinanceTab,
-// prop `ministry`) zapisuje i czyta propozycje. Stałe etykiety, często inne niż nazwa w menu.
-// Moduły własne (FinanceWidget) zapisują nazwę albo klucz modułu.
-const PROPOSAL_TEAM_TYPES = {
-  worship: 'Grupa Uwielbienia',
-  media: 'MediaTeam',
-  atmosfera: 'AtmosferaTeam',
-  kids: 'małe Avenit',
-  homegroups: 'Grupy domowe',
-  mlodziezowka: 'Mlodziezowka',
-};
-const BUILTIN_MODULE_KEYS = new Set(MODULES.map((m) => m.key));
 
 // Tabele, których insert wyzwala automatyczny push (patrz push-hooks.js).
 // Push wysyłamy wsadowo (fn send-assignment-invites), nie na każdy insert przypisania.
@@ -95,7 +84,7 @@ export default async function dataApiRoutes(app) {
         });
       }
 
-      const access = await canAccess({
+      let access = await canAccess({
         pool: req.db,
         dbName: req.tenant.db_name,
         table: q.table,
@@ -104,6 +93,17 @@ export default async function dataApiRoutes(app) {
         allowModuleScope: true, // wspólne tabele służb — zawężenie niżej (applyModuleScope)
         ignoreDuplicates: q.op === 'upsert' && !!q.ignoreDuplicates, // DO NOTHING — wystarcza create
       });
+      // Finanse w zakresie służby: bez module:finance, ale z zakładką Finanse swojej służby —
+      // tylko budżet i wydatki tej służby (financeScope.js). Bez złączeń (embed ominąłby zakres).
+      if (!access.ok && !isAdmin && allGrants !== null && TEAM_FINANCE_OPS[q.table]) {
+        const r = makeResolver(allGrants, { role: user.role, userId: user.id, isAdmin: false });
+        const teams = await financeTeamTypes(req.db, r);
+        if (teams.length && TEAM_FINANCE_OPS[q.table].has(q.op)) {
+          if (embedPairs.length) throw new ApiError(403, 'Brak dostępu do finansów w złączeniu');
+          applyTeamFinanceScope(q, teams);
+          access = { ok: true, rule: getTableRule(q.table), resolver: r };
+        }
+      }
       if (!access.ok) {
         // Wyjątki self-service (mimo braku roli): własny profil w app_users,
         // oraz akceptacja/odrzucenie WŁASNEGO zaproszenia do służby.
@@ -148,7 +148,7 @@ export default async function dataApiRoutes(app) {
       // Finanse osoba otwiera, i własne. Zgłaszać też można tylko dla tych zespołów i pod
       // własnym e-mailem (submitted_by).
       if (access.ok && q.table === 'budget_proposals' && !fullFinance) {
-        const teamTypes = await proposalTeamTypes(req, resolver);
+        const teamTypes = await financeTeamTypes(req.db, resolver);
         if (q.op === 'select') q.__proposalScope = { teamTypes, email: req.user.email || '' };
         if (q.op === 'insert') {
           const email = String(req.user.email || '').toLowerCase();
@@ -161,6 +161,11 @@ export default async function dataApiRoutes(app) {
             }
           }
         }
+      }
+
+      // Harmonogram raportów wysyła pełne finanse mailem poza aplikację — tylko z prawem eksportu.
+      if (access.ok && q.table === 'finance_report_schedules' && q.op !== 'select' && resolver && !resolver.can('action:finance:export')) {
+        throw new ApiError(403, 'Wysyłka raportów finansowych wymaga uprawnienia do eksportu finansów');
       }
 
       // Tabele wspólne bez modułu (słowniki, służby zespołów, RSVP, udostępnienia, tablice):
@@ -346,9 +351,15 @@ export default async function dataApiRoutes(app) {
       // Zadanie osobiste przypisywane innej osobie — stan przed zapisem (nie rzuca; push-hooks.js).
       const taskAssign = await prepareUserTaskAssign(req.db, q);
 
+      // Ślad zmian budżetu zapisuje serwer (wcześniej przeglądarka — dało się go pominąć).
+      const budgetBefore = isBudgetWrite(q) ? await budgetRowsBefore(req.db, q, buildQuery) : null;
+      if (isBudgetWrite(q) && !q.returning) q.returning = '*';
+
       const built = buildQuery(q);
       const result = await req.db.query(built.sql, built.params);
       let data = result.rows.map(unwrapRow);
+
+      if (budgetBefore) await writeBudgetAudit(req.db, q, budgetBefore, data, req.user.email);
 
       if (piiRestricted && q.op === 'select') data = redactPii(q.table, data, piiMe);
 
@@ -585,27 +596,6 @@ async function allowSelfUpdate(q, req) {
 
 function proposalRows(q) {
   return (Array.isArray(q.values) ? q.values : [q.values]).filter(Boolean);
-}
-
-// team_type propozycji widocznych bez dostępu do Finansów: zespoły z zakładką Finanse
-// (tab:<moduł>:finances — rola albo przynależność do służby) i moduły własne z dostępem
-// (nazwa i klucz, bo FinanceWidget zapisuje `moduleName || moduleKey`). Moduł własny =
-// bez component_name i spoza katalogu (sermons/rsvp/ai mają komponent, choć nie są w katalogu).
-async function proposalTeamTypes(req, resolver) {
-  const out = new Set();
-  for (const [key, label] of Object.entries(PROPOSAL_TEAM_TYPES)) {
-    if (resolver.can(`tab:${key}:finances`)) out.add(label);
-  }
-  try {
-    const { rows } = await req.db.query(`SELECT key, label, component_name FROM app_modules`);
-    for (const m of rows) {
-      if (!m.key || m.component_name || BUILTIN_MODULE_KEYS.has(m.key)) continue;
-      if (!resolver.can(`module:${m.key}`)) continue;
-      out.add(m.key);
-      if (m.label) out.add(m.label);
-    }
-  } catch { /* brak tabeli — tylko zespoły wbudowane */ }
-  return [...out];
 }
 
 // Wyznacza module_key żądania na module_records (insert: z values; pozostałe: z filtra eq).

@@ -21,12 +21,17 @@ for (const m of MODULES) MODULE_BY_KEY[m.key] = m;
 // i CUSTOM_TABLE_SUFFIXES w registry.js (enforcement res:custom_<key>_<suffix>:<op>).
 export const CUSTOM_MINISTRY_SUFFIXES = ['members', 'tasks', 'task_comments', 'wall', 'events', 'records'];
 export const LEADER_SCHEDULE_ACTION = 'action:programs:send_assignment';
+// Capability z tym prefiksem w membershipCapabilities = zakaz (allowed:false) w ministryGrants.
+export const DENY_PREFIX = '!';
 
 // Capability wynikające z jednej przynależności (klucz służby + rola).
 export function membershipCapabilities(ministryKey, role) {
   if (!ministryKey) return [];
   const isLeader = role === 'leader';
   const caps = [`module:${ministryKey}`, `tab:${ministryKey}:*`];
+  // Finanse służby (budżet, wydatki) widzi tylko LIDER służby — członek dostaje jawny zakaz tej
+  // jednej zakładki (wyjątek od zasady „tylko nadaje”; serwer zawęża finanse po tej zakładce).
+  if (!isLeader) caps.push(DENY_PREFIX + `tab:${ministryKey}:finances`);
   const mod = MODULE_BY_KEY[ministryKey];
   const resources = mod ? mod.resources : CUSTOM_MINISTRY_SUFFIXES.map((s) => `custom_${ministryKey}_${s}`);
   const ops = isLeader ? ['read', 'create', 'update', 'delete'] : ['read', 'create', 'update'];
@@ -44,13 +49,20 @@ export function membershipCapabilities(ministryKey, role) {
 export function ministryGrants(memberships = []) {
   const seen = new Set();
   const grants = [];
+  // Jedna rola na służbę — najwyższa (lider wygrywa), żeby zakaz Finansów członka nie
+  // odebrał ich osobie, która w tej samej służbie jest też liderem.
+  const best = new Map();
   for (const m of memberships || []) {
     if (!m || !m.ministry_key) continue;
-    const role = m.role === 'leader' ? 'leader' : 'member';
-    for (const cap of membershipCapabilities(m.ministry_key, role)) {
+    if (best.get(m.ministry_key) !== 'leader') best.set(m.ministry_key, m.role === 'leader' ? 'leader' : 'member');
+  }
+  for (const [ministryKey, role] of best) {
+    for (const raw of membershipCapabilities(ministryKey, role)) {
+      const allowed = !raw.startsWith(DENY_PREFIX);
+      const cap = allowed ? raw : raw.slice(DENY_PREFIX.length);
       if (seen.has(cap)) continue;
       seen.add(cap);
-      grants.push({ capability: cap, allowed: true });
+      grants.push({ capability: cap, allowed });
     }
   }
   return grants;

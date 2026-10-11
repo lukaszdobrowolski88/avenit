@@ -13,6 +13,8 @@ import publicPageRoutes from './public/routes.js';
 import { registerClient } from './realtime/hub.js';
 import { realtimeRowFilter } from './realtime/scope.js';
 import { canAccess, loadGrants } from './dataapi/registry.js';
+import { financeTeamTypes } from './dataapi/financeScope.js';
+import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { isPiiTable } from './dataapi/pii.js';
 import { getTenantPool, resolveTenant } from './db.js';
 import { verifyAccessToken, AUD_TENANT } from './auth/tokens.js';
@@ -163,6 +165,19 @@ export async function buildServer() {
           if (isPiiTable(table) && !isAdmin) return false;
           const access = await canAccess({ pool, dbName: tenant.db_name, table, op: 'select', user, allowModuleScope: true });
           if (!access.ok) return false;
+          // Propozycje budżetu (T(null)): bez prawa zatwierdzania — jak /api/db, tylko zespoły,
+          // których finanse osoba widzi, i własne zgłoszenia (wcześniej realtime wysyłał wszystkie).
+          if (table === 'budget_proposals' && !isAdmin) {
+            const { grants } = await loadGrants(pool, tenant.db_name);
+            if (grants !== null) {
+              const resolver = makeResolver(grants, { role: user.role, userId: user.id, isAdmin: false });
+              if (!resolver.can('action:finance:approve')) {
+                const teams = new Set(await financeTeamTypes(pool, resolver));
+                const me = String(user.email || '').toLowerCase();
+                return { filter: async (_op, rows) => (rows || []).filter((r) => r && (teams.has(String(r.team_type ?? '')) || (me && String(r.submitted_by || '').toLowerCase() === me))) };
+              }
+            }
+          }
           const filter = realtimeRowFilter({ pool, table, user, isAdmin, moduleScope: access.moduleScope || null });
           return filter ? { filter } : true;
         },

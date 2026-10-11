@@ -8024,6 +8024,8 @@ const en = {
   'Realizacja budżetu': 'Budget execution',
   '— bez projektu —': '— no project —',
   'zamknięty': 'closed',
+  'Finanse tej służby widzi jej lider': 'This ministry’s finances are visible to its leader',
+  'Poproś administratora o dostęp do zakładki Finanse tej służby.': 'Ask an administrator for access to this ministry’s Finance tab.',
 };
 
 const uk = {
@@ -16046,6 +16048,8 @@ const uk = {
   'Realizacja budżetu': 'Виконання бюджету',
   '— bez projektu —': '— без проєкту —',
   'zamknięty': 'закритий',
+  'Finanse tej służby widzi jej lider': 'Фінанси цього служіння бачить його лідер',
+  'Poproś administratora o dostęp do zakładki Finanse tej służby.': 'Попросіть адміністратора про доступ до вкладки «Фінанси» цього служіння.',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
