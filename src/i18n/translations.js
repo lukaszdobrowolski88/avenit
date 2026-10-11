@@ -8038,6 +8038,9 @@ const en = {
   '(bez obszaru)': '(no area)',
   '(bez kategorii)': '(no category)',
   '(bez tagów)': '(no tags)',
+  'Darczyńcy indywidualni': 'Individual donors',
+  'Razem': 'Total',
+  'Zmiana': 'Change',
 };
 
 const uk = {
@@ -16074,6 +16077,9 @@ const uk = {
   '(bez obszaru)': '(без сфери)',
   '(bez kategorii)': '(без категорії)',
   '(bez tagów)': '(без тегів)',
+  'Darczyńcy indywidualni': 'Індивідуальні жертводавці',
+  'Razem': 'Разом',
+  'Zmiana': 'Зміна',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

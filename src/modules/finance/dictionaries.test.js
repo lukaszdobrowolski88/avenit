@@ -100,4 +100,19 @@ describe('filtry i sekcje raportu', () => {
     expect(some).not.toContain('Podsumowanie;Kwota');
     expect(csvString(m, { ...defaultSections(), expenseList: true })).toContain('Remont dachu');
   });
+
+  it('raport bez nazwisk: osoby razem jako „Darczyńcy indywidualni”, organizacje z kategorią osobno, bez notatek', () => {
+    const range = { from: '2026-03-01', to: '2026-03-31', year: 2026, label: 'Marzec 2026' };
+    const inc = [
+      { id: 'a', amount: 100, type: 'Ofiara', source: 'Jan Kowalski', notes: 'Darowizna: Jan Kowalski', date: '2026-03-01' },
+      { id: 'b', amount: 50, type: 'Ofiara', source: 'Anna Nowak', notes: 'x', date: '2026-03-02' },
+      { id: 'c', amount: 300, type: 'Wasilla Bible Church', source: 'wasilla bible church', date: '2026-03-03' },
+    ];
+    const m = buildReportModel({ range, income: inc, expense: [], budget: [], incomeCategories: [{ name: 'Ofiara' }, { name: 'Wasilla Bible Church' }] });
+    expect(m.byIncomeSource.map((x) => [x.name, x.amount])).toEqual([['Wasilla Bible Church', 300], ['Darczyńcy indywidualni', 150]]);
+    expect(JSON.stringify(m.raw.income)).not.toMatch(/Kowalski|Nowak/);
+    expect(m.raw.income.every((r) => !('notes' in r))).toBe(true);
+    const csv = csvString(m, { ...defaultSections(), incomeList: true });
+    expect(csv).not.toMatch(/Kowalski|Nowak/);
+  });
 });

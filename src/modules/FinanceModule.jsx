@@ -18,7 +18,7 @@ import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { computeRange, shiftRangeYears, MONTHS_PL, yearOptions } from './finance/reportRange';
 import { buildReportModel, toCsvBlob, toXlsxBlob, reportElToPdfBlob, printReportEl, blobToBase64, download, slugForRange } from './finance/reportExport';
-import { IncomeExpenseBarChart, CashFlowAreaChart, CategoryDonut, YoYBars } from './finance/ReportCharts';
+import { IncomeExpenseBarChart, CashFlowAreaChart, CategoryDonut, YoYBars, BucketTable } from './finance/ReportCharts';
 import { usePermissions } from '../contexts/PermissionsContext';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import { DateInput } from '../components/pickers';
@@ -457,7 +457,9 @@ const FinanceModule = () => {
       income: applyReportExclusions(reportIncome, reportExclude, 'income'),
       expense: applyReportExclusions(reportExpense, reportExclude, 'expense'),
       budget: applyReportExclusions(reportBudget, reportExclude, 'budget'),
-      expenseCategories, incomeCategories, projects,
+      expenseCategories, projects,
+      // Wszystkie kategorie wpływów (także wyłączone) — po nich raport rozpoznaje organizacje.
+      incomeCategories: categories.filter((c) => c.kind === 'income'),
       // Porównanie r/r ma sens tylko dla całości (bez wykluczeń).
       prevIncome: hasExclusions(reportExclude) ? null : reportPrev.income,
       prevExpense: hasExclusions(reportExclude) ? null : reportPrev.expense,
@@ -2626,6 +2628,7 @@ const FinanceModule = () => {
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-accent-primary" />{tr('Wpływy vs Wydatki')}</h3>
               <IncomeExpenseBarChart buckets={reportModel.buckets} tr={tr} />
+              <BucketTable buckets={reportModel.buckets} tr={tr} />
             </div>
             )}
 
@@ -2634,6 +2637,8 @@ const FinanceModule = () => {
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-accent-primary" />{tr('Przepływ gotówki (skumulowany)')}</h3>
               <CashFlowAreaChart buckets={reportModel.buckets} tr={tr} />
+              {/* Tabela okresów pokazujemy raz — pod wykresem wpływów/wydatków albo tu, gdy tamten wyłączony. */}
+              {!sec('incomeExpense') && <BucketTable buckets={reportModel.buckets} tr={tr} />}
               <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">{tr('Saldo na koniec okresu')}: <span className={`font-bold tabular-nums ${reportModel.totals.balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(reportModel.buckets.at(-1)?.cumulative)}</span></div>
             </div>
             )}
@@ -2837,7 +2842,7 @@ const FinanceModule = () => {
                         <TR key={r.id}>
                           <TD numeric className="whitespace-nowrap">{fmtDate(r.date)}</TD>
                           <TD>{tr(r.type || 'Inne')}</TD>
-                          <TD muted>{r.source}<TagChips tags={r.tags} colorOf={tagColor} className="mt-1" /></TD>
+                          <TD muted>{tr(r.source)}<TagChips tags={r.tags} colorOf={tagColor} className="mt-1" /></TD>
                           <TD muted>{projectById(projects, r.project_id)?.name || ''}</TD>
                           <TD align="right" numeric className="font-semibold whitespace-nowrap">{fmtMoney(r.amount)}</TD>
                         </TR>

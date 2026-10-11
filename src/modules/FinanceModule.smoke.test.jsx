@@ -67,7 +67,7 @@ vi.mock('../components/ResponsiveTabs', () => ({
 }));
 vi.mock('./shared/MaterialsTab', () => ({ default: () => null }));
 vi.mock('./finance/ReportCharts', () => ({
-  IncomeExpenseBarChart: () => null, CashFlowAreaChart: () => null, CategoryDonut: () => null, YoYBars: () => null,
+  IncomeExpenseBarChart: () => null, CashFlowAreaChart: () => null, CategoryDonut: () => null, YoYBars: () => null, BucketTable: () => null,
 }));
 
 import FinanceModule from './FinanceModule';
