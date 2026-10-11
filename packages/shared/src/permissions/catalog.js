@@ -522,7 +522,8 @@ export function crudCapabilities(resource, op, { ignoreDuplicates = false } = {}
 
 // Mapowanie endpointów fn -> capability akcji (do egzekwowania /api/fn/*).
 export const FN_CAPABILITY = {
-  'finance-report-email': 'module:finance',
+  // Raport z pełnymi finansami idzie mailem poza aplikację — osobne prawo eksportu.
+  'finance-report-email': 'action:finance:export',
   'send-mail': 'action:mail:send',
   'sync-mail': 'action:mail:sync',
   'test-smtp': 'action:mail:test',

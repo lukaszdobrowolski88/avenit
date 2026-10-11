@@ -1,10 +1,14 @@
 // Role wbudowane + domyślne presety grantów (seed przy prowizjonowaniu / migracji).
 // Presety to punkt startowy — tenant edytuje je w macierzy uprawnień.
 
+import { MODULES } from './catalog.js';
+
 const allow = (capability) => ({ capability, allowed: true });
 const deny = (capability) => ({ capability, allowed: false });
 
-const FINANCE_RES = ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories'];
+// Wszystkie zasoby modułu Finanse (z katalogu) — wcześniej lista 4 starych tabel, przez co
+// lider zapisywał budget_items/wpływy/wydatki (audyt 2026-10-11).
+const FINANCE_RES = MODULES.find((m) => m.key === 'finance').resources;
 const SETTINGS_RES = ['app_users', 'app_settings', 'app_permissions', 'app_roles', 'app_modules', 'app_module_tabs', 'campuses', 'integration_settings'];
 
 // Usuwanie dla lidera — TYLKO dane służbowe: wydarzenia i grafik, zadania kalendarza, programy,
@@ -63,6 +67,9 @@ export const ROLE_PRESETS = {
     deny('module:sms_campaigns'), deny('module:push_campaigns'),
     // „bez finansów” obejmuje darowizny; automatyzacje wysyłają maile/SMS jak kampanie.
     deny('module:giving'), deny('module:automation'),
+    // Pełne Finanse tylko dla rady/skarbnika. Lider służby widzi finanse SWOJEJ służby przez
+    // tab:<moduł>:finances (serwer zawęża wiersze po team_type — dataapi/financeScope.js).
+    deny('module:finance'),
     allow('tab:*:*'), deny('tab:*:finances'),
     allow('res:*:read'), allow('res:*:create'), allow('res:*:update'),
     ...LIDER_DELETE_RESOURCES.map((r) => allow(`res:${r}:delete`)),

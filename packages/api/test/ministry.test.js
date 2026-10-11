@@ -41,6 +41,7 @@ test('ministryGrants: płaskie granty allowed, bez duplikatów, działają w res
     { ministry_key: 'media', role: 'member' },
     { ministry_key: 'media', role: 'leader' }, // nakładka — dubel capability nie powiela
   ]);
+  // Lider wygrywa nad członkiem tej samej służby — bez zakazu Finansów.
   assert.ok(grants.every((g) => g.allowed === true));
   const keys = grants.map((g) => g.capability);
   assert.equal(keys.length, new Set(keys).size, 'brak duplikatów');
@@ -52,4 +53,16 @@ test('ministryGrants: płaskie granty allowed, bez duplikatów, działają w res
 test('ministryGrants: puste/niepełne wejście nie wywala', () => {
   assert.deepEqual(ministryGrants(), []);
   assert.deepEqual(ministryGrants([{}, { role: 'leader' }]), []);
+});
+
+test('Finanse służby: członek ma zakaz zakładki, lider ją ma (także gdy jest i członkiem)', () => {
+  const rows = (mems) => ministryGrants(mems).map((g) => ({ role: null, user_id: 'u1', capability: g.capability, allowed: g.allowed }));
+  const subject = { role: 'czlonek', userId: 'u1' };
+  assert.equal(can(rows([{ ministry_key: 'media', role: 'member' }]), subject, 'tab:media:finances'), false);
+  assert.equal(can(rows([{ ministry_key: 'media', role: 'member' }]), subject, 'tab:media:schedule'), true);
+  assert.equal(can(rows([{ ministry_key: 'media', role: 'leader' }]), subject, 'tab:media:finances'), true);
+  assert.equal(can(rows([{ ministry_key: 'media', role: 'member' }, { ministry_key: 'media', role: 'leader' }]), subject, 'tab:media:finances'), true);
+  assert.equal(can(rows([{ ministry_key: 'media', role: 'leader' }, { ministry_key: 'media', role: 'member' }]), subject, 'tab:media:finances'), true);
+  // Lider innej służby nie dostaje finansów Mediów.
+  assert.equal(can(rows([{ ministry_key: 'media', role: 'member' }, { ministry_key: 'worship', role: 'leader' }]), subject, 'tab:media:finances'), false);
 });

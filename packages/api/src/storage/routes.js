@@ -12,6 +12,7 @@ import crypto from 'node:crypto';
 import { config } from '../config.js';
 import { loadGrants } from '../dataapi/registry.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
+import { financeTeamTypes } from '../dataapi/financeScope.js';
 
 const BUCKET_RE = /^[a-z0-9-]+$/;
 
@@ -93,7 +94,8 @@ const SENSITIVE = {
   'messenger-attachments': ['module:komunikator'],
 };
 // Odczyt bez podpisu zablokowany (tylko podpisany link albo pobranie z tokenem i uprawnieniem).
-const SIGNED_READ = new Set(['membership-declarations']);
+// finance: faktury/paragony (audyt 2026-10-11) — wcześniej czytelne bez logowania po samym linku.
+const SIGNED_READ = new Set(['membership-declarations', 'finance']);
 
 // Komunikator+ (K1): załączniki czatu. Podpis wydajemy TYLKO uczestnikowi rozmowy, której id
 // jest pierwszym segmentem ścieżki (<conversationId>/plik — tak zapisuje aplikacja); admin
@@ -211,6 +213,22 @@ async function canUseBucket(req, bucket) {
   }
 }
 
+// Wrzucanie do bucketu finance: pełne Finanse albo lider służby (zakładka Finanse swojej
+// służby — wniosek o wydatek z załącznikiem). Nadpisanie istniejącego pliku — tylko pełne Finanse.
+async function canUploadFinance(req, { overwrite }) {
+  if (await canUseBucket(req, 'finance')) return true;
+  if (overwrite) return false;
+  try {
+    const { rows } = await req.db.query(`SELECT role FROM app_users WHERE id = $1`, [req.user.id]);
+    const { grants } = await loadGrants(req.db, req.tenant.db_name);
+    if (grants === null) return false;
+    const resolver = makeResolver(grants, { role: rows[0]?.role ?? req.user.role, userId: req.user.id, isAdmin: false });
+    return (await financeTeamTypes(req.db, resolver)).length > 0;
+  } catch {
+    return false;
+  }
+}
+
 const signFor = (tenant, bucket, filePath, exp) =>
   crypto.createHmac('sha256', config.JWT_SECRET).update(`${tenant}|${bucket}|${filePath}|${exp}`).digest('hex');
 
@@ -255,6 +273,9 @@ export default async function storageRoutes(app) {
 
       const target = safeJoin(req.tenant.slug, bucket, filePath);
       const upsert = String(req.headers['x-upsert'] || 'false') === 'true';
+      if (bucket === 'finance' && !(await canUploadFinance(req, { overwrite: upsert }))) {
+        return reply.code(403).send({ error: 'Brak uprawnień do dodawania dokumentów finansowych' });
+      }
       if (!upsert && fs.existsSync(target)) {
         return reply.code(409).send({ error: 'Plik już istnieje', code: 'Duplicate' });
       }

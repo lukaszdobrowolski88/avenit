@@ -8,6 +8,9 @@ import FinanceTab from '../../shared/FinanceTab';
 import { toast } from '../../../lib/toast';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
+import { usePermissions } from '../../../contexts/PermissionsContext';
+import { Lock } from 'lucide-react';
 
 // Samowystarczalny widget finansów dla modułu własnego — PARYTET z modułami
 // systemowymi (np. MediaTeamModule): sam pobiera budget_items + expense_transactions
@@ -19,6 +22,10 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
   const [expenses, setExpenses] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const ministry = moduleKey;
+  // Finanse służby widzi lider (zakładka Finanse tej służby) i pełne Finanse — serwer zawęża
+  // dane po team_type (dataapi/financeScope.js), więc bez prawa nie ma czego pobierać.
+  const { can } = usePermissions();
+  const canSee = can('module:finance') || can(`tab:${moduleKey}:finances`);
 
   const emptyForm = {
     payment_date: '', amount: '', contractor: '', category: moduleKey,
@@ -49,7 +56,7 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
     }
   }, [ministry, withCampusFilter]);
 
-  useEffect(() => { fetchFinanceData(); }, [fetchFinanceData, selectedCampusId]);
+  useEffect(() => { if (canSee) fetchFinanceData(); }, [canSee, fetchFinanceData, selectedCampusId]);
 
   const saveExpense = async () => {
     if (!form.payment_date || !form.amount || !form.contractor || !form.description || !form.responsible_person) {
@@ -94,6 +101,10 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
       )}
     </div>
   );
+
+  if (!canSee) {
+    return <EmptyState icon={Lock} title={tr('Finanse tej służby widzi jej lider')} subtitle={tr('Poproś administratora o dostęp do zakładki Finanse tej służby.')} compact />;
+  }
 
   return (
     <>

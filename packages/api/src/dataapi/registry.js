@@ -191,7 +191,8 @@ export const REGISTRY = {
   finance_report_schedules: T('module:finance'),
   finance_areas: T('module:finance'),
   finance_projects: T('module:finance'),
-  budget_audit: T('module:finance'),
+  // Ślad zmian budżetu pisze wyłącznie serwer (financeScope.js) — przez /api/db tylko odczyt.
+  budget_audit: T('module:finance', { readOnly: true }),
   budget_versions: T('module:finance'),
   // Propozycje budżetu: każdy zalogowany może ZGŁOSIĆ (lider służby bez dostępu do
   // Finansów); zatwierdzanie do budżetu i tak wymaga zapisu budget_items (module:finance).
