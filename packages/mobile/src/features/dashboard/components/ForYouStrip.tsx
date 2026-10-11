@@ -1,9 +1,10 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { ItemsConfig } from '../layout';
 import { useShortcutCatalog, visibleShortcuts } from '../shortcuts';
 import { SectionHeading } from './WidgetCard';
 import { D, F } from '../theme';
+import { FitLabel } from '../../../components/ui/FitLabel';
 
 // „Dla Ciebie" — osobiste skróty: białe kwadraty z czarną ikoną, krótki podpis pod spodem.
 // Powiadomienia mają dzwonek w nagłówku, więc tu ich nie ma.
@@ -42,14 +43,10 @@ export const ForYouStrip = ({ config }: { config: ItemsConfig }) => {
             >
               <Icon size={24} color={D.ink} strokeWidth={1.8} />
             </View>
-            <Text
-              numberOfLines={2}
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
-              style={{ fontSize: 12, lineHeight: 15, color: D.ink2, fontFamily: F.medium, textAlign: 'center' }}
-            >
+            {/* Bez łamania słów w środku („Nieobecnośc/i”) — patrz FitLabel. */}
+            <FitLabel width={74} fontSize={12} style={{ lineHeight: 15, color: D.ink2, fontFamily: F.medium, textAlign: 'center' }}>
               {short}
-            </Text>
+            </FitLabel>
           </Pressable>
         ))}
       </ScrollView>

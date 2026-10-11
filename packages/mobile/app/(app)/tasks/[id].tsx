@@ -75,6 +75,7 @@ import { openTask } from '../../../src/features/tasks/navigation';
 import { F, PersonAvatar, StatusPill } from '../../../src/features/tasks/components/bits';
 import { OptionSheet, PeopleSheet } from '../../../src/features/tasks/components/Pickers';
 import { TaskComments } from '../../../src/features/tasks/components/Comments';
+import { FitLabel } from '../../../src/components/ui/FitLabel';
 
 // Zadanie (element dowolnej tablicy: Projekty, zakładka „Zadania” służby, zadania Kalendarza) —
 // jak panel elementu na webie: status, osoby, termin, grupa, opis, podzadania, komentarze
@@ -613,9 +614,9 @@ const PeopleRow = ({
     className="active:opacity-70"
     style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 54, borderTopWidth: first ? 0 : 1, borderTopColor: B.line }}
   >
-    <Text numberOfLines={2} style={{ width: 84, fontSize: 13, color: B.ink3, fontFamily: F.semibold }}>
+    <FitLabel width={84} fontSize={13} style={{ width: 84, color: B.ink3, fontFamily: F.semibold }}>
       {label}
-    </Text>
+    </FitLabel>
     <View style={{ flex: 1, gap: 8 }}>
       {people.length === 0 ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
