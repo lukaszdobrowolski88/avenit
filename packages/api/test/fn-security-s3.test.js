@@ -154,6 +154,7 @@ test('send-program-email: traversal → 400 bez wysyłki; poprawna ścieżka →
   const reads = [];
   programEmail.deps.sendEmail = async (m) => { sent.push(m); };
   programEmail.deps.readStorageFileBase64 = async (...args) => { reads.push(args); return 'UEZE'; };
+  programEmail.deps.churchEmails = async (_db, emails) => new Set(emails);
   const base = { tenant: { slug: 'kosciol' }, log: quietLog };
   const bad = fakeReply();
   await programEmail.default({ ...base, body: { emailTo: ['a@b.pl'], htmlBody: '<p>x</p>', filePath: '../../inny/programs/tajne.pdf' } }, bad);
@@ -167,6 +168,38 @@ test('send-program-email: traversal → 400 bez wysyłki; poprawna ścieżka →
   assert.deepEqual(reads[0], ['kosciol', 'programs', 'p1/Program-2026-10-12.pdf']);
   assert.equal(sent[0].attachments.length, 1);
   assert.ok(!/[\\/"]/.test(sent[0].attachments[0].filename));
+});
+
+test('send-program-email: tylko adresy ze wspólnoty, limit odbiorców (runda 4 — bez open relay)', async () => {
+  const sent = [];
+  programEmail.deps.sendEmail = async (m) => { sent.push(m); };
+  const queries = [];
+  const db = { async query(sql, params) {
+    queries.push(sql);
+    if (/FROM app_users/.test(sql)) return { rows: params[0].filter((e) => e === 'anna@kosciol.pl').map((e) => ({ e })) };
+    if (/FROM worship_team/.test(sql)) return { rows: params[0].filter((e) => e === 'gitara@kosciol.pl').map((e) => ({ e })) };
+    if (/FROM kids_teachers/.test(sql)) throw new Error('relation does not exist');
+    return { rows: [] };
+  } };
+  programEmail.deps.churchEmails = (await import('../src/fn/send-program-email.js')).churchEmails;
+  const base = { tenant: { slug: 'kosciol' }, log: quietLog, db };
+
+  const ext = fakeReply();
+  await programEmail.default({ ...base, body: { emailTo: ['Anna@Kosciol.pl', 'ofiara@gmail.com'], subject: 'Zmiana konta', htmlBody: '<a href=x>x</a>' } }, ext);
+  assert.equal(ext.statusCode, 403);
+  assert.deepEqual(ext.body.unknown, ['ofiara@gmail.com']);
+  assert.equal(sent.length, 0);
+
+  const many = fakeReply();
+  await programEmail.default({ ...base, body: { emailTo: Array.from({ length: 101 }, (_, i) => `x${i}@k.pl`), htmlBody: '<p>x</p>' } }, many);
+  assert.equal(many.statusCode, 400);
+
+  const ok = fakeReply();
+  await programEmail.default({ ...base, body: { emailTo: ['Anna@Kosciol.pl', 'gitara@kosciol.pl', 'anna@kosciol.pl'], subject: 'A\r\nBcc: x@y', htmlBody: '<p>x</p>' } }, ok);
+  assert.equal(ok.statusCode, 200);
+  assert.deepEqual(sent[0].to, ['anna@kosciol.pl', 'gitara@kosciol.pl']);
+  assert.ok(!/[\r\n]/.test(sent[0].subject));
+  assert.deepEqual(programEmail.rateLimit, { max: 10, timeWindow: '10 minutes' });
 });
 
 // ── Konta: manage_users bez roli admina ──────────────────────────────────────

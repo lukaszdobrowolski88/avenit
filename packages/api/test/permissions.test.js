@@ -63,7 +63,12 @@ test('preset lider: przypisane służby — bez finansów, ustawień i danych os
   for (const m of ['programs', 'calendar', 'teaching', 'prayer', 'komunikator', 'boards', 'serve']) assert.equal(can(g, sub, `module:${m}`), true, m);
   for (const m of ['members', 'care', 'forms', 'analytics', 'attendance', 'rsvp', 'rooms', 'ai', 'settings', 'giving', 'automation', 'finance']) assert.equal(can(g, sub, `module:${m}`), false, m);
   // Służby nie z roli — z przynależności.
-  for (const m of ['worship', 'media', 'homegroups']) assert.equal(can(g, sub, `module:${m}`), false, m);
+  for (const m of ['worship', 'media', 'kids']) assert.equal(can(g, sub, `module:${m}`), false, m);
+  // Grupy domowe jak członek — tylko odczyt (migracja 104); edycja z przynależności do służby.
+  assert.equal(can(g, sub, 'module:homegroups'), true);
+  assert.equal(can(g, sub, 'res:home_group_members:read'), true);
+  assert.equal(can(g, sub, 'res:home_group_members:update'), false);
+  assert.equal(can(g, sub, 'res:home_groups:create'), false);
   assert.equal(can(g, sub, 'res:finance_transactions:update'), false);
   assert.equal(can(g, sub, 'tab:media:finances'), false);
 });

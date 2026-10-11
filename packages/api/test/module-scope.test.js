@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
-import { presetGrantRows, LIDER_DELETE_RESOURCES, LIDER_SHARED_DELETE_RESOURCES, LIDER_MODULES, LIDER_DENIED_MODULES } from '@avenit/shared/src/permissions/presets.js';
+import { presetGrantRows, LIDER_DELETE_RESOURCES, LIDER_SHARED_DELETE_RESOURCES, LIDER_MODULES, LIDER_DENIED_MODULES, LIDER_READONLY_MODULES, ROLE_PRESETS } from '@avenit/shared/src/permissions/presets.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 import { MODULES } from '@avenit/shared/src/permissions/catalog.js';
 import {
@@ -272,7 +272,8 @@ test('lider jednej służby, członek drugiej: usuwa i widzi finanse tylko w swo
   const can = makeResolver(rows, { role: 'lider', userId: 'u-m', isAdmin: false }).can;
   assert.equal(can('module:media'), true);
   assert.equal(can('module:worship'), true);
-  assert.equal(can('module:homegroups'), false);
+  assert.equal(can('module:kids'), false);
+  assert.equal(can('res:home_group_members:update'), false);
   assert.equal(can('res:media_team:delete'), true);
   assert.equal(can('tab:media:finances'), true);
   assert.equal(can('res:worship_team:update'), true);
@@ -291,6 +292,29 @@ test('migracja 103 = preset lidera (moduły, zakazy, usuwanie danych służb)', 
   assert.deepEqual(del.sort(), ministryDel.map((r) => `res:${r}:delete`).sort());
   assert.match(sql, /capability = 'module:\*' AND allowed/, 'tylko tenanty ze starym presetem');
   assert.match(sql, /ON CONFLICT \(role, capability\) WHERE user_id IS NULL DO NOTHING/, 'decyzje admina zostają');
+});
+
+test('migracja 104 = Grupy domowe lidera tylko do odczytu (spójność z presetem)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../db/tenant-migrations/104_lider_homegroups_read.sql'), 'utf8');
+  assert.deepEqual(LIDER_READONLY_MODULES, ['homegroups']);
+  assert.match(sql, /'module:homegroups', true/);
+  const lider = ROLE_PRESETS.lider;
+  const denied = lider.filter((g) => !g.allowed && /^res:(home_group|homegroups)/.test(g.capability)).map((g) => g.capability.split(':')[1]);
+  const listed = sql.match(/unnest\(ARRAY\[([^\]]+)\]\) AS r/)[1].match(/'([a-z_]+)'/g).map((x) => x.slice(1, -1));
+  assert.deepEqual([...new Set(denied)].sort(), [...listed].sort());
+  assert.match(sql, /capability = 'module:members' AND NOT allowed/, 'tylko tenanty z modelem lidera 103');
+  assert.match(sql, /ON CONFLICT \(role, capability\) WHERE user_id IS NULL DO NOTHING/);
+});
+
+test('lider: Grupy domowe — odczyt z roli, edycja tylko z przynależności do służby', async () => {
+  const dbName = `t${++dbSeq}`;
+  const pool = fakePool({ userId: 'hg', memberships: [{ ministry_key: 'homegroups', role: 'leader' }], moduleKeys: ['homegroups'] });
+  const lider = { id: 'l1', role: 'lider' };
+  assert.equal((await canAccess({ pool, dbName, table: 'home_groups', op: 'select', user: lider })).ok, true);
+  assert.equal((await canAccess({ pool, dbName, table: 'home_group_members', op: 'update', user: lider })).ok, false);
+  assert.equal((await canAccess({ pool, dbName, table: 'home_group_members', op: 'insert', user: lider })).ok, false);
+  const hgLeader = { id: 'hg', role: 'lider' };
+  assert.equal((await canAccess({ pool, dbName, table: 'home_group_members', op: 'update', user: hgLeader })).ok, true);
 });
 
 test('migracja 091 = LIDER_DELETE_RESOURCES (spójność presetu i migracji)', () => {

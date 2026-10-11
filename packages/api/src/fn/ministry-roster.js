@@ -5,11 +5,25 @@
 //
 // Body: { ministry_key }.
 // Brak wpisu w FN_CAPABILITY => preHandler = requireUser (każdy zalogowany).
+//
+// Kontakty spoza własnej służby (audyt 2026-10, runda 4): wcześniej dla ról z listy na sztywno
+// (w tym „lider”), więc lider bez dostępu do Członków dostawał telefony i e-maile każdej służby.
+// Teraz: administrator albo ktoś z module:members (i tak widzi dane osobowe w Członkach).
+import { loadGrants } from '../dataapi/registry.js';
+import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
+
 export const name = 'ministry-roster';
 export const method = 'POST';
 
-const LEADER_ROLES = ['superadmin', 'rada_starszych', 'koordynator', 'lider'];
 const lc = (v) => String(v || '').toLowerCase();
+
+// Czy pytający widzi kontakty dowolnej służby (admin / dostęp do modułu Członkowie).
+export async function seesAllContacts(db, dbName, user) {
+  const { grants, adminRoles } = await loadGrants(db, dbName);
+  if (user.is_super_admin || adminRoles.has(user.role)) return true;
+  if (grants === null) return false;
+  return makeResolver(grants, { role: user.role, userId: user.id, isAdmin: false }).can('module:members');
+}
 
 export default async function handler(req, reply) {
   if (!req.db || !req.tenant) return reply.code(404).send({ error: 'Nieznany tenant' });
@@ -35,7 +49,7 @@ export default async function handler(req, reply) {
           [req.user.id]
         );
         const r = rows[0] || {};
-        iBelong = !!r.is_super_admin || LEADER_ROLES.includes(String(r.role || ''));
+        iBelong = await seesAllContacts(req.db, req.tenant.db_name, { id: req.user.id, role: r.role, is_super_admin: !!r.is_super_admin });
       } catch { /* brak kolumny — traktuj jak nie-członek */ }
     }
 
