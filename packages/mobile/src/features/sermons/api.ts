@@ -76,3 +76,19 @@ export const useSermon = (id: string) =>
     },
     enabled: id != null && id !== '',
   });
+
+// Nazwy aktywnych serii nauczania (teaching_series) — opcje filtra serii jak na webie
+// (SermonsTab): filtr działa od razu po utworzeniu serii, nie dopiero po przypisaniu kazania.
+// Brak tabeli/uprawnień = pusta lista (filtr bierze wtedy serie z samych kazań).
+export function useActiveSeriesNames() {
+  return useQuery({
+    queryKey: ['sermons', 'teaching-series-names'],
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase.from('teaching_series').select('name, is_active');
+      if (error) return [];
+      return ((data ?? []) as { name: string | null; is_active: boolean | null }[])
+        .filter((s) => s.is_active !== false && s.name)
+        .map((s) => String(s.name));
+    },
+  });
+}

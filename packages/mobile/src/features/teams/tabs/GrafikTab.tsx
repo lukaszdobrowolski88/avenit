@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, Share, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { AlertTriangle, Check, ChevronRight, ClipboardList, Clock, Plus, Send, Share2, UserX, X } from 'lucide-react-native';
+import { AlertTriangle, Check, ChevronRight, ClipboardList, Clock, Plus, Send, Share2, UserX, Wand2, X } from 'lucide-react-native';
 import { B } from '../../../components/ui/brand';
 import { friendlyError } from '../../../lib/errors';
 import { toast } from '../../../lib/toast';
@@ -22,6 +22,7 @@ import {
   type GrafikRoleDef,
 } from '../grafik';
 import { AssignSheet } from '../components/AssignSheet';
+import { GrafikToolsRow, useGrafikTools } from '../components/GrafikTools';
 import { DateBlock, Empty, Loading, SegmentChips, dayLabel } from './ui';
 
 // Grafik służby jak na webie (Grafik), tylko kartami zamiast tabeli: wydarzenie → role → osoby.
@@ -170,6 +171,16 @@ export const GrafikTab = ({
   const availability = useTeamAvailability(teamKey, upcomingDates[0] ?? null, upcomingDates[upcomingDates.length - 1] ?? null);
   const blockouts = availability.data ?? [];
 
+  // Narzędzia obsady (propozycja, kopia z poprzedniego terminu, zapisane składy) — tylko dla edytujących.
+  const tools = useGrafikTools({ teamKey, events: data?.events ?? [], roles, members, blockouts, me, enabled: canEdit });
+  // Propozycja hurtem: nadchodzące wydarzenia z najbliższych 4 tygodni (na webie — cały miesiąc).
+  const proposeSoon = () => {
+    const until = new Date();
+    until.setDate(until.getDate() + 28);
+    const untilYmd = `${until.getFullYear()}-${String(until.getMonth() + 1).padStart(2, '0')}-${String(until.getDate()).padStart(2, '0')}`;
+    tools.openProposal(splitGrafik(data?.events ?? []).upcoming.filter((e: GrafikEvent) => e.date <= untilYmd));
+  };
+
   // Zapis obsady: od razu na ekranie; przy błędzie obsada wraca (grafik.ts) i pokazujemy powód.
   const savePicked = (names: string[]) => {
     if (!picking || !pickingEvent) return;
@@ -243,6 +254,30 @@ export const GrafikTab = ({
           </Pressable>
         ) : null}
       </View>
+      {canEdit && range === 'upcoming' && list.length ? (
+        <Pressable
+          onPress={proposeSoon}
+          disabled={tools.busy}
+          accessibilityRole="button"
+          accessibilityLabel="Zaproponuj obsadę pustych ról na najbliższe 4 tygodnie"
+          className="active:opacity-70"
+          style={{
+            alignSelf: 'flex-start',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            marginTop: 2,
+            marginBottom: 10,
+            paddingHorizontal: 13,
+            paddingVertical: 8,
+            borderRadius: 999,
+            backgroundColor: B.card,
+          }}
+        >
+          <Wand2 size={14} color={B.ink2} />
+          <Text style={{ fontSize: 13, color: B.ink, fontFamily: F.semibold }}>Zaproponuj obsadę na 4 tygodnie</Text>
+        </Pressable>
+      ) : null}
       {grafik.isLoading ? <Loading /> : null}
       {grafik.isError ? <Empty Icon={ClipboardList} title="Nie udało się wczytać grafiku" hint="Pociągnij w dół, żeby spróbować ponownie." /> : null}
       {!grafik.isLoading && !grafik.isError && list.length === 0 ? (
@@ -353,6 +388,8 @@ export const GrafikTab = ({
                 </View>
               );
             })}
+
+            {canEdit && !past ? <GrafikToolsRow ev={ev} tools={tools} /> : null}
 
             {!canEdit && open.length ? (
               <Text style={{ paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: 1, borderTopColor: B.line, fontSize: 12, color: B.ink4, fontFamily: F.medium }}>
@@ -466,6 +503,7 @@ export const GrafikTab = ({
         onClose={() => setPicking(null)}
         onSave={savePicked}
       />
+      {canEdit ? tools.sheets : null}
     </View>
   );
 };

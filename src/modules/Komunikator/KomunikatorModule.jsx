@@ -161,13 +161,21 @@ export default function KomunikatorModule() {
     const conv = conversations.find(c => String(c.id) === conversationId);
     if (conv) {
       handleSelectConversation(conv);
+      // ?join=audio|video (z aplikacji mobilnej, dopóki nie ma tam natywnych rozmów): od razu
+      // dołącz do trwającego połączenia albo je rozpocznij (serwer łączy z trwającym).
+      const join = searchParams.get('join');
+      if ((join === 'audio' || join === 'video') && calls?.startCall) {
+        const live = calls.activeCallFor?.(conv.id);
+        if (live) calls.joinCall(live, conv, join);
+        else calls.startCall(conv, join);
+      }
       // Wyczyść parametr z URL po otwarciu konwersacji
       setSearchParams({}, { replace: true });
     } else if (!loading && urlRefetchRef.current !== conversationId) {
       urlRefetchRef.current = conversationId;
       refetch();
     }
-  }, [searchParams, conversations, handleSelectConversation, setSearchParams, loading, refetch, userEmail]);
+  }, [searchParams, conversations, handleSelectConversation, setSearchParams, loading, refetch, userEmail, calls]);
 
   // Oznacz powiadomienia jako przeczytane gdy użytkownik wejdzie w konwersację
   useEffect(() => {

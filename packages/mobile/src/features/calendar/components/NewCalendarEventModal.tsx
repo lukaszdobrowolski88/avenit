@@ -19,6 +19,7 @@ import { showError } from '../../../lib/errors';
 import { toast } from '../../../lib/toast';
 import { usePermissions } from '../../../lib/permissions';
 import { useModules } from '../../modules/useModules';
+import { EventFormatPicker } from './EventFormat';
 import {
   useCreateCalendarEvent,
   useDeleteCalendarEvent,
@@ -35,6 +36,7 @@ export interface EditableEvent {
   time: string | null;
   endTime: string | null;
   location: string | null;
+  format?: 'in_person' | 'online' | 'hybrid';
   description: string | null;
   // Opis sformatowany na webie (details_html) — wtedy opisu nie zmieniamy z telefonu.
   hasDetailsHtml: boolean;
@@ -92,6 +94,7 @@ export const NewCalendarEventModal = ({
   const [time, setTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [location, setLocation] = useState('');
+  const [eventFormat, setEventFormat] = useState<'in_person' | 'online' | 'hybrid'>('in_person');
   const [moduleKey, setModuleKey] = useState<string | null>(null);
   const [description, setDescription] = useState('');
 
@@ -102,6 +105,7 @@ export const NewCalendarEventModal = ({
     setTime(editing?.time ?? '');
     setEndTime(editing?.endTime ?? '');
     setLocation(editing?.location ?? '');
+    setEventFormat(editing?.format ?? 'in_person');
     setModuleKey(editing?.moduleKey ?? null);
     setDescription(editing?.description ?? '');
     // Tylko przy otwarciu — `editing` przychodzi jako nowy obiekt przy każdym renderze rodzica,
@@ -151,6 +155,7 @@ export const NewCalendarEventModal = ({
       time: time || null,
       endTime: (time && endTime) || null,
       location: location.trim() || null,
+      format: eventFormat,
       ...(editing?.hasDetailsHtml ? {} : { description: description.trim() || null }),
     };
     try {
@@ -231,8 +236,20 @@ export const NewCalendarEventModal = ({
             </View>
           </View>
 
-          <Label>Miejsce</Label>
-          <TextInput value={location} onChangeText={setLocation} placeholder="Np. sala główna" placeholderTextColor="#6E685A" style={inputStyle} />
+          <Label>Forma</Label>
+          <EventFormatPicker value={eventFormat} onChange={setEventFormat} />
+          {eventFormat !== 'in_person' ? (
+            <Text style={{ marginTop: 6, fontSize: 12, lineHeight: 17, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
+              {time ? 'Utworzy się spotkanie online z czatem — dołączy każdy, kto widzi wydarzenie.' : 'Ustaw godzinę, żeby utworzyć spotkanie online.'}
+            </Text>
+          ) : null}
+
+          {eventFormat !== 'online' ? (
+            <>
+              <Label>Miejsce</Label>
+              <TextInput value={location} onChangeText={setLocation} placeholder="Np. sala główna" placeholderTextColor="#6E685A" style={inputStyle} />
+            </>
+          ) : null}
 
           <Label>Opis</Label>
           {editing?.hasDetailsHtml ? (

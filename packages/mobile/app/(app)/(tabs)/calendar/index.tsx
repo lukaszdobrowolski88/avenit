@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Calendar, CalendarDays, CloudOff, List, Plus } from 'lucide-react-native';
+import { Calendar, CalendarDays, CalendarPlus, ChevronRight, CloudOff, List, Plus } from 'lucide-react-native';
 import { PageHeader } from '../../../../src/components/ui/PageHeader';
 import { useAgenda, type AgendaEvent } from '../../../../src/features/calendar/api';
 import { useCalendarLabel } from '../../../../src/features/calendar/meta';
@@ -21,6 +21,7 @@ import { useAuthSession } from '../../../../src/lib/auth';
 import { useCampusQuery } from '../../../../src/hooks/useCampusQuery';
 import { usePermissions } from '../../../../src/lib/permissions';
 import { NewCalendarEventModal } from '../../../../src/features/calendar/components/NewCalendarEventModal';
+import { MyServicesCalendarSheet } from '../../../../src/features/calendar/components/MyServicesCalendarSheet';
 import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import { friendlyError } from '../../../../src/lib/errors';
 
@@ -37,6 +38,7 @@ export default function CalendarScreen() {
   // SWOJEGO modułu (canModule w zakresie służby). Członek tylko czyta.
   const canCreate = perms.canModuleAny('events', 'create');
   const [creating, setCreating] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
   const [filter, setFilter] = useState<string>('all');
   const [view, setView] = useState<ViewMode>('agenda');
   const openEvent = (e: AgendaEvent) =>
@@ -177,6 +179,19 @@ export default function CalendarScreen() {
           </ScrollView>
         </View>
 
+        {filter === 'mine' ? (
+          <Pressable
+            onPress={() => setSubscribing(true)}
+            accessibilityRole="button"
+            className="active:opacity-70"
+            style={{ marginHorizontal: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 11 }}
+          >
+            <CalendarPlus size={17} color="#2A2312" />
+            <Text style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>Moje służby w kalendarzu telefonu</Text>
+            <ChevronRight size={16} color="#6E685A" />
+          </Pressable>
+        ) : null}
+
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color="#2A2312" />
@@ -258,6 +273,7 @@ export default function CalendarScreen() {
           <Plus size={24} color="#ffffff" strokeWidth={2.4} />
         </Pressable>
       ) : null}
+      <MyServicesCalendarSheet visible={subscribing} email={user?.email ?? null} onClose={() => setSubscribing(false)} />
       <NewCalendarEventModal
         visible={creating}
         onClose={() => setCreating(false)}

@@ -32,6 +32,8 @@ export interface NewCalendarEvent {
   endTime: string | null;
   location: string | null;
   description?: string | null;
+  // Forma (099): stacjonarne / online / hybrydowe. Spotkanie online zakłada serwer po zapisie.
+  format?: 'in_person' | 'online' | 'hybrid';
 }
 
 export const useCreateCalendarEvent = (userEmail: string | null, campusIdForInsert: number | null) => {
@@ -45,8 +47,9 @@ export const useCreateCalendarEvent = (userEmail: string | null, campusIdForInse
           date: e.date,
           time: e.time,
           end_time: e.endTime,
-          location: e.location,
+          location: e.format === 'online' ? null : e.location,
           description: e.description ?? null,
+          format: e.format ?? 'in_person',
           created_by: userEmail,
           campus_id: campusIdForInsert,
         },
@@ -67,6 +70,7 @@ const invalidateEvents = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ['dashboard'] });
   qc.invalidateQueries({ queryKey: ['team'] });
   qc.invalidateQueries({ queryKey: ['event-detail'] });
+  qc.invalidateQueries({ queryKey: ['event-meeting'] });
 };
 
 // Edycja podstawowych pól (jak karta „Termin i miejsce” na webie). Opis sformatowany
@@ -81,8 +85,9 @@ export const useUpdateCalendarEvent = (id: number) => {
         date: e.date,
         time: e.time,
         end_time: e.endTime,
-        location: e.location,
+        location: e.format === 'online' ? null : e.location,
       };
+      if (e.format) patch.format = e.format;
       if (e.description !== undefined) patch.description = e.description;
       const { error } = await (supabase.from('events') as any).update(patch).eq('id', id).select('id');
       if (error) throw error;

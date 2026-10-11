@@ -53,6 +53,8 @@ export interface EventDetail {
   typeLabel: string | null;
   // Surowe pola do edycji.
   raw: { description: string | null; hasDetailsHtml: boolean };
+  // Widzi je cały kościół (brak segmentów albo „wszyscy”) — uwaga o limicie kamer na karcie online.
+  wideAudience: boolean;
   myAssignments: MyAssignment[];
   details: string;
   link: string | null;
@@ -71,7 +73,7 @@ export interface EventDetail {
   materials: EventFile[];
   fields: { label: string; value: string }[];
   customTabs: { id: string; label: string; text: string }[];
-  sections: { program: boolean; registration: boolean; services: boolean; participants: boolean; materials: boolean };
+  sections: { program: boolean; registration: boolean; services: boolean; participants: boolean; materials: boolean; tasks?: boolean };
 }
 
 const csv = (v: unknown): string[] =>
@@ -130,6 +132,7 @@ const reviveDetail = (d: EventDetail | null) =>
         event: reviveAgendaEvent(d.event),
         myAssignments: d.myAssignments ?? [],
         raw: d.raw ?? { description: null, hasDetailsHtml: false },
+        wideAudience: d.wideAudience ?? false,
       }
     : d;
 
@@ -324,6 +327,10 @@ export const useEventDetail = (
         event,
         typeLabel,
         raw: { description: ev.description ?? null, hasDetailsHtml: !!String(ev.details_html ?? '').trim() },
+        wideAudience: (() => {
+          const segs = parseJson(ev.visibility_segments);
+          return !Array.isArray(segs) || !segs.length || segs.some((x: { type?: string } | null) => x?.type === 'everyone');
+        })(),
         myAssignments,
         details: htmlToText(ev.details_html || ev.description),
         link: ev.link || null,
@@ -348,6 +355,7 @@ export const useEventDetail = (
           registration: on('rejestracja', true),
           services: on('sluzby', true),
           participants: on('uczestnicy', true),
+          tasks: on('zadania', true),
           materials: !!materialsOn || materials.length > 0,
         },
       };

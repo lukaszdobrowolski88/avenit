@@ -211,8 +211,8 @@ export const useSetWorkStatus = (userEmail: string | null) => {
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<WorkItem[]>(key);
       const label = (item.statusLabels ?? []).find((l) => l.id === labelId) ?? null;
-      qc.setQueryData<WorkItem[]>(key, (list) =>
-        (list ?? []).map((w) =>
+      qc.setQueryData<WorkItem[]>(key, (list: WorkItem[] | undefined) =>
+        (list ?? []).map((w: WorkItem) =>
           w.id === item.id
             ? {
                 ...w,

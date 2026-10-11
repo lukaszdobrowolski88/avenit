@@ -36,9 +36,15 @@ import { DEFAULT_LAYOUT, useDashboardLayout, type DashboardLayout, type SectionI
 // Tło strony pulpitu — białe karty odcinają się od niego bez ramek i cieni.
 const PAGE_BG = D.page;
 
+// Minione = po faktycznym końcu (end_time; bez końca +1 h, cały dzień — do końca dnia), jak
+// kalendarz (meta.isOver). Stary wpis z cache na dysku (bez startsAt) — dawna reguła 3 h.
 const isOver = (ev: UpcomingEvent) => {
-  if (!ev.time) return false;
   const now = new Date();
+  if (typeof ev.startsAt === 'number') {
+    if (ev.allDay) return false;
+    return (ev.endsAt ?? ev.startsAt + 60 * 60_000) <= now.getTime();
+  }
+  if (!ev.time) return false;
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   if (ev.date !== today) return false;
   const [h, m] = ev.time.split(':').map(Number);

@@ -81,6 +81,7 @@ import {
   receiptSummary,
   unreadIdsToMark,
 } from "../../../src/features/messenger/logic";
+import { SwipeToReply } from "../../../src/features/messenger/components/SwipeToReply";
 import { MessageBubble, type BubbleTranslation } from "../../../src/features/messenger/components/MessageBubble";
 import { ComposerBar, type MentionCandidate } from "../../../src/features/messenger/components/ComposerBar";
 import { PollComposerModal } from "../../../src/features/messenger/components/PollComposerModal";
@@ -91,6 +92,9 @@ import { MessageActionsSheet } from "../../../src/features/messenger/components/
 import { ForwardMessageModal } from "../../../src/features/messenger/components/ForwardMessageModal";
 import { SearchModal } from "../../../src/features/messenger/components/SearchModal";
 import { PinnedPanel } from "../../../src/features/messenger/components/PinnedPanel";
+import { LiveCallBanner } from "../../../src/features/calls/components/CallMessageCard";
+import { MeetingCard } from "../../../src/features/meetings/components/MeetingCard";
+import { chooseCallKind, useCallsEnabled } from "../../../src/features/calls/api";
 import { MediaGalleryModal } from "../../../src/features/messenger/components/MediaGalleryModal";
 import { ConversationInfoModal } from "../../../src/features/messenger/components/ConversationInfoModal";
 import { MuteSheet } from "../../../src/features/messenger/components/MuteSheet";
@@ -133,6 +137,7 @@ export default function ConversationScreen() {
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const { user } = useAuthSession();
   const myEmail = user?.email ?? null;
+  const callsEnabled = useCallsEnabled();
   const qc = useQueryClient();
   const router = useRouter();
   const cid = String(conversationId ?? "");
@@ -909,7 +914,15 @@ export default function ConversationScreen() {
           onOpenGallery={() => setGalleryVisible(true)}
           peerStatus={peerStatus}
           onOpenInfo={details ? () => setInfoVisible(true) : undefined}
+          onCall={callsEnabled && details?.is_participant && details.type !== "meeting" ? () => chooseCallKind(String(conversationId)) : undefined}
         />
+
+        {/* Spotkanie online: termin, Dołącz, odpowiedź; inne rozmowy — pasek „Trwa połączenie”. */}
+        {details?.type === "meeting" ? (
+          <MeetingCard conversationId={String(conversationId)} myEmail={myEmail} />
+        ) : details ? (
+          <LiveCallBanner conversationId={String(conversationId)} isDirect={details.type === "direct"} />
+        ) : null}
 
         <PinnedPanel
           pinned={pinnedQuery.data ?? []}
@@ -1016,6 +1029,13 @@ export default function ConversationScreen() {
                 }
                 const hiddenBlocked = !mine && groupLike && isBlocked(m.sender_email) && !revealed.has(m.id);
                 return (
+                  <SwipeToReply
+                    enabled={canPost && !m.deleted_at && m.message_type !== "system" && m.message_type !== "call" && !hiddenBlocked}
+                    onReply={() => {
+                      setReplyTo(m);
+                      setEditingId(null);
+                    }}
+                  >
                   <MessageBubble
                     message={m}
                     mine={mine}
@@ -1054,6 +1074,7 @@ export default function ConversationScreen() {
                     onLongPress={() => setActionTarget(m)}
                     onToggleReaction={(emoji) => reactionMutation.mutate({ messageId: m.id, emoji })}
                   />
+                  </SwipeToReply>
                 );
               }}
             />

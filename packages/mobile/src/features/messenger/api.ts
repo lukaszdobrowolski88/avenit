@@ -50,7 +50,7 @@ const alertError = (title: string, fallback: string) => (e: unknown) =>
 
 export interface ConversationListItem {
   id: string;
-  type: "direct" | "group" | "ministry" | "announcement";
+  type: "direct" | "group" | "ministry" | "announcement" | "meeting";
   name: string | null;
   ministry_key: string | null;
   avatar_url: string | null;
@@ -232,7 +232,7 @@ export interface MessageAttachment {
   isVoiceMessage?: boolean;
 }
 
-export type MessageType = "text" | "poll" | "prayer" | "event" | "system";
+export type MessageType = "text" | "poll" | "prayer" | "event" | "system" | "call";
 
 export interface PollOption { id: string; text: string }
 // K7: metadata.poll = { question, options, multiple, anonymous, closes_at } (starsze ankiety
@@ -844,7 +844,7 @@ export const useSetMute = (userEmail: string | null) => {
 
 export interface ConversationDetails {
   id: string;
-  type: "direct" | "group" | "ministry" | "announcement";
+  type: "direct" | "group" | "ministry" | "announcement" | "meeting";
   name: string | null;
   ministry_key: string | null;
   avatar_url: string | null;

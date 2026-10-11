@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { CheckCircle2, CircleDot, ListTodo } from 'lucide-react-native';
+import { CheckCircle2, ChevronRight, CircleDot, LayoutGrid, ListTodo } from 'lucide-react-native';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
@@ -142,6 +142,9 @@ export default function MyWorkScreen() {
   // Zadania tablicy służby edytuje lider/członek tej służby, Projektów — prawo globalne.
   const canEdit = (item: WorkItem) => perms.canModule(item.moduleKey ?? null, 'board_items', 'update');
   const openItem = (item: WorkItem) => openTask(router, item.id, item.boardId);
+  // Wejście do tablic Projektów (tabela/kanban) — tylko z dostępem do modułu Projekty.
+  const showBoards = perms.moduleVisible('boards');
+  const openBoards = () => router.push('/(app)/work/boards' as never);
 
   const changeStatus = (item: WorkItem) => {
     const labels = item.statusLabels ?? [];
@@ -238,6 +241,45 @@ export default function MyWorkScreen() {
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
+            {showBoards ? (
+              <Pressable
+                onPress={openBoards}
+                accessibilityRole="button"
+                accessibilityLabel="Tablice projektów"
+                className="active:opacity-70"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: 14,
+                  marginBottom: 18,
+                  borderRadius: 16,
+                  backgroundColor: '#FFFFFF',
+                }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: '#ECE8DE',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <LayoutGrid size={17} color="#2A2312" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }} numberOfLines={1}>
+                    Tablice projektów
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }} numberOfLines={1}>
+                    Widok tabeli i kanbanu
+                  </Text>
+                </View>
+                <ChevronRight size={18} color="#6E685A" />
+              </Pressable>
+            ) : null}
             {total === 0 || (!showDone && openCount === 0) ? (
               <View style={{ alignItems: 'center', paddingTop: 56 }}>
                 <View

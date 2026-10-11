@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
   Image,
@@ -20,9 +21,11 @@ import {
   Hash,
   House,
   Megaphone,
+  CalendarClock,
   MessageCircle,
   Search,
   SquarePen,
+  CalendarPlus,
   Star,
   Users as UsersIcon,
   X,
@@ -31,6 +34,8 @@ import {
   CheckCheck,
 } from "lucide-react-native";
 import { PageHeader } from "../../../../src/components/ui/PageHeader";
+import { MeetingSheet } from "../../../../src/features/meetings/components/MeetingSheet";
+import { useCallsEnabled } from "../../../../src/features/calls/api";
 import { EmptyState } from "../../../../src/components/ui/EmptyState";
 import { usePermissions } from "../../../../src/lib/permissions";
 import { friendlyError } from "../../../../src/lib/errors";
@@ -110,6 +115,13 @@ const ConversationAvatar = ({
       </Tile>
     );
   }
+  if (conv.type === "meeting") {
+    return (
+      <Tile>
+        <CalendarClock size={20} color="#2A2312" />
+      </Tile>
+    );
+  }
   if (conv.type === "announcement") {
     return (
       <Tile>
@@ -157,6 +169,9 @@ export default function MessengerScreen() {
   const myEmail = user?.email ?? null;
   const [filter, setFilter] = useState<ConversationFilter>("all");
   const [search, setSearch] = useState("");
+  const [meetingOpen, setMeetingOpen] = useState(false);
+  const callsEnabled = useCallsEnabled();
+  const qc = useQueryClient();
   const { data, isLoading, isError, error, refetch, isRefetching } = useConversations(myEmail);
   const toggleStar = useToggleStarred(myEmail);
   const toggleArchive = useToggleArchived(myEmail);
@@ -238,6 +253,19 @@ export default function MessengerScreen() {
           Icon={MessageCircle}
           right={
             canCreate ? (
+              <View style={{ flexDirection: "row", gap: 8 }}>
+              {callsEnabled ? (
+                <Pressable
+                  onPress={() => setMeetingOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Zaplanuj spotkanie"
+                  hitSlop={8}
+                  className="active:opacity-70"
+                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
+                >
+                  <CalendarPlus size={18} color="#2A2312" strokeWidth={2.2} />
+                </Pressable>
+              ) : null}
               <Pressable
                 onPress={() => router.push("/(app)/messenger/new")}
                 accessibilityRole="button"
@@ -255,9 +283,24 @@ export default function MessengerScreen() {
               >
                 <SquarePen size={18} color="#ffffff" strokeWidth={2.2} />
               </Pressable>
+              </View>
             ) : null
           }
         />
+
+        {/* „Zaplanuj spotkanie” (jak web) — po zapisaniu otwieramy rozmowę spotkania. */}
+        {meetingOpen ? (
+          <MeetingSheet
+            visible
+            myEmail={user?.email ?? null}
+            onClose={() => setMeetingOpen(false)}
+            onSaved={(m) => {
+              setMeetingOpen(false);
+              void qc.invalidateQueries({ queryKey: ["conversations"] });
+              router.push({ pathname: "/(app)/messenger/[conversationId]", params: { conversationId: m.conversation_id } });
+            }}
+          />
+        ) : null}
 
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <View

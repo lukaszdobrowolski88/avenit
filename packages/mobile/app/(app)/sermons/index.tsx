@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { ChevronRight, Headphones, Podcast, PlaySquare, Quote, Search, User, X } from 'lucide-react-native';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
-import { useSermons, type Sermon } from '../../../src/features/sermons/api';
+import { useActiveSeriesNames, useSermons, type Sermon } from '../../../src/features/sermons/api';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { B, Monogram } from '../../../src/components/ui/brand';
 import { friendlyError } from '../../../src/lib/errors';
@@ -109,11 +109,13 @@ export default function SermonsScreen() {
   const [search, setSearch] = useState('');
   const [series, setSeries] = useState<string | null>(null);
 
+  // Aktywne serie nauczania + serie już przypisane do kazań (jak web SermonsTab).
+  const seriesNames = useActiveSeriesNames();
   const allSeries = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(seriesNames.data ?? []);
     for (const s of (data ?? []) as Sermon[]) if (s.series) set.add(s.series);
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'pl'));
-  }, [data]);
+  }, [data, seriesNames.data]);
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();

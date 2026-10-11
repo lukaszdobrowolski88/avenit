@@ -100,10 +100,12 @@ export function matchesFilter(
   return true;
 }
 
-export type SectionKey = "pinned" | "announcement" | "direct" | "group" | "ministry";
-export const SECTION_ORDER: SectionKey[] = ["pinned", "announcement", "direct", "group", "ministry"];
+export type SectionKey = "pinned" | "meeting" | "announcement" | "direct" | "group" | "ministry";
+export const SECTION_ORDER: SectionKey[] = ["pinned", "meeting", "announcement", "direct", "group", "ministry"];
 export const SECTION_TITLES: Record<SectionKey, string> = {
   pinned: "Przypięte",
+  // Spotkania online (rozmowy type='meeting', migracja 098) — jak web.
+  meeting: "Spotkania",
   announcement: "Ogłoszenia",
   direct: "Prywatne",
   group: "Grupy",

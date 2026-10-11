@@ -26,6 +26,8 @@ export interface AgendaEvent {
   programId: number | null;
   campusId: number | null;
   isMine: boolean;
+  // Forma (migracja 099): stacjonarne / online / hybrydowe — online ma spotkanie audio/wideo.
+  format?: 'in_person' | 'online' | 'hybrid';
   // Moja rola na tym wydarzeniu (grafik), gdy służę.
   myRole: string | null;
   // Wpis-zadanie (element tablicy z terminem) zamiast wydarzenia — inny wygląd, stuknięcie
@@ -73,7 +75,7 @@ const isSoftError = (error: unknown) => {
 };
 
 export const EVENT_COLUMNS =
-  'id, title, description, date, time, end_time, end_date, location, module_key, event_type, program_id, campus_id';
+  'id, title, description, date, time, end_time, end_date, location, module_key, event_type, program_id, campus_id, format';
 
 export const toAgendaEvent = (row: any): AgendaEvent | null => {
   const ymd = ymdOf(row.date);
@@ -96,6 +98,7 @@ export const toAgendaEvent = (row: any): AgendaEvent | null => {
     programId: row.program_id ?? null,
     campusId: row.campus_id ?? null,
     isMine: false,
+    format: row.format === 'online' || row.format === 'hybrid' ? row.format : 'in_person',
     myRole: null,
   };
 };

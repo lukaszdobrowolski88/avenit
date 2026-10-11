@@ -69,6 +69,8 @@ import {
 } from '../../../src/features/calendar/event-detail';
 import { addToPhoneCalendar } from '../../../src/features/calendar/add-to-calendar';
 import { NewCalendarEventModal } from '../../../src/features/calendar/components/NewCalendarEventModal';
+import { OnlineMeetingCard, isOnlineFormat } from '../../../src/features/calendar/components/EventFormat';
+import { EventTasksSection } from '../../../src/features/calendar/components/EventTasksSection';
 import { cap, isOngoing, isOver, relativeDay, timeRange, useCalendarLabel } from '../../../src/features/calendar/meta';
 
 // Pełny widok wydarzenia (jak strona wydarzenia na webie): termin i miejsce, szybkie akcje,
@@ -246,6 +248,8 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
   // Program: podgląd planu; z prawem edycji wydarzenia także gdy go brak (utwórz / wybierz).
   const showProgram = d.sections.program && (!!d.program || canEdit);
   const showServices = d.sections.services && d.hasServiceConfig;
+  // Zadania wydarzenia (board_items.event_id) — domyślnie włączone jak na webie (stary cache bez klucza też).
+  const showTasks = d.sections.tasks !== false;
   const files = [...d.attachments, ...d.materials];
   const showFiles = files.length > 0;
   const showDetails = !!d.details || d.fields.length > 0 || !!d.link;
@@ -276,13 +280,14 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
     ...(showDetails ? [{ key: 'details', label: 'Szczegóły' }] : []),
     ...(showProgram ? [{ key: 'program', label: 'Program' }] : []),
     ...(showServices ? [{ key: 'services', label: 'Służby' }] : []),
+    ...(showTasks ? [{ key: 'tasks', label: 'Zadania' }] : []),
     ...(showFiles ? [{ key: 'files', label: 'Materiały' }] : []),
     ...d.customTabs.map((t) => ({ key: `tab-${t.id}`, label: t.label })),
   ];
 
   const actions: { key: string; Icon: LucideIcon; label: string; onPress: () => void }[] = [
     ...(!over ? [{ key: 'cal', Icon: CalendarPlus, label: 'Do kalendarza', onPress: () => addToPhoneCalendar(ev, d.details || null) }] : []),
-    ...(ev.location ? [{ key: 'map', Icon: Navigation, label: 'Trasa', onPress: () => openMaps(ev.location!) }] : []),
+    ...(ev.location && ev.format !== 'online' ? [{ key: 'map', Icon: Navigation, label: 'Trasa', onPress: () => openMaps(ev.location!) }] : []),
     { key: 'share', Icon: Share2, label: 'Udostępnij', onPress: share },
     ...(canEdit ? [{ key: 'edit', Icon: Pencil, label: 'Edytuj', onPress: () => setEditing(true) }] : []),
   ];
@@ -340,9 +345,10 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
               <Chip tone={live ? 'kurkuma' : 'dark'}>{live ? 'Trwa teraz' : over ? 'Zakończone' : relativeDay(ev.startsAt, now)}</Chip>
               {mine ? <Chip tone="dark">{over ? 'Byłeś/aś zapisany/a' : 'Będziesz'}</Chip> : null}
+              {isOnlineFormat(ev.format) ? <Chip tone="dark">{ev.format === 'hybrid' ? 'Hybrydowe' : 'Online'}</Chip> : null}
             </View>
 
-            {ev.location ? (
+            {ev.location && ev.format !== 'online' ? (
               <Pressable
                 onPress={() => openMaps(ev.location!)}
                 className="active:opacity-70"
@@ -382,6 +388,12 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
               </Pressable>
             ))}
           </View>
+
+          {isOnlineFormat(ev.format) && !over ? (
+            <View style={{ marginTop: 12 }}>
+              <OnlineMeetingCard ev={ev} canManage={canEdit} wideAudience={d.wideAudience} />
+            </View>
+          ) : null}
 
           {showMyService ? (
             <MyServiceCard assignments={d.myAssignments} fallbackRole={ev.myRole} over={over} eventId={ev.eventId} />
@@ -488,6 +500,18 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
             </View>
           ) : null}
 
+          {showTasks ? (
+            <View onLayout={mark('tasks')}>
+              <SectionLabel>Zadania</SectionLabel>
+              <EventTasksSection
+                eventId={ev.eventId}
+                eventDate={format(ev.startsAt, 'yyyy-MM-dd')}
+                moduleKey={ev.moduleKey}
+                me={{ email, name: myName }}
+              />
+            </View>
+          ) : null}
+
           {showFiles ? (
             <View onLayout={mark('files')}>
               <SectionLabel count={files.length}>Materiały</SectionLabel>
@@ -549,6 +573,7 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
             time: ev.allDay ? null : hm(ev.startsAt),
             endTime: ev.endsAt && !ev.allDay ? hm(ev.endsAt) : null,
             location: ev.location,
+            format: ev.format ?? 'in_person',
             description: d.raw.description,
             hasDetailsHtml: d.raw.hasDetailsHtml,
           }}
