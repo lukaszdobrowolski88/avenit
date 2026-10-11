@@ -35,6 +35,7 @@ import { NEW_OPTION, buildAreaOptions, projectOptions, projectById, nameTaken } 
 import { REPORT_SECTIONS, MAIL_SECTION_KEYS, defaultSections, loadSections, saveSections, enabledKeys, NONE, EMPTY_REPORT_EXCLUDE, applyReportExclusions, hasExclusions, describeExclusions, loadExclusions, saveExclusions } from './finance/reportSections';
 import ExcludePicker from './finance/ExcludePicker';
 import ReportExportModal from './finance/ReportExportModal';
+import BudgetExpenseTable from './finance/BudgetExpenseTable';
 
 
 
@@ -187,7 +188,6 @@ const FinanceModule = () => {
   const closeExpenseModal = () => { if (saving) return; setShowExpenseModal(false); setExpenseForm(EMPTY_EXPENSE); setExpenseOffBudget(false); setFormErrors({}); };
 
   const [uploadingFile, setUploadingFile] = useState(false);
-  const [expandedBudgetItems, setExpandedBudgetItems] = useState({}); // For expandable expense lists
 
 
   // Filtry dla wpływów
@@ -1234,11 +1234,6 @@ const FinanceModule = () => {
   // Realizacja pozycji = zatwierdzone/opłacone wydatki tej służby z tym opisem (bez wielkości liter/spacji).
   const calculateRealization = (category, description) => realizationFor({ category, description }, expenseTransactions);
 
-  const getProgressBarColor = (percentage) => {
-    if (percentage < 80) return 'from-green-500 to-green-600';
-    if (percentage <= 100) return 'from-yellow-500 to-yellow-600';
-    return 'from-red-500 to-red-600';
-  };
 
   // Filtrowanie wpływów
   const filteredIncomeTransactions = incomeTransactions.filter(transaction => {
@@ -1317,7 +1312,7 @@ const FinanceModule = () => {
     if (!hasAny) return null;
     return (
       <div className="flex flex-wrap items-center gap-1 mt-1">
-        {showArea && item.category && <StatusPill color={STATUS_COLORS.neutral}>{item.category}</StatusPill>}
+        {showArea && item.category && <StatusPill color={STATUS_COLORS.neutral}>{areaLabel(item.category)}</StatusPill>}
         {item.cost_category && budgetGroupBy !== 'cost_category' && <StatusPill color={categoryColor(item.cost_category)}>{item.cost_category}</StatusPill>}
         {proj && budgetGroupBy !== 'project' && <span className="px-1.5 py-0.5 rounded-full text-[11px] font-medium flex items-center gap-1" style={{ background: `${proj.color || '#6b7280'}22`, color: proj.color || '#6b7280' }}><FolderKanban size={10} />{proj.name}</span>}
         <TagChips tags={item.tags} colorOf={tagColor} />
@@ -1522,7 +1517,7 @@ const FinanceModule = () => {
                 <div className="flex items-center gap-2 font-semibold text-red-700 dark:text-red-300 mb-1"><AlertTriangle size={18} /> {tr('Przekroczony budżet')} ({over.length})</div>
                 <ul className="text-sm text-red-700/90 dark:text-red-300/90 list-disc pl-6">
                   {over.slice(0, 6).map((it) => (
-                    <li key={it.id}>{it.category} — {it.description}: {tr('plan')} {fmtMoney(it.planned_amount)}, {tr('wydano')} {fmtMoney(calculateRealization(it.category, it.description))}</li>
+                    <li key={it.id}>{areaLabel(it.category)} — {it.description}: {tr('plan')} {fmtMoney(it.planned_amount)}, {tr('wydano')} {fmtMoney(calculateRealization(it.category, it.description))}</li>
                   ))}
                 </ul>
               </div>
@@ -1539,296 +1534,20 @@ const FinanceModule = () => {
               action={<Button onClick={openCreateBudget}><Plus size={16} /> {tr('Dodaj pozycję budżetową')}</Button>}
             />
           ) : expenseBudgetItems.length === 0 ? null : (
-            <>
-            {/* Telefon: karty zamiast szerokiej tabeli — plan, wydano i pozostało zawsze na ekranie. */}
-            <div className="sm:hidden space-y-2">
-              <div className="text-sm font-bold text-red-700 dark:text-red-300 flex items-center gap-2 px-1"><ArrowDownRight size={16} /> {tr('Planowane wydatki')}</div>
-              {expenseBudgetItems.map((item) => {
-                const planned = num(item.planned_amount);
-                const realization = calculateRealization(item.category, item.description);
-                const pct = planned > 0 ? (realization / planned) * 100 : 0;
-                const remaining = planned - realization;
-                return (
-                  <div key={item.id} className="rounded-2xl border border-gray-200 dark:border-gray-700 p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{budgetGroupBy === 'area' ? item.category : budgetGroupKey(item)}</div>
-                        {item.description && <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{item.description}</div>}
-                        {itemMeta(item, budgetGroupBy !== 'area')}
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <button onClick={() => openEditBudget(item)} className="p-2 text-gray-500 dark:text-gray-400 rounded-lg" aria-label={tr('Edytuj pozycję {name}', { name: item.category })}><Edit2 size={16} /></button>
-                        <button onClick={() => deleteBudgetItem(item.id)} className="p-2 text-red-600 dark:text-red-400 rounded-lg" aria-label={tr('Usuń pozycję {name}', { name: item.category })}><Trash2 size={16} /></button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-                      <div><div className="text-gray-500 dark:text-gray-400">{tr('Plan')}</div><div className="font-semibold text-gray-900 dark:text-white tabular-nums">{fmtMoney(planned)}</div></div>
-                      <div><div className="text-gray-500 dark:text-gray-400">{tr('Wydano')}</div><div className="font-semibold text-gray-900 dark:text-white tabular-nums">{fmtMoney(realization)}</div></div>
-                      <div className="text-right"><div className="text-gray-500 dark:text-gray-400">{t('Pozostało')}</div><div className={`font-semibold tabular-nums ${remaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(remaining)}</div></div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2"><div className={`h-2 rounded-full bg-gradient-to-r ${getProgressBarColor(pct)}`} style={{ width: `${Math.min(pct, 100)}%` }} /></div>
-                      <span className="text-xs font-semibold tabular-nums text-gray-700 dark:text-gray-200">{fmtPct(pct)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="hidden sm:block rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-4 py-2.5 bg-red-50 dark:bg-red-900/10 text-sm font-bold text-red-700 dark:text-red-300 flex items-center gap-2"><ArrowDownRight size={16} /> {tr('Planowane wydatki')}</div>
-              <DataTable flush>
-                <THead>
-                  <tr>
-                    <TH>{budgetGroupLabel}</TH>
-                    <TH>{t('Opis kosztu')}</TH>
-                    <TH align="right">{tr('Plan (zł)')}</TH>
-                    <TH align="right">{tr('Realizacja (zł)')}</TH>
-                    <TH align="center">{tr('% Realizacji')}</TH>
-                    <TH align="right">{t('Pozostało')}</TH>
-                    <TH align="center"><span className="sr-only">{t('Akcje')}</span></TH>
-                  </tr>
-                </THead>
-                <tbody>
-                  {(() => {
-                    // Group items by category
-                    const groupedItems = expenseBudgetItems.reduce((acc, item) => {
-                      const key = budgetGroupKey(item);
-                      if (!acc[key]) {
-                        acc[key] = [];
-                      }
-                      acc[key].push(item);
-                      return acc;
-                    }, {});
-
-                    let grandTotalPlanned = 0;
-                    let grandTotalRealization = 0;
-                    let grandTotalRemaining = 0;
-
-                    const rows = [];
-
-                    Object.keys(groupedItems).forEach((category) => {
-                      const items = groupedItems[category];
-                      let categoryTotalPlanned = 0;
-                      let categoryTotalRealization = 0;
-                      let categoryTotalRemaining = 0;
-
-                      // Calculate total rowspan including expanded rows
-                      const totalRowSpan = items.reduce((sum, item) => {
-                        return sum + 1 + (expandedBudgetItems[`${item.id}`] ? 1 : 0);
-                      }, 0);
-
-                      items.forEach((item, itemIndex) => {
-                        const planned = num(item.planned_amount);
-                        const realization = calculateRealization(item.category, item.description);
-                        const percentage = planned > 0 ? (realization / planned) * 100 : 0;
-                        const remaining = planned - realization;
-
-                        categoryTotalPlanned += planned;
-                        categoryTotalRealization += realization;
-                        categoryTotalRemaining += remaining;
-
-                        rows.push(
-                          <TR key={item.id}>
-                            {itemIndex === 0 && (
-                              <TD
-                                className="font-semibold text-gray-900 dark:text-white"
-                                rowSpan={totalRowSpan}
-                              >
-                                {category}
-                              </TD>
-                            )}
-                            <TD muted>{item.description}{itemMeta(item, budgetGroupBy !== 'area')}</TD>
-                            <TD align="right" numeric className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1.5 justify-end">
-                                {fmtMoney(planned)}
-                                {itemChanges(item.id).length > 0 && (
-                                  <button onClick={() => setChangeItem(itemChanges(item.id))} title={tr('Kwota zmieniona — pokaż historię')} aria-label={tr('Kwota zmieniona — pokaż historię')} className="text-amber-700 hover:text-amber-800 dark:text-amber-400">
-                                    <Clock size={13} />
-                                  </button>
-                                )}
-                              </span>
-                            </TD>
-                            <TD
-                              align="right"
-                              numeric
-                              className="font-medium text-gray-900 dark:text-white whitespace-nowrap cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
-                              onClick={() => {
-                                const key = `${item.id}`;
-                                setExpandedBudgetItems(prev => ({
-                                  ...prev,
-                                  [key]: !prev[key]
-                                }));
-                              }}
-                            >
-                              {fmtMoney(realization)}
-                              {expandedBudgetItems[`${item.id}`] ?
-                                <ChevronUp size={16} className="inline ml-1" /> :
-                                <ChevronDown size={16} className="inline ml-1" />
-                              }
-                            </TD>
-                            <TD>
-                              <div className="space-y-2">
-                                <div className="text-center font-semibold tabular-nums text-gray-900 dark:text-white">
-                                  {fmtPct(percentage)}
-                                </div>
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                                  <div
-                                    className={`h-2.5 rounded-full bg-gradient-to-r ${getProgressBarColor(percentage)} transition-all`}
-                                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            </TD>
-                            <TD align="right" numeric className={`font-semibold whitespace-nowrap ${remaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                              {fmtMoney(remaining)}
-                            </TD>
-                            <TD align="center">
-                              <div className="flex justify-center gap-1 opacity-60 group-hover/row:opacity-100 focus-within:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => openEditBudget(item)}
-                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-                                  title={tr('Edytuj')}
-                                  aria-label={tr('Edytuj pozycję {name}', { name: item.description || item.category })}
-                                >
-                                  <Edit2 size={16} />
-                                </button>
-                                <button
-                                  onClick={() => deleteBudgetItem(item.id)}
-                                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                                  title={tr('Usuń')}
-                                  aria-label={tr('Usuń pozycję {name}', { name: item.description || item.category })}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </TD>
-                          </TR>
-                        );
-
-                        // Add expandable expense list row
-                        if (expandedBudgetItems[`${item.id}`]) {
-                          const categoryExpenses = expenseTransactions.filter((exp) => matchesBudgetItem(exp, item));
-
-                          rows.push(
-                            <TR key={`expenses-${item.id}`} className="bg-gray-50/70 dark:bg-gray-800/40">
-                              <TD colSpan={7}>
-                                {categoryExpenses.length > 0 ? (
-                                  <div className="space-y-2">
-                                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                      {tr('Wydatki:')} {item.category} - {item.description}
-                                    </p>
-                                    <div className="space-y-1">
-                                      {categoryExpenses.map((expense) => (
-                                        <div
-                                          key={expense.id}
-                                          className="grid grid-cols-5 gap-3 text-sm py-2 px-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
-                                        >
-                                          <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{tr('Data')}</span>
-                                            <span className="text-gray-900 dark:text-white">
-                                              {fmtDate(expense.payment_date)}
-                                            </span>
-                                          </div>
-                                          <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kontrahent')}</span>
-                                            <span className="text-gray-900 dark:text-white">{expense.contractor}</span>
-                                          </div>
-                                          <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kwota')}</span>
-                                            <span className="font-bold text-gray-900 dark:text-white">
-                                              {fmtMoney(expense.amount)}
-                                            </span>
-                                            {!isCountedExpense(expense) && (
-                                              <span className="text-[11px] text-gray-500 dark:text-gray-400">{tr((EXPENSE_STATUS[expense.status] || {}).label || expense.status)} · {tr('nie wliczony')}</span>
-                                            )}
-                                          </div>
-                                          <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Szczegółowy opis')}</span>
-                                            <span className="text-gray-900 dark:text-white text-xs">{expense.detailed_description || '-'}</span>
-                                          </div>
-                                          <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Odpowiedzialny')}</span>
-                                            <span className="text-gray-900 dark:text-white">{expense.responsible_person}</span>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
-                                      <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                        {tr('Suma:')} {fmtMoney(categoryExpenses.filter(isCountedExpense).reduce((sum, exp) => sum + num(exp.amount), 0))}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
-                                    {tr('Brak wydatków w tej pozycji budżetu')}
-                                  </p>
-                                )}
-                              </TD>
-                            </TR>
-                          );
-                        }
-                      });
-
-                      grandTotalPlanned += categoryTotalPlanned;
-                      grandTotalRealization += categoryTotalRealization;
-                      grandTotalRemaining += categoryTotalRemaining;
-
-                      const categoryPercentage = categoryTotalPlanned > 0 ? (categoryTotalRealization / categoryTotalPlanned) * 100 : 0;
-
-                      // Subtotal row for this category
-                      rows.push(
-                        <TR key={`subtotal-${category}`} className="bg-gray-50/70 dark:bg-gray-800/40 font-semibold">
-                          <TD className="text-gray-900 dark:text-white" colSpan={2}>
-                            {tr('Podsumowanie:')} {category}
-                          </TD>
-                          <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                            {fmtMoney(categoryTotalPlanned)}
-                          </TD>
-                          <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                            {fmtMoney(categoryTotalRealization)}
-                          </TD>
-                          <TD align="center" numeric className="text-gray-900 dark:text-white">
-                            {fmtPct(categoryPercentage)}
-                          </TD>
-                          <TD align="right" numeric className={`whitespace-nowrap ${categoryTotalRemaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                            {fmtMoney(categoryTotalRemaining)}
-                          </TD>
-                          <TD />
-                        </TR>
-                      );
-                    });
-
-                    const grandPercentage = grandTotalPlanned > 0 ? (grandTotalRealization / grandTotalPlanned) * 100 : 0;
-
-                    // Grand total row
-                    rows.push(
-                      <TR key="grand-total" className="bg-gray-100/70 dark:bg-gray-700/40 font-bold">
-                        <TD className="text-gray-900 dark:text-white" colSpan={2}>
-                          {tr('SUMA CAŁKOWITA')}
-                        </TD>
-                        <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                          {fmtMoney(grandTotalPlanned)}
-                        </TD>
-                        <TD align="right" numeric className="text-gray-900 dark:text-white whitespace-nowrap">
-                          {fmtMoney(grandTotalRealization)}
-                        </TD>
-                        <TD align="center" numeric className="text-gray-900 dark:text-white">
-                          {fmtPct(grandPercentage)}
-                        </TD>
-                        <TD align="right" numeric className={`whitespace-nowrap ${grandTotalRemaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                          {fmtMoney(grandTotalRemaining)}
-                        </TD>
-                        <TD />
-                      </TR>
-                    );
-
-                    return rows;
-                  })()}
-                </tbody>
-              </DataTable>
-            </div>
-            </>
+            <BudgetExpenseTable
+              items={expenseBudgetItems}
+              groupKey={budgetGroupKey}
+              groupLabel={(k) => (budgetGroupBy === 'area' ? areaLabel(k) : k)}
+              columnLabel={budgetGroupLabel}
+              realizationOf={(it) => calculateRealization(it.category, it.description)}
+              expensesOf={(it) => expenseTransactions.filter((exp) => matchesBudgetItem(exp, it))}
+              renderMeta={(it) => itemMeta(it, budgetGroupBy !== 'area')}
+              onEdit={openEditBudget}
+              onDelete={deleteBudgetItem}
+              changesOf={itemChanges}
+              onShowChanges={setChangeItem}
+              statusLabel={(e) => tr((EXPENSE_STATUS[e.status] || {}).label || e.status)}
+            />
           )}
 
           {/* Propozycje budżetu od służb */}
