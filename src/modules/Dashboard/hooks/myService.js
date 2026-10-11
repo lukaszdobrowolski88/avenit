@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { isEventOver } from '../../../lib/eventTime';
 
 // „Moja służba” na Pulpicie — z grafiku na WYDARZENIACH (od migracji 055):
 //   • events.assignments[team][field_key] = CSV imion (tu szukamy mojego imienia),
@@ -38,11 +39,12 @@ export async function fetchMyEventService({ email, range, withCampusFilter, limi
   const lower = email.toLowerCase();
 
   let evQuery = withCampusFilter(
-    supabase.from('events').select('id, title, date, time, module_key, assignments')
+    supabase.from('events').select('id, title, date, time, end_time, end_date, module_key, assignments')
   );
+  // Dzisiejsze wydarzenie po zakończeniu przechodzi z „Nadchodzące” do „Historia”.
   evQuery = range === 'upcoming'
     ? evQuery.gte('date', today).order('date', { ascending: true }).limit(80)
-    : evQuery.lt('date', today).order('date', { ascending: false }).limit(60);
+    : evQuery.lte('date', today).order('date', { ascending: false }).limit(60);
 
   const [profileRes, evRes, saRes, meta] = await Promise.all([
     supabase.from('app_users').select('full_name').eq('email', email).maybeSingle(),
@@ -66,7 +68,8 @@ export async function fetchMyEventService({ email, range, withCampusFilter, limi
   if (!myNames.size) myNames.add(lower);
 
   const items = [];
-  for (const ev of evRes.data || []) {
+  const evs = (evRes.data || []).filter((ev) => (range === 'upcoming' ? !isEventOver(ev) : isEventOver(ev)));
+  for (const ev of evs) {
     const asg = parse(ev.assignments) || {};
     const sa = saByEvent.get(String(ev.id)) || [];
     const roles = new Map(); // team|role -> { category, role, status }

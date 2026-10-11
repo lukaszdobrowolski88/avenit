@@ -4,6 +4,7 @@ import { ArrowUpRight, MapPin, CalendarDays, Video } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr, appLocale } from '../../../i18n';
 import { hasPlace, isOnlineFormat, joinWindowOpen, formatLabel } from '../../Events/eventFormat';
+import { isEventOver } from '../../../lib/eventTime';
 
 // Pulpit w motywie „Avenit” — to samo co karta „Najbliższe” i liczniki w aplikacji mobilnej
 // (NextUpCard / Greeting): karta-bohater w jasnej kurkumie z najbliższym wydarzeniem i ciemna
@@ -46,8 +47,9 @@ export default function BrandHero({ upcomingMinistry = [], stats = {} }) {
       .gte('date', ymd(new Date()))
       .order('date', { ascending: true })
       .order('time', { ascending: true })
-      .limit(1)
-      .then(({ data }) => { if (active) setNext(data?.[0] || null); })
+      .limit(10)
+      // Dzisiejsze, które już się skończyły (np. nabożeństwo 11:00 wieczorem) — pomijamy.
+      .then(({ data }) => { if (active) setNext((data || []).find((e) => !isEventOver(e)) || null); })
       .catch(() => { if (active) setNext(null); });
     return () => { active = false; };
   }, []);

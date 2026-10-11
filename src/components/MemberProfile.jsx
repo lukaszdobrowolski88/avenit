@@ -4,6 +4,7 @@ import {
   CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote, CalendarCheck, HeartHandshake,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { isEventOver, localYmd } from '../lib/eventTime';
 import { openProtectedFile } from '../lib/protectedFiles';
 import { tr, appLocale } from '../i18n';
 import { plural } from '../modules/HomeGroups/homeGroupUtils';
@@ -103,14 +104,14 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
           .eq('user_email', member.email);
         const ids = (regs || []).map((r) => r.event_id);
         if (!ids.length) { if (active) setEvents([]); return; }
-        const today = new Date().toISOString().split('T')[0];
         const { data: evs } = await supabase
           .from('events')
-          .select('id, title, date, time')
+          .select('id, title, date, time, end_time, end_date')
           .in('id', ids)
-          .gte('date', today)
+          .gte('date', localYmd())
           .order('date', { ascending: true });
-        if (active) setEvents(evs || []);
+        // Bez dzisiejszych, które już się skończyły.
+        if (active) setEvents((evs || []).filter((e) => !isEventOver(e)));
       } catch (e) { console.error('MemberProfile events error:', e); }
     })();
     return () => { active = false; };
