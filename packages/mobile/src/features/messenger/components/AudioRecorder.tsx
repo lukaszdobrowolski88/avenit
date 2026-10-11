@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { showError } from "../../../lib/errors";
-import { Audio } from "expo-av";
+import {
+  createAudioPlayer,
+  requestRecordingPermissionsAsync,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorder,
+  useAudioRecorderState,
+  type AudioPlayer,
+} from "expo-audio";
 import { Mic, Pause, Play, Send, Square, X } from "lucide-react-native";
 
 interface Props {
@@ -25,7 +33,9 @@ const BARS = 18;
  *  - sending: spinner
  */
 export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  // Rejestrator żyje razem z komponentem (useAudioRecorder zwalnia go przy odmontowaniu).
+  const recorder = useAudioRecorder({ ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true });
+  const recState = useAudioRecorderState(recorder, 80);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -35,18 +45,20 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
     mime: string;
     durationMs: number;
   } | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [sound, setSound] = useState<AudioPlayer | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sending, setSending] = useState(false);
 
   const ringRef = useRef<number[]>(new Array(BARS).fill(4));
+  const recordingRef = useRef(false);
+  const durationRef = useRef(0);
 
   // Auto-start nagrywania.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const perm = await Audio.requestPermissionsAsync();
+        const perm = await requestRecordingPermissionsAsync();
         if (!perm.granted) {
           Alert.alert(
             "Brak uprawnień",
@@ -55,32 +67,11 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
           onCancel();
           return;
         }
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-        const rec = new Audio.Recording();
-        await rec.prepareToRecordAsync({
-          ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-          isMeteringEnabled: true,
-        });
-        rec.setOnRecordingStatusUpdate((status) => {
-          if (!status.isRecording) return;
-          setSeconds(Math.floor(status.durationMillis / 1000));
-          // metering: dB w zakresie ~ -160..0; 0 = clipping. Mapuj do 4..36.
-          const m = (status.metering ?? -100) as number;
-          const norm = Math.max(0, Math.min(1, (m + 60) / 60));
-          const h = Math.round(4 + norm * 32);
-          ringRef.current = [...ringRef.current.slice(1), h];
-          setBars(ringRef.current.slice());
-        });
-        rec.setProgressUpdateInterval(80);
-        await rec.startAsync();
-        if (cancelled) {
-          await rec.stopAndUnloadAsync().catch(() => undefined);
-          return;
-        }
-        setRecording(rec);
+        await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+        await recorder.prepareToRecordAsync();
+        if (cancelled) return;
+        recorder.record();
+        recordingRef.current = true;
         setIsRecording(true);
       } catch (e: any) {
         if (__DEV__) console.warn("[recorder] start failed", e);
@@ -93,32 +84,41 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
     };
   }, []);
 
-  // Cleanup
+  // Postęp i „fala” z meteringu (dB ~ -160..0; 0 = clipping) → słupki 4..36.
+  useEffect(() => {
+    if (!recState.isRecording) return;
+    durationRef.current = recState.durationMillis;
+    setSeconds(Math.floor(recState.durationMillis / 1000));
+    const m = recState.metering ?? -100;
+    const norm = Math.max(0, Math.min(1, (m + 60) / 60));
+    const h = Math.round(4 + norm * 32);
+    ringRef.current = [...ringRef.current.slice(1), h];
+    setBars(ringRef.current.slice());
+  }, [recState.isRecording, recState.durationMillis, recState.metering]);
+
+  // Sprzątanie: przerwane nagranie i odtwarzacz podglądu.
   useEffect(() => {
     return () => {
-      if (recording) {
-        recording.stopAndUnloadAsync().catch(() => undefined);
-      }
-      if (sound) {
-        sound.unloadAsync().catch(() => undefined);
-      }
+      if (recordingRef.current) recorder.stop().catch(() => undefined);
     };
-  }, [recording, sound]);
+  }, [recorder]);
+  useEffect(() => {
+    return () => {
+      sound?.remove();
+    };
+  }, [sound]);
 
   const stopAndPreview = async () => {
-    if (!recording) return;
+    if (!recordingRef.current) return;
     try {
-      await recording.stopAndUnloadAsync();
+      const durationMs = durationRef.current || seconds * 1000;
+      await recorder.stop();
+      recordingRef.current = false;
       // Zresetuj tryb audio po nagrywaniu — inaczej na iOS sesja zostaje w trybie
       // nagrywania i późniejsze odtwarzanie bywa ciche / „do ucha".
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-      }).catch(() => undefined);
-      const uri = recording.getURI();
-      const status = await recording.getStatusAsync();
-      const durationMs = status.durationMillis ?? seconds * 1000;
-      // expo-av nie wystawia mime'a — heurystyka na podstawie URI.
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => undefined);
+      const uri = recorder.uri;
+      // Rejestrator nie podaje mime'a — heurystyka na podstawie URI.
       const mime = uri?.endsWith(".m4a")
         ? "audio/mp4"
         : uri?.endsWith(".3gp")
@@ -130,19 +130,18 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
         setPreview({ uri, mime, durationMs });
       }
       setIsRecording(false);
-      setRecording(null);
     } catch (e: any) {
       showError("Nie udało się nagrywać", e, "Nie udało się zakończyć nagrywania. Spróbuj ponownie.");
     }
   };
 
-  const togglePause = async () => {
-    if (!recording) return;
+  const togglePause = () => {
+    if (!recordingRef.current) return;
     if (isPaused) {
-      await recording.startAsync();
+      recorder.record();
       setIsPaused(false);
     } else {
-      await recording.pauseAsync();
+      recorder.pause();
       setIsPaused(true);
     }
   };
@@ -150,20 +149,26 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
   const togglePlayback = async () => {
     if (!preview) return;
     if (isPlaying && sound) {
-      await sound.stopAsync().catch(() => undefined);
+      sound.pause();
       setIsPlaying(false);
       return;
     }
     if (sound) {
-      await sound.unloadAsync().catch(() => undefined);
+      await sound.seekTo(0).catch(() => undefined);
+      sound.play();
+      setIsPlaying(true);
+      return;
     }
-    const { sound: s } = await Audio.Sound.createAsync({ uri: preview.uri }, { shouldPlay: true });
-    s.setOnPlaybackStatusUpdate((st) => {
-      if ("didJustFinish" in st && st.didJustFinish) {
+    const p = createAudioPlayer({ uri: preview.uri });
+    p.addListener("playbackStatusUpdate", (st) => {
+      if (st.didJustFinish) {
         setIsPlaying(false);
+        p.pause();
+        p.seekTo(0).catch(() => undefined);
       }
     });
-    setSound(s);
+    p.play();
+    setSound(p);
     setIsPlaying(true);
   };
 
@@ -180,20 +185,11 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
   };
 
   const handleCancel = async () => {
-    if (recording) {
-      try {
-        await recording.stopAndUnloadAsync();
-      } catch {
-        // ignore
-      }
+    if (recordingRef.current) {
+      recordingRef.current = false;
+      await recorder.stop().catch(() => undefined);
     }
-    if (sound) {
-      try {
-        await sound.unloadAsync();
-      } catch {
-        // ignore
-      }
-    }
+    sound?.pause();
     onCancel();
   };
 

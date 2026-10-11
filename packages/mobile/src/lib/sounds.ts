@@ -1,33 +1,39 @@
-import { Audio } from 'expo-av';
+import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 
 // Dźwięk wysłania: miękki „szum wysłania” (filtrowany szum w górę, ~0,16 s; wybrany przez właściciela) + lekka wibracja.
-// Na iPhonie respektuje przełącznik wyciszenia (playsInSilentModeIOS domyślnie false).
+// Na iPhonie respektuje przełącznik wyciszenia (playsInSilentMode domyślnie false).
 // Błędy odtwarzania ignorujemy — dźwięk to dodatek, nie może psuć wysyłki.
-let sendSound: Audio.Sound | null = null;
-let loading: Promise<Audio.Sound | null> | null = null;
+let sendSound: AudioPlayer | null = null;
+
+// Odtwarzacz tworzony raz i trzymany przez całą sesję (createAudioPlayer nie zwalnia się sam).
+const makePlayer = (asset: number, volume: number): AudioPlayer | null => {
+  try {
+    const p = createAudioPlayer(asset);
+    p.volume = volume;
+    return p;
+  } catch {
+    return null;
+  }
+};
+
+// Od początku — ten sam dźwięk może grać kilka razy pod rząd.
+const replay = (p: AudioPlayer | null) => {
+  if (!p) return;
+  p.seekTo(0)
+    .catch(() => undefined)
+    .finally(() => p.play());
+};
 
 const loadSendSound = () => {
-  if (sendSound) return Promise.resolve(sendSound);
-  if (!loading) {
-    loading = Audio.Sound.createAsync(require('../../assets/sounds/send.wav'), { volume: 0.45 })
-      .then(({ sound }) => {
-        sendSound = sound;
-        return sound;
-      })
-      .catch(() => null)
-      .finally(() => {
-        loading = null;
-      });
-  }
-  return loading;
+  if (!sendSound) sendSound = makePlayer(require('../../assets/sounds/send.wav'), 0.45);
+  return sendSound;
 };
 
 export const playSendSound = async (): Promise<void> => {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
   try {
-    const sound = await loadSendSound();
-    await sound?.replayAsync();
+    replay(loadSendSound());
   } catch {
     // brak dźwięku — bez znaczenia dla wysyłki
   }
@@ -35,31 +41,19 @@ export const playSendSound = async (): Promise<void> => {
 
 // Wczytaj z wyprzedzeniem (wejście w rozmowę), żeby pierwszy dźwięk nie miał opóźnienia.
 export const preloadSendSound = () => {
-  loadSendSound().catch(() => undefined);
+  loadSendSound();
 };
 
 // ── Dźwięk przyjścia (aplikacja otwarta) ────────────────────────────────────────
 // Powiadomienie przy otwartej apce: zamiast dźwięku systemowego gramy własny (assets/sounds/
 // receive.wav), dobrany do dźwięku wysłania. Gdy osoba jest w tej samej rozmowie — tylko dźwięk,
 // bez banera (activeConversation ustawia ekran rozmowy).
-let receiveSound: Audio.Sound | null = null;
-let receiveLoading: Promise<Audio.Sound | null> | null = null;
+let receiveSound: AudioPlayer | null = null;
 let lastReceiveAt = 0;
 
 const loadReceiveSound = () => {
-  if (receiveSound) return Promise.resolve(receiveSound);
-  if (!receiveLoading) {
-    receiveLoading = Audio.Sound.createAsync(require('../../assets/sounds/receive.wav'), { volume: 0.5 })
-      .then(({ sound }) => {
-        receiveSound = sound;
-        return sound;
-      })
-      .catch(() => null)
-      .finally(() => {
-        receiveLoading = null;
-      });
-  }
-  return receiveLoading;
+  if (!receiveSound) receiveSound = makePlayer(require('../../assets/sounds/receive.wav'), 0.5);
+  return receiveSound;
 };
 
 export const playReceiveSound = async (): Promise<void> => {
@@ -68,8 +62,7 @@ export const playReceiveSound = async (): Promise<void> => {
   if (now - lastReceiveAt < 1500) return;
   lastReceiveAt = now;
   try {
-    const sound = await loadReceiveSound();
-    await sound?.replayAsync();
+    replay(loadReceiveSound());
   } catch {
     // bez dźwięku
   }

@@ -5,7 +5,6 @@
   },
   "build": {
     "base": {
-      "node": "20.18.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.avenit.pl",
         "EAS_PROJECT_ID": "5e740a70-96bb-4fbc-a00f-ecf4bea0b9df"
@@ -40,10 +39,7 @@
       "env": {
         "APP_VARIANT": "production"
       },
-      "autoIncrement": true,
-      "ios": {
-        "image": "macos-sequoia-15.6-xcode-26.2"
-      }
+      "autoIncrement": true
     }
   },
   "submit": {

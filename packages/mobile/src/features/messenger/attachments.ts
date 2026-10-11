@@ -116,7 +116,7 @@ export const uploadDocument = async (
 };
 
 /**
- * Upload nagrania głosowego (z expo-av Recording.getURI()) do bucketu i zwróć załącznik
+ * Upload nagrania głosowego (z expo-audio recorder.uri) do bucketu i zwróć załącznik
  * w tym samym kształcie co web (MessageInput.handleSendVoiceMessage): nazwa „Wiadomość głosowa”,
  * size = rozmiar pliku w bajtach, duration = długość w sekundach, isVoiceMessage = true.
  * (Starsze nagrania z telefonu niosły długość w ms w polu size — czyta je voiceDurationMs.)

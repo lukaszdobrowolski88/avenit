@@ -15,14 +15,14 @@ const suffix = isPreview ? '.preview' : isDev ? '.dev' : '';
 const config: ExpoConfig = {
   name: isPreview ? 'Avenit (preview)' : isDev ? 'Avenit (dev)' : 'Avenit',
   slug: 'avenit',
-  version: '1.0.0',
+  // 1.1.0 = Expo SDK 57 (nowy runtime natywny — OTA dla 1.0.x publikuje się osobno).
+  version: '1.1.0',
   orientation: 'portrait',
   scheme: ['avenit', 'schtomy'],
   icon: './assets/icon.png',
   // Aplikacja ma tylko jasny wygląd — systemowe wybieraki i okna też jasne (inaczej w trybie
   // ciemnym telefonu kółka daty/godziny i Alerty były ciemne na tle jasnej apki).
   userInterfaceStyle: 'light',
-  newArchEnabled: true,
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
@@ -131,21 +131,18 @@ const config: ExpoConfig = {
       },
     ],
     [
-      'expo-av',
+      'expo-audio',
       {
         microphonePermission: 'Avenit używa mikrofonu do nagrywania wiadomości głosowych w czacie.',
       },
     ],
-    // Xcode 26 + RN 0.76: łatka fmt (consteval) — patrz plugins/with-xcode26-fmt.js.
-    './plugins/with-xcode26-fmt',
     [
       'expo-build-properties',
       {
         android: {
-          kotlinVersion: '1.9.25',
           // Google Play od 31.08.2026 przyjmuje nowe apki i aktualizacje tylko z targetSdk 36
-          // (Android 16). Domyślnie RN 0.76 celuje w 34. Android 16 wymusza rysowanie pod paskami
-          // systemowymi (edge-to-edge) — ekrany biorą odstępy z useSafeAreaInsets.
+          // (Android 16). Android 16 wymusza rysowanie pod paskami systemowymi (edge-to-edge) —
+          // ekrany biorą odstępy z useSafeAreaInsets.
           compileSdkVersion: 36,
           targetSdkVersion: 36,
           buildToolsVersion: '36.0.0',
