@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 const DB = {
   budget_items: [
     { id: 'b1', year: new Date().getFullYear(), kind: 'expense', category: 'MediaTeam', description: 'Mikrofon', planned_amount: '2000.00', period_type: 'year' },
+    { id: 'b3', year: new Date().getFullYear(), kind: 'income', category: 'Darowizny', team_type: 'Darowizny', description: 'Zbiórki', planned_amount: '1000.00', period_type: 'year' },
     { id: 'b2', year: new Date().getFullYear(), kind: 'expense', category: 'Administracja', description: 'Czynsz za salę', planned_amount: '12000.00', period_type: 'year', cost_category: 'Czynsz', project_id: 'p1', tags: ['budynek'] },
   ],
   income_transactions: [
@@ -67,7 +68,7 @@ vi.mock('../components/ResponsiveTabs', () => ({
 }));
 vi.mock('./shared/MaterialsTab', () => ({ default: () => null }));
 vi.mock('./finance/ReportCharts', () => ({
-  IncomeExpenseBarChart: () => null, CashFlowAreaChart: () => null, CategoryDonut: () => null, YoYBars: () => null,
+  IncomeExpenseBarChart: () => null, CashFlowAreaChart: () => null, CategoryDonut: () => null, YoYBars: () => null, BucketTable: () => null,
 }));
 
 import FinanceModule from './FinanceModule';
@@ -164,4 +165,29 @@ describe('FinanceModule (dymny)', () => {
     fireEvent.click(screen.getByText('Uwzględnij wszystko'));
     await waitFor(() => expect(screen.queryAllByText(/Wyłączone z raportu/)).toHaveLength(0));
   });
+
+  it('okno „Pobierz / drukuj”: format, sekcje w grupach, bez sekcji nie da się pobrać', async () => {
+    renderModule();
+    clickTab('Raporty');
+    await waitFor(() => expect(screen.getByText('Raport finansowy')).toBeTruthy());
+    fireEvent.click(screen.getByText('Pobierz / drukuj'));
+    expect(await screen.findByText('Pobierz / drukuj raport')).toBeTruthy();
+    expect(screen.getByText('Orientacja strony')).toBeTruthy();
+    expect(screen.getByText('Listy transakcji')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Excel/ }));
+    expect(screen.queryByText('Orientacja strony')).toBeNull();
+    fireEvent.click(screen.getByText('Odznacz wszystko'));
+    const go = screen.getByRole('button', { name: /Pobierz \(0\)/ });
+    expect(go.disabled).toBe(true);
+  });
+
+  it('budżet: realizacja planowanych przychodów z wpływów bez wchodzenia w zakładkę Wpływy', async () => {
+    renderModule();
+    await waitFor(() => expect(screen.getAllByText('Zbiórki').length).toBeGreaterThan(0));
+    const row = screen.getAllByText('Zbiórki')[0].closest('tr');
+    // plan 1000, wpływy typu Darowizny = 700 → 70%
+    await waitFor(() => expect(row.textContent).toMatch(/700,00\s?zł/));
+    expect(row.textContent).toMatch(/70%/);
+  });
 });
+

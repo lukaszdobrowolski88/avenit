@@ -18,7 +18,7 @@ import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { computeRange, shiftRangeYears, MONTHS_PL, yearOptions } from './finance/reportRange';
 import { buildReportModel, toCsvBlob, toXlsxBlob, reportElToPdfBlob, printReportEl, blobToBase64, download, slugForRange } from './finance/reportExport';
-import { IncomeExpenseBarChart, CashFlowAreaChart, CategoryDonut, YoYBars } from './finance/ReportCharts';
+import { IncomeExpenseBarChart, CashFlowAreaChart, CategoryDonut, YoYBars, BucketTable } from './finance/ReportCharts';
 import { usePermissions } from '../contexts/PermissionsContext';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import { DateInput } from '../components/pickers';
@@ -34,6 +34,7 @@ import FinanceProjects from './finance/FinanceProjects';
 import { NEW_OPTION, buildAreaOptions, projectOptions, projectById, nameTaken } from './finance/dictionaries';
 import { REPORT_SECTIONS, MAIL_SECTION_KEYS, defaultSections, loadSections, saveSections, enabledKeys, NONE, EMPTY_REPORT_EXCLUDE, applyReportExclusions, hasExclusions, describeExclusions, loadExclusions, saveExclusions } from './finance/reportSections';
 import ExcludePicker from './finance/ExcludePicker';
+import ReportExportModal from './finance/ReportExportModal';
 
 
 
@@ -133,6 +134,8 @@ const FinanceModule = () => {
       } catch { setServiceOptions(FALLBACK_SERVICES); }
     })();
   }, []);
+  // Nazwa służby do wyświetlenia: team_type wbudowanego zespołu („małe Avenit”) → nazwa modułu z menu.
+  const areaLabel = (v) => serviceOptions.find((o) => o.value === v)?.label || v;
   const [incomeTransactions, setIncomeTransactions] = useState([]);
   const [expenseTransactions, setExpenseTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -423,7 +426,10 @@ const FinanceModule = () => {
   const [showSectionsMenu, setShowSectionsMenu] = useState(false);
   const setSection = (key, on) => setReportSections((prev) => { const next = { ...prev, [key]: on }; saveSections(next); return next; });
   const setAllSections = (next) => { setReportSections(next); saveSections(next); };
-  const sec = (key) => reportSections[key] !== false;
+  // Sekcje na czas generowania PDF/druku (okno „Pobierz / drukuj”) — inaczej te z widoku.
+  const [exportSections, setExportSections] = useState(null);
+  const activeSections = exportSections || reportSections;
+  const sec = (key) => activeSections[key] !== false;
   // Co wliczyć do raportu: odznaczone projekty / obszary / kategorie / tagi są wykluczane
   // (np. wszystkie projekty albo jeden, reszta zostaje). Zapamiętane w przeglądarce.
   const [reportExclude, setReportExcludeState] = useState(loadExclusions);
@@ -439,7 +445,7 @@ const FinanceModule = () => {
     const projIds = uniq([...projects.map((p) => p.id), ...allRows.map((r) => r.project_id)]);
     return {
       projects: [...projIds.map((id) => ({ value: id, label: projectById(projects, id)?.name || '—', color: projectById(projects, id)?.color })), none('(bez projektu)')],
-      areas: uniq([...buildAreaOptions(serviceOptions, areas).map((o) => o.value), ...expRows.map((r) => r.category)]).map((v) => ({ value: v, label: v })),
+      areas: uniq([...buildAreaOptions(serviceOptions, areas).map((o) => o.value), ...expRows.map((r) => r.category)]).map((v) => ({ value: v, label: areaLabel(v) })),
       costCategories: [...uniq([...expenseCategories.map((c) => c.name), ...expRows.map((r) => r.cost_category)]).map((v) => ({ value: v, label: v, color: categoryColor(v) })), none('(bez kategorii)')],
       incomeCategories: [...uniq([...incomeCategories.map((c) => c.name), ...incRows.map((r) => r.category)]).map((v) => ({ value: v, label: tr(v), color: categoryColor(v, 'income') })), none('(bez kategorii)')],
       tags: [...uniq([...tagPalette.map((t) => t.name), ...allRows.flatMap((r) => (Array.isArray(r.tags) ? r.tags : []))]).map((v) => ({ value: v, label: v, color: tagColor(v) })), none('(bez tagów)')],
@@ -447,7 +453,7 @@ const FinanceModule = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportIncome, reportExpense, reportBudget, projects, areas, serviceOptions, categories, tagPalette]);
   const reportFilterLabel = describeExclusions(reportExclude, {
-    tr, projectName: (id) => projectById(projects, id)?.name || '—',
+    tr, projectName: (id) => projectById(projects, id)?.name || '—', areaName: areaLabel,
     totals: Object.fromEntries(Object.entries(reportExcludeOptions).map(([d, o]) => [d, o.length])),
   });
 
@@ -457,7 +463,10 @@ const FinanceModule = () => {
       income: applyReportExclusions(reportIncome, reportExclude, 'income'),
       expense: applyReportExclusions(reportExpense, reportExclude, 'expense'),
       budget: applyReportExclusions(reportBudget, reportExclude, 'budget'),
-      expenseCategories, incomeCategories, projects,
+      expenseCategories, projects,
+      areaLabel,
+      // Wszystkie kategorie wpływów (także wyłączone) — po nich raport rozpoznaje organizacje.
+      incomeCategories: categories.filter((c) => c.kind === 'income'),
       // Porównanie r/r ma sens tylko dla całości (bez wykluczeń).
       prevIncome: hasExclusions(reportExclude) ? null : reportPrev.income,
       prevExpense: hasExclusions(reportExclude) ? null : reportPrev.expense,
@@ -465,38 +474,31 @@ const FinanceModule = () => {
     m.filterLabel = reportFilterLabel;
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportRange, reportIncome, reportExpense, reportBudget, categories, projects, reportPrev, reportExclude, reportFilterLabel]);
+  }, [reportRange, reportIncome, reportExpense, reportBudget, categories, projects, reportPrev, reportExclude, reportFilterLabel, serviceOptions]);
 
-  // ── Pobieranie raportu (CSV / XLSX / PDF) ────────────────────────────────
-  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
-  useEffect(() => {
-    if (!showDownloadMenu) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') setShowDownloadMenu(false); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [showDownloadMenu]);
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const doDownload = async (fmt) => {
-    setShowDownloadMenu(false);
+  // ── Pobieranie / druk raportu (okno: format, orientacja, sekcje) ─────────
+  // PDF i druk to zrzut widoku, więc na czas generowania podmieniamy sekcje na wybrane
+  // w oknie (exportSections), a potem wracamy do tego, co jest na ekranie.
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const doExport = async ({ format, orientation, sections }) => {
     const base = `raport-finansowy-${slugForRange(reportRange)}`;
+    setExporting(true);
     try {
-      if (fmt === 'csv') download(toCsvBlob(reportModel, reportSections), `${base}.csv`);
-      else if (fmt === 'xlsx') download(await toXlsxBlob(reportModel, reportSections), `${base}.xlsx`);
-      else if (fmt === 'pdf') {
+      if (format === 'csv') download(toCsvBlob(reportModel, sections), `${base}.csv`);
+      else if (format === 'xlsx') download(await toXlsxBlob(reportModel, sections), `${base}.xlsx`);
+      else {
+        setExportSections(sections);
+        // Dwie klatki + chwila na przeliczenie rozmiarów wykresów (ResponsiveContainer).
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await new Promise((r) => setTimeout(r, 350));
         if (!reportSectionRef.current) return;
-        setDownloadingPdf(true);
-        download(await reportElToPdfBlob(reportSectionRef.current), `${base}.pdf`);
+        if (format === 'print') await printReportEl(reportSectionRef.current, `${base}.pdf`, { orientation });
+        else download(await reportElToPdfBlob(reportSectionRef.current, { orientation }), `${base}.pdf`);
       }
+      setShowExportModal(false);
     } catch (e) { toast.error(tr('Błąd eksportu: ') + (e.message || e)); }
-    finally { setDownloadingPdf(false); }
-  };
-  const [printing, setPrinting] = useState(false);
-  const doPrint = async () => {
-    if (!reportSectionRef.current) return;
-    setPrinting(true);
-    try { await printReportEl(reportSectionRef.current, `raport-finansowy-${slugForRange(reportRange)}.pdf`); }
-    catch (e) { toast.error(tr('Błąd druku: ') + (e.message || e)); }
-    finally { setPrinting(false); }
+    finally { setExportSections(null); setExporting(false); }
   };
 
   // ── Raport finansowy mailem (na żądanie) ──────────────────────────────────
@@ -689,9 +691,10 @@ const FinanceModule = () => {
     }
   }, [activeTab, selectedYear, selectedCampusId]);
 
-  // Fetch income transactions
+  // Wpływy — także na Budżecie: realizacja planowanych przychodów liczy się z wpływów
+  // (wcześniej na Budżecie lista była pusta i realizacja przychodów zawsze 0 zł).
   useEffect(() => {
-    if (activeTab === 'income') {
+    if (activeTab === 'income' || activeTab === 'budget') {
       fetchIncomeTransactions();
     }
   }, [activeTab, selectedYear, selectedCampusId]);
@@ -2480,29 +2483,14 @@ const FinanceModule = () => {
                 )}
               </div>
               {canExport && (<>
-              <div className="relative">
-                <button onClick={() => setShowDownloadMenu((v) => !v)} disabled={downloadingPdf} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm disabled:opacity-60">
-                  <Download size={16} /> {downloadingPdf ? tr('Generowanie…') : tr('Pobierz')} <ChevronDown size={14} />
-                </button>
-                {showDownloadMenu && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowDownloadMenu(false)} />
-                    <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-20 py-1">
-                      <button onClick={() => doDownload('pdf')} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">PDF</button>
-                      <button onClick={() => doDownload('xlsx')} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Excel (.xlsx)</button>
-                      <button onClick={() => doDownload('csv')} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">CSV</button>
-                    </div>
-                  </>
-                )}
-              </div>
+              <button onClick={() => setShowExportModal(true)} disabled={exporting} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm disabled:opacity-60" title={tr('PDF, druk, Excel lub CSV — z wyborem, co ma się znaleźć w raporcie')}>
+                {exporting ? <Spinner size={14} /> : <Download size={16} />} {exporting ? tr('Generowanie…') : tr('Pobierz / drukuj')}
+              </button>
               <button onClick={() => setShowReportEmailModal(true)} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Wyślij raport mailem')}>
                 <Mail size={16} /> {tr('Wyślij raport')}
               </button>
               <button onClick={() => { setEditingScheduleId(null); setScheduleForm(emptySchedule); setShowScheduleModal(true); }} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Automatyczna wysyłka')}>
                 <CalendarClock size={16} /> {tr('Harmonogram')}{schedules.filter((s) => s.is_active !== false).length > 0 ? ` (${schedules.filter((s) => s.is_active !== false).length})` : ''}
-              </button>
-              <button onClick={doPrint} disabled={printing} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm disabled:opacity-60" title={tr('Drukuj / zapisz PDF')}>
-                <Printer size={16} /> {printing ? tr('Przygotowuję…') : tr('Drukuj')}
               </button>
               </>)}
             </div>
@@ -2626,6 +2614,7 @@ const FinanceModule = () => {
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-accent-primary" />{tr('Wpływy vs Wydatki')}</h3>
               <IncomeExpenseBarChart buckets={reportModel.buckets} tr={tr} />
+              <BucketTable buckets={reportModel.buckets} tr={tr} />
             </div>
             )}
 
@@ -2634,6 +2623,8 @@ const FinanceModule = () => {
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-accent-primary" />{tr('Przepływ gotówki (skumulowany)')}</h3>
               <CashFlowAreaChart buckets={reportModel.buckets} tr={tr} />
+              {/* Tabela okresów pokazujemy raz — pod wykresem wpływów/wydatków albo tu, gdy tamten wyłączony. */}
+              {!sec('incomeExpense') && <BucketTable buckets={reportModel.buckets} tr={tr} />}
               <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">{tr('Saldo na koniec okresu')}: <span className={`font-bold tabular-nums ${reportModel.totals.balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{fmtMoney(reportModel.buckets.at(-1)?.cumulative)}</span></div>
             </div>
             )}
@@ -2837,7 +2828,7 @@ const FinanceModule = () => {
                         <TR key={r.id}>
                           <TD numeric className="whitespace-nowrap">{fmtDate(r.date)}</TD>
                           <TD>{tr(r.type || 'Inne')}</TD>
-                          <TD muted>{r.source}<TagChips tags={r.tags} colorOf={tagColor} className="mt-1" /></TD>
+                          <TD muted>{tr(r.source)}<TagChips tags={r.tags} colorOf={tagColor} className="mt-1" /></TD>
                           <TD muted>{projectById(projects, r.project_id)?.name || ''}</TD>
                           <TD align="right" numeric className="font-semibold whitespace-nowrap">{fmtMoney(r.amount)}</TD>
                         </TR>
@@ -2868,7 +2859,7 @@ const FinanceModule = () => {
                 )}
               </div>
             )}
-            {enabledKeys(reportSections).length === 0 && (
+            {enabledKeys(activeSections).length === 0 && (
               <EmptyState icon={SlidersHorizontal} title={tr('Wszystkie sekcje raportu są wyłączone')} subtitle={tr('Włącz je przyciskiem „Sekcje”.')} />
             )}
           </div>
@@ -3026,6 +3017,16 @@ const FinanceModule = () => {
           </div>
         </div>
       </Modal>
+
+      <ReportExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        viewSections={reportSections}
+        rangeLabel={reportRange.label}
+        exclusionLabel={reportFilterLabel}
+        busy={exporting}
+        onGenerate={doExport}
+      />
 
       <Modal
         isOpen={showReportEmailModal}

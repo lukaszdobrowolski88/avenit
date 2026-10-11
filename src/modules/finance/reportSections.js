@@ -3,24 +3,25 @@
 // `mail: true` = sekcja ma odpowiednik w mailu (lib/finance-report.js na serwerze).
 
 export const REPORT_SECTIONS = [
-  { key: 'summary', label: 'Bilans i stan kont', mail: true },
-  { key: 'kpis', label: 'Wskaźniki (średnie, do zapłaty)' },
-  { key: 'incomeExpense', label: 'Wykres: wpływy vs wydatki' },
-  { key: 'cashflow', label: 'Wykres: przepływ gotówki' },
-  { key: 'byCostCategory', label: 'Wydatki wg kategorii', mail: true },
-  { key: 'byArea', label: 'Wydatki wg służby / obszaru', mail: true },
-  { key: 'byIncomeType', label: 'Wpływy wg kategorii', mail: true },
-  { key: 'byIncomeSource', label: 'Wpływy wg źródła' },
-  { key: 'byProject', label: 'Projekty', mail: true },
-  { key: 'byTag', label: 'Tagi', mail: true },
-  { key: 'topExpenses', label: 'Największe wydatki', mail: true },
-  { key: 'expenseStatus', label: 'Status wydatków' },
-  { key: 'budgetExecution', label: 'Realizacja budżetu', mail: true },
-  { key: 'unpaid', label: 'Nieopłacone zobowiązania', mail: true },
-  { key: 'yoy', label: 'Porównanie rok do roku' },
-  { key: 'incomeList', label: 'Lista wpływów', off: true },
-  { key: 'expenseList', label: 'Lista wydatków', off: true },
+  { key: 'summary', label: 'Bilans i stan kont', group: 'Podsumowanie', mail: true },
+  { key: 'kpis', label: 'Wskaźniki (średnie, do zapłaty)', group: 'Podsumowanie' },
+  { key: 'incomeExpense', label: 'Wykres: wpływy vs wydatki', group: 'Wykresy' },
+  { key: 'cashflow', label: 'Wykres: przepływ gotówki', group: 'Wykresy' },
+  { key: 'yoy', label: 'Porównanie rok do roku', group: 'Wykresy' },
+  { key: 'byCostCategory', label: 'Wydatki wg kategorii', group: 'Zestawienia', mail: true },
+  { key: 'byArea', label: 'Wydatki wg służby / obszaru', group: 'Zestawienia', mail: true },
+  { key: 'byIncomeType', label: 'Wpływy wg kategorii', group: 'Zestawienia', mail: true },
+  { key: 'byIncomeSource', label: 'Wpływy wg źródła', group: 'Zestawienia' },
+  { key: 'byProject', label: 'Projekty', group: 'Zestawienia', mail: true },
+  { key: 'byTag', label: 'Tagi', group: 'Zestawienia', mail: true },
+  { key: 'budgetExecution', label: 'Realizacja budżetu', group: 'Wydatki i budżet', mail: true },
+  { key: 'topExpenses', label: 'Największe wydatki', group: 'Wydatki i budżet', mail: true },
+  { key: 'expenseStatus', label: 'Status wydatków', group: 'Wydatki i budżet' },
+  { key: 'unpaid', label: 'Nieopłacone zobowiązania', group: 'Wydatki i budżet', mail: true },
+  { key: 'incomeList', label: 'Lista wpływów', group: 'Listy transakcji', off: true },
+  { key: 'expenseList', label: 'Lista wydatków', group: 'Listy transakcji', off: true },
 ];
+export const SECTION_GROUPS = ['Podsumowanie', 'Wykresy', 'Zestawienia', 'Wydatki i budżet', 'Listy transakcji'];
 
 export const MAIL_SECTION_KEYS = REPORT_SECTIONS.filter((s) => s.mail).map((s) => s.key);
 
@@ -88,14 +89,14 @@ export function applyReportExclusions(rows, ex, kind) {
 }
 
 /** Opis wykluczeń (po „Wyłączone z raportu:”) do nagłówka raportu, PDF, plików i maila. */
-export function describeExclusions(ex, { tr = (x) => x, projectName = (id) => id, totals = {} } = {}) {
+export function describeExclusions(ex, { tr = (x) => x, projectName = (id) => id, areaName = (v) => v, totals = {} } = {}) {
   if (!hasExclusions(ex)) return '';
   const LABEL = { projects: 'Projekty', areas: 'Służby / obszary', costCategories: 'Kategorie wydatków', incomeCategories: 'Kategorie wpływów', tags: 'Tagi' };
   const NONE_LABEL = { projects: '(bez projektu)', areas: '(bez obszaru)', costCategories: '(bez kategorii)', incomeCategories: '(bez kategorii)', tags: '(bez tagów)' };
   return EXCLUDE_DIMENSIONS.filter((d) => (ex[d] || []).length).map((d) => {
     const list = ex[d];
     if (totals[d] && list.length >= totals[d]) return `${tr(LABEL[d])}: ${tr('wyłączone')}`;
-    const names = list.map((v) => (v === NONE ? tr(NONE_LABEL[d]) : d === 'projects' ? projectName(v) : v));
+    const names = list.map((v) => (v === NONE ? tr(NONE_LABEL[d]) : d === 'projects' ? projectName(v) : d === 'areas' ? areaName(v) : v));
     return `${tr(LABEL[d])}: ${names.join(', ')}`;
   }).join(' · ');
 }
@@ -110,4 +111,25 @@ export function loadExclusions() {
 }
 export function saveExclusions(ex) {
   try { window.localStorage.setItem(EXCLUDE_KEY, JSON.stringify(ex)); } catch { /* ignoruj */ }
+}
+
+// Ostatnie ustawienia okna „Pobierz / drukuj” (format, orientacja, sekcje) — osobno od widoku.
+const EXPORT_KEY = 'finance.report.export.v1';
+export const EXPORT_FORMATS = ['pdf', 'print', 'xlsx', 'csv'];
+export function loadExportPrefs(viewSections) {
+  const base = { format: 'pdf', orientation: 'p', sections: { ...viewSections } };
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(EXPORT_KEY) || 'null');
+    if (!saved) return base;
+    const sections = { ...viewSections };
+    Object.keys(sections).forEach((k) => { if (typeof saved.sections?.[k] === 'boolean') sections[k] = saved.sections[k]; });
+    return {
+      format: EXPORT_FORMATS.includes(saved.format) ? saved.format : 'pdf',
+      orientation: saved.orientation === 'l' ? 'l' : 'p',
+      sections,
+    };
+  } catch { return base; }
+}
+export function saveExportPrefs(prefs) {
+  try { window.localStorage.setItem(EXPORT_KEY, JSON.stringify(prefs)); } catch { /* ignoruj */ }
 }

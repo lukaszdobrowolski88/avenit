@@ -56,3 +56,23 @@ test('HTML escapuje nazwy', () => {
   const html = buildReportHtml({ ...base, expenses: [{ amount: 1, category: '<b>x</b>', status: 'approved' }], sections: normalizeSections(['byArea']) });
   assert.doesNotMatch(html, /<b>x<\/b>/);
 });
+
+test('buildFinanceReport: służba pod nazwą z menu, wykluczenia na wartości technicznej', async () => {
+  const { buildFinanceReport } = await import('../src/lib/finance-report.js');
+  const db = { query: async (sql) => {
+    if (/FROM expense_transactions/.test(sql)) return { rows: [
+      { amount: '100', category: 'małe Avenit', description: 'Materiały', status: 'approved' },
+      { amount: '40', category: 'MediaTeam', description: 'Kabel', status: 'approved' },
+    ] };
+    if (/FROM app_modules/.test(sql)) return { rows: [{ key: 'kids', label: 'Małe SChWro' }, { key: 'media', label: 'MediaTeam' }] };
+    return { rows: [] };
+  } };
+  const base = { from: '2026-01-01', to: '2026-12-31', year: 2026, label: '2026', sections: ['byArea'] };
+  const r1 = await buildFinanceReport(db, base);
+  assert.match(r1.html, /Małe SChWro/);
+  assert.doesNotMatch(r1.html, /małe Avenit/);
+  const r2 = await buildFinanceReport(db, { ...base, exclude: { areas: ['małe Avenit'] } });
+  assert.doesNotMatch(r2.html, /Małe SChWro/);
+  assert.match(r2.html, /MediaTeam/);
+});
+

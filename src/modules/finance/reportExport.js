@@ -3,7 +3,7 @@
 import { saveAs } from 'file-saver';
 import { bucketsForRange } from './reportRange';
 import { appLocale } from '../../i18n';
-import { isCountedExpense, matchesBudgetItem } from './money';
+import { isCountedExpense, matchesBudgetItem, normKey } from './money';
 // Ciężkie zależności (xlsx, jspdf, html2canvas) ładowane dynamicznie dopiero przy eksporcie,
 // żeby nie powiększać głównego chunku modułu Finanse.
 
@@ -24,11 +24,23 @@ function groupSorted(rows, keyFn, colorFn) {
   }));
 }
 
+// Raporty nie pokazują nazwisk ofiarodawców (decyzja 2026-10-11). Organizacja = źródło, które ma
+// własną kategorię wpływów (np. „Wasilla Bible Church”); każde inne źródło — osoby prywatne,
+// kolekta, wpłaty za wyjazd — liczone razem. Notatki wpływów (z nazwiskami) nie wchodzą do raportu.
+export const INDIVIDUAL_DONORS = 'Darczyńcy indywidualni';
+export function makeSourceAnonymizer(incomeCategories = []) {
+  const named = new Map((incomeCategories || []).map((c) => [normKey(c.name), c.name]));
+  return (source) => named.get(normKey(source)) || INDIVIDUAL_DONORS;
+}
+
 /**
  * Buduje wspólny model raportu dla danego zakresu.
- * @param {{range, income, expense, budget, expenseCategories?, incomeCategories?, projects?, prevIncome?, prevExpense?}} p
+ * @param {{range, income, expense, budget, expenseCategories?, incomeCategories?, projects?, prevIncome?, prevExpense?, areaLabel?}} p
  */
-export function buildReportModel({ range, income = [], expense: allExpense = [], budget = [], expenseCategories = [], incomeCategories = [], projects = [], prevIncome = null, prevExpense = null }) {
+export function buildReportModel({ range, income = [], expense: allExpenseRaw = [], budget = [], expenseCategories = [], incomeCategories = [], projects = [], prevIncome = null, prevExpense = null, areaLabel = (v) => v }) {
+  // Służby zapisane pod nazwą techniczną (team_type, np. „małe Avenit”) — w raporcie nazwa modułu z menu.
+  const allExpense = allExpenseRaw.map((e) => ({ ...e, category: e.category ? areaLabel(e.category) : e.category }));
+  budget = budget.map((b) => (b.kind === 'income' ? b : { ...b, category: b.category ? areaLabel(b.category) : b.category }));
   // Do bilansu, wykresów i realizacji wchodzą tylko wydatki zatwierdzone/opłacone.
   // Wnioski czekające, szkice i odrzucone widać osobno w sekcji „Status wydatków”.
   const expense = allExpense.filter(isCountedExpense);
@@ -108,6 +120,9 @@ export function buildReportModel({ range, income = [], expense: allExpense = [],
   addTagged(income, 'income');
   const byTag = Object.values(tagMap).sort((a, b) => (b.expense + b.income) - (a.expense + a.income));
   const incomeColorFor = (name) => incomeCategories.find((c) => c.name === name)?.color || null;
+  const anonSource = makeSourceAnonymizer(incomeCategories);
+  // Wpływy do list/eksportów: źródło bez nazwisk, bez notatek.
+  const safeIncome = income.map(({ notes, ...r }) => ({ ...r, source: anonSource(r.source) }));
 
   const kpis = {
     incomeCount: income.length,
@@ -135,12 +150,12 @@ export function buildReportModel({ range, income = [], expense: allExpense = [],
     byProject,
     byTag,
     projectNames: Object.fromEntries(projects.map((p) => [String(p.id), p.name])),
-    byIncomeSource: groupSorted(income, (i) => i.source),
+    byIncomeSource: groupSorted(safeIncome, (i) => i.source, incomeColorFor),
     topExpenses,
     expenseStatus,
     unpaidInvoices,
     budgetExecution,
-    raw: { income, expense: allExpense, budget },
+    raw: { income: safeIncome, expense: allExpense, budget },
   };
 
   if (prevIncome != null && prevExpense != null) {
@@ -246,8 +261,8 @@ function buildWorkbook(XLSX, model, sections) {
   const projName = (id) => (id && model.projectNames?.[String(id)]) || '';
   // Arkusze transakcji zawsze (to dane źródłowe Excela), z projektem i tagami.
   const incomeSheet = [
-    ['Data', 'Kategoria', 'Źródło', 'Projekt', 'Tagi', 'Kwota', 'Notatki'],
-    ...model.raw.income.map((r) => [r.date, r.type, r.source, projName(r.project_id), (r.tags || []).join(', '), num(r.amount), r.notes]),
+    ['Data', 'Kategoria', 'Źródło', 'Projekt', 'Tagi', 'Kwota'],
+    ...model.raw.income.map((r) => [r.date, r.type, r.source, projName(r.project_id), (r.tags || []).join(', '), num(r.amount)]),
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(incomeSheet), 'Wpływy');
 
@@ -301,9 +316,9 @@ const H2C_OPTS = {
   },
 };
 
-async function buildReportPdf(el) {
+async function buildReportPdf(el, { orientation = 'p' } = {}) {
   const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas')]);
-  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdf = new jsPDF(orientation === 'l' ? 'l' : 'p', 'mm', 'a4');
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
   const M = 10;                                   // margines strony (mm)
@@ -357,13 +372,13 @@ async function buildReportPdf(el) {
   return pdf;
 }
 
-export async function reportElToPdfBlob(el) {
-  return (await buildReportPdf(el)).output('blob');
+export async function reportElToPdfBlob(el, opts) {
+  return (await buildReportPdf(el, opts)).output('blob');
 }
 
 /** Buduje PDF i otwiera okno druku (autoPrint). Fallback: pobranie pliku, gdy popup zablokowany. */
-export async function printReportEl(el, filename = 'raport.pdf') {
-  const pdf = await buildReportPdf(el);
+export async function printReportEl(el, filename = 'raport.pdf', opts) {
+  const pdf = await buildReportPdf(el, opts);
   pdf.autoPrint();
   const url = pdf.output('bloburl');
   const win = window.open(url, '_blank');
