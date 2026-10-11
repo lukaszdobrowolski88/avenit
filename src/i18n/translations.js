@@ -8060,6 +8060,13 @@ const en = {
   'Zestawienia': 'Breakdowns',
   'Wydatki i budżet': 'Expenses and budget',
   'Listy transakcji': 'Transaction lists',
+  'Zawartość raportu': 'Report contents',
+  'Nic': 'None',
+  'Brak danych z {year} do porównania': 'No data from {year} to compare',
+  'Plik PDF do zapisania lub wysłania.': 'A PDF file to save or send.',
+  'Okno drukowania — można też wybrać „Zapisz jako PDF”.': 'Print dialog — you can also choose “Save as PDF”.',
+  'Arkusze z danymi; wykresy zastępują tabele z liczbami.': 'Data sheets; charts are replaced by tables of figures.',
+  'Prosty plik tekstowy z liczbami.': 'A plain text file with the figures.',
 };
 
 const uk = {
@@ -16118,6 +16125,13 @@ const uk = {
   'Zestawienia': 'Зведення',
   'Wydatki i budżet': 'Витрати та бюджет',
   'Listy transakcji': 'Списки транзакцій',
+  'Zawartość raportu': 'Зміст звіту',
+  'Nic': 'Нічого',
+  'Brak danych z {year} do porównania': 'Немає даних за {year} для порівняння',
+  'Plik PDF do zapisania lub wysłania.': 'PDF-файл для збереження або надсилання.',
+  'Okno drukowania — można też wybrać „Zapisz jako PDF”.': 'Вікно друку — можна також вибрати «Зберегти як PDF».',
+  'Arkusze z danymi; wykresy zastępują tabele z liczbami.': 'Аркуші з даними; графіки замінюються таблицями з числами.',
+  'Prosty plik tekstowy z liczbami.': 'Простий текстовий файл із числами.',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

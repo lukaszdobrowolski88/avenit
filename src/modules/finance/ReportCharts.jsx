@@ -154,7 +154,7 @@ export function BucketTable({ buckets, tr = (x) => x }) {
             <th className="text-right font-medium py-1.5 px-2">{tr('Wpływy')}</th>
             <th className="text-right font-medium py-1.5 px-2">{tr('Wydatki')}</th>
             <th className="text-right font-medium py-1.5 px-2">{tr('Bilans')}</th>
-            <th className="text-right font-medium py-1.5 pl-2">{tr('Saldo skumulowane')}</th>
+            <th className="text-right font-medium py-1.5 pl-2 pr-1">{tr('Saldo skumulowane')}</th>
           </tr>
         </thead>
         <tbody>
@@ -164,7 +164,7 @@ export function BucketTable({ buckets, tr = (x) => x }) {
               <td className="py-1 px-2 text-right text-gray-900 dark:text-white">{pln2(b.income)}</td>
               <td className="py-1 px-2 text-right text-gray-900 dark:text-white">{pln2(b.expense)}</td>
               <td className={`py-1 px-2 text-right font-medium ${tone(b.balance)}`}>{pln2(b.balance)}</td>
-              <td className={`py-1 pl-2 text-right ${tone(b.cumulative)}`}>{pln2(b.cumulative)}</td>
+              <td className={`py-1 pl-2 pr-1 text-right whitespace-nowrap ${tone(b.cumulative)}`}>{pln2(b.cumulative)}</td>
             </tr>
           ))}
           <tr className="font-semibold">
@@ -184,6 +184,8 @@ export function BucketTable({ buckets, tr = (x) => x }) {
 export function YoYBars({ yoy, prevLabel, nowLabel, height = 240, tr = (x) => x }) {
   if (!yoy) return null;
   if (![yoy.income, yoy.expense].some((v) => num(v.now) !== 0 || num(v.prev) !== 0)) return <NoData tr={tr} text={tr('Brak danych do porównania')} />;
+  // Bez danych z poprzedniego roku porównanie to same zera — tylko informacja.
+  if (num(yoy.income.prev) === 0 && num(yoy.expense.prev) === 0) return <NoData tr={tr} text={tr('Brak danych z {year} do porównania', { year: prevLabel })} />;
   const data = [
     { label: tr('Przychody'), prev: yoy.income.prev, now: yoy.income.now },
     { label: tr('Wydatki'), prev: yoy.expense.prev, now: yoy.expense.now },
@@ -212,7 +214,7 @@ export function YoYBars({ yoy, prevLabel, nowLabel, height = 240, tr = (x) => x 
           <th className="text-left font-medium py-1.5" />
           <th className="text-right font-medium py-1.5 px-2">{String(prevLabel)}</th>
           <th className="text-right font-medium py-1.5 px-2">{String(nowLabel)}</th>
-          <th className="text-right font-medium py-1.5 pl-2">{tr('Zmiana')}</th>
+          <th className="text-right font-medium py-1.5 pl-2 pr-1">{tr('Zmiana')}</th>
         </tr>
       </thead>
       <tbody>
@@ -224,7 +226,7 @@ export function YoYBars({ yoy, prevLabel, nowLabel, height = 240, tr = (x) => x 
               <td className="py-1 text-gray-700 dark:text-gray-200">{d.label}</td>
               <td className="py-1 px-2 text-right text-gray-900 dark:text-white">{pln2(d.prev)}</td>
               <td className="py-1 px-2 text-right text-gray-900 dark:text-white">{pln2(d.now)}</td>
-              <td className="py-1 pl-2 text-right text-gray-700 dark:text-gray-200">{diff >= 0 ? '+' : ''}{pln2(diff)}{rel != null ? ` (${diff >= 0 ? '+' : ''}${pct(rel)})` : ''}</td>
+              <td className="py-1 pl-2 pr-1 text-right whitespace-nowrap text-gray-700 dark:text-gray-200">{diff >= 0 ? '+' : ''}{pln2(diff)}{rel != null ? ` (${diff >= 0 ? '+' : ''}${pct(rel)})` : ''}</td>
             </tr>
           );
         })}
