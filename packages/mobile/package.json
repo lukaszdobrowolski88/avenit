@@ -46,6 +46,7 @@
     "lucide-react-native": "^1.55.0",
     "nativewind": "^4.2.7",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-get-random-values": "~1.11.0",
