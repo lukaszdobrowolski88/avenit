@@ -691,9 +691,10 @@ const FinanceModule = () => {
     }
   }, [activeTab, selectedYear, selectedCampusId]);
 
-  // Fetch income transactions
+  // Wpływy — także na Budżecie: realizacja planowanych przychodów liczy się z wpływów
+  // (wcześniej na Budżecie lista była pusta i realizacja przychodów zawsze 0 zł).
   useEffect(() => {
-    if (activeTab === 'income') {
+    if (activeTab === 'income' || activeTab === 'budget') {
       fetchIncomeTransactions();
     }
   }, [activeTab, selectedYear, selectedCampusId]);

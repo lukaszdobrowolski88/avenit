@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 const DB = {
   budget_items: [
     { id: 'b1', year: new Date().getFullYear(), kind: 'expense', category: 'MediaTeam', description: 'Mikrofon', planned_amount: '2000.00', period_type: 'year' },
+    { id: 'b3', year: new Date().getFullYear(), kind: 'income', category: 'Darowizny', team_type: 'Darowizny', description: 'Zbiórki', planned_amount: '1000.00', period_type: 'year' },
     { id: 'b2', year: new Date().getFullYear(), kind: 'expense', category: 'Administracja', description: 'Czynsz za salę', planned_amount: '12000.00', period_type: 'year', cost_category: 'Czynsz', project_id: 'p1', tags: ['budynek'] },
   ],
   income_transactions: [
@@ -179,4 +180,14 @@ describe('FinanceModule (dymny)', () => {
     const go = screen.getByRole('button', { name: /Pobierz \(0\)/ });
     expect(go.disabled).toBe(true);
   });
+
+  it('budżet: realizacja planowanych przychodów z wpływów bez wchodzenia w zakładkę Wpływy', async () => {
+    renderModule();
+    await waitFor(() => expect(screen.getAllByText('Zbiórki').length).toBeGreaterThan(0));
+    const row = screen.getAllByText('Zbiórki')[0].closest('tr');
+    // plan 1000, wpływy typu Darowizny = 700 → 70%
+    await waitFor(() => expect(row.textContent).toMatch(/700,00\s?zł/));
+    expect(row.textContent).toMatch(/70%/);
+  });
 });
+
