@@ -8070,6 +8070,9 @@ const en = {
   'Pokaż wydatki tej pozycji': 'Show expenses for this item',
   '(bez opisu)': '(no description)',
   'z': 'of',
+  'Konto zapisane, ale nie udało się przypisać do służb: {teams}.': 'Account saved, but could not assign to ministries: {teams}.',
+  'Rola w służbie {name}': 'Role in ministry {name}',
+  'Lider służby widzi i prowadzi swoją służbę (także jej finanse); członek współpracuje w niej.': 'A ministry leader sees and runs their ministry (including its finances); a member collaborates in it.',
 };
 
 const uk = {
@@ -16138,6 +16141,9 @@ const uk = {
   'Pokaż wydatki tej pozycji': 'Показати витрати цієї позиції',
   '(bez opisu)': '(без опису)',
   'z': 'з',
+  'Konto zapisane, ale nie udało się przypisać do służb: {teams}.': 'Обліковий запис збережено, але не вдалося призначити до служінь: {teams}.',
+  'Rola w służbie {name}': 'Роль у служінні {name}',
+  'Lider służby widzi i prowadzi swoją służbę (także jej finanse); członek współpracuje w niej.': 'Лідер служіння бачить і веде своє служіння (зокрема його фінанси); учасник співпрацює в ньому.',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
