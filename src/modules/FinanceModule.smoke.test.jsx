@@ -164,4 +164,19 @@ describe('FinanceModule (dymny)', () => {
     fireEvent.click(screen.getByText('Uwzględnij wszystko'));
     await waitFor(() => expect(screen.queryAllByText(/Wyłączone z raportu/)).toHaveLength(0));
   });
+
+  it('okno „Pobierz / drukuj”: format, sekcje w grupach, bez sekcji nie da się pobrać', async () => {
+    renderModule();
+    clickTab('Raporty');
+    await waitFor(() => expect(screen.getByText('Raport finansowy')).toBeTruthy());
+    fireEvent.click(screen.getByText('Pobierz / drukuj'));
+    expect(await screen.findByText('Pobierz / drukuj raport')).toBeTruthy();
+    expect(screen.getByText('Orientacja strony')).toBeTruthy();
+    expect(screen.getByText('Listy transakcji')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Excel/ }));
+    expect(screen.queryByText('Orientacja strony')).toBeNull();
+    fireEvent.click(screen.getByText('Odznacz wszystko'));
+    const go = screen.getByRole('button', { name: /Pobierz \(0\)/ });
+    expect(go.disabled).toBe(true);
+  });
 });

@@ -115,4 +115,18 @@ describe('filtry i sekcje raportu', () => {
     const csv = csvString(m, { ...defaultSections(), incomeList: true });
     expect(csv).not.toMatch(/Kowalski|Nowak/);
   });
+
+  it('raport: służba z nazwą techniczną pokazana nazwą z menu (wykresy, realizacja, listy)', () => {
+    const range = { from: '2026-03-01', to: '2026-03-31', year: 2026, label: 'Marzec 2026' };
+    const areaLabel = (v) => ({ 'małe Avenit': 'Małe SChWro' }[v] || v);
+    const m = buildReportModel({
+      range, areaLabel, income: [],
+      expense: [{ id: 'e', amount: 30, category: 'małe Avenit', description: 'Kredki', payment_date: '2026-03-02', status: 'approved' }],
+      budget: [{ id: 'b', kind: 'expense', category: 'małe Avenit', description: 'Kredki', planned_amount: 100 }],
+    });
+    expect(m.byServiceCategory[0].name).toBe('Małe SChWro');
+    expect(m.budgetExecution[0]).toMatchObject({ category: 'Małe SChWro', planned: 100, realized: 30 });
+    expect(JSON.stringify(m.raw.expense)).not.toMatch(/małe Avenit/);
+  });
 });
+

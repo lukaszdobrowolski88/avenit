@@ -1,4 +1,5 @@
 // Wykresy raportów finansowych (Recharts). Theme-aware, w stylu modułu.
+// Bez animacji: PDF zrzuca widok zaraz po pokazaniu sekcji — animowany wykres byłby w połowie.
 // Paleta: status green/red dla wpływy/wydatki; kategoryczna CVD-safe dla kategorii.
 import React from 'react';
 import {
@@ -59,8 +60,8 @@ export function IncomeExpenseBarChart({ buckets, height = 300, tr = (x) => x }) 
         <YAxis {...axisProps} tickFormatter={compact} width={48} />
         <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(136,135,129,0.08)' }} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="income" name={tr('Wpływy')} fill={INCOME} radius={[4, 4, 0, 0]} maxBarSize={28} />
-        <Bar dataKey="expense" name={tr('Wydatki')} fill={EXPENSE} radius={[4, 4, 0, 0]} maxBarSize={28} />
+        <Bar dataKey="income" name={tr('Wpływy')} fill={INCOME} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+        <Bar dataKey="expense" name={tr('Wydatki')} fill={EXPENSE} radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -82,7 +83,7 @@ export function CashFlowAreaChart({ buckets, height = 260, tr = (x) => x }) {
         <XAxis dataKey="label" {...axisProps} interval="preserveStartEnd" minTickGap={8} />
         <YAxis {...axisProps} tickFormatter={compact} width={48} />
         <Tooltip content={<ChartTooltip />} cursor={{ stroke: AXIS, strokeDasharray: '3 3' }} />
-        <Area type="monotone" dataKey="cumulative" name={tr('Saldo skumulowane')} stroke={SERIES_BLUE} strokeWidth={2.5} fill="url(#cashflowGrad)" dot={false} activeDot={{ r: 4 }} />
+        <Area type="monotone" dataKey="cumulative" name={tr('Saldo skumulowane')} stroke={SERIES_BLUE} strokeWidth={2.5} fill="url(#cashflowGrad)" dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
       </AreaChart>
     </ResponsiveContainer>
   );

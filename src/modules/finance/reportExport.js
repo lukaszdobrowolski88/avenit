@@ -35,9 +35,12 @@ export function makeSourceAnonymizer(incomeCategories = []) {
 
 /**
  * Buduje wspólny model raportu dla danego zakresu.
- * @param {{range, income, expense, budget, expenseCategories?, incomeCategories?, projects?, prevIncome?, prevExpense?}} p
+ * @param {{range, income, expense, budget, expenseCategories?, incomeCategories?, projects?, prevIncome?, prevExpense?, areaLabel?}} p
  */
-export function buildReportModel({ range, income = [], expense: allExpense = [], budget = [], expenseCategories = [], incomeCategories = [], projects = [], prevIncome = null, prevExpense = null }) {
+export function buildReportModel({ range, income = [], expense: allExpenseRaw = [], budget = [], expenseCategories = [], incomeCategories = [], projects = [], prevIncome = null, prevExpense = null, areaLabel = (v) => v }) {
+  // Służby zapisane pod nazwą techniczną (team_type, np. „małe Avenit”) — w raporcie nazwa modułu z menu.
+  const allExpense = allExpenseRaw.map((e) => ({ ...e, category: e.category ? areaLabel(e.category) : e.category }));
+  budget = budget.map((b) => (b.kind === 'income' ? b : { ...b, category: b.category ? areaLabel(b.category) : b.category }));
   // Do bilansu, wykresów i realizacji wchodzą tylko wydatki zatwierdzone/opłacone.
   // Wnioski czekające, szkice i odrzucone widać osobno w sekcji „Status wydatków”.
   const expense = allExpense.filter(isCountedExpense);
@@ -313,9 +316,9 @@ const H2C_OPTS = {
   },
 };
 
-async function buildReportPdf(el) {
+async function buildReportPdf(el, { orientation = 'p' } = {}) {
   const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas')]);
-  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdf = new jsPDF(orientation === 'l' ? 'l' : 'p', 'mm', 'a4');
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
   const M = 10;                                   // margines strony (mm)
@@ -369,13 +372,13 @@ async function buildReportPdf(el) {
   return pdf;
 }
 
-export async function reportElToPdfBlob(el) {
-  return (await buildReportPdf(el)).output('blob');
+export async function reportElToPdfBlob(el, opts) {
+  return (await buildReportPdf(el, opts)).output('blob');
 }
 
 /** Buduje PDF i otwiera okno druku (autoPrint). Fallback: pobranie pliku, gdy popup zablokowany. */
-export async function printReportEl(el, filename = 'raport.pdf') {
-  const pdf = await buildReportPdf(el);
+export async function printReportEl(el, filename = 'raport.pdf', opts) {
+  const pdf = await buildReportPdf(el, opts);
   pdf.autoPrint();
   const url = pdf.output('bloburl');
   const win = window.open(url, '_blank');

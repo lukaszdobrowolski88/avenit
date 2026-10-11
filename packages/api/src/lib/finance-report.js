@@ -4,6 +4,8 @@
 // Sekcje (`sections`) i wykluczenia (`exclude`) odpowiadają wyborowi w zakładce Raporty
 // (src/modules/finance/reportSections.js); brak sekcji = wszystkie.
 
+import { FINANCE_TEAM_TYPES } from '../dataapi/financeScope.js';
+
 export const pln = (n) => Number(n || 0).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł';
 const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const CAT_COLORS = ['#2a78d6', '#1baf7a', '#eda100', '#008300', '#4a3aa7', '#e34948', '#e87ba4', '#eb6834'];
@@ -64,15 +66,25 @@ export function applyExclusions(rows, ex, kind) {
 export async function fetchReportRows(db, from, to, year) {
   const q = async (sql, params) => { try { const { rows } = await db.query(sql, params); return rows; } catch { return []; } };
   // SELECT * — odporne na tenanty przed migracją 101 (brak project_id/tags na budżecie).
-  const [income, allExpenses, budget, projects, orgRows] = await Promise.all([
+  const [income, allExpenses, budget, projects, orgRows, moduleRows] = await Promise.all([
     q('SELECT * FROM income_transactions WHERE date >= $1 AND date <= $2', [from, to]),
     q('SELECT * FROM expense_transactions WHERE payment_date >= $1 AND payment_date <= $2', [from, to]),
     q('SELECT * FROM budget_items WHERE year = $1', [year]),
     q('SELECT id, name, budget_amount FROM finance_projects', []),
     q("SELECT value FROM app_settings WHERE key='org_name' LIMIT 1", []),
+    q('SELECT key, label FROM app_modules', []),
   ]);
+  // Służby zapisane pod nazwą techniczną (team_type, np. „małe Avenit”) → nazwa modułu z menu.
+  const labels = new Map();
+  for (const m of moduleRows) {
+    const tt = FINANCE_TEAM_TYPES[m.key];
+    if (tt && m.label) labels.set(tt, m.label);
+  }
+  const areaLabel = (v) => labels.get(v) || v;
+  const relabel = (r) => (r && r.category && r.kind !== 'income' ? { ...r, category: areaLabel(r.category) } : r);
   const expenses = allExpenses.filter((e) => ['approved', 'paid'].includes(e.status || 'approved'));
-  return { income, expenses, allExpenses, budget, projects, org: orgRows[0]?.value || 'Wspólnota' };
+  // Wiersze surowe (wykluczenia porównują wartości techniczne); nazwy podmienia relabel po wykluczeniach.
+  return { income, expenses, allExpenses, budget, projects, relabel, org: orgRows[0]?.value || 'Wspólnota' };
 }
 
 const groupBy = (rows, keyFn) => {
@@ -211,9 +223,9 @@ export async function buildFinanceReport(db, { from, to, year, label, sections =
   const rows = await fetchReportRows(db, from, to, year);
   const f = normalizeExclude(exclude);
   const income = applyExclusions(rows.income, f, 'income');
-  const expenses = applyExclusions(rows.expenses, f, 'expense');
-  const allExpenses = applyExclusions(rows.allExpenses, f, 'expense');
-  const budget = applyExclusions(rows.budget, f, 'budget');
+  const expenses = applyExclusions(rows.expenses, f, 'expense').map(rows.relabel);
+  const allExpenses = applyExclusions(rows.allExpenses, f, 'expense').map(rows.relabel);
+  const budget = applyExclusions(rows.budget, f, 'budget').map(rows.relabel);
   const sectionSet = normalizeSections(sections);
   const fl = f ? String(filterLabel || '').slice(0, 300) : '';
   return {
