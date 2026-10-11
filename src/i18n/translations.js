@@ -8026,6 +8026,18 @@ const en = {
   'zamknięty': 'closed',
   'Finanse tej służby widzi jej lider': 'This ministry’s finances are visible to its leader',
   'Poproś administratora o dostęp do zakładki Finanse tej służby.': 'Ask an administrator for access to this ministry’s Finance tab.',
+  'Służby / obszary': 'Ministries / areas',
+  'Wyłączone z raportu': 'Excluded from the report',
+  'Uwzględnij wszystko': 'Include everything',
+  'Raport obejmuje wszystko. Odznacz w listach to, czego ma nie uwzględniać.': 'The report includes everything. Untick in the lists what it should leave out.',
+  'wszystkie': 'all',
+  'wyłączone': 'excluded',
+  '{n} z {total}': '{n} of {total}',
+  'Żadne': 'None',
+  '(bez projektu)': '(no project)',
+  '(bez obszaru)': '(no area)',
+  '(bez kategorii)': '(no category)',
+  '(bez tagów)': '(no tags)',
 };
 
 const uk = {
@@ -16050,6 +16062,18 @@ const uk = {
   'zamknięty': 'закритий',
   'Finanse tej służby widzi jej lider': 'Фінанси цього служіння бачить його лідер',
   'Poproś administratora o dostęp do zakładki Finanse tej służby.': 'Попросіть адміністратора про доступ до вкладки «Фінанси» цього служіння.',
+  'Służby / obszary': 'Служіння / сфери',
+  'Wyłączone z raportu': 'Виключено зі звіту',
+  'Uwzględnij wszystko': 'Врахувати все',
+  'Raport obejmuje wszystko. Odznacz w listach to, czego ma nie uwzględniać.': 'Звіт охоплює все. Зніміть позначки у списках з того, що не слід враховувати.',
+  'wszystkie': 'усі',
+  'wyłączone': 'виключено',
+  '{n} z {total}': '{n} з {total}',
+  'Żadne': 'Жодного',
+  '(bez projektu)': '(без проєкту)',
+  '(bez obszaru)': '(без сфери)',
+  '(bez kategorii)': '(без категорії)',
+  '(bez tagów)': '(без тегів)',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

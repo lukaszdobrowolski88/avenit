@@ -1,6 +1,6 @@
 // Wysyłka raportu finansowego na żądanie — na wybrane adresy e-mail, dla wybranego zakresu.
 // Gate: action:finance:export (FN_CAPABILITY) + limit wysyłek; każda wysyłka w logu serwera. Buduje HTML+CSV przez lib/finance-report i wysyła przez sendEmail.
-// Przyjmuje { from, to, periodLabel, recipients, attachments[], sections?, filters?, filterLabel? } lub { year, recipients } (wstecznie).
+// Przyjmuje { from, to, periodLabel, recipients, attachments[], sections?, exclude?, filterLabel? } lub { year, recipients } (wstecznie).
 import { sendEmail } from '../lib/email.js';
 import { buildFinanceReport } from '../lib/finance-report.js';
 
@@ -45,7 +45,7 @@ export default async function handler(req, reply) {
   // Sekcje i filtry jak w zakładce Raporty (lib/finance-report normalizuje i przycina wejście).
   const report = await buildFinanceReport(req.db, {
     from, to, year, label,
-    sections: req.body?.sections, filters: req.body?.filters, filterLabel: req.body?.filterLabel,
+    sections: req.body?.sections, exclude: req.body?.exclude, filterLabel: req.body?.filterLabel,
   });
 
   // Załączniki: od klienta (PDF/XLSX/CSV zbudowane u klienta) lub fallback serwerowy CSV.

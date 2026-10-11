@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildAreaOptions, projectOptions, nameTaken, renameInTags, removeFromTags, NEW_OPTION } from './dictionaries';
-import { applyReportFilters, hasReportFilters, defaultSections, REPORT_SECTIONS, MAIL_SECTION_KEYS } from './reportSections';
+import { applyReportExclusions, hasExclusions, describeExclusions, defaultSections, REPORT_SECTIONS, MAIL_SECTION_KEYS, NONE, EMPTY_REPORT_EXCLUDE } from './reportSections';
 import { buildReportModel, csvString } from './reportExport';
 
 describe('obszary budżetu (służby + własne)', () => {
@@ -45,18 +45,33 @@ describe('filtry i sekcje raportu', () => {
   ];
   const income = [{ id: 3, amount: 300, type: 'Darowizny', project_id: 'p1', tags: ['dach'], date: '2026-03-03' }];
 
-  it('filtr projektu i tagu dotyczy wpływów i wydatków', () => {
-    const f = { projectId: 'p1', area: '', costCategory: '', tag: '' };
-    expect(applyReportFilters(expense, f, 'expense').map((r) => r.id)).toEqual([1]);
-    expect(applyReportFilters(income, f, 'income').map((r) => r.id)).toEqual([3]);
-    expect(applyReportFilters(expense, { ...f, projectId: '', tag: 'dach' }, 'expense').map((r) => r.id)).toEqual([1]);
+  const ex = (o) => ({ ...EMPTY_REPORT_EXCLUDE, ...o });
+  it('wyłączenie jednego projektu zostawia resztę; wszystkie projekty = także „bez projektu”', () => {
+    expect(applyReportExclusions(expense, ex({ projects: ['p1'] }), 'expense').map((r) => r.id)).toEqual([2]);
+    expect(applyReportExclusions(income, ex({ projects: ['p1'] }), 'income')).toEqual([]);
+    expect(applyReportExclusions(expense, ex({ projects: ['p1', NONE] }), 'expense')).toEqual([]);
+    expect(applyReportExclusions(expense, ex({ projects: [NONE] }), 'expense').map((r) => r.id)).toEqual([1]);
   });
-  it('filtr obszaru/kategorii pomija wpływy', () => {
-    const f = { projectId: '', area: 'Administracja', costCategory: '', tag: '' };
-    expect(applyReportFilters(expense, f, 'expense').map((r) => r.id)).toEqual([1]);
-    expect(applyReportFilters(income, f, 'income')).toEqual([]);
-    expect(hasReportFilters(f)).toBe(true);
-    expect(hasReportFilters({ projectId: '', area: '', costCategory: '', tag: '' })).toBe(false);
+  it('obszar i kategoria wydatków nie ruszają wpływów; kategoria wpływów — tylko wpływy', () => {
+    expect(applyReportExclusions(expense, ex({ areas: ['Administracja'] }), 'expense').map((r) => r.id)).toEqual([2]);
+    expect(applyReportExclusions(income, ex({ areas: ['Administracja'], costCategories: ['Czynsz'] }), 'income').map((r) => r.id)).toEqual([3]);
+    expect(applyReportExclusions(income, ex({ incomeCategories: ['Darowizny'] }), 'income')).toEqual([]);
+    expect(applyReportExclusions(expense, ex({ incomeCategories: ['Darowizny'] }), 'expense')).toHaveLength(2);
+  });
+  it('tag: wyklucza transakcje z tym tagiem; „bez tagów” — nieotagowane', () => {
+    expect(applyReportExclusions(expense, ex({ tags: ['dach'] }), 'expense').map((r) => r.id)).toEqual([2]);
+    expect(applyReportExclusions(expense, ex({ tags: [NONE] }), 'expense').map((r) => r.id)).toEqual([1]);
+  });
+  it('plan budżetu: wydatkowy wg obszaru, przychodowy wg kategorii wpływów', () => {
+    const budget = [{ id: 'b1', kind: 'expense', category: 'Administracja' }, { id: 'b2', kind: 'income', category: 'Darowizny' }];
+    expect(applyReportExclusions(budget, ex({ areas: ['Administracja'] }), 'budget').map((r) => r.id)).toEqual(['b2']);
+    expect(applyReportExclusions(budget, ex({ incomeCategories: ['Darowizny'] }), 'budget').map((r) => r.id)).toEqual(['b1']);
+  });
+  it('opis wykluczeń', () => {
+    expect(hasExclusions(EMPTY_REPORT_EXCLUDE)).toBe(false);
+    const d = describeExclusions(ex({ projects: ['p1'], tags: [NONE] }), { projectName: () => 'Remont dachu' });
+    expect(d).toBe('Projekty: Remont dachu · Tagi: (bez tagów)');
+    expect(describeExclusions(ex({ projects: ['p1', NONE] }), { totals: { projects: 2 } })).toBe('Projekty: wyłączone');
   });
   it('domyślnie listy transakcji są wyłączone, reszta włączona', () => {
     const d = defaultSections();
