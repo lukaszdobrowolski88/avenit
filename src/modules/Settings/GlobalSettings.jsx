@@ -614,7 +614,7 @@ export default function GlobalSettings() {
 
   // Rejestracja: kolejki oczekujących + audyt. Akcje = funkcje serwerowe (bramka admina + maile + log).
   const pendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'admin');
-  const emailPendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'email');
+  const emailPendingUsers = users.filter(u => u.status === 'pending' && (u.pending_kind === 'email' || u.pending_kind === 'email_admin'));
   const [userSearch, setUserSearch] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
   // Zmiana filtra/wyszukiwarki czyści zaznaczenie — akcje masowe nigdy nie dotkną kont spoza widoku.

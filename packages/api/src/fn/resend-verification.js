@@ -22,7 +22,7 @@ export default async function handler(req, reply) {
   const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
   const { rows } = await req.db.query(
     `UPDATE app_users SET verify_token_hash = $1, verify_expires = now() + interval '24 hours'
-      WHERE id = $2 AND status = 'pending' AND pending_kind = 'email'
+      WHERE id = $2 AND status = 'pending' AND pending_kind IN ('email', 'email_admin')
       RETURNING email`,
     [tokenHash, userId]
   );

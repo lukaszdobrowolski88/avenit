@@ -12,6 +12,7 @@ import { platformPool, getTenantPool } from '../db.js';
 import { verifyPassword } from './passwords.js';
 import { verifyTOTP, consumeBackupCode, backupCodesParam } from './totp.js';
 import { config } from '../config.js';
+import { isLocked, registerFailedLogin, registerSuccessfulLogin } from './lockout.js';
 
 const schema = z.object({
   email: z.string().email(),
@@ -44,8 +45,9 @@ export default async function appLoginRoutes(app) {
         try {
           const pool = getTenantPool(t.db_name);
           const { rows } = await pool.query(
-            `SELECT id, email, full_name, role, is_active, password_hash,
-                    totp_enabled, totp_secret, totp_backup_codes, auth_user_id
+            `SELECT id, email, full_name, role, is_active, status, password_hash,
+                    totp_enabled, totp_secret, totp_backup_codes, auth_user_id,
+                    failed_login_count, locked_until
                FROM app_users WHERE lower(email) = lower($1)`,
             [email]
           );
@@ -54,8 +56,13 @@ export default async function appLoginRoutes(app) {
           req.log.warn({ err, tenant: t.slug }, 'app-login: błąd zapytania do bazy tenanta');
           continue;
         }
-        if (!user || !user.is_active) continue;
-        if (!(await verifyPassword(password, user.password_hash))) continue;
+        if (!user || !user.is_active || user.status === 'pending' || user.status === 'blocked') continue;
+        // Zablokowane po zbyt wielu próbach — jak na subdomenie: bez sprawdzania hasła.
+        if (isLocked(user)) continue;
+        if (!(await verifyPassword(password, user.password_hash))) {
+          await registerFailedLogin(getTenantPool(t.db_name), user).catch(() => {});
+          continue;
+        }
         matches.push({ tenant: t, user });
       }
 
@@ -91,8 +98,13 @@ export default async function appLoginRoutes(app) {
             );
           }
         }
-        if (!ok) return reply.code(401).send({ error: 'Nieprawidłowy kod weryfikacyjny' });
+        if (!ok) {
+          // Błędny kod 2FA liczy się do progu blokady (zgadywanie TOTP per konto).
+          await registerFailedLogin(getTenantPool(match.tenant.db_name), match.user).catch(() => {});
+          return reply.code(401).send({ error: 'Nieprawidłowy kod weryfikacyjny' });
+        }
       }
+      await registerSuccessfulLogin(getTenantPool(match.tenant.db_name), match.user).catch(() => {});
 
       // Wystaw jednorazowy bilet w bazie tenanta (ważny 60 s).
       const raw = crypto.randomBytes(32).toString('base64url');

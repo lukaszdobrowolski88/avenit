@@ -50,6 +50,7 @@ export default function UserSettings() {
 
   // Dane hasła
   const [passData, setPassData] = useState({
+    currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
@@ -509,10 +510,13 @@ export default function UserSettings() {
 
     setSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: passData.newPassword });
+      const { error } = await supabase.auth.updateUser({
+        password: passData.newPassword,
+        ...(passData.currentPassword ? { currentPassword: passData.currentPassword } : {}),
+      });
       if (error) throw error;
-      setMessage({ type: 'success', text: tr('Hasło zostało zmienione.') });
-      setPassData({ newPassword: '', confirmPassword: '' });
+      setMessage({ type: 'success', text: tr('Hasło zostało zmienione. Pozostałe urządzenia zostały wylogowane.') });
+      setPassData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
       setMessage({ type: 'error', text: err.message || tr('Nie udało się zmienić hasła.') });
     }
@@ -608,6 +612,20 @@ export default function UserSettings() {
             </div>
 
             <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Obecne hasło')}</label>
+                <div className="relative">
+                  <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    className="w-full p-3 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-red-400 dark:focus:border-red-500 outline-none transition"
+                    placeholder="••••••••"
+                    value={passData.currentPassword}
+                    onChange={e => setPassData({...passData, currentPassword: e.target.value})}
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Nowe hasło')}</label>
                 <div className="relative">

@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
-import { presetGrantRows, LIDER_DELETE_RESOURCES, LIDER_SHARED_DELETE_RESOURCES, LIDER_MODULES, LIDER_DENIED_MODULES, LIDER_READONLY_MODULES, ROLE_PRESETS } from '@avenit/shared/src/permissions/presets.js';
+import { presetGrantRows, LIDER_DELETE_RESOURCES, LIDER_SHARED_DELETE_RESOURCES, LIDER_MODULES, LIDER_DENIED_MODULES, LIDER_READONLY_MODULES, ROLE_PRESETS, LIDER_SHARED_DELETE_RESOURCES_103, LIDER_READONLY_SHARED_RESOURCES, LIDER_PROGRAM_ACTIONS } from '@avenit/shared/src/permissions/presets.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 import { MODULES } from '@avenit/shared/src/permissions/catalog.js';
 import {
@@ -249,8 +249,12 @@ test('lider służby może wysłać zaproszenia z grafiku; członek służby nie
 // ── Preset lidera ↔ migracja 091 ──
 test('preset lider: z roli usuwa tylko dane wspólne; dane służby — lider TEJ służby', () => {
   const lider = canOf('lider', 'u-l');
-  for (const r of ['events', 'schedule_assignments', 'board_columns', 'board_items', 'programs', 'program_songs', 'equipment']) {
+  for (const r of ['board_columns', 'board_items', 'equipment']) {
     assert.equal(lider(`res:${r}:delete`), true, r);
+  }
+  // Od migracji 106: wydarzenia, grafik i programy — nie z roli (tylko swoje służby).
+  for (const r of ['events', 'schedule_assignments', 'programs', 'program_songs']) {
+    assert.equal(lider(`res:${r}:delete`), false, r);
   }
   for (const r of ['media_team', 'songs', 'kids_events', 'home_groups', 'finance_transactions', 'expenses', 'budget_items', 'members', 'member_notes', 'app_users', 'donations']) {
     assert.equal(lider(`res:${r}:delete`), false, r);
@@ -288,7 +292,7 @@ test('migracja 103 = preset lidera (moduły, zakazy, usuwanie danych służb)', 
   const mod = caps.filter((c) => c.startsWith('module:'));
   assert.deepEqual(mod.sort(), [...LIDER_MODULES, ...LIDER_DENIED_MODULES].map((m) => `module:${m}`).sort());
   const del = caps.filter((c) => c.startsWith('res:'));
-  const ministryDel = LIDER_DELETE_RESOURCES.filter((r) => !LIDER_SHARED_DELETE_RESOURCES.includes(r));
+  const ministryDel = LIDER_DELETE_RESOURCES.filter((r) => !LIDER_SHARED_DELETE_RESOURCES_103.includes(r));
   assert.deepEqual(del.sort(), ministryDel.map((r) => `res:${r}:delete`).sort());
   assert.match(sql, /capability = 'module:\*' AND allowed/, 'tylko tenanty ze starym presetem');
   assert.match(sql, /ON CONFLICT \(role, capability\) WHERE user_id IS NULL DO NOTHING/, 'decyzje admina zostają');
@@ -315,6 +319,42 @@ test('lider: Grupy domowe — odczyt z roli, edycja tylko z przynależności do 
   assert.equal((await canAccess({ pool, dbName, table: 'home_group_members', op: 'insert', user: lider })).ok, false);
   const hgLeader = { id: 'hg', role: 'lider' };
   assert.equal((await canAccess({ pool, dbName, table: 'home_group_members', op: 'update', user: hgLeader })).ok, true);
+});
+
+test('migracja 106 = lider tylko swoje służby (spójność z presetem)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../db/tenant-migrations/106_lider_own_ministries_only.sql'), 'utf8');
+  const arr = (label) => sql.match(new RegExp(`unnest\\(ARRAY\\[([^\\]]+)\\]\\) AS ${label}`))[1].match(/'([a-z_]+)'/g).map((x) => x.slice(1, -1));
+  assert.deepEqual(arr('r').sort(), [...LIDER_READONLY_SHARED_RESOURCES].sort());
+  assert.deepEqual(arr('a').sort(), [...LIDER_PROGRAM_ACTIONS].sort());
+  const removed = sql.match(/capability IN \(([^)]+)\)/)[1].match(/'([^']+)'/g).map((x) => x.slice(1, -1));
+  for (const r of LIDER_SHARED_DELETE_RESOURCES_103.filter((x) => !LIDER_SHARED_DELETE_RESOURCES.includes(x))) {
+    if (r === 'tasks') continue;
+    assert.ok(removed.includes(`res:${r}:delete`), r);
+  }
+  assert.ok(removed.includes('action:programs:*'));
+  assert.match(sql, /capability = 'module:members' AND NOT allowed/);
+});
+
+test('lider: wydarzenia tylko swoich służb, program — lider Uwielbienia', async () => {
+  const dbName = `t${++dbSeq}`;
+  const media = fakePool({ userId: 'm', memberships: [{ ministry_key: 'media', role: 'leader' }] });
+  const user = { id: 'm', role: 'lider', email: 'm@x.pl' };
+  const glob = await canAccess({ pool: media, dbName, table: 'events', op: 'update', user });
+  assert.equal(glob.ok, false, 'bez globalnej edycji wydarzeń');
+  const scoped = await canAccess({ pool: media, dbName, table: 'events', op: 'update', user, allowModuleScope: true });
+  assert.deepEqual(scoped.moduleScope?.modules, ['media']);
+  assert.equal((await canAccess({ pool: media, dbName, table: 'programs', op: 'update', user })).ok, false);
+  assert.equal((await canAccess({ pool: media, dbName, table: 'programs', op: 'select', user })).ok, true);
+  assert.equal((await canAccess({ pool: media, dbName, table: 'teachings', op: 'update', user })).ok, false);
+  const db2 = `t${++dbSeq}`;
+  const worship = fakePool({ userId: 'w', memberships: [{ ministry_key: 'worship', role: 'leader' }] });
+  const wl = { id: 'w', role: 'lider', email: 'w@x.pl' };
+  assert.equal((await canAccess({ pool: worship, dbName: db2, table: 'programs', op: 'update', user: wl })).ok, true);
+  assert.equal((await canAccess({ pool: worship, dbName: db2, table: 'program_songs', op: 'insert', user: wl })).ok, true);
+  assert.equal((await canAccess({ pool: worship, dbName: db2, table: 'programs', op: 'delete', user: wl })).ok, false);
+  const db3 = `t${++dbSeq}`;
+  const worshipMember = fakePool({ userId: 'wm', memberships: [{ ministry_key: 'worship', role: 'member' }] });
+  assert.equal((await canAccess({ pool: worshipMember, dbName: db3, table: 'programs', op: 'update', user: { id: 'wm', role: 'czlonek' } })).ok, false);
 });
 
 test('migracja 091 = LIDER_DELETE_RESOURCES (spójność presetu i migracji)', () => {

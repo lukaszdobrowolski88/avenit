@@ -499,6 +499,7 @@ export function createApiClient({
       if (attrs?.password) {
         const { res, payload } = await requestJson('/api/auth/update-password', {
           password: attrs.password,
+          ...(attrs.currentPassword ? { currentPassword: attrs.currentPassword } : {}),
         });
         if (!res.ok) return { data: { user: null }, error: { message: payload?.error || 'Błąd' } };
       }

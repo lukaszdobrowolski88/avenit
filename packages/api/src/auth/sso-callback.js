@@ -4,7 +4,7 @@
 import crypto from 'node:crypto';
 import { config } from '../config.js';
 import { platformPool, getTenantPool } from '../db.js';
-import { verifyState, resolveProviderCreds, exchangeCode } from '../lib/sso.js';
+import { verifyState, resolveProviderCreds, exchangeCode, ssoEmailTrusted } from '../lib/sso.js';
 
 export default async function ssoCallbackRoutes(app) {
   app.get('/api/auth/oauth/:provider/callback', async (req, reply) => {
@@ -35,6 +35,10 @@ export default async function ssoCallbackRoutes(app) {
 
     const idToken = await exchangeCode(provider, { clientId: creds.clientId, clientSecret: creds.clientSecret, msTenant: creds.msTenant, code });
     if (!idToken) { req.log.error({ provider, tenant: t.subdomain }, 'sso token exchange failed'); return fail('error'); }
+    if (!ssoEmailTrusted(provider, idToken, { clientId: creds.clientId, msTenant: creds.msTenant })) {
+      req.log.warn({ provider, tenant: t.subdomain }, 'sso: niepotwierdzony e-mail w id_token');
+      return fail('unverified');
+    }
     const email = String(idToken.email || '').toLowerCase();
     const name = idToken.name || idToken.given_name || '';
     if (!email) return fail('error');
