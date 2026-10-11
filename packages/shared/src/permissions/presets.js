@@ -47,14 +47,35 @@ export const LIDER_DENIED_MODULES = [
   'settings', 'mail', 'mailing', 'sms_campaigns', 'push_campaigns', 'giving', 'automation', 'finance',
   'members', 'care', 'forms', 'analytics', 'attendance', 'rsvp', 'rooms', 'ai',
 ];
-// Usuwanie z roli — tylko dane wspólne (wydarzenia, grafik, zadania, programy, tablice) oraz
-// wyposażenie (wspólne dla wszystkich służb, w katalogu pod media).
+// Usuwanie z roli — tylko dane wspólne (zadania, tablice) oraz wyposażenie (wspólne dla wszystkich
+// służb, w katalogu pod media). Wydarzenia, grafik i programy — od migracji 106 nie z roli.
 export const LIDER_SHARED_DELETE_RESOURCES = [
+  'tasks',
+  'boards', 'board_groups', 'board_columns', 'board_items', 'board_item_updates',
+  'board_item_activity', 'board_views', 'board_automations', 'board_automation_runs', 'board_dashboards',
+  'equipment',
+];
+
+// Lista usuwania z roli według migracji 103 (historyczna — test spójności migracji 103).
+export const LIDER_SHARED_DELETE_RESOURCES_103 = [
   'events', 'schedule_assignments', 'tasks', 'programs', 'program_songs',
   'boards', 'board_groups', 'board_columns', 'board_items', 'board_item_updates',
   'board_item_activity', 'board_views', 'board_automations', 'board_automation_runs', 'board_dashboards',
   'equipment',
 ];
+
+// „Tylko swoje służby wszędzie” (decyzja 2026-10-11, migracja 106): rola lidera tylko CZYTA dane
+// wspólne niebędące jego służbą — wydarzenia i grafik zmienia w zakresie swoich służb (moduleScope.js,
+// z przynależności), program nabożeństwa edytuje lider Uwielbienia (ministry.js) i administrator,
+// nauczanie — administrator. Jawne zakazy, bo rola ma szerokie res:*:create/update.
+export const LIDER_READONLY_SHARED_RESOURCES = [
+  'events', 'schedule_assignments',
+  'programs', 'program_songs', 'program_types', 'program_templates', 'program_song_suggestions',
+  'teachings', 'teaching_series', 'teaching_speakers',
+];
+// Akcje programów z roli lidera: grafik swojej służby (zaproszenia) i eksporty. Publikację
+// i wysyłkę programu ma lider Uwielbienia (ministry.js) i administrator.
+export const LIDER_PROGRAM_ACTIONS = ['send_assignment', 'export_pdf', 'export_ppt', 'export_propresenter'];
 
 export const BUILTIN_ROLES = [
   { key: 'superadmin', label: 'Superadmin', description: 'Pełny, nieograniczony dostęp', is_system: true, is_admin: true, display_order: 0 },
@@ -96,8 +117,10 @@ export const ROLE_PRESETS = {
     ...SETTINGS_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),
     // Grupy domowe tylko do odczytu (edycja — lider/członek służby Grup domowych z przynależności)
     ...READONLY_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`)]),
-    // akcje: programy i kalendarz (akcje służb — z przynależności lidera służby)
-    allow('action:programs:*'), allow('action:calendar:*'),
+    // Dane wspólne spoza jego służb tylko do odczytu (migracja 106)
+    ...LIDER_READONLY_SHARED_RESOURCES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),
+    // akcje: grafik i eksport programów, kalendarz (akcje służb — z przynależności lidera służby)
+    ...LIDER_PROGRAM_ACTIONS.map((a) => allow(`action:programs:${a}`)), allow('action:calendar:*'),
   ],
 
   // czlonek: minimum — kalendarz/programy (odczyt), modlitwa, komunikator, RSVP, własne zadania.

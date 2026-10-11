@@ -105,3 +105,24 @@ export async function exchangeCode(provider, { clientId, clientSecret, msTenant,
   if (!res.ok || !tok?.id_token) return null;
   try { return JSON.parse(Buffer.from(tok.id_token.split('.')[1], 'base64url').toString()); } catch { return null; }
 }
+
+// Czy e-mail z id_token można dopasować do konta (audyt 2026-10, runda 4 — „nOAuth”). Dostawca
+// musi potwierdzać, że adres należy do osoby: Google — email_verified; Microsoft — claim
+// xms_edov (opcjonalny, włączany w rejestracji aplikacji) albo logowanie z JEDNEJ, wskazanej
+// organizacji (msTenant = GUID katalogu i zgodny tid). Inaczej ktoś z własnej organizacji Entra
+// mógł wpisać sobie cudzy adres (np. administratora kościoła) i zalogować się na jego konto.
+const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const truthy = (v) => v === true || v === 'true' || v === 1 || v === '1';
+
+export function ssoEmailTrusted(provider, idToken, { clientId, msTenant } = {}) {
+  if (!idToken || typeof idToken !== 'object') return false;
+  const aud = Array.isArray(idToken.aud) ? idToken.aud : [idToken.aud];
+  if (clientId && !aud.includes(clientId)) return false;
+  if (provider === 'google') return truthy(idToken.email_verified);
+  if (provider === 'microsoft') {
+    if (truthy(idToken.xms_edov)) return true;
+    return !!msTenant && GUID_RE.test(msTenant) && String(idToken.tid || '').toLowerCase() === msTenant.toLowerCase();
+  }
+  return false;
+}
+

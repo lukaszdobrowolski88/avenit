@@ -155,11 +155,13 @@ export default function Login() {
     const params = new URLSearchParams(window.location.search);
     const v = params.get('verify');
     if (v === 'ok') setInfo(tr('E-mail potwierdzony — możesz się zalogować.'));
+    else if (v === 'pending') setInfo(tr('E-mail potwierdzony — konto czeka na zatwierdzenie przez administratora.'));
     else if (v === 'expired') setInfo(tr('Link weryfikacyjny wygasł lub został już użyty.'));
     const sso = params.get('sso');
     if (sso === 'nouser') setError(tr('Brak konta dla tego adresu. Skontaktuj się z administratorem.'));
     else if (sso === 'pending') setError(tr('Konto utworzone — czeka na zatwierdzenie przez administratora.'));
     else if (sso === 'inactive') setError(tr('Konto nieaktywne lub oczekuje na zatwierdzenie.'));
+    else if (sso === 'unverified') setError(tr('Dostawca logowania nie potwierdził Twojego adresu e-mail. Zaloguj się hasłem.'));
     else if (sso === 'disabled') setError(tr('Logowanie przez tego dostawcę jest wyłączone.'));
     else if (sso === 'error') setError(tr('Logowanie zewnętrzne nie powiodło się. Spróbuj ponownie.'));
   }, []);

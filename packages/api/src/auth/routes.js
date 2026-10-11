@@ -17,6 +17,7 @@ import { config, isProd } from '../config.js';
 import { validatePassword, getPasswordPolicy } from '../lib/password-policy.js';
 import { resolveProviderCreds, ssoAvailability, signState, ssoRedirectUri, SSO_PROVIDERS } from '../lib/sso.js';
 import { needs2faSetup } from './twofa-policy.js';
+import { isLocked, registerFailedLogin, registerSuccessfulLogin } from './lockout.js';
 import crypto from 'node:crypto';
 
 const loginSchema = z.object({
@@ -101,6 +102,11 @@ const cookieOpts = (req) => ({
   // Cookie per subdomena tenanta — bez domain, przeglądarka ograniczy do hosta.
 });
 
+// Zmiana hasła bez podania obecnego — tylko tuż po zalogowaniu (minuty).
+export const FRESH_LOGIN_MINUTES = 10;
+// Rejestracja „za zgodą”: czeka na potwierdzenie e-maila, potem trafia do kolejki administratora.
+export const PENDING_EMAIL_THEN_ADMIN = 'email_admin';
+
 export default async function authRoutes(app) {
   // Logowanie działa też dla zawieszonych tenantów (żeby pokazać ekran blokady),
   // dlatego requireTenant, nie requireTenantActive.
@@ -129,20 +135,15 @@ export default async function authRoutes(app) {
       }
       // Czasowa blokada po zbyt wielu nieudanych próbach (anty-brute-force, próg 5 / 15 min).
       // Ten sam komunikat co przy błędnym haśle — bez ujawniania istnienia/stanu konta (bez enumeracji).
-      if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
+      if (isLocked(user)) {
         return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
       }
       if (!(await verifyPassword(password, user.password_hash))) {
-        const count = (user.failed_login_count || 0) + 1;
-        if (count >= 5) {
-          await req.db.query(`UPDATE app_users SET failed_login_count = 0, locked_until = now() + interval '15 minutes' WHERE id = $1`, [user.id]);
-        } else {
-          await req.db.query(`UPDATE app_users SET failed_login_count = $1 WHERE id = $2`, [count, user.id]);
-        }
+        await registerFailedLogin(req.db, user);
         return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
       }
       if (!user.is_active || user.status === 'pending' || user.status === 'blocked') {
-        if (user.status === 'pending' && user.pending_kind === 'email') {
+        if (user.status === 'pending' && (user.pending_kind === 'email' || user.pending_kind === PENDING_EMAIL_THEN_ADMIN)) {
           return reply.code(403).send({ error: 'Potwierdź adres e-mail — sprawdź skrzynkę.' });
         }
         if (user.status === 'pending') {
@@ -168,21 +169,13 @@ export default async function authRoutes(app) {
         }
         if (!ok) {
           // Błędny kod 2FA też liczy się do progu blokady (throttle zgadywania TOTP per konto).
-          const count = (user.failed_login_count || 0) + 1;
-          if (count >= 5) {
-            await req.db.query(`UPDATE app_users SET failed_login_count = 0, locked_until = now() + interval '15 minutes' WHERE id = $1`, [user.id]);
-          } else {
-            await req.db.query(`UPDATE app_users SET failed_login_count = $1 WHERE id = $2`, [count, user.id]);
-          }
+          await registerFailedLogin(req.db, user);
           return reply.code(401).send({ error: 'Nieprawidłowy kod weryfikacyjny' });
         }
       }
 
       // Sukces — reset licznika nieudanych prób + znacznik logowania.
-      await req.db.query(
-        `UPDATE app_users SET last_login_at = now(), failed_login_count = 0, locked_until = NULL WHERE id = $1`,
-        [user.id]
-      );
+      await registerSuccessfulLogin(req.db, user);
 
       // Wymóg 2FA (org lub konto) bez skonfigurowanego 2FA → token oznaczony n2fa (dane blokowane).
       const needs2fa = await needs2faSetup(req.db, user);
@@ -368,14 +361,47 @@ export default async function authRoutes(app) {
   });
 
   // Zmiana własnego hasła (odpowiednik supabase.auth.updateUser({password})).
+  // Audyt 2026-10, runda 4: wcześniej bez obecnego hasła i bez zamknięcia innych sesji — przejęty
+  // na chwilę token (15 min) dawał trwałe przejęcie konta. Teraz obecne hasło jest wymagane, chyba
+  // że logowanie było przed chwilą (FRESH_LOGIN_MINUTES — wymuszona zmiana po zalogowaniu, starsze
+  // wersje aplikacji bez pola „obecne hasło”). Po zmianie pozostałe sesje są wylogowane.
   app.post('/api/auth/update-password', { preHandler: app.requireUser }, async (req, reply) => {
     const password = String(req.body?.password || '');
+    const current = req.body?.currentPassword != null ? String(req.body.currentPassword) : null;
+    const { rows } = await req.db.query(
+      `SELECT password_hash, failed_login_count, locked_until,
+              (last_login_at IS NOT NULL AND last_login_at > now() - make_interval(mins => $2)) AS fresh
+         FROM app_users WHERE id = $1`,
+      [req.user.id, FRESH_LOGIN_MINUTES]
+    );
+    const me = rows[0];
+    if (!me) return reply.code(404).send({ error: 'Użytkownik nie istnieje' });
+    const hasPassword = !!me.password_hash; // konta z SSO bez hasła ustawiają je pierwszy raz
+    if (current != null && hasPassword) {
+      if (isLocked(me)) return reply.code(429).send({ error: 'Zbyt wiele prób — spróbuj za kilka minut' });
+      if (!(await verifyPassword(current, me.password_hash))) {
+        await registerFailedLogin(req.db, { id: req.user.id, failed_login_count: me.failed_login_count });
+        return reply.code(400).send({ error: 'Obecne hasło jest nieprawidłowe', code: 'WRONG_CURRENT_PASSWORD' });
+      }
+    } else if (hasPassword && !me.fresh) {
+      return reply.code(403).send({
+        error: 'Podaj obecne hasło (albo zaloguj się ponownie i zmień hasło od razu po zalogowaniu)',
+        code: 'CURRENT_PASSWORD_REQUIRED',
+      });
+    }
     const pwErr = await validatePassword(req.db, password);
     if (pwErr) return reply.code(400).send({ error: pwErr });
-    await req.db.query(`UPDATE app_users SET password_hash = $1 WHERE id = $2`, [
+    await req.db.query(`UPDATE app_users SET password_hash = $1, failed_login_count = 0, locked_until = NULL WHERE id = $2`, [
       await hashPassword(password),
       req.user.id,
     ]);
+    // Inne urządzenia wylogowane — zostaje bieżąca sesja (cookie / nagłówek), jeśli ją znamy.
+    const cur = req.cookies?.avenit_rt || req.headers['x-refresh-token'] || '';
+    await req.db.query(
+      `UPDATE refresh_tokens SET revoked_at = now()
+        WHERE user_id = $1 AND revoked_at IS NULL AND ($2::text IS NULL OR token_hash <> $2)`,
+      [req.user.id, cur ? hashRefreshToken(cur) : null]
+    );
     return reply.send({ ok: true });
   });
 
@@ -523,37 +549,25 @@ export default async function authRoutes(app) {
         return reply.code(202).send({ status: 'pending', reason: 'email' });
       }
 
-      // Tryb „za zgodą": zaufane domeny aktywują się od razu; reszta czeka na administratora.
-      if (cfg.autoapproveDomains.includes(domain)) {
-        await req.db.query(
-          `INSERT INTO app_users
-             (email, full_name, name, role, is_active, status, email_verified, password_hash, campus_id, consent_at)
-           VALUES ($1,$2,$2,$3,true,'active',true,$4,$5,$6)`,
-          [email, full_name || '', role, passwordHash, cfg.campus, consentAt]
-        );
-        const { sendWelcomeEmail } = await import('../lib/email.js');
-        await sendWelcomeEmail(email, { name: full_name, loginUrl: base }).catch((err) => req.log.error({ err }, 'welcome email failed'));
-        await logAccountEvent(req.db, { email, action: 'approved', actor: 'auto', detail: `zaufana domena ${domain}` });
-        return reply.code(201).send({ status: 'active', reason: 'auto' });
-      }
-
+      // Tryb „za zgodą" (audyt 2026-10, runda 4): najpierw potwierdzenie e-maila — inaczej ktoś mógł
+      // założyć konto na cudzy adres (zaufana domena aktywowała je od razu, a administrator
+      // zatwierdzał „znane nazwisko” z hasłem obcej osoby). Po kliknięciu linku: zaufana domena →
+      // konto aktywne, pozostali → kolejka administratora (verify-email).
+      const trusted = cfg.autoapproveDomains.includes(domain);
+      const raw = crypto.randomBytes(32).toString('base64url');
+      const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
       await req.db.query(
         `INSERT INTO app_users
-           (email, full_name, name, role, is_active, status, pending_kind, email_verified, password_hash, campus_id, consent_at)
-         VALUES ($1,$2,$2,$3,false,'pending','admin',false,$4,$5,$6)`,
-        [email, full_name || '', role, passwordHash, cfg.campus, consentAt]
+           (email, full_name, name, role, is_active, status, pending_kind, email_verified, verify_token_hash, verify_expires, password_hash, campus_id, consent_at)
+         VALUES ($1,$2,$2,$3,false,'pending',$4,false,$5, now() + interval '24 hours',$6,$7,$8)`,
+        [email, full_name || '', role, trusted ? 'email' : PENDING_EMAIL_THEN_ADMIN, tokenHash, passwordHash, cfg.campus, consentAt]
       );
-      const { rows: admins } = await req.db.query(
-        `SELECT u.email FROM app_users u JOIN app_roles r ON u.role = r.key
-          WHERE r.is_admin = true AND u.is_active = true AND u.email IS NOT NULL`
+      const { sendVerifyEmail } = await import('../lib/email.js');
+      await sendVerifyEmail(email, `${base}/api/auth/verify-email?token=${raw}`).catch((err) =>
+        req.log.error({ err }, 'verify email failed')
       );
-      if (admins.length) {
-        const { sendAdminNewUserEmail } = await import('../lib/email.js');
-        await sendAdminNewUserEmail(admins.map((a) => a.email), { email, name: full_name, link: `${base}/settings` })
-          .catch((err) => req.log.error({ err }, 'admin notify failed'));
-      }
-      await logAccountEvent(req.db, { email, action: 'registered', actor: 'self', detail: 'approval' });
-      return reply.code(202).send({ status: 'pending', reason: 'admin' });
+      await logAccountEvent(req.db, { email, action: 'registered', actor: 'self', detail: trusted ? `zaufana domena ${domain} (e-mail)` : 'approval (e-mail)' });
+      return reply.code(202).send({ status: 'pending', reason: 'email' });
     }
   );
 
@@ -563,6 +577,28 @@ export default async function authRoutes(app) {
     const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
     if (!raw) return reply.redirect(`${base}/?verify=invalid`);
     const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
+    // Rejestracja „za zgodą”: po potwierdzeniu e-maila konto trafia do kolejki administratora.
+    const { rows: queued } = await req.db.query(
+      `UPDATE app_users
+          SET pending_kind='admin', email_verified=true, verify_token_hash=NULL, verify_expires=NULL
+        WHERE verify_token_hash = $1 AND verify_expires > now() AND status='pending' AND pending_kind=$2
+        RETURNING email, full_name`,
+      [tokenHash, PENDING_EMAIL_THEN_ADMIN]
+    );
+    if (queued[0]) {
+      const { rows: admins } = await req.db.query(
+        `SELECT u.email FROM app_users u JOIN app_roles r ON u.role = r.key
+          WHERE r.is_admin = true AND u.is_active = true AND u.email IS NOT NULL`
+      );
+      if (admins.length) {
+        const { sendAdminNewUserEmail } = await import('../lib/email.js');
+        await sendAdminNewUserEmail(admins.map((a) => a.email), { email: queued[0].email, name: queued[0].full_name, link: `${base}/settings` })
+          .catch((err) => req.log.error({ err }, 'admin notify failed'));
+      }
+      const { logAccountEvent } = await import('../lib/account-audit.js');
+      await logAccountEvent(req.db, { email: queued[0].email, action: 'verified', actor: 'self', detail: 'czeka na zatwierdzenie' });
+      return reply.redirect(`${base}/?verify=pending`);
+    }
     const { rows } = await req.db.query(
       `UPDATE app_users
           SET status='active', is_active=true, email_verified=true, verify_token_hash=NULL, verify_expires=NULL
@@ -632,6 +668,12 @@ export default async function authRoutes(app) {
 
   app.post('/api/auth/2fa/enable', { preHandler: app.requireUser }, async (req, reply) => {
     const { secret, code, backupCodes } = req.body || {};
+    // Działające 2FA zmienia się przez wyłączenie (z kodem z obecnej aplikacji) i ponowne
+    // włączenie — wcześniej sam token sesji wystarczał, by podmienić 2FA na swoje (runda 4).
+    const { rows: cur } = await req.db.query(`SELECT totp_enabled FROM app_users WHERE id = $1`, [req.user.id]);
+    if (cur[0]?.totp_enabled) {
+      return reply.code(409).send({ error: 'Weryfikacja dwuetapowa jest już włączona — najpierw ją wyłącz', code: 'TOTP_ALREADY_ENABLED' });
+    }
     if (!secret || !verifyTOTP(String(secret), String(code || ''))) {
       return reply.code(400).send({ error: 'Nieprawidłowy kod — spróbuj ponownie' });
     }

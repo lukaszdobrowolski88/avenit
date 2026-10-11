@@ -20,6 +20,7 @@ import { isPiiTable } from './dataapi/pii.js';
 import { getTenantPool, resolveTenant } from './db.js';
 import { verifyAccessToken, AUD_TENANT } from './auth/tokens.js';
 import { config, isProd } from './config.js';
+import { corsOriginAllowed } from './lib/cors.js';
 
 export async function buildServer() {
   const app = Fastify({
@@ -29,7 +30,8 @@ export async function buildServer() {
   });
 
   await app.register(cors, {
-    origin: true, // subdomeny tenantów + admin; Caddy i tak ogranicza hosty
+    // Tylko domena platformy i jej subdomeny (lib/cors.js) — nie każda strona z credentials.
+    origin: (origin, cb) => cb(null, corsOriginAllowed(origin, { appDomain: config.APP_DOMAIN, isProd })),
     credentials: true,
   });
   await app.register(cookie);

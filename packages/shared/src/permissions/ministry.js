@@ -41,8 +41,23 @@ export function membershipCapabilities(ministryKey, role) {
   // Lider układa grafik swojej służby (wydarzenia i tablice — moduleScope.js) i wysyła z niego
   // zaproszenia: fn send-assignment-invites wymaga action:programs:send_assignment.
   if (isLeader) caps.push(LEADER_SCHEDULE_ACTION);
+  // Program nabożeństwa (wspólny, bez służby) edytuje lider Uwielbienia — decyzja 2026-10-11.
+  if (isLeader && PROGRAM_EDITOR_MINISTRIES.includes(ministryKey)) caps.push(...PROGRAM_EDITOR_CAPS);
   return caps;
 }
+
+// Służby, których LIDER edytuje programy nabożeństw, i prawa, które to daje (bez usuwania programu).
+export const PROGRAM_EDITOR_MINISTRIES = ['worship'];
+export const PROGRAM_EDITOR_CAPS = [
+  'module:programs',
+  'res:programs:read', 'res:programs:create', 'res:programs:update',
+  'res:program_songs:read', 'res:program_songs:create', 'res:program_songs:update', 'res:program_songs:delete',
+  'res:program_types:read',
+  'res:program_templates:read', 'res:program_templates:create', 'res:program_templates:update',
+  'res:program_song_suggestions:read', 'res:program_song_suggestions:create',
+  'res:program_song_suggestions:update', 'res:program_song_suggestions:delete',
+  'action:programs:publish', 'action:programs:send_email',
+];
 
 // Z listy przynależności osoby → płaskie granty { capability, allowed:true } (bez duplikatów)
 // do dołożenia w resolverze. memberships: [{ ministry_key, role }].

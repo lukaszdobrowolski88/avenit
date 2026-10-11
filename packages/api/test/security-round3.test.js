@@ -345,7 +345,9 @@ test('send-assignment-invites: bez globalnej edycji grafiku — wymagana własna
   assert.ok(inviteAccessError(mediaLeader, 'worship'));
   assert.ok(inviteAccessError(mediaLeader, undefined), 'teamType wymagany');
   assert.equal(inviteAccessError(canOf('koordynator'), undefined), null, 'globalnie — bez teamType');
-  assert.equal(inviteAccessError(canOf('lider'), 'worship'), null);
+  // Od migracji 106 lider bez przynależności nie zaprasza do cudzej służby (tylko swoje służby).
+  assert.ok(inviteAccessError(canOf('lider'), 'worship'));
+  assert.equal(inviteAccessError(canOf('lider', [{ ministry_key: 'worship', role: 'leader' }]), 'worship'), null);
 });
 
 test('send-assignment-invites: linki z domeny tenanta, nie z baseUrl żądania', () => {
