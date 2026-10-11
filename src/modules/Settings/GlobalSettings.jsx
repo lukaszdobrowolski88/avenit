@@ -65,6 +65,12 @@ const TEAM_TABLES = [
   { key: 'atmosfera', table: 'atmosfera_members', fallback: 'Atmosfera Team' },
   { key: 'kids', table: 'kids_teachers', hasGroup: true, fallback: 'Służba dzieci' },
 ];
+// Służby wbudowane (moduły zespołów). Własne moduły z kreatora (bez komponentu, spoza tej listy
+// i spoza modułów systemowych) też są służbami — np. „Faceci”.
+const MINISTRY_MODULE_KEYS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
+const SYSTEM_MODULE_KEYS = new Set(['dashboard', 'programs', 'calendar', 'members', 'finance', 'teaching', 'prayer', 'komunikator',
+  'mailing', 'settings', 'push_campaigns', 'mail', 'boards', 'sms_campaigns', 'giving', 'care', 'attendance', 'serve', 'rooms',
+  'rsvp', 'sermons', 'automation', 'analytics', 'ai', 'forms']);
 const teamCols = (def) => `id, full_name, email, phone${def.hasStatus ? ', status' : ''}${def.hasGroup ? ', group_id' : ''}`;
 
 // --- UI HELPERS ---
@@ -143,11 +149,19 @@ export default function GlobalSettings() {
   const [pwBusy, setPwBusy] = useState(false);
   const [isCreatingAuthUser, setIsCreatingAuthUser] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState([]);
+  // Rola w wybranej służbie: 'member' | 'leader' (zapis do ministry_memberships — od tego zależą
+  // uprawnienia; lider służby widzi i prowadzi swoją służbę, w tym jej finanse).
+  const [teamRoles, setTeamRoles] = useState({});
   const [require2FA, setRequire2FA] = useState(false);
 
   // Nazwy służb z app_modules (np. „Małe SchWro”), nie zaszyte w kodzie (UXE-12).
   const moduleLabel = (key, fallback) => dbModules.find(m => m.key === key)?.label || tr(fallback);
   const teamDefinitions = TEAM_TABLES.map(d => ({ ...d, label: moduleLabel(d.key, d.fallback) }));
+  // Wszystkie służby do wyboru przy zakładaniu konta (wcześniej tylko 4 zespoły ze składem).
+  const ministryOptions = useMemo(() => dbModules
+    .filter((m) => m.is_enabled !== false && (MINISTRY_MODULE_KEYS.includes(m.key) || (!m.component_name && !SYSTEM_MODULE_KEYS.has(m.key))))
+    .map((m) => ({ key: m.key, label: m.label || m.key })),
+  [dbModules]);
 
   // Lista ról do przypisania osobie — z app_roles; fallback do wbudowanych, gdy tabela pusta.
   const BUILTIN_ROLE_LABELS = {
@@ -175,7 +189,7 @@ export default function GlobalSettings() {
   };
 
   const fetchDbModules = async () => {
-    const { data, error } = await supabase.from('app_modules').select('id, key, label').order('display_order', { ascending: true });
+    const { data, error } = await supabase.from('app_modules').select('id, key, label, component_name, is_enabled').order('display_order', { ascending: true });
     if (!error && data) setDbModules(data);
   };
 
@@ -302,7 +316,7 @@ export default function GlobalSettings() {
     const failed = [];
     for (const teamKey of selectedTeams) {
       const def = teamDefinitions.find(d => d.key === teamKey);
-      if (!def) continue;
+      if (!def) continue; // służba bez listy składu (np. Grupy domowe) — tylko przynależność
       try {
         const { data: byEmail, error: e1 } = await supabase.from(def.table).select('id').eq('email', email);
         if (e1) throw e1;
@@ -354,6 +368,7 @@ export default function GlobalSettings() {
           .eq('email', userForm.email)
           .maybeSingle();
 
+        let userId = existingAppUser?.id || null;
         if (existingAppUser) {
           const { error } = await supabase.functions.invoke('admin-update-user', {
             body: {
@@ -369,7 +384,7 @@ export default function GlobalSettings() {
           toast.info(tr('Konto {email} już istniało — zaktualizowano jego dane.', { email: userForm.email }));
         } else {
           // Konto zakłada FUNKCJA SERWEROWA (aktywne, hash po stronie serwera) i wysyła e-mail „ustaw hasło”.
-          const { error: createErr } = await supabase.functions.invoke('admin-create-user', {
+          const { data: created, error: createErr } = await supabase.functions.invoke('admin-create-user', {
             body: {
               email: userForm.email,
               full_name: userForm.full_name || '',
@@ -380,7 +395,22 @@ export default function GlobalSettings() {
             },
           });
           if (createErr) throw new Error(createErr.message);
+          userId = created?.id || null;
           toast.success(tr('Utworzono {email} — wysłano zaproszenie do ustawienia hasła (ważne 7 dni).', { email: userForm.email }));
+        }
+
+        // Przynależność do wybranych służb (uprawnienia) — z rolą członek/lider.
+        if (selectedTeams.length > 0 && userId) {
+          const failedM = [];
+          for (const key of selectedTeams) {
+            const { error } = await supabase.from('ministry_memberships')
+              .insert({ user_id: userId, ministry_key: key, role: teamRoles[key] === 'leader' ? 'leader' : 'member' });
+            // Już przypisany (unikalność user+służba) — nie jest błędem.
+            if (error && !/duplicate|unique|23505/i.test(`${error.code || ''} ${error.message || ''}`)) {
+              failedM.push(ministryOptions.find((m) => m.key === key)?.label || key);
+            }
+          }
+          if (failedM.length) toast.error(tr('Konto zapisane, ale nie udało się przypisać do służb: {teams}.', { teams: failedM.join(', ') }));
         }
 
         if (selectedTeams.length > 0) {
@@ -391,6 +421,7 @@ export default function GlobalSettings() {
 
       setShowUserModal(false);
       setSelectedTeams([]);
+      setTeamRoles({});
       setRequire2FA(false);
       fetchData();
       loadAccountEvents();
@@ -1072,7 +1103,7 @@ export default function GlobalSettings() {
               <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2">{t('Służby / Zespoły')}</div>
               <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
                 <div className="flex flex-wrap gap-2">
-                  {teamDefinitions.map(team => {
+                  {ministryOptions.map(team => {
                     const isSelected = selectedTeams.includes(team.key);
                     return (
                       <button
@@ -1092,8 +1123,30 @@ export default function GlobalSettings() {
                     );
                   })}
                 </div>
+                {selectedTeams.length > 0 && (
+                  <div className="mt-3 space-y-1.5">
+                    {selectedTeams.map((key) => {
+                      const label = ministryOptions.find((m) => m.key === key)?.label || key;
+                      const role = teamRoles[key] === 'leader' ? 'leader' : 'member';
+                      return (
+                        <div key={key} className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-gray-700 dark:text-gray-200 truncate">{label}</span>
+                          <div role="radiogroup" aria-label={tr('Rola w służbie {name}', { name: label })} className="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 shrink-0">
+                            {[['member', tr('Członek')], ['leader', tr('Lider')]].map(([k, l]) => (
+                              <button key={k} type="button" role="radio" aria-checked={role === k}
+                                onClick={() => setTeamRoles((prev) => ({ ...prev, [key]: k }))}
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${role === k ? 'bg-white dark:bg-gray-900 shadow text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                {l}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                  {tr('Użytkownik zostanie dopisany jako członek wybranych służb.')}
+                  {tr('Lider służby widzi i prowadzi swoją służbę (także jej finanse); członek współpracuje w niej.')}
                 </p>
               </div>
             </div>
