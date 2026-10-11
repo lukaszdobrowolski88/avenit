@@ -52,21 +52,28 @@ export function createApiClient({
   // ── Tenant (dynamiczny) ──────────────────────────────────────────────────
   // `tenant` z opcji to domyślny/fallback (np. EXPO_PUBLIC_TENANT w devie); w apce
   // uniwersalnej jest null, a ustala się go przy logowaniu i utrwala w storage.
-  let tenantLoaded = false;
-  async function loadTenant() {
-    if (tenantLoaded) return tenant;
-    tenantLoaded = true;
-    try {
-      const saved = await storage?.getItem(TENANT_KEY);
-      if (saved) tenant = saved;
-    } catch {
-      // brak storage — zostaje wartość domyślna z opcji
+  // Jeden wspólny odczyt (obietnica) — równoczesne wywołania przy starcie czekają na TEN SAM odczyt.
+  // Wcześniej znacznik „wczytane” był ustawiany przed odczytem z SecureStore, więc drugie i kolejne
+  // wywołania dostawały pusty tenant (pierwsze żądania szły bez X-Tenant).
+  let tenantLoad = null;
+  let tenantWritten = false;
+  function loadTenant() {
+    if (!tenantLoad) {
+      tenantLoad = (async () => {
+        try {
+          const saved = await storage?.getItem(TENANT_KEY);
+          if (saved && !tenantWritten) tenant = saved;
+        } catch {
+          // brak storage — zostaje wartość domyślna z opcji
+        }
+      })();
     }
-    return tenant;
+    return tenantLoad.then(() => tenant);
   }
   async function setTenant(slug) {
     tenant = slug || null;
-    tenantLoaded = true;
+    tenantWritten = true;
+    tenantLoad = tenantLoad || Promise.resolve();
     try {
       if (slug) await storage?.setItem(TENANT_KEY, slug);
       else await storage?.removeItem(TENANT_KEY);
@@ -80,24 +87,33 @@ export function createApiClient({
 
   // ── Sesja ──────────────────────────────────────────────────────────────
   let session = null;
-  let sessionLoaded = false;
+  let sessionLoad = null;
+  let sessionWritten = false; // logowanie/wylogowanie w trakcie odczytu wygrywa ze starą wartością
   const authListeners = new Set();
 
-  async function loadSession() {
-    if (sessionLoaded) return session;
-    sessionLoaded = true;
-    try {
-      const raw = await storage?.getItem(SESSION_KEY);
-      if (raw) session = JSON.parse(raw);
-    } catch {
-      session = null;
+  // Jeden wspólny odczyt sesji z pamięci (SecureStore odpowiada asynchronicznie). Wcześniej
+  // znacznik „wczytane” był ustawiany PRZED odczytem — przy starcie aplikacji kilka miejsc pyta
+  // naraz (ekran startowy, push, nasłuch logowania) i wszystkie poza pierwszym dostawały PUSTĄ
+  // sesję → ekran logowania przy każdym uruchomieniu mobilki, mimo zapisanej sesji.
+  function loadSession() {
+    if (!sessionLoad) {
+      sessionLoad = (async () => {
+        try {
+          const raw = await storage?.getItem(SESSION_KEY);
+          // Zapis w trakcie odczytu (logowanie) ma pierwszeństwo przed starą wartością z pamięci.
+          if (raw && !sessionWritten) session = JSON.parse(raw);
+        } catch {
+          // uszkodzony wpis / brak storage — bez sesji
+        }
+      })();
     }
-    return session;
+    return sessionLoad.then(() => session);
   }
 
   async function saveSession(next, event) {
     session = next;
-    sessionLoaded = true;
+    sessionWritten = true;
+    sessionLoad = sessionLoad || Promise.resolve();
     try {
       if (next) await storage?.setItem(SESSION_KEY, JSON.stringify(next));
       else await storage?.removeItem(SESSION_KEY);

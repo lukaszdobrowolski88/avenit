@@ -50,3 +50,44 @@ describe('odświeżanie sesji', () => {
     expect(calls.filter((c) => c.endsWith('/api/fn/ping')).length).toBe(2);
   });
 });
+
+// Odczyt sesji przy starcie: SecureStore odpowiada asynchronicznie, a kilka miejsc naraz pyta
+// o sesję (ekran startowy, push, nasłuch logowania). Wcześniej drugie i kolejne zapytanie
+// dostawało PUSTĄ sesję (znacznik „wczytane” ustawiony przed odczytem) → ekran logowania.
+describe('odczyt sesji i kościoła przy starcie (wyścig)', () => {
+  const slowStorage = () => {
+    const m = new Map([['avenit.auth.session', JSON.stringify(SESSION)], ['avenit.tenant', 'schwro']]);
+    return { getItem: (k) => new Promise((r) => setTimeout(() => r(m.get(k) ?? null), 20)), setItem: async (k, v) => { m.set(k, v); }, removeItem: async (k) => { m.delete(k); } };
+  };
+
+  it('równoczesne getSession / getUser / onAuthStateChange — wszystkie widzą zapisaną sesję', async () => {
+    const client = createApiClient({ apiUrl: 'https://api.test', storage: slowStorage(), fetchImpl: async () => json(200, {}) });
+    let initial = 'nie wywołano';
+    client.auth.onAuthStateChange((event, s) => { if (event === 'INITIAL_SESSION') initial = s; });
+    const [a, b, c] = await Promise.all([client.auth.getSession(), client.auth.getSession(), client.auth.getUser()]);
+    expect(a.data.session?.refresh_token).toBe('r0');
+    expect(b.data.session?.refresh_token).toBe('r0');
+    expect(c.data.user?.email).toBe('ja@x.pl');
+    await new Promise((r) => setTimeout(r, 30));
+    expect(initial?.refresh_token).toBe('r0');
+  });
+
+  it('pierwsze żądania przy starcie mają już nagłówek kościoła (X-Tenant)', async () => {
+    const seen = [];
+    const client = createApiClient({ apiUrl: 'https://api.test', storage: slowStorage(), fetchImpl: async (url, opts) => { seen.push(opts?.headers?.['X-Tenant'] || null); return json(200, {}); } });
+    await Promise.all([client.functions.invoke('a', { body: {} }), client.functions.invoke('b', { body: {} })]);
+    expect(seen).toEqual(['schwro', 'schwro']);
+  });
+});
+
+describe('wylogowanie w trakcie pierwszego odczytu', () => {
+  it('nie wraca stara sesja z pamięci', async () => {
+    const m = new Map([['avenit.auth.session', JSON.stringify(SESSION)]]);
+    const st = { getItem: (k) => new Promise((r) => setTimeout(() => r(m.get(k) ?? null), 20)), setItem: async (k, v) => { m.set(k, v); }, removeItem: async (k) => { m.delete(k); } };
+    const client = createApiClient({ apiUrl: 'https://api.test', storage: st, fetchImpl: async () => json(200, {}) });
+    const pending = client.auth.getSession();
+    await client.auth.signOut();
+    await pending;
+    expect((await client.auth.getSession()).data.session).toBeNull();
+  });
+});
