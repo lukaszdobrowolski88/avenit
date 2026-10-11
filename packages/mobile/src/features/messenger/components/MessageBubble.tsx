@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
+import { router } from "expo-router";
 import { Check, CheckCheck, CornerUpLeft, Eye, EyeOff, FileText, Forward, Languages, Pin } from "lucide-react-native";
 import { format } from "date-fns";
 import type { MemberMap, MessageRow, ReactionAggregate } from "../api";
@@ -15,7 +16,18 @@ import { AttachmentImage } from "./AttachmentImage";
 import { LinkPreviewCard, openLink } from "./LinkPreviewCard";
 import { openAttachment } from "../signedUrl";
 import { translatedFromLabel } from "../plus";
+import { CallMessageCard } from "../../calls/components/CallMessageCard";
+import { taskFromChatLink, taskNameFromMessage } from "../../tasks/share";
+import { openTask } from "../../tasks/navigation";
+import { TaskLinkCard } from "../../tasks/components/TaskLinkCard";
 import type { PrayerMetadata, EventMetadata, DeliveryStatus } from "../api";
+
+// Link do zadania tego tenanta („Wyślij do czatu”) otwiera ekran zadania w apce, reszta — przeglądarkę.
+const openMessageLink = (url: string) => {
+  const task = taskFromChatLink(url);
+  if (task) openTask(router, task);
+  else openLink(url);
+};
 
 // Treść: klikalne linki (K2) + pogrubione @wzmianki (z „@wszyscy” — K5).
 const MENTION_RE = /(@[\p{L}][\p{L}\d._-]*)/u;
@@ -25,7 +37,7 @@ const renderRichText = (text: string, opts: { accent: string; link: string; onLo
       return [
         <Text
           key={`l${i}`}
-          onPress={() => openLink(part.url)}
+          onPress={() => openMessageLink(part.url)}
           onLongPress={opts.onLongPress}
           accessibilityRole="link"
           style={{ color: opts.link, textDecorationLine: "underline" }}
@@ -147,6 +159,13 @@ const MessageBubbleBase = ({
   const mentionsMe = !mine && (mentionsUser(message, currentUserEmail) || toAll);
   const isText = !message.message_type || message.message_type === "text";
   const previewUrl = isText && message.content ? firstLink(message.content) : null;
+  // Link do zadania → karta zadania zamiast podglądu strony (podgląd SPA nic by nie powiedział).
+  const previewTask = previewUrl ? taskFromChatLink(previewUrl) : null;
+
+  // Połączenie audio/wideo — karta jak w webie („Dołącz” / „Oddzwoń” w przeglądarce).
+  if (message.message_type === "call") {
+    return <CallMessageCard message={message} conversationId={String(message.conversation_id)} myEmail={currentUserEmail ?? null} />;
+  }
 
   // Wiadomość systemowa — wyśrodkowana pastylka (spec §2).
   if (message.message_type === "system") {
@@ -398,7 +417,11 @@ const MessageBubbleBase = ({
             </View>
           ) : null}
 
-          {previewUrl ? <LinkPreviewCard url={previewUrl} mine={mine} onLongPress={onLongPress} /> : null}
+          {previewTask ? (
+            <TaskLinkCard target={previewTask} name={taskNameFromMessage(message.content)} mine={mine} onLongPress={onLongPress} />
+          ) : previewUrl ? (
+            <LinkPreviewCard url={previewUrl} mine={mine} onLongPress={onLongPress} />
+          ) : null}
 
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 3, marginTop: 2 }}>
             {message.edited_at ? (

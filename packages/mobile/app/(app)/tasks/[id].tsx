@@ -21,6 +21,7 @@ import {
   Pencil,
   RotateCcw,
   SearchX,
+  Send,
   UserPlus,
 } from 'lucide-react-native';
 import { boardModuleKey } from '@avenit/shared/src/permissions/moduleScope.js';
@@ -70,11 +71,14 @@ import {
   whenLabel,
   type BoardColumn,
   type Person,
+  type TaskActivity,
 } from '../../../src/features/tasks/board';
 import { openTask } from '../../../src/features/tasks/navigation';
 import { F, PersonAvatar, StatusPill } from '../../../src/features/tasks/components/bits';
 import { OptionSheet, PeopleSheet } from '../../../src/features/tasks/components/Pickers';
 import { TaskComments } from '../../../src/features/tasks/components/Comments';
+import { ShareTaskToChatSheet } from '../../../src/features/tasks/components/ShareTaskToChatSheet';
+import { absoluteTaskUrl } from '../../../src/features/tasks/share';
 import { FitLabel } from '../../../src/components/ui/FitLabel';
 
 // Zadanie (element dowolnej tablicy: Projekty, zakładka „Zadania” służby, zadania Kalendarza) —
@@ -139,7 +143,7 @@ export default function TaskScreen() {
   );
 }
 
-type SheetState = null | 'status' | 'group' | 'edit' | { people: string };
+type SheetState = null | 'status' | 'group' | 'edit' | 'chat' | { people: string };
 
 const TaskBody = ({ d, refreshing, onRefresh }: { d: Ok; refreshing: boolean; onRefresh: () => void }) => {
   const { item, board, columns, groups, parent, subitems } = d;
@@ -158,6 +162,8 @@ const TaskBody = ({ d, refreshing, onRefresh }: { d: Ok; refreshing: boolean; on
   const canComment = can('board_item_updates', 'create');
   const canLike = can('board_item_updates', 'update');
   const canDeleteComments = can('board_item_updates', 'delete');
+  // „Wyślij do czatu” — jak web (useCanShareToChat): z dostępem do Komunikatora.
+  const canShareToChat = perms.moduleVisible('komunikator');
 
   const people = useTaskPeople(canEdit || canComment);
   const updates = useTaskUpdates(item.id);
@@ -224,7 +230,7 @@ const TaskBody = ({ d, refreshing, onRefresh }: { d: Ok; refreshing: boolean; on
     sheet && typeof sheet === 'object' ? peopleCols.find((c) => c.id === sheet.people) ?? null : null;
 
   const updatesList = updates.data ?? [];
-  const activityList = activity.data ?? [];
+  const activityList: TaskActivity[] = activity.data ?? [];
 
   return (
     <View style={{ flex: 1, backgroundColor: B.paper }}>
@@ -507,12 +513,25 @@ const TaskBody = ({ d, refreshing, onRefresh }: { d: Ok; refreshing: boolean; on
           </View>
         )}
 
+        {/* Wiadomość z nazwą i linkiem do zadania do wybranej rozmowy (jak web: „Wyślij do czatu”). */}
+        {canShareToChat ? (
+          <Pressable
+            onPress={() => setSheet('chat')}
+            accessibilityRole="button"
+            className="active:opacity-70"
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 26, height: 46, borderRadius: 999, backgroundColor: B.card }}
+          >
+            <Send size={16} color={B.ink} />
+            <Text style={{ fontSize: 14, color: B.ink, fontFamily: F.semibold }}>Wyślij do czatu</Text>
+          </Pressable>
+        ) : null}
+
         {/* Akcja drugorzędna: pełny widok na webie (pola, których apka nie edytuje). */}
         <Pressable
           onPress={() => void openOnWeb(taskWebPath(board, item.id, paths))}
           accessibilityRole="link"
           className="active:opacity-70"
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 26, height: 46, borderRadius: 999, borderWidth: 1, borderColor: B.fieldBorder }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: canShareToChat ? 10 : 26, height: 46, borderRadius: 999, borderWidth: 1, borderColor: B.fieldBorder }}
         >
           <ExternalLink size={16} color={B.ink2} />
           <Text style={{ fontSize: 14, color: B.ink2, fontFamily: F.semibold }}>Otwórz w przeglądarce</Text>
@@ -566,6 +585,15 @@ const TaskBody = ({ d, refreshing, onRefresh }: { d: Ok; refreshing: boolean; on
           return save(p, 'Zapisano');
         }}
       />
+      {canShareToChat ? (
+        <ShareTaskToChatSheet
+          visible={sheet === 'chat'}
+          onClose={() => setSheet(null)}
+          taskName={item.name}
+          url={absoluteTaskUrl(board, item.id, paths)}
+          myEmail={myEmail}
+        />
+      ) : null}
     </View>
   );
 };

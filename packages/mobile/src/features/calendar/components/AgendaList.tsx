@@ -1,11 +1,12 @@
 import { useMemo, useState, type ReactElement } from 'react';
 import { Pressable, ScrollView, Text, View, type RefreshControlProps } from 'react-native';
 import { useRouter } from 'expo-router';
-import { CheckCircle2, ChevronRight, Circle, History, MapPin } from 'lucide-react-native';
+import { CheckCircle2, ChevronRight, Circle, History, MapPin, Video } from 'lucide-react-native';
 import { B } from '../../../components/ui/brand';
 import { StatusPill } from '../../tasks/components/bits';
 import { openTask } from '../../tasks/navigation';
 import type { AgendaEvent } from '../api';
+import { isOnlineFormat } from './EventFormat';
 import {
   dayDiff,
   endTime,
@@ -253,11 +254,11 @@ const EventRow = ({
         <Text numberOfLines={2} style={{ fontSize: 16, lineHeight: 21, color: B.ink, fontFamily: F.semibold, letterSpacing: -0.3 }}>
           {evt.title}
         </Text>
-        {evt.location ? (
+        {evt.location || isOnlineFormat(evt.format) ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
-            <MapPin size={12} color={B.ink3} />
+            {evt.format === 'online' ? <Video size={12} color={B.ink3} /> : <MapPin size={12} color={B.ink3} />}
             <Text numberOfLines={1} style={{ flex: 1, fontSize: 13, color: B.ink3, fontFamily: F.medium }}>
-              {evt.location}
+              {evt.format === 'online' ? 'Online' : evt.format === 'hybrid' ? ['Hybrydowe', evt.location].filter(Boolean).join(' · ') : evt.location}
             </Text>
           </View>
         ) : null}

@@ -2,9 +2,10 @@ import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ArrowUpRight, MapPin } from 'lucide-react-native';
+import { ArrowUpRight, MapPin, Video } from 'lucide-react-native';
 import { D, F } from '../theme';
 import type { UpcomingEvent } from '../extras';
+import { JoinEventButton, isOnlineFormat, joinWindowOpen } from '../../calendar/components/EventFormat';
 
 const parseLocal = (ymd: string) => {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -75,7 +76,13 @@ export const NextUpCard = ({ event, myRole }: Props) => {
             {event.title}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
-            {event.location ? (
+            {isOnlineFormat(event.format) ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Video size={13} color="#5B4A50" strokeWidth={2} />
+                <Text style={{ fontSize: 13, color: D.ink2, fontFamily: F.semibold }}>{event.format === 'hybrid' ? 'Hybrydowe' : 'Online'}</Text>
+              </View>
+            ) : null}
+            {event.location && event.format !== 'online' ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}>
                 <MapPin size={13} color="#5B4A50" strokeWidth={2} />
                 <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 13, color: D.ink2, fontFamily: F.medium }}>
@@ -89,6 +96,12 @@ export const NextUpCard = ({ event, myRole }: Props) => {
               </View>
             ) : null}
           </View>
+          {typeof event.startsAt === 'number' &&
+          joinWindowOpen({ startsAt: new Date(event.startsAt), endsAt: event.endsAt ? new Date(event.endsAt) : null, allDay: event.allDay, format: event.format }) ? (
+            <View style={{ marginTop: 12 }}>
+              <JoinEventButton eventId={Number(event.id)} />
+            </View>
+          ) : null}
         </View>
       </View>
     </Pressable>

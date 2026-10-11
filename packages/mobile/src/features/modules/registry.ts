@@ -69,7 +69,7 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
   homegroups: m({ key: 'homegroups', label: 'Grupy domowe', Icon: Home, tint: '#2A2312', bg: '#ECE8DE', section: 'community', route: '/(app)/home-groups', webPath: '/home-groups' }),
   teaching: m({ key: 'teaching', label: 'Nauczanie', Icon: BookOpen, tint: '#2A2312', bg: '#ECE8DE', section: 'community', route: '/(app)/teachings', webPath: '/teaching', keywords: 'kazania serie' }),
   sermons: m({ key: 'sermons', label: 'Kazania', Icon: Podcast, tint: '#2A2312', bg: '#ECE8DE', section: 'community', route: '/(app)/sermons', webPath: '/teaching?tab=kazania' }),
-  boards: m({ key: 'boards', label: 'Projekty', Icon: LayoutGrid, tint: '#2A2312', bg: '#ECE8DE', section: 'community', route: '/(app)/work', webPath: '/projekty', keywords: 'tablice zadania boards' }),
+  boards: m({ key: 'boards', label: 'Projekty', Icon: LayoutGrid, tint: '#2A2312', bg: '#ECE8DE', section: 'community', route: '/(app)/work/boards', webPath: '/projekty', keywords: 'tablice zadania boards' }),
 
   worship: m({ key: 'worship', label: 'Zespół uwielbienia', Icon: Music, tint: '#2A2312', bg: '#ECE8DE', section: 'teams', route: '/(app)/teams/worship', webPath: '/worship' }),
   // Baza pieśni to część modułu Uwielbienia na webie (zakładka) — tu osobny kafel.

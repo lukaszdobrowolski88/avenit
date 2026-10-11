@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { toAgendaEvent } from '../calendar/api';
+import { isOver } from '../calendar/meta';
 
 // Widżety pulpitu, które web ma, a mobile nie miał (PersonalDashboard.jsx): nadchodzące
 // wydarzenia, urodziny, dawanie w miesiącu, frekwencja, RSVP. Każdy to osobne zapytanie
@@ -16,6 +18,11 @@ export interface UpcomingEvent {
   date: string;
   time: string | null;
   location: string | null;
+  format: 'in_person' | 'online' | 'hybrid';
+  // Początek i koniec (ms) — „Dołącz” do wydarzenia online w oknie spotkania.
+  startsAt: number;
+  endsAt: number | null;
+  allDay: boolean;
 }
 
 export const useUpcomingEvents = (enabled: boolean) =>
@@ -26,20 +33,30 @@ export const useUpcomingEvents = (enabled: boolean) =>
     queryFn: async (): Promise<UpcomingEvent[]> => {
       const { data, error } = await supabase
         .from('events')
-        .select('id, title, category, date, time, location')
+        .select('id, title, category, date, time, end_time, end_date, location, format')
         .gte('date', ymd(new Date()))
         .order('date', { ascending: true })
         .limit(12);
       if (error) return [];
+      const now = new Date();
       return ((data ?? []) as any[])
-        .map((e) => ({
-          id: String(e.id),
-          title: e.title ?? 'Wydarzenie',
-          category: e.category ?? null,
-          date: String(e.date).slice(0, 10),
-          time: e.time ? String(e.time).slice(0, 5) : null,
-          location: e.location ?? null,
-        }))
+        .flatMap((e) => {
+          const ag = toAgendaEvent(e);
+          // Bez dzisiejszych, które już się skończyły (jak web UpcomingEventsWidget).
+          if (!ag || isOver(ag, now)) return [];
+          return [{
+            id: String(e.id),
+            title: e.title ?? 'Wydarzenie',
+            category: e.category ?? null,
+            date: String(e.date).slice(0, 10),
+            time: e.time ? String(e.time).slice(0, 5) : null,
+            location: e.location ?? null,
+            format: ag.format ?? 'in_person',
+            startsAt: ag.startsAt.getTime(),
+            endsAt: ag.endsAt ? ag.endsAt.getTime() : null,
+            allDay: ag.allDay,
+          }];
+        })
         .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
         .slice(0, 5);
     },

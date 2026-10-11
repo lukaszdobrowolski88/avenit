@@ -12,6 +12,8 @@ import {
   Image as ImageIcon,
   Megaphone,
   MessageCircle,
+  CalendarClock,
+  PhoneCall,
 } from "lucide-react-native";
 import {
   MINISTRY_CHANNEL_META,
@@ -40,6 +42,8 @@ interface Props {
   peerStatus?: PresenceStatus;
   /** Dotknięcie nazwy rozmowy — okno „Szczegóły rozmowy” (skład, opuszczenie, usunięcie). */
   onOpenInfo?: () => void;
+  /** „Zadzwoń” — wybór połączenia głosowego / wideo (otwiera się w przeglądarce). */
+  onCall?: () => void;
 }
 
 // „1 uczestnik”, dalej „2 uczestników” (rodzaj męskoosobowy — dopełniacz przy każdej liczbie).
@@ -55,6 +59,7 @@ export const ConversationHeader = ({
   onOpenGallery,
   peerStatus,
   onOpenInfo,
+  onCall,
 }: Props) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -175,6 +180,14 @@ export const ConversationHeader = ({
         )}
       </View>
     );
+  } else if (details.type === "meeting") {
+    title = details.name || "Spotkanie";
+    subtitle = `Spotkanie online · ${participantsLabel(details.participant_emails.length)}`;
+    avatarBlock = (
+      <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: "#ECE8DE", alignItems: "center", justifyContent: "center" }}>
+        <CalendarClock size={18} color="#2A2312" />
+      </View>
+    );
   } else if (details.type === "announcement") {
     title = details.name || "Kanał ogłoszeń";
     subtitle = `Kanał ogłoszeń · ${participantsLabel(details.participant_emails.length)}`;
@@ -276,6 +289,26 @@ export const ConversationHeader = ({
         ) : null}
       </View>
       </Pressable>
+      {onCall ? (
+        <Pressable
+          onPress={onCall}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Zadzwoń"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: "#F1EEE6",
+            borderWidth: 1,
+            borderColor: "#E6E1D5",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <PhoneCall size={16} color="#4A463E" strokeWidth={2.2} />
+        </Pressable>
+      ) : null}
       {onSearch ? (
         <Pressable
           onPress={onSearch}

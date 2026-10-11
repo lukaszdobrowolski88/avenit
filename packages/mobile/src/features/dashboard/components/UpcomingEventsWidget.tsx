@@ -64,7 +64,7 @@ export const UpcomingEventsWidget = ({ events, showEmpty }: { events: UpcomingEv
                   {ev.title}
                 </Text>
                 <Text numberOfLines={1} style={{ fontSize: 13, color: D.ink2, fontFamily: F.medium, marginTop: 2 }}>
-                  {[dayLabel(ev.date), ev.time, ev.location].filter(Boolean).join(' · ')}
+                  {[dayLabel(ev.date), ev.time, ev.format === 'online' ? 'Online' : ev.format === 'hybrid' ? `Hybrydowe${ev.location ? ` · ${ev.location}` : ''}` : ev.location].filter(Boolean).join(' · ')}
                 </Text>
               </View>
             </Pressable>

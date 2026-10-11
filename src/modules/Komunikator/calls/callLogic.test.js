@@ -138,3 +138,29 @@ describe('układ kafelków', () => {
     expect(gridColumns(5, 400)).toBe(3);
   });
 });
+
+// Parytet z mobilką (packages/mobile/src/features/calls/logic.ts): te same przypadki, ten sam wynik.
+import * as mobileCalls from '../../../../packages/mobile/src/features/calls/logic';
+import * as webCalls from './callLogic';
+
+describe.each([['web', webCalls], ['mobilka', mobileCalls]])('wiadomość „połączenie” — %s', (_name, L) => {
+  const tt = (s, v = {}) => s.replace(/\{(\w+)\}/g, (_, k) => String(v[k]));
+  const m = (meta, sender = 'ola@x.pl') => ({ id: 'm', sender_email: sender, message_type: 'call', metadata: meta });
+  const cases = [
+    [m({ call_id: 'k', kind: 'video', status: 'ended', duration_sec: 720 }), {}],
+    [m({ call_id: 'k', kind: 'audio', status: 'missed' }), {}],
+    [m({ call_id: 'k', status: 'missed', started_by_email: 'ja@x.pl' }), {}],
+    [m(JSON.stringify({ call_id: 'k', status: 'ringing', is_group: true })), {}],
+    [m({ call_id: 'k', status: 'active', is_group: true }), { live: false }],
+    [m({ call_id: 'k', kind: 'video', status: 'missed' }), { live: true }],
+    [m({ call_id: 'k', status: 'declined', started_by_email: 'ja@x.pl' }), {}],
+    [m({ call_id: 'k', status: 'cancelled' }), {}],
+    [m({ call_id: 'k', status: 'ended', is_group: true, kind: 'video', duration_sec: 4000 }), {}],
+  ];
+  it.each(cases.map((c, i) => [i, ...c]))('przypadek %i', (_i, msg, opts) => {
+    expect(L.callMessageView(msg, 'ja@x.pl', tt, opts)).toEqual(webCalls.callMessageView(msg, 'ja@x.pl', tt, opts));
+  });
+  it('czas trwania', () => {
+    for (const s of [0, 45, 61, 3599, 3600, 5400]) expect(L.formatCallDuration(s, tt)).toBe(webCalls.formatCallDuration(s, tt));
+  });
+});

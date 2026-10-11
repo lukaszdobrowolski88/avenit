@@ -187,8 +187,14 @@ export const splitGrafik = (events: GrafikEvent[]) => {
 // na aktualny stan w transakcji z blokadą wiersza, więc równoległa edycja innej służby (np. na
 // webie) nie znika. Dawniej: odczyt + zapis CAŁEGO events.assignments (ostatni zapis wygrywał).
 async function writeTeamField(eventId: string, team: string, field: string, value: string) {
+  return writeTeamFields(eventId, team, { [field]: value });
+}
+
+// Kilka pól naraz (np. wstawienie całego składu) — jeden atomowy patch, jak patchTeam na webie.
+async function writeTeamFields(eventId: string, team: string, fields: Record<string, string>) {
+  const ops = Object.entries(fields).map(([key, value]) => ({ team, key, value }));
   const { data, error } = await supabase.functions.invoke('event-assignments-patch', {
-    body: { event_id: eventId, ops: [{ team, key: field, value }] },
+    body: { event_id: eventId, ops },
   });
   if (error) {
     const status = (error as any)?.status;
@@ -225,6 +231,84 @@ const snapshotField = (qc: ReturnType<typeof useQueryClient>, team: string, even
   return ev && field in ev.team ? ev.team[field] : undefined;
 };
 
+// Synchronizacja jednej roli z silnikiem zaproszeń (schedule_assignments) — jak createAssignment /
+// removeEventAssignment na webie. Zwraca imiona, których nie udało się dodać / zdjąć.
+async function syncRolePeople(
+  team: string,
+  eventId: string,
+  role: GrafikRoleDef,
+  added: string[],
+  removed: string[],
+  members: GrafikMember[],
+  me: { email: string | null; name: string | null },
+) {
+  const failedAdd: string[] = [];
+  const failedRemove: string[] = [];
+  const byName = new Map(members.map((m) => [m.name, m]));
+  const syncAdded = async (name: string) => {
+    const email = byName.get(name)?.email ?? null;
+    const self = !!(me.email && email && me.email.toLowerCase() === email.toLowerCase());
+    const base = {
+      team_type: team,
+      role_key: role.key,
+      role_label: role.label,
+      assigned_name: name,
+      assigned_email: email,
+      assigned_by_email: me.email,
+      assigned_by_name: me.name || me.email?.split('@')[0] || 'Lider',
+      status: self ? 'accepted' : 'pending',
+      responded_at: self ? new Date().toISOString() : null,
+    };
+    // Ręczny upsert (częściowy unikat po event_id) — jak createAssignment na webie.
+    const { data: existing, error: findErr } = await supabase
+      .from('schedule_assignments')
+      .select('id, status, assigned_email')
+      .eq('event_id', eventId)
+      .eq('team_type', team)
+      .eq('role_key', role.key)
+      .eq('assigned_name', name)
+      .maybeSingle();
+    if (findErr) throw findErr;
+    let res;
+    if (existing) {
+      // Ponowne przypisanie (reassignFields na webie): po ODRZUCENIU albo zmianie e-maila
+      // zaproszenie trzeba potwierdzić od nowa — status wraca na „czeka”, a email_sent_at = null,
+      // więc osoba znów wchodzi do „Powiadom (n)”. Zaakceptowane / oczekujące pod tym samym
+      // adresem zostają bez zmian (bez drugiego maila).
+      const ex = existing as any;
+      const sameEmail = String(ex.assigned_email || '').toLowerCase() === String(email || '').toLowerCase();
+      const keep = !self && sameEmail && (ex.status === 'accepted' || ex.status === 'pending');
+      const patch: Record<string, unknown> = keep ? { ...base } : self ? { ...base } : { ...base, email_sent_at: null };
+      if (keep) {
+        delete patch.status;
+        delete patch.responded_at;
+      }
+      res = await (supabase.from('schedule_assignments') as any).update(patch).eq('id', ex.id);
+    } else {
+      res = await (supabase.from('schedule_assignments') as any).insert({ event_id: Number(eventId), ...base });
+    }
+    if (res.error) throw res.error;
+  };
+  for (const name of added) {
+    try {
+      await syncAdded(name);
+    } catch {
+      failedAdd.push(name);
+    }
+  }
+  for (const name of removed) {
+    const { error } = await supabase
+      .from('schedule_assignments')
+      .delete()
+      .eq('event_id', eventId)
+      .eq('team_type', team)
+      .eq('role_key', role.key)
+      .eq('assigned_name', name);
+    if (error) failedRemove.push(name);
+  }
+  return { failedAdd, failedRemove };
+}
+
 export const useSetRolePeople = (team: string) => {
   const qc = useQueryClient();
   return useMutation({
@@ -243,70 +327,7 @@ export const useSetRolePeople = (team: string) => {
 
       // Synchronizacja z silnikiem zaproszeń. Gdy się nie uda — cofamy zmianę w siatce, żeby
       // grafik i „Powiadom” mówiły to samo (inaczej zaproszenie poszłoby do zdjętej osoby).
-      const failedAdd: string[] = [];
-      const failedRemove: string[] = [];
-      const byName = new Map(members.map((m) => [m.name, m]));
-      const syncAdded = async (name: string) => {
-        const email = byName.get(name)?.email ?? null;
-        const self = !!(me.email && email && me.email.toLowerCase() === email.toLowerCase());
-        const base = {
-          team_type: team,
-          role_key: role.key,
-          role_label: role.label,
-          assigned_name: name,
-          assigned_email: email,
-          assigned_by_email: me.email,
-          assigned_by_name: me.name || me.email?.split('@')[0] || 'Lider',
-          status: self ? 'accepted' : 'pending',
-          responded_at: self ? new Date().toISOString() : null,
-        };
-        // Ręczny upsert (częściowy unikat po event_id) — jak createAssignment na webie.
-        const { data: existing, error: findErr } = await supabase
-          .from('schedule_assignments')
-          .select('id, status, assigned_email')
-          .eq('event_id', event.id)
-          .eq('team_type', team)
-          .eq('role_key', role.key)
-          .eq('assigned_name', name)
-          .maybeSingle();
-        if (findErr) throw findErr;
-        let res;
-        if (existing) {
-          // Ponowne przypisanie (reassignFields na webie): po ODRZUCENIU albo zmianie e-maila
-          // zaproszenie trzeba potwierdzić od nowa — status wraca na „czeka”, a email_sent_at = null,
-          // więc osoba znów wchodzi do „Powiadom (n)”. Zaakceptowane / oczekujące pod tym samym
-          // adresem zostają bez zmian (bez drugiego maila).
-          const ex = existing as any;
-          const sameEmail = String(ex.assigned_email || '').toLowerCase() === String(email || '').toLowerCase();
-          const keep = !self && sameEmail && (ex.status === 'accepted' || ex.status === 'pending');
-          const patch: Record<string, unknown> = keep ? { ...base } : self ? { ...base } : { ...base, email_sent_at: null };
-          if (keep) {
-            delete patch.status;
-            delete patch.responded_at;
-          }
-          res = await (supabase.from('schedule_assignments') as any).update(patch).eq('id', ex.id);
-        } else {
-          res = await (supabase.from('schedule_assignments') as any).insert({ event_id: Number(event.id), ...base });
-        }
-        if (res.error) throw res.error;
-      };
-      for (const name of added) {
-        try {
-          await syncAdded(name);
-        } catch {
-          failedAdd.push(name);
-        }
-      }
-      for (const name of removed) {
-        const { error } = await supabase
-          .from('schedule_assignments')
-          .delete()
-          .eq('event_id', event.id)
-          .eq('team_type', team)
-          .eq('role_key', role.key)
-          .eq('assigned_name', name);
-        if (error) failedRemove.push(name);
-      }
+      const { failedAdd, failedRemove } = await syncRolePeople(team, event.id, role, added, removed, members, me);
       if (failedAdd.length || failedRemove.length) {
         const corrected = [...names.filter((n) => !failedAdd.includes(n)), ...failedRemove];
         await writeTeamField(event.id, team, role.key, corrected.join(', ')).catch(() => null);
@@ -314,6 +335,7 @@ export const useSetRolePeople = (team: string) => {
           `Nie udało się zmienić przydziału: ${[...failedAdd, ...failedRemove].join(', ')}. Sprawdź, czy masz uprawnienia do edycji grafiku, i spróbuj ponownie.`,
         );
       }
+      const byName = new Map(members.map((m) => [m.name, m]));
       return { added: added.filter((n) => !!byName.get(n)?.email).length };
     },
     // Od razu na ekranie; przy błędzie wraca poprzednia obsada (i komunikat u wywołującego).
@@ -323,6 +345,70 @@ export const useSetRolePeople = (team: string) => {
       return { prev };
     },
     onError: (_e, { event, role }, ctx) => patchCache(qc, team, event.id, role.key, ctx?.prev),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: KEY(team) });
+      qc.invalidateQueries({ queryKey: ['event-detail'] });
+      qc.invalidateQueries({ queryKey: ['assignments'] });
+    },
+  });
+};
+
+// Wstawienie kilku ról naraz (szablon, kopia z poprzedniego terminu, propozycja obsady) — jak
+// applyRoles na webie: jeden atomowy patch grafiku (event-assignments-patch), potem synchronizacja
+// schedule_assignments per rola; przy błędzie synchronizacji cofamy tylko nieudane imiona.
+// changes = { roleKey: ['Imię', …] } — PEŁNE nowe wartości ról. Zwraca liczbę dodanych osób.
+export const useApplyLineup = (team: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      event: GrafikEvent;
+      changes: Record<string, string[]>;
+      roles: GrafikRoleDef[];
+      members: GrafikMember[];
+      me: { email: string | null; name: string | null };
+    }): Promise<{ added: number }> => {
+      const { event, changes, roles, members, me } = input;
+      const diffs = Object.entries(changes)
+        .map(([roleKey, names]) => {
+          const before = csvNames(event.team[roleKey]);
+          const after = [...new Set(names)];
+          return { roleKey, after, added: after.filter((n) => !before.includes(n)), removed: before.filter((n) => !after.includes(n)) };
+        })
+        .filter((d) => d.added.length || d.removed.length);
+      if (!diffs.length) return { added: 0 };
+
+      await writeTeamFields(event.id, team, Object.fromEntries(diffs.map((d) => [d.roleKey, d.after.join(', ')])));
+
+      const corrections: Record<string, string> = {};
+      const failedNames: string[] = [];
+      for (const d of diffs) {
+        const role = roles.find((r) => r.key === d.roleKey) ?? { id: null, key: d.roleKey, label: d.roleKey };
+        const { failedAdd, failedRemove } = await syncRolePeople(team, event.id, role, d.added, d.removed, members, me);
+        if (failedAdd.length || failedRemove.length) {
+          corrections[d.roleKey] = [...d.after.filter((n) => !failedAdd.includes(n)), ...failedRemove].join(', ');
+          failedNames.push(...failedAdd, ...failedRemove);
+        }
+      }
+      if (Object.keys(corrections).length) {
+        await writeTeamFields(event.id, team, corrections).catch(() => null);
+        throw new Error(
+          `Nie udało się zmienić przydziału: ${failedNames.join(', ')}. Sprawdź, czy masz uprawnienia do edycji grafiku, i spróbuj ponownie.`,
+        );
+      }
+      return { added: diffs.flatMap((d) => d.added).length };
+    },
+    // Od razu na ekranie; przy błędzie wracają poprzednie wartości ról.
+    onMutate: ({ event, changes }) => {
+      const prev: Record<string, string | undefined> = {};
+      for (const [k, names] of Object.entries(changes)) {
+        prev[k] = snapshotField(qc, team, event.id, k);
+        patchCache(qc, team, event.id, k, [...new Set(names)].join(', '));
+      }
+      return { prev };
+    },
+    onError: (_e, { event }, ctx) => {
+      for (const [k, v] of Object.entries(ctx?.prev ?? {})) patchCache(qc, team, event.id, k, v);
+    },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: KEY(team) });
       qc.invalidateQueries({ queryKey: ['event-detail'] });
