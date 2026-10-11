@@ -26,9 +26,9 @@ function groupSorted(rows, keyFn, colorFn) {
 
 /**
  * Buduje wspólny model raportu dla danego zakresu.
- * @param {{range, income, expense, budget, expenseCategories?, prevIncome?, prevExpense?}} p
+ * @param {{range, income, expense, budget, expenseCategories?, incomeCategories?, projects?, prevIncome?, prevExpense?}} p
  */
-export function buildReportModel({ range, income = [], expense: allExpense = [], budget = [], expenseCategories = [], prevIncome = null, prevExpense = null }) {
+export function buildReportModel({ range, income = [], expense: allExpense = [], budget = [], expenseCategories = [], incomeCategories = [], projects = [], prevIncome = null, prevExpense = null }) {
   // Do bilansu, wykresów i realizacji wchodzą tylko wydatki zatwierdzone/opłacone.
   // Wnioski czekające, szkice i odrzucone widać osobno w sekcji „Status wydatków”.
   const expense = allExpense.filter(isCountedExpense);
@@ -84,6 +84,31 @@ export function buildReportModel({ range, income = [], expense: allExpense = [],
 
   const byCostCategory = groupSorted(expense, (e) => e.cost_category || 'Bez kategorii', colorFor);
 
+  // Projekty: plan (kwota projektu albo pozycje budżetu roku), wydano i zebrano w zakresie.
+  const projectName = (id) => projects.find((p) => String(p.id) === String(id));
+  const projIds = [...new Set([...expense, ...income, ...budget].map((r) => r.project_id).filter(Boolean).map(String))];
+  const byProject = projIds.map((id) => {
+    const p = projectName(id);
+    const own = (r) => String(r.project_id || '') === id;
+    const budgetPlan = budget.filter((b) => own(b) && b.kind !== 'income').reduce((a, b) => a + num(b.planned_amount), 0);
+    const planned = num(p?.budget_amount) > 0 ? num(p.budget_amount) : budgetPlan;
+    const spent = expense.filter(own).reduce((a, e) => a + num(e.amount), 0);
+    const raised = income.filter(own).reduce((a, i) => a + num(i.amount), 0);
+    return { id, name: p?.name || '—', color: p?.color || null, planned, spent, raised, balance: raised - spent, pct: planned > 0 ? (spent / planned) * 100 : 0 };
+  }).sort((a, b) => b.spent - a.spent || b.raised - a.raised);
+
+  // Tagi: transakcja z kilkoma tagami liczy się w każdym z nich (sumy tagów ≠ suma ogółem).
+  const tagMap = {};
+  const addTagged = (rows, field) => rows.forEach((r) => (Array.isArray(r.tags) ? r.tags : []).forEach((t) => {
+    if (!t) return;
+    (tagMap[t] = tagMap[t] || { name: t, expense: 0, income: 0, count: 0 })[field] += num(r.amount);
+    tagMap[t].count++;
+  }));
+  addTagged(expense, 'expense');
+  addTagged(income, 'income');
+  const byTag = Object.values(tagMap).sort((a, b) => (b.expense + b.income) - (a.expense + a.income));
+  const incomeColorFor = (name) => incomeCategories.find((c) => c.name === name)?.color || null;
+
   const kpis = {
     incomeCount: income.length,
     expenseCount: expense.length,
@@ -106,7 +131,10 @@ export function buildReportModel({ range, income = [], expense: allExpense = [],
     buckets,
     byCostCategory,
     byServiceCategory: groupSorted(expense, (e) => e.category),
-    byIncomeType: groupSorted(income, (i) => i.type),
+    byIncomeType: groupSorted(income, (i) => i.type, incomeColorFor),
+    byProject,
+    byTag,
+    projectNames: Object.fromEntries(projects.map((p) => [String(p.id), p.name])),
     byIncomeSource: groupSorted(income, (i) => i.source),
     topExpenses,
     expenseStatus,
@@ -129,86 +157,131 @@ export function buildReportModel({ range, income = [], expense: allExpense = [],
 
 // ── CSV (wielosekcyjny, BOM + średniki — zgodnie z exportToCsv w module) ──────
 function csvEsc(v) { const s = v == null ? '' : String(v); return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
-export function csvString(model) {
+// `sections` (opcjonalnie) — {klucz: bool} z reportSections.js; brak = wszystkie sekcje.
+const sectionOn = (sections, key) => !sections || sections[key] !== false;
+
+export function csvString(model, sections) {
+  const on = (k) => sectionOn(sections, k);
   const lines = [];
   const row = (...cells) => lines.push(cells.map(csvEsc).join(';'));
   row('Raport finansowy', model.range.label);
   row('');
-  row('Podsumowanie', 'Kwota');
-  row('Przychody', model.totals.income);
-  row('Wydatki', model.totals.expense);
-  row('Bilans', model.totals.balance);
-  row('');
-  row('Okres', 'Przychody', 'Wydatki', 'Bilans', 'Skumulowany');
-  model.buckets.forEach((b) => row(b.label, b.income, b.expense, b.balance, b.cumulative));
-  const section = (title, items, cols) => {
-    if (!items.length) return;
+  if (model.filterLabel) row('Filtr', model.filterLabel);
+  if (on('summary')) {
+    row('');
+    row('Podsumowanie', 'Kwota');
+    row('Przychody', model.totals.income);
+    row('Wydatki', model.totals.expense);
+    row('Bilans', model.totals.balance);
+  }
+  if (on('incomeExpense') || on('cashflow')) {
+    row('');
+    row('Okres', 'Przychody', 'Wydatki', 'Bilans', 'Skumulowany');
+    model.buckets.forEach((b) => row(b.label, b.income, b.expense, b.balance, b.cumulative));
+  }
+  const section = (title, items, cols, key) => {
+    if (!items.length || (key && !on(key))) return;
     row(''); row(title, ...cols.map((c) => c.h));
     items.forEach((it) => row(it.name ?? it.category, ...cols.map((c) => c.v(it))));
   };
-  section('Wydatki wg kategorii kosztu', model.byCostCategory, [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }]);
-  section('Wydatki wg służby', model.byServiceCategory, [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }]);
-  section('Wpływy wg typu', model.byIncomeType, [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }]);
-  section('Wpływy wg źródła', model.byIncomeSource, [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }]);
-  if (model.topExpenses.length) {
+  const amtPct = [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }];
+  section('Wydatki wg kategorii', model.byCostCategory, amtPct, 'byCostCategory');
+  section('Wydatki wg służby / obszaru', model.byServiceCategory, amtPct, 'byArea');
+  section('Wpływy wg kategorii', model.byIncomeType, amtPct, 'byIncomeType');
+  section('Wpływy wg źródła', model.byIncomeSource, amtPct, 'byIncomeSource');
+  section('Projekty', model.byProject || [], [{ h: 'Plan', v: (x) => x.planned }, { h: 'Wydano', v: (x) => x.spent }, { h: 'Zebrano', v: (x) => x.raised }, { h: 'Bilans', v: (x) => x.balance }], 'byProject');
+  section('Tagi', model.byTag || [], [{ h: 'Wydatki', v: (x) => x.expense }, { h: 'Wpływy', v: (x) => x.income }, { h: 'Liczba', v: (x) => x.count }], 'byTag');
+  if (on('expenseStatus') && model.expenseStatus.length) {
+    row(''); row('Status wydatków', 'Liczba', 'Kwota');
+    model.expenseStatus.forEach((x) => row(x.status, x.count, x.amount));
+  }
+  if (on('topExpenses') && model.topExpenses.length) {
     row(''); row('Największe wydatki', 'Data', 'Kontrahent', 'Kategoria', 'Opis', 'Kwota');
     model.topExpenses.forEach((e) => row('', e.date, e.contractor, e.category, e.description, e.amount));
   }
-  if (model.unpaidInvoices.length) {
+  if (on('unpaid') && model.unpaidInvoices.length) {
     row(''); row('Nieopłacone', 'Kontrahent', 'Opis', 'Termin', 'Nr faktury', 'Kwota');
     model.unpaidInvoices.forEach((e) => row('', e.contractor, e.description, e.due_date || '', e.invoice_number || '', e.amount));
   }
-  if (model.budgetExecution.length) {
+  if (on('budgetExecution') && model.budgetExecution.length) {
     row(''); row('Realizacja budżetu', 'Planowane', 'Zrealizowane', 'Realizacja %', 'Pozostało');
     model.budgetExecution.forEach((b) => row(b.category, b.planned, b.realized, b.pct.toFixed(0), b.remaining));
   }
+  if (on('yoy') && model.yoy) {
+    row(''); row('Rok do roku', 'Poprzedni', 'Bieżący');
+    row('Przychody', model.yoy.income.prev, model.yoy.income.now);
+    row('Wydatki', model.yoy.expense.prev, model.yoy.expense.now);
+    row('Bilans', model.yoy.balance.prev, model.yoy.balance.now);
+  }
+  const projName = (id) => (id && model.projectNames?.[String(id)]) || '';
+  if (on('incomeList') && model.raw.income.length) {
+    row(''); row('Wpływy', 'Data', 'Kategoria', 'Źródło', 'Projekt', 'Tagi', 'Kwota');
+    model.raw.income.forEach((r) => row('', r.date, r.type, r.source, projName(r.project_id), (r.tags || []).join(', '), num(r.amount)));
+  }
+  if (on('expenseList') && model.raw.expense.length) {
+    row(''); row('Wydatki', 'Data', 'Służba / obszar', 'Kategoria', 'Opis', 'Kontrahent', 'Projekt', 'Tagi', 'Status', 'Kwota');
+    model.raw.expense.forEach((r) => row('', r.payment_date, r.category, r.cost_category, r.description, r.contractor, projName(r.project_id), (r.tags || []).join(', '), r.status || 'approved', num(r.amount)));
+  }
   return '﻿' + lines.join('\n');
 }
-export function toCsvBlob(model) { return new Blob([csvString(model)], { type: 'text/csv;charset=utf-8;' }); }
+export function toCsvBlob(model, sections) { return new Blob([csvString(model, sections)], { type: 'text/csv;charset=utf-8;' }); }
 
 // ── XLSX (SheetJS, wiele arkuszy) ─────────────────────────────────────────────
-function buildWorkbook(XLSX, model) {
+function buildWorkbook(XLSX, model, sections) {
+  const on = (k) => sectionOn(sections, k);
   const wb = XLSX.utils.book_new();
-  const summary = [
-    ['Raport finansowy', model.range.label],
-    [],
-    ['Podsumowanie', 'Kwota (zł)'],
-    ['Przychody', model.totals.income],
-    ['Wydatki', model.totals.expense],
-    ['Bilans', model.totals.balance],
-    [],
-    ['Okres', 'Przychody', 'Wydatki', 'Bilans', 'Skumulowany'],
-    ...model.buckets.map((b) => [b.label, b.income, b.expense, b.balance, b.cumulative]),
-    [],
-    ['Wydatki wg kategorii kosztu', 'Kwota', '%'],
-    ...model.byCostCategory.map((c) => [c.name, c.amount, Number(c.pct.toFixed(1))]),
-  ];
+  const summary = [['Raport finansowy', model.range.label]];
+  if (model.filterLabel) summary.push(['Filtr', model.filterLabel]);
+  if (on('summary')) summary.push([], ['Podsumowanie', 'Kwota (zł)'], ['Przychody', model.totals.income], ['Wydatki', model.totals.expense], ['Bilans', model.totals.balance]);
+  if (on('incomeExpense') || on('cashflow')) summary.push([], ['Okres', 'Przychody', 'Wydatki', 'Bilans', 'Skumulowany'], ...model.buckets.map((b) => [b.label, b.income, b.expense, b.balance, b.cumulative]));
+  const groupRows = (title, items, key) => {
+    if (on(key) && items.length) summary.push([], [title, 'Kwota', '%'], ...items.map((c) => [c.name, c.amount, Number(c.pct.toFixed(1))]));
+  };
+  groupRows('Wydatki wg kategorii', model.byCostCategory, 'byCostCategory');
+  groupRows('Wydatki wg służby / obszaru', model.byServiceCategory, 'byArea');
+  groupRows('Wpływy wg kategorii', model.byIncomeType, 'byIncomeType');
+  groupRows('Wpływy wg źródła', model.byIncomeSource, 'byIncomeSource');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), 'Podsumowanie');
 
+  const projName = (id) => (id && model.projectNames?.[String(id)]) || '';
+  // Arkusze transakcji zawsze (to dane źródłowe Excela), z projektem i tagami.
   const incomeSheet = [
-    ['Data', 'Typ', 'Źródło', 'Kwota', 'Notatki'],
-    ...model.raw.income.map((r) => [r.date, r.type, r.source, num(r.amount), r.notes]),
+    ['Data', 'Kategoria', 'Źródło', 'Projekt', 'Tagi', 'Kwota', 'Notatki'],
+    ...model.raw.income.map((r) => [r.date, r.type, r.source, projName(r.project_id), (r.tags || []).join(', '), num(r.amount), r.notes]),
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(incomeSheet), 'Wpływy');
 
   const expenseSheet = [
-    ['Data', 'Kontrahent', 'Służba', 'Kategoria kosztu', 'Opis', 'Kwota', 'Status'],
-    ...model.raw.expense.map((r) => [r.payment_date, r.contractor, r.category, r.cost_category, r.description, num(r.amount), r.status]),
+    ['Data', 'Kontrahent', 'Służba / obszar', 'Kategoria', 'Opis', 'Projekt', 'Tagi', 'Kwota', 'Status'],
+    ...model.raw.expense.map((r) => [r.payment_date, r.contractor, r.category, r.cost_category, r.description, projName(r.project_id), (r.tags || []).join(', '), num(r.amount), r.status]),
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expenseSheet), 'Wydatki');
 
-  if (model.budgetExecution.length) {
+  if (on('byProject') && (model.byProject || []).length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Projekt', 'Plan', 'Wydano', 'Zebrano', 'Bilans', 'Realizacja %'],
+      ...model.byProject.map((p) => [p.name, p.planned, p.spent, p.raised, p.balance, Number(p.pct.toFixed(0))]),
+    ]), 'Projekty');
+  }
+  if (on('byTag') && (model.byTag || []).length) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Tag', 'Wydatki', 'Wpływy', 'Liczba transakcji'],
+      ...model.byTag.map((t) => [t.name, t.expense, t.income, t.count]),
+    ]), 'Tagi');
+  }
+
+  if (on('budgetExecution') && model.budgetExecution.length) {
     const budgetSheet = [
-      ['Służba', 'Planowane', 'Zrealizowane', 'Realizacja %', 'Pozostało'],
+      ['Służba / obszar', 'Planowane', 'Zrealizowane', 'Realizacja %', 'Pozostało'],
       ...model.budgetExecution.map((b) => [b.category, b.planned, b.realized, Number(b.pct.toFixed(0)), b.remaining]),
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(budgetSheet), 'Budżet');
   }
   return wb;
 }
-export async function toXlsxBlob(model) {
+export async function toXlsxBlob(model, sections) {
   const XLSX = await import('xlsx');
-  const out = XLSX.write(buildWorkbook(XLSX, model), { type: 'array', bookType: 'xlsx' });
+  const out = XLSX.write(buildWorkbook(XLSX, model, sections), { type: 'array', bookType: 'xlsx' });
   return new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
 
