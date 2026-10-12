@@ -9,13 +9,14 @@
 // Stan trzyma tabela calls (logic.js — maszyna stanów). Każda zmiana stanu to UPDATE z warunkiem
 // na bieżący stan, a skutki uboczne (wiadomość w czacie, push, zamknięcie pokoju) wykonuje tylko
 // ten, kto wygrał przejście — powtórzone webhooki i wyścigi fn/timer/worker niczego nie dublują.
-// Zależności zewnętrzne (LiveKit, realtime, push) wstrzykiwane przez ctx.deps (testy).
+// Zależności zewnętrzne (LiveKit, realtime, push, VoIP push) wstrzykiwane przez ctx.deps (testy).
 import { randomUUID } from 'node:crypto';
 import { ApiError } from '../dataapi/querybuilder.js';
 import { conversationOf, isMember, directMembers, conversationAudience } from '../dataapi/komunikator.js';
 import { assertDirectAllowed } from '../dataapi/komunikatorPlus.js';
 import { emitChange } from '../realtime/hub.js';
 import { sendPushCore } from '../fn/send-push.js';
+import { sendVoip, buildIncomingCallEvent, absoluteUrl } from '../push/voip.js';
 import { notifyOnWrite, pushKind, isQuietNow, messageLink, recipientsOf } from '../realtime/push-hooks.js';
 import { getLivekit, CALLS_DISABLED } from './livekit.js';
 import * as L from './logic.js';
@@ -34,6 +35,7 @@ export function callDeps(extra = {}) {
     livekit: getLivekit(),
     emit: emitChange,
     sendPush: sendPushCore,
+    sendVoip,
     notifyMessage: notifyOnWrite,
     timers: true,
     ...(overrides || {}),
@@ -408,8 +410,25 @@ export async function callConfig(ctx) {
 }
 
 // ── Dzwonienie (push) ───────────────────────────────────────────────────────
+// Urządzenia odbiorców z tokenem VoIP (migracja 107). Tenant bez migracji — brak urządzeń.
+async function voipDevicesOf(db, emails) {
+  if (!emails.length) return [];
+  try {
+    const { rows } = await db.query(
+      `SELECT id, lower(user_email) AS user_email, expo_token, voip_token, voip_type, voip_env
+         FROM push_tokens
+        WHERE lower(user_email) = ANY($1::text[]) AND voip_token IS NOT NULL AND voip_token <> ''`,
+      [emails]);
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
 // Push wysokiego priorytetu do pozostałych uczestników: bez wyciszonych rozmów i cichych godzin
 // (realtime i baner „trwa rozmowa” dostają wszyscy) i bez osób, które zablokowały dzwoniącego.
+// Telefony z tokenem VoIP dostają VoIP push (natywny ekran połączenia) i są pomijane w pushu Expo
+// (bez podwójnego alertu); gdy VoIP się nie uda / kanał wyłączony — zwykły push jak dotąd.
 export async function ringParticipants(ctx, call) {
   const { db } = ctx;
   if (typeof ctx.deps?.sendPush !== 'function') return { sent: 0 };
@@ -434,19 +453,49 @@ export async function ringParticipants(ctx, call) {
     : (video ? 'Przychodzące połączenie wideo' : 'Przychodzące połączenie głosowe');
   const link = `${messageLink(call.conversation_id)}&call=${encodeURIComponent(call.id)}`;
   const now = new Date();
-  let sent = 0;
-  for (const p of parts.slice(0, MAX_RING_PUSHES)) {
-    const email = lower(p.user_email);
-    if (blockedBy.has(email)) continue;
-    const kind = pushKind({
+  const targets = parts.slice(0, MAX_RING_PUSHES).filter((p) => {
+    if (blockedBy.has(lower(p.user_email))) return false;
+    return pushKind({
       muted: p.muted,
       mutedUntil: p.muted_until,
       quiet: isQuietNow({ start: p.quiet_hours_start, end: p.quiet_hours_end, timezone: p.timezone }, now),
       personalMention: false,
       allMention: false,
       now,
-    });
-    if (kind !== 'message') continue;
+    }) === 'message';
+  });
+
+  // VoIP — równolegle do wszystkich urządzeń z tokenem; tokeny Expo tych, które go dostały, pomijamy.
+  const viaVoip = new Map(); // e-mail → tokeny Expo urządzeń, które dostały VoIP
+  let voip = 0;
+  if (typeof ctx.deps?.sendVoip === 'function' && targets.length) {
+    const devices = await voipDevicesOf(db, [...new Set(targets.map((p) => lower(p.user_email)))]);
+    if (devices.length) {
+      try {
+        const event = buildIncomingCallEvent({
+          call,
+          callerName: caller.name,
+          displayName: title,
+          avatarUrl: absoluteUrl(caller.avatar_url, ctx.tenantSlug),
+          tenantSlug: ctx.tenantSlug,
+        });
+        const owner = new Map(devices.map((d) => [d.expo_token, d.user_email]));
+        const results = await ctx.deps.sendVoip(db, devices, event, { log: ctx.log });
+        for (const r of results || []) {
+          const email = owner.get(r?.expo_token);
+          if (!r?.ok || !email) continue;
+          viaVoip.set(email, [...(viaVoip.get(email) || []), r.expo_token]);
+          voip++;
+        }
+      } catch (err) {
+        warn(ctx, err, 'VoIP push dzwonienia');
+      }
+    }
+  }
+
+  let sent = 0;
+  for (const p of targets) {
+    const skip = viaVoip.get(lower(p.user_email));
     try {
       await ctx.deps.sendPush(db, {
         user_email: p.user_email,
@@ -464,13 +513,14 @@ export async function ringParticipants(ctx, call) {
           from_email: call.started_by_email,
         },
         sound: 'default',
+        ...(skip ? { exclude_expo_tokens: skip } : {}),
       });
       sent++;
     } catch (err) {
       warn(ctx, err, 'push dzwonienia');
     }
   }
-  return { sent };
+  return { sent, voip };
 }
 
 // ── Okno dzwonienia (45 s) ──────────────────────────────────────────────────

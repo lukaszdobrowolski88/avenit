@@ -73,6 +73,15 @@ const schema = z.object({
   LIVEKIT_API_KEY: z.string().optional(),
   LIVEKIT_API_SECRET: z.string().optional(),
   LIVEKIT_HOST: z.string().default('http://livekit:7880'),
+
+  // Natywne dzwonienie w aplikacji mobilnej (VoIP push — src/push/voip.js). Pliki kluczy z katalogu
+  // ./secrets montowanego w compose (/run/secrets/avenit, tylko do odczytu); brak pliku = dany kanał
+  // VoIP wyłączony (dzwonienie idzie zwykłym pushem Expo).
+  APNS_KEY_PATH: z.string().default('/run/secrets/avenit/AuthKey_537YWDPDF2.p8'),
+  APNS_KEY_ID: z.string().default('537YWDPDF2'),
+  APNS_TEAM_ID: z.string().default('N4C97P5LL8'),
+  APNS_BUNDLE_ID: z.string().default('pl.avenit.app'),
+  FCM_SERVICE_ACCOUNT_PATH: z.string().default('/run/secrets/avenit/avenit-app-firebase-adminsdk-fbsvc-f52d1c5ece.json'),
 });
 
 export const config = schema.parse(process.env);

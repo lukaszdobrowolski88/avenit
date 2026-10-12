@@ -5,7 +5,9 @@
 // Body:
 //   user_email, title, body — wymagane
 //   link?, tag?, icon?, big_image?, category_id?, data?, actions?,
-//   campaign_id?, recipient_id?, variant?
+//   campaign_id?, recipient_id?, variant?,
+//   exclude_expo_tokens? — tokeny Expo do pominięcia (urządzenia, które dostały już VoIP push
+//                          przy dzwonieniu — src/calls/service.js); web push bez zmian
 //
 // Response:
 //   { message, sent, failed, channels: { mobile: {...}, web: {...} } }
@@ -91,7 +93,8 @@ async function sendExpo(pool, payload, sharedData, accessToken) {
   }
 
   // Expo wymaga tokenów w formacie ExponentPushToken[xxx] albo ExpoPushToken[xxx].
-  const valid = tokens.filter((t) => /^Expo(nent)?PushToken\[/.test(t.expo_token));
+  const skip = new Set(Array.isArray(payload.exclude_expo_tokens) ? payload.exclude_expo_tokens : []);
+  const valid = tokens.filter((t) => /^Expo(nent)?PushToken\[/.test(t.expo_token) && !skip.has(t.expo_token));
   if (valid.length === 0) {
     return { sent: 0, failed: 0, results: [], tickets: [] };
   }

@@ -103,7 +103,9 @@ export function createApiClient({
           // Zapis w trakcie odczytu (logowanie) ma pierwszeństwo przed starą wartością z pamięci.
           if (raw && !sessionWritten) session = JSON.parse(raw);
         } catch {
-          // uszkodzony wpis / brak storage — bez sesji
+          // Odczyt się nie udał (np. pęk kluczy zablokowanego telefonu, gdy apkę obudziło połączenie) —
+          // na teraz bez sesji, ale NIE zapamiętujemy porażki: następne pytanie spróbuje ponownie.
+          if (!sessionWritten) sessionLoad = null;
         }
       })();
     }

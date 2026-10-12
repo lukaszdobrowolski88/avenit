@@ -69,6 +69,8 @@ services:
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
     volumes:
       - storage:/srv/storage
+      # Klucze VoIP push (APNs .p8, konto serwisowe FCM) — na VPS /opt/avenit/secrets, poza repo.
+      - ./secrets:/run/secrets/avenit:ro
 
   worker:
     build:
@@ -110,6 +112,7 @@ services:
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
     volumes:
       - storage:/srv/storage
+      - ./secrets:/run/secrets/avenit:ro
 
   # SFU LiveKit — połączenia audio/wideo w Komunikatorze (1:1 i grupowe, do ~30 osób z wideo).
   # Sygnalizacja (WebSocket) przez Caddy: wss://rtc.${APP_DOMAIN} → livekit:7880 (port 7880 NIE
