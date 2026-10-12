@@ -8,10 +8,9 @@ import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
-import { tr } from '../../../i18n';
+import { tr, trPlural } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
-import { pluralForm } from '../checkin/utils/kiosk';
 import { yearsLabel } from '../checkin/utils/ageCalculator';
 
 export default function HouseholdManager() {
@@ -361,18 +360,12 @@ export default function HouseholdManager() {
         <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
           <span className="flex items-center gap-1.5">
             <Home size={16} />
-            {pluralForm(households.length,
-              tr('{n} rodzina', { n: households.length }),
-              tr('{n} rodziny', { n: households.length }),
-              tr('{n} rodzin', { n: households.length }))}
+            {trPlural(households.length, '{n} rodzina', '{n} rodziny', '{n} rodzin')}
           </span>
           {unassignedStudents.length > 0 && (
             <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
               <User size={16} />
-              {pluralForm(unassignedStudents.length,
-                tr('{n} uczeń bez rodziny', { n: unassignedStudents.length }),
-                tr('{n} uczniów bez rodziny', { n: unassignedStudents.length }),
-                tr('{n} uczniów bez rodziny', { n: unassignedStudents.length }))}
+              {trPlural(unassignedStudents.length, '{n} uczeń bez rodziny', '{n} uczniów bez rodziny', '{n} uczniów bez rodziny')}
             </span>
           )}
         </div>
@@ -694,7 +687,7 @@ export default function HouseholdManager() {
                       )}
                       <span className="flex items-center gap-1">
                         <Users size={14} />
-                        {(() => { const n = household.kids_students?.length || 0; return pluralForm(n, tr('{n} dziecko', { n }), tr('{n} dzieci', { n }), tr('{n} dzieci', { n })); })()}
+                        {trPlural(household.kids_students?.length || 0, '{n} dziecko', '{n} dzieci', '{n} dzieci')}
                       </span>
                     </div>
                   </div>
