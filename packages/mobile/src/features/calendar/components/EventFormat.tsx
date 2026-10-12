@@ -8,7 +8,7 @@ import { FONT as F } from "../../../lib/fonts";
 import { supabase } from "../../../lib/supabase";
 import { showError, friendlyError } from "../../../lib/errors";
 import { toast } from "../../../lib/toast";
-import { joinCallOnWeb, useCallsEnabled } from "../../calls/api";
+import { joinCall, useCallsEnabled } from "../../calls/api";
 import { parseGuestInput, RESPONSE_STATUS, type MeetingResponse } from "../../meetings/logic";
 
 // Forma wydarzenia (099): stacjonarne / online / hybrydowe — jak web src/modules/Events/eventFormat.jsx.
@@ -77,14 +77,14 @@ async function eventMeetingFn(body: Record<string, unknown>) {
 }
 
 // Dołącz do spotkania wydarzenia: serwer dopisuje do czatu (jeśli widzę wydarzenie), potem rozmowa
-// w przeglądarce telefonu.
+// w apce (natywnie; bez modułów natywnych — w przeglądarce telefonu).
 export async function joinEventMeeting(eventId: number) {
   const res = await eventMeetingFn({ event_id: eventId, join: true });
   if (res.status === "needs_time") throw new Error("Ustaw godzinę wydarzenia, żeby utworzyć spotkanie online.");
   if (res.status === "cancelled") throw new Error("Spotkanie online tego wydarzenia zostało odwołane.");
   const m = res.meeting;
   if (!m?.conversation_id) throw new Error("Nie udało się dołączyć do spotkania.");
-  await joinCallOnWeb(m.conversation_id, m.kind === "video" ? "video" : "audio");
+  await joinCall(m.conversation_id, null, m.kind === "video" ? "video" : "audio", { isGroup: true });
   return m;
 }
 
@@ -106,7 +106,7 @@ export function JoinEventButton({ eventId, label = "Dołącz" }: { eventId: numb
         }
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${label}. Spotkanie otworzy się w przeglądarce`}
+      accessibilityLabel={`${label} do spotkania online`}
       className="active:opacity-70"
       style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: B.ink, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, alignSelf: "flex-start" }}
     >

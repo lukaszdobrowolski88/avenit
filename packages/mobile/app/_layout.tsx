@@ -28,8 +28,13 @@ import {
 } from '../src/lib/push';
 import { navigateFromDeepLink, openTask, taskFromNotificationData } from '../src/lib/deep-links';
 import { updatePresence } from '../src/lib/presence';
+import { initCallEngine } from '../src/features/calls/native/engine';
 
 SplashScreen.preventAutoHideAsync();
+
+// Rozmowy natywne (CallKit / Core-Telecom): słuchacze od razu przy starcie JS — przy zimnym
+// starcie z pushu VoIP zgłoszone już połączenie (i ewentualne odebranie) czeka w kolejce modułu.
+initCallEngine();
 
 // Powiadomienie o zadaniu (przypisanie, wzmianka w komentarzu) — odśwież listy zadań, tablice
 // zespołów, pulpit i dzwonek. Klucze bez dopasowania (np. ekran nieotwarty) nic nie kosztują.

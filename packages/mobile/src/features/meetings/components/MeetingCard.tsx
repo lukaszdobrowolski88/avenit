@@ -8,7 +8,7 @@ import { B } from "../../../components/ui/brand";
 import { FONT as F } from "../../../lib/fonts";
 import { showError } from "../../../lib/errors";
 import { addToPhoneCalendar } from "../../calendar/add-to-calendar";
-import { joinCallOnWeb, useCallsEnabled, useLiveCall } from "../../calls/api";
+import { joinCall, useCallsEnabled, useLiveCall } from "../../calls/api";
 import { useCancelMeeting, useMeeting, useRespondMeeting } from "../api";
 import { PHASE_TEXT, RESPONSES, RESPONSE_LABELS, RESPONSE_STATUS, meetingPhase, responseCounts, type Meeting } from "../logic";
 import { MeetingSheet } from "./MeetingSheet";
@@ -77,9 +77,9 @@ export function MeetingCard({ conversationId, myEmail }: { conversationId: strin
         </View>
         {!cancelled && phase !== "ended" && callsOn ? (
           <Pressable
-            onPress={() => void joinCallOnWeb(conversationId, m.kind)}
+            onPress={() => void joinCall(conversationId, live?.id, m.kind, { title: m.title, isGroup: true })}
             accessibilityRole="button"
-            accessibilityLabel={`${live ? "Dołącz" : "Rozpocznij spotkanie"}. Otworzy się w przeglądarce`}
+            accessibilityLabel={live ? "Dołącz do spotkania" : "Rozpocznij spotkanie"}
             className="active:opacity-70"
             style={pill(true)}
           >

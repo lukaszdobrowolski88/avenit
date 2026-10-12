@@ -914,7 +914,7 @@ export default function ConversationScreen() {
           onOpenGallery={() => setGalleryVisible(true)}
           peerStatus={peerStatus}
           onOpenInfo={details ? () => setInfoVisible(true) : undefined}
-          onCall={callsEnabled && details?.is_participant && details.type !== "meeting" ? () => chooseCallKind(String(conversationId)) : undefined}
+          onCall={callsEnabled && details?.is_participant && details.type !== "meeting" ? () => chooseCallKind(String(conversationId), { isGroup: details.type !== "direct" }) : undefined}
         />
 
         {/* Spotkanie online: termin, Dołącz, odpowiedź; inne rozmowy — pasek „Trwa połączenie”. */}

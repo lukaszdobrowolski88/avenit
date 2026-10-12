@@ -1,12 +1,12 @@
-// Rozmowy audio/wideo w mobilce — dane i dołączanie. Do czasu natywnych rozmów (Expo SDK 56
-// + LiveKit) połączenie odbywa się w przeglądarce telefonu: zalogowany link (web-ticket) do
-// rozmowy z ?join=audio|video — web od razu dołącza do trwającej albo ją rozpoczyna.
+// Rozmowy audio/wideo w mobilce — dane i dołączanie. Rozmowa jest natywna (LiveKit + CallKit /
+// Core-Telecom, native/engine.ts); w buildzie bez modułów natywnych silnik sam otwiera ją
+// w przeglądarce telefonu (zalogowany link web-ticket z ?join=audio|video).
 import { useEffect } from "react";
 import { Alert } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
-import { openOnWeb } from "../modules/useModules";
-import { isLiveCall, webCallPath } from "./logic";
+import { isLiveCall } from "./logic";
+import { startOrJoinCall, type CallKind } from "./native/engine";
 
 export interface LiveCallRow {
   id: string;
@@ -76,16 +76,21 @@ export function useLiveCall(conversationId: string | null | undefined) {
   return q.data ?? null;
 }
 
-// Dołącz / zadzwoń: rozmowa w przeglądarce telefonu (zalogowana jednorazowym biletem).
-export async function joinCallOnWeb(conversationId: string, kind: "audio" | "video") {
-  await openOnWeb(webCallPath(conversationId, kind));
+// Zadzwoń w rozmowie (call-start; serwer dołącza do trwającej, jeśli jest).
+export function startCall(conversationId: string, kind: CallKind, opts: { title?: string | null; isGroup?: boolean } = {}) {
+  return startOrJoinCall({ conversationId, kind, ...opts });
+}
+
+// Dołącz do trwającej rozmowy (baner „Trwa połączenie”, wiadomość „Dołącz”, spotkanie).
+export function joinCall(conversationId: string, callId: string | null | undefined, kind: CallKind, opts: { title?: string | null; isGroup?: boolean } = {}) {
+  return startOrJoinCall({ conversationId, kind, callId: callId ?? null, ...opts });
 }
 
 // Wybór rodzaju połączenia (jeden przycisk w nagłówku — mało miejsca).
-export function chooseCallKind(conversationId: string) {
-  Alert.alert("Zadzwoń", "Połączenie otworzy się w przeglądarce telefonu.", [
-    { text: "Połączenie głosowe", onPress: () => void joinCallOnWeb(conversationId, "audio") },
-    { text: "Połączenie wideo", onPress: () => void joinCallOnWeb(conversationId, "video") },
+export function chooseCallKind(conversationId: string, opts: { title?: string | null; isGroup?: boolean } = {}) {
+  Alert.alert("Zadzwoń", undefined, [
+    { text: "Połączenie głosowe", onPress: () => void startCall(conversationId, "audio", opts) },
+    { text: "Połączenie wideo", onPress: () => void startCall(conversationId, "video", opts) },
     { text: "Anuluj", style: "cancel" },
   ]);
 }

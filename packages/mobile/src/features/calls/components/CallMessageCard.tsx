@@ -4,10 +4,12 @@ import { format } from "date-fns";
 import { B } from "../../../components/ui/brand";
 import { FONT as F } from "../../../lib/fonts";
 import { callMessageView } from "../logic";
-import { joinCallOnWeb, useCallsEnabled, useLiveCall } from "../api";
+import { joinCall, startCall, useCallsEnabled, useLiveCall } from "../api";
+import { showCallScreen } from "../native/engine";
+import { useCurrentCall } from "../native/hooks";
 
 // Wiadomość „połączenie” w wątku (jak web CallMessage): ikona, opis, czas trwania,
-// „Dołącz” (trwa) albo „Oddzwoń” (nieodebrane). Połączenie otwiera się w przeglądarce telefonu.
+// „Dołącz” (trwa) albo „Oddzwoń” (nieodebrane). Rozmowa natywna (ekran rozmowy w apce).
 export function CallMessageCard({
   message,
   conversationId,
@@ -37,10 +39,15 @@ export function CallMessageCard({
 
   const meta = [view.durationText, format(new Date(message.created_at), "HH:mm")].filter(Boolean).join(" · ");
   const action = enabled && view.live
-    ? { label: "Dołącz", kind: view.kind }
+    ? { label: "Dołącz", kind: view.kind, join: true }
     : enabled && view.canCallBack
-      ? { label: view.callBackLabel, kind: view.kind }
+      ? { label: view.callBackLabel, kind: view.kind, join: false }
       : null;
+  const onAction = () => {
+    if (!action) return;
+    if (action.join) void joinCall(conversationId, live?.id ?? metaCallId, action.kind, { isGroup: view.isGroup });
+    else void startCall(conversationId, action.kind);
+  };
 
   return (
     <View style={{ alignItems: "center", marginVertical: 8 }}>
@@ -77,9 +84,9 @@ export function CallMessageCard({
         </View>
         {action ? (
           <Pressable
-            onPress={() => void joinCallOnWeb(conversationId, action.kind)}
+            onPress={onAction}
             accessibilityRole="button"
-            accessibilityLabel={`${action.label}. Połączenie otworzy się w przeglądarce`}
+            accessibilityLabel={action.join ? "Dołącz do rozmowy" : action.label}
             className="active:opacity-70"
             style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: B.ink, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 }}
           >
@@ -92,13 +99,16 @@ export function CallMessageCard({
   );
 }
 
-// Pasek pod nagłówkiem rozmowy, gdy trwa połączenie (jak web ActiveCallBanner).
+// Pasek pod nagłówkiem rozmowy, gdy trwa połączenie (jak web ActiveCallBanner). Gdy to moja
+// bieżąca rozmowa — „Wróć” do ekranu rozmowy zamiast „Dołącz”.
 export function LiveCallBanner({ conversationId, isDirect }: { conversationId: string; isDirect: boolean }) {
   const enabled = useCallsEnabled();
   const live = useLiveCall(conversationId);
-  if (!enabled || !live) return null;
-  const video = live.kind === "video";
-  const label = isDirect ? (video ? "Trwa połączenie wideo" : "Trwa połączenie głosowe") : "Trwa rozmowa";
+  const mine = useCurrentCall();
+  const inThisCall = !!mine && mine.conversationId === conversationId;
+  if (!enabled || (!live && !inThisCall)) return null;
+  const video = (live?.kind ?? mine?.kind) === "video";
+  const label = inThisCall ? "Jesteś w tej rozmowie" : isDirect ? (video ? "Trwa połączenie wideo" : "Trwa połączenie głosowe") : "Trwa rozmowa";
   return (
     <View
       accessibilityRole="summary"
@@ -107,14 +117,16 @@ export function LiveCallBanner({ conversationId, isDirect }: { conversationId: s
       {video ? <Video size={17} color={B.ink} /> : <PhoneCall size={17} color={B.ink} />}
       <Text style={{ flex: 1, fontSize: 14, color: B.ink, fontFamily: F.semibold }} numberOfLines={1}>{label}</Text>
       <Pressable
-        onPress={() => void joinCallOnWeb(conversationId, video ? "video" : "audio")}
+        onPress={() =>
+          inThisCall ? showCallScreen() : void joinCall(conversationId, live?.id, video ? "video" : "audio", { isGroup: !isDirect })
+        }
         accessibilityRole="button"
-        accessibilityLabel="Dołącz do rozmowy. Otworzy się w przeglądarce"
+        accessibilityLabel={inThisCall ? "Wróć do ekranu rozmowy" : "Dołącz do rozmowy"}
         className="active:opacity-70"
         style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: B.ink, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 }}
       >
         <PhoneCall size={14} color={B.onDark} />
-        <Text style={{ fontSize: 13, color: B.onDark, fontFamily: F.bold }}>Dołącz</Text>
+        <Text style={{ fontSize: 13, color: B.onDark, fontFamily: F.bold }}>{inThisCall ? "Wróć" : "Dołącz"}</Text>
       </Pressable>
     </View>
   );

@@ -6,6 +6,8 @@ import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { respondToAssignment } from './assignments';
 import { showError } from './errors';
+import { registerVoipPush } from '../features/calls/native/voip';
+import { isCallHandledNatively } from '../features/calls/native/engine';
 
 // Wywołanie funkcji backendu Avenit (/api/fn/*) przez klienta (tenant z logowania, odświeżanie
 // tokenu). Błąd (np. 403, brak sieci) RZUCA — wcześniej surowy fetch bez sprawdzania statusu
@@ -20,7 +22,11 @@ async function callFn(name: string, body: Record<string, unknown>) {
 // właśnie rozmowie bez banera (wiadomość i tak pojawia się w wątku).
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
-    const data = notification.request.content.data as { conversation_id?: string } | null;
+    const data = notification.request.content.data as { conversation_id?: string; type?: string; call_id?: string } | null;
+    // Połączenie, które już dzwoni / trwa natywnie (CallKit) — bez drugiego banera „dzwoni”.
+    if (data?.type === 'call' && isCallHandledNatively(data.call_id)) {
+      return { shouldPlaySound: false, shouldSetBadge: false, shouldShowAlert: false, shouldShowBanner: false, shouldShowList: false };
+    }
     const inThisThread = !!data?.conversation_id && data.conversation_id === getActiveConversation();
     playReceiveSound();
     return {
@@ -277,6 +283,10 @@ export const registerPushToken = async (userEmail: string) => {
     },
     { onConflict: 'expo_token' },
   );
+  if (!error) {
+    // Ten sam wiersz dostaje token VoIP (przychodzące połączenia jako systemowe — CallKit/Telecom).
+    registerVoipPush(token);
+  }
   if (error) {
     if ((error as any).code === '42P01') {
       console.warn(

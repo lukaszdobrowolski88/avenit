@@ -6,11 +6,50 @@ import * as SecureStore from 'expo-secure-store';
 const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
 const TENANT = process.env.EXPO_PUBLIC_TENANT || '';
 
-// SecureStore adapter dla sesji auth
+// SecureStore adapter dla sesji auth.
+// Dostępność w pęku kluczy: AFTER_FIRST_UNLOCK (zamiast domyślnego WHEN_UNLOCKED). Przychodzące
+// połączenie (push VoIP) budzi apkę także przy ZABLOKOWANYM telefonie — przy WHEN_UNLOCKED odczyt
+// sesji kończy się błędem, apka „nie ma” zalogowanego użytkownika i odebranie z ekranu blokady
+// nie może dołączyć do rozmowy. Aktualizacja istniejącego wpisu nie zmienia jego dostępności, więc
+// sesja żyje pod NOWĄ nazwą klucza (`<klucz>.v2`, zawsze AFTER_FIRST_UNLOCK); stary wpis to tylko
+// zapas do odczytu — przepisujemy go do nowego i kasujemy dopiero po udanym zapisie. Nigdy nie ma
+// chwili bez sesji (wcześniejsze wylogowania brały się właśnie z „pustego” odczytu).
+const KEYCHAIN = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
+const v2 = (key: string) => `${key}.v2`;
+// Licznik zapisów per klucz: przepisanie starego wpisu nie może nadpisać świeższego zapisu
+// (np. odświeżonego tokenu) — stary refresh token po rotacji = wylogowanie.
+const writes = new Map<string, number>();
+const bump = (key: string) => writes.set(key, (writes.get(key) ?? 0) + 1);
 const secureStoreAdapter = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+  getItem: async (key: string) => {
+    const fresh = await SecureStore.getItemAsync(v2(key), KEYCHAIN).catch(() => null);
+    if (fresh != null) return fresh;
+    const at = writes.get(key) ?? 0;
+    const legacy = await SecureStore.getItemAsync(key);
+    // Przepisanie PRZED zwróceniem wartości (sesja nie zdąży się w tym czasie odświeżyć);
+    // stary wpis kasujemy dopiero po udanym zapisie nowego.
+    if (legacy != null && (writes.get(key) ?? 0) === at) {
+      try {
+        await SecureStore.setItemAsync(v2(key), legacy, KEYCHAIN);
+        SecureStore.deleteItemAsync(key).catch(() => undefined);
+      } catch {
+        // zostaje stary wpis — odczyt dalej działa po odblokowaniu
+      }
+    }
+    return legacy;
+  },
+  setItem: async (key: string, value: string) => {
+    bump(key);
+    await SecureStore.setItemAsync(v2(key), value, KEYCHAIN);
+    SecureStore.deleteItemAsync(key).catch(() => undefined);
+  },
+  removeItem: async (key: string) => {
+    bump(key);
+    await Promise.all([
+      SecureStore.deleteItemAsync(v2(key), KEYCHAIN).catch(() => undefined),
+      SecureStore.deleteItemAsync(key).catch(() => undefined),
+    ]);
+  },
 };
 
 export const supabase = createSupabaseClient(API_URL, {

@@ -5,3 +5,6 @@ google-play-service-account.json
 # Klucz service accountu Firebase/FCM (SEKRET — nigdy do repo)
 *firebase-adminsdk*.json
 fcm-service-account.json
+
+# Lokalny stan Expo (historia urządzeń, serwer deweloperski) — nie do repo
+.expo/
