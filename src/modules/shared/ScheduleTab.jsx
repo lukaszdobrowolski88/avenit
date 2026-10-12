@@ -1289,7 +1289,11 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
       </div>
 
       {members.length === 0 ? (
-        <EmptyState icon={Users} title={t('Brak członków w zespole')} subtitle={tr('Najpierw dodaj członków w zakładce "Służby"')} />
+        // Osoby dodaje się w zakładce „Członkowie” (w Dzieciach: „Nauczyciele”); „Służby” definiują
+        // tylko role, czyli kolumny grafiku — bez nich grafik i tak działa (kolumna „Osoba”).
+        <EmptyState icon={Users} title={t('Brak członków w zespole')} subtitle={teamType === 'kids'
+          ? tr('Najpierw dodaj nauczycieli w zakładce „Nauczyciele” — pojawią się tu do wpisania w grafik.')
+          : tr('Najpierw dodaj osoby w zakładce „Członkowie” (przycisk „Dodaj członka”). Role, czyli kolumny grafiku, ustawisz w zakładce „Służby”.')} />
       ) : upcomingMonths.length + pastMonths.length === 0 ? (
         <EmptyState icon={Calendar} title={t('Brak wydarzeń')} subtitle={tr('Dodaj wydarzenia w tym module albo przypisz tę służbę do typu wydarzenia w Ustawieniach.')} />
       ) : (

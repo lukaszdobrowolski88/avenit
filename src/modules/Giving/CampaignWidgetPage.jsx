@@ -66,7 +66,7 @@ export default function CampaignWidgetPage() {
 
             <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-accent-primary to-accent-secondary transition-all duration-700"
+                className="h-full rounded-full bg-accent-primary transition-all duration-700"
                 style={{ width: `${pct}%` }}
               />
             </div>

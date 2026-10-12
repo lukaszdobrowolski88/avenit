@@ -261,10 +261,17 @@ export default function EventDetailPage() {
 
   const saveCustom = (key, val) => save({ custom: { ...(ev?.custom || {}), [key]: val } });
 
-  // Wstecz: po wejściu z linku (mail, powiadomienie) historia jest pusta — wtedy lista wydarzeń.
+  // Wstecz: tylko gdy poprzedni wpis historii należy do aplikacji. react-router numeruje swoje
+  // wpisy w history.state.idx (0 = pierwszy ekran tej sesji). history.length tu nie wystarcza:
+  // po wejściu z linku (mail, powiadomienie, nowa karta) liczy też strony sprzed aplikacji
+  // i navigate(-1) wyprowadzało poza nią — wtedy wracamy do listy wydarzeń.
+  const leave = () => {
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else navigate('/wydarzenia', { replace: true });
+  };
   const goBack = async () => {
     await flushPending();
-    if (window.history.length > 1) navigate(-1); else navigate('/wydarzenia');
+    leave();
   };
 
   // Tytuł: pusty nie jest zapisywany — wraca poprzednia nazwa.
@@ -306,7 +313,7 @@ export default function EventDetailPage() {
     const { error } = await supabase.from('events').delete().eq('id', id);
     if (error) return toast.error(tr('Nie udało się usunąć wydarzenia. Sprawdź, czy masz uprawnienia.'));
     toast.success(tr('Wydarzenie usunięte'));
-    if (window.history.length > 1) navigate(-1); else navigate('/wydarzenia');
+    leave();
   };
 
   // Zapewnij kampanię RSVP powiązaną z wydarzeniem (utwórz szkic, jeśli brak) — wspólną dla

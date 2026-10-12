@@ -189,7 +189,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
                     <span className="text-gray-500 dark:text-gray-400">{tr('z {amount}', { amount: formatMoney(goal) })} ({pct}%)</span>
                   </div>
                   <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-accent-primary to-accent-secondary transition-all" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full bg-accent-primary transition-all" style={{ width: `${pct}%` }} />
                   </div>
                   <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
                     <span>{tr('Zadeklarowano:')} {formatMoney(pledged)}</span>

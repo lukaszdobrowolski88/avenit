@@ -217,6 +217,19 @@ html[data-color-preset="avenit"] span.absolute.rounded-full:is(.bg-accent-primar
   color: #2A2312 !important;
 }
 
+/* Wypełnienie paska postępu (div.h-full z szerokością inline: zbiórki, limity planu, miejsca RSVP,
+   wysyłanie plików, postęp formularza, odtwarzacz) — kurkuma na papierowym torze. Reguła kafelków
+   wyżej dawała mu papier #ECE8DE na torze gray-100 (#F1EEE6), czyli pasek praktycznie niewidoczny. */
+html[data-color-preset="avenit"] div.h-full[style*="width"]:is(
+  .from-accent-primary, .from-accent-primary-light, .from-accent-primary-dark,
+  .from-accent-secondary, .from-accent-secondary-light,
+  .bg-accent-primary, .bg-accent-primary-light, .bg-accent-primary-dark,
+  .bg-accent-secondary, .bg-accent-secondary-light
+) {
+  background-image: none !important;
+  background-color: #FFBE0B !important;
+}
+
 /* ═══ Akcenty (przeciw „sterylności”) — te same klocki co w aplikacji mobilnej ═══════════════ */
 
 /* Tony kółek: data-tone ustawia komponent (src/lib/brandTone.js). Podwójny selektor atrybutu
