@@ -49,3 +49,6 @@ migrations/_install_*.sql
 live_schema.sql
 .npm-cache/
 avenit-npm-cache/
+
+# Klucze VoIP push (montowane w compose: ./secrets → /run/secrets/avenit) — NIE commitować
+/secrets/

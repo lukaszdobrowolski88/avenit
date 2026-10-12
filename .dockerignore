@@ -1,0 +1,2 @@
+# Klucze VoIP push (montowane w compose jako wolumen) — nigdy do kontekstu budowania obrazów
+secrets/
