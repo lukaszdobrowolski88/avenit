@@ -8,7 +8,8 @@ export function loadLivekit() {
 
 // Opcje pokoju: adaptiveStream (jakość wg rozmiaru/widoczności kafelka; niewidoczne kafelki
 // nie pobierają obrazu), dynacast (nadawca nie wysyła warstw, których nikt nie ogląda),
-// simulcast 180p/360p/540p — rozsądnie dla ~30 osób na jednym serwerze.
+// simulcast 180p/360p/720p — w 1:1 ostry obraz (także kadrowany do pionu na telefonie), w siatce
+// i na słabszym łączu odbiorcy dostają niższe warstwy; serwer tylko przekazuje warstwy (~30 osób).
 export function roomOptions(lk) {
   const P = lk.VideoPresets || {};
   const S = lk.ScreenSharePresets || {};
@@ -16,10 +17,11 @@ export function roomOptions(lk) {
     adaptiveStream: true,
     dynacast: true,
     disconnectOnPageLeave: true,
-    videoCaptureDefaults: P.h540 ? { resolution: P.h540.resolution } : undefined,
+    videoCaptureDefaults: P.h720 ? { resolution: P.h720.resolution } : undefined,
     audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     publishDefaults: {
       simulcast: true,
+      videoEncoding: P.h720?.encoding,
       videoSimulcastLayers: [P.h180, P.h360].filter(Boolean),
       screenShareEncoding: S.h1080fps15?.encoding,
       dtx: true,
