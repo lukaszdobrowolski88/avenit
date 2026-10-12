@@ -84,6 +84,25 @@ export default async function handler(req, reply) {
       for (const r of rows) avatarMap.set(r.email, r.avatar_url);
     } catch { /* brak kolumny avatar_url — bez avatarów */ }
 
+    // Podpis autora: prośby z mobilki zapisywały się bez user_name („Ktoś ze wspólnoty” mimo
+    // nieanonimowego wpisu) — dociągamy imię i nazwisko z konta albo kartoteki po e-mailu.
+    const nameMap = new Map();
+    const unnamed = [...new Set(visible.filter((r) => !r.user_name && r.user_email).map((r) => lc(r.user_email)))];
+    if (unnamed.length) {
+      try {
+        const { rows } = await req.db.query(
+          `SELECT lower(email) AS email, NULLIF(trim(coalesce(full_name, name, '')), '') AS n
+             FROM app_users WHERE lower(email) = ANY($1)`, [unnamed]);
+        for (const r of rows) if (r.n && !r.n.includes('@')) nameMap.set(r.email, r.n);
+      } catch { /* bez nazw z kont */ }
+      try {
+        const { rows } = await req.db.query(
+          `SELECT lower(email) AS email, NULLIF(trim(concat_ws(' ', first_name, last_name)), '') AS n
+             FROM members WHERE lower(email) = ANY($1)`, [unnamed]);
+        for (const r of rows) if (r.n && !nameMap.has(r.email)) nameMap.set(r.email, r.n);
+      } catch { /* bez kartoteki */ }
+    }
+
     const requests = visible.map((r) => {
       const isAnon = !!r.is_anonymous;
       const mine = lc(r.user_email) === email;
@@ -103,7 +122,7 @@ export default async function handler(req, reply) {
         created_at: r.created_at,
         updated_at: r.updated_at,
         // Tożsamość — ukryta przed innymi dla anonimowych; NIGDY e-mail.
-        user_name: hideIdentity ? null : (r.user_name ?? null),
+        user_name: hideIdentity ? null : (r.user_name ?? nameMap.get(lc(r.user_email)) ?? null),
         requester_name: hideIdentity ? null : (r.requester_name ?? null),
         // Avatar to sygnał tożsamości — chowamy dla każdego wpisu anonimowego (także autorowi).
         avatar_url: isAnon ? null : (avatarMap.get(lc(r.user_email)) ?? null),
