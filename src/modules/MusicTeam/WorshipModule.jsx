@@ -1947,7 +1947,7 @@ export default function WorshipModule() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      <PageHeader moduleKey="worship" icon={Music} title={tr('Grupa Uwielbienia')} />
+      <PageHeader moduleKey="worship" icon={Music} title={tr('Zespół Uwielbienia')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs moduleKey="worship"

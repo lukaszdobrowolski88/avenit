@@ -351,7 +351,7 @@ export default function AtmosferaTeamModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader moduleKey="atmosfera" icon={HeartHandshake} title={tr('Atmosfera Team')} />
+      <PageHeader moduleKey="atmosfera" icon={HeartHandshake} title={tr('Gościnność')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs moduleKey="atmosfera"

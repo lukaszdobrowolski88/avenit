@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 
-// Pozycja panelu (portal w <body>) przyklejonego do pola: pod polem, a gdy brak miejsca — nad nim.
+// Pozycja panelu (portal w <body>) przyklejonego do pola: pod polem, a gdy brak miejsca — nad nim
+// (prefer: 'up' — odwrotnie: nad polem, a pod nim, gdy u góry brak miejsca).
 // Współrzędne „fixed” (viewport), przeliczane przy przewijaniu i zmianie rozmiaru okna.
-export function useAnchoredPopover(anchorRef, open, { height = 300, width = 280 } = {}) {
+export function useAnchoredPopover(anchorRef, open, { height = 300, width = 280, prefer = 'down' } = {}) {
   const [pos, setPos] = useState(null);
 
   useEffect(() => {
@@ -10,7 +11,9 @@ export function useAnchoredPopover(anchorRef, open, { height = 300, width = 280 
     const update = () => {
       const r = anchorRef.current.getBoundingClientRect();
       const below = window.innerHeight - r.bottom;
-      const up = below < height + 12 && r.top > below;
+      const up = prefer === 'up'
+        ? !(r.top < height + 12 && below > r.top)
+        : below < height + 12 && r.top > below;
       const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
       setPos(up ? { left, bottom: window.innerHeight - r.top + 6, width: r.width } : { left, top: r.bottom + 6, width: r.width });
     };
@@ -21,7 +24,7 @@ export function useAnchoredPopover(anchorRef, open, { height = 300, width = 280 
       window.removeEventListener('scroll', update, true);
       window.removeEventListener('resize', update);
     };
-  }, [open, anchorRef, height, width]);
+  }, [open, anchorRef, height, width, prefer]);
 
   return pos;
 }

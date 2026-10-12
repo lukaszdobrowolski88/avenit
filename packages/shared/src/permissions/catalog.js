@@ -156,7 +156,7 @@ export const MODULES = [
     fields: [],
   },
   {
-    key: 'media', label: 'Media Team',
+    key: 'media', label: 'Media',
     resources: ['media_events', 'media_team', 'equipment', 'media_tasks', 'media_task_comments'],
     tabs: [
       { key: 'schedule', label: 'Grafik' },
@@ -184,7 +184,7 @@ export const MODULES = [
     fields: [],
   },
   {
-    key: 'worship', label: 'Grupa Uwielbienia',
+    key: 'worship', label: 'Zespół Uwielbienia',
     resources: ['songs', 'song_attachments', 'worship_events', 'worship_team'],
     tabs: [
       { key: 'schedule', label: 'Grafik' },
@@ -197,7 +197,7 @@ export const MODULES = [
     fields: [],
   },
   {
-    key: 'atmosfera', label: 'Atmosfera Team',
+    key: 'atmosfera', label: 'Gościnność',
     resources: ['atmosfera_events', 'atmosfera_members'],
     tabs: [
       { key: 'schedule', label: 'Grafik' },
