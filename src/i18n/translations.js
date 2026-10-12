@@ -8077,6 +8077,11 @@ const en = {
   'Konto zapisane, ale nie udało się przypisać do służb: {teams}.': 'Account saved, but could not assign to ministries: {teams}.',
   'Rola w służbie {name}': 'Role in ministry {name}',
   'Lider służby widzi i prowadzi swoją służbę (także jej finanse); członek współpracuje w niej.': 'A ministry leader sees and runs their ministry (including its finances); a member collaborates in it.',
+  // ── Pulpit: okno „Dostosuj pulpit”, grafik bez osób ──
+  'Dostosuj pulpit': 'Customize dashboard',
+  'Nadchodzące RSVP': 'Upcoming RSVPs',
+  'Najpierw dodaj osoby w zakładce „Członkowie” (przycisk „Dodaj członka”). Role, czyli kolumny grafiku, ustawisz w zakładce „Służby”.': 'First add people in the "Members" tab ("Add member" button). Roles, i.e. the schedule columns, are set in the "Ministries" tab.',
+  'Najpierw dodaj nauczycieli w zakładce „Nauczyciele” — pojawią się tu do wpisania w grafik.': 'First add teachers in the "Teachers" tab — they will appear here to be scheduled.',
 };
 
 const uk = {
@@ -16152,6 +16157,11 @@ const uk = {
   'Konto zapisane, ale nie udało się przypisać do służb: {teams}.': 'Обліковий запис збережено, але не вдалося призначити до служінь: {teams}.',
   'Rola w służbie {name}': 'Роль у служінні {name}',
   'Lider służby widzi i prowadzi swoją służbę (także jej finanse); członek współpracuje w niej.': 'Лідер служіння бачить і веде своє служіння (зокрема його фінанси); учасник співпрацює в ньому.',
+  // ── Pulpit: okno „Dostosuj pulpit”, grafik bez osób ──
+  'Dostosuj pulpit': 'Налаштувати панель',
+  'Nadchodzące RSVP': 'Майбутні RSVP',
+  'Najpierw dodaj osoby w zakładce „Członkowie” (przycisk „Dodaj członka”). Role, czyli kolumny grafiku, ustawisz w zakładce „Służby”.': 'Спочатку додайте людей у вкладці «Учасники» (кнопка «Додати учасника»). Ролі, тобто стовпці графіка, налаштуєте у вкладці «Служіння».',
+  'Najpierw dodaj nauczycieli w zakładce „Nauczyciele” — pojawią się tu do wpisania w grafik.': 'Спочатку додайте вчителів у вкладці «Вчителі» — вони з’являться тут, щоб внести їх у графік.',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

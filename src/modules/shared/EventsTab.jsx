@@ -108,7 +108,7 @@ const MINISTRY_CONFIG = {
   kids: {
     tableName: 'module_events', teamType: 'kids',
     icon: '👶',
-    title: tr('Małe Avenit'),
+    title: tr('Dzieci'),
     defaultType: 'zajecia',
     types: [
       { value: 'zajecia', label: tr('Zajęcia') },

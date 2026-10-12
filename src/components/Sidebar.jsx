@@ -64,7 +64,9 @@ function Tooltip({ children, text, show }) {
 }
 
 // Import logo dla zwiniętego sidebara
-import sidebarLogo from '../media/schw.svg';
+// Domyślny znak, gdy kościół nie ustawił własnego logo (Ustawienia → org_logo_url) — znak Avenit,
+// nie logo konkretnego kościoła (wcześniej media/schw.svg = logo SChWro u wszystkich).
+const sidebarLogo = '/brand/avenit-znak-kurkuma.png';
 import { tr } from '../i18n';
 
 // localStorage bywa niedostępny (tryb prywatny, zablokowane dane) — zawsze przez try/catch.
@@ -150,6 +152,14 @@ export default function Sidebar() {
   const t = useT();
   const { userRole, loading: roleLoading } = useUserRole();
   const { can, ready, appSettings: moduleSettings, logoUrl } = usePermissions();
+  // Logo kościoła się nie wczytało → znak Avenit (jednorazowo; img.src to pełny URL, więc
+  // porównanie ze ścieżką względną nie chroniło przed pętlą onError).
+  const logoFallback = (e) => {
+    const img = e.currentTarget;
+    if (img.dataset.fallback) return;
+    img.dataset.fallback = '1';
+    img.src = sidebarLogo;
+  };
   const { isOpen, close } = useSidebar();
   const { hasUnsavedChanges, checkBeforeNavigate } = useUnsavedChanges();
   const { activeTour } = useOnboarding();
@@ -346,14 +356,11 @@ export default function Sidebar() {
         <div className={`${isCollapsed ? 'p-3' : 'p-4 lg:p-6'} border-b border-gray-200/50 dark:border-gray-700 flex justify-center items-center shrink-0`}>
           {(logoUrl || sidebarLogo) ? (
             <img
+              key={logoUrl || 'default'}
               src={logoUrl || sidebarLogo}
               alt={tr('Logo kościoła')}
               className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-10 h-10' : 'w-full max-h-20 lg:max-h-32 rounded-md'}`}
-              onError={(e) => {
-                if (logoUrl && e.target.src !== sidebarLogo) {
-                  e.target.src = sidebarLogo;
-                }
-              }}
+              onError={logoFallback}
             />
           ) : (
             <div className="w-full aspect-video text-3xl lg:text-4xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest dark:to-accent-secondary-darkest rounded-xl flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold shadow-sm transition-all duration-300">
@@ -367,7 +374,7 @@ export default function Sidebar() {
       {isMobile && (
         <div className="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logoUrl || sidebarLogo} alt="" className="w-8 h-8 object-contain" onError={(e) => { if (logoUrl && e.target.src !== sidebarLogo) e.target.src = sidebarLogo; }} />
+            <img key={logoUrl || 'default'} src={logoUrl || sidebarLogo} alt="" className="w-8 h-8 object-contain" onError={logoFallback} />
             <span className="font-semibold text-gray-800 dark:text-white">{tr('Menu')}</span>
           </div>
           <button

@@ -1,4 +1,4 @@
-import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
+import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect, useLayoutEffect } from 'react';
 import { Send, Paperclip, X, FileText, Loader, Reply, Mic, Plus, BarChart3, Calendar, Lock, Smile, HeartHandshake, Users } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatFileSize, isImageFile } from '../utils/messageHelpers';
@@ -7,7 +7,7 @@ import EmojiPicker from './EmojiPicker';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
-import { previewText, sameEmail, MENTION_ALL, MENTION_ALL_TOKEN } from '../utils/chatLogic';
+import { previewText, sameEmail, MENTION_ALL, MENTION_ALL_TOKEN, insertMentionAt } from '../utils/chatLogic';
 import { attachmentUploadPath } from '../utils/attachmentUrl';
 import { SignedImage } from './SignedAttachment';
 
@@ -43,6 +43,7 @@ const MessageInput = forwardRef(function MessageInput({
   const attachMenuRef = useRef(null);
   const mentionMapRef = useRef(new Map()); // fullName -> email
   const sendingRef = useRef(false); // strażnik podwójnego Entera / kliknięcia
+  const pendingCaretRef = useRef(null); // pozycja kursora do ustawienia po wstawieniu wzmianki
   const [sending, setSending] = useState(false);
 
   // Wczytaj wersję roboczą (draft) przy zmianie konwersacji
@@ -248,14 +249,23 @@ const MessageInput = forwardRef(function MessageInput({
     const isAll = user.user_email === MENTION_ALL;
     const name = isAll ? MENTION_ALL_TOKEN.slice(1) : (user.full_name || user.user_email?.split('@')[0] || '');
     if (!isAll) mentionMapRef.current.set(name, user.user_email);
-    // Zamień wpisywany fragment "@query" na "@name "
-    const before = content.slice(0, mention.start - 1); // -1 aby usunąć '@'
-    const after = content.slice(mention.start + mention.query.length);
-    const next = `${before}@${name} ${after}`;
+    // Zamień wpisywany fragment "@query" na "@name " i postaw kursor zaraz za nim — samo
+    // podmienienie wartości kontrolowanego pola przenosiło kursor (dalszy tekst lądował przed wzmianką).
+    const { text: next, caret } = insertMentionAt(content, mention.start, mention.query, name);
+    pendingCaretRef.current = caret;
     setContent(next);
     setMention({ open: false, query: '', start: 0 });
-    setTimeout(() => textareaRef.current?.focus(), 0);
   };
+
+  // Po wstawieniu wzmianki: fokus z powrotem w polu i kursor za wzmianką (po wyrenderowaniu nowej treści).
+  useLayoutEffect(() => {
+    const caret = pendingCaretRef.current;
+    const el = textareaRef.current;
+    if (caret == null || !el) return;
+    pendingCaretRef.current = null;
+    el.focus();
+    el.setSelectionRange(caret, caret);
+  }, [content]);
 
   const insertEmoji = (emoji) => {
     setContent(prev => prev + emoji);
@@ -366,6 +376,7 @@ const MessageInput = forwardRef(function MessageInput({
             <button
               key={p.user_email}
               type="button"
+              onMouseDown={(e) => e.preventDefault()} // nie zabieraj fokusu polu tekstowemu
               onClick={() => insertMention(p)}
               className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 transition text-left"
             >

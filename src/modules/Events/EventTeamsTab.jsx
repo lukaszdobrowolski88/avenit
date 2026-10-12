@@ -26,12 +26,12 @@ const TEAM_MEMBER_TABLE = {
 const memberTableFor = (teamType) => TEAM_MEMBER_TABLE[teamType] || `custom_${teamType}_members`;
 const TEAM_LABELS = {
   worship: 'Zespół Uwielbienia', media: 'Media Team', atmosfera: 'Atmosfera Team',
-  kids: 'Małe Avenit', mc: 'Scena / MC',
+  kids: 'Dzieci', mc: 'Scena / MC',
 };
 // Bazowe (systemowe) służby zawsze dostępne w pickerze; custom moduły dochodzą z app_modules.
 const SYSTEM_TEAM_OPTIONS = [
   { value: 'worship', label: 'Zespół Uwielbienia' }, { value: 'media', label: 'Media Team' },
-  { value: 'atmosfera', label: 'Atmosfera Team' }, { value: 'kids', label: 'Małe Avenit' },
+  { value: 'atmosfera', label: 'Atmosfera Team' }, { value: 'kids', label: 'Dzieci' },
   { value: 'mc', label: 'Scena / MC' },
 ];
 // Nazwa służby: najpierw nazwa modułu nadana przez kościół (app_modules), potem domyślna.

@@ -246,7 +246,9 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
 // MAIN WIDGET
 // ============================================
 
-export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userEmail }) {
+// onRefresh: przeładowanie list „Nadchodzące”/„Historia” (useDashboardData.refreshMinistry) — po
+// odpowiedzi na sugestię status roli (zegar → ptaszek / skreślenie) zmienia się bez przeładowania strony.
+export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userEmail, onRefresh }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [modalState, setModalState] = useState({ isOpen: false, programId: null });
@@ -306,6 +308,8 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
         return;
       }
       setPendingAssignments((prev) => prev.filter((a) => a.id !== assignment.id));
+      // Nadchodzące/Historia czytają ten sam przydział (status roli) — odśwież je w tle.
+      Promise.resolve(onRefresh?.()).catch(() => {});
       if (payload.already) toast.info(tr('Na ten przydział odpowiedziano już wcześniej.'));
       else if (action === 'accept') toast.success(tr('Dziękujemy! Twój dyżur jest potwierdzony.'));
       else toast.success(tr('Dziękujemy za informację. Usunęliśmy Cię z grafiku.'));

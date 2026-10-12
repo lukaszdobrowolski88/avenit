@@ -36,6 +36,7 @@ import { REPORT_SECTIONS, MAIL_SECTION_KEYS, defaultSections, loadSections, save
 import ExcludePicker from './finance/ExcludePicker';
 import ReportExportModal from './finance/ReportExportModal';
 import BudgetExpenseTable from './finance/BudgetExpenseTable';
+import { isMinistryModule } from '../lib/ministryModules';
 
 
 
@@ -78,21 +79,18 @@ const TEAM_TYPE_BY_KEY = {
   mlodziezowka: 'Mlodziezowka',
 };
 
-// Moduły SYSTEMOWE/techniczne — pomijane na liście „Kategoria (Służba)" budżetu.
-// Denylista (a nie allowlista) — dzięki temu WŁASNE moduły użytkownika zawsze się pokażą.
-const SYSTEM_MODULE_KEYS = new Set([
-  'dashboard', 'settings', 'analytics', 'automation', 'ai', 'members',
-  'calendar', 'komunikator', 'mail', 'mailing', 'push_campaigns', 'sms_campaigns',
-  'programs', 'boards', 'rooms', 'attendance', 'rsvp', 'finance', 'care',
-]);
+// Lista służb = tylko SŁUŻBY (wbudowane zespoły + moduły własne; lib/ministryModules).
+// Wcześniej czarna lista przepuszczała Ścianę modlitwy, Formularze, Kazania, Hojność itd.
+// Pozostałe obszary budżetu (Administracja, Budynek…) to finance_areas.
 
-// Zapasowa lista służb (gdyby app_modules się nie wczytało). WARTOŚĆ = team_type modułu.
+// Zapasowa lista służb (gdyby app_modules się nie wczytało). WARTOŚĆ = team_type modułu
+// (zapisany klucz — nie zmieniać), ETYKIETA = nazwa dla ludzi.
 const FALLBACK_SERVICES = [
-  { value: 'Grupa Uwielbienia', label: 'Grupa Uwielbienia' },
-  { value: 'MediaTeam', label: 'MediaTeam' },
-  { value: 'AtmosferaTeam', label: 'AtmosferaTeam' },
+  { value: 'Grupa Uwielbienia', label: 'Zespół Uwielbienia' },
+  { value: 'MediaTeam', label: 'Media Team' },
+  { value: 'AtmosferaTeam', label: 'Atmosfera Team' },
   { value: 'Grupy domowe', label: 'Grupy domowe' },
-  { value: 'małe Avenit', label: 'małe Avenit' },
+  { value: 'małe Avenit', label: 'Dzieci' },
   { value: 'Mlodziezowka', label: 'Młodzieżówka' },
 ];
 
@@ -127,12 +125,12 @@ const FinanceModule = () => {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await supabase.from('app_modules').select('key, label, display_order').order('display_order', { ascending: true });
+        const { data } = await supabase.from('app_modules').select('key, label, display_order, component_name').order('display_order', { ascending: true });
         const opts = (data || [])
-          .filter((m) => m.label && !SYSTEM_MODULE_KEYS.has(m.key))
+          .filter((m) => m.label && isMinistryModule(m))
           .map((m) => ({ value: TEAM_TYPE_BY_KEY[m.key] || m.label, label: m.label }));
-        setServiceOptions(opts.length ? opts : FALLBACK_SERVICES);
-      } catch { setServiceOptions(FALLBACK_SERVICES); }
+        setServiceOptions(opts.length ? opts : FALLBACK_SERVICES.map((o) => ({ ...o, label: tr(o.label) })));
+      } catch { setServiceOptions(FALLBACK_SERVICES.map((o) => ({ ...o, label: tr(o.label) }))); }
     })();
   }, []);
   // Nazwa służby do wyświetlenia: team_type wbudowanego zespołu („małe Avenit”) → nazwa modułu z menu.
@@ -1276,7 +1274,8 @@ const FinanceModule = () => {
 
   // Kategorie (służby) do wydatku: najpierw te z budżetu, potem pozostałe służby — wydatek
   // da się zapisać także bez pozycji budżetowej („poza budżetem”).
-  const budgetCategories = [...new Set(budgetItems.filter((i) => i.kind !== 'income').map(item => item.category).filter(Boolean))].map(cat => ({ value: cat, label: cat }));
+  // Etykieta przez areaLabel: zapisany team_type („MediaTeam”, „małe Avenit”) → nazwa modułu z menu.
+  const budgetCategories = [...new Set(budgetItems.filter((i) => i.kind !== 'income').map(item => item.category).filter(Boolean))].map(cat => ({ value: cat, label: areaLabel(cat) }));
   const expenseCategoryOptions = [
     ...buildAreaOptions([...budgetCategories, ...serviceOptions], areas, expenseForm.category),
     { value: NEW_OPTION, label: tr('+ Dodaj nowy obszar…') },
@@ -1838,7 +1837,7 @@ const FinanceModule = () => {
                 onChange={(val) => setExpenseFilters({...expenseFilters, category: val})}
                 options={[
                   { value: '', label: tr('Wszystkie') },
-                  ...[...new Set(expenseTransactions.map((e) => e.category).filter(Boolean))].map((c) => ({ value: c, label: c })),
+                  ...[...new Set(expenseTransactions.map((e) => e.category).filter(Boolean))].map((c) => ({ value: c, label: areaLabel(c) })),
                 ]}
                 placeholder={t('Wszystkie')}
               />
@@ -1954,7 +1953,7 @@ const FinanceModule = () => {
                         <div className="flex flex-col items-start gap-1">
                           {transaction.category && (
                             <StatusPill color={STATUS_COLORS.neutral}>
-                              {transaction.category}
+                              {areaLabel(transaction.category)}
                             </StatusPill>
                           )}
                           {transaction.cost_category && (
@@ -2085,7 +2084,7 @@ const FinanceModule = () => {
                       <div className="font-semibold text-gray-800 dark:text-gray-100 truncate">{r.title}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {FREQ[r.frequency] || r.frequency}
-                        {r.category ? ` · ${r.category}` : ''}
+                        {r.category ? ` · ${r.kind === 'income' ? r.category : areaLabel(r.category)}` : ''}
                         {r.cost_category ? ` · ${r.cost_category}` : ''}
                         {projectById(projects, r.project_id) ? ` · ${projectById(projects, r.project_id).name}` : ''}
                         {r.next_run_date ? ` · ${tr('następna')}: ${fmtDate(r.next_run_date)}` : ''}
@@ -2905,7 +2904,7 @@ const FinanceModule = () => {
                   <div key={a.id} className="flex items-start gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${a.action === 'deleted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : a.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>{AL[a.action] || a.action}</span>
                     <div className="min-w-0 flex-1">
-                      <div className="text-gray-800 dark:text-gray-100 truncate">{a.category}{a.description ? ` — ${a.description}` : ''}</div>
+                      <div className="text-gray-800 dark:text-gray-100 truncate">{a.category ? areaLabel(a.category) : a.category}{a.description ? ` — ${a.description}` : ''}</div>
                       <div className="text-xs text-gray-400">
                         {a.action === 'updated' && beforeAmt != null && afterAmt != null && beforeAmt !== afterAmt
                           ? `${fmtMoney(beforeAmt)} → ${fmtMoney(afterAmt)} · `

@@ -12,6 +12,7 @@ import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
 import { pluralForm } from '../checkin/utils/kiosk';
+import { yearsLabel } from '../checkin/utils/ageCalculator';
 
 export default function HouseholdManager() {
   const [households, setHouseholds] = useState([]);
@@ -693,7 +694,7 @@ export default function HouseholdManager() {
                       )}
                       <span className="flex items-center gap-1">
                         <Users size={14} />
-                        {household.kids_students?.length || 0} {tr('dzieci')}
+                        {(() => { const n = household.kids_students?.length || 0; return pluralForm(n, tr('{n} dziecko', { n }), tr('{n} dzieci', { n }), tr('{n} dzieci', { n })); })()}
                       </span>
                     </div>
                   </div>
@@ -813,7 +814,7 @@ export default function HouseholdManager() {
                                   </span>
                                   {student.birth_year && (
                                     <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                                      ({new Date().getFullYear() - student.birth_year} {tr('lat')})
+                                      ({yearsLabel(new Date().getFullYear() - student.birth_year)})
                                     </span>
                                   )}
                                 </div>

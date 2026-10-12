@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { MoreVertical, Edit2, Trash2, Check, X, FileText, Image, Table, File, Download, CheckCheck, Reply, Smile, Forward, Pin, Copy, Plus, Eye, Languages, Flag, Ban, Loader } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageTime, formatFileSize, isImageFile, getFileIcon } from '../utils/messageHelpers';
@@ -13,10 +14,16 @@ import CallMessage from '../calls/CallMessage';
 import { SignedImage, SignedLink, SignedAudio } from './SignedAttachment';
 import { tr, useI18n } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
-import { isVoiceAttachment, voiceDurationMs, previewText, mentionsMe, attachmentsOf } from '../utils/chatLogic';
+import { isVoiceAttachment, voiceDurationMs, previewText, mentionsMe, mentionNamesOf, attachmentsOf } from '../utils/chatLogic';
 import { firstLink } from '../utils/linkify';
 import { translateMessage, cachedTranslation, languageName } from '../utils/translate';
 import { toast } from '../../../lib/toast';
+import { useAnchoredPopover, useOutsideClose } from '../../../components/pickers/useAnchoredPopover';
+
+// Menu „Więcej działań”: portal w <body> (position: fixed), żeby nie ucinał go przewijany wątek;
+// przy dolnej krawędzi otwiera się w górę (useAnchoredPopover). Wysokość = najdłuższy wariant menu.
+const MENU_WIDTH = 180;
+const MENU_HEIGHT = 330;
 
 export default function MessageBubble({
   message,
@@ -74,12 +81,12 @@ export default function MessageBubble({
   const [showOriginal, setShowOriginal] = useState(false);
   const [translating, setTranslating] = useState(false);
   const menuRef = useRef(null);
+  const menuBtnRef = useRef(null);
   const reactionRef = useRef(null);
   const touchStart = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false);
       if (reactionRef.current && !reactionRef.current.contains(e.target)) {
         setShowReactionPicker(false);
         setShowFullEmoji(false);
@@ -89,12 +96,27 @@ export default function MessageBubble({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const closeMenu = useCallback(() => setShowMenu(false), []);
+  const menuRefs = useMemo(() => [menuRef, menuBtnRef], []);
+  useOutsideClose(showMenu, menuRefs, closeMenu);
+  const menuPos = useAnchoredPopover(menuBtnRef, showMenu, { height: MENU_HEIGHT, width: MENU_WIDTH });
+  // Moje wiadomości (przycisk po lewej dymka) — menu rozwija się w lewo od przycisku, cudze — w prawo.
+  const menuStyle = menuPos && {
+    top: menuPos.top,
+    bottom: menuPos.bottom,
+    ...(isOwn
+      ? { right: Math.max(8, window.innerWidth - (menuPos.left + menuPos.width)) }
+      : { left: menuPos.left }),
+  };
+
   // Edycja treści unieważnia tłumaczenie.
   useEffect(() => { setTranslation(cachedTranslation(message.id, lang)); setShowOriginal(false); }, [message.content, message.id, lang]);
 
   const messageType = message.message_type || 'text';
   const isRich = messageType === 'poll' || messageType === 'prayer' || messageType === 'event';
   const mentionedMe = mentionsMe(message, currentUserEmail);
+  // Pełne nazwy wzmiankowanych (messages.mentions = e-maile) — do wyróżnienia „@Imię Nazwisko” w całości.
+  const mentionNames = mentionNamesOf(message, nameOf);
   const attachments = attachmentsOf(message); // API bywa zwraca {} zamiast []
   const previewUrl = !isRich && message.content ? firstLink(message.content) : null;
   const canTranslate = !isRich && !isOwn && !!message.content && message.content.trim().length > 1;
@@ -321,7 +343,7 @@ export default function MessageBubble({
                 )}
 
                 {shownText && (
-                  <p className="whitespace-pre-wrap break-words"><MessageText text={shownText} isOwn={isOwn} /></p>
+                  <p className="whitespace-pre-wrap break-words"><MessageText text={shownText} isOwn={isOwn} mentionNames={mentionNames} /></p>
                 )}
 
                 {(translating || translation?.text) && (
@@ -356,14 +378,16 @@ export default function MessageBubble({
           {/* Menu i reakcje – tylko poza edycją */}
           {!isEditing && (
             <>
-              <button type="button" onClick={() => setShowMenu(!showMenu)}
-                aria-label={tr('Więcej działań')} title={tr('Więcej działań')} aria-expanded={showMenu}
-                className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-all duration-200 shadow-sm ${isOwn ? '-left-9' : '-right-9'}`}>
+              <button ref={menuBtnRef} type="button" onClick={() => setShowMenu(v => !v)}
+                aria-label={tr('Więcej działań')} title={tr('Więcej działań')} aria-haspopup="menu" aria-expanded={showMenu}
+                className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-xl ${showMenu ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-all duration-200 shadow-sm ${isOwn ? '-left-9' : '-right-9'}`}>
                 <MoreVertical size={14} />
               </button>
 
-              {showMenu && (
-                <div ref={menuRef} role="menu" className={`absolute top-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-xl py-1.5 z-10 min-w-[170px] ${isOwn ? '-left-44' : '-right-44'}`}>
+              {showMenu && menuStyle && createPortal(
+                <div ref={menuRef} role="menu" aria-label={tr('Więcej działań')} style={{ ...menuStyle, minWidth: MENU_WIDTH }}
+                  onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}
+                  className="fixed z-[9999] bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-xl py-1.5 animate-in fade-in zoom-in-95 duration-100">
                   {onReply && <button type="button" role="menuitem" onClick={handleReply} className={menuItem}><Reply size={14} className="text-gray-400" />{tr('Odpowiedz')}</button>}
                   {!isRich && <button type="button" role="menuitem" onClick={handleForward} className={menuItem}><Forward size={14} className="text-gray-400" />{tr('Przekaż')}</button>}
                   {!isRich && message.content && <button type="button" role="menuitem" onClick={handleCopy} className={menuItem}>{copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-gray-400" />}{copied ? tr('Skopiowano!') : tr('Kopiuj')}</button>}
@@ -397,7 +421,8 @@ export default function MessageBubble({
                   {isOwn && onDelete && (
                     <button type="button" role="menuitem" onClick={handleDelete} className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition"><Trash2 size={14} />{tr('Usuń')}</button>
                   )}
-                </div>
+                </div>,
+                document.body
               )}
 
               {/* Przycisk reakcji */}

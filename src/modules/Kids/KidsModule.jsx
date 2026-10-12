@@ -413,7 +413,7 @@ export default function KidsModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader moduleKey="kids" icon={Baby} title={t('Małe Avenit')} />
+      <PageHeader moduleKey="kids" icon={Baby} title={t('Dzieci')} />
 
       {/* TABS */}
       <ResponsiveTabs moduleKey="kids"

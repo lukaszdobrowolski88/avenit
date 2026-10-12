@@ -78,6 +78,7 @@ export default function PersonalDashboard({ user }) {
     stats,
     loading: dataLoading,
     refresh,
+    refreshMinistry,
     refreshTasks,
     refreshAbsences,
     refreshPrayers,
@@ -99,7 +100,7 @@ export default function PersonalDashboard({ user }) {
   const renderWidget = (widgetId) => {
     switch (widgetId) {
       case 'ministry':
-        return <MyMinistryWidget upcomingMinistry={upcomingMinistry} pastMinistry={pastMinistry} userEmail={userEmail} />;
+        return <MyMinistryWidget upcomingMinistry={upcomingMinistry} pastMinistry={pastMinistry} userEmail={userEmail} onRefresh={refreshMinistry} />;
       case 'tasks':
         return <MyTasksWidget tasks={tasks} boardTasks={boardTasks} userEmail={userEmail} userName={userProfile?.full_name} onRefresh={refreshTasks} />;
       case 'absences':
@@ -286,7 +287,7 @@ export default function PersonalDashboard({ user }) {
           icon={Settings}
           title={tr('Brak widocznych widgetów')}
           subtitle={tr('Wszystkie widgety są ukryte. Kliknij "Dostosuj", aby je włączyć.')}
-          action={<Button onClick={() => setShowCustomizer(true)}>Dostosuj pulpit</Button>}
+          action={<Button onClick={() => setShowCustomizer(true)}>{tr('Dostosuj pulpit')}</Button>}
         />
       )}
 

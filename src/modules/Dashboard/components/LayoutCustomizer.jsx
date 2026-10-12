@@ -36,10 +36,12 @@ export default function LayoutCustomizer({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-            Dostosuj Pulpit
+            {tr('Dostosuj pulpit')}
           </h2>
           <button
             onClick={onClose}
+            aria-label={tr('Zamknij')}
+            title={tr('Zamknij')}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
           >
             <X size={20} />
@@ -81,10 +83,10 @@ export default function LayoutCustomizer({
                     </div>
                     <div>
                       <p className="font-medium text-gray-800 dark:text-white">
-                        {widget.name}
+                        {tr(widget.name)}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {widget.description}
+                        {tr(widget.description)}
                       </p>
                     </div>
                   </div>
@@ -96,11 +98,12 @@ export default function LayoutCustomizer({
                       <select
                         value={item.size}
                         onChange={(e) => onSizeChange(item.widgetId, e.target.value)}
+                        aria-label={tr('Rozmiar')}
                         className="flex-1 sm:flex-none px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-accent-primary-light"
                       >
                         {Object.entries(WIDGET_SIZES).map(([key, size]) => (
                           <option key={key} value={key}>
-                            {size.label}
+                            {tr(size.label)}
                           </option>
                         ))}
                       </select>
@@ -115,6 +118,7 @@ export default function LayoutCustomizer({
                           : 'hover:bg-green-100 dark:hover:bg-green-900/30 text-gray-400 hover:text-green-600'
                       }`}
                       title={item.visible ? tr('Ukryj widget') : tr('Pokaż widget')}
+                      aria-label={item.visible ? tr('Ukryj widget') : tr('Pokaż widget')}
                     >
                       {item.visible ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -138,7 +142,7 @@ export default function LayoutCustomizer({
             onClick={onClose}
             className="px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg transition-all"
           >
-            Gotowe
+            {tr('Gotowe')}
           </button>
         </div>
       </div>
