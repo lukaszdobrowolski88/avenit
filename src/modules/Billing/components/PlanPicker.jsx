@@ -12,7 +12,7 @@ import '../../../components/toolbar.css';
 // Wybór wysyła prośbę do zespołu Avenit (plan zmieniamy od kolejnego okresu); Sieć → „Porozmawiajmy”.
 const INCLUDED = [
   'Wszystkie moduły, bez dopłat za kolejne',
-  'Bez limitu użytkowników: loguje się cały zbór',
+  'Bez limitu użytkowników: loguje się cały kościół',
   'Aplikacja na iPhone\'a i Androida oraz wersja w przeglądarce',
   'Po polsku, angielsku i ukraińsku',
   'Dane w UE, osobna baza i kopia co noc',
@@ -55,7 +55,7 @@ export default function PlanPicker({ plans = [], currentKey, currentCycle = 'mon
       <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
         <div>
           <h3 id="billing-plans-h" className="font-bold text-gray-800 dark:text-white">{tr('Plany')}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tr('Płacicie za wielkość zboru, nie za moduły. Ceny brutto (z VAT).')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tr('Płacicie za wielkość kościoła, nie za moduły. Ceny brutto (z VAT).')}</p>
         </div>
         <div className="seg-bar" role="group" aria-label={tr('Okres rozliczenia')}>
           <button type="button" className="seg-btn" aria-pressed={cycle === 'monthly'} onClick={() => setCycle('monthly')}>{tr('Miesięcznie')}</button>
@@ -134,7 +134,7 @@ export default function PlanPicker({ plans = [], currentKey, currentCycle = 'mon
           </ul>
         </div>
         <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-          <p><span className="font-semibold text-gray-800 dark:text-white">{tr('Zbór urośnie?')}</span> {tr('Macie 10% zapasu ponad limit. Plan zmieniamy od kolejnego okresu, nikt nie zostanie zablokowany w niedzielę rano.')}</p>
+          <p><span className="font-semibold text-gray-800 dark:text-white">{tr('Kościół urośnie?')}</span> {tr('Macie 10% zapasu ponad limit. Plan zmieniamy od kolejnego okresu, nikt nie zostanie zablokowany w niedzielę rano.')}</p>
           <p><span className="font-semibold text-gray-800 dark:text-white">{tr('SMS-y osobno.')}</span> {tr('Własne konto SMSAPI albo pakiet. Push i e-mail są w cenie.')}</p>
           <p><span className="font-semibold text-gray-800 dark:text-white">{tr('Płatność roczna')}</span> {tr('to 2 miesiące gratis i przeniesienie danych członków bez dodatkowej opłaty.')}</p>
         </div>

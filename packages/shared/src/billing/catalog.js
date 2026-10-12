@@ -15,12 +15,12 @@ export const DEFAULT_PLAN_KEY = 'start';
 export const PRICING_PLANS = [
   {
     key: 'start', name: 'Start', maxAdults: 50, priceMonthly: 7900, priceYearly: 79000,
-    tagline: 'Dla małego zboru, który chce uporządkować niedzielę i ludzi.',
+    tagline: 'Dla małej wspólnoty, która chce uporządkować niedzielę i ludzi.',
     prioritySupport: false, isCustom: false, sortOrder: 1,
   },
   {
     key: 'wspolnota', name: 'Wspólnota', maxAdults: 150, priceMonthly: 15900, priceYearly: 159000,
-    tagline: 'Dla zboru z kilkoma służbami, grupami domowymi i szkółką.',
+    tagline: 'Dla kościoła z kilkoma służbami, grupami domowymi i szkółką.',
     prioritySupport: false, isCustom: false, sortOrder: 2,
   },
   {
@@ -35,7 +35,7 @@ export const PRICING_PLANS = [
   },
   {
     key: 'siec', name: 'Sieć', maxAdults: -1, priceMonthly: 89900, priceYearly: null,
-    tagline: 'Wycena indywidualna: kampusy, wdrożenie dla wielu zborów i priorytetowe wsparcie.',
+    tagline: 'Wycena indywidualna: kampusy, wdrożenie dla wielu kościołów i priorytetowe wsparcie.',
     prioritySupport: true, isCustom: true, sortOrder: 5,
   },
 ];

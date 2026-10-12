@@ -71,7 +71,7 @@ export default function LandingPage() {
     },
     {
       name: 'Anna Nowak',
-      church: 'Zbór Nowe Życie, Kraków',
+      church: 'Kościół Nowe Życie, Kraków',
       text: tr('System check-in dzieci to game changer. Rodzice czują się bezpiecznie, a my mamy pełną kontrolę.')
     },
     {

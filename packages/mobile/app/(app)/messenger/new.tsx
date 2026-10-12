@@ -247,7 +247,7 @@ export default function NewConversationScreen() {
               value={groupName}
               onChangeText={setGroupName}
               accessibilityLabel={isChannel ? "Nazwa kanału ogłoszeń" : "Nazwa grupy"}
-              placeholder={isChannel ? "Nazwa kanału, np. Ogłoszenia parafialne" : "Nazwa grupy, np. Zespół na Wielkanoc"}
+              placeholder={isChannel ? "Nazwa kanału, np. Ogłoszenia dla kościoła" : "Nazwa grupy, np. Zespół na Wielkanoc"}
               placeholderTextColor="#6E685A"
               style={{
                 height: 46,

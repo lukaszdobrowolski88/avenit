@@ -155,7 +155,7 @@ export default function SecuritySettings({ get, save, roles = [], campuses = [] 
             </div>
             <div>
               <label htmlFor="reg-domains" className={labelCls}>{tr('Dozwolone domeny e-mail (opcjonalnie)')}</label>
-              <BlurInput id="reg-domains" settingKey="registration_allowed_domains" get={get} save={save} placeholder={tr('np. schwro.pl, parafia.pl')} />
+              <BlurInput id="reg-domains" settingKey="registration_allowed_domains" get={get} save={save} placeholder={tr('np. nasz-kosciol.pl, wspolnota.org')} />
             </div>
             {regMode === 'approval' && (
               <div>
@@ -252,7 +252,7 @@ export default function SecuritySettings({ get, save, roles = [], campuses = [] 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="sso-domains" className={labelCls}>{tr('Dozwolone domeny e-mail')}</label>
-                <BlurInput id="sso-domains" settingKey="sso_allowed_domains" get={get} save={save} placeholder={tr('np. parafia.pl, diecezja.pl')} transform={(v) => v.trim()} />
+                <BlurInput id="sso-domains" settingKey="sso_allowed_domains" get={get} save={save} placeholder={tr('np. nasz-kosciol.pl, kosciol.org')} transform={(v) => v.trim()} />
                 <p className="text-xs text-gray-400 mt-1">{tr('Oddziel przecinkiem. Puste pole oznacza dowolną domenę.')}</p>
               </div>
               <div>

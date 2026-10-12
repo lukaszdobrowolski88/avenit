@@ -146,7 +146,7 @@ function planLines(plan, yearly, lang) {
       size,
       price: en ? `from ${zl(plan.monthly, lang)} / month` : `od ${zl(plan.monthly, lang)} / mies.`,
       note: en ? 'Individual quote: campuses, multi-church rollout and priority support.'
-        : 'Wycena indywidualna: kampusy, wdrożenie dla wielu zborów i priorytetowe wsparcie.',
+        : 'Wycena indywidualna: kampusy, wdrożenie dla wielu kościołów i priorytetowe wsparcie.',
     };
   }
   const monthly = en ? `${zl(plan.monthly, lang)} / month` : `${zl(plan.monthly, lang)} / mies.`;

@@ -79,7 +79,7 @@ export default function HomeGroupsListScreen() {
       <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Grupy domowe"
-          subtitle="Lista grup zboru"
+          subtitle="Lista grup w kościele"
           Icon={Home}
           showBack
           right={
