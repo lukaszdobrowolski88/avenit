@@ -1,6 +1,9 @@
+import { useCallback, useEffect } from 'react';
+import { AppState } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { supabase } from '../../lib/supabase';
+import { supabase, tenantWebBase } from '../../lib/supabase';
 
 // ── Profil (app_users) ──────────────────────────────────────────────────────
 // publicUser z backendu nie zwraca avatar_url/phone — doczytujemy je z app_users.
@@ -28,6 +31,24 @@ export const useMyProfile = (email: string | null) =>
       return (data as unknown as MyProfile) ?? null;
     },
   });
+
+// Profil zmienia się też na webie (zdjęcie, imię), a ekrany zakładek zostają zamontowane
+// i cache jest trwały — bez tego zdjęcie ustawione w przeglądarce nie docierało do apki.
+// Odświeża profil przy wejściu na ekran i przy powrocie apki z tła. Tylko w komponentach
+// ekranów (useFocusEffect wymaga nawigacji) — np. nie w ikonie paska zakładek.
+export const useRefreshProfileOnFocus = (email: string | null) => {
+  const qc = useQueryClient();
+  const refresh = useCallback(() => {
+    if (email) qc.invalidateQueries({ queryKey: ['my-profile', email] });
+  }, [qc, email]);
+  useFocusEffect(refresh);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') refresh();
+    });
+    return () => sub.remove();
+  }, [refresh]);
+};
 
 export const useUpdateProfile = (email: string | null) => {
   const qc = useQueryClient();
@@ -70,15 +91,18 @@ export const uploadAvatar = async (
   const safeSeed = keySeed.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
   const fileName = `avatar-${safeSeed}-${Date.now()}.${ext}`;
 
-  // RN: fetch(uri) → arrayBuffer → upload (najbardziej niezawodne).
-  const response = await fetch(asset.uri);
-  const arrayBuffer = await response.arrayBuffer();
+  // FormData w React Native wysyła plik tylko jako {uri, name, type} — ArrayBuffer przepadał
+  // i serwer odpowiadał „Brak pliku” (zdjęcia nie dało się zmienić).
+  const file = { uri: asset.uri, name: fileName, type: mime };
   const { error } = await supabase.storage
     .from('public-assets')
-    .upload(fileName, arrayBuffer, { contentType: mime, upsert: true });
+    .upload(fileName, file as never, { contentType: mime, upsert: true });
   if (error) throw error;
-  const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
-  return data.publicUrl;
+  // Pliki serwuje host kościoła (nie api.* — tam serwer nie zna tenanta), jak na webie.
+  const base = tenantWebBase();
+  return base
+    ? `${base}/storage/public-assets/${fileName}`
+    : supabase.storage.from('public-assets').getPublicUrl(fileName).data.publicUrl;
 };
 
 // ── 2FA (TOTP) ───────────────────────────────────────────────────────────────

@@ -5,7 +5,8 @@ import { Image } from 'expo-image';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { Bell } from 'lucide-react-native';
-import { useMyProfile } from '../../account/api';
+import { useMyProfile, useRefreshProfileOnFocus } from '../../account/api';
+import { storageImageUrl } from '../../../lib/imageThumb';
 import { useUnreadNotificationsCount } from '../../notifications/api';
 import { D, F } from '../theme';
 import { goToTab } from '../../../lib/navigation';
@@ -61,11 +62,12 @@ export const Greeting = (props: Props) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const profile = useMyProfile(email ?? null);
+  useRefreshProfileOnFocus(email ?? null);
   const unread = useUnreadNotificationsCount(email ?? null);
   const unreadCount = unread.data ?? 0;
 
   const name = firstName(profile.data?.full_name || profile.data?.name, email);
-  const avatarUrl = profile.data?.avatar_url ?? null;
+  const avatarUrl = storageImageUrl(profile.data?.avatar_url, 44);
   const today = format(new Date(), 'EEEE, d MMMM', { locale: pl });
 
   return (
