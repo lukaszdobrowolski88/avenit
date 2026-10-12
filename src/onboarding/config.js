@@ -529,7 +529,7 @@ export const WIZARD_STEPS = [
 // Moduły proponowane w kreatorze (klucz = app_settings module_<key>_enabled).
 export const WIZARD_MODULES = [
   { key: 'members', label: 'Członkowie' },
-  { key: 'worship', label: 'Grupa Uwielbienia' },
+  { key: 'worship', label: 'Zespół Uwielbienia' },
   { key: 'kids', label: 'Dzieci' },
   { key: 'groups', label: 'Grupy domowe' },
   { key: 'finance', label: 'Finanse' },

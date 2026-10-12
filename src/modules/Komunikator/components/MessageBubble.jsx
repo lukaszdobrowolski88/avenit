@@ -24,6 +24,10 @@ import { useAnchoredPopover, useOutsideClose } from '../../../components/pickers
 // przy dolnej krawędzi otwiera się w górę (useAnchoredPopover). Wysokość = najdłuższy wariant menu.
 const MENU_WIDTH = 180;
 const MENU_HEIGHT = 330;
+// Wybór reakcji — też w portalu: nad dymkiem, a przy górnej krawędzi wątku (pierwsza wiadomość) pod nim.
+const REACTION_WIDTH = 340;
+const REACTION_BAR_HEIGHT = 56;
+const REACTION_FULL_HEIGHT = 420;
 
 export default function MessageBubble({
   message,
@@ -83,6 +87,7 @@ export default function MessageBubble({
   const menuRef = useRef(null);
   const menuBtnRef = useRef(null);
   const reactionRef = useRef(null);
+  const bubbleRef = useRef(null);
   const touchStart = useRef(null);
 
   useEffect(() => {
@@ -107,6 +112,16 @@ export default function MessageBubble({
     ...(isOwn
       ? { right: Math.max(8, window.innerWidth - (menuPos.left + menuPos.width)) }
       : { left: menuPos.left }),
+  };
+  const reactionPos = useAnchoredPopover(bubbleRef, showReactionPicker, {
+    height: showFullEmoji ? REACTION_FULL_HEIGHT : REACTION_BAR_HEIGHT, width: REACTION_WIDTH, prefer: 'up',
+  });
+  const reactionStyle = reactionPos && {
+    top: reactionPos.top,
+    bottom: reactionPos.bottom,
+    ...(isOwn
+      ? { right: Math.max(8, window.innerWidth - (reactionPos.left + reactionPos.width)) }
+      : { left: reactionPos.left }),
   };
 
   // Edycja treści unieważnia tłumaczenie.
@@ -294,7 +309,7 @@ export default function MessageBubble({
           </span>
         )}
 
-        <div className="relative">
+        <div ref={bubbleRef} className="relative">
           {isEditing ? (
             <div className="flex flex-col gap-2">
               <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} aria-label={tr('Treść wiadomości')}
@@ -432,8 +447,9 @@ export default function MessageBubble({
                 <Smile size={14} />
               </button>
 
-              {showReactionPicker && (
-                <div ref={reactionRef} className={`absolute bottom-full mb-2 z-20 ${isOwn ? 'right-0' : 'left-0'}`}>
+              {showReactionPicker && reactionStyle && createPortal(
+                <div ref={reactionRef} style={reactionStyle} className="fixed z-[9999]"
+                  onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
                   {showFullEmoji ? (
                     <EmojiPicker onSelect={(emoji) => { onToggleReaction?.(message.id, emoji); setShowReactionPicker(false); setShowFullEmoji(false); }} onClose={() => setShowFullEmoji(false)} />
                   ) : (
@@ -446,7 +462,8 @@ export default function MessageBubble({
                         className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-all"><Plus size={16} /></button>
                     </div>
                   )}
-                </div>
+                </div>,
+                document.body
               )}
             </>
           )}

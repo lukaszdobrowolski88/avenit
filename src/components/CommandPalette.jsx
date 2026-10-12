@@ -68,7 +68,7 @@ const SETTINGS_PAGES = [
 const FALLBACK_MODULES = [
   { key: 'calendar', path: '/wydarzenia', label: 'Wydarzenia', resource_key: 'module:calendar' },
   { key: 'members', path: '/members', label: 'Członkowie', resource_key: 'module:members' },
-  { key: 'worship', path: '/worship', label: 'Grupa Uwielbienia', resource_key: 'module:worship' },
+  { key: 'worship', path: '/worship', label: 'Zespół Uwielbienia', resource_key: 'module:worship' },
   { key: 'homegroups', path: '/home-groups', label: 'Grupy domowe', resource_key: 'module:homegroups' },
   { key: 'finance', path: '/finance', label: 'Finanse', resource_key: 'module:finance' },
   { key: 'forms', path: '/forms', label: 'Formularze', resource_key: 'module:forms' },

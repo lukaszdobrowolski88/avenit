@@ -305,32 +305,34 @@ export default function CampaignStats({ campaigns, initialCampaignId = null }) {
 
                     {/* Progress bar */}
                     <div className="mt-5">
+                      {/* Pełne kolory zamiast gradientów: motyw Avenit zamienia gradienty from-… (kafelki ikon)
+                          na papier, przez co cały pasek znikał na torze. Odbite = bursztyn, jak licznik obok. */}
                       <div className="flex gap-0.5 h-4 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 shadow-inner">
                         <div
-                          className="bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-500"
+                          className="bg-emerald-500 transition-all duration-500"
                           style={{ width: `${(campaign.opened_count || 0) / (campaign.total_recipients || 1) * 100}%` }}
                           title={tr('Otwarte')}
                         />
                         <div
-                          className="bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500"
+                          className="bg-sky-500 transition-all duration-500"
                           style={{ width: `${((campaign.delivered_count || 0) - (campaign.opened_count || 0)) / (campaign.total_recipients || 1) * 100}%` }}
                           title={tr('Dostarczone (nie otwarte)')}
                         />
                         <div
-                          className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light transition-all duration-500"
+                          className="bg-amber-500 transition-all duration-500"
                           style={{ width: `${(campaign.bounced_count || 0) / (campaign.total_recipients || 1) * 100}%` }}
                           title={tr('Odbite')}
                         />
                       </div>
                       <div className="flex flex-wrap justify-center gap-4 mt-3 text-xs text-gray-500">
                         <span className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full shadow-sm" /> {tr('Otwarte')}
+                          <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-sm" /> {tr('Otwarte')}
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full shadow-sm" /> {tr('Dostarczone')}
+                          <span className="w-2.5 h-2.5 bg-sky-500 rounded-full shadow-sm" /> {tr('Dostarczone')}
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light rounded-full shadow-sm" /> {tr('Odbite')}
+                          <span className="w-2.5 h-2.5 bg-amber-500 rounded-full shadow-sm" /> {tr('Odbite')}
                         </span>
                       </div>
                     </div>

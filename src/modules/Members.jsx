@@ -92,9 +92,9 @@ export default function Members() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Służby: etykiety z konfiguracji modułów tenanta (nie hardcode) + moduły custom + MC.
-  const lblWorship = useModuleLabel('worship', tr('Grupa Uwielbienia'));
-  const lblMedia = useModuleLabel('media', tr('Media Team'));
-  const lblAtmosfera = useModuleLabel('atmosfera', tr('Atmosfera Team'));
+  const lblWorship = useModuleLabel('worship', tr('Zespół Uwielbienia'));
+  const lblMedia = useModuleLabel('media', tr('Media'));
+  const lblAtmosfera = useModuleLabel('atmosfera', tr('Gościnność'));
   const lblKids = useModuleLabel('kids', tr('Dzieci'));
   const lblMc = useModuleLabel('mc', tr('Scena / MC'));
   const { modules } = useModules();

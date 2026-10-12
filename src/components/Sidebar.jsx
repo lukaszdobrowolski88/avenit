@@ -120,9 +120,9 @@ export function MobileMenuButton() {
 const STATIC_MODULES = [
   { key: 'calendar', path: '/wydarzenia', iconName: 'CalendarDays', label: 'Wydarzenia', resource: 'module:calendar' },
   { key: 'members', path: '/members', iconName: 'Users', label: 'Członkowie', setting: 'members' },
-  { key: 'worship', path: '/worship', iconName: 'Music', label: 'Grupa Uwielbienia', setting: 'worship' },
-  { key: 'media', path: '/media', iconName: 'Video', label: 'MediaTeam', setting: 'media' },
-  { key: 'atmosfera', path: '/atmosfera', iconName: 'Coffee', label: 'Atmosfera Team', setting: 'atmosfera' },
+  { key: 'worship', path: '/worship', iconName: 'Music', label: 'Zespół Uwielbienia', setting: 'worship' },
+  { key: 'media', path: '/media', iconName: 'Video', label: 'Media', setting: 'media' },
+  { key: 'atmosfera', path: '/atmosfera', iconName: 'Coffee', label: 'Gościnność', setting: 'atmosfera' },
   { key: 'kids', path: '/kids', iconName: 'Baby', label: 'Dzieci', setting: 'kids' },
   { key: 'homegroups', path: '/home-groups', iconName: 'Home', label: 'Grupy domowe', setting: 'groups' },
   { key: 'finance', path: '/finance', iconName: 'Wallet', label: 'Finanse', resource: 'module:finance' },

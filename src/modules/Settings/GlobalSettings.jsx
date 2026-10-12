@@ -60,9 +60,9 @@ const SETTINGS_NAV_FLAT = SETTINGS_NAV.flatMap((g) => g.items);
 // Kolumny wg produkcji: status tylko w worship_team/media_team; kids_teachers ma group_id.
 // (home_group_leaders celowo pominięte — lider jest przypisany do konkretnej grupy.)
 const TEAM_TABLES = [
-  { key: 'worship', table: 'worship_team', hasStatus: true, fallback: 'Grupa Uwielbienia' },
-  { key: 'media', table: 'media_team', hasStatus: true, fallback: 'MediaTeam' },
-  { key: 'atmosfera', table: 'atmosfera_members', fallback: 'Atmosfera Team' },
+  { key: 'worship', table: 'worship_team', hasStatus: true, fallback: 'Zespół Uwielbienia' },
+  { key: 'media', table: 'media_team', hasStatus: true, fallback: 'Media' },
+  { key: 'atmosfera', table: 'atmosfera_members', fallback: 'Gościnność' },
   { key: 'kids', table: 'kids_teachers', hasGroup: true, fallback: 'Służba dzieci' },
 ];
 // Służby wbudowane (moduły zespołów). Własne moduły z kreatora (bez komponentu, spoza tej listy
