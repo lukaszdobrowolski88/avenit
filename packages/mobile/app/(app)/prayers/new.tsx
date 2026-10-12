@@ -117,8 +117,10 @@ export default function NewPrayerScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      {/* iOS: klawiatura zasłaniała „Podziel się intencją” i nie dało się jej schować —
+          ScrollView sam przewija nad klawiaturę, a przeciągnięcie w dół ją chowa. */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? undefined : 'height'}
         style={{ flex: 1, backgroundColor: '#F6F4EE' }}
       >
         <View
@@ -166,6 +168,8 @@ export default function NewPrayerScreen() {
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
         >
           <Text style={labelStyle}>Treść intencji</Text>
           <TextInput
@@ -294,7 +298,7 @@ export default function NewPrayerScreen() {
                   fontFamily: 'Manrope_400Regular',
                 }}
               >
-                Twój email nie będzie widoczny dla innych
+                Inni nie zobaczą, kto prosi o modlitwę
               </Text>
             </View>
             <Switch
