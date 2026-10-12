@@ -28,6 +28,7 @@ import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
 import { useModuleLabel } from '../hooks/useModuleLabel';
 import { useModules } from '../hooks/useModules';
+import { isCustomModule } from '../lib/ministryModules';
 import { tr, appLocale } from '../i18n';
 import { toast } from '../lib/toast';
 import { openProtectedFile } from '../lib/protectedFiles';
@@ -42,9 +43,10 @@ const STATUS_OPTIONS = [
   "Gość"
 ];
 
-// Lista służb budowana dynamicznie w komponencie (etykiety per tenant + moduły custom).
+// Lista służb budowana dynamicznie w komponencie (etykiety per tenant + moduły własne).
 // Grupy domowe mają osobny, wielokrotny wybór (nie jako pojedyncza „służba").
-const MINISTRY_SYS_KEYS = new Set(['worship', 'media', 'atmosfera', 'kids', 'mc', 'homegroups', 'programs', 'dashboard', 'calendar', 'general', 'members', 'finance', 'teaching', 'prayer_wall', 'boards']);
+// Tylko SŁUŻBY (biała lista w lib/ministryModules) — wcześniej czarna lista przepuszczała
+// Komunikator, Ustawienia, Kampanie, Formularze, Asystenta AI itd.
 
 const EMPTY_FORM = {
   id: null,
@@ -93,7 +95,7 @@ export default function Members() {
   const lblWorship = useModuleLabel('worship', tr('Grupa Uwielbienia'));
   const lblMedia = useModuleLabel('media', tr('Media Team'));
   const lblAtmosfera = useModuleLabel('atmosfera', tr('Atmosfera Team'));
-  const lblKids = useModuleLabel('kids', tr('Małe Avenit'));
+  const lblKids = useModuleLabel('kids', tr('Dzieci'));
   const lblMc = useModuleLabel('mc', tr('Scena / MC'));
   const { modules } = useModules();
   const MINISTRY_OPTIONS = React.useMemo(() => {
@@ -104,10 +106,18 @@ export default function Members() {
       { key: 'kids_ministry', label: lblKids, table: 'kids_teachers' },
       { key: 'mc_team', label: lblMc, table: 'custom_mc_members' },
     ];
+    // Młodzieżówka ma własną tabelę składu; klucz 'custom_mlodziezowka' zostaje taki jak
+    // dotąd (zapisane członkostwa osób), zmienia się tylko tabela (custom_mlodziezowka_members nie istnieje).
+    const youth = (modules || []).find((m) => m.key === 'mlodziezowka' && m.is_enabled);
     const customs = (modules || [])
-      .filter((m) => m.is_enabled && m.key && !MINISTRY_SYS_KEYS.has(m.key))
+      .filter((m) => m.is_enabled && isCustomModule(m))
       .map((m) => ({ key: `custom_${m.key}`, label: m.label || m.key, table: `custom_${m.key}_members` }));
-    return [...sys, ...customs, { key: 'administration', label: tr('Administracja'), table: null }];
+    return [
+      ...sys,
+      ...(youth ? [{ key: 'custom_mlodziezowka', label: youth.label || tr('Młodzieżówka'), table: 'mlodziezowka_members' }] : []),
+      ...customs,
+      { key: 'administration', label: tr('Administracja'), table: null },
+    ];
   }, [lblWorship, lblMedia, lblAtmosfera, lblKids, lblMc, modules]);
   // Członkostwa w grupach domowych (home_group_members) — wiele grup na osobę, rola per grupa.
   // null = brak dostępu do modułu Grupy domowe (wtedy zostaje tylko members.home_group_id).
@@ -610,7 +620,11 @@ export default function Members() {
     if (!ministries || ministries.length === 0) return [];
     return ministries.map(key => {
       const ministry = MINISTRY_OPTIONS.find(m => m.key === key);
-      return ministry?.label || (key === 'home_groups' ? tr('Grupy domowe') : key);
+      if (ministry) return ministry.label;
+      if (key === 'home_groups') return tr('Grupy domowe');
+      // Starsze zapisy „custom_<moduł>” (np. moduł spoza listy służb) — nazwa modułu zamiast klucza.
+      const mod = String(key).startsWith('custom_') ? (modules || []).find((m) => m.key === key.slice(7)) : null;
+      return mod?.label || key;
     });
   };
 
