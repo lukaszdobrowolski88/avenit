@@ -1,5 +1,4 @@
-import { tr } from '../../../../i18n';
-import { pluralForm } from './kiosk';
+import { tr, trPlural } from '../../../../i18n';
 
 /**
  * Oblicza wiek na podstawie roku urodzenia
@@ -42,9 +41,9 @@ export function formatAge(birthYear) {
   return yearsLabel(age);
 }
 
-// „1 rok / 2 lata / 5 lat” — odmiana jak w języku polskim.
+// „1 rok / 2 lata / 5 lat” — odmiana według reguł bieżącego języka (trPlural).
 export function yearsLabel(n) {
-  return pluralForm(n, tr('{n} rok', { n }), tr('{n} lata', { n }), tr('{n} lat', { n }));
+  return trPlural(n, '{n} rok', '{n} lata', '{n} lat');
 }
 
 /**

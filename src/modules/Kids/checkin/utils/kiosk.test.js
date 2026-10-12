@@ -3,7 +3,7 @@ import {
   PICKUP_CODE_ALPHABET, generatePickupCode, generateUniquePickupCode, normalizePickupCode,
   splitStoredCodes, pickupCodeMatches, isValidPin, hashPin, verifyPin, readKioskState,
   writeKioskState, clearKioskState, isKioskActive, lockoutRemaining, KIOSK_MAX_ATTEMPTS,
-  KIOSK_LOCKOUT_MS, localDateISO, parseLocalDate, phoneEndsWith, maskPhone, pluralForm,
+  KIOSK_LOCKOUT_MS, localDateISO, parseLocalDate, phoneEndsWith, maskPhone,
   pickSessionEvent, CODE_KEYPAD_ROWS, KEY_CLEAR, KEY_BACK,
 } from './kiosk';
 
@@ -118,16 +118,6 @@ describe('daty, telefony, odmiana', () => {
   it('maskuje telefon', () => {
     expect(maskPhone('601 234 567')).toBe('••• ••• 567');
     expect(maskPhone('')).toBe('');
-  });
-
-  it('odmienia liczebniki po polsku', () => {
-    const f = (n) => pluralForm(n, 'dziecko', 'dzieci', 'dzieci') + '/' + pluralForm(n, 'rodzina', 'rodziny', 'rodzin');
-    expect(f(1)).toBe('dziecko/rodzina');
-    expect(f(3)).toBe('dzieci/rodziny');
-    expect(f(5)).toBe('dzieci/rodzin');
-    expect(f(12)).toBe('dzieci/rodzin');
-    expect(f(22)).toBe('dzieci/rodziny');
-    expect(f(0)).toBe('dzieci/rodzin');
   });
 });
 

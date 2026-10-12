@@ -4,11 +4,11 @@ import Spinner from '../../../../components/Spinner';
 import Button from '../../../../components/Button';
 import { supabase, getCachedUser } from '../../../../lib/supabase';
 import { Plus, Trash2, CalendarClock, Eraser } from 'lucide-react';
-import { tr, appLocale } from '../../../../i18n';
+import { tr, trPlural, appLocale } from '../../../../i18n';
 import { toast } from '../../../../lib/toast';
 import { DateInput, TimeField } from '../../../../components/pickers';
 import { confirmDialog } from '../../../../lib/dialog';
-import { localDateISO, parseLocalDate, pluralForm } from '../utils/kiosk';
+import { localDateISO, parseLocalDate } from '../utils/kiosk';
 
 const emptyForm = () => ({
   name: '',
@@ -17,10 +17,7 @@ const emptyForm = () => ({
   end_time: '13:00',
 });
 
-const checkinsLabel = (n) => pluralForm(n,
-  tr('{n} meldowanie', { n }),
-  tr('{n} meldowania', { n }),
-  tr('{n} meldowań', { n }));
+const checkinsLabel = (n) => trPlural(n, '{n} meldowanie', '{n} meldowania', '{n} meldowań');
 
 export default function SessionManager({ onSessionChange, onSessionRemoved }) {
   const [sessions, setSessions] = useState([]);

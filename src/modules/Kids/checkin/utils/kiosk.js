@@ -201,16 +201,6 @@ export function maskPhone(phone) {
   return `••• ••• ${d.slice(-3)}`;
 }
 
-// Polska odmiana liczebnika: 1 dziecko / 2 dzieci… (formy przekazuje wywołujący, już przez tr()).
-export function pluralForm(n, one, few, many) {
-  const abs = Math.abs(n);
-  if (abs === 1) return one;
-  const mod10 = abs % 10;
-  const mod100 = abs % 100;
-  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return few;
-  return many;
-}
-
 // Wydarzenie z dzisiejszego kalendarza, które najlepiej nazywa sesję meldowania:
 // trwające lub najbliższe nadchodzące; gdy wszystkie minęły — ostatnie.
 export function pickSessionEvent(events, now = new Date()) {

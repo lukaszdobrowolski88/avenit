@@ -59,6 +59,23 @@ export function appLocale() {
   return LOCALES[_lang] || 'pl-PL';
 }
 
+// Liczebnik z odmianą według reguł BIEŻĄCEGO języka: trPlural(n, '{n} dziecko', '{n} dzieci', '{n} dzieci').
+// Formy to polskie klucze (one = 1, few = 2–4, many = 5+). Kategorię wybiera Intl.PluralRules,
+// więc po ukraińsku 21 to „one”, a po angielsku wszystko poza 1 to forma „many”.
+// Gdy polska forma few i many jest ta sama (np. „{n} dzieci”), słownik może mieć osobny
+// wpis „<klucz few>|few” — po ukraińsku 2–4 to inna forma niż 5+ (дитини / дітей).
+export function pluralKey(lang, n, one, few, many, dict = {}) {
+  let cat = 'many';
+  try { cat = new Intl.PluralRules(LOCALES[lang] || 'pl-PL').select(n); } catch { /* stare przeglądarki */ }
+  if (cat === 'one') return one;
+  if (cat === 'few') return lang !== 'pl' && dict[`${few}|few`] != null ? `${few}|few` : few;
+  return many;
+}
+
+export function trPlural(n, one, few, many, vars) {
+  return tr(pluralKey(_lang, n, one, few, many, DICTS[_lang]), { n, ...vars });
+}
+
 export function I18nProvider({ children }) {
   const [lang, setLangState] = useState(readInitialLang);
   // Słownik gotowy? Polski nie potrzebuje słownika (klucze są polskie).

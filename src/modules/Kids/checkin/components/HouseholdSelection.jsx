@@ -1,20 +1,15 @@
 import React from 'react';
 import { ArrowLeft, Users } from 'lucide-react';
 import Button from '../../../../components/Button';
-import { tr } from '../../../../i18n';
-import { maskPhone, pluralForm } from '../utils/kiosk';
+import { tr, trPlural } from '../../../../i18n';
+import { maskPhone } from '../utils/kiosk';
 
 export const childrenCountLabel = (n) =>
-  pluralForm(n, tr('{n} dziecko', { n }), tr('{n} dzieci', { n }), tr('{n} dzieci', { n }));
+  trPlural(n, '{n} dziecko', '{n} dzieci', '{n} dzieci');
 
 export default function HouseholdSelection({ households, onSelect, onBack }) {
   const n = households.length;
-  const familiesLabel = pluralForm(
-    n,
-    tr('Znaleźliśmy {n} rodzinę z tym numerem', { n }),
-    tr('Znaleźliśmy {n} rodziny z tym numerem', { n }),
-    tr('Znaleźliśmy {n} rodzin z tym numerem', { n }),
-  );
+  const familiesLabel = trPlural(n, 'Znaleźliśmy {n} rodzinę z tym numerem', 'Znaleźliśmy {n} rodziny z tym numerem', 'Znaleźliśmy {n} rodzin z tym numerem');
 
   return (
     <div className="flex flex-col items-center px-5 py-6 sm:py-8 min-h-full">
