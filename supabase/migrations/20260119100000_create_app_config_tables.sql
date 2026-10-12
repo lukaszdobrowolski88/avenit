@@ -146,7 +146,7 @@ INSERT INTO app_modules (key, label, icon, path, resource_key, display_order, is
     ('worship', 'Zespół Uwielbienia', 'Music', '/worship', 'module:worship', 4, true, 'WorshipModule'),
     ('media', 'MediaTeam', 'Video', '/media', 'module:media', 5, true, 'MediaTeamModule'),
     ('atmosfera', 'Atmosfera Team', 'HeartHandshake', '/atmosfera', 'module:atmosfera', 6, true, 'AtmosferaTeamModule'),
-    ('kids', 'Małe SchWro', 'Baby', '/kids', 'module:kids', 7, true, 'KidsModule'),
+    ('kids', 'Dzieci', 'Baby', '/kids', 'module:kids', 7, true, 'KidsModule'),
     ('homegroups', 'Grupy domowe', 'UserCircle', '/home-groups', 'module:homegroups', 8, true, 'HomeGroupsModule'),
     ('finance', 'Finanse', 'DollarSign', '/finance', 'module:finance', 9, true, 'FinanceModule'),
     ('teaching', 'Nauczanie', 'GraduationCap', '/teaching', 'module:teaching', 10, true, 'TeachingModule'),

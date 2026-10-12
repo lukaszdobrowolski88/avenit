@@ -168,7 +168,7 @@ export const MODULES = [
     fields: [],
   },
   {
-    key: 'kids', label: 'Małe Avenit',
+    key: 'kids', label: 'Dzieci',
     resources: ['kids_groups', 'kids_students', 'kids_teachers', 'kids_events', 'checkin_locations', 'checkin_sessions', 'checkins', 'kids_parent_notifications'],
     tabs: [
       { key: 'schedule', label: 'Grafik' },

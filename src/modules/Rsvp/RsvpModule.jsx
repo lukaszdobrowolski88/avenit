@@ -37,7 +37,7 @@ const AUDIENCE_MODES = [
 
 const MINISTRY_LABELS = {
   worship_team: 'Zespół Uwielbienia', media_team: 'Media Team',
-  atmosfera_team: 'Atmosfera Team', kids_ministry: 'Małe Avenit',
+  atmosfera_team: 'Atmosfera Team', kids_ministry: 'Dzieci',
 };
 const prettyMinistry = (k) => (MINISTRY_LABELS[k] ? tr(MINISTRY_LABELS[k]) : null) || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 

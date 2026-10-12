@@ -77,7 +77,7 @@ export const ministryKeyToName = {
   worship_team: 'Zespół Uwielbienia',
   media_team: 'Media Team',
   atmosfera_team: 'Atmosfera Team',
-  kids_ministry: 'Małe Avenit',
+  kids_ministry: 'Dzieci',
   home_groups: 'Liderzy Grup Domowych',
   youth_ministry: 'Młodzieżówka',
   prayer_team: 'Grupa Modlitewna',

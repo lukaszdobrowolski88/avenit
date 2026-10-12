@@ -272,7 +272,7 @@ INSERT INTO app_modules (key, label, icon, path, resource_key, display_order, is
     ('worship', 'Zespół Uwielbienia', 'Music', '/worship', 'module:worship', 4, true, 'WorshipModule'),
     ('media', 'MediaTeam', 'Video', '/media', 'module:media', 5, true, 'MediaTeamModule'),
     ('atmosfera', 'Atmosfera Team', 'HeartHandshake', '/atmosfera', 'module:atmosfera', 6, true, 'AtmosferaTeamModule'),
-    ('kids', 'Małe SchWro', 'Baby', '/kids', 'module:kids', 7, true, 'KidsModule'),
+    ('kids', 'Dzieci', 'Baby', '/kids', 'module:kids', 7, true, 'KidsModule'),
     ('homegroups', 'Grupy domowe', 'UserCircle', '/home-groups', 'module:homegroups', 8, true, 'HomeGroupsModule'),
     ('finance', 'Finanse', 'DollarSign', '/finance', 'module:finance', 9, true, 'FinanceModule'),
     ('teaching', 'Nauczanie', 'GraduationCap', '/teaching', 'module:teaching', 10, true, 'TeachingModule'),
@@ -3062,7 +3062,7 @@ INSERT INTO app_modules (key, label, icon, path, resource_key, display_order, is
     ('homegroups', 'Grupy domowe', 'UserCircle', '/home-groups', 'module:homegroups', 3, true, 'HomeGroupsModule'),
     ('media', 'MediaTeam', 'Video', '/media', 'module:media', 4, true, 'MediaTeamModule'),
     ('atmosfera', 'Atmosfera Team', 'HeartHandshake', '/atmosfera', 'module:atmosfera', 5, true, 'AtmosferaTeamModule'),
-    ('kids', 'Małe SchWro', 'Baby', '/kids', 'module:kids', 6, true, 'KidsModule'),
+    ('kids', 'Dzieci', 'Baby', '/kids', 'module:kids', 6, true, 'KidsModule'),
     ('worship', 'Zespół Uwielbienia', 'Music', '/worship', 'module:worship', 7, true, 'WorshipModule'),
     ('finance', 'Finanse', 'DollarSign', '/finance', 'module:finance', 8, true, 'FinanceModule'),
     ('teaching', 'Nauczanie', 'GraduationCap', '/teaching', 'module:teaching', 9, true, 'TeachingModule'),
@@ -3152,7 +3152,7 @@ ON CONFLICT (module_id, key) DO NOTHING;
 INSERT INTO app_module_tabs (module_id, key, label, icon, display_order, is_system)
 SELECT id, 'events', 'Wydarzenia', 'Calendar', 3, false FROM app_modules WHERE key = 'atmosfera'
 ON CONFLICT (module_id, key) DO NOTHING;
--- Zakładki dla Małe SchWro (kids)
+-- Zakładki dla Dzieci (kids)
 INSERT INTO app_module_tabs (module_id, key, label, icon, display_order, is_system)
 SELECT id, 'schedule', 'Grafik', 'Calendar', 0, true FROM app_modules WHERE key = 'kids'
 ON CONFLICT (module_id, key) DO NOTHING;
@@ -3377,7 +3377,7 @@ CREATE TRIGGER trigger_update_atmosfera_events_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_atmosfera_events_updated_at();
 -- ============================================
--- 4. Tabela wydarzeń Małe SchWro (Kids)
+-- 4. Tabela wydarzeń Dzieci (Kids)
 -- ============================================
 CREATE TABLE IF NOT EXISTS kids_events (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

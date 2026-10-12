@@ -173,7 +173,7 @@ INSERT INTO app_modules (key, label, icon, path, resource_key, display_order, is
     ('homegroups', 'Grupy domowe', 'UserCircle', '/home-groups', 'module:homegroups', 3, true, 'HomeGroupsModule'),
     ('media', 'MediaTeam', 'Video', '/media', 'module:media', 4, true, 'MediaTeamModule'),
     ('atmosfera', 'Atmosfera Team', 'HeartHandshake', '/atmosfera', 'module:atmosfera', 5, true, 'AtmosferaTeamModule'),
-    ('kids', 'Małe SchWro', 'Baby', '/kids', 'module:kids', 6, true, 'KidsModule'),
+    ('kids', 'Dzieci', 'Baby', '/kids', 'module:kids', 6, true, 'KidsModule'),
     ('worship', 'Zespół Uwielbienia', 'Music', '/worship', 'module:worship', 7, true, 'WorshipModule'),
     ('finance', 'Finanse', 'DollarSign', '/finance', 'module:finance', 8, true, 'FinanceModule'),
     ('teaching', 'Nauczanie', 'GraduationCap', '/teaching', 'module:teaching', 9, true, 'TeachingModule'),
@@ -288,7 +288,7 @@ INSERT INTO app_module_tabs (module_id, key, label, icon, display_order, is_syst
 SELECT id, 'events', 'Wydarzenia', 'Calendar', 3, false FROM app_modules WHERE key = 'atmosfera'
 ON CONFLICT (module_id, key) DO NOTHING;
 
--- Zakładki dla Małe SchWro (kids)
+-- Zakładki dla Dzieci (kids)
 INSERT INTO app_module_tabs (module_id, key, label, icon, display_order, is_system)
 SELECT id, 'schedule', 'Grafik', 'Calendar', 0, true FROM app_modules WHERE key = 'kids'
 ON CONFLICT (module_id, key) DO NOTHING;

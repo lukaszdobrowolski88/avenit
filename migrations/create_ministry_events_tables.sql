@@ -106,7 +106,7 @@ CREATE TRIGGER trigger_update_atmosfera_events_updated_at
     EXECUTE FUNCTION update_atmosfera_events_updated_at();
 
 -- ============================================
--- 4. Tabela wydarzeń Małe SchWro (Kids)
+-- 4. Tabela wydarzeń Dzieci (Kids)
 -- ============================================
 CREATE TABLE IF NOT EXISTS kids_events (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
