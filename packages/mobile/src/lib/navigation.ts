@@ -7,10 +7,30 @@ export type TabName = 'dashboard' | 'calendar' | 'messenger' | 'modules' | 'acco
 type RouteLike = { name: string; params?: object; state?: StateLike };
 type StateLike = { index?: number; routes?: RouteLike[] } | undefined;
 
+const TAB_NAMES: TabName[] = ['dashboard', 'calendar', 'messenger', 'modules', 'account'];
+
+// Trasa „(app)” — w expo-router 57 korzeń ma jeszcze warstwę „__root” (INTERNAL_SLOT_NAME).
+const findAppState = (state: StateLike, depth = 0): StateLike => {
+  if (!state?.routes || depth > 3) return undefined;
+  const app = state.routes.find((r) => r.name === '(app)');
+  if (app) return app.state;
+  for (const r of state.routes) {
+    const found = findAppState(r.state, depth + 1);
+    if (found) return found;
+  }
+  return undefined;
+};
+
 // Odczyt ze stanu korzenia: czy nad zakładkami nic nie jest otwarte i która zakładka jest pod spodem.
-export const readTabsState = (root: StateLike): { onTabs: boolean; active: TabName } => {
-  const app = root?.routes?.find((r) => r.name === '(app)')?.state;
+// `segments` (useSegments) — zapas, gdy stanu jeszcze nie ma: ['(app)', '(tabs)', 'calendar'] = zakładka.
+export const readTabsState = (root: StateLike, segments: string[] = []): { onTabs: boolean; active: TabName } => {
+  const app = findAppState(root);
   const routes = app?.routes ?? [];
+  if (!routes.length) {
+    const i = segments.indexOf('(tabs)');
+    const tab = i >= 0 ? segments[i + 1] : undefined;
+    return { onTabs: i >= 0, active: (TAB_NAMES.includes(tab as TabName) ? tab : 'dashboard') as TabName };
+  }
   const focused = routes[app?.index ?? routes.length - 1];
   const tabsRoute = routes.find((r) => r.name === '(tabs)');
   const tabs = tabsRoute?.state;
