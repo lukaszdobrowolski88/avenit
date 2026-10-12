@@ -5,7 +5,7 @@ import { Check, CheckCheck, CornerUpLeft, Eye, EyeOff, FileText, Forward, Langua
 import { format } from "date-fns";
 import type { MemberMap, MessageRow, ReactionAggregate } from "../api";
 import { memberDisplayName, memberInitials, pollOf } from "../api";
-import { isVoiceAttachment, voiceDurationMs, mentionsUser, mentionsAll, previewText, splitLinks, firstLink } from "../logic";
+import { isVoiceAttachment, voiceDurationMs, mentionsUser, mentionsAll, previewText, splitLinks, firstLink, splitMentions, mentionNamesOf, sameEmail } from "../logic";
 import { PresenceDot } from "./PresenceDot";
 import { AudioPlayer } from "./AudioPlayer";
 import { type PresenceStatus } from "../../../lib/presence";
@@ -29,9 +29,9 @@ const openMessageLink = (url: string) => {
   else openLink(url);
 };
 
-// Treść: klikalne linki (K2) + pogrubione @wzmianki (z „@wszyscy” — K5).
-const MENTION_RE = /(@[\p{L}][\p{L}\d._-]*)/u;
-const renderRichText = (text: string, opts: { accent: string; link: string; onLongPress?: () => void }) =>
+// Treść: klikalne linki (K2) + pogrubione @wzmianki (z „@wszyscy” — K5). names — pełne nazwy
+// wzmiankowanych, żeby „@Paweł Wiśniewski” było wyróżnione w całości (jak web), nie samo imię.
+const renderRichText = (text: string, opts: { accent: string; link: string; names?: string[]; onLongPress?: () => void }) =>
   splitLinks(text).flatMap((part, i) => {
     if (part.kind === "link") {
       return [
@@ -46,13 +46,13 @@ const renderRichText = (text: string, opts: { accent: string; link: string; onLo
         </Text>,
       ];
     }
-    return part.text.split(MENTION_RE).map((seg, j) =>
-      seg.startsWith("@") ? (
+    return splitMentions(part.text, opts.names).map((seg, j) =>
+      seg.type === "mention" ? (
         <Text key={`m${i}-${j}`} style={{ fontFamily: "Manrope_700Bold", color: opts.accent }}>
-          {seg}
+          {seg.value}
         </Text>
       ) : (
-        seg
+        seg.value
       ),
     );
   });
@@ -156,6 +156,10 @@ const MessageBubbleBase = ({
   const replyName = replyTo ? memberDisplayName(members, replyTo.sender_email) : null;
   const time = format(new Date(message.created_at), "HH:mm");
   const toAll = mentionsAll(message);
+  const mentionNames = mentionNamesOf(message, (email) => {
+    const m = members[email] ?? Object.values(members).find((x) => sameEmail(x?.email, email));
+    return m ? [m.firstName, m.lastName].filter(Boolean).join(" ") || null : null;
+  });
   const mentionsMe = !mine && (mentionsUser(message, currentUserEmail) || toAll);
   const isText = !message.message_type || message.message_type === "text";
   const previewUrl = isText && message.content ? firstLink(message.content) : null;
@@ -380,7 +384,7 @@ const MessageBubbleBase = ({
             <EventCard metadata={message.metadata as EventMetadata} content={message.content} bubbleMine={mine} />
           ) : message.content ? (
             <Text style={{ fontSize: 15, lineHeight: 21, color: textColor, fontFamily: "Manrope_400Regular" }}>
-              {renderRichText(message.content, { accent, link: mine ? "#FFE08A" : "#6B4F05", onLongPress })}
+              {renderRichText(message.content, { accent, link: mine ? "#FFE08A" : "#6B4F05", names: mentionNames, onLongPress })}
             </Text>
           ) : null}
 
@@ -402,7 +406,7 @@ const MessageBubbleBase = ({
               </View>
               {translation.pending ? null : (
                 <Text style={{ fontSize: 15, lineHeight: 21, color: textColor, fontFamily: "Manrope_400Regular" }}>
-                  {renderRichText(translation.text, { accent, link: mine ? "#FFE08A" : "#6B4F05", onLongPress })}
+                  {renderRichText(translation.text, { accent, link: mine ? "#FFE08A" : "#6B4F05", names: mentionNames, onLongPress })}
                 </Text>
               )}
               {onHideTranslation && !translation.pending ? (

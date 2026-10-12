@@ -19,8 +19,7 @@ import { AgendaList } from '../../../../src/features/calendar/components/AgendaL
 import { MonthView } from '../../../../src/features/calendar/components/MonthView';
 import { useAuthSession } from '../../../../src/lib/auth';
 import { useCampusQuery } from '../../../../src/hooks/useCampusQuery';
-import { usePermissions } from '../../../../src/lib/permissions';
-import { NewCalendarEventModal } from '../../../../src/features/calendar/components/NewCalendarEventModal';
+import { NewCalendarEventModal, useEventCalendarOptions } from '../../../../src/features/calendar/components/NewCalendarEventModal';
 import { MyServicesCalendarSheet } from '../../../../src/features/calendar/components/MyServicesCalendarSheet';
 import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import { friendlyError } from '../../../../src/lib/errors';
@@ -33,10 +32,11 @@ export default function CalendarScreen() {
   const profile = useMyProfile(user?.email ?? null);
   const calendarLabel = useCalendarLabel();
   const { selectedCampusId, withCampusFilter, campusIdForInsert } = useCampusQuery();
-  const perms = usePermissions();
   // Jak serwer: dodawać może rola z res:events:create albo lider służby — w kalendarzu
-  // SWOJEGO modułu (canModule w zakresie służby). Członek tylko czyta.
-  const canCreate = perms.canModuleAny('events', 'create');
+  // SWOJEGO modułu (canModule w zakresie służby). Członek tylko czyta. Liczymy na tych samych
+  // kalendarzach co formularz — „+” bez żadnego dozwolonego kalendarza nie ma sensu.
+  const eventCalendars = useEventCalendarOptions();
+  const canCreate = eventCalendars.all.some((o) => eventCalendars.allowed(o.key));
   const [creating, setCreating] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [filter, setFilter] = useState<string>('all');

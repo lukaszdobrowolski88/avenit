@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
-import { presetGrantRows, LIDER_DELETE_RESOURCES, LIDER_SHARED_DELETE_RESOURCES, LIDER_MODULES, LIDER_DENIED_MODULES, LIDER_READONLY_MODULES, ROLE_PRESETS, LIDER_SHARED_DELETE_RESOURCES_103, LIDER_READONLY_SHARED_RESOURCES, LIDER_PROGRAM_ACTIONS } from '@avenit/shared/src/permissions/presets.js';
+import { presetGrantRows, LIDER_DELETE_RESOURCES, LIDER_SHARED_DELETE_RESOURCES, LIDER_MODULES, LIDER_DENIED_MODULES, LIDER_READONLY_MODULES, ROLE_PRESETS, LIDER_SHARED_DELETE_RESOURCES_103, LIDER_READONLY_SHARED_RESOURCES, LIDER_PROGRAM_ACTIONS, KOMUNIKATOR_OWN_DELETE_RESOURCES } from '@avenit/shared/src/permissions/presets.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 import { MODULES } from '@avenit/shared/src/permissions/catalog.js';
 import {
@@ -377,4 +377,19 @@ test('canAccess: upsert to zapis — tabele app_* wymagają manage_*, writeRoles
   // Odczyt app_settings — dalej otwarty.
   const read = await canAccess({ pool, dbName, table: 'app_settings', op: 'select', user: member });
   assert.equal(read.ok, true);
+});
+
+test('migracja 109 = lider usuwa własne dane czatu (ankiety, „Modlę się”, reakcje)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../db/tenant-migrations/109_komunikator_own_delete_grants.sql'), 'utf8');
+  const listed = sql.match(/unnest\(ARRAY\[([^\]]+)\]\) AS c/)[1].match(/'([a-z_]+)'/g).map((x) => x.slice(1, -1));
+  assert.deepEqual([...listed].sort(), [...KOMUNIKATOR_OWN_DELETE_RESOURCES].sort());
+  const komunikator = MODULES.find((m) => m.key === 'komunikator').resources;
+  for (const r of KOMUNIKATOR_OWN_DELETE_RESOURCES) assert.ok(komunikator.includes(r), `${r} w module Komunikator`);
+  const lider = makeResolver(presetGrantRows(), { role: 'lider', userId: 'l', isAdmin: false }).can;
+  const czlonek = makeResolver(presetGrantRows(), { role: 'czlonek', userId: 'c', isAdmin: false }).can;
+  for (const r of KOMUNIKATOR_OWN_DELETE_RESOURCES) {
+    assert.equal(lider(`res:${r}:delete`), true, `lider: ${r}`);
+    assert.equal(czlonek(`res:${r}:delete`), true, `członek: ${r}`);
+  }
+  assert.match(sql, /ON CONFLICT \(role, capability\) WHERE user_id IS NULL DO NOTHING/, 'decyzje admina zostają');
 });

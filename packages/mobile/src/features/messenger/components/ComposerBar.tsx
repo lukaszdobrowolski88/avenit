@@ -253,7 +253,7 @@ export const ComposerBar = ({
                   fontFamily: "Manrope_700Bold",
                 }}
               >
-                Odpowiedź dla {memberDisplayName(members, replyTo.sender_email)}
+                Odpowiadasz: {memberDisplayName(members, replyTo.sender_email)}
               </Text>
             </View>
             <Text

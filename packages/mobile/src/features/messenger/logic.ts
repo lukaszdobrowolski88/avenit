@@ -271,6 +271,54 @@ export function unreadIdsToMark(
   return out;
 }
 
+// Wzmianki w treści (K5) — jak web (src/modules/Komunikator/utils/chatLogic.js splitMentions):
+// pełne nazwy wzmiankowanych („Paweł Wiśniewski”) dopasowujemy w całości, najdłuższe najpierw;
+// pozostałe „@słowo” jednym słowem. „@” w środku słowa (e-mail) to nie wzmianka.
+const MENTION_WORD_CHAR = /[\p{L}\p{N}_.-]/u;
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export type MentionPart = { type: "text" | "mention"; value: string };
+export function splitMentions(text: string | null | undefined, names: string[] = []): MentionPart[] {
+  const s = String(text ?? "");
+  if (!s) return [];
+  const known = [...new Set(names.map((n) => String(n || "").trim()).filter(Boolean))]
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRe);
+  const re = new RegExp(
+    `@(?:${known.length ? `(${known.join("|")})(?![\\p{L}\\p{N}_])|` : ""}[\\p{L}\\p{N}._-]+)`,
+    "giu",
+  );
+  const out: MentionPart[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(s))) {
+    if (m.index > 0 && (MENTION_WORD_CHAR.test(s[m.index - 1]) || s[m.index - 1] === "@")) continue;
+    // Kropka/myślnik na końcu to zwykle interpunkcja („…, @Jan.”), nie część wzmianki.
+    const value = m[1] ? m[0] : m[0].replace(/[.-]+$/, "");
+    if (value.length < 2) continue;
+    if (m.index > last) out.push({ type: "text", value: s.slice(last, m.index) });
+    out.push({ type: "mention", value });
+    last = m.index + value.length;
+    re.lastIndex = last;
+  }
+  if (last < s.length) out.push({ type: "text", value: s.slice(last) });
+  return out;
+}
+
+// Nazwy, pod jakimi wzmiankowani stoją w treści: imię i nazwisko (z mapy osób) i początek e-maila.
+export function mentionNamesOf(
+  m: PreviewMessage | null | undefined,
+  nameOf: (email: string) => string | null,
+): string[] {
+  const out: string[] = [];
+  for (const email of Array.isArray(m?.mentions) ? m!.mentions! : []) {
+    if (!email || email === MENTION_ALL) continue;
+    const name = nameOf(email);
+    if (name && !sameEmail(name, email)) out.push(name);
+    out.push(String(email).split("@")[0]);
+  }
+  return out;
+}
+
 export const mentionsUser = (m: PreviewMessage | null | undefined, email: string | null | undefined) =>
   !!email && Array.isArray(m?.mentions) && m!.mentions!.some((e) => sameEmail(e, email));
 

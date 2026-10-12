@@ -24,6 +24,8 @@ export interface UnreadConversation {
   name: string | null;
   type: 'direct' | 'group' | 'ministry';
   ministry_key: string | null;
+  // Rozmowa 1:1 — druga osoba (tytuł jak w Komunikatorze, zamiast „Rozmowa”).
+  peer_email?: string | null;
   unread_count: number;
   last_message: string | null;
   last_message_at: string | null;
@@ -354,7 +356,12 @@ export const useDashboard = (
           .limit(200);
 
         const grouped = new Map<string, { count: number; last: any }>();
+        const peerByConv = new Map<string, string>();
         for (const m of messages ?? []) {
+          const sender = (m as any).sender_email as string | null;
+          if (sender && sender.toLowerCase() !== String(userEmail ?? '').toLowerCase() && !peerByConv.has((m as any).conversation_id)) {
+            peerByConv.set((m as any).conversation_id, sender);
+          }
           const lastRead = lastReadByConv.get((m as any).conversation_id);
           const isUnread =
             (m as any).sender_email !== userEmail &&
@@ -378,6 +385,7 @@ export const useDashboard = (
               name: c.name,
               type: c.type,
               ministry_key: c.ministry_key,
+              peer_email: c.type === 'direct' ? peerByConv.get(c.id) ?? null : null,
               unread_count: g.count,
               last_message: g.last?.content ?? null,
               last_message_at: g.last?.created_at ?? null,

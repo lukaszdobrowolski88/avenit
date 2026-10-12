@@ -58,6 +58,26 @@ const Label = ({ children }: { children: string }) => (
   </Text>
 );
 
+// Kalendarze, które kościół ma w event_calendars (Ogólne + moduły z dostępem), i reguła
+// „wolno dodać”: prawo globalne ALBO zakres służby tego kalendarza — jak serwer (moduleScope.js).
+// „Ogólne” = tylko prawo globalne. Ten sam zestaw decyduje o przycisku „+” w kalendarzu
+// (wcześniej przycisk liczył każdy moduł, a formularz tylko kalendarze — członek widział „+”
+// i dopiero w formularzu „Nie masz uprawnień”).
+export const useEventCalendarOptions = () => {
+  const calendars = useEventCalendarKeys();
+  const { items } = useModules();
+  const perms = usePermissions();
+  const allowed = (key: string | null) => perms.canModule(key, 'events', 'create');
+  const all = useMemo(() => {
+    const keys: string[] = calendars.data ?? [];
+    return [
+      { key: null as string | null, label: 'Ogólne' },
+      ...items.filter((m) => keys.includes(m.key)).map((m) => ({ key: m.key as string | null, label: m.label })),
+    ];
+  }, [calendars.data, items]);
+  return { all, allowed, ready: perms.ready && !calendars.isLoading };
+};
+
 // Pola jak na webie: biel + ramka (wcześniej szare tło bez ramki).
 const inputStyle = { ...fieldStyle, minHeight: 48, paddingVertical: 10 } as const;
 
@@ -82,13 +102,10 @@ export const NewCalendarEventModal = ({
   const update = useUpdateCalendarEvent(editing?.id ?? -1);
   const remove = useDeleteCalendarEvent(editing?.id ?? -1);
   const busy = create.isPending || update.isPending;
-  const calendars = useEventCalendarKeys();
   const { items } = useModules();
   const perms = usePermissions();
-  // Dodać wydarzenie (albo przenieść je) do kalendarza wolno z prawem globalnym ALBO w zakresie
-  // służby tego kalendarza — jak serwer (moduleScope.js). „Ogólne” = tylko prawo globalne.
   // Lider służby bez prawa globalnego nie dostaje „Ogólnych” (zapis kończył się 403).
-  const allowed = (key: string | null) => perms.canModule(key, 'events', 'create');
+  const { all, allowed } = useEventCalendarOptions();
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(toYmd(new Date()));
   const [time, setTime] = useState('');
@@ -116,11 +133,6 @@ export const NewCalendarEventModal = ({
   // Kalendarze modułów, które kościół ma w event_calendars, do których mam dostęp i prawo
   // dodawania wydarzeń. Edytowane wydarzenie zostaje w swoim kalendarzu (zawsze wybieralnym).
   const options = useMemo(() => {
-    const keys: string[] = calendars.data ?? [];
-    const all = [
-      { key: null as string | null, label: 'Ogólne' },
-      ...items.filter((m) => keys.includes(m.key)).map((m) => ({ key: m.key as string | null, label: m.label })),
-    ];
     const out = all.filter((o) => allowed(o.key) || (!!editing && o.key === (editing.moduleKey ?? null)));
     // Edytowane wydarzenie z kalendarza spoza listy — zostaw je wybieralne.
     if (editing && !out.some((o) => o.key === (editing.moduleKey ?? null))) {
@@ -129,7 +141,7 @@ export const NewCalendarEventModal = ({
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calendars.data, items, editing, perms.canModule]);
+  }, [all, items, editing, perms.canModule]);
 
   // Nowe wydarzenie: domyślnie pierwszy dozwolony kalendarz (zamiast zawsze „Ogólnych”),
   // gdy bieżący wybór nie jest dozwolony — wybór użytkownika zostaje nietknięty.
