@@ -404,9 +404,17 @@ async function connectRoom(key: number, data: StartResponse, kind: CallKind) {
     // Jakość obrazu wg rozmiaru kafelka i gęstości ekranu; niewidoczne kafelki nie pobierają obrazu.
     adaptiveStream: { pixelDensity: "screen" },
     dynacast: true,
-    videoCaptureDefaults: { resolution: VideoPresets.h540.resolution, facingMode: "user" },
+    // 720p (do 1,7 Mb/s) + warstwy 180p/360p: w 1:1 ostry obraz także po kadrowaniu do pionu,
+    // w siatce i na słabym łączu odbiorcy dostają niższą warstwę (adaptiveStream/dynacast).
+    videoCaptureDefaults: { resolution: VideoPresets.h720.resolution, facingMode: "user" },
     audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-    publishDefaults: { simulcast: true, videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360], dtx: true, red: true },
+    publishDefaults: {
+      simulcast: true,
+      videoEncoding: VideoPresets.h720.encoding,
+      videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360],
+      dtx: true,
+      red: true,
+    },
   });
   room = r;
   const canPublish = data.can_publish !== false;
@@ -771,7 +779,8 @@ export async function flipCamera() {
     const track = pub?.track as LocalVideoTrack | undefined;
     if (!track) return;
     const front = !cur.frontCamera;
-    await track.restartTrack({ facingMode: front ? "user" : "environment" });
+    // Z rozdzielczością — sam facingMode wróciłby do domyślnej (niższej) jakości.
+    await track.restartTrack({ facingMode: front ? "user" : "environment", resolution: client.VideoPresets.h720.resolution });
     patch(cur.key, { frontCamera: front });
   } catch (e) {
     toast.error(e, "Nie udało się przełączyć aparatu");

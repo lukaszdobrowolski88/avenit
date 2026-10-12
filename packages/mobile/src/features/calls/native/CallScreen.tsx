@@ -1,7 +1,7 @@
 // Ekran rozmowy audio/wideo (LiveKit). Ładowany leniwie z app/(app)/call/[callId].tsx — tylko
 // w buildzie z modułami natywnymi (import @livekit/react-native bez WebRTC wywraca apkę).
 // Pokój żyje w silniku (engine.ts), ekran tylko go pokazuje: zamknięcie ekranu nie kończy rozmowy.
-import { useEffect, useRef, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { Pressable, ScrollView, Text, View, useWindowDimensions, type ViewStyle } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -83,12 +83,14 @@ function Tile({
   mirror = false,
   compact = false,
   zOrder,
+  fit = "cover",
 }: {
   trackRef: TrackReferenceOrPlaceholder;
   style: ViewStyle;
   mirror?: boolean;
   compact?: boolean;
   zOrder?: number;
+  fit?: "cover" | "contain";
 }) {
   const p = trackRef.participant;
   const speaking = useIsSpeaking(p);
@@ -109,7 +111,7 @@ function Tile({
       ]}
     >
       {showVideo && isTrackReference(trackRef) ? (
-        <VideoTrack trackRef={trackRef} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} objectFit="cover" mirror={mirror} zOrder={zOrder} />
+        <VideoTrack trackRef={trackRef} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} objectFit={fit} mirror={mirror} zOrder={zOrder} />
       ) : (
         <Avatar name={p.isLocal ? "Ty" : name} url={avatar} size={compact ? 44 : 84} />
       )}
@@ -163,6 +165,7 @@ function Stage({ call, status, topPad, bottomPad }: { call: CurrentCall; status:
   const tracks = useTracks([{ source: Track.Source.Camera, withPlaceholder: true }], { onlySubscribed: false });
   const local = tracks.find((t) => t.participant.isLocal) ?? null;
   const remotes = tracks.filter((t) => !t.participant.isLocal);
+  const [fit, setFit] = useState<"cover" | "contain">("cover");
   const pip = local && call.camOn ? (
     <Tile
       trackRef={local}
@@ -184,11 +187,19 @@ function Stage({ call, status, topPad, bottomPad }: { call: CurrentCall; status:
     );
   }
 
-  // 1:1 — druga osoba na cały ekran, ja w małym okienku.
+  // 1:1 — druga osoba na cały ekran, ja w małym okienku. Stuknięcie przełącza „wypełnij ekran”
+  // (kadrowanie poziomej kamery do pionu) ↔ „cały kadr” (bez przycinania, ostrzej).
   if (remotes.length === 1) {
     return (
       <View style={{ flex: 1 }}>
-        <Tile trackRef={remotes[0]} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 0, borderWidth: 0 }} />
+        <Pressable
+          onPress={() => setFit((f) => (f === "cover" ? "contain" : "cover"))}
+          accessibilityRole="button"
+          accessibilityLabel={fit === "cover" ? "Pokaż cały kadr" : "Wypełnij ekran"}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          <Tile trackRef={remotes[0]} fit={fit} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 0, borderWidth: 0 }} />
+        </Pressable>
         {pip}
       </View>
     );
