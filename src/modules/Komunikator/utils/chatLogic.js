@@ -430,3 +430,60 @@ export function unreadSummary(rows = [], myEmail, sinceByConv = {}) {
 export const isFromBlocked = (m, blockedSet, myEmail) =>
   !!m && !!blockedSet && m.message_type !== 'system' && !sameEmail(m.sender_email, myEmail) &&
   blockedSet.has(normEmail(m.sender_email));
+
+// Wzmianki w treści (K5): tekst → kawałki { type: 'text', value } | { type: 'mention', value, all }.
+// names = pełne nazwy znanych osób (wzmiankowani/uczestnicy), np. „Paweł Wiśniewski” — dopasowujemy
+// je w całości (najdłuższe najpierw, bez względu na wielkość liter), a pozostałe „@słowo” jak dotąd
+// jednym słowem. „@” w środku słowa (e-mail „jan@x.pl”) to nie wzmianka.
+const MENTION_WORD_CHAR = /[\p{L}\p{N}_.-]/u;
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function splitMentions(text, names = []) {
+  const s = String(text ?? '');
+  if (!s) return [];
+  const known = [...new Set((names || []).map((n) => String(n || '').trim()).filter(Boolean))]
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRe);
+  const re = new RegExp(
+    `@(?:${known.length ? `(${known.join('|')})(?![\\p{L}\\p{N}_])|` : ''}[\\p{L}\\p{N}._-]+)`,
+    'giu'
+  );
+  const out = [];
+  let last = 0;
+  let m;
+  while ((m = re.exec(s))) {
+    if (m.index > 0 && (MENTION_WORD_CHAR.test(s[m.index - 1]) || s[m.index - 1] === '@')) continue;
+    // Kropka/myślnik na końcu to zwykle interpunkcja („…, @Jan.”), nie część wzmianki.
+    const value = m[1] ? m[0] : m[0].replace(/[.-]+$/, '');
+    if (value.length < 2) continue;
+    if (m.index > last) out.push({ type: 'text', value: s.slice(last, m.index) });
+    out.push({ type: 'mention', value, all: value.toLowerCase() === MENTION_ALL_TOKEN });
+    last = m.index + value.length;
+    re.lastIndex = last;
+  }
+  if (last < s.length) out.push({ type: 'text', value: s.slice(last) });
+  return out;
+}
+
+// Wstawienie wybranej wzmianki w miejsce wpisywanego „@zapytanie” (start = indeks za „@”).
+// Zwraca nowy tekst i pozycję kursora — zaraz za wzmianką i spacją.
+export function insertMentionAt(text, start, query, name) {
+  const s = String(text ?? '');
+  const before = s.slice(0, Math.max(0, start - 1)); // -1 aby usunąć '@'
+  const after = s.slice(start + String(query || '').length).replace(/^ /, '');
+  const inserted = `@${name} `;
+  return { text: `${before}${inserted}${after}`, caret: before.length + inserted.length };
+}
+
+// Nazwy, pod jakimi wzmiankowani mogą stać w treści: pełne imię i nazwisko (nameOf) albo — gdy go
+// brak — początek e-maila (tak wstawia je pole wiadomości). „@wszyscy” ("*") łapie splitMentions.
+export function mentionNamesOf(message, nameOf) {
+  const emails = Array.isArray(message?.mentions) ? message.mentions : [];
+  const out = [];
+  for (const email of emails) {
+    if (!email || email === MENTION_ALL) continue;
+    const name = typeof nameOf === 'function' ? nameOf(email) : null;
+    if (name && !sameEmail(name, email)) out.push(name);
+    out.push(String(email).split('@')[0]);
+  }
+  return out;
+}

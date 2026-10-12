@@ -359,3 +359,38 @@ describe('Komunikator+ — czysta logika (web)', () => {
     expect(L.isFromBlocked({ sender_email: 'ola@x.pl' }, null, 'ja@x.pl')).toBe(false);
   });
 });
+
+describe('Komunikator — @wzmianki w treści i w polu wiadomości (web)', () => {
+  const L = web;
+  const mentionsIn = (text, names) => L.splitMentions(text, names).filter((p) => p.type === 'mention').map((p) => p.value);
+
+  it('wyróżnia pełne imię i nazwisko wzmiankowanej osoby (polskie znaki, wielkość liter)', () => {
+    const msg = { mentions: ['pawel@x.pl', 'kasia@x.pl', '*'] };
+    const nameOf = (e) => ({ 'pawel@x.pl': 'Paweł Wiśniewski' }[e] || e);
+    const names = L.mentionNamesOf(msg, nameOf);
+    expect(names).toEqual(['Paweł Wiśniewski', 'pawel', 'kasia']);
+    expect(mentionsIn('@Paweł Wiśniewski przygotujesz akordy? @wszyscy', names)).toEqual(['@Paweł Wiśniewski', '@wszyscy']);
+    expect(mentionsIn('cześć @paweł wiśniewski!', names)).toEqual(['@paweł wiśniewski']);
+    // tekst wokół zostaje nietknięty
+    expect(L.splitMentions('a @Paweł Wiśniewski b', names).map((p) => p.value).join('')).toBe('a @Paweł Wiśniewski b');
+  });
+
+  it('bez znanej nazwy — jak dotąd jedno słowo; @wszyscy oznaczone; e-mail to nie wzmianka', () => {
+    expect(mentionsIn('@Paweł Wiśniewskiego nie ma', ['Paweł Wiśniewski'])).toEqual(['@Paweł']);
+    expect(mentionsIn('pytanie do @Ani.', [])).toEqual(['@Ani']);
+    expect(L.splitMentions('@Wszyscy uwaga', []).find((p) => p.type === 'mention')).toEqual({ type: 'mention', value: '@Wszyscy', all: true });
+    expect(mentionsIn('pisz na jan@kosciol.pl', [])).toEqual([]);
+    expect(L.splitMentions('', ['x'])).toEqual([]);
+  });
+
+  it('wstawienie wzmianki zwraca kursor zaraz za wzmianką i spacją', () => {
+    // „Hej @Pa|” — start = indeks za „@”, zapytanie „pa”
+    const r = L.insertMentionAt('Hej @Pa', 5, 'pa', 'Paweł Wiśniewski');
+    expect(r.text).toBe('Hej @Paweł Wiśniewski ');
+    expect(r.caret).toBe(r.text.length);
+    // w środku tekstu: bez podwójnej spacji, kursor przed dalszą treścią
+    const mid = L.insertMentionAt('@Ka jak tam?', 1, 'ka', 'Katarzyna Zielińska');
+    expect(mid.text).toBe('@Katarzyna Zielińska jak tam?');
+    expect(mid.text.slice(mid.caret)).toBe('jak tam?');
+  });
+});
