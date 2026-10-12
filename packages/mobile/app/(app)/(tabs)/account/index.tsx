@@ -42,7 +42,8 @@ import { CampusSelector } from '../../../../src/components/CampusSelector';
 import { useCampus } from '../../../../src/contexts/CampusContext';
 import { supabase, tenantWebBase } from '../../../../src/lib/supabase';
 import { showError } from '../../../../src/lib/errors';
-import { useMyProfile, use2FAStatus } from '../../../../src/features/account/api';
+import { useMyProfile, useRefreshProfileOnFocus, use2FAStatus } from '../../../../src/features/account/api';
+import { storageImageUrl } from '../../../../src/lib/imageThumb';
 import { openModule, openOnWeb, useModules } from '../../../../src/features/modules/useModules';
 import { useT, useLang } from '../../../../src/i18n';
 import { usePermissions } from '../../../../src/lib/permissions';
@@ -64,6 +65,7 @@ export default function AccountScreen() {
   const { user } = useAuthSession();
   const { campuses } = useCampus();
   const profile = useMyProfile(user?.email ?? null);
+  useRefreshProfileOnFocus(user?.email ?? null);
   const twoFa = use2FAStatus();
   const t = useT();
   const { lang, setLang, languages } = useLang();
@@ -171,7 +173,7 @@ export default function AccountScreen() {
 
   const email = user?.email ?? '—';
   const fullName = profile.data?.full_name?.trim() || (user?.full_name as string | undefined)?.trim() || '';
-  const avatarUrl = profile.data?.avatar_url ?? null;
+  const avatarUrl = storageImageUrl(profile.data?.avatar_url, 72);
   const initial = (fullName || email).charAt(0).toUpperCase();
   const twoFaOn = !!twoFa.data?.enabled;
   const twoFaDescription = twoFaOn

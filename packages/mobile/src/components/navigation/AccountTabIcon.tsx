@@ -3,12 +3,13 @@ import { Image } from 'expo-image';
 import { User } from 'lucide-react-native';
 import { useAuthSession } from '../../lib/auth';
 import { useMyProfile } from '../../features/account/api';
+import { storageImageUrl } from '../../lib/imageThumb';
 
 // Zakładka Konto: zdjęcie profilowe zamiast ikony (aktywna — czarna obwódka).
 export const AccountTabIcon = ({ focused, color }: { focused: boolean; color: string }) => {
   const { user } = useAuthSession();
   const profile = useMyProfile(user?.email ?? null);
-  const avatarUrl = profile.data?.avatar_url ?? null;
+  const avatarUrl = storageImageUrl(profile.data?.avatar_url, 26);
 
   if (!avatarUrl) return <User color={color} size={24} strokeWidth={focused ? 2.4 : 1.8} />;
   return (

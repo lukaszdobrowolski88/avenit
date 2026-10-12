@@ -19,7 +19,8 @@ import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { GradientAvatar } from '../../../src/components/ui/GradientAvatar';
 import { B, fieldStyle } from '../../../src/components/ui/brand';
 import { useAuthSession } from '../../../src/lib/auth';
-import { useMyProfile, useUpdateProfile, pickAvatar, uploadAvatar } from '../../../src/features/account/api';
+import { useMyProfile, useRefreshProfileOnFocus, useUpdateProfile, pickAvatar, uploadAvatar } from '../../../src/features/account/api';
+import { storageImageUrl } from '../../../src/lib/imageThumb';
 import { goBack } from '../../../src/lib/navigation';
 import { showError } from '../../../src/lib/errors';
 import { toast } from '../../../src/lib/toast';
@@ -29,10 +30,12 @@ export default function EditProfileScreen() {
   const { user } = useAuthSession();
   const email = user?.email ?? null;
   const profile = useMyProfile(email);
+  useRefreshProfileOnFocus(email);
   const update = useUpdateProfile(email);
 
   const [fullName, setFullName] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // Świeżo wgrane zdjęcie; poza tym pokazujemy aktualne z profilu (może się zmienić na webie).
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -40,12 +43,12 @@ export default function EditProfileScreen() {
   useEffect(() => {
     if (profile.data && !hydrated) {
       setFullName(profile.data.full_name ?? '');
-      setAvatarUrl(profile.data.avatar_url ?? null);
       setHydrated(true);
     }
   }, [profile.data, hydrated]);
 
   const initial = (fullName || email || '?').charAt(0).toUpperCase();
+  const avatarUrl = storageImageUrl(uploadedUrl ?? profile.data?.avatar_url, 96);
 
   const changeAvatar = async () => {
     if (uploading) return;
@@ -55,7 +58,7 @@ export default function EditProfileScreen() {
       setUploading(true);
       const url = await uploadAvatar(asset, String(user?.app_user_id ?? email ?? 'me'));
       await update.mutateAsync({ avatar_url: url });
-      setAvatarUrl(url);
+      setUploadedUrl(url);
       toast.success('Zdjęcie profilowe zaktualizowane');
     } catch (e) {
       showError('Nie udało się zmienić zdjęcia', e, 'Spróbuj ponownie albo wybierz mniejsze zdjęcie.');
