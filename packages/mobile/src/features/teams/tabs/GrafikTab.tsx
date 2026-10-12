@@ -437,6 +437,10 @@ export const GrafikTab = ({
                   placeholder="Notatka dla zespołu…"
                   placeholderTextColor={B.ink4}
                   multiline
+                  // „Gotowe” chowa klawiaturę i zapisuje notatkę (onBlur) — wcześniej Return dodawał
+                  // tylko nową linię i klawiatura zasłaniała przycisk „Powiadom”.
+                  returnKeyType="done"
+                  submitBehavior="blurAndSubmit"
                   style={{ minHeight: 36, paddingVertical: 8, fontSize: 13, lineHeight: 18, color: B.ink2, fontFamily: F.medium }}
                 />
               </View>
