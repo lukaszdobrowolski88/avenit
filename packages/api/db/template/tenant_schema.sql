@@ -270,8 +270,8 @@ INSERT INTO app_modules (key, label, icon, path, resource_key, display_order, is
     ('calendar', 'Kalendarz', 'Calendar', '/calendar', 'module:calendar', 2, true, 'CalendarModule'),
     ('members', 'Członkowie', 'Users', '/members', 'module:members', 3, true, 'MembersModule'),
     ('worship', 'Zespół Uwielbienia', 'Music', '/worship', 'module:worship', 4, true, 'WorshipModule'),
-    ('media', 'MediaTeam', 'Video', '/media', 'module:media', 5, true, 'MediaTeamModule'),
-    ('atmosfera', 'Atmosfera Team', 'HeartHandshake', '/atmosfera', 'module:atmosfera', 6, true, 'AtmosferaTeamModule'),
+    ('media', 'Media', 'Video', '/media', 'module:media', 5, true, 'MediaTeamModule'),
+    ('atmosfera', 'Gościnność', 'HeartHandshake', '/atmosfera', 'module:atmosfera', 6, true, 'AtmosferaTeamModule'),
     ('kids', 'Dzieci', 'Baby', '/kids', 'module:kids', 7, true, 'KidsModule'),
     ('homegroups', 'Grupy domowe', 'UserCircle', '/home-groups', 'module:homegroups', 8, true, 'HomeGroupsModule'),
     ('finance', 'Finanse', 'DollarSign', '/finance', 'module:finance', 9, true, 'FinanceModule'),
@@ -3060,8 +3060,8 @@ INSERT INTO app_modules (key, label, icon, path, resource_key, display_order, is
     ('programs', 'Programy', 'ClipboardList', '/programs', 'module:programs', 1, true, 'ProgramsModule'),
     ('calendar', 'Kalendarz', 'Calendar', '/calendar', 'module:calendar', 2, true, 'CalendarModule'),
     ('homegroups', 'Grupy domowe', 'UserCircle', '/home-groups', 'module:homegroups', 3, true, 'HomeGroupsModule'),
-    ('media', 'MediaTeam', 'Video', '/media', 'module:media', 4, true, 'MediaTeamModule'),
-    ('atmosfera', 'Atmosfera Team', 'HeartHandshake', '/atmosfera', 'module:atmosfera', 5, true, 'AtmosferaTeamModule'),
+    ('media', 'Media', 'Video', '/media', 'module:media', 4, true, 'MediaTeamModule'),
+    ('atmosfera', 'Gościnność', 'HeartHandshake', '/atmosfera', 'module:atmosfera', 5, true, 'AtmosferaTeamModule'),
     ('kids', 'Dzieci', 'Baby', '/kids', 'module:kids', 6, true, 'KidsModule'),
     ('worship', 'Zespół Uwielbienia', 'Music', '/worship', 'module:worship', 7, true, 'WorshipModule'),
     ('finance', 'Finanse', 'DollarSign', '/finance', 'module:finance', 8, true, 'FinanceModule'),
@@ -3107,7 +3107,7 @@ ON CONFLICT (module_id, key) DO NOTHING;
 INSERT INTO app_module_tabs (module_id, key, label, icon, display_order, is_system)
 SELECT id, 'events', 'Wydarzenia', 'Calendar', 6, false FROM app_modules WHERE key = 'homegroups'
 ON CONFLICT (module_id, key) DO NOTHING;
--- Zakładki dla Media Team
+-- Zakładki dla Media
 INSERT INTO app_module_tabs (module_id, key, label, icon, display_order, is_system)
 SELECT id, 'schedule', 'Grafik', 'Calendar', 0, true FROM app_modules WHERE key = 'media'
 ON CONFLICT (module_id, key) DO NOTHING;
@@ -3139,7 +3139,7 @@ ON CONFLICT (module_id, key) DO NOTHING;
 INSERT INTO app_module_tabs (module_id, key, label, icon, display_order, is_system)
 SELECT id, 'events', 'Wydarzenia', 'Calendar', 4, false FROM app_modules WHERE key = 'worship'
 ON CONFLICT (module_id, key) DO NOTHING;
--- Zakładki dla Atmosfera Team
+-- Zakładki dla Gościnności
 INSERT INTO app_module_tabs (module_id, key, label, icon, display_order, is_system)
 SELECT id, 'schedule', 'Grafik', 'Calendar', 0, true FROM app_modules WHERE key = 'atmosfera'
 ON CONFLICT (module_id, key) DO NOTHING;

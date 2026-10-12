@@ -534,6 +534,6 @@ export const WIZARD_MODULES = [
   { key: 'groups', label: 'Grupy domowe' },
   { key: 'finance', label: 'Finanse' },
   { key: 'prayer', label: 'Ściana modlitwy' },
-  { key: 'media', label: 'MediaTeam' },
+  { key: 'media', label: 'Media' },
   { key: 'komunikator', label: 'Komunikator' },
 ];
