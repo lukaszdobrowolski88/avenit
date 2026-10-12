@@ -14,7 +14,7 @@
 //
 // Jedna rozmowa naraz (CallKit w expo-callkit-telecom i tak ma jedną sesję). Stan dla UI —
 // subscribe/getCallState (useSyncExternalStore w hooks.ts).
-import { AppState, Platform } from "react-native";
+import { Alert, AppState, Linking, Platform } from "react-native";
 import type { LocalVideoTrack, Room } from "livekit-client";
 import type { CallEndedReason, CallIntentReceivedEvent, CallSession, AudioRouteChangedEvent } from "expo-callkit-telecom";
 import { supabase } from "../../../lib/supabase";
@@ -439,10 +439,12 @@ async function connectRoom(key: number, data: StartResponse, kind: CallKind) {
   patch(key, { roomReady: true, canPublish });
 
   if (canPublish) {
-    try {
-      await r.localParticipant.setMicrophoneEnabled(true);
-    } catch {
-      toast.info("Brak dostępu do mikrofonu", "Zezwól Avenit na mikrofon w ustawieniach telefonu.");
+    if (await ensureMediaAccess("microphone")) {
+      try {
+        await r.localParticipant.setMicrophoneEnabled(true);
+      } catch {
+        toast.info("Nie udało się włączyć mikrofonu", "Sprawdź dostęp do mikrofonu w Ustawieniach.");
+      }
     }
     if (kind === "video") {
       // Przy zablokowanym ekranie / apce w tle system nie da kamery — włączymy ją po powrocie.
@@ -453,14 +455,53 @@ async function connectRoom(key: number, data: StartResponse, kind: CallKind) {
   syncLocal(key);
 }
 
+// Dostęp do aparatu / mikrofonu przed włączeniem: brak decyzji → systemowe pytanie; wcześniejsza
+// odmowa (iOS nie zapyta drugi raz, np. po odmowie przy zdjęciu w czacie) → okno z przejściem do
+// Ustawień zamiast znikającego komunikatu.
+const MEDIA_TEXT = {
+  camera: { title: "Brak dostępu do aparatu", body: "Aby pokazać obraz z kamery, zezwól Avenit na dostęp do aparatu w Ustawieniach." },
+  microphone: { title: "Brak dostępu do mikrofonu", body: "Aby rozmówcy Cię słyszeli, zezwól Avenit na dostęp do mikrofonu w Ustawieniach." },
+} as const;
+async function ensureMediaAccess(kind: "camera" | "microphone"): Promise<boolean> {
+  let granted = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { permissions } = require("@livekit/react-native-webrtc") as {
+      permissions: { query(d: { name: string }): Promise<string>; request(d: { name: string }): Promise<unknown> };
+    };
+    const state = await permissions.query({ name: kind });
+    if (state === "granted") return true;
+    if (state === "prompt") {
+      const res = await permissions.request({ name: kind });
+      granted = res === true || res === "granted";
+    } else {
+      granted = false;
+    }
+  } catch {
+    return true; // nie umiemy sprawdzić — niech spróbuje sam getUserMedia
+  }
+  if (!granted) {
+    const t = MEDIA_TEXT[kind];
+    Alert.alert(t.title, t.body, [
+      { text: "Nie teraz", style: "cancel" },
+      { text: "Otwórz ustawienia", onPress: () => void Linking.openSettings().catch(() => undefined) },
+    ]);
+  }
+  return granted;
+}
+
 async function enableCamera(key: number, on: boolean) {
   const r = room;
   if (!r || !current || current.key !== key) return;
+  if (on && !(await ensureMediaAccess("camera"))) {
+    syncLocal(key);
+    return;
+  }
   try {
     await r.localParticipant.setCameraEnabled(on);
     if (current.nativeId) callkit()?.reportVideo(current.nativeId, on).catch(() => undefined);
   } catch {
-    if (on) toast.info("Brak dostępu do aparatu", "Zezwól Avenit na aparat w ustawieniach telefonu.");
+    if (on) toast.info("Nie udało się włączyć kamery", "Spróbuj ponownie albo sprawdź dostęp do aparatu w Ustawieniach.");
   }
   syncLocal(key);
 }
@@ -692,10 +733,14 @@ async function applyMic(on: boolean) {
   const cur = current;
   const r = room;
   if (!cur || !r || !cur.canPublish) return;
+  if (on && !(await ensureMediaAccess("microphone"))) {
+    syncLocal(cur.key);
+    return;
+  }
   try {
     await r.localParticipant.setMicrophoneEnabled(on);
   } catch {
-    if (on) toast.info("Brak dostępu do mikrofonu", "Zezwól Avenit na mikrofon w ustawieniach telefonu.");
+    if (on) toast.info("Nie udało się włączyć mikrofonu", "Sprawdź dostęp do mikrofonu w Ustawieniach.");
   }
   syncLocal(cur.key);
 }

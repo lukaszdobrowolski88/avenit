@@ -247,7 +247,7 @@ function ControlButton({
       >
         <Icon size={24} color={fg} strokeWidth={2} />
       </Pressable>
-      <Text numberOfLines={1} style={{ color: B.onDarkMuted, fontSize: 11, fontFamily: F.semibold }}>
+      <Text numberOfLines={1} style={{ color: B.onDark, fontSize: 11, fontFamily: F.semibold }}>
         {label}
       </Text>
     </View>
@@ -368,7 +368,21 @@ export function CallScreen() {
         style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingBottom: insets.bottom + 16, paddingTop: 12 }}
         pointerEvents="box-none"
       >
-        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "flex-start", gap: 4, paddingHorizontal: 8 }}>
+        {/* Ciemna pigułka pod przyciskami — podpisy czytelne także na jasnym obrazie z kamery. */}
+        <View
+          style={{
+            alignSelf: "center",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            gap: 4,
+            paddingHorizontal: 10,
+            paddingTop: 12,
+            paddingBottom: 10,
+            borderRadius: 36,
+            backgroundColor: "rgba(42,35,18,0.78)",
+          }}
+        >
           <ControlButton
             icon={call.micOn ? Mic : MicOff}
             label="Mikrofon"
