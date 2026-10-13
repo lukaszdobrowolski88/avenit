@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" sizes="64x64" href="/assets/brand/favicon-64.png" />
   <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
   <meta name="theme-color" content="#F6F4EE" />
-  <link rel="stylesheet" href="/assets/site.css?v=20261008" />
+  <link rel="stylesheet" href="/assets/site.css?v=20261013" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -26,20 +26,30 @@
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/nav.css?v=20261013" />
 </head>
 <body>
-  <nav class="topnav">
-    <div class="inner">
-      <a class="logo" href="/" aria-label="Avenit — strona główna"><span class="logo-img" aria-hidden="true"></span><span class="logo-claim">Church Manager</span></a>
-      <div class="links">
-        <a href="/grafik-sluzb/">Grafik służb</a>
-        <a href="/check-in-dzieci/">Check-in dzieci</a>
-        <a href="/aplikacja-dla-zboru/">Dla zborów</a>
-        <a href="/alternatywa-dla-planning-center/">vs Planning Center</a>
+  <!-- nav:start -->
+  <header class="snav" id="snav">
+    <div class="snav-in">
+      <a class="snav-logo" href="/" aria-label="Avenit — strona główna"><span class="snav-mark" aria-hidden="true"></span><span class="snav-claim">Church Manager</span></a>
+      <nav class="snav-menu" id="snav-menu" aria-label="Główna nawigacja">
+        <ul class="snav-list">
+          <li class="snav-dd"><button class="snav-link snav-dd-btn" type="button" aria-expanded="false" aria-controls="snav-funkcje" aria-current="true">Funkcje <svg class="snav-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div class="snav-panel" id="snav-funkcje"><div class="snav-col"><p class="snav-cap">Dla służb</p><a href="/grafik-sluzb/"><strong>Grafik służb</strong><span>Lider układa grafik, ludzie potwierdzają</span></a><a href="/check-in-dzieci/"><strong>Check-in dzieci</strong><span>Bezpieczne meldowanie i odbiór dzieci</span></a><a href="/grupy-domowe/"><strong>Grupy domowe</strong><span>Składy, spotkania, materiały i czat</span></a><a href="/kartoteka-czlonkow/"><strong>Kartoteka członków</strong><span>Ludzie, rodziny i obecność</span></a></div><div class="snav-col"><p class="snav-cap">Więcej</p><a href="/funkcje/" aria-current="page"><strong>Wszystkie funkcje</strong><span>Pełny przegląd modułów Avenit</span></a><a href="/aplikacja-dla-zboru/"><strong>Dla kościołów i wspólnot</strong><span>Jak Avenit pracuje w małym i dużym kościele</span></a><a href="/alternatywa-dla-planning-center/"><strong>Avenit a Planning Center</strong><span>Porównanie i przejście krok po kroku</span></a></div></div></li>
+          <li><a class="snav-link" href="/#cennik">Cennik</a></li><li><a class="snav-link" href="/podrecznik/">Podręcznik</a></li><li><a class="snav-link" href="/blog/">Blog</a></li><li><a class="snav-link" href="/#faq">Pytania</a></li>
+        </ul>
+        <div class="snav-extra"><a href="https://app.avenit.pl">Zaloguj się</a><a href="/en/" lang="en">English version</a></div>
+      </nav>
+      <div class="snav-side">
+        <a class="snav-lang" href="/en/" lang="en" title="English version" aria-label="Switch to English">EN</a>
+        <a class="snav-login" href="https://app.avenit.pl">Zaloguj się</a>
+        <a class="snav-cta" href="/#kontakt" data-track="cta-nav">Umów prezentację</a>
+        <button class="snav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="snav-menu"><i></i></button>
       </div>
-      <a class="nav-cta" href="/#kontakt" data-track="cta-nav-funkcje">Umów prezentację</a>
     </div>
-  </nav>
+  </header>
+  <!-- nav:end -->
 
   <main class="container">
     <nav class="breadcrumb"><a href="/">Strona główna</a> › Funkcje</nav>
@@ -105,5 +115,6 @@
     </div>
   </footer>
   <script defer src="/a.js"></script>
+  <script defer src="/assets/nav.js?v=20261013"></script>
 </body>
 </html>
