@@ -6,6 +6,7 @@ import { formatRelative } from '../../../lib/domain';
 import { EmptyRow, WidgetCard } from './WidgetCard';
 import type { UnreadConversation } from '../api';
 import { goToTab } from '../../../lib/navigation';
+import { conversationTitle, useMembersByEmails } from '../../messenger/api';
 
 interface Props {
   conversations: UnreadConversation[];
@@ -14,6 +15,8 @@ interface Props {
 
 export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
   const router = useRouter();
+  const peers = conversations.map((c) => c.peer_email).filter((e): e is string => !!e);
+  const { data: members = {} } = useMembersByEmails(peers);
   return (
     <WidgetCard
       title="Wiadomości"
@@ -26,8 +29,7 @@ export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
       ) : (
         conversations.slice(0, 4).map((c, idx, arr) => {
           const Icon = c.type === 'ministry' ? Hash : MessageCircle;
-          const title =
-            c.name || (c.type === 'ministry' ? c.ministry_key ?? 'Kanał' : 'Rozmowa');
+          const title = conversationTitle(c, members);
           return (
             <Link push
               key={c.id}

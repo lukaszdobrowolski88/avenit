@@ -13,6 +13,8 @@ interface Props {
 
 export const PrayerCard = ({ metadata, content, count, mine, bubbleMine, onToggle }: Props) => {
   const title = metadata?.title || "Prośba o modlitwę";
+  // Prośba wysłana z mobilki ma tytuł = treść — bez tego tekst pokazywał się dwa razy.
+  const body = content && content.trim() !== String(title).trim() ? content : "";
   const fg = bubbleMine ? "#ffffff" : "#2A2312";
   const sub = bubbleMine ? "#FFF1C2" : "#2A2312";
   return (
@@ -20,12 +22,12 @@ export const PrayerCard = ({ metadata, content, count, mine, bubbleMine, onToggl
       <Text style={{ fontSize: 12, color: sub, fontFamily: "Manrope_700Bold", marginBottom: 2 }}>
         🙏 Prośba o modlitwę
       </Text>
-      <Text style={{ fontSize: 15, color: fg, fontFamily: "Manrope_600SemiBold", marginBottom: content ? 2 : 8 }}>
+      <Text style={{ fontSize: 15, color: fg, fontFamily: "Manrope_600SemiBold", marginBottom: body ? 2 : 8 }}>
         {title}
       </Text>
-      {content ? (
+      {body ? (
         <Text style={{ fontSize: 14, color: bubbleMine ? "#F3E3B0" : "#4A463E", fontFamily: "Manrope_400Regular", marginBottom: 8 }}>
-          {content}
+          {body}
         </Text>
       ) : null}
       <Pressable

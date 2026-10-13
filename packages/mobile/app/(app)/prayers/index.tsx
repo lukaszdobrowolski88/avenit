@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   ActivityIndicator,
   Alert,
   Modal,
@@ -635,6 +637,8 @@ export default function PrayersScreen() {
         animationType="slide"
         onRequestClose={() => setAnsweredFor(null)}
       >
+        {/* Arkusz podjeżdża nad klawiaturę — wcześniej klawiatura zasłaniała pole świadectwa i przycisk. */}
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <Pressable
           style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.45)', justifyContent: 'flex-end' }}
           onPress={() => !markAnswered.isPending && setAnsweredFor(null)}
@@ -687,6 +691,7 @@ export default function PrayersScreen() {
             </GradientButton>
           </Pressable>
         </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       <ReportModal

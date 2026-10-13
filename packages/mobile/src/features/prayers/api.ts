@@ -106,6 +106,8 @@ export interface CreatePrayerInput {
   requester_name?: string | null;
   is_anonymous?: boolean;
   visibility?: PrayerVisibility;
+  /** Podpis autora (imię i nazwisko z profilu), jak web. */
+  user_name?: string | null;
 }
 
 export const useCreatePrayer = (userEmail: string | null) => {
@@ -116,6 +118,7 @@ export const useCreatePrayer = (userEmail: string | null) => {
       const { error } = await (supabase.from('prayer_requests') as any)
         .insert({
           user_email: userEmail,
+          user_name: input.user_name ?? null,
           content: input.content,
           category: input.category,
           requester_name: input.requester_name ?? null,
@@ -141,6 +144,8 @@ export interface EditPrayerInput {
   requester_name?: string | null;
   is_anonymous?: boolean;
   visibility?: PrayerVisibility;
+  /** Podpis autora (imię i nazwisko z profilu), jak web. */
+  user_name?: string | null;
 }
 
 // Edycja WŁASNEJ modlitwy. Zapis wprost do prayer_requests; serwer (allowOwnPrayerWrite)

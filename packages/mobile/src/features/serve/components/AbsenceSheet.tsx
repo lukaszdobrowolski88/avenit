@@ -106,7 +106,9 @@ export const AbsenceSheet = ({ visible, onClose }: { visible: boolean; onClose: 
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: B.paper }}>
+      {/* iOS: w arkuszu pageSheet „padding” liczył się źle i klawiatura zasłaniała pole powodu
+          (wpisywany tekst był niewidoczny) — przewijanie nad klawiaturę robi ScrollView. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? undefined : 'height'} style={{ flex: 1, backgroundColor: B.paper }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', padding: 16, paddingBottom: 4 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 20, color: B.ink, fontFamily: F.bold }}>Zgłoś nieobecność</Text>
@@ -118,7 +120,12 @@ export const AbsenceSheet = ({ visible, onClose }: { visible: boolean; onClose: 
             <X size={22} color={B.ink2} />
           </Pressable>
         </View>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
+        >
           {list.length ? (
             <>
               <Label>Nie będzie mnie na</Label>
@@ -173,6 +180,10 @@ export const AbsenceSheet = ({ visible, onClose }: { visible: boolean; onClose: 
             placeholder="np. urlop, wyjazd, choroba"
             placeholderTextColor={B.ink4}
             multiline
+            // Krótki powód: „Gotowe” chowa klawiaturę (wcześniej Return dodawał tylko nową linię
+            // i nie było jak zejść do przycisku „Zgłoś”).
+            returnKeyType="done"
+            submitBehavior="blurAndSubmit"
             style={{ minHeight: 70, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: B.paper2, fontSize: 15, color: B.ink, fontFamily: F.medium, textAlignVertical: 'top' }}
           />
 

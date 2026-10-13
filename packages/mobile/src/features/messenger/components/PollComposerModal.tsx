@@ -4,7 +4,7 @@ import { Plus, X } from "lucide-react-native";
 import { DateField, TimeField, toYmd } from "../../../components/ui/DateField";
 import type { PollMetadata } from "../api";
 
-// Kompozytor ankiety (K7): pytanie, 2–10 opcji, „Wiele odpowiedzi”, „Anonimowa”, „Zamknij o…”.
+// Kompozytor ankiety (K7): pytanie, 2–10 opcji, „Wiele odpowiedzi”, „Anonimowa”, „Termin zamknięcia”.
 // Zwraca pytanie (content) + metadata: pola ankiety wprost (zgodność ze starszymi wersjami)
 // oraz metadata.poll (kontrakt serwera: termin zamknięcia, zastępowanie głosu, anonimowość).
 interface Props {
@@ -110,7 +110,7 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
     if (closing) {
       const at = closeDate && closeTime ? new Date(`${closeDate}T${closeTime}:00`) : null;
       if (!at || !Number.isFinite(at.getTime())) {
-        Alert.alert("Wybierz termin zamknięcia", "Podaj dzień i godzinę, o której ankieta ma się zamknąć, albo wyłącz „Zamknij o…”.");
+        Alert.alert("Wybierz termin zamknięcia", "Podaj dzień i godzinę, o której ankieta ma się zamknąć, albo wyłącz „Termin zamknięcia”.");
         return;
       }
       if (at.getTime() <= Date.now() + 60 * 1000) {
@@ -212,7 +212,7 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
                 onChange={setAnonymous}
               />
               <ToggleRow
-                title="Zamknij o…"
+                title="Termin zamknięcia"
                 hint="Po tym terminie głosowanie się kończy, wyniki zostają."
                 value={closing}
                 onChange={(v) => {

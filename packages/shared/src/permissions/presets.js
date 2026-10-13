@@ -56,6 +56,14 @@ export const LIDER_SHARED_DELETE_RESOURCES = [
   'equipment',
 ];
 
+// Własne dane czatu (głos w ankiecie, „Modlę się”, reakcja, przypięcie, wyjście z rozmowy,
+// wskaźnik pisania) — zakres „tylko własne / uczestnik” pilnuje serwer (komunikator.js).
+// Członek ma je od 065/084; lider (bez res:*:delete od 103) — od migracji 109.
+export const KOMUNIKATOR_OWN_DELETE_RESOURCES = [
+  'conversation_participants', 'conversations', 'message_reactions', 'pinned_messages',
+  'poll_votes', 'prayer_responses', 'typing_status',
+];
+
 // Lista usuwania z roli według migracji 103 (historyczna — test spójności migracji 103).
 export const LIDER_SHARED_DELETE_RESOURCES_103 = [
   'events', 'schedule_assignments', 'tasks', 'programs', 'program_songs',
@@ -112,6 +120,7 @@ export const ROLE_PRESETS = {
     allow('tab:*:*'), deny('tab:*:finances'),
     allow('res:*:read'), allow('res:*:create'), allow('res:*:update'),
     ...LIDER_SHARED_DELETE_RESOURCES.map((r) => allow(`res:${r}:delete`)),
+    ...KOMUNIKATOR_OWN_DELETE_RESOURCES.map((r) => allow(`res:${r}:delete`)),
     // bez finansów (zapis) i ustawień (zapis)
     ...FINANCE_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),
     ...SETTINGS_RES.flatMap((r) => [deny(`res:${r}:create`), deny(`res:${r}:update`), deny(`res:${r}:delete`)]),
@@ -144,6 +153,11 @@ export const ROLE_PRESETS = {
     allow('res:conversation_participants:update'), allow('res:conversation_participants:delete'),
     allow('res:messages:update'), allow('res:conversations:delete'),
     allow('res:typing_status:read'), allow('res:typing_status:create'), allow('res:typing_status:update'), allow('res:typing_status:delete'),
+    // Ankiety i „Modlę się” w czacie (migracja 065), reakcje i własne dane czatu (109).
+    allow('res:poll_votes:read'), allow('res:poll_votes:create'),
+    allow('res:prayer_responses:read'), allow('res:prayer_responses:create'),
+    allow('res:message_reactions:read'), allow('res:message_reactions:create'),
+    ...KOMUNIKATOR_OWN_DELETE_RESOURCES.map((r) => allow(`res:${r}:delete`)),
     // Projekty/Tablice — członek współpracuje: widzi wszystko, tworzy/edytuje/usuwa
     // elementy (zadania) i pisze aktualizacje. Zmiany STRUKTURALNE (kolumny/grupy/widoki/
     // automatyzacje/dashboardy) zostają u liderów (wildcardy).

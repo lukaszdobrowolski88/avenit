@@ -7,6 +7,25 @@
 export const name = 'program-songs-preview';
 export const method = 'POST';
 
+// Pieśni z planu programu (schedule): punkty typu „song” — z selectedSongs (wiele pieśni w punkcie)
+// albo songId/songKey. Gdy lider nie dodał osobnych propozycji, to jest setlista nabożeństwa
+// (wcześniej ekran „Planowane pieśni” był pusty, choć program miał pieśni).
+export function songsFromSchedule(schedule) {
+  const out = [];
+  for (const item of Array.isArray(schedule) ? schedule : []) {
+    if (!item || item.type !== 'song') continue;
+    const picked = Array.isArray(item.selectedSongs) && item.selectedSongs.length
+      ? item.selectedSongs
+      : [{ songId: item.songId ?? null, key: item.songKey ?? null }];
+    for (const s of picked) {
+      const songId = s?.songId ?? null;
+      if (songId == null && !item.title) continue;
+      out.push({ songId, key: s?.key ?? item.songKey ?? null, title: picked.length === 1 ? item.title || null : null, note: null });
+    }
+  }
+  return out;
+}
+
 export default async function handler(req, reply) {
   if (!req.db || !req.tenant) return reply.code(404).send({ error: 'Nieznany tenant' });
   const empty = { programs: [] };
@@ -14,7 +33,7 @@ export default async function handler(req, reply) {
 
   try {
     const { rows: progs } = await req.db.query(
-      `SELECT id, title, to_char(date,'YYYY-MM-DD') AS date
+      `SELECT id, title, to_char(date,'YYYY-MM-DD') AS date, schedule
          FROM programs
         WHERE date >= CURRENT_DATE
         ORDER BY date ASC
@@ -34,10 +53,14 @@ export default async function handler(req, reply) {
       );
       sugg = rows;
     } catch {
-      return reply.send({ programs: progs.map((p) => ({ id: p.id, title: p.title, date: p.date, songs: [] })) });
+      sugg = [];
     }
 
-    const songIds = [...new Set(sugg.map((s) => s.song_id).filter((x) => x != null))];
+    const fromSchedule = new Map(progs.map((p) => [String(p.id), songsFromSchedule(p.schedule)]));
+    const songIds = [...new Set([
+      ...sugg.map((s) => s.song_id),
+      ...[...fromSchedule.values()].flat().map((s) => s.songId),
+    ].filter((x) => x != null))];
     const songById = new Map();
     if (songIds.length) {
       try {
@@ -59,12 +82,14 @@ export default async function handler(req, reply) {
       });
     }
 
-    const programs = progs.map((p) => ({
-      id: p.id,
-      title: p.title,
-      date: p.date,
-      songs: byProgram.get(String(p.id)) ?? [],
-    }));
+    const programs = progs.map((p) => {
+      const suggested = byProgram.get(String(p.id));
+      const songs = suggested?.length ? suggested : (fromSchedule.get(String(p.id)) ?? []).map((s) => {
+        const sn = s.songId != null ? songById.get(String(s.songId)) : null;
+        return { songId: s.songId, title: sn?.title ?? s.title ?? 'Pieśń', key: s.key ?? sn?.key ?? null, note: s.note };
+      });
+      return { id: p.id, title: p.title, date: p.date, songs };
+    });
     return reply.send({ programs });
   } catch (e) {
     req.log?.error?.(e, 'program-songs-preview failed');

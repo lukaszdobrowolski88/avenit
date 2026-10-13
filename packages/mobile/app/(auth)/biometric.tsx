@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Fingerprint } from 'lucide-react-native';
+import { Fingerprint, ScanFace } from 'lucide-react-native';
 import { GradientIcon } from '../../src/components/ui/GradientIcon';
 import {
   getBiometricCapability,
@@ -15,6 +15,8 @@ export default function BiometricScreen() {
   const router = useRouter();
   const [available, setAvailable] = useState<boolean | null>(null);
   const [hint, setHint] = useState('Face ID / Touch ID');
+  // Ikona jak metoda: twarz dla Face ID, odcisk dla Touch ID (wcześniej zawsze odcisk palca).
+  const [face, setFace] = useState(false);
 
   useEffect(() => {
     // To konto już zdecydowało (włączone albo „Nie teraz”) — nie pytamy przy każdym logowaniu.
@@ -24,7 +26,7 @@ export default function BiometricScreen() {
         const labels: string[] = [];
         for (const t of cap.types) {
           if (t === 1) labels.push('Touch ID');
-          else if (t === 2) labels.push('Face ID');
+          else if (t === 2) { labels.push('Face ID'); setFace(true); }
           else if (t === 3) labels.push('biometryka');
         }
         if (labels.length) setHint(labels.join(' / '));
@@ -78,7 +80,7 @@ export default function BiometricScreen() {
       }}
     >
       <View style={{ alignItems: 'center', marginBottom: 28 }}>
-        <GradientIcon Icon={Fingerprint} size={80} iconSize={40} rounded />
+        <GradientIcon Icon={face ? ScanFace : Fingerprint} size={80} iconSize={40} rounded />
       </View>
       <Text
         style={{

@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Globe, Lock } from 'lucide-react-native';
 import { useAuthSession } from '../../../src/lib/auth';
+import { useMyProfile } from '../../../src/features/account/api';
 import {
   CATEGORY_META,
   useCreatePrayer,
@@ -67,6 +68,8 @@ export default function NewPrayerScreen() {
   const isEditing = !!editId;
 
   const create = useCreatePrayer(user?.email ?? null);
+  // Podpis jak na webie (user_name) — bez niego intencja z telefonu była „Ktoś ze wspólnoty”.
+  const profile = useMyProfile(user?.email ?? null);
   const edit = useEditPrayer();
   const busy = create.isPending || edit.isPending;
 
@@ -105,6 +108,7 @@ export default function NewPrayerScreen() {
           requester_name: requesterName.trim() || null,
           is_anonymous: anonymous,
           visibility,
+          user_name: profile.data?.full_name || profile.data?.name || null,
         });
       }
       goBack(router);
@@ -117,8 +121,10 @@ export default function NewPrayerScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      {/* iOS: klawiatura zasłaniała „Podziel się intencją” i nie dało się jej schować —
+          ScrollView sam przewija nad klawiaturę, a przeciągnięcie w dół ją chowa. */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? undefined : 'height'}
         style={{ flex: 1, backgroundColor: '#F6F4EE' }}
       >
         <View
@@ -166,6 +172,8 @@ export default function NewPrayerScreen() {
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
         >
           <Text style={labelStyle}>Treść intencji</Text>
           <TextInput
@@ -294,7 +302,7 @@ export default function NewPrayerScreen() {
                   fontFamily: 'Manrope_400Regular',
                 }}
               >
-                Twój email nie będzie widoczny dla innych
+                Inni nie zobaczą, kto prosi o modlitwę
               </Text>
             </View>
             <Switch

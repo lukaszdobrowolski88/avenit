@@ -316,6 +316,10 @@ export default function TeamDetailScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 130 }}
           keyboardShouldPersistTaps="handled"
+          // Pola w zakładkach (notatka grafiku, komentarze): przeciągnięcie chowa klawiaturę,
+          // a iOS przewija pole nad klawiaturę.
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={B.ink} />}
         >
           {renderContent()}
