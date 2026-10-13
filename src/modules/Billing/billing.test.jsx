@@ -17,8 +17,8 @@ vi.mock('../../lib/dialog', () => ({ confirmDialog: async () => h.confirm }));
 vi.mock('../../lib/toast', () => ({ toast: { success: () => {}, error: () => {}, info: () => {} } }));
 
 const PLANS = [
-  { key: 'start', name: 'Start', description: 'Dla małego zboru, który chce uporządkować niedzielę i ludzi.', priceMonthly: 7900, priceYearly: 79000, maxAdults: 50, isCustom: false },
-  { key: 'wspolnota', name: 'Wspólnota', description: 'Dla zboru z kilkoma służbami, grupami domowymi i szkółką.', priceMonthly: 15900, priceYearly: 159000, maxAdults: 150, isCustom: false },
+  { key: 'start', name: 'Start', description: 'Dla małej wspólnoty, która chce uporządkować niedzielę i ludzi.', priceMonthly: 7900, priceYearly: 79000, maxAdults: 50, isCustom: false },
+  { key: 'wspolnota', name: 'Wspólnota', description: 'Dla kościoła z kilkoma służbami, grupami domowymi i szkółką.', priceMonthly: 15900, priceYearly: 159000, maxAdults: 150, isCustom: false },
   { key: 'kosciol', name: 'Kościół', description: 'x', priceMonthly: 29900, priceYearly: 299000, maxAdults: 400, isCustom: false },
   { key: 'kosciol_plus', name: 'Kościół+', description: 'x', priceMonthly: 49900, priceYearly: 499000, maxAdults: 1000, isCustom: false },
   { key: 'siec', name: 'Sieć', description: 'Wycena indywidualna', priceMonthly: 89900, priceYearly: null, maxAdults: -1, isCustom: true },

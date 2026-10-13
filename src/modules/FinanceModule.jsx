@@ -2772,7 +2772,7 @@ const FinanceModule = () => {
             rows={3}
             value={reportRecipients}
             onChange={(e) => setReportRecipients(e.target.value)}
-            placeholder={tr('jan@parafia.pl, skarbnik@parafia.pl (oddziel przecinkiem lub enterem)')}
+            placeholder={tr('jan@nasz-kosciol.pl, skarbnik@nasz-kosciol.pl (oddziel przecinkiem lub enterem)')}
             className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
           />
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mt-4 mb-2">{tr('Załączniki')}</label>
@@ -2826,7 +2826,7 @@ const FinanceModule = () => {
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
-              <textarea rows={2} value={scheduleForm.recipients} onChange={(e) => setScheduleForm((f) => ({ ...f, recipients: e.target.value }))} placeholder={tr('skarbnik@parafia.pl, zarzad@parafia.pl')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
+              <textarea rows={2} value={scheduleForm.recipients} onChange={(e) => setScheduleForm((f) => ({ ...f, recipients: e.target.value }))} placeholder={tr('skarbnik@nasz-kosciol.pl, zarzad@nasz-kosciol.pl')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Sekcje w mailu')}</label>
