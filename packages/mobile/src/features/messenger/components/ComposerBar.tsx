@@ -455,7 +455,9 @@ export const ComposerBar = ({
           onChangeText={onChangeText}
           onSelectionChange={(e) => setCursor(e.nativeEvent.selection.end)}
           multiline
-          editable={!sending && !uploading}
+          // Bez blokady w trakcie wysyłania: nieedytowalne pole traci focus i iOS chowa klawiaturę
+          // po każdej wiadomości (podwójną wysyłkę blokuje przycisk i handleSend).
+          editable={!uploading}
           accessibilityLabel={editing ? "Edytuj wiadomość" : "Treść wiadomości"}
         />
         {!editing && !prayerMode && !canSend && onSendVoice ? (

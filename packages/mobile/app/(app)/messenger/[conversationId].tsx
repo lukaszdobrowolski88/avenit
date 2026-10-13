@@ -731,8 +731,15 @@ export default function ConversationScreen() {
         mentions: extractMentions(t, members, { allowAll: canMentionAll, exclude: myEmail }),
       });
       void stopTyping();
+      // Pole zostaje edytowalne w trakcie wysyłki (klawiatura się nie chowa) — jeśli ktoś zdążył
+      // dopisać kolejną wiadomość, nie kasujemy jej, tylko zdejmujemy wysłaną część.
+      const now = textRef.current;
       resetComposer();
-      clearDraft();
+      if (now.trim() !== t) {
+        setText(now.startsWith(text) ? now.slice(text.length).replace(/^\s+/, "") : now);
+      } else {
+        clearDraft();
+      }
       scrollToBottom();
     } catch (e) {
       Alert.alert(

@@ -1,5 +1,6 @@
 import { createSupabaseClient, createCachedUserHelper } from '@avenit/shared';
 import * as SecureStore from 'expo-secure-store';
+import { File as FsFile } from 'expo-file-system';
 
 // Avenit API (własny backend) — mobile łączy się z api.<domena> i wskazuje
 // tenanta nagłówkiem X-Tenant (slug kościoła).
@@ -57,6 +58,40 @@ export const supabase = createSupabaseClient(API_URL, {
   storage: secureStoreAdapter,
   realtime: true, // mobile używa realtime (messenger, presence)
 });
+
+// Wysyłka plików do storage. Od Expo SDK 57 globalny fetch to expo/fetch: część formularza musi
+// być Blobem albo obiektem z `bytes()` — dawne formaty React Native ({ uri, name, type }, surowy
+// ArrayBuffer) kończyły się „Unsupported FormDataPart implementation”. Normalizujemy je tu, raz
+// dla wszystkich ekranów (czat, zadania, programy, pieśni, sprzęt, materiały, awatar…).
+type UploadOpts = { contentType?: string; upsert?: boolean } | undefined;
+const baseName = (path: string) => String(path).split('/').pop() || 'plik';
+export function toUploadPart(file: unknown, path: string, opts: UploadOpts): unknown {
+  if (!file || typeof file !== 'object') return file;
+  const f = file as { uri?: unknown; name?: unknown; type?: unknown };
+  if (typeof f.uri === 'string') {
+    const uri = f.uri;
+    return {
+      name: typeof f.name === 'string' && f.name ? f.name : baseName(path),
+      type: (typeof f.type === 'string' && f.type) || opts?.contentType || 'application/octet-stream',
+      bytes: () => new FsFile(uri).bytes(),
+    };
+  }
+  if (file instanceof ArrayBuffer || ArrayBuffer.isView(file)) {
+    const view = file instanceof ArrayBuffer ? new Uint8Array(file) : new Uint8Array(file.buffer, file.byteOffset, file.byteLength);
+    return { name: baseName(path), type: opts?.contentType || 'application/octet-stream', bytes: async () => view };
+  }
+  return file;
+}
+{
+  const storage = supabase.storage as unknown as { from: (bucket: string) => { upload: (p: string, f: unknown, o?: UploadOpts) => Promise<unknown> } };
+  const from = storage.from.bind(storage);
+  storage.from = (bucket: string) => {
+    const api = from(bucket);
+    const upload = api.upload.bind(api);
+    api.upload = (path: string, file: unknown, opts?: UploadOpts) => upload(path, toUploadPart(file, path, opts), opts);
+    return api;
+  };
+}
 
 const userHelper = createCachedUserHelper(supabase);
 export const getCachedUser = userHelper.getCachedUser;
