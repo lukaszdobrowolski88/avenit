@@ -62,21 +62,23 @@ SHOTS = {
     'Aplikacja mobilna: pulpit, wydarzenia, pieśń z akordami, czat zespołu': 's12-mobile',
 }
 
+CHANNEL = 'https://www.youtube.com/@AvenitChurchManager'
+
 # Samouczki wideo. `yt` = identyfikator filmu na YouTube (pusty → karta „wkrótce”).
 VIDEOS = [
     ('Przeglądarka', [
-        ('01-pierwsze-kroki', 'Pierwsze kroki: logowanie, pulpit i menu', '2:01', 1, ''),
-        ('02-nowe-wydarzenie', 'Nowe wydarzenie i zapisy', '2:50', 3, ''),
-        ('03-program-nabozenstwa', 'Program nabożeństwa z pieśniami', '3:01', 3, ''),
-        ('04-grafik-sluzby', 'Grafik służby: lider układa, zespół potwierdza', '3:09', 4, ''),
-        ('05-czlonkowie-i-rodziny', 'Członkowie, rodziny i obecność', '3:03', 2, ''),
-        ('06-komunikator', 'Komunikator: wzmianki, ankiety i reakcje', '2:41', 7, ''),
-        ('07-sciana-modlitwy', 'Ściana modlitwy w minutę', '1:22', 9, ''),
-        ('08-finanse', 'Finanse: budżet, wpływy, wydatki i raporty', '3:06', 10, ''),
+        ('01-pierwsze-kroki', 'Pierwsze kroki: logowanie, pulpit i menu', '2:01', 1, 'tcWGWGZ9K2Y'),
+        ('02-nowe-wydarzenie', 'Nowe wydarzenie i zapisy', '2:50', 3, 'CEqMONBcXTY'),
+        ('03-program-nabozenstwa', 'Program nabożeństwa z pieśniami', '3:01', 3, 'xkY5CkBbgqk'),
+        ('04-grafik-sluzby', 'Grafik służby: lider układa, zespół potwierdza', '3:09', 4, 'Doa0iDl7ZUw'),
+        ('05-czlonkowie-i-rodziny', 'Członkowie, rodziny i obecność', '3:03', 2, 'VPit2UOltFs'),
+        ('06-komunikator', 'Komunikator: wzmianki, ankiety i reakcje', '2:41', 7, '0W_yd3iVcVI'),
+        ('07-sciana-modlitwy', 'Ściana modlitwy w minutę', '1:22', 9, 'dnt9eZCcaGU'),
+        ('08-finanse', 'Finanse: budżet, wpływy, wydatki i raporty', '3:06', 10, 'rHQzagj41JY'),
     ]),
     ('iPhone', [
-        ('ios-01-pierwsze-kroki', 'Pierwsze kroki w aplikacji na iPhone', '6:11', 12, ''),
-        ('ios-02-moja-sluzba', 'Moja służba: zaproszenia, pieśni, nieobecności', '6:00', 4, ''),
+        ('ios-01-pierwsze-kroki', 'Pierwsze kroki w aplikacji na iPhone', '6:11', 12, '2Q86GZVT7bM'),
+        ('ios-02-moja-sluzba', 'Moja służba: zaproszenia, pieśni, nieobecności', '6:00', 4, 'aeaOrNaugHA'),
         ('ios-03-wydarzenia-i-zapisy', 'Wydarzenia i zapisy', '4:24', 3, ''),
         ('ios-04-komunikator', 'Komunikator w telefonie', '4:22', 7, ''),
         ('ios-05-sciana-modlitwy', 'Ściana modlitwy', '2:23', 9, ''),
@@ -284,7 +286,8 @@ def chapter_page(idx, intro_unused, chapters):
     if n == 13:
         lead = 'Krótkie filmy z lektorem pokazują najważniejsze zadania krok po kroku — w przeglądarce i w aplikacji na iPhone. Wszystkie nagrano na przykładowym kościele z fikcyjnymi danymi.'
         groups = video_cards()
-        content = ''.join(f'<h2 id="{slugify(g)}">{E(g)}</h2><div class="pd-videos">{c}</div>' for g, c in groups)
+        content = (f'<p class="pd-channel"><a href="{CHANNEL}" target="_blank" rel="noopener">Wszystkie samouczki na kanale YouTube „Avenit Church Manager”</a> — tam też subskrybujesz nowe filmy.</p>'
+                   + ''.join(f'<h2 id="{slugify(g)}">{E(g)}</h2><div class="pd-videos">{c}</div>' for g, c in groups))
         toc = [(slugify(g), g) for g, _ in groups]
     elif n == 14:
         lead = 'Najczęstsze pytania użytkowników i szybkie rozwiązania. Nie ma tu Twojego? Napisz do nas albo zajrzyj do menu Pomoc w aplikacji.'
