@@ -150,6 +150,10 @@ const config: ExpoConfig = {
       'expo-audio',
       {
         microphonePermission: MIC_TEXT,
+        // Bez odtwarzania w tle: domyślnie plugin dodaje usługę Androida „media playback”
+        // (FOREGROUND_SERVICE_MEDIA_PLAYBACK) — nieużywaną, a w Google Play wymagającą osobnej
+        // deklaracji. Tło dla rozmów zapewnia CallKit/Telecom (iOS: UIBackgroundModes voip+audio).
+        enableBackgroundPlayback: false,
       },
     ],
     // Rozmowy audio/wideo natywnie: LiveKit (WebRTC) + CallKit (iOS) / Core-Telecom (Android).
