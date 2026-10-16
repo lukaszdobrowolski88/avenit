@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Audio, type AVPlaybackStatus } from "expo-av";
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer as Player, type AudioStatus } from "expo-audio";
 import { Mic, Pause, Play } from "lucide-react-native";
 import { resolveAttachmentUrl } from "../signedUrl";
 import { showError } from "../../../lib/errors";
@@ -37,7 +37,7 @@ const fakeWaveform = (uri: string): number[] => {
 };
 
 export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) => {
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [sound, setSound] = useState<Player | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(durationHintMs ?? 0);
@@ -59,51 +59,48 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
           bg: "#ffffff",
         };
 
+  // createAudioPlayer nie zwalnia się sam — zwolnij przy odmontowaniu / zmianie.
   useEffect(() => {
     return () => {
-      if (sound) {
-        sound.unloadAsync().catch(() => undefined);
-      }
+      sound?.remove();
     };
   }, [sound]);
 
-  const onStatus = (st: AVPlaybackStatus) => {
+  const onStatus = (p: Player) => (st: AudioStatus) => {
     if (!st.isLoaded) return;
-    setPosition(st.positionMillis ?? 0);
-    if (st.durationMillis && !duration) setDuration(st.durationMillis);
+    setPosition(Math.round((st.currentTime ?? 0) * 1000));
+    if (st.duration) setDuration((d) => d || Math.round(st.duration * 1000));
     if (st.didJustFinish) {
       setIsPlaying(false);
       setPosition(0);
-      sound?.setPositionAsync(0).catch(() => undefined);
+      p.pause();
+      p.seekTo(0).catch(() => undefined);
     } else {
-      setIsPlaying(st.isPlaying);
+      setIsPlaying(st.playing);
     }
   };
 
   const toggle = async () => {
     if (loading) return;
     if (sound) {
-      const st = await sound.getStatusAsync();
-      if (st.isLoaded && st.isPlaying) {
-        await sound.pauseAsync();
+      if (sound.playing) {
+        sound.pause();
         setIsPlaying(false);
       } else {
-        await sound.playAsync();
+        sound.play();
         setIsPlaying(true);
       }
       return;
     }
     setLoading(true);
     try {
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+      await setAudioModeAsync({ playsInSilentMode: true });
       // K1: głosówka z magazynu czatu — podpisany link w chwili odtworzenia (zawsze świeży).
       const source = await resolveAttachmentUrl(uri);
-      const { sound: s } = await Audio.Sound.createAsync(
-        { uri: source || uri },
-        { shouldPlay: true, progressUpdateIntervalMillis: 150 },
-      );
-      s.setOnPlaybackStatusUpdate(onStatus);
-      setSound(s);
+      const p = createAudioPlayer({ uri: source || uri }, { updateInterval: 150 });
+      p.addListener("playbackStatusUpdate", onStatus(p));
+      p.play();
+      setSound(p);
       setIsPlaying(true);
     } catch (e) {
       showError("Nie udało się odtworzyć", e, "Nie udało się odtworzyć wiadomości głosowej. Spróbuj ponownie.");

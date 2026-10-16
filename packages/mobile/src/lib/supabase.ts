@@ -1,16 +1,56 @@
 import { createSupabaseClient, createCachedUserHelper } from '@avenit/shared';
 import * as SecureStore from 'expo-secure-store';
+import { File as FsFile } from 'expo-file-system';
 
 // Avenit API (własny backend) — mobile łączy się z api.<domena> i wskazuje
 // tenanta nagłówkiem X-Tenant (slug kościoła).
 const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
 const TENANT = process.env.EXPO_PUBLIC_TENANT || '';
 
-// SecureStore adapter dla sesji auth
+// SecureStore adapter dla sesji auth.
+// Dostępność w pęku kluczy: AFTER_FIRST_UNLOCK (zamiast domyślnego WHEN_UNLOCKED). Przychodzące
+// połączenie (push VoIP) budzi apkę także przy ZABLOKOWANYM telefonie — przy WHEN_UNLOCKED odczyt
+// sesji kończy się błędem, apka „nie ma” zalogowanego użytkownika i odebranie z ekranu blokady
+// nie może dołączyć do rozmowy. Aktualizacja istniejącego wpisu nie zmienia jego dostępności, więc
+// sesja żyje pod NOWĄ nazwą klucza (`<klucz>.v2`, zawsze AFTER_FIRST_UNLOCK); stary wpis to tylko
+// zapas do odczytu — przepisujemy go do nowego i kasujemy dopiero po udanym zapisie. Nigdy nie ma
+// chwili bez sesji (wcześniejsze wylogowania brały się właśnie z „pustego” odczytu).
+const KEYCHAIN = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
+const v2 = (key: string) => `${key}.v2`;
+// Licznik zapisów per klucz: przepisanie starego wpisu nie może nadpisać świeższego zapisu
+// (np. odświeżonego tokenu) — stary refresh token po rotacji = wylogowanie.
+const writes = new Map<string, number>();
+const bump = (key: string) => writes.set(key, (writes.get(key) ?? 0) + 1);
 const secureStoreAdapter = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+  getItem: async (key: string) => {
+    const fresh = await SecureStore.getItemAsync(v2(key), KEYCHAIN).catch(() => null);
+    if (fresh != null) return fresh;
+    const at = writes.get(key) ?? 0;
+    const legacy = await SecureStore.getItemAsync(key);
+    // Przepisanie PRZED zwróceniem wartości (sesja nie zdąży się w tym czasie odświeżyć);
+    // stary wpis kasujemy dopiero po udanym zapisie nowego.
+    if (legacy != null && (writes.get(key) ?? 0) === at) {
+      try {
+        await SecureStore.setItemAsync(v2(key), legacy, KEYCHAIN);
+        SecureStore.deleteItemAsync(key).catch(() => undefined);
+      } catch {
+        // zostaje stary wpis — odczyt dalej działa po odblokowaniu
+      }
+    }
+    return legacy;
+  },
+  setItem: async (key: string, value: string) => {
+    bump(key);
+    await SecureStore.setItemAsync(v2(key), value, KEYCHAIN);
+    SecureStore.deleteItemAsync(key).catch(() => undefined);
+  },
+  removeItem: async (key: string) => {
+    bump(key);
+    await Promise.all([
+      SecureStore.deleteItemAsync(v2(key), KEYCHAIN).catch(() => undefined),
+      SecureStore.deleteItemAsync(key).catch(() => undefined),
+    ]);
+  },
 };
 
 export const supabase = createSupabaseClient(API_URL, {
@@ -18,6 +58,40 @@ export const supabase = createSupabaseClient(API_URL, {
   storage: secureStoreAdapter,
   realtime: true, // mobile używa realtime (messenger, presence)
 });
+
+// Wysyłka plików do storage. Od Expo SDK 57 globalny fetch to expo/fetch: część formularza musi
+// być Blobem albo obiektem z `bytes()` — dawne formaty React Native ({ uri, name, type }, surowy
+// ArrayBuffer) kończyły się „Unsupported FormDataPart implementation”. Normalizujemy je tu, raz
+// dla wszystkich ekranów (czat, zadania, programy, pieśni, sprzęt, materiały, awatar…).
+type UploadOpts = { contentType?: string; upsert?: boolean } | undefined;
+const baseName = (path: string) => String(path).split('/').pop() || 'plik';
+export function toUploadPart(file: unknown, path: string, opts: UploadOpts): unknown {
+  if (!file || typeof file !== 'object') return file;
+  const f = file as { uri?: unknown; name?: unknown; type?: unknown };
+  if (typeof f.uri === 'string') {
+    const uri = f.uri;
+    return {
+      name: typeof f.name === 'string' && f.name ? f.name : baseName(path),
+      type: (typeof f.type === 'string' && f.type) || opts?.contentType || 'application/octet-stream',
+      bytes: () => new FsFile(uri).bytes(),
+    };
+  }
+  if (file instanceof ArrayBuffer || ArrayBuffer.isView(file)) {
+    const view = file instanceof ArrayBuffer ? new Uint8Array(file) : new Uint8Array(file.buffer, file.byteOffset, file.byteLength);
+    return { name: baseName(path), type: opts?.contentType || 'application/octet-stream', bytes: async () => view };
+  }
+  return file;
+}
+{
+  const storage = supabase.storage as unknown as { from: (bucket: string) => { upload: (p: string, f: unknown, o?: UploadOpts) => Promise<unknown> } };
+  const from = storage.from.bind(storage);
+  storage.from = (bucket: string) => {
+    const api = from(bucket);
+    const upload = api.upload.bind(api);
+    api.upload = (path: string, file: unknown, opts?: UploadOpts) => upload(path, toUploadPart(file, path, opts), opts);
+    return api;
+  };
+}
 
 const userHelper = createCachedUserHelper(supabase);
 export const getCachedUser = userHelper.getCachedUser;

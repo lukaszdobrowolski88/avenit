@@ -731,8 +731,15 @@ export default function ConversationScreen() {
         mentions: extractMentions(t, members, { allowAll: canMentionAll, exclude: myEmail }),
       });
       void stopTyping();
+      // Pole zostaje edytowalne w trakcie wysyłki (klawiatura się nie chowa) — jeśli ktoś zdążył
+      // dopisać kolejną wiadomość, nie kasujemy jej, tylko zdejmujemy wysłaną część.
+      const now = textRef.current;
       resetComposer();
-      clearDraft();
+      if (now.trim() !== t) {
+        setText(now.startsWith(text) ? now.slice(text.length).replace(/^\s+/, "") : now);
+      } else {
+        clearDraft();
+      }
       scrollToBottom();
     } catch (e) {
       Alert.alert(
@@ -914,7 +921,7 @@ export default function ConversationScreen() {
           onOpenGallery={() => setGalleryVisible(true)}
           peerStatus={peerStatus}
           onOpenInfo={details ? () => setInfoVisible(true) : undefined}
-          onCall={callsEnabled && details?.is_participant && details.type !== "meeting" ? () => chooseCallKind(String(conversationId)) : undefined}
+          onCall={callsEnabled && details?.is_participant && details.type !== "meeting" ? () => chooseCallKind(String(conversationId), { isGroup: details.type !== "direct" }) : undefined}
         />
 
         {/* Spotkanie online: termin, Dołącz, odpowiedź; inne rozmowy — pasek „Trwa połączenie”. */}

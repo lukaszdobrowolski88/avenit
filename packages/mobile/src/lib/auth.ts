@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { supabase } from './supabase';
 
 // Kształty sesji/usera z Avenit API (zgodne z dotychczasowym użyciem pól).
@@ -48,9 +49,18 @@ export const useAuthSession = (): AuthState => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
     });
+    // Apka obudzona połączeniem na zablokowanym telefonie mogła nie odczytać sesji z pęku kluczy —
+    // po odblokowaniu (powrót na pierwszy plan) próbujemy jeszcze raz (klient nie zapamiętuje porażki).
+    const appState = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') return;
+      supabase.auth.getSession().then(({ data }) => {
+        if (mounted && data.session) setSession((cur) => cur ?? data.session);
+      });
+    });
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
+      appState.remove();
     };
   }, []);
 

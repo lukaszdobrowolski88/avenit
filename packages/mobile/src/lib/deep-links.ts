@@ -1,4 +1,4 @@
-import type { Router } from 'expo-router';
+import type { ImperativeRouter as Router } from 'expo-router';
 import { parseTaskLink } from '@avenit/shared/src/lib/taskLinks.js';
 import { goToTab } from './navigation';
 import { MODULE_REGISTRY, type ModuleEntry } from '../features/modules/registry';

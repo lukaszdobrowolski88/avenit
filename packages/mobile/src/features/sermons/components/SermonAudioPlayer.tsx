@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
-import { Audio, type AVPlaybackStatus } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatus } from 'expo-audio';
 import { Pause, Play } from 'lucide-react-native';
 
-// Odtwarzacz audio dla kazań — ten sam mechanizm expo-av co w messenger/AudioPlayer,
+// Odtwarzacz audio dla kazań — ten sam mechanizm expo-audio co w messenger/AudioPlayer,
 // ale w większym, „podcastowym" układzie (pasek postępu + czas).
 
 interface Props {
@@ -20,53 +20,52 @@ const formatTime = (ms: number) => {
 
 // `dark` — wewnątrz ciemnej karty (słód): przezroczyste tło, opisy jasne.
 export const SermonAudioPlayer = ({ uri, dark }: Props) => {
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [sound, setSound] = useState<AudioPlayer | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(false);
 
+  // createAudioPlayer nie zwalnia się sam — zwolnij przy odmontowaniu / zmianie.
   useEffect(() => {
     return () => {
-      if (sound) sound.unloadAsync().catch(() => undefined);
+      sound?.remove();
     };
   }, [sound]);
 
-  const onStatus = (st: AVPlaybackStatus) => {
+  const onStatus = (p: AudioPlayer) => (st: AudioStatus) => {
     if (!st.isLoaded) return;
-    setPosition(st.positionMillis ?? 0);
-    if (st.durationMillis && !duration) setDuration(st.durationMillis);
+    setPosition(Math.round((st.currentTime ?? 0) * 1000));
+    if (st.duration) setDuration((d) => d || Math.round(st.duration * 1000));
     if (st.didJustFinish) {
       setIsPlaying(false);
       setPosition(0);
-      sound?.setPositionAsync(0).catch(() => undefined);
+      p.pause();
+      p.seekTo(0).catch(() => undefined);
     } else {
-      setIsPlaying(st.isPlaying);
+      setIsPlaying(st.playing);
     }
   };
 
   const toggle = async () => {
     if (loading) return;
     if (sound) {
-      const st = await sound.getStatusAsync();
-      if (st.isLoaded && st.isPlaying) {
-        await sound.pauseAsync();
+      if (sound.playing) {
+        sound.pause();
         setIsPlaying(false);
       } else {
-        await sound.playAsync();
+        sound.play();
         setIsPlaying(true);
       }
       return;
     }
     setLoading(true);
     try {
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-      const { sound: s } = await Audio.Sound.createAsync(
-        { uri },
-        { shouldPlay: true, progressUpdateIntervalMillis: 250 },
-      );
-      s.setOnPlaybackStatusUpdate(onStatus);
-      setSound(s);
+      await setAudioModeAsync({ playsInSilentMode: true });
+      const p = createAudioPlayer({ uri }, { updateInterval: 250 });
+      p.addListener('playbackStatusUpdate', onStatus(p));
+      p.play();
+      setSound(p);
       setIsPlaying(true);
     } catch {
       Alert.alert('Nie udało się odtworzyć', 'Nie udało się odtworzyć nagrania. Sprawdź połączenie i spróbuj ponownie.');

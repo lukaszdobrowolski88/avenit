@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
+  AppState,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -10,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { supabase } from '../../src/lib/supabase';
 import {
   universalLogin,
   sendPasswordReset,
@@ -23,6 +25,17 @@ import { showError } from '../../src/lib/errors';
 
 export default function LoginScreen() {
   const router = useRouter();
+  // Ekran logowania po „pustym” odczycie sesji przy zablokowanym telefonie (apkę obudziło
+  // połączenie): po odblokowaniu sesja zwykle jest — wtedy wracamy do aplikacji.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') return;
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session) router.replace('/');
+      });
+    });
+    return () => sub.remove();
+  }, [router]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);

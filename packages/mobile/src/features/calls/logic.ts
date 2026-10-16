@@ -1,7 +1,8 @@
 // Rozmowy audio/wideo w mobilce — czysta logika (bez React Native i sieci): widok wiadomości
 // „połączenie” w wątku. Lustrzana kopia webowego src/modules/Komunikator/calls/callLogic.js
 // (callMessageView, formatCallDuration) — test parytetu: src/modules/Komunikator/calls/callLogic.test.js.
-// Do czasu natywnych rozmów (Expo SDK 56 + LiveKit) „Dołącz” otwiera rozmowę w przeglądarce.
+// Rozmowy są natywne (LiveKit + CallKit/Core-Telecom, features/calls/native); przeglądarka
+// (webCallPath) zostaje tylko jako zapas, gdy w buildzie brakuje modułów natywnych.
 
 export const LIVE_STATUSES = new Set(["ringing", "active"]);
 export const ENDED_STATUSES = new Set(["ended", "missed", "declined", "cancelled"]);
@@ -120,3 +121,58 @@ export function callMessageView(
 // Ścieżka webu: rozmowa + automatyczne dołączenie / rozpoczęcie (web: KomunikatorModule, ?join=).
 export const webCallPath = (conversationId: string, kind: "audio" | "video") =>
   `/komunikator?conversation=${encodeURIComponent(conversationId)}&join=${kind}`;
+
+// Nieodebrane, odrzucone… — stan końcowy wiersza calls.
+export const isEndedStatus = (status: unknown) => ENDED_STATUSES.has(String(status));
+
+// Zegar rozmowy „mm:ss” / „h:mm:ss” (web callLogic.formatClock).
+export function formatClock(ms: unknown) {
+  const total = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+// ── Goście z linku — poczekalnia (lustro webowego guestLogic.js: lobbyQueue, applyGuestRequest) ──
+export interface GuestRequestRow {
+  id: string;
+  conversation_id: string;
+  guest_name?: string | null;
+  status: string;
+  created_at?: string | null;
+}
+
+// Prośby gości do pokazania (oczekujące w tej rozmowie, najstarsze pierwsze).
+export function lobbyQueue(requests: Record<string, GuestRequestRow> | null | undefined, conversationId: string | null | undefined) {
+  if (!conversationId) return [] as GuestRequestRow[];
+  return Object.values(requests || {})
+    .filter((r) => r && r.status === "pending" && String(r.conversation_id) === String(conversationId))
+    .sort((a, b) => (Date.parse(a.created_at || "") || 0) - (Date.parse(b.created_at || "") || 0));
+}
+
+// Zmiana wiersza poczekalni (realtime / odczyt) → nowa mapa id → wiersz (tylko oczekujące).
+export function applyGuestRequest(map: Record<string, GuestRequestRow> | null | undefined, row: GuestRequestRow | null | undefined) {
+  if (!row?.id) return map || {};
+  const next = { ...(map || {}) };
+  if (row.status === "pending") next[row.id] = row;
+  else delete next[row.id];
+  return next;
+}
+
+// ── Błędy API połączeń (web callLogic: isCallsDisabledError / isCallGoneError) ──
+export interface CallApiError { status?: number; code?: string | null; message?: string }
+export const isCallsDisabledError = (err: CallApiError | null | undefined) =>
+  !!err && err.status === 503 && (err.code === "calls_disabled" || /calls_disabled/i.test(String(err.message || "")));
+export const isCallGoneError = (err: CallApiError | null | undefined) =>
+  !!err && (err.status === 410 || err.code === "CALL_ENDED");
+
+// Inicjały do kafelka bez obrazu („Anna Nowak” → „AN”).
+export function initials(name: string | null | undefined) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  const first = parts[0][0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] || "" : "";
+  return (first + last).toUpperCase();
+}

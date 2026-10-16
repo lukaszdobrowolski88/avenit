@@ -1,4 +1,4 @@
-import type { Router } from 'expo-router';
+import type { ImperativeRouter as Router } from 'expo-router';
 import { openTask as openTaskScreen, taskFromNotificationData } from '../../lib/deep-links';
 
 // Wejście w ekran zadania (app/(app)/tasks/[id].tsx). Jedna implementacja trasy i rozpoznawania

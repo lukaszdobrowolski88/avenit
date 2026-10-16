@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useAuthSession } from '../../src/lib/auth';
 import { FloatingTabBar } from '../../src/components/navigation/FloatingTabBar';
 import { TermsGate } from '../../src/components/TermsGate';
+import { CallEngineHost } from '../../src/features/calls/native/CallEngineHost';
 
 // Nawigacja: pięć zakładek w (tabs), a wszystkie pozostałe ekrany na JEDNYM wspólnym stosie
 // nad nimi. Każde wejście dokłada ekran do tej samej historii, więc „wstecz” zawsze wraca
@@ -27,12 +28,14 @@ export default function AppLayout() {
   if (!session) return <Redirect href="/(auth)/login" />;
 
   return (
-    <View style={{ flex: 1 }}>
+    <CallEngineHost>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
+        {/* Rozmowa audio/wideo — pełny ekran, od dołu; zamknięcie (gest/strzałka) nie kończy rozmowy. */}
+        <Stack.Screen name="call/[callId]" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
       </Stack>
       <FloatingTabBar />
       <TermsGate />
-    </View>
+    </CallEngineHost>
   );
 }

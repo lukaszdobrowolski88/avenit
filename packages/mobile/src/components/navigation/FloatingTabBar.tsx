@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, View } from 'react-native';
-import { useRootNavigationState, useRouter } from 'expo-router';
+import { useNavigationContainerRef, useRouter, useSegments, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, Home, LayoutGrid, MessageCircle, type LucideIcon } from 'lucide-react-native';
 import { usePermissions } from '../../lib/permissions';
@@ -31,7 +31,14 @@ export const FloatingTabBar = () => {
   const insets = useSafeAreaInsets();
   const t = useT();
   const perms = usePermissions();
-  const { onTabs, active } = readTabsState(useRootNavigationState() as never);
+  // useSegments odświeża pasek przy każdej zmianie ekranu (w expo-router 57 useRootNavigationState
+  // to jednorazowy odczyt — pasek nie wiedział o zmianie zakładki i przełączał źle). Stan bierzemy
+  // świeży z kontenera nawigacji.
+  const segments = useSegments() as string[];
+  const pathname = usePathname();
+  const nav = useNavigationContainerRef();
+  const root = nav?.isReady?.() ? nav.getRootState() : undefined;
+  const { onTabs, active } = readTabsState(root as never, segments);
   useEffect(() => {
     setOnTabs(onTabs);
   }, [onTabs]);
@@ -48,6 +55,8 @@ export const FloatingTabBar = () => {
     };
   }, []);
   if (keyboardOpen) return null;
+  // Ekran rozmowy audio/wideo — pełny ekran, bez paska zakładek (Android rysuje go na stosie).
+  if (pathname.startsWith('/call')) return null;
 
   // Zakładki według uprawnień jak na webie; do pierwszego wczytania wszystkie (bez migania).
   const tabs = TABS.filter((tab) => !tab.module || !perms.ready || perms.moduleVisible(tab.module));

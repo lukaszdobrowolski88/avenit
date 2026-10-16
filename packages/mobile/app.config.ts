@@ -6,6 +6,11 @@ const variant = process.env.APP_VARIANT ?? 'production';
 const isPreview = variant === 'preview';
 const isDev = variant === 'development';
 
+// Teksty próśb o mikrofon i aparat — jedno źródło dla infoPlist i pluginów (expo-audio, WebRTC,
+// CallKit), żeby żaden plugin nie wstawił angielskiego domyślnego tekstu.
+const MIC_TEXT = 'Avenit używa mikrofonu do nagrywania wiadomości głosowych w czacie oraz w rozmowach audio i wideo.';
+const CAMERA_TEXT = 'Avenit używa aparatu, aby zrobić zdjęcie i dołączyć je do wiadomości lub zadania, a także w rozmowach wideo.';
+
 // Identyfikator aplikacji (Android applicationId / iOS bundle ID). Avenit, nie legacy
 // 'com.schtomy.app' (apka nigdy nie była w sklepie, więc nie było czego chronić).
 // NIEODWRACALNY po utworzeniu wpisu w Play/App Store.
@@ -15,14 +20,14 @@ const suffix = isPreview ? '.preview' : isDev ? '.dev' : '';
 const config: ExpoConfig = {
   name: isPreview ? 'Avenit (preview)' : isDev ? 'Avenit (dev)' : 'Avenit',
   slug: 'avenit',
-  version: '1.0.0',
+  // 1.1.0 = Expo SDK 57 (nowy runtime natywny — OTA dla 1.0.x publikuje się osobno).
+  version: '1.1.0',
   orientation: 'portrait',
   scheme: ['avenit', 'schtomy'],
   icon: './assets/icon.png',
   // Aplikacja ma tylko jasny wygląd — systemowe wybieraki i okna też jasne (inaczej w trybie
   // ciemnym telefonu kółka daty/godziny i Alerty były ciemne na tle jasnej apki).
   userInterfaceStyle: 'light',
-  newArchEnabled: true,
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
@@ -30,7 +35,8 @@ const config: ExpoConfig = {
     // tło = papier, jak ekran logowania — przejście bez błysku.
     backgroundColor: '#F6F4EE',
   },
-  // Prośby o uprawnienia per język telefonu (en = recenzent Apple). Lokalizacje decydują też,
+  // Prośby o uprawnienia per język telefonu (en = recenzent Apple) — klucze pod "ios" (SDK 55+
+  // tłumaczy też zasoby Androida; płaskie klucze iOS łamały lint wydania). Lokalizacje decydują też,
   // jakie języki App Store pokazuje przy apce — bez nich byłby sam angielski. Ukraiński dopisz,
   // gdy interfejs mobilki będzie przetłumaczony (dziś t() obejmuje tylko część ekranów).
   locales: {
@@ -54,8 +60,12 @@ const config: ExpoConfig = {
       NSCalendarsUsageDescription: 'Avenit dodaje wybrane przez Ciebie wydarzenia kościoła do kalendarza w telefonie.',
       NSPhotoLibraryUsageDescription:
         'Avenit potrzebuje dostępu do zdjęć, aby ustawić Twoje zdjęcie profilowe albo dołączyć zdjęcie do wiadomości lub zadania.',
-      NSCameraUsageDescription: 'Avenit używa aparatu, aby zrobić zdjęcie i dołączyć je do wiadomości lub zadania.',
-      NSMicrophoneUsageDescription: 'Avenit używa mikrofonu do nagrywania wiadomości głosowych w czacie.',
+      NSCameraUsageDescription: CAMERA_TEXT,
+      NSMicrophoneUsageDescription: MIC_TEXT,
+      // Rozmowy audio/wideo (CallKit): voip — przychodzące połączenia z pushu VoIP (PushKit) także
+      // przy zamkniętej apce; audio — rozmowa trwa po zablokowaniu ekranu / wyjściu z apki.
+      // (Plugin expo-callkit-telecom dopisuje je też sam — tu jawnie, żeby było widać.)
+      UIBackgroundModes: ['voip', 'audio'],
     },
     // Manifest prywatności (wymóg Apple od 05.2024): powody użycia „required reason API” przez
     // React Native i moduły Expo. Apple nie czyta poprawnie manifestów statycznych podów,
@@ -89,7 +99,13 @@ const config: ExpoConfig = {
     // avenit-app ma pl.avenit.app (produkcja) i pl.avenit.app.preview. Nowy wariant = dodaj
     // aplikację Android w Firebase i pobierz plik ponownie.
     googleServicesFile: './google-services.json',
-    permissions: ['android.permission.RECORD_AUDIO'],
+    // RECORD_AUDIO — wiadomości głosowe i rozmowy; CAMERA — rozmowy wideo. Uprawnienia połączeń
+    // (MANAGE_OWN_CALLS, FOREGROUND_SERVICE_PHONE_CALL, USE_FULL_SCREEN_INTENT) dokłada manifest
+    // expo-callkit-telecom.
+    permissions: ['android.permission.RECORD_AUDIO', 'android.permission.CAMERA'],
+    // Plugin WebRTC dopisuje SYSTEM_ALERT_WINDOW (rysowanie nad innymi apkami) — niepotrzebne,
+    // a Google Play pyta o nie osobno.
+    blockedPermissions: ['android.permission.SYSTEM_ALERT_WINDOW'],
     // Mapa grup (react-native-maps). Android wymaga klucza Google Maps — podaj go
     // przez env GOOGLE_MAPS_ANDROID_KEY (w profilu EAS). iOS używa Apple Maps bez klucza.
     // Bez klucza mapa na Androidzie będzie pusta; reszta apki działa normalnie.
@@ -131,21 +147,43 @@ const config: ExpoConfig = {
       },
     ],
     [
-      'expo-av',
+      'expo-audio',
       {
-        microphonePermission: 'Avenit używa mikrofonu do nagrywania wiadomości głosowych w czacie.',
+        microphonePermission: MIC_TEXT,
       },
     ],
-    // Xcode 26 + RN 0.76: łatka fmt (consteval) — patrz plugins/with-xcode26-fmt.js.
-    './plugins/with-xcode26-fmt',
+    // Rozmowy audio/wideo natywnie: LiveKit (WebRTC) + CallKit (iOS) / Core-Telecom (Android).
+    // Wymagają nowego builda natywnego (nie OTA).
+    [
+      '@livekit/react-native-expo-plugin',
+      {
+        // Android: tryb rozmowy (echo cancellation, słuchawka/głośnik jak w telefonie).
+        android: { audioType: 'communication' },
+      },
+    ],
+    [
+      '@config-plugins/react-native-webrtc',
+      { cameraPermission: CAMERA_TEXT, microphonePermission: MIC_TEXT },
+    ],
+    [
+      'expo-callkit-telecom',
+      {
+        microphonePermission: MIC_TEXT,
+        cameraPermission: CAMERA_TEXT,
+        // Jak serwer: po 45 s dzwonienia połączenie jest „nieodebrane”.
+        incomingCallTimeout: 45,
+        // Dzwoniący czeka trochę dłużej niż serwer (jak web OUTGOING_TIMEOUT_MS = 55 s).
+        outgoingCallTimeout: 55,
+        includesCallsInRecents: true,
+      },
+    ],
     [
       'expo-build-properties',
       {
         android: {
-          kotlinVersion: '1.9.25',
           // Google Play od 31.08.2026 przyjmuje nowe apki i aktualizacje tylko z targetSdk 36
-          // (Android 16). Domyślnie RN 0.76 celuje w 34. Android 16 wymusza rysowanie pod paskami
-          // systemowymi (edge-to-edge) — ekrany biorą odstępy z useSafeAreaInsets.
+          // (Android 16). Android 16 wymusza rysowanie pod paskami systemowymi (edge-to-edge) —
+          // ekrany biorą odstępy z useSafeAreaInsets.
           compileSdkVersion: 36,
           targetSdkVersion: 36,
           buildToolsVersion: '36.0.0',
@@ -156,6 +194,8 @@ const config: ExpoConfig = {
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
     tenant: process.env.EXPO_PUBLIC_TENANT,
+    // Wariant builda — środowisko APNs tokenu VoIP (development = sandbox, reszta = production).
+    appVariant: variant,
     eas: {
       projectId: process.env.EAS_PROJECT_ID ?? null,
     },
