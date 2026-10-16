@@ -2,11 +2,13 @@
 // i do zrzutów ekranu. Nikt tu nie jest prawdziwą osobą; pieśni są z domeny publicznej.
 //
 // Uruchamianie na VPS (z /opt/avenit):
-//   docker compose exec -e DEMO_REVIEW_PASSWORD='…' -e DEMO_ADMIN_PASSWORD='…' api node scripts/demo-tenant.mjs
+//   docker compose exec -e DEMO_REVIEW_PASSWORD='…' -e DEMO_REVIEW2_PASSWORD='…' -e DEMO_ADMIN_PASSWORD='…' api node scripts/demo-tenant.mjs
 //
 // Idempotentne: zakłada tenanta, gdy go nie ma; dane demo czyści i wstawia od nowa z datami
 // liczonymi od dziś (przed każdą recenzją warto odświeżyć). Działa WYŁĄCZNIE na tenancie 'demo'.
 // Konto recenzenta: rola lider, bez 2FA, zasady społeczności NIEzaakceptowane (recenzent widzi bramkę).
+// Drugie konto recenzenta (członek) — do sprawdzenia rozmów audio/wideo między dwoma kontami
+// (rozmowa prywatna z pierwszym kontem gotowa); hasło DEMO_REVIEW2_PASSWORD (domyślnie to samo).
 import crypto from 'node:crypto';
 import { platformPool, getTenantPool, closeAll } from '../src/db.js';
 import { provisionTenant, slugToDbName } from '../src/admin/provisioning.js';
@@ -15,6 +17,7 @@ import { hashPassword } from '../src/auth/passwords.js';
 const SLUG = 'demo';
 const DOMAIN = 'demo.avenit.pl';
 const REVIEW = { email: `recenzja@${DOMAIN}`, name: 'Marta Nowak', role: 'lider' };
+const REVIEW2 = { email: `recenzja2@${DOMAIN}`, name: 'Jan Kowalczyk', role: 'czlonek' };
 const ADMIN = { email: `admin@${DOMAIN}`, name: 'Administrator Demo' };
 const PEOPLE = [
   { email: `pawel.wisniewski@${DOMAIN}`, first: 'Paweł', last: 'Wiśniewski', role: 'lider' },
@@ -177,12 +180,15 @@ async function main() {
 
   // 2. Konta
   await upsertUser(db, { ...REVIEW, password: reviewPassword });
+  const review2Password = process.env.DEMO_REVIEW2_PASSWORD || reviewPassword;
+  await upsertUser(db, { ...REVIEW2, password: review2Password });
   for (const p of PEOPLE) await upsertUser(db, { email: p.email, name: `${p.first} ${p.last}`, role: p.role, password: randomPassword() });
 
   // 3. Kartoteka
   const [mFirst, mLast] = REVIEW.name.split(' ');
   await insert(db, 'members', [
     { first_name: mFirst, last_name: mLast, email: REVIEW.email, phone: '+48 600 100 200', status: 'Członek', ministries: ['Grupa Uwielbienia'], membership_date: iso(addDays(-900)) },
+    { first_name: REVIEW2.name.split(' ')[0], last_name: REVIEW2.name.split(' ')[1], email: REVIEW2.email, phone: '+48 600 100 300', status: 'Członek', ministries: ['Grupa Uwielbienia'], membership_date: iso(addDays(-700)) },
     ...PEOPLE.map((p, i) => ({ first_name: p.first, last_name: p.last, email: p.email, phone: `+48 600 100 2${i + 1}0`, status: 'Członek', membership_date: iso(addDays(-400 - i * 90)) })),
     ...MEMBERS_ONLY.map(([f, l], i) => ({ first_name: f, last_name: l, email: `${f}.${l}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace('ł', 'l') + `@${DOMAIN}`, status: i % 3 === 2 ? 'Sympatyk' : 'Członek', membership_date: iso(addDays(-200 - i * 60)) })),
   ]);
@@ -271,7 +277,7 @@ async function main() {
   const [team] = await insert(db, 'conversations', [{ type: 'group', name: 'Zespół uwielbienia', created_by: PEOPLE[0].email, posting_policy: 'everyone', last_message_at: ago(1) }]);
   const [dm] = await insert(db, 'conversations', [{ type: 'direct', created_by: PEOPLE[2].email, last_message_at: ago(3) }]);
   if (team) {
-    await insert(db, 'conversation_participants', [REVIEW.email, PEOPLE[0].email, PEOPLE[1].email, PEOPLE[4].email].map((e, i) => ({
+    await insert(db, 'conversation_participants', [REVIEW.email, PEOPLE[0].email, PEOPLE[1].email, PEOPLE[4].email, REVIEW2.email].map((e, i) => ({
       conversation_id: team.id, user_email: e, role: i === 1 ? 'admin' : 'member', last_read_at: ago(8),
     })));
     const t = (h, who, name, content) => ({ conversation_id: team.id, sender_email: who, sender_name: name, content, message_type: 'text', attachments: [], created_at: ago(h) });
@@ -294,7 +300,17 @@ async function main() {
     ]);
   }
 
-  log(`gotowe: https://${DOMAIN} — recenzent ${REVIEW.email} (rola ${REVIEW.role}, bez 2FA)`);
+  // Rozmowa prywatna obu kont recenzenta — stąd można od razu zadzwonić (audio/wideo).
+  const [dm2] = await insert(db, 'conversations', [{ type: 'direct', created_by: REVIEW2.email, last_message_at: ago(2) }]);
+  if (dm2) {
+    await insert(db, 'conversation_participants', [REVIEW.email, REVIEW2.email].map((e) => ({ conversation_id: dm2.id, user_email: e, role: 'member', last_read_at: ago(6) })));
+    await insert(db, 'messages', [
+      { conversation_id: dm2.id, sender_email: REVIEW2.email, sender_name: REVIEW2.name, content: 'Cześć Marto! Masz chwilę na krótką rozmowę przed próbą?', message_type: 'text', attachments: [], created_at: ago(3) },
+      { conversation_id: dm2.id, sender_email: REVIEW.email, sender_name: REVIEW.name, content: 'Jasne, zadzwoń do mnie przez aplikację 🙂', message_type: 'text', attachments: [], created_at: ago(2) },
+    ]);
+  }
+
+  log(`gotowe: https://${DOMAIN} — recenzent ${REVIEW.email} (rola ${REVIEW.role}, bez 2FA), drugie konto ${REVIEW2.email}`);
 }
 
 main()
