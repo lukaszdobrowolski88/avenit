@@ -560,17 +560,7 @@
     .vc-ctl span.end { background: #D9443A; }
     .vc-ctl span.end svg { transform: rotate(135deg); }
     .vc-ctl svg { width: 1.3em; height: 1.3em; }
-    .news { margin-top: clamp(56px, 7vw, 96px); }
-    .news h3.news-h { font-size: clamp(22px, 2vw, 28px); font-weight: 800; letter-spacing: -.025em; color: var(--slod); }
-    .news-grid { margin-top: 22px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 clamp(20px, 3vw, 40px); }
-    .news-grid > div { padding-top: 20px; border-top: 1px solid var(--linia); }
-    .news-grid i { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--papier-2); color: var(--slod); }
-    .news-grid i .ico { width: 20px; height: 20px; }
-    .news-grid h4 { margin-top: 14px; font-size: 19px; font-weight: 800; letter-spacing: -.015em; color: var(--slod); line-height: 1.25; }
-    .news-grid p { margin-top: 6px; font-size: 16px; line-height: 1.55; }
-    @media (max-width: 1000px) { .news-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 32px; } }
     @media (max-width: 900px) { .calls { grid-template-columns: minmax(0, 1fr); } .calls-phone { font-size: 13px; } }
-    @media (max-width: 560px) { .news-grid { grid-template-columns: minmax(0, 1fr); } }
 
     /* ── SChWro ── */
     .proof { background: var(--kurkuma-j); padding: clamp(72px, 9vw, 128px) 0; }
@@ -1151,16 +1141,6 @@
               <div class="vc-wait"><span class="av k" style="width:2.2em;height:2.2em;font-size:.8em">G</span><span class="tx"><b>Gość z linku</b><small>czeka w poczekalni</small></span><span class="in">Wpuść</span></div>
               <div class="vc-ctl"><span><svg class="ico"><use href="#i-mic"/></svg></span><span><svg class="ico"><use href="#i-cam"/></svg></span><span><svg class="ico"><use href="#i-users"/></svg></span><span class="end"><svg class="ico"><use href="#i-phone"/></svg></span></div>
             </div></div></div>
-          </div>
-        </div>
-
-        <div class="news">
-          <h3 class="news-h" data-rv>Też nowe w Avenit<span class="pt">.</span></h3>
-          <div class="news-grid">
-            <div data-rv><i><svg class="ico"><use href="#i-kanban"/></svg></i><h4>Projekty i zadania</h4><p>Tablice zadań dla każdej służby: statusy, terminy, komentarze i przegląd dnia.</p></div>
-            <div data-rv style="--d:.06s"><i><svg class="ico"><use href="#i-cal"/></svg></i><h4>Nowy grafik służb</h4><p>Widok role × daty, szablony składów, propozycja obsady i przypomnienia. Twoje służby w Twoim kalendarzu.</p></div>
-            <div data-rv style="--d:.12s"><i><svg class="ico"><use href="#i-chart"/></svg></i><h4>Finanse i raporty</h4><p>Własne obszary budżetu i projekty, raporty PDF z wyborem sekcji, bez nazwisk ofiarodawców.</p></div>
-            <div data-rv style="--d:.18s"><i><svg class="ico"><use href="#i-key"/></svg></i><h4>Uprawnienia liderów</h4><p>Lider prowadzi swoje służby i widzi tylko ich ludzi, grafik i finanse.</p></div>
           </div>
         </div>
       </div>
