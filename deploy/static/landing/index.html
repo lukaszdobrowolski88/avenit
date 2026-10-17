@@ -93,7 +93,7 @@
           {
             "@type": "Question",
             "name": "Czy jest aplikacja mobilna?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Tak. Avenit działa w przeglądarce oraz jako aplikacja mobilna na iOS i Androida, z powiadomieniami push dla członków i służb." }
+            "acceptedAnswer": { "@type": "Answer", "text": "Tak. Avenit działa w przeglądarce oraz jako aplikacja mobilna na iOS i Androida, z powiadomieniami push dla członków i służb. Aplikację pobierzesz z App Store i Google Play." }
           }
         ]
       }
@@ -518,6 +518,60 @@
     @media (max-width: 900px) { .incl { grid-template-columns: minmax(0, 1fr); } .price-notes { grid-template-columns: minmax(0, 1fr); } }
     @media (max-width: 600px) { .plans { grid-template-columns: minmax(0, 1fr); } .incl ul { grid-template-columns: minmax(0, 1fr); } .plan.wide { flex-direction: column; align-items: flex-start; } .plan.wide .extra { flex: none; } }
 
+    /* ── sklepy z aplikacją ── */
+    .stores { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
+    .stores a { display: block; border-radius: 9px; transition: transform .25s var(--ease), box-shadow .25s; }
+    .stores a:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -12px rgba(42, 35, 18, .6); }
+    .stores img { display: block; height: 44px; width: auto; }
+    .hero-copy { display: grid; gap: 4px; }
+    .fact .stores { margin-top: 16px; }
+    .fact .stores img { height: 40px; }
+    .foot-brand .stores img { height: 40px; }
+
+    /* ── rozmowy i spotkania online ── */
+    .calls { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 48px clamp(32px, 6vw, 112px); align-items: center; margin-top: clamp(36px, 4.5vw, 56px); }
+    .calls .qa { margin-top: 0; }
+    .calls-phone { justify-self: center; font-size: clamp(12px, 1.12vw, 16px); position: relative; }
+    .vc { position: absolute; inset: 0; background: #1E1A10; color: var(--papier); display: flex; flex-direction: column; }
+    .vc .sb { color: var(--papier); }
+    .vc .sb .bt i { border-color: var(--papier); }
+    .vc .sb .bt i::after { background: var(--papier); }
+    .vc .sb .bt s { background: linear-gradient(90deg, var(--papier) 20%, transparent 20% 30%, var(--papier) 30% 50%, transparent 50% 60%, var(--papier) 60% 80%, transparent 80% 85%, var(--papier) 85%); }
+    .vc-head { padding: .4em 1.3em .8em; }
+    .vc-head b { display: block; font-size: 1.05em; }
+    .vc-head small { display: block; font-size: .74em; color: var(--na-slodzie); }
+    .vc-head small i { display: inline-block; width: .55em; height: .55em; border-radius: 50%; background: #E0483A; margin-right: .35em; vertical-align: .05em; }
+    .vc-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: .45em; padding: 0 .8em; }
+    .vc-tile { position: relative; border-radius: 1em; display: grid; place-items: center; overflow: hidden; background: #3A3222; }
+    .vc-tile.a { background: linear-gradient(150deg, #5A4A26, #2E2614); }
+    .vc-tile.b { background: linear-gradient(150deg, #4A4436, #26221A); }
+    .vc-tile.c { background: linear-gradient(150deg, #6B5418, #2E2410); }
+    .vc-tile.d { background: linear-gradient(150deg, #403A2E, #221E16); }
+    .vc-tile .av { width: 3.4em; height: 3.4em; font-size: .95em; }
+    .vc-tile .nm { position: absolute; left: .6em; bottom: .5em; font-size: .7em; font-weight: 700; background: rgba(0, 0, 0, .35); padding: .2em .55em; border-radius: 99em; }
+    .vc-tile.talk { box-shadow: inset 0 0 0 .18em var(--kurkuma); }
+    .vc-wait { margin: .7em .8em 0; display: flex; align-items: center; gap: .6em; background: var(--papier); color: var(--slod); border-radius: 1em; padding: .6em .7em; font-size: .78em; }
+    .vc-wait .tx { flex: 1; min-width: 0; }
+    .vc-wait b { display: block; }
+    .vc-wait small { display: block; color: var(--pomoc); font-size: .9em; }
+    .vc-wait span.in { background: var(--kurkuma); font-weight: 800; padding: .4em .8em; border-radius: 99em; }
+    .vc-ctl { display: flex; justify-content: center; gap: .8em; padding: 1em 0 1.6em; }
+    .vc-ctl span { width: 3.1em; height: 3.1em; border-radius: 50%; display: grid; place-items: center; background: rgba(246, 244, 238, .14); color: var(--papier); }
+    .vc-ctl span.end { background: #D9443A; }
+    .vc-ctl span.end svg { transform: rotate(135deg); }
+    .vc-ctl svg { width: 1.3em; height: 1.3em; }
+    .news { margin-top: clamp(56px, 7vw, 96px); }
+    .news h3.news-h { font-size: clamp(22px, 2vw, 28px); font-weight: 800; letter-spacing: -.025em; color: var(--slod); }
+    .news-grid { margin-top: 22px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 clamp(20px, 3vw, 40px); }
+    .news-grid > div { padding-top: 20px; border-top: 1px solid var(--linia); }
+    .news-grid i { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--papier-2); color: var(--slod); }
+    .news-grid i .ico { width: 20px; height: 20px; }
+    .news-grid h4 { margin-top: 14px; font-size: 19px; font-weight: 800; letter-spacing: -.015em; color: var(--slod); line-height: 1.25; }
+    .news-grid p { margin-top: 6px; font-size: 16px; line-height: 1.55; }
+    @media (max-width: 1000px) { .news-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 32px; } }
+    @media (max-width: 900px) { .calls { grid-template-columns: minmax(0, 1fr); } .calls-phone { font-size: 13px; } }
+    @media (max-width: 560px) { .news-grid { grid-template-columns: minmax(0, 1fr); } }
+
     /* ── SChWro ── */
     .proof { background: var(--kurkuma-j); padding: clamp(72px, 9vw, 128px) 0; }
     .proof-in { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 40px clamp(32px, 5vw, 96px); align-items: center; }
@@ -661,6 +715,11 @@
       <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
       <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="m4 6 1 1 2-2"/><path d="m4 12 1 1 2-2"/><path d="m4 18 1 1 2-2"/></symbol>
       <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+      <symbol id="i-cam" viewBox="0 0 24 24"><path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/></symbol>
+      <symbol id="i-kanban" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-8"/></symbol>
+      <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></symbol>
     </defs>
   </svg>
 
@@ -692,7 +751,7 @@
       <div class="wrap">
         <h1 class="dw"><span>Cały kościół.</span><span class="l">Jedna aplikacja<span class="pt">.</span></span></h1>
         <div class="hero-foot">
-          <p class="lead">System do zarządzania kościołem: nabożeństwa, służby, dzieci, komunikacja i finanse. <b>Na telefonie i w przeglądarce, po polsku, angielsku i ukraińsku.</b></p>
+          <div class="hero-copy"><p class="lead">System do zarządzania kościołem: nabożeństwa, służby, dzieci, komunikacja, rozmowy wideo i finanse. <b>Na telefonie i w przeglądarce, po polsku, angielsku i ukraińsku.</b></p><div class="stores" aria-label="Pobierz aplikację Avenit"><a href="https://apps.apple.com/pl/app/id6820247671" target="_blank" rel="noopener" data-track="store-appstore-hero"><img src="/assets/brand/stores/appstore-pl.svg" alt="Pobierz w App Store" width="120" height="40" loading="lazy" /></a><a href="https://play.google.com/store/apps/details?id=pl.avenit.app&amp;hl=pl" target="_blank" rel="noopener" data-track="store-googleplay-hero"><img src="/assets/brand/stores/googleplay-pl.png" alt="Pobierz z Google Play" width="148" height="44" loading="lazy" /></a></div></div>
           <a class="pill pill-lg" href="#kontakt" data-track="cta-hero">Umów prezentację</a>
         </div>
 
@@ -1064,6 +1123,49 @@
       </div>
     </section>
 
+    <!-- ═══════════ ROZMOWY I NOWOŚCI ═══════════ -->
+    <section class="sec" id="rozmowy" aria-labelledby="roz-h" style="padding-top:0">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="dw h2" id="roz-h" data-rv><span>Rozmowy i spotkania online<span class="pt">.</span></span><span class="l">Prosto z Avenit, bez osobnych aplikacji<span class="pt">.</span></span></h2>
+          <p data-rv style="--d:.1s">Zadzwoń do lidera, zrób próbę online albo spotkanie rady kościoła. Wszystko w tej samej aplikacji co grafik i komunikator.</p>
+        </div>
+        <div class="calls">
+          <ul class="qa" data-rv>
+            <li><b>Rozmowy audio i wideo<span class="pt">.</span></b><span>Jeden na jeden albo w grupie, w przeglądarce na komputerze i na telefonie. Bez instalowania dodatkowych programów.</span></li>
+            <li><b>Spotkania z gośćmi<span class="pt">.</span></b><span>Członkowie wchodzą po swoim koncie, goście z linku w zaproszeniu e-mail. Ty decydujesz, kogo wpuścić z poczekalni.</span></li>
+            <li><b>Wydarzenia stacjonarne, online i hybrydowe<span class="pt">.</span></b><span>Link do spotkania jest od razu przy wydarzeniu w kalendarzu.</span></li>
+            <li><b>Obraz w jakości HD<span class="pt">.</span></b><span>Rozmowy wideo w 720p, także na telefonie.</span></li>
+          </ul>
+          <div class="calls-phone" aria-hidden="true">
+            <span class="sv-glow"></span>
+            <div class="phone"><div class="scr"><div class="vc">
+              <div class="sb"><span>9:41</span><span class="bt"><s></s><i></i></span></div>
+              <div class="vc-head"><b>Próba zespołu</b><small><i></i>Rozmowa wideo · 4 osoby</small></div>
+              <div class="vc-grid">
+                <div class="vc-tile a talk"><span class="av k">AK</span><span class="nm">Ania</span></div>
+                <div class="vc-tile b"><span class="av p">TW</span><span class="nm">Tomek</span></div>
+                <div class="vc-tile c"><span class="av s">KN</span><span class="nm">Kuba</span></div>
+                <div class="vc-tile d"><span class="av p">MZ</span><span class="nm">Michał</span></div>
+              </div>
+              <div class="vc-wait"><span class="av k" style="width:2.2em;height:2.2em;font-size:.8em">G</span><span class="tx"><b>Gość z linku</b><small>czeka w poczekalni</small></span><span class="in">Wpuść</span></div>
+              <div class="vc-ctl"><span><svg class="ico"><use href="#i-mic"/></svg></span><span><svg class="ico"><use href="#i-cam"/></svg></span><span><svg class="ico"><use href="#i-users"/></svg></span><span class="end"><svg class="ico"><use href="#i-phone"/></svg></span></div>
+            </div></div></div>
+          </div>
+        </div>
+
+        <div class="news">
+          <h3 class="news-h" data-rv>Też nowe w Avenit<span class="pt">.</span></h3>
+          <div class="news-grid">
+            <div data-rv><i><svg class="ico"><use href="#i-kanban"/></svg></i><h4>Projekty i zadania</h4><p>Tablice zadań dla każdej służby: statusy, terminy, komentarze i przegląd dnia.</p></div>
+            <div data-rv style="--d:.06s"><i><svg class="ico"><use href="#i-cal"/></svg></i><h4>Nowy grafik służb</h4><p>Widok role × daty, szablony składów, propozycja obsady i przypomnienia. Twoje służby w Twoim kalendarzu.</p></div>
+            <div data-rv style="--d:.12s"><i><svg class="ico"><use href="#i-chart"/></svg></i><h4>Finanse i raporty</h4><p>Własne obszary budżetu i projekty, raporty PDF z wyborem sekcji, bez nazwisk ofiarodawców.</p></div>
+            <div data-rv style="--d:.18s"><i><svg class="ico"><use href="#i-key"/></svg></i><h4>Uprawnienia liderów</h4><p>Lider prowadzi swoje służby i widzi tylko ich ludzi, grafik i finanse.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ═══════════ WSZĘDZIE (słód) ═══════════ -->
     <section class="sec dark" id="wszedzie" aria-labelledby="ws-h">
       <div class="wrap">
@@ -1073,6 +1175,7 @@
             <i class="fi"><svg class="ico"><use href="#i-mobile"/></svg></i>
             <h3>Aplikacja na telefon</h3>
             <p>iPhone i Android. Powiadomienia push o służbach, zmianach i nowych prośbach o modlitwę.</p>
+            <div class="stores" aria-label="Pobierz aplikację Avenit"><a href="https://apps.apple.com/pl/app/id6820247671" target="_blank" rel="noopener" data-track="store-appstore-facts"><img src="/assets/brand/stores/appstore-pl.svg" alt="Pobierz w App Store" width="120" height="40" loading="lazy" /></a><a href="https://play.google.com/store/apps/details?id=pl.avenit.app&amp;hl=pl" target="_blank" rel="noopener" data-track="store-googleplay-facts"><img src="/assets/brand/stores/googleplay-pl.png" alt="Pobierz z Google Play" width="148" height="44" loading="lazy" /></a></div>
           </div>
           <div class="fact" data-rv style="--d:.08s">
             <i class="fi"><svg class="ico"><use href="#i-monitor"/></svg></i>
@@ -1125,6 +1228,8 @@
           <button class="mod" type="button" role="switch" aria-checked="false">Materiały<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="false">Poczta<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="false">Moduły własne<span class="sw" aria-hidden="true"></span></button>
+          <button class="mod" type="button" role="switch" aria-checked="true">Rozmowy i spotkania online<span class="sw" aria-hidden="true"></span></button>
+          <button class="mod" type="button" role="switch" aria-checked="false">Projekty i zadania<span class="sw" aria-hidden="true"></span></button>
         </div>
       </div>
     </section>
@@ -1242,7 +1347,7 @@
           </details>
           <details>
             <summary>Czy jest aplikacja mobilna?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
-            <p>Tak. Avenit działa w przeglądarce oraz jako aplikacja mobilna na iOS i Androida, z powiadomieniami push dla członków i służb.</p>
+            <p>Tak. Avenit działa w przeglądarce oraz jako aplikacja mobilna na iOS i Androida, z powiadomieniami push dla członków i służb. Pobierzesz ją z <a href="https://apps.apple.com/pl/app/id6820247671" target="_blank" rel="noopener">App Store</a> i <a href="https://play.google.com/store/apps/details?id=pl.avenit.app&amp;hl=pl" target="_blank" rel="noopener">Google Play</a>.</p>
           </details>
           <details>
             <summary>Czy Avenit nadaje się dla małego zboru?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
@@ -1330,10 +1435,12 @@
         <div class="foot-brand">
           <a class="logo" href="#top" aria-label="Avenit — strona główna"><span class="logo-img" aria-hidden="true"></span><span class="logo-claim">Church Manager</span></a>
           <p>System zarządzania kościołem: nabożeństwa, służby, dzieci, komunikacja i finanse. Na telefonie i w przeglądarce.</p>
+          <div class="stores" aria-label="Pobierz aplikację Avenit"><a href="https://apps.apple.com/pl/app/id6820247671" target="_blank" rel="noopener" data-track="store-appstore-footer"><img src="/assets/brand/stores/appstore-pl.svg" alt="Pobierz w App Store" width="120" height="40" loading="lazy" /></a><a href="https://play.google.com/store/apps/details?id=pl.avenit.app&amp;hl=pl" target="_blank" rel="noopener" data-track="store-googleplay-footer"><img src="/assets/brand/stores/googleplay-pl.png" alt="Pobierz z Google Play" width="148" height="44" loading="lazy" /></a></div>
         </div>
         <nav class="foot-col" aria-labelledby="f-prod">
           <h2 id="f-prod">Produkt</h2>
           <a href="#sluzby">Służby</a>
+          <a href="#rozmowy">Rozmowy i spotkania</a>
           <a href="#wszedzie">Telefon i przeglądarka</a>
           <a href="#moduly">Moduły</a>
           <a href="#cennik">Cennik</a>
