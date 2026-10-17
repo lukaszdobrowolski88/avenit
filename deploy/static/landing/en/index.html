@@ -193,19 +193,19 @@
     .js [data-rv].in { opacity: 1; transform: none; }
 
     /* ── hero ── */
-    .hero { padding: clamp(36px, 7vh, 100px) 0 0; overflow: hidden; }
+    .hero { padding: clamp(56px, 11vh, 150px) 0 0; overflow: hidden; }
     .hero h1 { font-size: clamp(40px, 8.9vw, 156px); line-height: .98; letter-spacing: -.04em; }
     .hero h1 .l { margin-top: .04em; }
     .js .hero h1 > span { opacity: 0; transform: translateY(.35em); animation: up 1s var(--ease) forwards; }
     .js .hero h1 > span.l { animation-delay: .12s; }
     @keyframes up { to { opacity: 1; transform: none; } }
-    .hero-foot { margin-top: clamp(28px, 4.5vh, 56px); display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; }
-    .hero-foot .lead { max-width: 40em; font-size: clamp(17px, 1.42vw, 22px); line-height: 1.5; color: var(--tekst); text-wrap: pretty; }
+    .hero-foot { margin-top: clamp(44px, 7vh, 96px); display: flex; align-items: flex-end; justify-content: space-between; gap: 48px; }
+    .hero-foot .lead { max-width: 36em; font-size: clamp(17px, 1.42vw, 22px); line-height: 1.6; color: var(--tekst); text-wrap: pretty; }
     .hero-foot .lead b { color: var(--slod); font-weight: 700; }
 
     /* scena z urządzeniami */
-    .stage-wrap { position: relative; margin-top: clamp(40px, 6vh, 72px); }
-    .stage-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    .stage-wrap { position: relative; margin-top: clamp(80px, 13vh, 160px); }
+    .stage-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
     .stage-bar p { font-size: 15px; color: var(--pomoc); }
     .seg { display: inline-flex; padding: 4px; border-radius: 999px; background: var(--papier-2); gap: 2px; }
     .seg button { padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 700; color: var(--tekst); transition: background-color .25s, color .25s; }
@@ -237,7 +237,7 @@
 
     @media (max-width: 720px) {
       .hero h1 { font-size: 13.4vw; }
-      .hero-foot { flex-direction: column; align-items: flex-start; gap: 24px; }
+      .hero-foot { flex-direction: column; align-items: flex-start; gap: 32px; }
       .stage { height: calc(100cqw * 1.24); }
       .stage .browser { font-size: 1.12cqw; }
       .stage .phone-hold { font-size: 2.15cqw; right: 0; top: 22cqw; }
@@ -524,6 +524,7 @@
     .stores a:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -12px rgba(42, 35, 18, .6); }
     .stores img { display: block; height: 44px; width: auto; }
     .hero-copy { display: grid; gap: 4px; }
+    .hero-copy .stores { margin-top: 32px; }
     .fact .stores { margin-top: 16px; }
     .fact .stores img { height: 40px; }
     .foot-brand .stores img { height: 40px; }
@@ -560,17 +561,7 @@
     .vc-ctl span.end { background: #D9443A; }
     .vc-ctl span.end svg { transform: rotate(135deg); }
     .vc-ctl svg { width: 1.3em; height: 1.3em; }
-    .news { margin-top: clamp(56px, 7vw, 96px); }
-    .news h3.news-h { font-size: clamp(22px, 2vw, 28px); font-weight: 800; letter-spacing: -.025em; color: var(--slod); }
-    .news-grid { margin-top: 22px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 clamp(20px, 3vw, 40px); }
-    .news-grid > div { padding-top: 20px; border-top: 1px solid var(--linia); }
-    .news-grid i { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--papier-2); color: var(--slod); }
-    .news-grid i .ico { width: 20px; height: 20px; }
-    .news-grid h4 { margin-top: 14px; font-size: 19px; font-weight: 800; letter-spacing: -.015em; color: var(--slod); line-height: 1.25; }
-    .news-grid p { margin-top: 6px; font-size: 16px; line-height: 1.55; }
-    @media (max-width: 1000px) { .news-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 32px; } }
     @media (max-width: 900px) { .calls { grid-template-columns: minmax(0, 1fr); } .calls-phone { font-size: 13px; } }
-    @media (max-width: 560px) { .news-grid { grid-template-columns: minmax(0, 1fr); } }
 
     /* ── SChWro ── */
     .proof { background: var(--kurkuma-j); padding: clamp(72px, 9vw, 128px) 0; }
@@ -1147,16 +1138,6 @@
               <div class="vc-wait"><span class="av k" style="width:2.2em;height:2.2em;font-size:.8em">G</span><span class="tx"><b>Guest via link</b><small>waiting in the lobby</small></span><span class="in">Admit</span></div>
               <div class="vc-ctl"><span><svg class="ico"><use href="#i-mic"/></svg></span><span><svg class="ico"><use href="#i-cam"/></svg></span><span><svg class="ico"><use href="#i-users"/></svg></span><span class="end"><svg class="ico"><use href="#i-phone"/></svg></span></div>
             </div></div></div>
-          </div>
-        </div>
-
-        <div class="news">
-          <h3 class="news-h" data-rv>Also new in Avenit<span class="pt">.</span></h3>
-          <div class="news-grid">
-            <div data-rv><i><svg class="ico"><use href="#i-kanban"/></svg></i><h4>Projects and tasks</h4><p>Task boards for every ministry: statuses, due dates, comments and a daily overview.</p></div>
-            <div data-rv style="--d:.06s"><i><svg class="ico"><use href="#i-cal"/></svg></i><h4>A new volunteer schedule</h4><p>Roles × dates view, line-up templates, suggested rosters and reminders. Your services in your own calendar.</p></div>
-            <div data-rv style="--d:.12s"><i><svg class="ico"><use href="#i-chart"/></svg></i><h4>Finances and reports</h4><p>Custom budget areas and projects, PDF reports with the sections you choose, no donor names.</p></div>
-            <div data-rv style="--d:.18s"><i><svg class="ico"><use href="#i-key"/></svg></i><h4>Leader permissions</h4><p>A leader runs their own ministries and sees only their people, schedule and finances.</p></div>
           </div>
         </div>
       </div>
