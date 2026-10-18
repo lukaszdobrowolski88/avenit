@@ -36,19 +36,10 @@ jobs:
 
   # Test schematu na prawdziwym Postgresie (ładowanie platform + tenant).
   db-schema:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        # Oficjalny obraz postgres z kopii AWS ECR Public — Docker Hub limituje anonimowe pobrania
-        # z runnerów GitHuba (toomanyrequests), przez co test db-schema padał przed startem.
-        image: public.ecr.aws/docker/library/postgres:16
-        env:
-          POSTGRES_PASSWORD: ci
-          POSTGRES_DB: avenit_platform
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s --health-timeout 5s --health-retries 5
+    # Postgres 16 preinstalowany w obrazie runnera (bez kontenera usług): pobieranie obrazu z
+    # Docker Huba trafiało w limit anonimowych pobrań, a z AWS ECR Public od 10.2026 kończyło się
+    # „Docker pull failed”. Obraz przypięty do 24.04 — ubuntu-latest przechodzi na Ubuntu 26.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,6 +47,12 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm install --no-audit --no-fund
+      - name: Uruchom Postgres z obrazu runnera
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'ci';"
+          sudo -u postgres createdb avenit_platform
+          pg_isready -h localhost -U postgres
       - name: Generuj szablon tenanta
         run: node packages/api/db/build-tenant-schema.mjs
       - name: Załaduj schemat platform
