@@ -65,7 +65,12 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
     [senderEmail],
   );
   const senderName = sender[0]?.display || senderEmail;
-  const body = messagePreview(msg);
+  // Gdzie napisano: grupa / kanał służby / spotkanie — zawsze widać w powiadomieniu (jak WhatsApp).
+  const { rows: convRows } = await pool.query(
+    `SELECT type, name FROM conversations WHERE id = $1 LIMIT 1`, [conversationId],
+  ).catch(() => ({ rows: [] }));
+  const conv = convRows[0] || null;
+  const preview = messagePreview(msg);
   const link = messageLink(conversationId);
   const now = new Date();
 
@@ -83,8 +88,7 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
     if (kind === 'mention') {
       await sendPushCore(pool, {
         user_email: p.user_email,
-        title: mentioned.has(email) ? `${senderName} wspomniał(a) Cię` : `${senderName} wspomniał(a) wszystkich`,
-        body,
+        ...messagePushText({ conv, senderName, preview, mention: mentioned.has(email) ? 'me' : 'all' }),
         link,
         data: { type: 'mention', conversation_id: conversationId },
         sound: 'receive.wav',
@@ -92,8 +96,7 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
     } else if (kind === 'message') {
       await sendPushCore(pool, {
         user_email: p.user_email,
-        title: senderName,
-        body,
+        ...messagePushText({ conv, senderName, preview }),
         link,
         data: { type: 'message', conversation_id: conversationId },
         sound: 'receive.wav',
@@ -178,6 +181,26 @@ export function messageLink(conversationId) {
 
 // Treść powiadomienia — jak podgląd na liście rozmów (chatLogic.previewText): zdjęcie, głosówka,
 // plik opisane słowami zamiast pustego „Załącznik”.
+// Nazwa miejsca rozmowy do powiadomień; prywatna (direct) → null (tytułem jest nadawca).
+const CONV_TYPE_LABEL = { group: 'Rozmowa grupowa', ministry: 'Kanał służby', meeting: 'Spotkanie', announcement: 'Ogłoszenia' };
+export function conversationPlace(conv) {
+  if (!conv || conv.type === 'direct') return null;
+  return String(conv.name || '').trim() || CONV_TYPE_LABEL[conv.type] || 'Rozmowa grupowa';
+}
+
+// Tytuł i treść powiadomienia o wiadomości (push na telefon i web). W grupie/kanale/spotkaniu:
+// tytuł = nazwa miejsca, treść = „Nadawca: wiadomość”; prywatnie: tytuł = nadawca.
+// mention: 'me' | 'all' | undefined.
+export function messagePushText({ conv, senderName, preview, mention }) {
+  const place = conversationPlace(conv);
+  if (mention) {
+    const who = mention === 'me' ? `${senderName} wspomniał(a) Cię` : `${senderName} wspomniał(a) wszystkich`;
+    return { title: place ? `${who} — ${place}` : who, body: preview };
+  }
+  if (place) return { title: place, body: `${senderName}: ${preview}` };
+  return { title: senderName, body: preview };
+}
+
 export function messagePreview(msg) {
   const text = typeof msg.content === 'string' ? msg.content.replace(/\s+/g, ' ').trim() : '';
   const short = text.length > 100 ? `${text.slice(0, 99)}…` : text;
