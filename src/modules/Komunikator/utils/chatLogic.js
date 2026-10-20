@@ -212,7 +212,8 @@ export function findDirectConversation(conversations = [], myEmail, otherEmail) 
 // Nowa wiadomość z realtime na liście rozmów (web): rozmowa idzie na górę, podgląd się zmienia,
 // licznik rośnie (cudza wiadomość, rozmowa nieotwarta), a rozmowa wychodzi z archiwum (jak serwer).
 export function applyIncomingMessage(list = [], msg, myEmail, { openId = null } = {}) {
-  if (!msg?.conversation_id || msg.deleted_at) return list;
+  // Odpowiedź w wątku (112) nie zmienia podglądu ani licznika rozmowy — powiadamia obserwujących.
+  if (!msg?.conversation_id || msg.deleted_at || msg.thread_root_id) return list;
   const cid = String(msg.conversation_id);
   let hit = false;
   const next = list.map((c) => {

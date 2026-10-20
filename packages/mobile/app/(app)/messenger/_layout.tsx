@@ -7,6 +7,7 @@ export default function MessengerLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="new" />
         <Stack.Screen name="[conversationId]" options={{ headerShown: false }} />
+        <Stack.Screen name="thread/[rootId]" options={{ headerShown: false }} />
       </Stack>
     </ModuleGate>
   );

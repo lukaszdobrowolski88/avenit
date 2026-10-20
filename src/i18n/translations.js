@@ -5,6 +5,29 @@
 // Lista języków: src/i18n/languages.js (mała, w głównej paczce). Ten plik ładuje się leniwie.
 
 const en = {
+  // ── Komunikator: wątki (odpowiedzi w wątku) ──
+  'Wątek': 'Thread',
+  'Odpowiedz w wątku': 'Reply in thread',
+  'Odpowiedz w wątku…': 'Reply in thread…',
+  'Zamknij wątek': 'Close thread',
+  'Obserwuj': 'Follow',
+  'Obserwujesz': 'Following',
+  'Obserwujesz ten wątek': 'You are following this thread',
+  'Nie obserwujesz już tego wątku': 'You are no longer following this thread',
+  'Dostaniesz powiadomienia o nowych odpowiedziach': 'You will be notified about new replies',
+  'Nie dostaniesz powiadomień o nowych odpowiedziach': 'You will not be notified about new replies',
+  'Nie udało się zmienić obserwowania wątku.': 'Could not change thread following.',
+  'Nie udało się wysłać odpowiedzi. Spróbuj ponownie.': 'Could not send the reply. Please try again.',
+  'Nie udało się wczytać odpowiedzi.': 'Could not load replies.',
+  'Nie znaleziono tego wątku.': 'This thread was not found.',
+  'Nie znaleziono tego wątku — wiadomość mogła zostać usunięta.': 'This thread was not found — the message may have been deleted.',
+  'Odpowiedz jako pierwszy(a) — autor wiadomości dostanie powiadomienie.': 'Be the first to reply — the author will be notified.',
+  'Otwórz wątek: {label}': 'Open thread: {label}',
+  'ostatnia {time}': 'last {time}',
+  'Ładowanie wątku…': 'Loading thread…',
+  '{n} odpowiedź': '{n} reply',
+  '{n} odpowiedzi': '{n} replies',
+  'Jeszcze nikt nie odpowiedział': 'No replies yet',
   // ── Kampanie push/SMS: autor i daty, nazwa opcjonalna ──
   'Utworzył(a)': 'Created by',
   'Wysłano': 'Sent',
@@ -8100,6 +8123,30 @@ const en = {
 };
 
 const uk = {
+  // ── Komunikator: wątki (odpowiedzi w wątku) ──
+  'Wątek': 'Гілка',
+  'Odpowiedz w wątku': 'Відповісти в гілці',
+  'Odpowiedz w wątku…': 'Відповісти в гілці…',
+  'Zamknij wątek': 'Закрити гілку',
+  'Obserwuj': 'Стежити',
+  'Obserwujesz': 'Ви стежите',
+  'Obserwujesz ten wątek': 'Ви стежите за цією гілкою',
+  'Nie obserwujesz już tego wątku': 'Ви більше не стежите за цією гілкою',
+  'Dostaniesz powiadomienia o nowych odpowiedziach': 'Ви отримуватимете сповіщення про нові відповіді',
+  'Nie dostaniesz powiadomień o nowych odpowiedziach': 'Ви не отримуватимете сповіщень про нові відповіді',
+  'Nie udało się zmienić obserwowania wątku.': 'Не вдалося змінити стеження за гілкою.',
+  'Nie udało się wysłać odpowiedzi. Spróbuj ponownie.': 'Не вдалося надіслати відповідь. Спробуйте ще раз.',
+  'Nie udało się wczytać odpowiedzi.': 'Не вдалося завантажити відповіді.',
+  'Nie znaleziono tego wątku.': 'Цю гілку не знайдено.',
+  'Nie znaleziono tego wątku — wiadomość mogła zostać usunięta.': 'Цю гілку не знайдено — повідомлення могло бути видалене.',
+  'Odpowiedz jako pierwszy(a) — autor wiadomości dostanie powiadomienie.': 'Відповідайте першими — автор повідомлення отримає сповіщення.',
+  'Otwórz wątek: {label}': 'Відкрити гілку: {label}',
+  'ostatnia {time}': 'остання {time}',
+  'Ładowanie wątku…': 'Завантаження гілки…',
+  '{n} odpowiedź': '{n} відповідь',
+  '{n} odpowiedzi': '{n} відповідей',
+  '{n} odpowiedzi|few': '{n} відповіді',
+  'Jeszcze nikt nie odpowiedział': 'Ще ніхто не відповів',
   // ── Kampanie push/SMS: autor i daty, nazwa opcjonalna ──
   'Utworzył(a)': 'Створив(ла)',
   'Wysłano': 'Надіслано',

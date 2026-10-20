@@ -30,3 +30,18 @@ test('wzmianki: z nazwą miejsca w grupie, bez — prywatnie', () => {
   assert.deepEqual(messagePushText({ conv: { type: 'direct' }, senderName: 'Jan', preview: 'hej', mention: 'me' }),
     { title: 'Jan wspomniał(a) Cię', body: 'hej' });
 });
+
+test('odpowiedź w wątku: „Nadawca w wątku: …”, wzmianka „… w wątku”, link otwiera wątek', async () => {
+  const { messageLink } = await import('../src/realtime/push-hooks.js');
+  assert.deepEqual(messagePushText({ conv: { type: 'group', name: 'Liderzy' }, senderName: 'Jan', preview: 'Ja mogę', thread: true }),
+    { title: 'Liderzy', body: 'Jan w wątku: Ja mogę' });
+  assert.deepEqual(messagePushText({ conv: { type: 'direct' }, senderName: 'Jan', preview: 'ok', thread: true }),
+    { title: 'Jan', body: 'W wątku: ok' });
+  assert.deepEqual(messagePushText({ conv: { type: 'group', name: 'Liderzy' }, senderName: 'Jan', preview: '@Ola?', mention: 'me', thread: true }),
+    { title: 'Jan wspomniał(a) Cię w wątku — Liderzy', body: '@Ola?' });
+  // Bez wątku — bez zmian.
+  assert.deepEqual(messagePushText({ conv: { type: 'group', name: 'Liderzy' }, senderName: 'Jan', preview: 'x', thread: false }),
+    { title: 'Liderzy', body: 'Jan: x' });
+  assert.equal(messageLink('c1'), '/komunikator?conversation=c1');
+  assert.equal(messageLink('c1', 'r 1'), '/komunikator?conversation=c1&thread=r%201');
+});

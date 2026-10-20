@@ -287,6 +287,10 @@ export interface MessageRow {
   mentions?: string[] | null;
   /** Przekazana wiadomość — id oryginału (jak web). */
   forwarded_from?: string | null;
+  /** Wątki (migracja 112): odpowiedź → id wiadomości głównej; główna → liczniki od serwera. */
+  thread_root_id?: string | null;
+  thread_reply_count?: number | null;
+  thread_last_reply_at?: string | null;
 }
 
 // Jak web (MessageBubble): edytować można własną wiadomość tekstową z treścią — bez limitu
@@ -419,7 +423,8 @@ export const applyMessageToConversations = (
   msg: Partial<MessageRow> | null | undefined,
   openId: string | null = null,
 ) => {
-  if (!userEmail || !msg?.conversation_id) return;
+  // Odpowiedź w wątku nie zmienia podglądu ani licznika rozmowy (powiadamia obserwujących).
+  if (!userEmail || !msg?.conversation_id || msg.thread_root_id) return;
   qc.setQueryData<ConversationListItem[]>(conversationsKey(userEmail), (prev: ConversationListItem[] | undefined) =>
     applyIncomingMessage(prev, msg as any, userEmail, { openId }) as ConversationListItem[] | undefined,
   );

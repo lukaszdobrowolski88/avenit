@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical, Edit2, Trash2, Check, X, FileText, Image, Table, File, Download, CheckCheck, Reply, Smile, Forward, Pin, Copy, Plus, Eye, Languages, Flag, Ban, Loader } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Check, X, FileText, Image, Table, File, Download, CheckCheck, Reply, Smile, Forward, Pin, Copy, Plus, Eye, Languages, Flag, Ban, Loader, MessagesSquare } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageTime, formatFileSize, isImageFile, getFileIcon } from '../utils/messageHelpers';
 import { REACTION_EMOJIS } from '../hooks/useReactions';
@@ -68,7 +68,10 @@ export default function MessageBubble({
   onBlockSender,
   hiddenAsBlocked = false,
   // Połączenia: rozmowa grupowa → „Rozmowa grupowa trwa — dołącz”
-  isGroupConversation = false
+  isGroupConversation = false,
+  // Wątki (112): „Odpowiedz w wątku” w menu i pigułka „N odpowiedzi” pod dymkiem.
+  onReplyInThread,
+  threadChip = null
 }) {
   const { lang } = useI18n();
   const [showMenu, setShowMenu] = useState(false);
@@ -404,7 +407,8 @@ export default function MessageBubble({
                   onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}
                   className="fixed z-[9999] bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-xl py-1.5 animate-in fade-in zoom-in-95 duration-100">
                   {onReply && <button type="button" role="menuitem" onClick={handleReply} className={menuItem}><Reply size={14} className="text-gray-400" />{tr('Odpowiedz')}</button>}
-                  {!isRich && <button type="button" role="menuitem" onClick={handleForward} className={menuItem}><Forward size={14} className="text-gray-400" />{tr('Przekaż')}</button>}
+                  {onReplyInThread && <button type="button" role="menuitem" onClick={() => { setShowMenu(false); onReplyInThread(message); }} className={menuItem}><MessagesSquare size={14} className="text-gray-400" />{tr('Odpowiedz w wątku')}</button>}
+                  {!isRich && onForward && <button type="button" role="menuitem" onClick={handleForward} className={menuItem}><Forward size={14} className="text-gray-400" />{tr('Przekaż')}</button>}
                   {!isRich && message.content && <button type="button" role="menuitem" onClick={handleCopy} className={menuItem}>{copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-gray-400" />}{copied ? tr('Skopiowano!') : tr('Kopiuj')}</button>}
                   {canTranslate && (
                     <button type="button" role="menuitem" onClick={handleTranslate} disabled={translating} className={menuItem}>
@@ -482,6 +486,8 @@ export default function MessageBubble({
             ))}
           </div>
         )}
+
+        {threadChip}
 
         <div className={`flex items-center gap-1.5 mt-1.5 ${isOwn ? 'flex-row-reverse' : ''}`}>
           <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{formatMessageTime(message.created_at)}</span>

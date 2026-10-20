@@ -6,6 +6,8 @@
 //   - messages              → push do uczestników (nie wyciszonych, poza cichymi godzinami);
 //                             @wzmianka osobista → push 'mention' zawsze; @wszyscy ("*") → 'mention'
 //                             także wyciszonym, ale z poszanowaniem cichych godzin
+//                             odpowiedź w wątku (thread_root_id) → tylko obserwujący wątek
+//                             i wspomniani; tekst „Nadawca w wątku: …”, link otwiera wątek
 //   - schedule_assignments  → push do zaproszonego do służby (status 'pending')
 // Zadania osobiste (user_tasks) — przypisanie innej osobie (assigned_to_email ustawione albo
 // zmienione): wpis w skrzynce + realtime + push dla przypisanego (prepareUserTaskAssign przed
@@ -13,6 +15,7 @@
 import { sendPushCore } from '../fn/send-push.js';
 import { buildQuery } from '../dataapi/querybuilder.js';
 import { deliverNotifications, displayNameOf } from '../dataapi/boardNotify.js';
+import { threadFollowerEmails, threadPushAllowed } from '../dataapi/komunikatorThreads.js';
 
 export async function notifyOnWrite({ pool, table, op, values, actingUserEmail, log }) {
   if (op !== 'insert' || !values) return;
@@ -33,13 +36,17 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
   const conversationId = msg.conversation_id;
   const senderEmail = msg.sender_email || actingUserEmail;
   if (!conversationId || !senderEmail) return;
+  // Odpowiedź w wątku (migracja 112): nie podbija rozmowy u wszystkich — tylko obserwujący wątek.
+  const threadRootId = msg.thread_root_id || null;
 
   // Nowa wiadomość wyciąga rozmowę z archiwum (jak w WhatsAppie) — inaczej zarchiwizowana rozmowa
   // dostawała wiadomości i powiadomienia, a na liście rozmów jej nie było.
-  await pool.query(
-    `UPDATE conversation_participants SET archived = false WHERE conversation_id = $1 AND archived = true`,
-    [conversationId],
-  ).catch(() => undefined);
+  if (!threadRootId) {
+    await pool.query(
+      `UPDATE conversation_participants SET archived = false WHERE conversation_id = $1 AND archived = true`,
+      [conversationId],
+    ).catch(() => undefined);
+  }
 
   // Wzmianki (@) z messages.mentions — wspomniani dostają osobny push 'mention' ZAWSZE
   // (nawet przy wyciszeniu i w cichych godzinach); reszta — zwykły push wiadomości, o ile nie
@@ -71,12 +78,16 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
   ).catch(() => ({ rows: [] }));
   const conv = convRows[0] || null;
   const preview = messagePreview(msg);
-  const link = messageLink(conversationId);
+  const link = messageLink(conversationId, threadRootId);
+  const thread = !!threadRootId;
+  const followers = thread ? await threadFollowerEmails(pool, threadRootId) : null;
+  const extra = thread ? { thread_root_id: threadRootId } : {};
   const now = new Date();
 
   for (const p of parts) {
     const email = String(p.user_email).toLowerCase();
     if (blockedBy.has(email)) continue;
+    if (followers && !threadPushAllowed(email, { followers, mentioned, mentionsAll })) continue;
     const kind = pushKind({
       muted: p.muted,
       mutedUntil: p.muted_until,
@@ -88,17 +99,17 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
     if (kind === 'mention') {
       await sendPushCore(pool, {
         user_email: p.user_email,
-        ...messagePushText({ conv, senderName, preview, mention: mentioned.has(email) ? 'me' : 'all' }),
+        ...messagePushText({ conv, senderName, preview, mention: mentioned.has(email) ? 'me' : 'all', thread }),
         link,
-        data: { type: 'mention', conversation_id: conversationId },
+        data: { type: 'mention', conversation_id: conversationId, ...extra },
         sound: 'receive.wav',
       });
     } else if (kind === 'message') {
       await sendPushCore(pool, {
         user_email: p.user_email,
-        ...messagePushText({ conv, senderName, preview }),
+        ...messagePushText({ conv, senderName, preview, thread }),
         link,
-        data: { type: 'message', conversation_id: conversationId },
+        data: { type: 'message', conversation_id: conversationId, ...extra },
         sound: 'receive.wav',
       });
     }
@@ -175,8 +186,10 @@ export function isQuietNow({ start, end, timezone } = {}, now = new Date()) {
 // Link z powiadomienia: ścieżka webu (/komunikator?conversation=…) — otwiera rozmowę w przeglądarce
 // (push przeglądarkowy) i w aplikacji (deep-links.ts rozpoznaje ten format). Dawny link
 // /messenger/<id> działał tylko w aplikacji; w webie prowadził na nieistniejącą stronę.
-export function messageLink(conversationId) {
-  return `/komunikator?conversation=${encodeURIComponent(String(conversationId))}`;
+// Odpowiedź w wątku: &thread=<id wiadomości głównej> (web otwiera panel wątku, aplikacja — ekran wątku).
+export function messageLink(conversationId, threadRootId = null) {
+  const base = `/komunikator?conversation=${encodeURIComponent(String(conversationId))}`;
+  return threadRootId ? `${base}&thread=${encodeURIComponent(String(threadRootId))}` : base;
 }
 
 // Treść powiadomienia — jak podgląd na liście rozmów (chatLogic.previewText): zdjęcie, głosówka,
@@ -190,13 +203,16 @@ export function conversationPlace(conv) {
 
 // Tytuł i treść powiadomienia o wiadomości (push na telefon i web). W grupie/kanale/spotkaniu:
 // tytuł = nazwa miejsca, treść = „Nadawca: wiadomość”; prywatnie: tytuł = nadawca.
-// mention: 'me' | 'all' | undefined.
-export function messagePushText({ conv, senderName, preview, mention }) {
+// mention: 'me' | 'all' | undefined. thread: odpowiedź w wątku — „Nadawca w wątku: …”
+// (prywatnie: tytuł = nadawca, treść „W wątku: …”), wzmianka — „… wspomniał(a) Cię w wątku”.
+export function messagePushText({ conv, senderName, preview, mention, thread = false }) {
   const place = conversationPlace(conv);
   if (mention) {
-    const who = mention === 'me' ? `${senderName} wspomniał(a) Cię` : `${senderName} wspomniał(a) wszystkich`;
+    const base = mention === 'me' ? `${senderName} wspomniał(a) Cię` : `${senderName} wspomniał(a) wszystkich`;
+    const who = thread ? `${base} w wątku` : base;
     return { title: place ? `${who} — ${place}` : who, body: preview };
   }
+  if (thread) return place ? { title: place, body: `${senderName} w wątku: ${preview}` } : { title: senderName, body: `W wątku: ${preview}` };
   if (place) return { title: place, body: `${senderName}: ${preview}` };
   return { title: senderName, body: preview };
 }

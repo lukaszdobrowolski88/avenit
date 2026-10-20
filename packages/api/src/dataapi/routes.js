@@ -14,6 +14,7 @@ import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } 
 import { PII_TABLES, enforcePiiWrite, isPiiTable, redactPii } from './pii.js';
 import { enforceSharedWrite, enforceExpenseApproval, enforceCampaignStatus, enforceAccountWrite } from './sharedWrites.js';
 import { isConversationTable, conversationScope, enforceConversationWrite, conversationAudience, conversationDeleteAudience, assertConversationFilters, pollVotesRedactor } from './komunikator.js';
+import { applyMainFeedDefault, emitThreadRoots } from './komunikatorThreads.js';
 import { MODERATE_CAPABILITY, reportScope, enforceReportWrite, reportAudience, normalizeBlockWrite, assertVoteFilters, anonymousPollIds, redactVotes } from './komunikatorPlus.js';
 import { isBoardTable, boardScope, enforceBoardWrite, boardAudience } from './boardsScope.js';
 import { isMailTable, mailScope, enforceMailWrite, mailAudience } from './mailScope.js';
@@ -332,6 +333,8 @@ export default async function dataApiRoutes(app) {
         // z mobilki bez .select()) zmiana nie docierała do nikogo.
         if (q.op !== 'select' && !q.returning) q.returning = '*';
         q.__preAudience = await conversationDeleteAudience(req.db, q).catch(() => null);
+        // Wątki (112): odczyt wiadomości bez wskazania wątku/id = główna oś rozmowy.
+        applyMainFeedDefault(q);
       }
 
       // Projekty: prywatne tablice tylko dla właściciela i edytorów (boardsScope.js).
@@ -446,6 +449,9 @@ export default async function dataApiRoutes(app) {
         // Głosy w ankietach anonimowych — e-mail tylko dla głosującego (także w realtime).
         const redact = q.table === 'poll_votes' ? await pollVotesRedactor(req.db, changed).catch(() => null) : null;
         emitChange(req.tenant.slug, q.table, q.op, changed, { audience, ...(redact ? { redact } : {}) });
+        // Wątki (112): nowe liczniki wiadomości głównej po dodaniu/usunięciu odpowiedzi — w tle.
+        emitThreadRoots({ db: req.db, tenantSlug: req.tenant.slug, table: q.table, op: q.op, rows: changed, emit: emitChange, audienceOf: conversationAudience })
+          .catch((err) => req.log?.warn?.({ err }, 'thread roots realtime failed'));
         // Wydarzenia online/hybrydowe (099): spotkanie uzgadniane po każdym zapisie wydarzenia
         // i zapisu na nie — w tle, niezależnie od formularza (web, mobilka).
         if (q.table === 'events' || q.table === 'event_registrations') {

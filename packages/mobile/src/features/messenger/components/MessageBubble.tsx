@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Check, CheckCheck, CornerUpLeft, Eye, EyeOff, FileText, Forward, Languages, Pin } from "lucide-react-native";
@@ -98,6 +98,8 @@ interface Props {
   onOpenImage?: (url: string) => void;
   /** Wyróżnienie po skoku (wyszukiwarka, cytat, przypięte). */
   highlighted?: boolean;
+  /** Pod dymkiem (po reakcjach) — np. pigułka wątku „N odpowiedzi”. */
+  footer?: ReactNode;
 }
 
 const Avatar = ({ email, members }: { email: string; members: MemberMap }) => {
@@ -148,6 +150,7 @@ const MessageBubbleBase = ({
   onPressReply,
   onOpenImage,
   highlighted,
+  footer,
 }: Props) => {
   // API zwraca puste załączniki jako {} (obiekt), nie []. Bez tego guardu
   // {}.map(...) rzuca "undefined is not a function" i wywala całą rozmowę.
@@ -490,6 +493,7 @@ const MessageBubbleBase = ({
             ))}
           </View>
         ) : null}
+        {footer}
       </View>
     </View>
   );

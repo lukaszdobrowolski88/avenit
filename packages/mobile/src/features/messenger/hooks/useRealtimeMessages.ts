@@ -46,8 +46,8 @@ export const useRealtimeMessages = (conversationId: string) => {
           // ze WSZYSTKICH konwersacji przez wspólne WS. Bez tego guardu wiadomość z innej
           // rozmowy trafiłaby do otwartego wątku (przeciek treści) — filtrujemy po kliencie.
           if (String(msg?.conversation_id) !== String(conversationId)) return;
-          // Wiadomość usunięta, zanim dotarła — nie pokazuj.
-          if (msg.deleted_at) return;
+          // Wiadomość usunięta, zanim dotarła — nie pokazuj. Odpowiedź w wątku — ekran wątku.
+          if (msg.deleted_at || msg.thread_root_id) return;
           qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) => {
             if (!prev) return [msg];
             if (prev.some((m: MessageRow) => m.id === msg.id)) return prev;

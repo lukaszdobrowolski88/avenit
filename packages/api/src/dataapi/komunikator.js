@@ -13,6 +13,7 @@ import {
   pollOf, pollClosed, POLL_CLOSED_MESSAGE, anonymousPollIds, redactVotes,
 } from './komunikatorPlus.js';
 import { emitChange } from '../realtime/hub.js';
+import { normalizeThreadWrite } from './komunikatorThreads.js';
 
 // Rodzaj powiązania wiersza z rozmową.
 const CONV_TABLES = {
@@ -33,6 +34,8 @@ const CONV_TABLES = {
   call_guest_requests: 'conv',
   // Spotkania (migracja 098) — tylko odczyt; zakłada/zmienia serwer (src/meetings, fn meeting-*).
   meetings: 'conv',
+  // Obserwujący wątki (migracja 112) — wiersz osobisty w rozmowie (komunikatorThreads.js).
+  message_thread_followers: 'conv',
 };
 export const isConversationTable = (table) => table in CONV_TABLES;
 const CALL_TABLES = new Set(['calls', 'call_participants', 'call_guest_requests']);
@@ -215,6 +218,8 @@ export async function enforceConversationWrite(q, req) {
   if (!isConversationTable(q.table) || !['insert', 'upsert', 'update'].includes(q.op) || !q.values) return;
   const db = req.db;
   const me = lower(req.user.email);
+  // Wątki (112): korzeń w tej samej rozmowie, liczniki tylko z triggera, obserwujący — własny wpis.
+  await normalizeThreadWrite(q, req);
   const rows = rowsOf(q);
 
   if (q.table === 'conversations') {

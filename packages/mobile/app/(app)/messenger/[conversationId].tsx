@@ -102,6 +102,8 @@ import { MuteSheet } from "../../../src/features/messenger/components/MuteSheet"
 import { ReadByModal } from "../../../src/features/messenger/components/ReadByModal";
 import { ReportModal } from "../../../src/features/messenger/components/ReportModal";
 import { AttachmentImage } from "../../../src/features/messenger/components/AttachmentImage";
+import { ThreadChip } from "../../../src/features/messenger/components/ThreadChip";
+import { canStartThread, useThreadRepliers } from "../../../src/features/messenger/threads";
 import { loadDraft, saveDraft } from "../../../src/features/messenger/drafts";
 import {
   chatErrorTitle,
@@ -196,6 +198,13 @@ export default function ConversationScreen() {
   const blockMutation = useToggleBlock(myEmail);
   const reportMutation = useReportMessage(myEmail);
   useRealtimeMessages(cid);
+  // Wątki (112): awatary pod „N odpowiedzi” i przejście do ekranu wątku.
+  const repliersQuery = useThreadRepliers(messages);
+  const openThread = useCallback(
+    (m: MessageRow) =>
+      router.push({ pathname: "/(app)/messenger/thread/[rootId]", params: { rootId: m.id, conversationId: cid } } as never),
+    [router, cid],
+  );
 
   const details = detailsQuery.data;
   const blockedSet = useMemo(() => new Set(blocksQuery.data ?? []), [blocksQuery.data]);
@@ -1087,6 +1096,15 @@ export default function ConversationScreen() {
                     senderStatus={mine ? undefined : getStatus(m.sender_email)}
                     onLongPress={() => setActionTarget(m)}
                     onToggleReaction={(emoji) => reactionMutation.mutate({ messageId: m.id, emoji })}
+                    footer={
+                      <ThreadChip
+                        message={m}
+                        repliers={repliersQuery.data?.[m.id]}
+                        members={members}
+                        mine={mine}
+                        onOpen={() => openThread(m)}
+                      />
+                    }
                   />
                   </SwipeToReply>
                 );
@@ -1223,6 +1241,9 @@ export default function ConversationScreen() {
             setEditingId(null);
           }
         }}
+        onReplyInThread={
+          canPost && !peerBlocked && canStartThread(actionTarget) ? () => actionTarget && openThread(actionTarget) : undefined
+        }
         onForward={() => {
           if (actionTarget) setForwardTarget(actionTarget);
         }}

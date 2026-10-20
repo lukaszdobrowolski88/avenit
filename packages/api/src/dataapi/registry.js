@@ -334,6 +334,9 @@ export const REGISTRY = {
   // widzi własne), czyta i rozstrzyga moderator — admin aplikacji albo action:komunikator:moderate
   // (zakres i walidacja: komunikatorPlus.js, wołane z routes.js).
   message_reports: T(null),
+  // Obserwujący wątki (migracja 112): jak zgłoszenia — bez osobnego zasobu w macierzy; wiersze tylko
+  // uczestników rozmowy, zapis tylko własny (komunikator.js CONV_TABLES + komunikatorThreads.js).
+  message_thread_followers: T(null),
   // Zablokowane osoby — tabela osobista (ownership.js, właściciel blocker_email).
   user_blocks: T(null),
   // Połączenia audio/wideo (migracja 096): odczyt tylko w rozmowach, w których jestem
