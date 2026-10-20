@@ -15,8 +15,9 @@ import ShareModal from '../Materials/components/ShareModal';
 import FilePreviewModal from '../Materials/components/FilePreviewModal';
 import { tr } from '../../i18n';
 import { confirmDialog } from '../../lib/dialog';
+import { signFiles } from '../Materials/hooks/useMaterials';
 
-const fileUrl = (path) => supabase.storage.from('materials').getPublicUrl(path).data.publicUrl;
+const publicUrl = (path) => supabase.storage.from('materials').getPublicUrl(path).data.publicUrl;
 const fmtSize = (b) => (!b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 const isImage = (m) => (m || '').startsWith('image/');
 
@@ -36,13 +37,19 @@ export default function EventMaterialsTab({ event, canManage }) {
   const [renameVal, setRenameVal] = useState('');
   const fileRef = useRef(null);
   const shares = useShares();
+  // Pliki przestrzeni wrażliwych (Finanse, Członkowie, Opieka, Dawanie) serwer oddaje tylko
+  // podpisanym linkiem — podpisujemy je po wczytaniu listy (jak useMaterials).
+  const [signedUrls, setSignedUrls] = useState({});
+  const fileUrl = (path) => signedUrls[path] || publicUrl(path);
 
   const loadLinked = useCallback(async () => {
     const { data: links } = await supabase.from('event_materials').select('file_id').eq('event_id', event.id);
     const ids = [...new Set((links || []).map((l) => l.file_id).filter(Boolean))];
     if (!ids.length) { setLinked([]); return; }
     const { data: files } = await supabase.from('materials_files').select('*').in('id', ids);
-    setLinked((files || []).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pl')));
+    const sorted = (files || []).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pl'));
+    setSignedUrls(await signFiles(sorted));
+    setLinked(sorted);
   }, [event.id]);
 
   useEffect(() => { loadLinked(); }, [loadLinked]);

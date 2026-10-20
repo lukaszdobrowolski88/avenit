@@ -425,7 +425,7 @@ export function buildQuery(q) {
         )
         .join(', ');
       let sql = `INSERT INTO ${tbl} (${columns.map(quoteIdent).join(', ')}) VALUES ${valuesSql}`;
-      sql += returningClause(table, q);
+      sql += returningClause(table, q, quoteIdent(table));
       return { sql, params, kind: 'insert' };
     }
 
@@ -466,7 +466,7 @@ export function buildQuery(q) {
           ? ` ON CONFLICT (${conflictCols}) DO UPDATE SET ${updates.join(', ')}${guard ? ` WHERE ${guard}` : ''}`
           : ` ON CONFLICT (${conflictCols}) DO NOTHING`;
       }
-      sql += returningClause(table, q);
+      sql += returningClause(table, q, guard ? alias : quoteIdent(table));
       return { sql, params, kind: 'upsert' };
     }
 
@@ -484,7 +484,7 @@ export function buildQuery(q) {
       const where = buildWhere(q.filters, params, alias, hidden, table);
       const updWhere = andOwn(andWhere(where, [campusClause()]), 'update'); // scoped: tylko własny kampus
       let sql = `UPDATE ${tbl} AS ${alias} SET ${sets.join(', ')}${updWhere}`;
-      sql += returningClause(table, q);
+      sql += returningClause(table, q, alias);
       return { sql, params, kind: 'update' };
     }
 
@@ -493,7 +493,7 @@ export function buildQuery(q) {
       const where = buildWhere(q.filters, params, alias, hidden, table);
       const delWhere = andOwn(andWhere(where, [campusClause()]), 'delete'); // scoped: tylko własny kampus
       let sql = `DELETE FROM ${tbl} AS ${alias}${delWhere}`;
-      sql += returningClause(table, q);
+      sql += returningClause(table, q, alias);
       return { sql, params, kind: 'delete' };
     }
 
@@ -557,23 +557,27 @@ function normalizeValue(v, table, col) {
   return v;
 }
 
-function returningClause(table, q) {
+// ref — jak w zapytaniu nazywa się tabela docelowa (alias przy UPDATE/DELETE i upsercie ze
+// strażnikiem; inaczej sama nazwa tabeli) — `to_jsonb("tabela".*)` przy aliasie to błąd SQL.
+function returningClause(table, q, ref = quoteIdent(table)) {
   if (!q.returning) return '';
-  // RETURNING wg żądanego selecta (bez embedów — te wymagają SELECT po zapisie).
+  // RETURNING wg żądanego selecta. Złączeń (embed) tu nie ma — wymagałyby SELECT po zapisie —
+  // więc przy embedach zwracamy cały wiersz główny, ale TAK SAMO bez kolumn ukrytych (do rundy 6
+  // embed dawał gołe RETURNING *, czyli np. password_hash / totp_secret kont przy
+  // .update(...).select('*, x:tabela(*)')).
   const parsed = parseSelect(q.returning === true ? '*' : q.returning);
-  if (parsed.embeds.length) {
-    // Prosty przypadek: zwróć całość, klient dobierze embedy osobnym zapytaniem.
-    return ' RETURNING *';
-  }
+  const columns = parsed.embeds.length ? ['*'] : parsed.columns;
   const rule = getTableRule(table);
   const hidden = rule?.hiddenColumns || [];
-  if (parsed.columns.includes('*')) {
+  if (!columns.length || columns.includes('*')) {
     if (!hidden.length) return ' RETURNING *';
-    return ` RETURNING (to_jsonb(${quoteIdent(table)}.*) ${hidden
+    return ` RETURNING (to_jsonb(${ref}.*) ${hidden
       .map((h) => `- '${h.replace(/'/g, "''")}'`)
       .join(' ')}) AS __row`;
   }
-  return ` RETURNING ${parsed.columns
+  // Aliasów kolumn („tel:phone”) RETURNING nie przyjmuje — quoteIdent odrzuci je jako
+  // nieprawidłowy identyfikator (400), więc redakcja po nazwie klucza (redactRows.js) nie ma luk.
+  return ` RETURNING ${columns
     .map((c) => {
       assertColumnAllowed(c.trim(), hidden);
       return quoteIdent(c.trim());

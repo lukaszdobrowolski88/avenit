@@ -5,7 +5,8 @@ import { isSignedMaterialsPath } from '@avenit/shared/src/lib/materialsAccess.js
 // Pliki przestrzeni wrażliwych (Finanse, Członkowie…) serwer oddaje tylko podpisanym linkiem
 // (storage/routes.js) — podpisujemy je po pobraniu listy, żeby miniatury i podgląd działały.
 const SIGNED_TTL = 3600;
-async function signFiles(list) {
+// Mapa storage_path → podpisany adres (także materiały wydarzeń — EventMaterialsTab).
+export async function signFiles(list) {
   const out = {};
   await Promise.all((list || []).filter((f) => f?.storage_path && isSignedMaterialsPath(f.storage_path)).map(async (f) => {
     try {

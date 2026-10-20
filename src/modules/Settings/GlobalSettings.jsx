@@ -30,6 +30,7 @@ import { Settings as SettingsIcon } from 'lucide-react';
 import { toast } from '../../lib/toast';
 import { injectCustomFont, applyFont, setBgUrl, applyBgPattern } from '../../lib/appearance';
 import { confirmDialog } from '../../lib/dialog';
+import { usePermissions } from '../../contexts/PermissionsContext';
 
 // Grupy nawigacji ustawień (menu po lewej). Adres zakładki: /settings?tab=<id> (UXE-10).
 // Ukryte: „Regionalne” i „Powiadomienia” (ich ustawień nic nie czytało — UXE-07),
@@ -220,6 +221,13 @@ export default function GlobalSettings() {
     return true;
   };
 
+  // Cudze hasło wprost ustawia tylko pełny administrator (superadmin / rola is_admin) — serwer
+  // (fn admin-set-user-password) i tak to egzekwuje. Osoba z samym „Zarządzanie użytkownikami”
+  // wysyła link do zmiany hasła (audyt uprawnień r6).
+  const { subject: permSubject } = usePermissions() || {};
+  const myAccount = users.find(u => permSubject?.userId && u.id === permSubject.userId);
+  const canSetPasswords = !!(permSubject?.isAdmin || myAccount?.is_super_admin);
+
   // Admin: ustaw nowe hasło wskazanemu użytkownikowi (fn admin-set-user-password, bramkowany serwerowo).
   const minPw = Math.max(6, parseInt(getSetting('password_min_length') || '8', 10) || 8);
   const handleAdminSetPassword = async () => {
@@ -235,13 +243,14 @@ export default function GlobalSettings() {
     } finally { setPwBusy(false); }
   };
 
-  // Admin: wyślij użytkownikowi e-mail z linkiem do resetu hasła (istniejący flow).
+  // Wyślij użytkownikowi e-mail z linkiem do zmiany hasła (fn admin-send-password-reset: ten sam
+  // token co „Nie pamiętam hasła”, link ważny 24 h, wpis w historii konta).
   const handleAdminSendReset = async () => {
     setPwBusy(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(userForm.email, { redirectTo: `${window.location.origin}/reset-password` });
-      if (error) throw new Error(error.message);
-      toast.success(tr('Link do resetu hasła wysłany na {email}.', { email: userForm.email }));
+      const { data, error } = await supabase.functions.invoke('admin-send-password-reset', { body: { userId: userForm.id } });
+      if (error || data?.error) throw new Error(data?.error || error?.message || tr('Błąd'));
+      toast.success(tr('Link do zmiany hasła wysłany na {email}.', { email: userForm.email }));
     } catch (e) {
       toast.error(tr('Nie udało się wysłać linku: {msg}', { msg: e.message }));
     } finally { setPwBusy(false); }
@@ -651,7 +660,7 @@ export default function GlobalSettings() {
       ? { type: 'error', text: error.message || tr('Nie udało się wysłać') }
       : { type: 'success', text: tr('Wysłano ponownie link weryfikacyjny') });
   };
-  const ACTION_LABEL = { registered: tr('Rejestracja'), verified: tr('Potwierdzenie e-mail'), approved: tr('Zatwierdzenie'), rejected: tr('Odrzucenie'), created: tr('Utworzenie (admin)'), edited: tr('Edycja'), deleted: tr('Usunięcie'), blocked: tr('Zablokowanie'), unblocked: tr('Odblokowanie'), reset_2fa: tr('Reset weryfikacji dwuetapowej'), logged_out: tr('Wylogowanie (wszędzie)'), unlocked_login: tr('Odblokowanie logowania'), call_link_created: tr('Link gościa do rozmowy'), call_link_revoked: tr('Wyłączenie linku gościa'), call_guest_admitted: tr('Wpuszczenie gościa do rozmowy'), call_guest_denied: tr('Odrzucenie gościa rozmowy') };
+  const ACTION_LABEL = { registered: tr('Rejestracja'), verified: tr('Potwierdzenie e-mail'), approved: tr('Zatwierdzenie'), rejected: tr('Odrzucenie'), created: tr('Utworzenie (admin)'), edited: tr('Edycja'), deleted: tr('Usunięcie'), blocked: tr('Zablokowanie'), unblocked: tr('Odblokowanie'), reset_2fa: tr('Reset weryfikacji dwuetapowej'), password_set: tr('Ustawienie hasła (admin)'), password_reset_link: tr('Link do zmiany hasła'), logged_out: tr('Wylogowanie (wszędzie)'), unlocked_login: tr('Odblokowanie logowania'), call_link_created: tr('Link gościa do rozmowy'), call_link_revoked: tr('Wyłączenie linku gościa'), call_guest_admitted: tr('Wpuszczenie gościa do rozmowy'), call_guest_denied: tr('Odrzucenie gościa rozmowy') };
 
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
   const openNewUser = () => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setRequire2FA(false); setShowUserModal(true); };
@@ -1081,17 +1090,21 @@ export default function GlobalSettings() {
           )}
           {userForm.id && (
             <div className="p-3 border border-gray-200 dark:border-gray-600 rounded-xl space-y-2.5">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"><KeyRound size={13} aria-hidden="true" /> {tr('Hasło (administrator)')}</div>
-              <div className="flex gap-2">
-                <input type="text" aria-label={tr('Nowe hasło')} autoComplete="new-password" value={adminNewPassword} onChange={e => setAdminNewPassword(e.target.value)} placeholder={tr('Nowe hasło (min. {n} znaków)', { n: minPw })}
-                  className="flex-1 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm" />
-                <Button size="sm" onClick={handleAdminSetPassword} loading={pwBusy} disabled={adminNewPassword.length < minPw}>{tr('Ustaw')}</Button>
-              </div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"><KeyRound size={13} aria-hidden="true" /> {canSetPasswords ? tr('Hasło (administrator)') : tr('Hasło')}</div>
+              {canSetPasswords && (
+                <div className="flex gap-2">
+                  <input type="text" aria-label={tr('Nowe hasło')} autoComplete="new-password" value={adminNewPassword} onChange={e => setAdminNewPassword(e.target.value)} placeholder={tr('Nowe hasło (min. {n} znaków)', { n: minPw })}
+                    className="flex-1 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm" />
+                  <Button size="sm" onClick={handleAdminSetPassword} loading={pwBusy} disabled={adminNewPassword.length < minPw}>{tr('Ustaw')}</Button>
+                </div>
+              )}
               <button type="button" onClick={handleAdminSendReset} disabled={pwBusy || !userForm.email}
                 className="w-full py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                <Mail size={15} aria-hidden="true" /> {tr('Wyślij link do resetu hasła')}
+                <Mail size={15} aria-hidden="true" /> {tr('Wyślij link do zmiany hasła')}
               </button>
-              <p className="text-[11px] text-gray-400">{tr('„Ustaw” zmienia hasło od razu. „Wyślij link” pozwala użytkownikowi ustawić hasło samodzielnie.')}</p>
+              <p className="text-[11px] text-gray-400">{canSetPasswords
+                ? tr('„Ustaw” zmienia hasło od razu. „Wyślij link” pozwala użytkownikowi ustawić hasło samodzielnie.')
+                : tr('Osoba dostanie e-mail z linkiem (ważnym 24 godziny) i sama ustawi nowe hasło. Hasło wprost ustawia tylko administrator.')}</p>
               <button type="button" onClick={() => forceLogoutUser(userForm.id)}
                 className="w-full py-2 border border-amber-200 dark:border-amber-900/50 rounded-lg text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-center gap-2">
                 <UserX size={15} aria-hidden="true" /> {tr('Wyloguj ze wszystkich urządzeń')}

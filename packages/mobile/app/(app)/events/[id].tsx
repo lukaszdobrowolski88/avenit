@@ -43,6 +43,7 @@ import { B, Monogram, SectionLabel } from '../../../src/components/ui/brand';
 import { goBack } from '../../../src/lib/navigation';
 import { useAuthSession } from '../../../src/lib/auth';
 import { tenantWebBase } from '../../../src/lib/supabase';
+import { resolveFileUrl } from '../../../src/lib/storageFiles';
 import { usePermissions } from '../../../src/lib/permissions';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { useMyProfile } from '../../../src/features/account/api';
@@ -106,6 +107,20 @@ const hm = (d: Date) => format(d, 'HH:mm');
 const openUrl = (url: string | null) => {
   if (!url) return;
   Linking.openURL(url).catch(() => Alert.alert('Nie udało się otworzyć linku', 'Sprawdź, czy adres jest poprawny, albo otwórz go na webie.'));
+};
+// Materiał / załącznik wydarzenia: plik przestrzeni wrażliwej (np. Finanse) otwieramy podpisanym
+// linkiem (lib/storageFiles.ts) — zwykły adres kończył się 403.
+const openEventFile = async (url: string | null) => {
+  if (!url) {
+    Alert.alert('Nie udało się otworzyć pliku', 'Plik nie ma adresu — otwórz go na webie.');
+    return;
+  }
+  const target = await resolveFileUrl(url);
+  if (!target) {
+    Alert.alert('Nie udało się otworzyć pliku', 'Nie masz dostępu do tego pliku albo brak połączenia. Spróbuj ponownie za chwilę.');
+    return;
+  }
+  openUrl(target);
 };
 const openMaps = (place: string) =>
   openUrl(
@@ -1122,7 +1137,7 @@ const FileRow = ({ file, first }: { file: EventFile; first: boolean }) => {
   const Icon = image ? ImageIcon : FileText;
   return (
     <Pressable
-      onPress={() => (file.url ? openUrl(file.url) : Alert.alert('Nie udało się otworzyć pliku', 'Plik nie ma adresu — otwórz go na webie.'))}
+      onPress={() => openEventFile(file.url)}
       className="active:opacity-70"
       style={{
         flexDirection: 'row',

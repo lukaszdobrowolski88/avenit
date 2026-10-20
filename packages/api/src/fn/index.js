@@ -63,6 +63,7 @@ const MODULES = [
   'public-form-get',
   'public-form-submit',
   'admin-set-user-password',
+  'admin-send-password-reset',
   'approve-user',
   'admin-create-user',
   'reject-user',

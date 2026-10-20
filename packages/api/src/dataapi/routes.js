@@ -11,11 +11,11 @@ import { syncEventsAfterWrite, syncRegistrationsAfterWrite } from '../meetings/e
 import { notifyOnWrite, prepareUserTaskAssign, notifyUserTaskAssign } from '../realtime/push-hooks.js';
 import { platformDisabledModules } from '../lib/platform-modules.js';
 import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
-import { PII_TABLES, enforcePiiWrite, isPiiTable, redactPii } from './pii.js';
+import { PII_TABLES, enforcePiiWrite, isPiiTable } from './pii.js';
 import { enforceSharedWrite, enforceExpenseApproval, enforceCampaignStatus, enforceAccountWrite, enforceMembershipWrite, enforceRoleWrite } from './sharedWrites.js';
 import { isConversationTable, conversationScope, enforceConversationWrite, conversationAudience, conversationDeleteAudience, assertConversationFilters, pollVotesRedactor } from './komunikator.js';
 import { applyMainFeedDefault, emitThreadRoots } from './komunikatorThreads.js';
-import { MODERATE_CAPABILITY, reportScope, enforceReportWrite, reportAudience, normalizeBlockWrite, assertVoteFilters, anonymousPollIds, redactVotes } from './komunikatorPlus.js';
+import { MODERATE_CAPABILITY, reportScope, enforceReportWrite, reportAudience, normalizeBlockWrite, assertVoteFilters } from './komunikatorPlus.js';
 import { isBoardTable, boardScope, enforceBoardWrite, boardAudience } from './boardsScope.js';
 import { isMailTable, mailScope, enforceMailWrite, mailAudience } from './mailScope.js';
 import { applyModuleScope, moduleRowScope, andScopes } from './moduleScope.js';
@@ -24,11 +24,11 @@ import { loadVisibilityContext } from './eventVisibility.js';
 import { filterUserContent, notifyNewReport } from '../lib/moderation.js';
 import { prepareBoardAssignNotify, notifyBoardAssignees } from './boardNotify.js';
 import { financeTeamTypes, applyTeamFinanceScope, TEAM_FINANCE_OPS, isBudgetWrite, budgetRowsBefore, writeBudgetAudit } from './financeScope.js';
-import { isPrayerTable, prayerViewer, prayerScope, enforcePrayerWrite, redactPrayerRows } from './prayerScope.js';
+import { isPrayerTable, prayerViewer, prayerScope, enforcePrayerWrite } from './prayerScope.js';
 import { isSecretSetting, settingsSecretScope } from './settingsScope.js';
-import { redactAccounts } from './accountFields.js';
-import { seesAllHomeGroupContacts, myHomeGroupIds, isHomeGroupContactTable, redactHomeGroupRows } from './homeGroupContacts.js';
+import { seesAllHomeGroupContacts } from './homeGroupContacts.js';
 import { sensitiveColumnsFor, assertSensitiveQuery } from './sensitiveColumns.js';
+import { redactRows } from './redactRows.js';
 import { isMaterialsTable, materialsViewer, materialsScope, enforceMaterialsTeamWrite } from './materialsScope.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
@@ -412,32 +412,18 @@ export default async function dataApiRoutes(app) {
 
       const built = buildQuery(q);
       const result = await req.db.query(built.sql, built.params);
-      let data = result.rows.map(unwrapRow);
+      // Surowe wiersze — dla śladu budżetu, realtime (redakcja per odbiorca) i powiadomień.
+      const rawRows = result.rows.map(unwrapRow);
 
-      if (budgetBefore) await writeBudgetAudit(req.db, q, budgetBefore, data, req.user.email);
+      if (budgetBefore) await writeBudgetAudit(req.db, q, budgetBefore, rawRows, req.user.email);
 
-      if (piiRestricted && q.op === 'select') data = redactPii(q.table, data, piiMe);
-
-      // Ankiety anonimowe (K7): e-mail głosującego tylko w jego własnych głosach.
-      if (q.table === 'poll_votes' && q.op === 'select' && Array.isArray(data) && data.length) {
-        const anon = await anonymousPollIds(req.db, data.map((r) => r?.message_id));
-        data = redactVotes(data, anon, req.user.email);
-      }
-
-      if (prayerCtx && q.op === 'select' && Array.isArray(data)) data = redactPrayerRows(data, prayerCtx);
-      // Kontakty grup domowych (członkowie, telefon/e-mail grupy, liderzy) — tylko z moich grup.
-      if (isHomeGroupContactTable(q.table) && q.op === 'select' && Array.isArray(data) && data.length && !seesAllHomeGroupContacts(resolver)) {
-        redactHomeGroupRows(q.table, data, { groupIds: await myHomeGroupIds(req.db, req.user.email), email: req.user.email });
-      }
-      if (q.table === 'app_users' && q.op === 'select' && resolver) redactAccounts(Array.isArray(data) ? data : [data], resolver, req.user);
-
-      // Egzekwowanie pól przy odczycie: usuń kolumny bez prawa odczytu.
-      if (access.resolver && q.op === 'select') {
-        const denied = fieldColumns(q.table).filter((c) => !access.resolver.fieldReadable(q.table, c));
-        if (denied.length && Array.isArray(data)) {
-          for (const row of data) if (row) for (const c of denied) if (c in row) delete row[c];
-        }
-      }
+      // Odpowiedź dla czytającego: ta sama redakcja dla SELECT i dla wierszy zwróconych przez zapis
+      // (RETURNING) — dane osobowe, głosy anonimowe, autorzy próśb anonimowych, kontakty grup
+      // domowych, telefony kont, zakazy pól (redactRows.js, audyt r6). Przy zapisie — na kopiach.
+      let data = await redactRows(q.table, rawRows, {
+        db: req.db, op: q.op, resolver, fieldResolver: access.resolver,
+        piiRestricted, piiMe, prayerCtx, user: req.user,
+      });
 
       // Egzekwowanie modułów per tenant z poziomu platformy: moduł wyłączony
       // w panelu admina znika u tenanta niezależnie od lokalnego app_modules.
@@ -466,7 +452,7 @@ export default async function dataApiRoutes(app) {
 
       // Realtime: powiadom subskrybentów o zmianach.
       if (q.op !== 'select') {
-        const changed = Array.isArray(data) ? data : [data].filter(Boolean);
+        const changed = rawRows;
         // Zgłoszenia: tylko zgłaszający i moderatorzy.
         const reportAud = q.table === 'message_reports'
           ? await reportAudience(req.db, changed, (u) => isModeratorAccount(u, adminRoles, allGrants)).catch(() => new Set())
@@ -507,15 +493,15 @@ export default async function dataApiRoutes(app) {
 
       // Nowe zgłoszenie wiadomości: e-mail + push do moderatorów (reakcja w ciągu 24 h). Fire-and-forget.
       if (q.op === 'insert' && q.table === 'message_reports') {
-        for (const r of (Array.isArray(data) ? data : [data]).filter(Boolean)) {
+        for (const r of rawRows.filter(Boolean)) {
           notifyNewReport({ db: req.db, tenant: req.tenant, report: r, log: req.log });
         }
       }
 
       // Nowo przypisani w kolumnie „Osoby” elementu tablicy: powiadomienie + push. Fire-and-forget.
-      if (boardAssign) notifyBoardAssignees({ db: req.db, tenant: req.tenant, prep: boardAssign, data, rowCount: result.rowCount, actor: req.user, log: req.log });
+      if (boardAssign) notifyBoardAssignees({ db: req.db, tenant: req.tenant, prep: boardAssign, data: rawRows, rowCount: result.rowCount, actor: req.user, log: req.log });
       // Zadanie osobiste przypisane innej osobie: wpis + push dla przypisanego. Fire-and-forget.
-      if (taskAssign) notifyUserTaskAssign({ db: req.db, tenant: req.tenant, prep: taskAssign, data, rowCount: result.rowCount, actor: req.user, log: req.log });
+      if (taskAssign) notifyUserTaskAssign({ db: req.db, tenant: req.tenant, prep: taskAssign, data: rawRows, rowCount: result.rowCount, actor: req.user, log: req.log });
 
       return reply.send({ data, count });
     } catch (err) {
