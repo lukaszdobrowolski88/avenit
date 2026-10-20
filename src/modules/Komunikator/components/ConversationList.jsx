@@ -11,6 +11,7 @@ import { tr } from '../../../i18n';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
+import { usePendingAcks } from '../hooks/useMessageAcks';
 
 // Czy menu „⋯” zmieści się pod przyciskiem w przewijanej liście (inaczej otwieramy je nad nim).
 const MENU_HEIGHT = 140;
@@ -47,6 +48,8 @@ export default function ConversationList({
 }) {
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
+  // „Ważne” — rozmowy z ważną wiadomością czekającą na moje „Rozumiem” (migracja 115).
+  const { counts: pendingAcks } = usePendingAcks(currentUserEmail);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'unread' | 'starred' | 'archived' (jak w aplikacji)
   const [menuFor, setMenuFor] = useState(null); // id rozmowy z otwartym menu „⋯”
   const [menuUp, setMenuUp] = useState(false); // menu nad przyciskiem (wiersz przy dolnej krawędzi listy)
@@ -217,6 +220,14 @@ export default function ConversationList({
                 <p className="flex-1 min-w-0 text-xs text-gray-400 dark:text-gray-500 italic truncate">
                   {tr('Brak wiadomości')}
                 </p>
+              )}
+              {pendingAcks[conv.id] > 0 && (
+                <span
+                  className="flex-shrink-0 h-5 px-2 rounded-full bg-amber-50 text-amber-900 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800/60 text-[10px] font-bold leading-[18px]"
+                  title={t('Ważne wiadomości czekają na potwierdzenie: {n}', { n: pendingAcks[conv.id] })}
+                >
+                  {t('Ważne')}
+                </span>
               )}
               {hasUnread && (
                 <span

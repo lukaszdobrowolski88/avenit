@@ -330,6 +330,9 @@ export const REGISTRY = {
   // (module:komunikator + res:* grant); członek dostaje granty w migracji 065.
   poll_votes: T('module:komunikator'),
   prayer_responses: T('module:komunikator'),
+  // „Ważne — potwierdź przeczytanie” (migracja 115): odczyt uczestników rozmowy (komunikator.js —
+  // CONV_TABLES), zapis wyłącznie fn chat-ack. message_ack_reminders celowo POZA rejestrem.
+  message_acks: T(null, { readOnly: true }),
   // Komunikator+ (migracja 088). Zgłoszenia wiadomości: dodaje uczestnik rozmowy (zgłaszający
   // widzi własne), czyta i rozstrzyga moderator — admin aplikacji albo action:komunikator:moderate
   // (zakres i walidacja: komunikatorPlus.js, wołane z routes.js).

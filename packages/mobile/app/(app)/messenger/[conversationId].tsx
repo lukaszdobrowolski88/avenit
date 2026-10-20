@@ -101,6 +101,9 @@ import { MediaGalleryModal } from "../../../src/features/messenger/components/Me
 import { ConversationInfoModal } from "../../../src/features/messenger/components/ConversationInfoModal";
 import { MuteSheet } from "../../../src/features/messenger/components/MuteSheet";
 import { ReadByModal } from "../../../src/features/messenger/components/ReadByModal";
+import { AckBar } from "../../../src/features/messenger/components/AckBar";
+import { AckStatusModal } from "../../../src/features/messenger/components/AckStatusModal";
+import { isImportantMessage, useAckMessage, useMessageAcks } from "../../../src/features/messenger/acks";
 import { ReportModal } from "../../../src/features/messenger/components/ReportModal";
 import { AttachmentImage } from "../../../src/features/messenger/components/AttachmentImage";
 import { ThreadChip } from "../../../src/features/messenger/components/ThreadChip";
@@ -240,6 +243,8 @@ export default function ConversationScreen() {
   const savedQuery = useSavedIds(myEmail);
   const toggleSavedMutation = useToggleSaved(myEmail);
   const [taskMessage, setTaskMessage] = useState<MessageRow | null>(null);
+  const acksQuery = useMessageAcks(cid, myEmail, messages, threadReady);
+  const ackMutation = useAckMessage(cid, myEmail);
 
   const details = detailsQuery.data;
   const blockedSet = useMemo(() => new Set(blocksQuery.data ?? []), [blocksQuery.data]);
@@ -298,6 +303,9 @@ export default function ConversationScreen() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [galleryVisible, setGalleryVisible] = useState(false);
   const [prayerMode, setPrayerMode] = useState(false);
+  // „Ważne — poproś o potwierdzenie” (migracja 115) i lista „Potwierdziło X z Y”.
+  const [importantMode, setImportantMode] = useState(false);
+  const [ackTarget, setAckTarget] = useState<MessageRow | null>(null);
   const [infoVisible, setInfoVisible] = useState(false);
   const [muteOpen, setMuteOpen] = useState(false);
   const [readByTarget, setReadByTarget] = useState<MessageRow | null>(null);
@@ -792,7 +800,9 @@ export default function ConversationScreen() {
         attachments: pendingAttachment ? [pendingAttachment] : undefined,
         replyToId: replyTo?.id ?? null,
         mentions: extractMentions(t, members, { allowAll: canMentionAll, exclude: myEmail }),
+        ...(importantMode && details?.type !== "direct" ? { requiresAck: true } : {}),
       });
+      setImportantMode(false);
       void stopTyping();
       // Pole zostaje edytowalne w trakcie wysyłki (klawiatura się nie chowa) — jeśli ktoś zdążył
       // dopisać kolejną wiadomość, nie kasujemy jej, tylko zdejmujemy wysłaną część.
@@ -1224,6 +1234,27 @@ export default function ConversationScreen() {
                     }
                   />
                   <MessageTaskChips tasks={tasksFor(m.id)} mine={mine} />
+                  {isImportantMessage(m) && !hiddenBlocked ? (
+                    <AckBar
+                      mine={mine}
+                      acked={!!acksQuery.data?.[m.id]?.mine}
+                      busy={ackMutation.isPending && ackMutation.variables === m.id}
+                      count={
+                        (acksQuery.data?.[m.id]?.emails ?? []).filter(
+                          (e) => !sameEmail(e, m.sender_email) && participantEmails.some((p: string) => sameEmail(p, e)),
+                        ).length
+                      }
+                      total={participantEmails.filter((p: string) => !sameEmail(p, m.sender_email)).length}
+                      canManage={mine || isConvAdmin}
+                      onAck={() => {
+                        if (ackMutation.isPending) return;
+                        ackMutation.mutate(m.id, {
+                          onError: (e) => Alert.alert("Nie udało się potwierdzić", friendlyError(e, "Spróbuj ponownie.")),
+                        });
+                      }}
+                      onOpenStatus={() => setAckTarget(m)}
+                    />
+                  ) : null}
                   </SwipeToReply>
                 );
               }}
@@ -1363,6 +1394,15 @@ export default function ConversationScreen() {
               Keyboard.dismiss();
               setScheduleOpen(true);
             } : undefined}
+            important={importantMode}
+            onToggleImportant={
+              details && details.type !== "direct"
+                ? () => {
+                    setImportantMode((v) => !v);
+                    setPrayerMode(false);
+                  }
+                : undefined
+            }
           />
         </View>
       </KeyboardAvoidingView>
@@ -1509,7 +1549,18 @@ export default function ConversationScreen() {
         onJump={(m) => void jumpToMessage(m)}
       />
 
-      <MediaGalleryModal visible={galleryVisible} onClose={() => setGalleryVisible(false)} conversationId={cid} />
+      <MediaGalleryModal
+        visible={galleryVisible}
+        onClose={() => setGalleryVisible(false)}
+        conversationId={cid}
+        onJump={(msg) => {
+          // Odpowiedź w wątku: skok do wiadomości głównej i ekran wątku nad rozmową.
+          if (msg.thread_root_id) {
+            void jumpToMessage({ id: msg.thread_root_id });
+            router.push({ pathname: "/(app)/messenger/thread/[rootId]", params: { rootId: msg.thread_root_id, conversationId: cid } } as never);
+          } else void jumpToMessage(msg);
+        }}
+      />
 
       <ConversationInfoModal
         visible={infoVisible}
@@ -1522,6 +1573,7 @@ export default function ConversationScreen() {
         onGone={() => goBack(router)}
         peerBlocked={peerBlocked}
         onToggleBlock={peerEmail ? () => handleToggleBlock(peerEmail) : undefined}
+        onOpenMedia={() => setGalleryVisible(true)}
       />
 
       <MuteSheet
@@ -1539,6 +1591,14 @@ export default function ConversationScreen() {
         readers={(readBySummary?.readers ?? []) as ReadReceiptRow[]}
         participantEmails={participantEmails}
         members={members}
+      />
+
+      <AckStatusModal
+        visible={!!ackTarget}
+        onClose={() => setAckTarget(null)}
+        message={ackTarget}
+        members={members}
+        ackCount={ackTarget ? acksQuery.data?.[ackTarget.id]?.emails.length ?? 0 : 0}
       />
 
       <ReportModal

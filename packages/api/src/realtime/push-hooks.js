@@ -5,9 +5,12 @@
 // Obsługiwane inserty:
 //   - messages              → push do uczestników (nie wyciszonych, poza cichymi godzinami);
 //                             @wzmianka osobista → push 'mention' zawsze; @wszyscy ("*") → 'mention'
-//                             także wyciszonym, ale z poszanowaniem cichych godzin
+//                             także wyciszonym, ale z poszanowaniem cichych godzin;
 //                             odpowiedź w wątku (thread_root_id) → tylko obserwujący wątek
-//                             i wspomniani; tekst „Nadawca w wątku: …”, link otwiera wątek
+//                             i wspomniani; tekst „Nadawca w wątku: …”, link otwiera wątek;
+//                             „Ważne — potwierdź przeczytanie” (requires_ack, migracja 115) →
+//                             tytuł „Ważne: …”; od administratora rozmowy (jak @wszyscy) także
+//                             wyciszonym, zawsze z poszanowaniem cichych godzin
 //   - schedule_assignments  → push do zaproszonego do służby (status 'pending')
 // Zadania osobiste (user_tasks) — przypisanie innej osobie (assigned_to_email ustawione albo
 // zmienione): wpis w skrzynce + realtime + push dla przypisanego (prepareUserTaskAssign przed
@@ -16,6 +19,7 @@ import { sendPushCore } from '../fn/send-push.js';
 import { buildQuery } from '../dataapi/querybuilder.js';
 import { deliverNotifications, displayNameOf } from '../dataapi/boardNotify.js';
 import { threadFollowerEmails, threadPushAllowed } from '../dataapi/komunikatorThreads.js';
+import { canMentionAll } from '../dataapi/komunikatorPlus.js';
 
 export async function notifyOnWrite({ pool, table, op, values, actingUserEmail, log }) {
   if (op !== 'insert' || !values) return;
@@ -81,8 +85,14 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
   const link = messageLink(conversationId, threadRootId);
   const thread = !!threadRootId;
   const followers = thread ? await threadFollowerEmails(pool, threadRootId) : null;
-  const extra = thread ? { thread_root_id: threadRootId } : {};
+  const threadExtra = thread ? { thread_root_id: threadRootId } : {};
   const now = new Date();
+  // Ważne (requires_ack): przebija wyciszenie tylko od tego, kto może też @wszyscy (administrator
+  // rozmowy; w kanałach służb — lider/admin aplikacji), poza rozmową 1:1. Od pozostałych — zwykłe
+  // zasady (wyciszenie działa), ale z tytułem „Ważne: …”.
+  const important = isImportant(msg);
+  const importantLoud = important && conv?.type !== 'direct'
+    && await senderMayBypassMute(pool, conv, conversationId, senderEmail).catch(() => false);
 
   for (const p of parts) {
     const email = String(p.user_email).toLowerCase();
@@ -94,20 +104,22 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
       quiet: isQuietNow({ start: p.quiet_hours_start, end: p.quiet_hours_end, timezone: p.timezone }, now),
       personalMention: mentioned.has(email),
       allMention: mentionsAll,
+      important: importantLoud,
       now,
     });
+    const extra = { ...threadExtra, ...(important ? { important: true, ...(msg.id ? { message_id: msg.id } : {}) } : {}) };
     if (kind === 'mention') {
       await sendPushCore(pool, {
         user_email: p.user_email,
-        ...messagePushText({ conv, senderName, preview, mention: mentioned.has(email) ? 'me' : 'all', thread }),
+        ...messagePushText({ conv, senderName, preview, mention: mentioned.has(email) ? 'me' : 'all', thread, important }),
         link,
         data: { type: 'mention', conversation_id: conversationId, ...extra },
         sound: 'receive.wav',
       });
-    } else if (kind === 'message') {
+    } else if (kind === 'message' || kind === 'important') {
       await sendPushCore(pool, {
         user_email: p.user_email,
-        ...messagePushText({ conv, senderName, preview, thread }),
+        ...messagePushText({ conv, senderName, preview, thread, important }),
         link,
         data: { type: 'message', conversation_id: conversationId, ...extra },
         sound: 'receive.wav',
@@ -143,13 +155,15 @@ export async function recipientsOf(pool, conversationId, senderEmail) {
   }
 }
 
-// Rodzaj powiadomienia dla odbiorcy: 'mention' | 'message' | null (bez powiadomienia).
+// Rodzaj powiadomienia dla odbiorcy: 'mention' | 'important' | 'message' | null (bez powiadomienia).
 //  • @wzmianka osobista — zawsze (także wyciszeni i w cichych godzinach),
 //  • @wszyscy — także wyciszeni, ale nie w cichych godzinach,
+//  • ważna wiadomość od administratora (important) — także wyciszeni, ale nie w cichych godzinach,
 //  • zwykła wiadomość — nie przy wyciszeniu (muted albo muted_until w przyszłości) i nie w ciszy.
-export function pushKind({ muted, mutedUntil, quiet, personalMention, allMention, now = new Date() }) {
+export function pushKind({ muted, mutedUntil, quiet, personalMention, allMention, important = false, now = new Date() }) {
   if (personalMention) return 'mention';
   if (allMention) return quiet ? null : 'mention';
+  if (important) return quiet ? null : 'important';
   if (muted === true) return null;
   if (mutedUntil) {
     const t = mutedUntil instanceof Date ? mutedUntil.getTime() : Date.parse(mutedUntil);
@@ -205,7 +219,13 @@ export function conversationPlace(conv) {
 // tytuł = nazwa miejsca, treść = „Nadawca: wiadomość”; prywatnie: tytuł = nadawca.
 // mention: 'me' | 'all' | undefined. thread: odpowiedź w wątku — „Nadawca w wątku: …”
 // (prywatnie: tytuł = nadawca, treść „W wątku: …”), wzmianka — „… wspomniał(a) Cię w wątku”.
-export function messagePushText({ conv, senderName, preview, mention, thread = false }) {
+// important (requires_ack) — tytuł z przedrostkiem „Ważne: ”.
+export function messagePushText({ conv, senderName, preview, mention, thread = false, important = false }) {
+  const out = baseMessagePushText({ conv, senderName, preview, mention, thread });
+  return important ? { ...out, title: `${IMPORTANT_PREFIX}${out.title}` } : out;
+}
+export const IMPORTANT_PREFIX = 'Ważne: ';
+function baseMessagePushText({ conv, senderName, preview, mention, thread = false }) {
   const place = conversationPlace(conv);
   if (mention) {
     const base = mention === 'me' ? `${senderName} wspomniał(a) Cię` : `${senderName} wspomniał(a) wszystkich`;
@@ -215,6 +235,18 @@ export function messagePushText({ conv, senderName, preview, mention, thread = f
   if (thread) return place ? { title: place, body: `${senderName} w wątku: ${preview}` } : { title: senderName, body: `W wątku: ${preview}` };
   if (place) return { title: place, body: `${senderName}: ${preview}` };
   return { title: senderName, body: preview };
+}
+
+// Wiadomość „Ważne — potwierdź przeczytanie” (kolumna bywa booleanem albo tekstem z serializacji).
+export const isImportant = (msg) => msg?.requires_ack === true || msg?.requires_ack === 'true' || msg?.requires_ack === 't';
+
+// Czy nadawca ważnej wiadomości może przebić wyciszenie — te same zasady co @wszyscy.
+async function senderMayBypassMute(pool, conv, conversationId, senderEmail) {
+  const { rows } = await pool.query(
+    `SELECT role FROM conversation_participants WHERE conversation_id = $1 AND lower(user_email) = lower($2) LIMIT 1`,
+    [conversationId, senderEmail],
+  );
+  return canMentionAll(pool, conv, rows[0]?.role || 'member', String(senderEmail).toLowerCase());
 }
 
 export function messagePreview(msg) {

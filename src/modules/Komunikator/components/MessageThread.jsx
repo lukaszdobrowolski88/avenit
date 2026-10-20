@@ -11,6 +11,9 @@ import SearchModal from './SearchModal';
 import PollComposerModal from './PollComposerModal';
 import EventShareModal from './EventShareModal';
 import SeenByModal from './SeenByModal';
+import AckBar from './AckBar';
+import AckStatusModal from './AckStatusModal';
+import useMessageAcks, { isImportantMessage } from '../hooks/useMessageAcks';
 import ActiveCallBanner from '../calls/ActiveCallBanner';
 import MeetingPanel from '../meetings/MeetingPanel';
 import ThreadPanel from '../threads/ThreadPanel';
@@ -25,7 +28,6 @@ import useReactions from '../hooks/useReactions';
 import usePolls from '../hooks/usePolls';
 import usePrayer from '../hooks/usePrayer';
 import usePinnedMessages from '../hooks/usePinnedMessages';
-import useMediaGallery from '../hooks/useMediaGallery';
 import useMessageSearch from '../hooks/useMessageSearch';
 import useBlocks from '../hooks/useBlocks';
 import useScheduledMessages from '../schedule/useScheduledMessages';
@@ -88,6 +90,7 @@ export default function MessageThread({
   const [showEventShare, setShowEventShare] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [seenByMessage, setSeenByMessage] = useState(null);
+  const [ackStatusFor, setAckStatusFor] = useState(null); // „Potwierdziło X z Y” — id wiadomości
   const [jumping, setJumping] = useState(false);
   const [pendingJump, setPendingJump] = useState(null);
   // Otwarty wątek (panel po prawej): { id, initial } — initial = wiadomość główna z listy (od razu widać).
@@ -111,7 +114,7 @@ export default function MessageThread({
   const { fetchVotes, castVote, getResults } = usePolls(conversation?.id, userEmail);
   const { fetchResponses, togglePraying, getForMessage } = usePrayer(conversation?.id, userEmail);
   const { pinnedMessages, togglePin, isMessagePinned } = usePinnedMessages(conversation?.id, userEmail);
-  const gallery = useMediaGallery(conversation?.id, showMediaGallery);
+  const { fetchAcks, acknowledge, getForMessage: getAckState } = useMessageAcks(conversation?.id, userEmail);
   const { results: searchResults, loading: searchLoading, search } = useMessageSearch(conversation?.id);
   const { blocked, isBlocked, block, unblock } = useBlocks(userEmail);
   // Zaplanowane wiadomości (moje, w tej rozmowie) i „Przypomnij mi”.
@@ -334,6 +337,12 @@ export default function MessageThread({
     if (prayerIds.length) fetchResponses(prayerIds);
   }, [messages, fetchReactions, fetchVotes, fetchResponses]);
 
+  // „Ważne — potwierdź przeczytanie”: potwierdzenia wczytanych ważnych wiadomości.
+  useEffect(() => {
+    const ids = messages.filter(isImportantMessage).map(m => m.id);
+    if (ids.length) fetchAcks(ids);
+  }, [messages, fetchAcks]);
+
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -480,6 +489,12 @@ export default function MessageThread({
 
   const handleReply = useCallback((message) => setReplyingTo(message), []);
   const handleOpenThread = useCallback((message) => { if (message?.id) setOpenThread({ id: message.id, initial: message }); }, []);
+  // Galeria obejmuje też odpowiedzi w wątkach — wtedy skok do wiadomości głównej i panel wątku.
+  const jumpToGalleryItem = useCallback((messageId, createdAt, threadRootId) => {
+    if (!threadRootId) return jumpToMessage(messageId, createdAt);
+    setOpenThread({ id: threadRootId, initial: null });
+    return jumpToMessage(threadRootId);
+  }, [jumpToMessage]);
   const threadRepliers = useThreadRepliers(messages);
   const participantOf = useCallback((email) => {
     const p = participants.find(x => sameEmail(x.user_email, email));
@@ -735,6 +750,21 @@ export default function MessageThread({
                             extraActions={messageExtraActions(message)}
                             footer={<MessageTaskChips tasks={tasksFor(message.id)} isOwn={isOwn} />}
                           />
+                          {isImportantMessage(message) && !(!isDirect && isFromBlocked(message, blocked, userEmail)) && (() => {
+                            const ack = getAckState(message.id);
+                            return (
+                              <AckBar
+                                isOwn={isOwn}
+                                mine={ack.mine}
+                                busy={ack.busy}
+                                count={ack.emails.filter(e => !sameEmail(e, message.sender_email) && participantEmails.some(p => sameEmail(p, e))).length}
+                                total={participantEmails.filter(p => !sameEmail(p, message.sender_email)).length}
+                                canManage={isOwn || isAdmin}
+                                onAck={() => acknowledge(message.id)}
+                                onOpenStatus={() => setAckStatusFor(message.id)}
+                              />
+                            );
+                          })()}
                         </div>
                       </React.Fragment>
                     );
@@ -801,6 +831,7 @@ export default function MessageThread({
           onOpenPoll={() => setShowPollComposer(true)}
           onOpenEventShare={() => setShowEventShare(true)}
           onSchedule={handleScheduleMessage}
+          canMarkImportant={!isDirect}
         />
       )}
 
@@ -834,12 +865,8 @@ export default function MessageThread({
       <MediaGalleryModal
         isOpen={showMediaGallery}
         onClose={() => setShowMediaGallery(false)}
-        images={gallery.images}
-        files={gallery.files}
-        loading={gallery.loading}
-        hasMore={gallery.hasMore}
-        loadingMore={gallery.loadingMore}
-        onLoadMore={gallery.loadMore}
+        conversationId={conversation.id}
+        onJump={jumpToGalleryItem}
       />
 
       <SearchModal isOpen={showSearch} onClose={() => setShowSearch(false)} onSearch={search} results={searchResults} loading={searchLoading} onScrollToMessage={jumpToMessage} />
@@ -860,6 +887,14 @@ export default function MessageThread({
           onCreated={(task) => addTaskLocal(taskMessage.id, task)}
         />
       )}
+
+      <AckStatusModal
+        isOpen={!!ackStatusFor}
+        onClose={() => setAckStatusFor(null)}
+        messageId={ackStatusFor}
+        participants={participants}
+        ackCount={ackStatusFor ? getAckState(ackStatusFor).count : 0}
+      />
 
       <SeenByModal
         isOpen={!!seenByMessage}

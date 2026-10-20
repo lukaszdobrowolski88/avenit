@@ -177,7 +177,7 @@ export default function ConversationHeader({
           )}
 
           {onOpenMediaGallery && (
-            <button type="button" onClick={onOpenMediaGallery} className={iconBtn} title={t('Galeria mediów')} aria-label={t('Galeria mediów')}>
+            <button type="button" onClick={onOpenMediaGallery} className={iconBtn} title={t('Media, pliki i linki')} aria-label={t('Media, pliki i linki')}>
               <Image size={18} className="text-gray-500 group-hover:text-accent-primary transition-colors" />
             </button>
           )}
@@ -261,7 +261,7 @@ export default function ConversationHeader({
                 {onOpenMediaGallery && (
                   <button type="button" role="menuitem" onClick={() => { onOpenMediaGallery(); setShowMenu(false); }} className={menuItem}>
                     <Image size={16} />
-                    {tr('Galeria')}
+                    {tr('Media i pliki')}
                   </button>
                 )}
                 {canInvite && (

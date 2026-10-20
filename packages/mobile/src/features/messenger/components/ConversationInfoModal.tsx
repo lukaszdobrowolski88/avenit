@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Image, Modal, Pressable, Text, View } from "react-native";
-import { Ban, LogOut, Trash2, X } from "lucide-react-native";
+import { Ban, ChevronRight, Image as ImageIcon, LogOut, Trash2, X } from "lucide-react-native";
 import {
   conversationTitle,
   memberDisplayName,
@@ -35,6 +35,8 @@ interface Props {
   /** K10 (rozmowa 1:1): czy druga osoba jest zablokowana i przełącznik blokady. */
   peerBlocked?: boolean;
   onToggleBlock?: () => void;
+  /** „Media, pliki i linki” rozmowy (zakładki Media / Pliki / Linki / Głosowe). */
+  onOpenMedia?: () => void;
 }
 
 export const ConversationInfoModal = ({
@@ -48,6 +50,7 @@ export const ConversationInfoModal = ({
   onGone,
   peerBlocked,
   onToggleBlock,
+  onOpenMedia,
 }: Props) => {
   const leave = useLeaveConversation(myEmail);
   const remove = useDeleteConversation(myEmail);
@@ -192,6 +195,37 @@ export const ConversationInfoModal = ({
                 <Text style={{ fontSize: 12, color: "#6E685A", fontFamily: "Manrope_400Regular", marginTop: 8, lineHeight: 17 }}>
                   Nazwę, skład i role zmienisz w Komunikatorze w przeglądarce.
                 </Text>
+              ) : null}
+              {onOpenMedia ? (
+                <Pressable
+                  onPress={() => {
+                    onClose();
+                    setTimeout(onOpenMedia, 250);
+                  }}
+                  accessibilityRole="button"
+                  className="active:opacity-70"
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    marginTop: 16,
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    borderRadius: 14,
+                    backgroundColor: "#FFFFFF",
+                    borderWidth: 1,
+                    borderColor: "#E6E1D5",
+                  }}
+                >
+                  <ImageIcon size={18} color="#2A2312" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, color: "#2A2312", fontFamily: "Manrope_600SemiBold" }}>Media, pliki i linki</Text>
+                    <Text style={{ fontSize: 12, color: "#6E685A", fontFamily: "Manrope_500Medium", marginTop: 1 }}>
+                      Zdjęcia, filmy, dokumenty, linki i głosówki
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color="#6E685A" />
+                </Pressable>
               ) : null}
               <Text
                 style={{
