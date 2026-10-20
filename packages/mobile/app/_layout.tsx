@@ -177,6 +177,12 @@ function RootEffects() {
       if (convId) {
         queryClient.invalidateQueries({ queryKey: ['messages', convId] });
         queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        // Przypomnienie / nieudana zaplanowana wiadomość mają wpis w skrzynce i listy w Komunikatorze.
+        if (data?.type === 'reminder' || data?.type === 'scheduled_failed') {
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: ['myReminders'] });
+          queryClient.invalidateQueries({ queryKey: ['scheduledMessages', convId] });
+        }
         return;
       }
       // Zadanie / wzmianka w zadaniu na pierwszym planie: odśwież zadania i dzwonek.

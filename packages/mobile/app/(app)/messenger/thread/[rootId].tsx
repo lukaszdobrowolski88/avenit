@@ -44,6 +44,8 @@ import { pickDocument, pickImageFromLibrary, takePhoto, uploadAttachment, upload
 import { MessageBubble } from "../../../../src/features/messenger/components/MessageBubble";
 import { ComposerBar, type MentionCandidate } from "../../../../src/features/messenger/components/ComposerBar";
 import { chatErrorTitle } from "../../../../src/features/messenger/plus";
+import { TimePresetSheet } from "../../../../src/features/messenger/components/TimePresetSheet";
+import { reminderPresets, useCreateReminder, whenLabel } from "../../../../src/features/messenger/schedule";
 import { supabase } from "../../../../src/lib/supabase";
 import { useAuthSession } from "../../../../src/lib/auth";
 import { usePermissions } from "../../../../src/lib/permissions";
@@ -77,6 +79,9 @@ export default function ThreadScreen() {
   const following = isFollowing(followersQuery.data, myEmail);
   const sendMutation = useSendThreadReply(cid, rootId, myEmail);
   const followMutation = useSetThreadFollow(rootId, myEmail);
+  // „Przypomnij mi” o wiadomości wątku (link przypomnienia prowadzi tu przez &thread=).
+  const createReminder = useCreateReminder();
+  const [remindTarget, setRemindTarget] = useState<MessageRow | null>(null);
   useRealtimeThread(cid, rootId);
 
   const memberEmails = useMemo(() => {
@@ -232,6 +237,7 @@ export default function ThreadScreen() {
     const mine = sameEmail(m.sender_email, myEmail);
     const buttons: { text: string; style?: "cancel" | "destructive"; onPress?: () => void }[] = [];
     if (m.content) buttons.push({ text: "Udostępnij tekst", onPress: () => void Share.share({ message: m.content }).catch(() => undefined) });
+    if (m.message_type !== "system") buttons.push({ text: "Przypomnij mi", onPress: () => setRemindTarget(m) });
     if (!isRoot && mine && canEditOwn && canEditMessage(m, myEmail)) {
       buttons.push({ text: "Edytuj", onPress: () => { setEditingId(m.id); setText(m.content); setPendingAttachment(null); } });
     }
@@ -239,6 +245,18 @@ export default function ThreadScreen() {
     if (!buttons.length) return;
     buttons.push({ text: "Anuluj", style: "cancel" });
     Alert.alert("Wiadomość", undefined, buttons);
+  };
+
+  const handleRemind = async (remindAt: string) => {
+    const target = remindTarget;
+    if (!target || createReminder.isPending) return;
+    try {
+      await createReminder.mutateAsync({ messageId: target.id, remindAt });
+      setRemindTarget(null);
+      toast.success("Przypomnę Ci", whenLabel(remindAt));
+    } catch (e) {
+      Alert.alert("Nie udało się ustawić przypomnienia", friendlyError(e, "Spróbuj ponownie."));
+    }
   };
 
   const toggleFollow = () => {
@@ -391,6 +409,17 @@ export default function ThreadScreen() {
           />
         </View>
       </KeyboardAvoidingView>
+
+      <TimePresetSheet
+        visible={!!remindTarget}
+        title="Przypomnij mi"
+        presets={remindTarget ? reminderPresets(new Date()) : []}
+        detailKeys={["in1h", "in3h", "monday9"]}
+        confirmLabel="Przypomnij"
+        busy={createReminder.isPending}
+        onPick={handleRemind}
+        onClose={() => setRemindTarget(null)}
+      />
     </>
   );
 }

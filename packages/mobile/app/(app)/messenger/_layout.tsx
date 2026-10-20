@@ -8,6 +8,7 @@ export default function MessengerLayout() {
         <Stack.Screen name="new" />
         <Stack.Screen name="[conversationId]" options={{ headerShown: false }} />
         <Stack.Screen name="thread/[rootId]" options={{ headerShown: false }} />
+        <Stack.Screen name="reminders" />
       </Stack>
     </ModuleGate>
   );

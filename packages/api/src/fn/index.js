@@ -123,6 +123,10 @@ const MODULES = [
   // Wydarzenia online/hybrydowe (099): stan spotkania wydarzenia i „Dołącz” wg widoczności wydarzenia.
   'event-meeting',
   'event-meeting-guests',
+  // Komunikator: zaplanowane wiadomości i „Przypomnij mi” (migracja 113, src/chatSchedule) —
+  // capability module:komunikator z eksportu modułu; worker co minutę woła runForTenant.
+  'chat-scheduled',
+  'chat-reminders',
 ];
 
 export async function registerFunctions(app) {

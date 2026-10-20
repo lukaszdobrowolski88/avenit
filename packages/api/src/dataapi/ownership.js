@@ -28,6 +28,8 @@ export const OWNED_TABLES = {
   notifications: { owner: 'user_email', openInsert: true },
   ical_subscriptions: { owner: 'user_email' }, // web zapisuje user_email (migracja 077)
   user_blocks: { owner: 'blocker_email' }, // Komunikator+ (088): moje blokady widzę tylko ja
+  scheduled_messages: { owner: 'sender_email' }, // 113: zaplanowane wiadomości — tylko nadawca
+  message_reminders: { owner: 'user_email' }, // 113: „Przypomnij mi” — tylko właściciel
   totp_auth_logs: { owner: 'user_id', byId: true },
 };
 

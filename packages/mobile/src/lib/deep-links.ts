@@ -95,15 +95,20 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
     });
     return;
   }
-  // Web format: /komunikator?conversation=<uuid>
+  // Web format: /komunikator?conversation=<uuid>[&message=<uuid>] (przypomnienie — skok do wiadomości).
   const komunikatorMatch = path.match(/^\/?komunikator\?.*conversation=([^&]+)/);
   if (komunikatorMatch) {
+    const messageId = queryParam(path, 'message');
+    const thread = threadFromLink(path);
     router.push({
       pathname: '/(app)/messenger/[conversationId]',
-      params: { conversationId: komunikatorMatch[1] },
-    });
+      // Przypomnienie (&message=): skok do wiadomości; gdy to odpowiedź w wątku — do wiadomości
+      // głównej wątku w rozmowie, a nad nią ekran wątku.
+      params: messageId
+        ? { conversationId: komunikatorMatch[1], messageId: thread || messageId }
+        : { conversationId: komunikatorMatch[1] },
+    } as never);
     // Odpowiedź w wątku (&thread=<id>): ekran wątku nad rozmową — „wstecz” wraca do rozmowy.
-    const thread = threadFromLink(path);
     if (thread) {
       router.push({
         pathname: '/(app)/messenger/thread/[rootId]',

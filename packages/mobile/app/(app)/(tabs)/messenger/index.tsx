@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Link, useRouter } from "expo-router";
 import {
+  AlarmClock,
   Archive,
   ArchiveRestore,
   BellOff,
@@ -252,7 +253,19 @@ export default function MessengerScreen() {
           subtitle={totalUnread > 0 ? `Nieprzeczytane: ${totalUnread}` : "Wiadomości wspólnoty"}
           Icon={MessageCircle}
           right={
-            canCreate ? (
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {/* „Moje przypomnienia” — przypomnienia o wiadomościach (Przypomnij mi). */}
+              <Pressable
+                onPress={() => router.push("/(app)/messenger/reminders" as never)}
+                accessibilityRole="button"
+                accessibilityLabel="Moje przypomnienia"
+                hitSlop={8}
+                className="active:opacity-70"
+                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
+              >
+                <AlarmClock size={18} color="#2A2312" strokeWidth={2.2} />
+              </Pressable>
+            {canCreate ? (
               <View style={{ flexDirection: "row", gap: 8 }}>
               {callsEnabled ? (
                 <Pressable
@@ -284,7 +297,8 @@ export default function MessengerScreen() {
                 <SquarePen size={18} color="#ffffff" strokeWidth={2.2} />
               </Pressable>
               </View>
-            ) : null
+            ) : null}
+            </View>
           }
         />
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { Loader, MessageSquare, Upload, ChevronDown, Megaphone, Ban, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Loader, MessageSquare, Upload, ChevronDown, Megaphone, Ban, AlertTriangle, RefreshCw, Clock } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import ConversationHeader from './ConversationHeader';
@@ -28,6 +28,10 @@ import usePinnedMessages from '../hooks/usePinnedMessages';
 import useMediaGallery from '../hooks/useMediaGallery';
 import useMessageSearch from '../hooks/useMessageSearch';
 import useBlocks from '../hooks/useBlocks';
+import useScheduledMessages from '../schedule/useScheduledMessages';
+import ScheduledMessagesPanel from '../schedule/ScheduledMessagesPanel';
+import RemindMeDialog from '../schedule/RemindMeDialog';
+import { whenLabel } from '../schedule/scheduleUi';
 import { usePresence } from '../../../hooks/usePresence';
 import { supabase } from '../../../lib/supabase';
 import { groupMessagesByDate, formatDateSeparator } from '../utils/messageHelpers';
@@ -57,7 +61,10 @@ export default function MessageThread({
   perms = {},
   isAppAdmin = false,
   // Wątek do otwarcia (link z powiadomienia: ?thread=<id wiadomości głównej>) — { id, at }.
-  threadRequest = null
+  threadRequest = null,
+  // Skok do wiadomości po wejściu (link z przypomnienia: ?conversation=…&message=…).
+  initialMessageId = null,
+  onInitialMessageHandled
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -101,6 +108,12 @@ export default function MessageThread({
   const gallery = useMediaGallery(conversation?.id, showMediaGallery);
   const { results: searchResults, loading: searchLoading, search } = useMessageSearch(conversation?.id);
   const { blocked, isBlocked, block, unblock } = useBlocks(userEmail);
+  // Zaplanowane wiadomości (moje, w tej rozmowie) i „Przypomnij mi”.
+  const scheduled = useScheduledMessages(conversation?.id, !!userEmail);
+  const [showScheduled, setShowScheduled] = useState(false);
+  const [remindTarget, setRemindTarget] = useState(null);
+  const jumpTargetRef = useRef(initialMessageId);
+  const jumpHandledRef = useRef(null);
 
   const isAdmin = conversation?.myRole === 'admin';
   const isDirect = conversation?.type === 'direct';
@@ -186,7 +199,7 @@ export default function MessageThread({
     if (!lastMessage || didInitialScrollRef.current || loading) return;
     didInitialScrollRef.current = true;
     const boundaryTs = initialLastRead ? new Date(initialLastRead).getTime() : 0;
-    if (initialUnreadRef.current > 0 && boundaryTs) {
+    if (initialUnreadRef.current > 0 && boundaryTs && !jumpTargetRef.current) {
       const oldestTs = messages[0] ? new Date(messages[0].created_at).getTime() : 0;
       if (oldestTs > boundaryTs && hasMore) {
         loadSince(initialLastRead)
@@ -241,6 +254,25 @@ export default function MessageThread({
       setJumping(false);
     }
   }, [highlightMessage, loadUntil]);
+
+  // Link z przypomnienia: po pierwszym wczytaniu wątku — skok do wskazanej wiadomości (raz).
+  // Nowy cel przy już otwartej rozmowie (kolejne powiadomienie) — też skaczemy.
+  if (!initialMessageId) jumpHandledRef.current = null;
+  else if (initialMessageId !== jumpHandledRef.current && jumpTargetRef.current !== initialMessageId) {
+    jumpTargetRef.current = initialMessageId;
+  }
+  useEffect(() => {
+    const target = jumpTargetRef.current;
+    if (!target || loading || !didInitialScrollRef.current) return undefined;
+    const t = setTimeout(() => {
+      jumpTargetRef.current = null;
+      jumpHandledRef.current = target;
+      jumpToMessage(target);
+      onInitialMessageHandled?.();
+    }, 60);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, lastMessage?.id, initialMessageId]);
 
   // Po doczytaniu starszych wiadomości zachowaj miejsce, które użytkownik czytał.
   const restoreScrollRef = useRef(null);
@@ -312,6 +344,25 @@ export default function MessageThread({
     }
     setReplyingTo(null);
     scrollToBottom();
+  };
+
+  // Zaplanowana wysyłka (MessageInput: przytrzymanie „Wyślij”) — serwer sprawdza te same zasady co przy wysyłce.
+  const handleScheduleMessage = async (content, attachments, replyToId, extra = {}, sendAt) => {
+    stopTyping();
+    try {
+      await scheduled.create({
+        content,
+        attachments,
+        reply_to_id: replyToId || null,
+        mentions: Array.isArray(extra.mentions) ? extra.mentions : [],
+        send_at: sendAt,
+      });
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się zaplanować wiadomości. Spróbuj ponownie.') });
+      throw handled(err);
+    }
+    setReplyingTo(null);
+    toast.success(tr('Zaplanowano: {when}', { when: whenLabel(sendAt) }));
   };
 
   const handleCreatePoll = async (pollMeta) => {
@@ -645,6 +696,7 @@ export default function MessageThread({
                             isGroupConversation={!isDirect}
                             onReplyInThread={canPost && !peerBlocked && canStartThread(message) ? handleOpenThread : undefined}
                             threadChip={<ThreadChip message={message} repliers={threadRepliers[message.id] || []} userOf={participantOf} onOpen={handleOpenThread} align={isOwn ? 'end' : 'start'} />}
+                            onRemind={message.message_type === 'system' ? undefined : setRemindTarget}
                           />
                         </div>
                       </React.Fragment>
@@ -673,6 +725,20 @@ export default function MessageThread({
         </button>
       )}
 
+      {/* Moje zaplanowane wiadomości w tej rozmowie */}
+      {scheduled.items.length > 0 && (
+        <div className="px-4 pt-2 flex">
+          <button type="button" onClick={() => setShowScheduled(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary-light/50 transition">
+            <Clock size={13} aria-hidden="true" />
+            {tr('Zaplanowane ({n})', { n: scheduled.items.length })}
+            {scheduled.items.some(s => s.status === 'failed') && (
+              <span className="text-red-600 dark:text-red-400">· {tr('nieudane: {n}', { n: scheduled.items.filter(s => s.status === 'failed').length })}</span>
+            )}
+          </button>
+        </div>
+      )}
+
       {peerBlocked ? (
         <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/80 dark:bg-gray-900/80">
           <div className="flex flex-wrap items-center justify-center gap-3 py-1 text-sm text-gray-600 dark:text-gray-300">
@@ -697,6 +763,7 @@ export default function MessageThread({
           canMentionAll={mentionAllAllowed}
           onOpenPoll={() => setShowPollComposer(true)}
           onOpenEventShare={() => setShowEventShare(true)}
+          onSchedule={handleScheduleMessage}
         />
       )}
 
@@ -713,6 +780,7 @@ export default function MessageThread({
           canEditOwn={canEditOwn}
           nameOf={nameOf}
           onClose={() => setOpenThread(null)}
+          onRemind={setRemindTarget}
         />
       )}
 
@@ -741,6 +809,10 @@ export default function MessageThread({
       <PollComposerModal isOpen={showPollComposer} onClose={() => setShowPollComposer(false)} onSubmit={handleCreatePoll} />
 
       <EventShareModal isOpen={showEventShare} onClose={() => setShowEventShare(false)} onShare={handleShareEvent} />
+
+      <ScheduledMessagesPanel isOpen={showScheduled} onClose={() => setShowScheduled(false)} hook={scheduled} />
+
+      <RemindMeDialog message={remindTarget} onClose={() => setRemindTarget(null)} />
 
       <SeenByModal
         isOpen={!!seenByMessage}

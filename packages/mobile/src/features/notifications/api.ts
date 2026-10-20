@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { plural } from '../../lib/domain';
 import { taskFromNotificationData } from '../../lib/deep-links';
 
-export type NotificationType = 'message' | 'mention' | 'task' | 'event' | 'system';
+export type NotificationType = 'message' | 'mention' | 'task' | 'event' | 'system' | 'reminder';
 
 export interface NotificationRow {
   id: string;
@@ -91,6 +91,8 @@ export const TYPE_META: Record<
   task: { tint: '#8A6606', bg: '#FFF1C2', label: 'Zadanie' },
   event: { tint: '#8A6606', bg: '#FFF1C2', label: 'Wydarzenie' },
   system: { tint: '#6B6557', bg: '#E3DDD0', label: 'System' },
+  // „Przypomnij mi” o wiadomości (Komunikator) — osobna pozycja, prowadzi do wiadomości.
+  reminder: { tint: '#8A6606', bg: '#FFF1C2', label: 'Przypomnienie' },
 };
 
 // Grupowanie listy:

@@ -355,6 +355,11 @@ export const REGISTRY = {
   // Spotkania online (migracja 098): odczyt uczestników rozmowy spotkania (komunikator.js — CONV_TABLES),
   // zapis tylko fn meeting-*. meeting_invites celowo POZA rejestrem (e-maile gości — fn meeting-get).
   meetings: T(null, { readOnly: true }),
+  // Zaplanowane wiadomości i „Przypomnij mi” (migracja 113): tabele osobiste (ownership.js —
+  // tylko właściciel czyta, także przez realtime), zapis wyłącznie fn chat-scheduled / chat-reminders
+  // i worker (walidacja terminu, strażnicy wysyłki).
+  scheduled_messages: T(null, { readOnly: true }),
+  message_reminders: T(null, { readOnly: true }),
   // link_previews / message_translations — celowo POZA rejestrem: tylko przez fn
   // (link-preview, translate-message), bez odczytu/zapisu przez /api/db.
   // Młodzieżówka

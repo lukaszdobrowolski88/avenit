@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Plus, MessageSquare, Star, Archive, Pin, MoreHorizontal, BellOff, Flag, RefreshCw, CalendarPlus } from 'lucide-react';
+import { Search, Plus, MessageSquare, Star, Archive, Pin, MoreHorizontal, BellOff, Flag, RefreshCw, CalendarPlus, AlarmClock } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { ChannelIcon } from './ConversationHeader';
 import { muteUntilLabel } from './MuteMenu';
@@ -41,7 +41,8 @@ export default function ConversationList({
   onNewMeeting,        // „Zaplanuj spotkanie” (spotkanie online z zaproszeniami)
   openReportsCount = 0,
   onSyncChannels,      // „odśwież składy kanałów” (administrator aplikacji) — K8
-  syncingChannels = false
+  syncingChannels = false,
+  onOpenReminders      // „Moje przypomnienia” (Przypomnij mi o wiadomości)
 }) {
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
@@ -331,6 +332,17 @@ export default function ConversationList({
                   {openReportsCount > 99 ? '99+' : openReportsCount}
                 </span>
               )}
+            </button>
+          )}
+          {onOpenReminders && (
+            <button
+              type="button"
+              onClick={onOpenReminders}
+              aria-label={t('Moje przypomnienia')}
+              title={t('Moje przypomnienia')}
+              className="p-2.5 rounded-xl text-gray-600 dark:text-gray-300 bg-white/70 dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 hover:text-gray-900 dark:hover:text-white transition"
+            >
+              <AlarmClock size={16} />
             </button>
           )}
           {onNewMeeting && (

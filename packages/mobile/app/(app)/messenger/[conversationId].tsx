@@ -19,7 +19,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { goBack } from "../../../src/lib/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { isSameDay } from "date-fns";
-import { ArrowDown, Ban, X } from "lucide-react-native";
+import { ArrowDown, Ban, Clock, X } from "lucide-react-native";
 import {
   useMessages,
   useOlderMessages,
@@ -104,6 +104,17 @@ import { ReportModal } from "../../../src/features/messenger/components/ReportMo
 import { AttachmentImage } from "../../../src/features/messenger/components/AttachmentImage";
 import { ThreadChip } from "../../../src/features/messenger/components/ThreadChip";
 import { canStartThread, useThreadRepliers } from "../../../src/features/messenger/threads";
+import { TimePresetSheet } from "../../../src/features/messenger/components/TimePresetSheet";
+import { ScheduledListSheet } from "../../../src/features/messenger/components/ScheduledListSheet";
+import {
+  reminderPresets,
+  schedulePresets,
+  useCreateReminder,
+  useCreateScheduled,
+  useScheduledMessages,
+  whenLabel,
+  type ScheduledMessage,
+} from "../../../src/features/messenger/schedule";
 import { loadDraft, saveDraft } from "../../../src/features/messenger/drafts";
 import {
   chatErrorTitle,
@@ -137,7 +148,8 @@ type TranslationState = BubbleTranslation & { hidden?: boolean };
 // Lista wątku jest ODWRÓCONA (najnowsze na dole, offset 0 = dół): rozmowa otwiera się na końcu
 // bez przewijania, starsze wiadomości doczytują się przy przewijaniu w górę (K11).
 export default function ConversationScreen() {
-  const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
+  // messageId — skok do wiadomości po wejściu (przypomnienie, link ?conversation=…&message=…).
+  const { conversationId, messageId } = useLocalSearchParams<{ conversationId: string; messageId?: string }>();
   const { user } = useAuthSession();
   const myEmail = user?.email ?? null;
   const callsEnabled = useCallsEnabled();
@@ -205,6 +217,18 @@ export default function ConversationScreen() {
       router.push({ pathname: "/(app)/messenger/thread/[rootId]", params: { rootId: m.id, conversationId: cid } } as never),
     [router, cid],
   );
+  // Zaplanowane wiadomości (moje, w tej rozmowie) i „Przypomnij mi”.
+  const scheduledQuery = useScheduledMessages(cid, !!myEmail);
+  const scheduledItems: ScheduledMessage[] = scheduledQuery.data ?? [];
+  const createScheduled = useCreateScheduled(cid);
+  const createReminder = useCreateReminder();
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduledListOpen, setScheduledListOpen] = useState(false);
+  const [remindTarget, setRemindTarget] = useState<MessageRow | null>(null);
+  const jumpParam = typeof messageId === "string" && messageId ? messageId : null;
+  const jumpParamRef = useRef<string | null>(jumpParam);
+  jumpParamRef.current = jumpParam;
+  const jumpedRef = useRef<string | null>(null);
 
   const details = detailsQuery.data;
   const blockedSet = useMemo(() => new Set(blocksQuery.data ?? []), [blocksQuery.data]);
@@ -307,6 +331,9 @@ export default function ConversationScreen() {
     setUnreadAnchor(null);
     setSnapshotDone(false);
     setHighlightId(null);
+    setScheduleOpen(false);
+    setScheduledListOpen(false);
+    setRemindTarget(null);
     markedRef.current = new Set();
     readFloor.current = 0;
     pendingScroll.current = null;
@@ -473,8 +500,9 @@ export default function ConversationScreen() {
       readFloor.current = since ? new Date(since).getTime() || 0 : 0;
       setUnreadAnchor(first);
       setSnapshotDone(true);
-      // Otwórz przy pierwszej nieprzeczytanej, gdy nie mieści się na dole ekranu.
-      if (first) {
+      // Otwórz przy pierwszej nieprzeczytanej, gdy nie mieści się na dole ekranu (chyba że
+      // wejście prowadzi do konkretnej wiadomości — przypomnienie).
+      if (first && !jumpParamRef.current) {
         const pos = list.findIndex((m: MessageRow) => m.id === first);
         if (pos >= 0 && list.length - pos > 6) {
           pendingScroll.current = { id: `u-${first}`, viewPosition: 0.9, tries: 0 };
@@ -496,6 +524,14 @@ export default function ConversationScreen() {
     qc,
     loadUntil,
   ]);
+
+  // Przypomnienie (link z messageId): po pierwszym wczytaniu wątku skok do wiadomości (raz na cel).
+  useEffect(() => {
+    if (!snapshotDone || !jumpParam || jumpedRef.current === `${cid}:${jumpParam}`) return;
+    jumpedRef.current = `${cid}:${jumpParam}`;
+    const t = setTimeout(() => void jumpToMessage({ id: jumpParam }), 250);
+    return () => clearTimeout(t);
+  }, [snapshotDone, jumpParam, cid, jumpToMessage]);
 
   // Wejście w rozmowę i każda nowa wiadomość = przeczytane (jak web). Znacznik nie wcześniejszy niż
   // ostatnia wiadomość (spóźniony zegar telefonu), licznik na liście znika od razu.
@@ -762,6 +798,41 @@ export default function ConversationScreen() {
         chatErrorTitle(e, "Nie udało się wysłać"),
         friendlyError(e, "Nie udało się wysłać wiadomości. Spróbuj ponownie."),
       );
+    }
+  };
+
+  // Zaplanowana wysyłka (przytrzymanie „Wyślij”): treść, załącznik, odpowiedź i wzmianki jak przy
+  // wysyłce; serwer od razu sprawdza te same zasady (np. kanał „tylko administratorzy”).
+  const handleSchedule = async (sendAt: string) => {
+    const t = text.trim();
+    if (createScheduled.isPending || (!t && !pendingAttachment)) return;
+    try {
+      await createScheduled.mutateAsync({
+        content: t,
+        attachments: pendingAttachment ? [pendingAttachment] : [],
+        replyToId: replyTo?.id ?? null,
+        mentions: extractMentions(t, members, { allowAll: canMentionAll, exclude: myEmail }),
+        sendAt,
+      });
+      setScheduleOpen(false);
+      void stopTyping();
+      resetComposer();
+      clearDraft();
+      toast.success("Zaplanowano", whenLabel(sendAt));
+    } catch (e) {
+      Alert.alert(chatErrorTitle(e, "Nie udało się zaplanować"), friendlyError(e, "Nie udało się zaplanować wiadomości. Spróbuj ponownie."));
+    }
+  };
+
+  const handleRemind = async (remindAt: string) => {
+    const target = remindTarget;
+    if (!target || createReminder.isPending) return;
+    try {
+      await createReminder.mutateAsync({ messageId: target.id, remindAt });
+      setRemindTarget(null);
+      toast.success("Przypomnę Ci", whenLabel(remindAt));
+    } catch (e) {
+      Alert.alert("Nie udało się ustawić przypomnienia", friendlyError(e, "Spróbuj ponownie."));
     }
   };
 
@@ -1181,6 +1252,36 @@ export default function ConversationScreen() {
           </View>
         ) : null}
 
+        {scheduledItems.length > 0 ? (
+          <View style={{ flexDirection: "row", paddingHorizontal: 12, paddingTop: 4, backgroundColor: "#F6F4EE" }}>
+            <Pressable
+              onPress={() => setScheduledListOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Zaplanowane wiadomości: ${scheduledItems.length}`}
+              className="active:opacity-70"
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 999,
+                backgroundColor: "#ECE8DE",
+              }}
+            >
+              <Clock size={13} color="#2A2312" />
+              <Text style={{ fontSize: 12, color: "#2A2312", fontFamily: "Manrope_700Bold" }}>
+                {`Zaplanowane (${scheduledItems.length})`}
+              </Text>
+              {scheduledItems.some((x: ScheduledMessage) => x.status === "failed") ? (
+                <Text style={{ fontSize: 12, color: "#B42318", fontFamily: "Manrope_600SemiBold" }}>
+                  {`· nieudane: ${scheduledItems.filter((x: ScheduledMessage) => x.status === "failed").length}`}
+                </Text>
+              ) : null}
+            </Pressable>
+          </View>
+        ) : null}
+
         <View style={{ paddingBottom: composerBottomPad, backgroundColor: "#F6F4EE" }}>
           <ComposerBar
             text={text}
@@ -1211,6 +1312,10 @@ export default function ConversationScreen() {
             onCancelPrayer={() => setPrayerMode(false)}
             mentionCandidates={mentionCandidates}
             canMentionAll={canMentionAll}
+            onLongPressSend={canPost ? () => {
+              Keyboard.dismiss();
+              setScheduleOpen(true);
+            } : undefined}
           />
         </View>
       </KeyboardAvoidingView>
@@ -1292,6 +1397,41 @@ export default function ConversationScreen() {
             ? () => handleToggleBlock(actionTarget.sender_email)
             : undefined
         }
+        onRemind={
+          details?.is_participant && actionTarget && actionTarget.message_type !== "system"
+            ? () => setRemindTarget(actionTarget)
+            : undefined
+        }
+      />
+
+      <TimePresetSheet
+        visible={scheduleOpen}
+        title="Zaplanuj wysyłkę"
+        subtitle={text.trim() ? `„${excerpt(text, 70)}”` : pendingAttachment ? "Załącznik" : null}
+        presets={scheduleOpen ? schedulePresets(new Date()) : []}
+        confirmLabel="Zaplanuj"
+        busy={createScheduled.isPending}
+        onPick={handleSchedule}
+        onClose={() => setScheduleOpen(false)}
+      />
+
+      <TimePresetSheet
+        visible={!!remindTarget}
+        title="Przypomnij mi"
+        subtitle={remindTarget?.content ? `„${excerpt(remindTarget.content, 70)}”` : null}
+        presets={remindTarget ? reminderPresets(new Date()) : []}
+        detailKeys={["in1h", "in3h", "monday9"]}
+        confirmLabel="Przypomnij"
+        busy={createReminder.isPending}
+        onPick={handleRemind}
+        onClose={() => setRemindTarget(null)}
+      />
+
+      <ScheduledListSheet
+        visible={scheduledListOpen}
+        onClose={() => setScheduledListOpen(false)}
+        conversationId={cid}
+        items={scheduledItems}
       />
 
       <ForwardMessageModal
