@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { Loader, MessageSquare, Upload, ChevronDown, Megaphone, Ban, AlertTriangle, RefreshCw, Clock } from 'lucide-react';
+import { Loader, MessageSquare, Upload, ChevronDown, Megaphone, Ban, AlertTriangle, RefreshCw, Clock, Bookmark, BookmarkMinus, CheckSquare } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import ConversationHeader from './ConversationHeader';
@@ -33,6 +33,12 @@ import ScheduledMessagesPanel from '../schedule/ScheduledMessagesPanel';
 import RemindMeDialog from '../schedule/RemindMeDialog';
 import { whenLabel } from '../schedule/scheduleUi';
 import { usePresence } from '../../../hooks/usePresence';
+import { usePermissions } from '../../../contexts/PermissionsContext';
+import { useMessageTasks, useSavedMessageIds } from '../messageTasks/hooks';
+import CreateTaskFromMessageModal from '../messageTasks/CreateTaskFromMessageModal';
+import MessageTaskChips from '../messageTasks/MessageTaskChips';
+import { conversationModuleKey } from '@avenit/shared/src/lib/messageTasks.js';
+import { eventTasksModule } from '../../Events/eventTasks';
 import { supabase } from '../../../lib/supabase';
 import { groupMessagesByDate, formatDateSeparator } from '../utils/messageHelpers';
 import { canPostIn, sameEmail, canMentionAll as canMentionAllIn, isFromBlocked, readSince } from '../utils/chatLogic';
@@ -114,6 +120,14 @@ export default function MessageThread({
   const [remindTarget, setRemindTarget] = useState(null);
   const jumpTargetRef = useRef(initialMessageId);
   const jumpHandledRef = useRef(null);
+  // Zadania z wiadomości i zapisane wiadomości (migracja 114).
+  const { canModule } = usePermissions();
+  const { tasksFor, addLocal: addTaskLocal } = useMessageTasks(messages, !!conversation?.id);
+  const { isSaved, toggleSaved, available: savedAvailable } = useSavedMessageIds(!!userEmail);
+  const [taskMessage, setTaskMessage] = useState(null);
+  const convTaskModule = conversationModuleKey(conversation);
+  const canCreateTask = canModule(null, 'board_items', 'create') || canModule('calendar', 'board_items', 'create')
+    || (!!convTaskModule && canModule(eventTasksModule(convTaskModule), 'board_items', 'create'));
 
   const isAdmin = conversation?.myRole === 'admin';
   const isDirect = conversation?.type === 'direct';
@@ -490,6 +504,27 @@ export default function MessageThread({
   }, [forwardMessage]);
 
   const handleShowSeenBy = useCallback((message) => setSeenByMessage(message), []);
+
+  // „Zapisz” / „Usuń z zapisanych” i „Utwórz zadanie” w menu wiadomości (migracja 114).
+  const handleToggleSaved = useCallback(async (message) => {
+    try {
+      const nowSaved = await toggleSaved(message.id);
+      toast.success(nowSaved ? tr('Zapisano wiadomość') : tr('Usunięto z zapisanych'));
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się zapisać wiadomości.') });
+    }
+  }, [toggleSaved]);
+  const messageExtraActions = (message) => {
+    if (!message || message.deleted_at || message.message_type === 'system' || message.message_type === 'call') return null;
+    const list = [];
+    if (savedAvailable) {
+      list.push(isSaved(message.id)
+        ? { key: 'unsave', label: tr('Usuń z zapisanych'), icon: BookmarkMinus, onClick: handleToggleSaved }
+        : { key: 'save', label: tr('Zapisz'), icon: Bookmark, onClick: handleToggleSaved });
+    }
+    if (canCreateTask) list.push({ key: 'task', label: tr('Utwórz zadanie'), icon: CheckSquare, onClick: setTaskMessage });
+    return list;
+  };
   const handleTyping = useCallback(() => startTyping(), [startTyping]);
   const handleSetMute = onSetMute && conversation?.id ? (opt) => onSetMute(conversation.id, opt) : undefined;
 
@@ -697,6 +732,8 @@ export default function MessageThread({
                             onReplyInThread={canPost && !peerBlocked && canStartThread(message) ? handleOpenThread : undefined}
                             threadChip={<ThreadChip message={message} repliers={threadRepliers[message.id] || []} userOf={participantOf} onOpen={handleOpenThread} align={isOwn ? 'end' : 'start'} />}
                             onRemind={message.message_type === 'system' ? undefined : setRemindTarget}
+                            extraActions={messageExtraActions(message)}
+                            footer={<MessageTaskChips tasks={tasksFor(message.id)} isOwn={isOwn} />}
                           />
                         </div>
                       </React.Fragment>
@@ -781,6 +818,7 @@ export default function MessageThread({
           nameOf={nameOf}
           onClose={() => setOpenThread(null)}
           onRemind={setRemindTarget}
+          extraActionsFor={messageExtraActions}
         />
       )}
 
@@ -813,6 +851,15 @@ export default function MessageThread({
       <ScheduledMessagesPanel isOpen={showScheduled} onClose={() => setShowScheduled(false)} hook={scheduled} />
 
       <RemindMeDialog message={remindTarget} onClose={() => setRemindTarget(null)} />
+      {taskMessage && (
+        <CreateTaskFromMessageModal
+          message={{ ...taskMessage, conversation_id: taskMessage.conversation_id || conversation.id }}
+          conversation={conversation}
+          userEmail={userEmail}
+          onClose={() => setTaskMessage(null)}
+          onCreated={(task) => addTaskLocal(taskMessage.id, task)}
+        />
+      )}
 
       <SeenByModal
         isOpen={!!seenByMessage}

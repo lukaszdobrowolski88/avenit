@@ -20,6 +20,7 @@ import { getColumnType, findLabel, isCellEmpty } from '../lib/columnTypes';
 import { useItemUpdates } from '../hooks/useItemUpdates';
 import { isTypingTarget } from '../lib/keyboard';
 import ShareToChatModal, { useCanShareToChat } from '../../Komunikator/components/ShareToChatModal';
+import SourceMessageLink from '../../Komunikator/messageTasks/SourceMessageLink';
 import { confirmDialog } from '../../../lib/dialog';
 import { toast } from '../../../lib/toast';
 import { tr, appLocale } from '../../../i18n';
@@ -469,6 +470,9 @@ export default function ItemPanel({ item, data, terms = {}, onClose, userEmail, 
           onBlur={commitName}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
           className="block w-full text-2xl font-bold leading-tight tracking-tight bg-transparent border-0 shadow-none outline-none resize-none overflow-hidden text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600 rounded-lg px-2 -mx-2 py-1 hover:bg-gray-50 focus:bg-gray-50 dark:hover:bg-white/5 dark:focus:bg-white/5 transition-colors" />
+
+        {/* Zadanie utworzone z wiadomości czatu — link do rozmowy na tej wiadomości (migracja 114) */}
+        {current.source_message_id && <SourceMessageLink item={current} />}
 
         {/* Szczegóły — etykieta → wartość, te same komórki co w tabeli */}
         <section aria-labelledby={`${ids}-props`}>

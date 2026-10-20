@@ -52,6 +52,8 @@ interface Props {
   onToggleBlock?: () => void;
   /** „Przypomnij mi” o wiadomości (arkusz z terminami). */
   onRemind?: () => void;
+  /** Dodatkowe akcje (np. „Zapisz”, „Utwórz zadanie” — migracja 114), przed przypięciem. */
+  extraActions?: { key: string; label: string; Icon: LucideIcon; onPress: () => void }[];
 }
 
 interface ActionRow {
@@ -163,6 +165,7 @@ export const MessageActionsSheet = ({
   blockLabel,
   onToggleBlock,
   onRemind,
+  extraActions,
 }: Props) => {
   const close = onClose;
   const wrap = (fn: () => void) => () => {
@@ -180,6 +183,7 @@ export const MessageActionsSheet = ({
       : []),
     ...(onRemind ? [{ key: "remind", label: "Przypomnij mi", Icon: AlarmClock, onPress: wrap(onRemind) }] : []),
     ...(onReadBy ? [{ key: "readby", label: "Kto przeczytał", Icon: Eye, onPress: wrap(onReadBy) }] : []),
+    ...(extraActions ?? []).map((a) => ({ key: a.key, label: a.label, Icon: a.Icon, onPress: wrap(a.onPress) })),
   ];
   if (canPin) {
     actions.push({

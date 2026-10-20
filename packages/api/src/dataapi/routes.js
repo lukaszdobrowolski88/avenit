@@ -19,6 +19,7 @@ import { MODERATE_CAPABILITY, reportScope, enforceReportWrite, reportAudience, n
 import { isBoardTable, boardScope, enforceBoardWrite, boardAudience } from './boardsScope.js';
 import { isMailTable, mailScope, enforceMailWrite, mailAudience } from './mailScope.js';
 import { applyModuleScope, moduleRowScope, andScopes } from './moduleScope.js';
+import { enforceMessageTaskLink, enforceSavedMessageWrite } from './messageTasks.js';
 import { loadVisibilityContext } from './eventVisibility.js';
 import { filterUserContent, notifyNewReport } from '../lib/moderation.js';
 import { prepareBoardAssignNotify, notifyBoardAssignees } from './boardNotify.js';
@@ -296,6 +297,9 @@ export default async function dataApiRoutes(app) {
       }
       // Blokady: e-maile małymi literami, bez blokowania siebie, ponowna blokada bez błędu.
       if (q.table === 'user_blocks') normalizeBlockWrite(q, req.user);
+      // Zadanie z wiadomości i zapisane wiadomości (114): tylko wiadomości z moich rozmów (messageTasks.js).
+      await enforceSavedMessageWrite(q, req);
+      await enforceMessageTaskLink(q, req);
       // Głosy w ankietach: bez filtrowania po cudzym e-mailu (ankiety anonimowe).
       if (q.table === 'poll_votes' && q.op === 'select') assertVoteFilters(q.filters, req.user.email);
 

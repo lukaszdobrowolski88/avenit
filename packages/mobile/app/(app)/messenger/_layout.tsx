@@ -6,6 +6,7 @@ export default function MessengerLayout() {
     <ModuleGate moduleKey="komunikator">
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="new" />
+        <Stack.Screen name="saved" />
         <Stack.Screen name="[conversationId]" options={{ headerShown: false }} />
         <Stack.Screen name="thread/[rootId]" options={{ headerShown: false }} />
         <Stack.Screen name="reminders" />

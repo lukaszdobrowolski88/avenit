@@ -19,7 +19,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { goBack } from "../../../src/lib/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { isSameDay } from "date-fns";
-import { ArrowDown, Ban, Clock, X } from "lucide-react-native";
+import { ArrowDown, Ban, Bookmark, BookmarkMinus, Clock, SquareCheckBig, X } from "lucide-react-native";
 import {
   useMessages,
   useOlderMessages,
@@ -41,6 +41,7 @@ import {
   markReadLocally,
   clearUnreadLocally,
   memberDisplayName,
+  conversationTitle,
   memberPhotoUrl,
   canEditMessage,
   usePollVotes,
@@ -124,6 +125,11 @@ import {
   useToggleBlock,
 } from "../../../src/features/messenger/plus";
 import { useAuthSession } from "../../../src/lib/auth";
+import { MessageTaskChips } from "../../../src/features/messenger/components/MessageTaskChips";
+import { CreateTaskSheet } from "../../../src/features/messenger/components/CreateTaskSheet";
+import { useMessageTasks, useSavedIds, useToggleSaved } from "../../../src/features/messenger/messageTasks";
+import { conversationModuleKey } from "@avenit/shared/src/lib/messageTasks.js";
+import { eventTasksModule } from "../../../src/features/calendar/event-tasks";
 import { usePermissions } from "../../../src/lib/permissions";
 import { friendlyError, showError } from "../../../src/lib/errors";
 import { toast } from "../../../src/lib/toast";
@@ -229,6 +235,11 @@ export default function ConversationScreen() {
   const jumpParamRef = useRef<string | null>(jumpParam);
   jumpParamRef.current = jumpParam;
   const jumpedRef = useRef<string | null>(null);
+  // Zadania z wiadomości i zapisane wiadomości (migracja 114).
+  const { tasksFor, addLocal: addTaskLocal } = useMessageTasks(messages, threadReady);
+  const savedQuery = useSavedIds(myEmail);
+  const toggleSavedMutation = useToggleSaved(myEmail);
+  const [taskMessage, setTaskMessage] = useState<MessageRow | null>(null);
 
   const details = detailsQuery.data;
   const blockedSet = useMemo(() => new Set(blocksQuery.data ?? []), [blocksQuery.data]);
@@ -990,6 +1001,41 @@ export default function ConversationScreen() {
 
   const actionMine = sameEmail(actionTarget?.sender_email, myEmail);
 
+  // „Zapisz” / „Usuń z zapisanych” i „Utwórz zadanie” w menu wiadomości (migracja 114).
+  const convTaskModule = conversationModuleKey(details ?? null);
+  const canCreateTask =
+    perms.canModule(null, "board_items", "create") ||
+    perms.canModule("calendar", "board_items", "create") ||
+    (!!convTaskModule && perms.canModule(eventTasksModule(convTaskModule), "board_items", "create"));
+  const actionIsPlain =
+    !!actionTarget && !actionTarget.deleted_at && actionTarget.message_type !== "system" && actionTarget.message_type !== "call";
+  const actionSaved = !!actionTarget && (savedQuery.data?.ids ?? []).includes(String(actionTarget.id));
+  const extraActions = [
+    ...(actionIsPlain && savedQuery.data?.available
+      ? [
+          {
+            key: "save",
+            label: actionSaved ? "Usuń z zapisanych" : "Zapisz",
+            Icon: actionSaved ? BookmarkMinus : Bookmark,
+            onPress: () => {
+              const target = actionTarget;
+              if (!target) return;
+              toggleSavedMutation.mutate(
+                { messageId: String(target.id), saved: actionSaved },
+                {
+                  onSuccess: (nowSaved) => toast.success(nowSaved ? "Zapisano wiadomość" : "Usunięto z zapisanych"),
+                  onError: (e) => showError("Nie udało się zapisać wiadomości", e, "Spróbuj ponownie."),
+                },
+              );
+            },
+          },
+        ]
+      : []),
+    ...(actionIsPlain && canCreateTask && details?.is_participant
+      ? [{ key: "task", label: "Utwórz zadanie", Icon: SquareCheckBig, onPress: () => actionTarget && setTaskMessage(actionTarget) }]
+      : []),
+  ];
+
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
@@ -1177,6 +1223,7 @@ export default function ConversationScreen() {
                       />
                     }
                   />
+                  <MessageTaskChips tasks={tasksFor(m.id)} mine={mine} />
                   </SwipeToReply>
                 );
               }}
@@ -1329,7 +1376,19 @@ export default function ConversationScreen() {
         busy={sendMutation.isPending}
       />
 
+      <CreateTaskSheet
+        message={taskMessage}
+        conversation={details ? { id: details.id, type: details.type, ministry_key: details.ministry_key, name: details.name } : null}
+        conversationName={details ? conversationTitle({ ...details, peer_email: peerEmail }, members) : "Rozmowa"}
+        members={members}
+        myEmail={myEmail}
+        myName={myEmail ? memberDisplayName(members, myEmail) : null}
+        onClose={() => setTaskMessage(null)}
+        onCreated={(messageId, task) => addTaskLocal(messageId, task)}
+      />
+
       <MessageActionsSheet
+        extraActions={extraActions}
         visible={!!actionTarget}
         onClose={() => setActionTarget(null)}
         mine={actionMine}

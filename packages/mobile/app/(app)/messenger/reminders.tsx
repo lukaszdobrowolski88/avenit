@@ -6,6 +6,7 @@ import { EmptyState } from "../../../src/components/ui/EmptyState";
 import { B } from "../../../src/components/ui/brand";
 import { friendlyError } from "../../../src/lib/errors";
 import { toast } from "../../../src/lib/toast";
+import { openMessageInConversation } from "../../../src/features/messenger/threads";
 import { useCancelReminder, useMyReminders, whenLabel, type ReminderItem } from "../../../src/features/messenger/schedule";
 
 // „Moje przypomnienia” (z nagłówka listy rozmów): aktywne przypomnienia o wiadomościach.
@@ -21,10 +22,8 @@ export default function RemindersScreen() {
 
   const open = (r: ReminderItem) => {
     if (!r.available) return;
-    router.push({
-      pathname: "/(app)/messenger/[conversationId]",
-      params: { conversationId: r.conversation_id, messageId: r.message_id },
-    } as never);
+    // Odpowiedź w wątku: rozmowa przy wiadomości głównej, nad nią ekran wątku.
+    openMessageInConversation(router, r.conversation_id, r.message_id, r.thread_root_id);
   };
 
   const remove = (r: ReminderItem) => {

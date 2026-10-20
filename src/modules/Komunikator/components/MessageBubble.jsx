@@ -73,7 +73,11 @@ export default function MessageBubble({
   onReplyInThread,
   threadChip = null,
   // „Przypomnij mi” o tej wiadomości (otwiera wybór terminu)
-  onRemind
+  onRemind,
+  // Dodatkowe pozycje menu „Więcej działań” ([{ key, label, icon, onClick }]) i treść pod dymkiem
+  // (np. „Zapisz”, „Utwórz zadanie” i wskaźnik „Zadanie: …” — messageTasks/).
+  extraActions = null,
+  footer = null
 }) {
   const { lang } = useI18n();
   const [showMenu, setShowMenu] = useState(false);
@@ -109,7 +113,7 @@ export default function MessageBubble({
   const closeMenu = useCallback(() => setShowMenu(false), []);
   const menuRefs = useMemo(() => [menuRef, menuBtnRef], []);
   useOutsideClose(showMenu, menuRefs, closeMenu);
-  const menuPos = useAnchoredPopover(menuBtnRef, showMenu, { height: MENU_HEIGHT, width: MENU_WIDTH });
+  const menuPos = useAnchoredPopover(menuBtnRef, showMenu, { height: MENU_HEIGHT + 36 * (extraActions?.length || 0), width: MENU_WIDTH });
   // Moje wiadomości (przycisk po lewej dymka) — menu rozwija się w lewo od przycisku, cudze — w prawo.
   const menuStyle = menuPos && {
     top: menuPos.top,
@@ -431,6 +435,11 @@ export default function MessageBubble({
                   {isOwn && onShowSeenBy && (
                     <button type="button" role="menuitem" onClick={() => { setShowMenu(false); onShowSeenBy(message); }} className={menuItem}><Eye size={14} className="text-gray-400" />{tr('Widziane przez')}</button>
                   )}
+                  {(extraActions || []).map(({ key, label, icon: ActionIcon, onClick }) => (
+                    <button key={key} type="button" role="menuitem" onClick={() => { setShowMenu(false); onClick?.(message); }} className={menuItem}>
+                      {ActionIcon && <ActionIcon size={14} className="text-gray-400" />}{label}
+                    </button>
+                  ))}
                   {!isOwn && (onReport || onBlockSender) && <div className="my-1 border-t border-gray-200/50 dark:border-gray-700/50" />}
                   {!isOwn && onReport && (
                     <button type="button" role="menuitem" onClick={() => { setShowMenu(false); onReport(message); }} className={menuItem}><Flag size={14} className="text-gray-400" />{tr('Zgłoś')}</button>
@@ -493,6 +502,7 @@ export default function MessageBubble({
         )}
 
         {threadChip}
+        {footer}
 
         <div className={`flex items-center gap-1.5 mt-1.5 ${isOwn ? 'flex-row-reverse' : ''}`}>
           <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{formatMessageTime(message.created_at)}</span>
