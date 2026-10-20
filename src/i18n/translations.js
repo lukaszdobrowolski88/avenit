@@ -8227,6 +8227,12 @@ const en = {
   'Nadchodzące RSVP': 'Upcoming RSVPs',
   'Najpierw dodaj osoby w zakładce „Członkowie” (przycisk „Dodaj członka”). Role, czyli kolumny grafiku, ustawisz w zakładce „Służby”.': 'First add people in the "Members" tab ("Add member" button). Roles, i.e. the schedule columns, are set in the "Ministries" tab.',
   'Najpierw dodaj nauczycieli w zakładce „Nauczyciele” — pojawią się tu do wpisania w grafik.': 'First add teachers in the "Teachers" tab — they will appear here to be scheduled.',
+  // ── Ustawienia → Użytkownicy: link do zmiany hasła (audyt r6) ──
+  'Wyślij link do zmiany hasła': 'Send password change link',
+  'Link do zmiany hasła wysłany na {email}.': 'Password change link sent to {email}.',
+  'Osoba dostanie e-mail z linkiem (ważnym 24 godziny) i sama ustawi nowe hasło. Hasło wprost ustawia tylko administrator.': 'The person will get an e-mail with a link (valid for 24 hours) and set a new password themselves. Only an administrator can set a password directly.',
+  'Ustawienie hasła (admin)': 'Password set (admin)',
+  'Link do zmiany hasła': 'Password change link',
 };
 
 const uk = {
@@ -16455,6 +16461,12 @@ const uk = {
   'Nadchodzące RSVP': 'Майбутні RSVP',
   'Najpierw dodaj osoby w zakładce „Członkowie” (przycisk „Dodaj członka”). Role, czyli kolumny grafiku, ustawisz w zakładce „Służby”.': 'Спочатку додайте людей у вкладці «Учасники» (кнопка «Додати учасника»). Ролі, тобто стовпці графіка, налаштуєте у вкладці «Служіння».',
   'Najpierw dodaj nauczycieli w zakładce „Nauczyciele” — pojawią się tu do wpisania w grafik.': 'Спочатку додайте вчителів у вкладці «Вчителі» — вони з’являться тут, щоб внести їх у графік.',
+  // ── Ustawienia → Użytkownicy: link do zmiany hasła (audyt r6) ──
+  'Wyślij link do zmiany hasła': 'Надіслати посилання для зміни пароля',
+  'Link do zmiany hasła wysłany na {email}.': 'Посилання для зміни пароля надіслано на {email}.',
+  'Osoba dostanie e-mail z linkiem (ważnym 24 godziny) i sama ustawi nowe hasło. Hasło wprost ustawia tylko administrator.': 'Особа отримає електронний лист із посиланням (дійсним 24 години) і сама встановить новий пароль. Пароль безпосередньо встановлює лише адміністратор.',
+  'Ustawienie hasła (admin)': 'Встановлення пароля (адмін)',
+  'Link do zmiany hasła': 'Посилання для зміни пароля',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

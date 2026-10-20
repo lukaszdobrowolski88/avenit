@@ -114,6 +114,76 @@ export async function sendResetPasswordEmail(to, link) {
   });
 }
 
+// Link do zmiany hasła wysłany z Ustawień → Użytkownicy (fn admin-send-password-reset). Osoba
+// z samym action:settings:manage_users nie ustawia już cudzego hasła wprost (audyt r6) — wysyła
+// właścicielowi konta link, a hasło ustawia on sam. Szablon w marce (papier, słód, kurkuma).
+const BRAND = {
+  paper: '#F6F4EE', hero: '#FFF1C2', malt: '#2A2312', text: '#4A463E',
+  muted: '#6B6557', turmeric: '#FFBE0B',
+};
+const BRAND_FONT = "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hoursLabel = (h) => (h === 1 ? '1 godzinę' : h % 10 >= 2 && h % 10 <= 4 && (h % 100 < 10 || h % 100 >= 20) ? `${h} godziny` : `${h} godzin`);
+
+export function adminPasswordResetEmail({ name = '', link, hours = 24, orgName = '' } = {}) {
+  const C = BRAND;
+  const F = BRAND_FONT;
+  const hello = name ? `Cześć, ${escHtml(name)}!` : 'Cześć!';
+  const where = ` w <strong>Avenit</strong>${orgName ? ` (${escHtml(orgName)})` : ''}`;
+  const valid = hoursLabel(hours);
+  const subject = 'Ustaw nowe hasło — Avenit';
+  const html = `<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<title>${subject}</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;600;700;800&display=swap" rel="stylesheet">
+<style>
+  a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
+  @media (max-width: 480px) { .card { padding: 28px 22px !important; } .h1 { font-size: 26px !important; line-height: 32px !important; } }
+</style>
+</head>
+<body style="margin:0;padding:0;background:${C.paper};-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.paper};">Link do ustawienia nowego hasła — ważny ${valid}.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.paper};">
+  <tr><td align="center" style="padding:32px 16px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+      <tr><td style="padding:0 6px 16px;font-family:${F};font-size:15px;line-height:20px;font-weight:800;color:${C.malt};">avenit<span style="color:${C.turmeric};">.</span></td></tr>
+      <tr><td class="card" style="background:#FFFFFF;border-radius:24px;padding:36px 32px 32px;">
+        <h1 class="h1" style="margin:0 0 12px;font-family:${F};font-size:30px;line-height:36px;font-weight:800;letter-spacing:-0.5px;color:${C.malt};">Nowe <span style="font-weight:300;">hasło</span><span style="color:${C.turmeric};">.</span></h1>
+        <p style="margin:0 0 8px;font-family:${F};font-size:15px;line-height:23px;color:${C.text};">${hello} Administrator Twojej wspólnoty wysłał Ci link do ustawienia nowego hasła do Twojego konta${where}.</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+          <tr><td align="center" bgcolor="${C.turmeric}" style="border-radius:999px;background:${C.turmeric};">
+            <a href="${escHtml(link)}" target="_blank" style="display:block;padding:15px 12px;font-family:${F};font-size:16px;line-height:20px;font-weight:800;color:${C.malt};text-decoration:none;border-radius:999px;">Ustaw nowe hasło</a>
+          </td></tr>
+        </table>
+        <p style="margin:20px 0 0;font-family:${F};font-size:13px;line-height:19px;color:${C.muted};">Link jest ważny ${valid} i działa jeden raz. Dotychczasowe hasło działa, dopóki nie ustawisz nowego. Jeśli nie prosiłeś(-aś) o zmianę — zignoruj tę wiadomość.</p>
+      </td></tr>
+      <tr><td style="padding:20px 6px 0;font-family:${F};font-size:12px;line-height:18px;color:${C.muted};text-align:center;">Wiadomość wysłana automatycznie z aplikacji Avenit.</td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  const text = [
+    `${name ? `Cześć, ${name}!` : 'Cześć!'} Administrator Twojej wspólnoty wysłał Ci link do ustawienia nowego hasła do Twojego konta w Avenit${orgName ? ` (${orgName})` : ''}.`,
+    '',
+    `Ustaw nowe hasło: ${link}`,
+    '',
+    `Link jest ważny ${valid} i działa jeden raz. Dotychczasowe hasło działa, dopóki nie ustawisz nowego. Jeśli nie prosiłeś(-aś) o zmianę — zignoruj tę wiadomość.`,
+  ].join('\n');
+  return { subject, html, text };
+}
+
+export async function sendAdminPasswordResetEmail(to, opts = {}) {
+  const { subject, html, text } = adminPasswordResetEmail(opts);
+  return sendEmail({ to, subject, html, text });
+}
+
 // Rejestracja (tryb otwarty): potwierdzenie adresu e-mail.
 export async function sendVerifyEmail(to, link) {
   return sendEmail({

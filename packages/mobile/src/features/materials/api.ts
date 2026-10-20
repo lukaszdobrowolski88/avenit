@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { supabase, tenantWebBase } from '../../lib/supabase';
+import { materialFileUrl } from '../../lib/storageFiles';
 
 export interface FolderRow {
   id: string;
@@ -218,13 +219,8 @@ export const useDeleteMaterial = () => {
   });
 };
 
-export const getDownloadUrl = async (storagePath: string): Promise<string | null> => {
-  // Backend serwuje pliki publicznie pod GET /storage/<bucket>/<path>, ale WYŁĄCZNIE na
-  // subdomenie tenanta (rozwiązuje tenant z subdomeny) — nie na api.*. Shim nie ma
-  // `createSignedUrl` (istniał tylko w typach, nie w runtime), więc budujemy publiczny
-  // URL na hoście tenanta — tak jak web (getPublicUrl).
-  const base = tenantWebBase();
-  if (!base) return null;
-  const clean = String(storagePath).replace(/^\//, '');
-  return `${base}/storage/materials/${clean}`;
-};
+// Adres do otwarcia pliku. Przestrzenie wrażliwe (Finanse, Członkowie, Opieka, Dawanie) serwer
+// oddaje tylko podpisanym linkiem — podpisujemy je tu (lib/storageFiles.ts); pozostałe pliki
+// mają zwykły adres na hoście kościoła (api.* nie rozpoznaje tenanta w samym GET).
+// null = brak adresu (nieznany host, brak dostępu do przestrzeni albo sieci przy podpisie).
+export const getDownloadUrl = async (storagePath: string): Promise<string | null> => materialFileUrl(storagePath);

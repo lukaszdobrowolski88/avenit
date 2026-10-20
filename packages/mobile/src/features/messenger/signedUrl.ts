@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Linking } from "react-native";
-import { supabase, tenantWebBase } from "../../lib/supabase";
+import { tenantWebBase } from "../../lib/supabase";
+import { signStoragePath } from "../../lib/storageFiles";
 import { showError } from "../../lib/errors";
 import { attachmentStoragePath, buildSignedUrl } from "./logic";
 
@@ -34,20 +35,7 @@ const baseFor = (url: string): string => {
   return m ? m[1] : "";
 };
 
-const sign = async (path: string): Promise<string | null> => {
-  try {
-    const res: Response = await (supabase as any)._request(`/api/storage/${BUCKET}/sign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path, expiresIn: SIGN_TTL_S }),
-    });
-    if (!res.ok) return null;
-    const payload = (await res.json().catch(() => null)) as { signedPath?: string } | null;
-    return payload?.signedPath ? String(payload.signedPath) : null;
-  } catch {
-    return null;
-  }
-};
+const sign = (path: string): Promise<string | null> => signStoragePath(BUCKET, path, SIGN_TTL_S);
 
 /** Czy adres wymaga podpisu (plik z magazynu czatu). */
 export const needsSigning = (url: string | null | undefined): boolean => !!attachmentStoragePath(url);
