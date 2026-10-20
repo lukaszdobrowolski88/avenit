@@ -81,6 +81,7 @@ import {
   receiptSummary,
   unreadIdsToMark,
 } from "../../../src/features/messenger/logic";
+import { dismissConversationNotifications } from "../../../src/lib/push";
 import { SwipeToReply } from "../../../src/features/messenger/components/SwipeToReply";
 import { MessageBubble, type BubbleTranslation } from "../../../src/features/messenger/components/MessageBubble";
 import { ComposerBar, type MentionCandidate } from "../../../src/features/messenger/components/ComposerBar";
@@ -495,11 +496,17 @@ export default function ConversationScreen() {
     if (!snapshotDone) return;
     if (cid && myEmail && details?.is_participant && readReceiptsQuery.isFetched) {
       clearUnreadLocally(qc, myEmail, cid);
+      void dismissConversationNotifications(cid);
       // „Przeczytane” — tylko gdy rola może zmieniać swój wiersz uczestnika (inaczej 403).
       if (canManageOwn) {
         markConversationRead(cid, myEmail, newestCreatedAt)
           .then((at) => {
-            if (at) markReadLocally(qc, myEmail, cid, at);
+            if (!at) return;
+            markReadLocally(qc, myEmail, cid, at);
+            // Serwer oznacza też powiadomienia tej rozmowy (migracja 110) — odśwież Powiadomienia
+            // i pulpit (nieprzeczytane wiadomości), żeby nie wisiały po przeczytaniu.
+            void qc.invalidateQueries({ queryKey: ["notifications"] });
+            void qc.invalidateQueries({ queryKey: ["dashboard"] });
           })
           .catch(() => undefined);
       }

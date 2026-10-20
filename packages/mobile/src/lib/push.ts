@@ -297,3 +297,22 @@ export const registerPushToken = async (userEmail: string) => {
     }
   }
 };
+
+// Po przeczytaniu rozmowy: jej pushe znikają z centrum powiadomień telefonu (jak w komunikatorach).
+// Dopasowanie po data.conversation_id albo linku ?conversation=… (wiadomości, wzmianki, rozmowy).
+export const dismissConversationNotifications = async (conversationId: string) => {
+  try {
+    const presented = await Notifications.getPresentedNotificationsAsync();
+    await Promise.all(
+      presented
+        .filter((n) => {
+          const d = (n.request.content.data ?? {}) as { conversation_id?: unknown; link?: unknown };
+          if (String(d.conversation_id ?? '') === conversationId) return true;
+          return typeof d.link === 'string' && d.link.includes(`conversation=${conversationId}`);
+        })
+        .map((n) => Notifications.dismissNotificationAsync(n.request.identifier).catch(() => undefined)),
+    );
+  } catch {
+    // brak uprawnień / modułu — nic do sprzątania
+  }
+};
