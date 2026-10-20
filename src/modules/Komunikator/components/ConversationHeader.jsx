@@ -128,7 +128,9 @@ export default function ConversationHeader({
   const menuItem = 'flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800';
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+    // relative z-40: backdrop-blur tworzy osobny kontekst warstw — bez własnego z-index menu nagłówka
+    // (wyciszenie, „więcej”) chowały się pod dymkami wątku, które są później w DOM. Poniżej modali (z-50+).
+    <div className="relative z-40 flex items-center gap-3 px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
       {showBackButton && (
         <button
           type="button"
