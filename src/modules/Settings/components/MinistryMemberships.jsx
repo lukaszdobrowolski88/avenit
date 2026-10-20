@@ -2,6 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { Plus, Trash2, Shield, UserRound } from 'lucide-react';
+import { MINISTRY_MODULES, isCustomMinistryKey } from '@avenit/shared/src/permissions/ministry.js';
+
+// Służba = moduł zespołu albo moduł własny z kreatora (jak serwer — sharedWrites.js). Moduły
+// ogólnokościelne (Członkowie, Finanse, Ustawienia…) nadaje rola, nie przynależność.
+const isMinistryModule = (m) => MINISTRY_MODULES.includes(m.key) || (m.is_system !== true && isCustomMinistryKey(m.key));
 
 // Faza 1: przypisywanie osób do SŁUŻB. Jeden wiersz = osoba w danej służbie jako
 // lider albo członek, na konkretnym kampusie albo globalnie (kampus pusty = wszystkie).
@@ -24,11 +29,11 @@ export default function MinistryMemberships({ userId = null }) {
     (async () => {
       const [u, m, c] = await Promise.all([
         supabase.from('app_users').select('id, email, full_name, name, role').order('created_at'),
-        supabase.from('app_modules').select('key, label, is_enabled').order('display_order'),
+        supabase.from('app_modules').select('key, label, is_enabled, is_system').order('display_order'),
         supabase.from('campuses').select('id, name').order('sort_order'),
       ]);
       setUsers(u.data || []);
-      setModules((m.data || []).filter((x) => x.is_enabled !== false));
+      setModules((m.data || []).filter((x) => x.is_enabled !== false && isMinistryModule(x)));
       setCampuses(c.data || []);
     })().catch((e) => setErr(e.message));
   }, []);

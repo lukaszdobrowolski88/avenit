@@ -17,6 +17,7 @@ const USERS = {
   anna: { id: 'u-anna', email: 'anna@k.pl', role: 'czlonek' },
   bob: { id: 'u-bob', email: 'bob@k.pl', role: 'czlonek' },
   lider: { id: 'u-l', email: 'lider@k.pl', role: 'lider' },
+  koord: { id: 'u-k', email: 'koord@k.pl', role: 'koordynator' },
 };
 const objects = new Map(); // `${bucket}|${path}` -> uploaded_by
 const participants = [{ conversation_id: '11111111-1111-1111-1111-111111111111', user_email: 'anna@k.pl' }];
@@ -149,4 +150,23 @@ test('serwowanie: SVG w piaskownicy CSP i nosniff, PDF bez CSP', async () => {
   const pdf = await app.inject({ method: 'GET', url: '/storage/public-assets/a.pdf', headers: host });
   assert.equal(pdf.headers['content-security-policy'], undefined);
   assert.equal(pdf.headers['x-content-type-options'], 'nosniff');
+});
+
+// Runda 5: przestrzenie wrażliwe bucketu materials (Finanse, Członkowie…) — tylko podpisany link,
+// podpis i wgrywanie z dostępem do modułu przestrzeni; reszta bucketu czytelna jak dotąd.
+test('materiały: materials/finance/… tylko podpisanym linkiem dla osoby z modułem Finanse', async () => {
+  const host = { 'x-test-user': '' };
+  assert.equal((await upload('bob', 'materials', 'finance/f.pdf')).statusCode, 403, 'członek nie wgra do Finansów');
+  assert.equal((await upload('koord', 'materials', 'finance/f.pdf')).statusCode, 200);
+  assert.equal((await upload('bob', 'materials', 'worship/plan.pdf')).statusCode, 200);
+  assert.equal((await app.inject({ method: 'GET', url: '/storage/materials/finance/f.pdf', headers: host })).statusCode, 403);
+  assert.equal((await app.inject({ method: 'GET', url: '/storage/materials/finance/f.pdf?w=96', headers: host })).statusCode, 403, 'bez miniatur');
+  assert.equal((await app.inject({ method: 'GET', url: '/storage/materials/worship/plan.pdf', headers: host })).statusCode, 200);
+  const sign = (who, p) => app.inject({ method: 'POST', url: '/api/storage/materials/sign', payload: { path: p }, headers: { 'x-test-user': who } });
+  assert.equal((await sign('bob', 'finance/f.pdf')).statusCode, 403);
+  assert.equal((await sign('lider', 'members/x.pdf')).statusCode, 403, 'lider bez Członków');
+  const ok = await sign('koord', 'finance/f.pdf');
+  assert.equal(ok.statusCode, 200);
+  assert.equal((await app.inject({ method: 'GET', url: ok.json().signedPath, headers: host })).statusCode, 200);
+  assert.equal((await sign('bob', 'worship/plan.pdf')).statusCode, 200, 'ścieżka publiczna — podpis bez znaczenia');
 });

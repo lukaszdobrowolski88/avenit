@@ -3,7 +3,29 @@
 // i dopasowanie udostępnień liczy SERWER z req.user — klient nie czyta całej tabeli
 // materials_shares ani cudzych przynależności. Odwzorowanie web useShares.fetchSharedWithMe.
 //
+// Pliki przestrzeni wrażliwych (Finanse, Członkowie, Opieka, Dawanie — SENSITIVE_MATERIAL_TEAMS)
+// udostępnienie NIE otwiera: widzi je tylko osoba z dostępem do modułu przestrzeni albo autor
+// (jak zakres /api/db w dataapi/materialsScope.js — audyt 2026-10, runda 5).
+//
 // Brak wpisu w FN_CAPABILITY => preHandler = requireUser (każdy zalogowany).
+import { loadGrants } from '../dataapi/registry.js';
+import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
+import { isSensitiveMaterialTeam } from '@avenit/shared/src/lib/materialsAccess.js';
+
+// Czy wolno pokazać plik przestrzeni wrażliwej (admin / legacy — zawsze).
+async function sensitiveTeamGate(req) {
+  try {
+    const { rows } = await req.db.query('SELECT role, is_super_admin FROM app_users WHERE id = $1', [req.user.id]);
+    const role = rows[0]?.role ?? req.user.role;
+    const { grants, adminRoles } = await loadGrants(req.db, req.tenant.db_name);
+    if (rows[0]?.is_super_admin || adminRoles.has(role) || grants === null) return () => true;
+    const resolver = makeResolver(grants, { role, userId: req.user.id, isAdmin: false });
+    return (team) => resolver.can(`module:${team}`);
+  } catch {
+    return () => false;
+  }
+}
+
 export const name = 'my-shared-materials';
 export const method = 'POST';
 
@@ -86,8 +108,10 @@ export default async function handler(req, reply) {
 
     // 4) Pliki: bezpośrednio udostępnione + z udostępnionych folderów.
     const filesById = new Map();
+    const teamAllowed = await sensitiveTeamGate(req);
     const addFiles = (rows, labelFromFolder) => {
       for (const f of rows) {
+        if (isSensitiveMaterialTeam(f.team_type) && lc(f.uploaded_by) !== email && !teamAllowed(f.team_type)) continue;
         if (!filesById.has(String(f.id))) {
           filesById.set(String(f.id), {
             id: f.id,
@@ -105,7 +129,7 @@ export default async function handler(req, reply) {
     if (fileIds.length) {
       try {
         const { rows } = await req.db.query(
-          `SELECT id, name, storage_path, mime_type, file_size, folder_id, created_at
+          `SELECT id, name, storage_path, mime_type, file_size, folder_id, created_at, team_type, uploaded_by
              FROM materials_files WHERE id = ANY($1)`,
           [fileIds]
         );
@@ -115,7 +139,7 @@ export default async function handler(req, reply) {
     if (folderIds.length) {
       try {
         const { rows } = await req.db.query(
-          `SELECT id, name, storage_path, mime_type, file_size, folder_id, created_at
+          `SELECT id, name, storage_path, mime_type, file_size, folder_id, created_at, team_type, uploaded_by
              FROM materials_files WHERE folder_id = ANY($1)`,
           [folderIds]
         );

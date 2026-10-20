@@ -57,3 +57,16 @@ export async function accountChangeDenied(db, dbName, caller, target, { newRole 
   }
   return null;
 }
+
+// Zmiana powiązania konta z osobą (e-mail, member_id) — audyt 2026-10, runda 5. E-mail i profil
+// członka są kluczem dopasowania (darowizny w fn my-giving, grupy domowe, zaproszenia), więc osoba
+// z samym manage_users mogła przepiąć konto (także własne) na cudzy adres i czytać cudze dane.
+// Wolno: administratorowi, osobie z dostępem do Członków albo z prawem do uprawnień.
+export async function canChangeAccountIdentity(db, dbName, caller, loaded) {
+  if (isFullAdmin(caller)) return true;
+  const { grants, adminRoles } = loaded || await loadGrants(db, dbName);
+  if (adminRoles.has(caller.role)) return true;
+  if (grants === null) return true; // legacy — brak szczegółowych uprawnień
+  const subject = { role: caller.role, userId: caller.id };
+  return can(grants, subject, 'module:members') || can(grants, subject, 'action:settings:manage_permissions');
+}

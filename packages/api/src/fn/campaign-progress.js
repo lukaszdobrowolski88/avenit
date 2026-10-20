@@ -2,6 +2,10 @@
 // Zwraca tylko zagregowane sumy: nazwa, cel, zebrano, procent, waluta.
 // NIE ujawnia darczyńców ani pojedynczych darowizn.
 // Dane żyją w bazie TENANTA (req.db). Wymaga rozpoznanego tenanta (app.requireTenant).
+// Tylko zbiórki AKTYWNE (audyt 2026-10, runda 5): funkcja jest publiczna, a po samym id dało się
+// odczytać sumy zakończonych / ukrytych zbiórek. Nieaktywna albo nieznana = 404.
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const name = 'campaign-progress';
 export const isPublic = true;
@@ -15,12 +19,15 @@ export default async function handler(req, reply) {
   if (!campaign_id) {
     return reply.code(400).send({ error: 'Wymagane: campaign_id' });
   }
+  if (!UUID_RE.test(String(campaign_id))) {
+    return reply.code(404).send({ error: 'Kampania nie znaleziona' });
+  }
 
   // 1. Kampania (cel + nazwa). Brak => 404.
   let campaign;
   try {
     const { rows } = await req.db.query(
-      `SELECT id, name, goal_amount, fund_id, start_date, end_date FROM giving_campaigns WHERE id = $1`,
+      `SELECT id, name, goal_amount, fund_id, start_date, end_date FROM giving_campaigns WHERE id = $1 AND is_active IS NOT FALSE`,
       [campaign_id]
     );
     campaign = rows[0];

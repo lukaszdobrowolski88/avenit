@@ -13,6 +13,7 @@ import { config } from '../config.js';
 import { loadGrants } from '../dataapi/registry.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { financeTeamTypes } from '../dataapi/financeScope.js';
+import { isSignedMaterialsPath, materialsPathTeam } from '@avenit/shared/src/lib/materialsAccess.js';
 
 const BUCKET_RE = /^[a-z0-9-]+$/;
 
@@ -96,6 +97,13 @@ const SENSITIVE = {
 // Odczyt bez podpisu zablokowany (tylko podpisany link albo pobranie z tokenem i uprawnieniem).
 // finance: faktury/paragony (audyt 2026-10-11) — wcześniej czytelne bez logowania po samym linku.
 const SIGNED_READ = new Set(['membership-declarations', 'finance']);
+// Bucket „materials” (Pliki modułów) zostaje czytelny zwykłym adresem — miniatury, <img src> i
+// podgląd PDF w Plikach, materiałach wydarzeń i grupach domowych oraz pobieranie w mobilce
+// nie wysyłają tokenu. Wyjątek (audyt 2026-10, runda 5): przestrzenie wrażliwe
+// (materials/finance/…, members/…, care/…, giving/… — SENSITIVE_MATERIAL_TEAMS) tylko podpisanym
+// linkiem, który wydajemy osobie z dostępem do modułu tej przestrzeni (canSignMaterialsFile).
+const MATERIALS_BUCKET = 'materials';
+const isSignedReadPath = (bucket, filePath) => bucket === MATERIALS_BUCKET && isSignedMaterialsPath(filePath);
 
 // Komunikator+ (K1): załączniki czatu. Podpis wydajemy TYLKO uczestnikowi rozmowy, której id
 // jest pierwszym segmentem ścieżki (<conversationId>/plik — tak zapisuje aplikacja); admin
@@ -199,6 +207,18 @@ function validSignature(req, bucket, filePath) {
   const expected = Number.isFinite(exp) ? signFor(req.tenant.slug, bucket, filePath, exp) : '';
   return !!expected && sig.length === expected.length
     && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) && exp >= Date.now() / 1000;
+}
+
+// Podpis pliku z przestrzeni wrażliwej bucketu materials: dostęp do modułu tej przestrzeni
+// (admin i tryb legacy — zawsze). Pozostałe ścieżki są publiczne — podpis niczego nie zmienia.
+async function canSignMaterialsFile(req, filePath) {
+  if (!isSignedMaterialsPath(filePath)) return true;
+  try {
+    const me = await callerAccess(req);
+    return me.isAdmin || me.can(`module:${materialsPathTeam(filePath)}`);
+  } catch {
+    return false;
+  }
 }
 
 async function canUseBucket(req, bucket) {
@@ -305,6 +325,10 @@ export async function uploadDenied(req, bucket, filePath, { overwrite }) {
     return null;
   }
   if (SENSITIVE[bucket]) return (await canUseBucket(req, bucket)) ? null : 'Brak uprawnień do tego bucketu';
+  // Pliki przestrzeni wrażliwej (materials/finance/… itd.) wgrywa tylko osoba z dostępem do jej modułu.
+  if (isSignedReadPath(bucket, filePath) && !(await canSignMaterialsFile(req, filePath))) {
+    return 'Pliki tej przestrzeni dodaje osoba z dostępem do jej modułu';
+  }
   if (overwrite && !(await isBucketStaff(req, bucket)) && !(await isUploader(req, bucket, filePath))) {
     return 'Nie możesz podmienić cudzego pliku';
   }
@@ -469,7 +493,9 @@ export default async function storageRoutes(app) {
     if (!filePath) return reply.code(400).send({ error: 'Brak ścieżki pliku' });
     const allowed = bucket === MESSENGER_BUCKET
       ? await canSignMessengerFile(req, filePath)
-      : await canUseBucket(req, bucket);
+      : bucket === MATERIALS_BUCKET
+        ? await canSignMaterialsFile(req, filePath)
+        : await canUseBucket(req, bucket);
     if (!allowed) return reply.code(403).send({ error: 'Brak uprawnień do tego pliku' });
     const ttl = Math.min(Math.max(Number(req.body?.expiresIn) || 300, 30), 3600);
     const exp = Math.floor(Date.now() / 1000) + ttl;
@@ -490,7 +516,7 @@ export default async function storageRoutes(app) {
     }
     if (!req.tenant) return reply.code(404).send({ error: 'Nieznany tenant' });
     if (!filePath) return reply.code(400).send({ error: 'Nieprawidłowa ścieżka' });
-    const signedOnly = SIGNED_READ.has(bucket)
+    const signedOnly = SIGNED_READ.has(bucket) || isSignedReadPath(bucket, filePath)
       || (bucket === MESSENGER_BUCKET && !isPublicMessengerPath(filePath) && (await chatPrivateFiles(req)));
     if (signedOnly && !validSignature(req, bucket, filePath)) {
       return reply.code(403).send({ error: 'Link do pliku wygasł albo jest nieprawidłowy' });

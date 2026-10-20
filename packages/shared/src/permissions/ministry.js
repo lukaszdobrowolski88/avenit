@@ -24,9 +24,42 @@ export const LEADER_SCHEDULE_ACTION = 'action:programs:send_assignment';
 // Capability z tym prefiksem w membershipCapabilities = zakaz (allowed:false) w ministryGrants.
 export const DENY_PREFIX = '!';
 
-// Capability wynikające z jednej przynależności (klucz służby + rola).
+// ── Które klucze są SŁUŻBAMI (audyt uprawnień 2026-10, runda 5) ─────────────────────────────
+// Do rundy 5 membershipCapabilities przyjmowało DOWOLNY klucz: wpis { ministry_key: 'members' |
+// 'finance' | 'settings', role: 'leader' } dawał module:members, CRUD Członków, darowizny, a nawet
+// action:settings:manage_permissions — osoba z samym manage_users dopisywała sobie taki wiersz
+// i przejmowała całą aplikację. Teraz przynależność daje granty tylko dla służb:
+//  • modułów zespołów z katalogu (grafik, członkowie, tablica, finanse zespołu — MINISTRY_MODULES),
+//  • modułów własnych z kreatora (klucz spoza katalogu i spoza modułów systemowych).
+// Moduły ogólnokościelne (Członkowie, Finanse, Dawanie, Ustawienia, Poczta, kampanie, Formularze,
+// Frekwencja, Sale, Analityka, Automatyzacje, AI, Opieka, RSVP…) nadaje wyłącznie rola lub
+// nadpisanie w macierzy uprawnień. Strażnik zapisu ministry_memberships (api, sharedWrites.js)
+// dodatkowo sprawdza, czy moduł własny istnieje w app_modules.
+export const MINISTRY_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'teaching'];
+// Klucze modułów systemowych spoza katalogu MODULES (app_modules z szablonu i migracji) oraz
+// zarezerwowane module_key wydarzeń — nigdy nie są modułem własnym.
+export const SYSTEM_MODULE_KEYS = [
+  'dashboard', 'rsvp', 'care', 'ai', 'sermons', 'general', 'program', 'materials', 'campaigns',
+  'notifications', 'profile', 'users', 'roles', 'permissions', 'events', 'tasks', 'equipment',
+];
+const STATIC_KEYS = new Set(MODULES.map((m) => m.key));
+const SYSTEM_KEYS = new Set(SYSTEM_MODULE_KEYS);
+const MINISTRY_KEYS = new Set(MINISTRY_MODULES);
+const MINISTRY_KEY_RE = /^[a-z0-9_]{1,64}$/;
+
+// Klucz, który MOŻE być modułem własnym (kreator): spoza katalogu i spoza modułów systemowych.
+export function isCustomMinistryKey(key) {
+  return typeof key === 'string' && MINISTRY_KEY_RE.test(key) && !STATIC_KEYS.has(key) && !SYSTEM_KEYS.has(key);
+}
+
+// Czy przynależność do tego klucza może dawać uprawnienia (służba wbudowana albo moduł własny).
+export function isMinistryKey(key) {
+  return MINISTRY_KEYS.has(key) || isCustomMinistryKey(key);
+}
+
+// Capability wynikające z jednej przynależności (klucz służby + rola). Klucz spoza służb → [].
 export function membershipCapabilities(ministryKey, role) {
-  if (!ministryKey) return [];
+  if (!ministryKey || !isMinistryKey(ministryKey)) return [];
   const isLeader = role === 'leader';
   const caps = [`module:${ministryKey}`, `tab:${ministryKey}:*`];
   // Finanse służby (budżet, wydatki) widzi tylko LIDER służby — członek dostaje jawny zakaz tej
@@ -68,7 +101,7 @@ export function ministryGrants(memberships = []) {
   // odebrał ich osobie, która w tej samej służbie jest też liderem.
   const best = new Map();
   for (const m of memberships || []) {
-    if (!m || !m.ministry_key) continue;
+    if (!m || !m.ministry_key || !isMinistryKey(m.ministry_key)) continue; // nie-służba: bez grantów
     if (best.get(m.ministry_key) !== 'leader') best.set(m.ministry_key, m.role === 'leader' ? 'leader' : 'member');
   }
   for (const [ministryKey, role] of best) {

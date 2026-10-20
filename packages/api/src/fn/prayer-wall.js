@@ -6,10 +6,11 @@
 // Wpisy „leaders_only" filtrowane serwerowo (nie-lider/nie-autor ich nie dostaje).
 //
 // Brak wpisu w FN_CAPABILITY => preHandler = requireUser (każdy zalogowany).
+import { isPrayerLeader } from '../dataapi/prayerScope.js';
+
 export const name = 'prayer-wall';
 export const method = 'POST';
 
-const LEADER_ROLES = ['superadmin', 'rada_starszych', 'koordynator', 'lider'];
 const lc = (v) => String(v || '').toLowerCase();
 
 export default async function handler(req, reply) {
@@ -19,16 +20,8 @@ export default async function handler(req, reply) {
   if (!email) return reply.send(empty);
 
   try {
-    // Rola — dla widoczności leaders_only.
-    let isLeader = false;
-    try {
-      const { rows } = await req.db.query(
-        'SELECT role, is_super_admin FROM app_users WHERE id = $1',
-        [req.user.id]
-      );
-      const r = rows[0] || {};
-      isLeader = !!r.is_super_admin || LEADER_ROLES.includes(String(r.role || ''));
-    } catch { /* brak kolumny — traktuj jak nie-lider */ }
+    // Widoczność leaders_only — capability jak w /api/db (prayerScope.js).
+    const isLeader = await isPrayerLeader(req.db, req.tenant.db_name, req.user);
 
     // Prośby: bez archived (chyba że moje). user_email pobierany do obliczeń, NIE zwracany.
     const { rows: reqs } = await req.db.query(

@@ -1,5 +1,20 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { isSignedMaterialsPath } from '@avenit/shared/src/lib/materialsAccess.js';
+
+// Pliki przestrzeni wrażliwych (Finanse, Członkowie…) serwer oddaje tylko podpisanym linkiem
+// (storage/routes.js) — podpisujemy je po pobraniu listy, żeby miniatury i podgląd działały.
+const SIGNED_TTL = 3600;
+async function signFiles(list) {
+  const out = {};
+  await Promise.all((list || []).filter((f) => f?.storage_path && isSignedMaterialsPath(f.storage_path)).map(async (f) => {
+    try {
+      const { data } = await supabase.storage.from('materials').createSignedUrl(f.storage_path, SIGNED_TTL);
+      if (data?.signedUrl) out[f.storage_path] = data.signedUrl;
+    } catch { /* bez podpisu — plik pokaże się bez podglądu */ }
+  }));
+  return out;
+}
 
 export default function useMaterials(folderId = null, ministryKey = null) {
   const [files, setFiles] = useState([]);
@@ -7,6 +22,7 @@ export default function useMaterials(folderId = null, ministryKey = null) {
   const [error, setError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [signedUrls, setSignedUrls] = useState({});
 
   // Pobierz pliki
   const fetchFiles = useCallback(async () => {
@@ -40,6 +56,7 @@ export default function useMaterials(folderId = null, ministryKey = null) {
       if (fetchError) throw fetchError;
 
       setFiles(data || []);
+      setSignedUrls(await signFiles(data));
     } catch (err) {
       console.error('Error fetching files:', err);
       setError(err.message);
@@ -167,6 +184,15 @@ export default function useMaterials(folderId = null, ministryKey = null) {
         .update({ download_count: (file.download_count || 0) + 1 })
         .eq('id', file.id);
 
+      // Plik przestrzeni wrażliwej — świeży podpisany link (okno od razu: blokery wyskakujących okien).
+      if (isSignedMaterialsPath(file.storage_path)) {
+        const win = window.open('', '_blank');
+        const { data, error: signError } = await supabase.storage.from('materials').createSignedUrl(file.storage_path, 300);
+        if (signError || !data?.signedUrl) { win?.close(); throw new Error(signError?.message || 'Brak dostępu do pliku'); }
+        if (win) win.location.href = data.signedUrl; else window.location.href = data.signedUrl;
+        return;
+      }
+
       // Pobierz URL
       const { data } = supabase.storage
         .from('materials')
@@ -182,11 +208,12 @@ export default function useMaterials(folderId = null, ministryKey = null) {
 
   // Pobierz URL pliku
   const getFileUrl = useCallback((storagePath) => {
+    if (signedUrls[storagePath]) return signedUrls[storagePath];
     const { data } = supabase.storage
       .from('materials')
       .getPublicUrl(storagePath);
     return data.publicUrl;
-  }, []);
+  }, [signedUrls]);
 
   // Wyszukaj pliki
   const searchFiles = useCallback(async (query) => {
@@ -217,6 +244,7 @@ export default function useMaterials(folderId = null, ministryKey = null) {
       if (searchError) throw searchError;
 
       setFiles(data || []);
+      setSignedUrls(await signFiles(data));
     } catch (err) {
       console.error('Error searching files:', err);
       setError(err.message);
