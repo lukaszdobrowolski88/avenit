@@ -74,7 +74,7 @@ export default function GettingStartedWidget() {
         data-tour="getting-started"
         aria-label={t('Pierwsze kroki: {done} z {total} gotowe', { done: doneCount, total })}
         onClick={openChecklist}
-        className="fixed bottom-4 right-4 z-[60] group flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-full bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 hover:shadow-accent-primary-light/20 hover:-translate-y-0.5 transition-all"
+        className="fixed bottom-4 right-20 z-[60] group flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-full bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 hover:shadow-accent-primary-light/20 hover:-translate-y-0.5 transition-all"
         title={t('Pierwsze kroki')}
       >
         <span className="relative w-9 h-9 rounded-full flex items-center justify-center" style={{ background: `conic-gradient(rgb(var(--accent-primary)) ${pct * 3.6}deg, rgb(var(--accent-primary) / 0.15) 0deg)` }}>

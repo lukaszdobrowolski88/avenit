@@ -246,7 +246,7 @@ export default function PersonalDashboard({ user }) {
 
       {/* Saving indicator */}
       {saving && (
-        <div className="fixed bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+        <div className="fixed bottom-4 right-20 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50">
           <Spinner size={16} />
           <span className="text-sm text-gray-600 dark:text-gray-300">{tr('Zapisywanie...')}</span>
         </div>

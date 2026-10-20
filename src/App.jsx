@@ -17,6 +17,7 @@ import Sidebar, { SidebarProvider } from './components/Sidebar';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import KioskGuard from './modules/Kids/checkin/KioskGuard';
+import ChatFab from './components/ChatFab';
 import InstallPrompt from './components/InstallPrompt';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import PlanUsageNotice from './modules/Billing/PlanUsageNotice';
@@ -567,6 +568,8 @@ function AppInner() {
                 <ToastNotifications />
               {/* PWA Install Prompt */}
               <InstallPrompt />
+              {/* Okrągły skrót do Komunikatora (prawy dolny róg) */}
+              <ChatFab />
               {/* Offline Banner */}
               <OfflineBanner />
               {/* Ogłoszenia systemowe z platformy */}
