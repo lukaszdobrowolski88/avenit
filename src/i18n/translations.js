@@ -5,6 +5,15 @@
 // Lista języków: src/i18n/languages.js (mała, w głównej paczce). Ten plik ładuje się leniwie.
 
 const en = {
+  // ── Kampanie push/SMS: autor i daty, nazwa opcjonalna ──
+  'Utworzył(a)': 'Created by',
+  'Wysłano': 'Sent',
+  'Zaplanowano': 'Scheduled',
+  'Zakończono': 'Completed',
+  'do {n} osoby': 'to {n} person',
+  'do {n} osób': 'to {n} people',
+  'Nazwa (opcjonalnie — domyślnie tytuł)': 'Name (optional — defaults to the title)',
+  'Nazwa (opcjonalnie — domyślnie początek treści)': 'Name (optional — defaults to the start of the message)',
   'Komunikator — nieprzeczytane: {n}': 'Messenger — unread: {n}',
   'przed chwilą': 'just now',
   'zaraz wraca': 'be right back',
@@ -8091,6 +8100,15 @@ const en = {
 };
 
 const uk = {
+  // ── Kampanie push/SMS: autor i daty, nazwa opcjonalna ──
+  'Utworzył(a)': 'Створив(ла)',
+  'Wysłano': 'Надіслано',
+  'Zaplanowano': 'Заплановано',
+  'Zakończono': 'Завершено',
+  'do {n} osoby': 'до {n} особи',
+  'do {n} osób': 'до {n} осіб',
+  'Nazwa (opcjonalnie — domyślnie tytuł)': 'Назва (необов’язково — типово заголовок)',
+  'Nazwa (opcjonalnie — domyślnie początek treści)': 'Назва (необов’язково — типово початок тексту)',
   'Komunikator — nieprzeczytane: {n}': 'Месенджер — непрочитані: {n}',
   'przed chwilą': 'щойно',
   'zaraz wraca': 'зараз повернуться',

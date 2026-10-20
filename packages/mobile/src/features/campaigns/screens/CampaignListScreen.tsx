@@ -16,17 +16,18 @@ import {
   deleteCampaign,
   duplicateCampaign,
   isEditable,
-  listDate,
   pct,
   useCampaigns,
   useInvalidateCampaigns,
+  useUserNames,
   type CampaignKind,
   type CampaignRow,
   type CampaignStatus,
 } from '../api';
 import { PRICE_PER_PART, formatPLN } from '../smsEncoding';
 import { StatsSheet } from '../components/StatsSheet';
-import { StatusPill, confirmAsync, fmtDateTime, fmtDay } from '../components/ui';
+import { StatusPill, confirmAsync, fmtDateTime, sentAt, toPeople } from '../components/ui';
+import { userLabel } from '@avenit/shared/src/lib/campaignName.js';
 
 // Lista kampanii jak CampaignList na webie: filtry (wszystkie/szkice/zaplanowane/wysłane),
 // status, data, liczba odbiorców i podstawowe wskaźniki wysłanych. Stuknięcie: szkic/zaplanowana
@@ -55,16 +56,24 @@ const MenuRow = ({ label, onPress, last }: { label: string; onPress: () => void;
 const CampaignCard = ({
   kind,
   c,
+  names,
   onPress,
   onMenu,
 }: {
   kind: CampaignKind;
   c: CampaignRow;
+  names: Record<string, string>;
   onPress: () => void;
   onMenu: () => void;
 }) => {
   const total = c.recipient_count || 0;
-  const date = listDate(c);
+  const sent = (c.status === 'sent' || c.status === 'sending') && sentAt(c);
+  // „Kto i kiedy”: autor + utworzenie, wysyłka (z liczbą osób) albo termin zaplanowanej.
+  const meta = [
+    `Utworzył(a): ${userLabel(c.created_by, names) || '—'} · ${fmtDateTime(c.created_at)}`,
+    sent ? `Wysłano: ${fmtDateTime(sentAt(c))}${total > 0 ? ` · ${toPeople(total)}` : ''}` : null,
+    c.status === 'scheduled' && c.scheduled_at ? `Zaplanowano: ${fmtDateTime(c.scheduled_at)}` : null,
+  ].filter(Boolean) as string[];
   const sentStats =
     c.status === 'sent' && total > 0
       ? kind === 'push'
@@ -112,12 +121,16 @@ const CampaignCard = ({
           {c.body}
         </Text>
       ) : null}
+      <View style={{ marginTop: 8, gap: 2 }}>
+        {meta.map((line) => (
+          <Text key={line} numberOfLines={2} style={{ fontSize: 12, lineHeight: 16, color: B.ink4, fontFamily: F.medium }}>
+            {line}
+          </Text>
+        ))}
+      </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
         <StatusPill status={c.status} />
-        <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.semibold }}>
-          {c.status === 'scheduled' ? fmtDateTime(date) : fmtDay(date)}
-          {total > 0 ? ` · ${total} odb.` : ''}
-        </Text>
+        {total > 0 && !sent ? <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.semibold }}>{`${total} odb.`}</Text> : null}
       </View>
       {sentStats.length ? (
         <Text style={{ marginTop: 8, fontSize: 12, color: B.okFg, fontFamily: F.semibold }}>{sentStats.filter(Boolean).join(' · ')}</Text>
@@ -132,6 +145,7 @@ export const CampaignListScreen = ({ kind }: { kind: CampaignKind }) => {
   const { selectedCampusId, withCampusFilter } = useCampusQuery();
   const campaigns = useCampaigns(kind, { selectedCampusId, withCampusFilter });
   const invalidate = useInvalidateCampaigns(kind);
+  const names = useUserNames().data ?? {};
   const [filter, setFilter] = useState<Filter>('all');
   const [menu, setMenu] = useState<CampaignRow | null>(null);
   const [stats, setStats] = useState<CampaignRow | null>(null);
@@ -250,7 +264,7 @@ export const CampaignListScreen = ({ kind }: { kind: CampaignKind }) => {
           ) : null}
 
           {list.map((c) => (
-            <CampaignCard key={c.id} kind={kind} c={c} onPress={() => open(c)} onMenu={() => setMenu(c)} />
+            <CampaignCard key={c.id} kind={kind} c={c} names={names} onPress={() => open(c)} onMenu={() => setMenu(c)} />
           ))}
         </ScrollView>
       </View>

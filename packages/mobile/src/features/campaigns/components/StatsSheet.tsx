@@ -2,7 +2,8 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { Sheet } from '../../../components/ui/Sheet';
 import { B } from '../../../components/ui/brand';
 import { FONT as F } from '../../../lib/fonts';
-import { pct, useRecipientRows, type CampaignKind, type CampaignRow } from '../api';
+import { userLabel } from '@avenit/shared/src/lib/campaignName.js';
+import { pct, useRecipientRows, useUserNames, type CampaignKind, type CampaignRow } from '../api';
 import { PRICE_PER_PART, formatPLN } from '../smsEncoding';
 import { StatTile, fmtDateTime } from './ui';
 
@@ -24,6 +25,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export const StatsSheet = ({ kind, campaign, onClose }: { kind: CampaignKind; campaign: CampaignRow | null; onClose: () => void }) => {
   const rows = useRecipientRows(kind, campaign?.id ?? null);
+  const names = useUserNames().data ?? {};
   const recipients: any[] = rows.data?.recipients ?? [];
   const responses: any[] = rows.data?.responses ?? [];
   const c = campaign;
@@ -39,6 +41,18 @@ export const StatsSheet = ({ kind, campaign, onClose }: { kind: CampaignKind; ca
   recipients.forEach((r) => byStatus.set(r.status, (byStatus.get(r.status) ?? 0) + 1));
   const failedRows = recipients.filter((r) => r.status === 'failed' && r.error).slice(0, 5);
 
+  // „Kto i kiedy” — jak nagłówek statystyk na webie.
+  const details: [string, string][] = c
+    ? ([
+        ['Utworzył(a)', userLabel(c.created_by, names) || '—'],
+        ['Utworzono', fmtDateTime(c.created_at)],
+        c.status === 'scheduled' && c.scheduled_at ? ['Zaplanowano', fmtDateTime(c.scheduled_at)] : null,
+        c.started_at ? ['Wysłano', fmtDateTime(c.started_at)] : null,
+        c.completed_at ? ['Zakończono', fmtDateTime(c.completed_at)] : null,
+        ['Odbiorcy', String(total)],
+      ].filter(Boolean) as [string, string][])
+    : [];
+
   return (
     <Sheet
       visible={!!c}
@@ -47,7 +61,18 @@ export const StatsSheet = ({ kind, campaign, onClose }: { kind: CampaignKind; ca
       eyebrow="Statystyki"
       subtitle={kind === 'sms' ? `Od: ${c?.sender ?? '—'}` : c?.title ?? null}
     >
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+      <View style={{ borderRadius: 18, backgroundColor: B.card, overflow: 'hidden', marginTop: 6, marginBottom: 12 }}>
+        {details.map(([label, value], i) => (
+          <View key={label} style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: B.line }}>
+            <Text style={{ fontSize: 13, color: B.ink3, fontFamily: F.semibold }}>{label}</Text>
+            <Text numberOfLines={1} style={{ flex: 1, textAlign: 'right', fontSize: 13, color: B.ink, fontFamily: F.semibold }}>
+              {value}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <StatTile label="Odbiorcy" value={String(total)} dark />
         <StatTile label="Wysłane" value={String(sent)} sub={`${pct(sent, total)}%`} />
         <StatTile label="Dostarczone" value={String(delivered)} sub={`${pct(delivered, total)}%`} />

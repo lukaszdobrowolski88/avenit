@@ -6,12 +6,14 @@ import { tr, appLocale } from '../../../i18n';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../../components/ui/DataTable';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
+import { CampaignMetaDetails, useUserNames } from '../../shared/campaignMeta';
 
 export default function CampaignStats({ campaign, onClose }) {
   const t = useT();
   const [recipients, setRecipients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const names = useUserNames();
 
   useEffect(() => {
     if (!campaign?.id) return;
@@ -70,6 +72,8 @@ export default function CampaignStats({ campaign, onClose }) {
           <Download size={14} /> {tr('Eksport CSV')}
         </button>
       </div>
+
+      <CampaignMetaDetails campaign={campaign} names={names} recipientCount={total} />
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <Stat icon={Users} label={tr('Odbiorcy')} value={total} color="gray" />

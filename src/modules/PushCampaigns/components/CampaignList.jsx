@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import {
   Bell, Send, Clock, FileText, MoreVertical, Edit, Copy, Trash2,
-  CheckCircle, XCircle, AlertCircle, Users, Calendar, TrendingUp,
+  CheckCircle, XCircle, AlertCircle, TrendingUp,
   Eye, MousePointer, ArrowRight, Plus, X
 } from 'lucide-react';
 import { usePushCampaigns } from '../hooks/usePushCampaigns';
 import { STATUS_CONFIG } from '../constants';
 import { useT } from '../../../i18n';
-import { tr, appLocale } from '../../../i18n';
+import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
+import { CampaignMetaLines, useUserNames } from '../../shared/campaignMeta';
 
 const STATUS_ICON = {
   draft: FileText, scheduled: Clock, sending: Send, sent: CheckCircle,
@@ -23,6 +24,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
   const { deleteCampaign, duplicateCampaign, cancelCampaign } = usePushCampaigns();
   const [filter, setFilter] = useState('all');
   const [menuOpen, setMenuOpen] = useState(null);
+  const names = useUserNames();
 
   const filtered = campaigns.filter(c => filter === 'all' || c.status === filter);
 
@@ -108,22 +110,14 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">{c.body}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">{c.body}</p>
+                  <CampaignMetaLines campaign={c} names={names} />
 
-                  <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-${cfg.color}-100 dark:bg-${cfg.color}-900/30 text-${cfg.color}-700 dark:text-${cfg.color}-400 mb-3`}>
+                  <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-${cfg.color}-100 dark:bg-${cfg.color}-900/30 text-${cfg.color}-700 dark:text-${cfg.color}-400`}>
                     <Icon size={11} />
                     {t(cfg.label)}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                    {total > 0 && (
-                      <span className="flex items-center gap-1"><Users size={12} /> {total}</span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <Calendar size={12} />
-                      {formatDate(c.status === 'scheduled' ? c.scheduled_at : c.completed_at || c.created_at)}
-                    </span>
-                  </div>
 
                   {c.status === 'sent' && total > 0 && (
                     <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -195,9 +189,4 @@ function Empty({ onNew }) {
       action={<Button icon={Plus} onClick={onNew}>{tr('Stwórz pierwszą kampanię')}</Button>}
     />
   );
-}
-
-function formatDate(s) {
-  if (!s) return '—';
-  return new Date(s).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 }
