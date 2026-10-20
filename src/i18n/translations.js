@@ -5,6 +5,7 @@
 // Lista języków: src/i18n/languages.js (mała, w głównej paczce). Ten plik ładuje się leniwie.
 
 const en = {
+  'Komunikator — nieprzeczytane: {n}': 'Messenger — unread: {n}',
   'przed chwilą': 'just now',
   'zaraz wraca': 'be right back',
   'w ostatniej godzinie': 'in the last hour',
@@ -8090,6 +8091,7 @@ const en = {
 };
 
 const uk = {
+  'Komunikator — nieprzeczytane: {n}': 'Месенджер — непрочитані: {n}',
   'przed chwilą': 'щойно',
   'zaraz wraca': 'зараз повернуться',
   'w ostatniej godzinie': 'за останню годину',
