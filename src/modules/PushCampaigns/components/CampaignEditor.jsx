@@ -7,6 +7,7 @@ import { useCampus } from '../../../contexts/CampusContext';
 import { usePushCampaigns, dispatchCampaign, invokeSendPush } from '../hooks/usePushCampaigns';
 import { useRecipientsSource } from '../../shared/recipients';
 import { TITLE_MAX, BODY_MAX } from '../constants';
+import { campaignFallbackName } from '@avenit/shared/src/lib/campaignName.js';
 import RecipientSelector from './RecipientSelector';
 import ActionButtonsBuilder from './ActionButtonsBuilder';
 import ScheduleControl from './ScheduleControl';
@@ -78,16 +79,31 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const updateForm = (patch) => setForm(prev => ({ ...prev, ...patch }));
 
+  // Nazwa jest opcjonalna (domyślnie tytuł) — wymagamy tylko tego, co trafia do odbiorcy.
   const validate = () => {
-    if (!form.name.trim()) return tr('Podaj nazwę kampanii');
-    if (!form.title.trim()) return tr('Podaj tytuł powiadomienia');
-    if (!form.body.trim()) return tr('Podaj treść powiadomienia');
-    if (form.send_mode === 'scheduled' && !form.scheduled_at) return tr('Wybierz datę wysyłki');
+    if (!form.title.trim()) return { msg: tr('Podaj tytuł powiadomienia'), field: 'push-title' };
+    if (!form.body.trim()) return { msg: tr('Podaj treść powiadomienia'), field: 'push-body' };
+    if (form.send_mode === 'scheduled' && !form.scheduled_at) return { msg: tr('Wybierz datę wysyłki'), section: 'schedule' };
     return null;
+  };
+
+  // Błąd walidacji: toast + przejście do sekcji i fokus na pierwszym błędnym polu.
+  const reportInvalid = (err) => {
+    toast.error(err.msg);
+    setSection(err.section || 'compose');
+    if (err.field) {
+      setTimeout(() => {
+        const el = document.getElementById(err.field);
+        if (!el) return;
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el.focus({ preventScroll: true });
+      }, 50);
+    }
   };
 
   const buildPayload = (status) => ({
     ...form,
+    name: campaignFallbackName({ kind: 'push', name: form.name, title: form.title, body: form.body }),
     campus_id: getCampusIdForInsert(),
     status,
     segments,
@@ -96,7 +112,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSaveDraft = async () => {
     const err = validate();
-    if (err) { toast.error(err); return; }
+    if (err) { reportInvalid(err); return; }
     setSaving(true);
     try {
       if (campaign?.id) {
@@ -114,7 +130,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSchedule = async () => {
     const err = validate();
-    if (err) { toast.error(err); return; }
+    if (err) { reportInvalid(err); return; }
     if (recipientCount === 0) {
       if (!await confirmDialog(tr('Brak odbiorców pasujących do segmentów. Zapisać mimo to?'))) return;
     }
@@ -136,7 +152,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSendNow = async () => {
     const err = validate();
-    if (err) { toast.error(err); return; }
+    if (err) { reportInvalid(err); return; }
     if (recipientCount === 0) { toast.error(tr('Brak odbiorców')); return; }
     if (!await confirmDialog(tr('Wysłać kampanię do {n} odbiorców?', { n: recipientCount }))) return;
 
@@ -297,13 +313,14 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     data-tour="push-name"
                     value={form.name}
                     onChange={e => updateForm({ name: e.target.value })}
-                    placeholder={tr('Np. Niedziela 12.05 — przypomnienie')}
+                    placeholder={tr('Nazwa (opcjonalnie — domyślnie tytuł)')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                   />
                 </Field>
 
                 <Field label={tr('Tytuł')} hint={`${form.title.length}/${TITLE_MAX}`}>
                   <input
+                    id="push-title"
                     data-tour="push-title"
                     maxLength={TITLE_MAX}
                     value={form.title}
@@ -315,6 +332,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
                 <Field label={tr('Treść')} hint={`${form.body.length}/${BODY_MAX}`}>
                   <textarea
+                    id="push-body"
                     data-tour="push-body"
                     maxLength={BODY_MAX}
                     rows={3}

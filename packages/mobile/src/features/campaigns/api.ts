@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { buildUserNameMap } from '@avenit/shared/src/lib/campaignName.js';
 import type { Segment } from './recipientsLogic';
 
 // Kampanie push i SMS — kontrakt jak web (src/modules/PushCampaigns/hooks/usePushCampaigns.js,
@@ -66,6 +67,8 @@ export interface CampaignRow {
   quiet_hours_end?: string | null;
   frequency_cap_per_day?: number | null;
   created_at: string | null;
+  created_by?: string | null;
+  started_at?: string | null;
   completed_at?: string | null;
   recipient_count?: number | null;
   sent_count?: number | null;
@@ -126,6 +129,19 @@ const fetchFull = async (kind: CampaignKind, id: string): Promise<CampaignRow> =
   if (error) throw error;
   return data as CampaignRow;
 };
+
+// Imiona autorów kampanii: created_by to e-mail → jedno zapytanie do app_users, mapa po e-mailu
+// małymi literami (userLabel z @avenit/shared dopasowuje bez względu na wielkość liter).
+export const useUserNames = () =>
+  useQuery({
+    queryKey: ['campaigns', 'user-names'],
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<Record<string, string>> => {
+      const { data, error } = await supabase.from('app_users').select('email, full_name, name');
+      if (error) return {};
+      return buildUserNameMap(asList(data));
+    },
+  });
 
 // Pełna kampania do edycji (z segmentami i przyciskami) — web bierze ją z listy, my dociągamy
 // osobno, żeby zapis nie skasował segmentów (lista nie ma embedów).
@@ -325,9 +341,6 @@ export const useInvalidateCampaigns = (kind: CampaignKind) => {
   const qc = useQueryClient();
   return useCallback(() => qc.invalidateQueries({ queryKey: campaignsKey(kind) }), [qc, kind]);
 };
-
-// Data w liście: zaplanowane → termin, wysłane → zakończenie, reszta → utworzenie (jak web).
-export const listDate = (c: CampaignRow) => (c.status === 'scheduled' ? c.scheduled_at : c.completed_at || c.created_at);
 
 export const pct = (v: number, total: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
 

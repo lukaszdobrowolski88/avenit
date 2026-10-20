@@ -47,3 +47,16 @@ declare module '@avenit/shared/src/lib/presence.js' {
   export function lastSeenLabel(lastSeen: string | null | undefined, now?: number): string;
   export function presenceByEmail<T extends { user_email?: string | null }>(rows: T[] | null | undefined): Map<string, T>;
 }
+
+declare module '@avenit/shared/src/lib/campaignName.js' {
+  export function campaignDateName(now?: Date | string | number): string;
+  export function smsBodySnippet(body: string | null | undefined, max?: number): string;
+  export function campaignFallbackName(
+    input?: { kind?: 'push' | 'sms'; name?: string | null; title?: string | null; body?: string | null },
+    now?: Date,
+  ): string;
+  export function buildUserNameMap(
+    rows: { email?: string | null; full_name?: string | null; name?: string | null }[] | null | undefined,
+  ): Record<string, string>;
+  export function userLabel(email: string | null | undefined, map: Record<string, string> | null | undefined): string;
+}

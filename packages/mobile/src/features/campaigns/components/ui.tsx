@@ -113,6 +113,12 @@ export const confirmAsync = (title: string, message: string, okLabel: string, de
     );
   });
 
+// „do 1 osoby”, „do 5 osób” — liczba odbiorców wysłanej kampanii.
+export const toPeople = (n: number) => `do ${n} ${n === 1 ? 'osoby' : 'osób'}`;
+
+// Moment wysyłki: zakończenie, a gdy jeszcze trwa — start.
+export const sentAt = (c: { completed_at?: string | null; started_at?: string | null }) => c.completed_at || c.started_at || null;
+
 // „1 odbiorca”, „2 odbiorców”… — polska odmiana dla liczników.
 export const recipientsWord = (n: number) => {
   if (n === 1) return 'odbiorca';

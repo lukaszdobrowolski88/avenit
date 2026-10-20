@@ -7,6 +7,7 @@ import { useCampus } from '../../../contexts/CampusContext';
 import { useSmsCampaigns, dispatchSmsCampaign, invokeSendSms } from '../hooks/useSmsCampaigns';
 import { useRecipientsSource, normalizePhone } from '../../shared/recipients';
 import { SENDER_MAX, BODY_MAX } from '../constants';
+import { campaignFallbackName } from '@avenit/shared/src/lib/campaignName.js';
 import { smsAnalysis, estimateCost, formatPLN } from '../utils/smsEncoding';
 import RecipientSelector from './RecipientSelector';
 import ScheduleControl from './ScheduleControl';
@@ -76,17 +77,32 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const updateForm = (patch) => setForm(prev => ({ ...prev, ...patch }));
 
+  // Nazwa jest opcjonalna (domyślnie początek treści) — wymagamy tylko tego, co trafia do odbiorcy.
   const validate = () => {
-    if (!form.name.trim()) return tr('Podaj nazwę kampanii');
-    if (!form.sender.trim()) return tr('Podaj nadawcę');
-    if (form.sender.length > SENDER_MAX) return tr('Nadawca: max {n} znaków', { n: SENDER_MAX });
-    if (!form.body.trim()) return tr('Podaj treść SMS-a');
-    if (form.send_mode === 'scheduled' && !form.scheduled_at) return tr('Wybierz datę wysyłki');
+    if (!form.sender.trim()) return { msg: tr('Podaj nadawcę'), field: 'sms-sender' };
+    if (form.sender.length > SENDER_MAX) return { msg: tr('Nadawca: max {n} znaków', { n: SENDER_MAX }), field: 'sms-sender' };
+    if (!form.body.trim()) return { msg: tr('Podaj treść SMS-a'), field: 'sms-body' };
+    if (form.send_mode === 'scheduled' && !form.scheduled_at) return { msg: tr('Wybierz datę wysyłki'), section: 'schedule' };
     return null;
+  };
+
+  // Błąd walidacji: toast + przejście do sekcji i fokus na pierwszym błędnym polu.
+  const reportInvalid = (err) => {
+    toast.error(err.msg);
+    setSection(err.section || 'compose');
+    if (err.field) {
+      setTimeout(() => {
+        const el = document.getElementById(err.field);
+        if (!el) return;
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el.focus({ preventScroll: true });
+      }, 50);
+    }
   };
 
   const buildPayload = (status) => ({
     ...form,
+    name: campaignFallbackName({ kind: 'sms', name: form.name, body: form.body }),
     encoding: analysis.encoding,
     parts_per_message: analysis.parts,
     campus_id: getCampusIdForInsert(),
@@ -96,7 +112,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSaveDraft = async () => {
     const err = validate();
-    if (err) { toast.error(err); return; }
+    if (err) { reportInvalid(err); return; }
     setSaving(true);
     try {
       if (campaign?.id) {
@@ -114,7 +130,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSchedule = async () => {
     const err = validate();
-    if (err) { toast.error(err); return; }
+    if (err) { reportInvalid(err); return; }
     if (recipientCount === 0) {
       if (!await confirmDialog(tr('Brak odbiorców z numerem. Zapisać mimo to?'))) return;
     }
@@ -136,7 +152,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSendNow = async () => {
     const err = validate();
-    if (err) { toast.error(err); return; }
+    if (err) { reportInvalid(err); return; }
     if (recipientCount === 0) { toast.error(tr('Brak odbiorców z numerem')); return; }
     if (!await confirmDialog(tr('Wysłać SMS do {n} odbiorców? Szacunkowy koszt: {cost}.', { n: recipientCount, cost: formatPLN(estimatedCost) }))) return;
 
@@ -301,7 +317,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     data-tour="sms-name"
                     value={form.name}
                     onChange={e => updateForm({ name: e.target.value })}
-                    placeholder={tr('Np. Niedziela 12.05 — przypomnienie')}
+                    placeholder={tr('Nazwa (opcjonalnie — domyślnie początek treści)')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
                   />
                 </Field>
@@ -311,6 +327,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                   hint={`${form.sender.length}/${SENDER_MAX}`}
                 >
                   <input
+                    id="sms-sender"
                     maxLength={SENDER_MAX}
                     value={form.sender}
                     onChange={e => updateForm({ sender: e.target.value })}
@@ -335,6 +352,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                   }
                 >
                   <textarea
+                    id="sms-body"
                     data-tour="sms-body"
                     maxLength={BODY_MAX}
                     rows={5}

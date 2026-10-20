@@ -37,6 +37,7 @@ import {
 import { useRecipientsSource } from '../recipients';
 import { hasValidPhone, normalizePhone, resolveSegments, segmentLabel, segmentsFromRows, type Segment } from '../recipientsLogic';
 import { PRICE_PER_PART, SENDER_MAX, SMS_BODY_MAX, estimateCost, formatPLN, partsLabel, smsAnalysis } from '../smsEncoding';
+import { campaignFallbackName } from '@avenit/shared/src/lib/campaignName.js';
 import { PushPreview, SmsPreview } from '../components/Previews';
 import { RecipientSheet } from '../components/RecipientSheet';
 import { ScheduleSection, type ScheduleValue } from '../components/ScheduleSection';
@@ -121,9 +122,11 @@ const campaignFields = (kind: CampaignKind, f: Form) => {
     quiet_hours_end: f.quiet_hours_end,
     frequency_cap_per_day: f.frequency_cap_per_day,
   };
+  // Nazwa opcjonalna: wpisana → (push) tytuł / (SMS) początek treści → „Kampania DD.MM.YYYY HH:mm”.
+  const name = campaignFallbackName({ kind, name: f.name, title: f.title, body: f.body });
   if (kind === 'push') {
     return {
-      name: f.name,
+      name,
       title: f.title,
       body: f.body,
       icon: f.icon,
@@ -136,7 +139,7 @@ const campaignFields = (kind: CampaignKind, f: Form) => {
     };
   }
   const a = smsAnalysis(f.body);
-  return { name: f.name, sender: f.sender, body: f.body, ...schedule, encoding: a.encoding, parts_per_message: a.parts };
+  return { name, sender: f.sender, body: f.body, ...schedule, encoding: a.encoding, parts_per_message: a.parts };
 };
 
 const Counter = ({ value, max }: { value: number; max: number }) => (
@@ -206,7 +209,6 @@ export const CampaignEditorScreen = ({ kind }: { kind: CampaignKind }) => {
   };
 
   const validate = (): string | null => {
-    if (!form.name.trim()) return 'Podaj nazwę kampanii';
     if (kind === 'push') {
       if (!form.title.trim()) return 'Podaj tytuł powiadomienia';
       if (!form.body.trim()) return 'Podaj treść powiadomienia';
@@ -420,7 +422,7 @@ export const CampaignEditorScreen = ({ kind }: { kind: CampaignKind }) => {
           <SectionTitle>Treść</SectionTitle>
           <Card>
             <FormLabel first>Nazwa kampanii (wewnętrzna)</FormLabel>
-            <FormInput value={form.name} onChangeText={(name) => update({ name })} placeholder="Np. Niedziela 12.05 — przypomnienie" />
+            <FormInput value={form.name} onChangeText={(name) => update({ name })} placeholder={kind === 'push' ? 'Nazwa (opcjonalnie — domyślnie tytuł)' : 'Nazwa (opcjonalnie — domyślnie początek treści)'} />
 
             {kind === 'push' ? (
               <>
