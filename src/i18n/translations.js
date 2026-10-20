@@ -5,6 +5,7 @@
 // Lista języków: src/i18n/languages.js (mała, w głównej paczce). Ten plik ładuje się leniwie.
 
 const en = {
+  'Nieaktywna osoba nie pojawia się przy przypisywaniu do grafiku.': 'An inactive person is not offered when assigning the schedule.',
   'Kampus': 'Campus',
   'Kampusy': 'Campuses',
   'Wszystkie kampusy': 'All campuses',
@@ -8085,6 +8086,7 @@ const en = {
 };
 
 const uk = {
+  'Nieaktywna osoba nie pojawia się przy przypisywaniu do grafiku.': 'Неактивна особа не пропонується під час призначення в графік.',
   'Kampus': 'Кампус',
   'Kampusy': 'Кампуси',
   'Wszystkie kampusy': 'Усі кампуси',
