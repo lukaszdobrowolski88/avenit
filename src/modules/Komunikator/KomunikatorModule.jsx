@@ -8,6 +8,7 @@ import GroupSettingsModal from './components/GroupSettingsModal';
 import ReportsPanel, { countOpenReports } from './components/ReportsPanel';
 import MeetingModal from './meetings/MeetingModal';
 import { threadParam } from './threads/threadLogic';
+import MyRemindersPanel from './schedule/MyRemindersPanel';
 import { useCalls } from './calls/callContext';
 import useConversations from './hooks/useConversations';
 import useMinistryChannels from './hooks/useMinistryChannels';
@@ -106,6 +107,9 @@ export default function KomunikatorModule() {
   useEffect(() => { refreshReportsCount(); }, [refreshReportsCount]);
 
   const [pendingOpenId, setPendingOpenId] = useState(null);
+  // Skok do wiadomości po otwarciu rozmowy (przypomnienie: link ?conversation=…&message=…).
+  const [jumpTarget, setJumpTarget] = useState(null); // { conversationId, messageId }
+  const [showReminders, setShowReminders] = useState(false);
   const urlRefetchRef = useRef(null); // rozmowa z linku, dla której już odświeżyliśmy listę
   const [showNewModal, setShowNewModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -163,6 +167,11 @@ export default function KomunikatorModule() {
     if (!conversationId || !userEmail) return;
     const conv = conversations.find(c => String(c.id) === conversationId);
     if (conv) {
+      // ?message=<id> (przypomnienie) — skok do wiadomości; odpowiedź w wątku (&thread=) — do jej
+      // wiadomości głównej w rozmowie, a panel wątku otwiera się obok (niżej).
+      const messageId = searchParams.get('message');
+      const threadRoot = threadParam(searchParams.get('thread'));
+      if (messageId) setJumpTarget({ conversationId: String(conv.id), messageId: threadRoot || messageId });
       handleSelectConversation(conv);
       // ?join=audio|video (z aplikacji mobilnej, dopóki nie ma tam natywnych rozmów): od razu
       // dołącz do trwającego połączenia albo je rozpocznij (serwer łączy z trwającym).
@@ -294,6 +303,7 @@ export default function KomunikatorModule() {
           openReportsCount={openReports}
           onSyncChannels={isAppAdmin ? handleSyncChannels : undefined}
           syncingChannels={syncingChannels}
+          onOpenReminders={() => setShowReminders(true)}
         />
       </div>
 
@@ -318,6 +328,8 @@ export default function KomunikatorModule() {
           perms={perms}
           isAppAdmin={isAppAdmin}
           threadRequest={threadRequest && threadRequest.conversationId === selectedConversation?.id ? threadRequest : null}
+          initialMessageId={jumpTarget && String(jumpTarget.conversationId) === String(selectedConversation?.id) ? jumpTarget.messageId : null}
+          onInitialMessageHandled={() => setJumpTarget(null)}
         />
       </div>
 
@@ -341,6 +353,17 @@ export default function KomunikatorModule() {
           onSaved={(m) => { if (m?.conversation_id) { refetch({ light: true }); openConversationById(m.conversation_id); } }}
         />
       )}
+
+      {/* Moje przypomnienia — kliknięcie otwiera rozmowę przy wiadomości */}
+      <MyRemindersPanel
+        isOpen={showReminders}
+        onClose={() => setShowReminders(false)}
+        onOpen={(conversationId, messageId, threadRootId) => {
+          setJumpTarget({ conversationId: String(conversationId), messageId: threadRootId || messageId });
+          if (threadRootId) setThreadRequest({ conversationId, id: threadRootId, at: Date.now() });
+          openConversationById(conversationId);
+        }}
+      />
 
       {/* Modal ustawień grupy */}
       <GroupSettingsModal

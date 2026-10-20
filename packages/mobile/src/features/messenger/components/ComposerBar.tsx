@@ -62,6 +62,8 @@ interface Props {
   /** K5: uczestnicy do podpowiedzi „@” (bez mnie) i czy wolno „@wszyscy”. */
   mentionCandidates?: MentionCandidate[];
   canMentionAll?: boolean;
+  /** Przytrzymanie „Wyślij” — zaplanuj wysyłkę (arkusz z terminami). */
+  onLongPressSend?: () => void;
 }
 
 export const ComposerBar = ({
@@ -89,6 +91,7 @@ export const ComposerBar = ({
   onCancelPrayer,
   mentionCandidates,
   canMentionAll = false,
+  onLongPressSend,
 }: Props) => {
   // Hooki ZAWSZE przed warunkowym returnem (prawo pisania zmienia się po wczytaniu rozmowy).
   const [recording, setRecording] = useState(false);
@@ -485,9 +488,12 @@ export const ComposerBar = ({
         ) : (
           <Pressable
             onPress={onSend}
+            onLongPress={!editing && !prayerMode && canSend && onLongPressSend ? onLongPressSend : undefined}
+            delayLongPress={400}
             disabled={sending || !canSend}
             accessibilityRole="button"
             accessibilityLabel={editing ? "Zapisz zmiany" : "Wyślij"}
+            accessibilityHint={!editing && !prayerMode && onLongPressSend ? "Przytrzymaj, żeby zaplanować wysyłkę" : undefined}
             style={{ opacity: canSend ? 1 : 0.4 }}
           >
             {sending || uploading ? (

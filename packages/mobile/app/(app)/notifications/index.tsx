@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
+  AlarmClock,
   Bell,
   Calendar,
   CheckCheck,
@@ -42,6 +43,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   task: CheckSquare,
   event: Calendar,
   system: Info,
+  reminder: AlarmClock,
 };
 
 export default function NotificationsScreen() {

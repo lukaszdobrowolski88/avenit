@@ -1,5 +1,6 @@
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import {
+  AlarmClock,
   Ban,
   Eye,
   MessagesSquare,
@@ -49,6 +50,8 @@ interface Props {
   onReport?: () => void;
   blockLabel?: string | null;
   onToggleBlock?: () => void;
+  /** „Przypomnij mi” o wiadomości (arkusz z terminami). */
+  onRemind?: () => void;
 }
 
 interface ActionRow {
@@ -159,6 +162,7 @@ export const MessageActionsSheet = ({
   onReport,
   blockLabel,
   onToggleBlock,
+  onRemind,
 }: Props) => {
   const close = onClose;
   const wrap = (fn: () => void) => () => {
@@ -174,6 +178,7 @@ export const MessageActionsSheet = ({
     ...(onTranslate && translateLabel
       ? [{ key: "translate", label: translateLabel, Icon: Languages, onPress: wrap(onTranslate), busy: !!translating }]
       : []),
+    ...(onRemind ? [{ key: "remind", label: "Przypomnij mi", Icon: AlarmClock, onPress: wrap(onRemind) }] : []),
     ...(onReadBy ? [{ key: "readby", label: "Kto przeczytał", Icon: Eye, onPress: wrap(onReadBy) }] : []),
   ];
   if (canPin) {

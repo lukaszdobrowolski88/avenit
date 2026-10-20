@@ -1,5 +1,5 @@
 import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect, useLayoutEffect } from 'react';
-import { Send, Paperclip, X, FileText, Loader, Reply, Mic, Plus, BarChart3, Calendar, Lock, Smile, HeartHandshake, Users } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Loader, Reply, Mic, Plus, BarChart3, Calendar, Lock, Smile, HeartHandshake, Users, Clock } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatFileSize, isImageFile } from '../utils/messageHelpers';
 import AudioRecorder from './AudioRecorder';
@@ -10,6 +10,7 @@ import { toast } from '../../../lib/toast';
 import { previewText, sameEmail, MENTION_ALL, MENTION_ALL_TOKEN, insertMentionAt } from '../utils/chatLogic';
 import { attachmentUploadPath } from '../utils/attachmentUrl';
 import { SignedImage } from './SignedAttachment';
+import ScheduleSendMenu from '../schedule/ScheduleSendMenu';
 
 const DRAFT_PREFIX = 'komunikator_draft_';
 
@@ -29,7 +30,10 @@ const MessageInput = forwardRef(function MessageInput({
   onOpenEventShare,
   // Wątki: osobny szkic (inaczej pole wątku i rozmowy dzieliłyby jeden) i bez ankiet/wydarzeń/modlitw.
   draftKey = null,
-  richTypes = true
+  richTypes = true,
+  // Zaplanuj wysyłkę: (content, attachments, replyToId, extra, sendAtIso) — długie przytrzymanie
+  // / prawy klik na „Wyślij” albo zegar obok. Bez propsa — brak planowania.
+  onSchedule
 }, ref) {
   const draftId = draftKey || conversationId;
   const t = useT();
@@ -49,6 +53,9 @@ const MessageInput = forwardRef(function MessageInput({
   const sendingRef = useRef(false); // strażnik podwójnego Entera / kliknięcia
   const pendingCaretRef = useRef(null); // pozycja kursora do ustawienia po wstawieniu wzmianki
   const [sending, setSending] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const longPressTimer = useRef(null);
+  const longPressFired = useRef(false);
 
   // Wczytaj wersję roboczą (draft) przy zmianie konwersacji
   useEffect(() => {
@@ -209,6 +216,48 @@ const MessageInput = forwardRef(function MessageInput({
       setSending(false);
     }
   };
+
+  // Zaplanowana wysyłka — to samo co „Wyślij” (treść, załączniki, odpowiedź, wzmianki), tylko później.
+  const canSchedule = !!onSchedule && composerMode === 'text';
+  const handleSchedule = async (sendAtIso) => {
+    if ((!content.trim() && attachments.length === 0) || disabled || uploading || sendingRef.current) return;
+    sendingRef.current = true;
+    setSending(true);
+    try {
+      await onSchedule(content.trim(), attachments, replyingTo?.id || null, { mentions: resolveMentions(content) }, sendAtIso);
+      setShowSchedule(false);
+      setContent('');
+      setAttachments([]);
+      clearDraft();
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    } catch (err) {
+      if (!err?.handled) toast.error(err, { fallback: t('Nie udało się zaplanować wiadomości. Spróbuj ponownie.') });
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
+  };
+  const openSchedule = () => {
+    if (!canSchedule || (!content.trim() && attachments.length === 0)) return;
+    setShowAttachMenu(false);
+    setShowEmoji(false);
+    setShowSchedule(true);
+  };
+  // Długie przytrzymanie „Wyślij” (dotyk i mysz) otwiera planowanie zamiast wysyłki.
+  const clearLongPress = () => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } };
+  const sendPressHandlers = canSchedule ? {
+    onPointerDown: () => {
+      longPressFired.current = false;
+      clearLongPress();
+      longPressTimer.current = setTimeout(() => { longPressFired.current = true; openSchedule(); }, 500);
+    },
+    onPointerUp: clearLongPress,
+    onPointerLeave: clearLongPress,
+    onPointerCancel: clearLongPress,
+    onContextMenu: (e) => { e.preventDefault(); clearLongPress(); openSchedule(); },
+    onClick: (e) => { if (longPressFired.current) { e.preventDefault(); longPressFired.current = false; } },
+  } : {};
+  useEffect(() => clearLongPress, []);
 
   useEffect(() => {
     if (replyingTo && textareaRef.current) textareaRef.current.focus();
@@ -427,6 +476,10 @@ const MessageInput = forwardRef(function MessageInput({
         </div>
       )}
 
+      {canSchedule && (
+        <ScheduleSendMenu open={showSchedule} onClose={() => setShowSchedule(false)} onPick={handleSchedule} busy={sending} />
+      )}
+
       {isRecordingVoice ? (
         <AudioRecorder onSend={handleSendVoiceMessage} onCancel={() => setIsRecordingVoice(false)} disabled={disabled || uploading} />
       ) : (
@@ -488,12 +541,28 @@ const MessageInput = forwardRef(function MessageInput({
             />
           </div>
 
+          {canSchedule && (content.trim() || attachments.length > 0) && (
+            <button
+              type="button"
+              data-schedule-toggle
+              onClick={() => (showSchedule ? setShowSchedule(false) : openSchedule())}
+              disabled={disabled || uploading || sending}
+              className="hidden sm:flex w-11 h-11 items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+              title={t('Zaplanuj wysyłkę')}
+              aria-label={t('Zaplanuj wysyłkę')}
+              aria-expanded={showSchedule}
+            >
+              <Clock size={18} />
+            </button>
+          )}
+
           <button
+            {...sendPressHandlers}
             data-tour="komunikator-send"
             type="submit"
             disabled={(!content.trim() && attachments.length === 0) || disabled || uploading || sending}
             aria-label={t('Wyślij')}
-            title={t('Wyślij')}
+            title={canSchedule ? t('Wyślij (przytrzymaj, żeby zaplanować)') : t('Wyślij')}
             className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 flex-shrink-0"
           >
             <Send size={16} className="sm:w-[18px] sm:h-[18px]" />

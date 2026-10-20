@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, X, MessageSquare, AtSign, CheckSquare, Calendar, CalendarCheck, CheckCheck } from 'lucide-react';
+import { Bell, X, MessageSquare, AtSign, CheckSquare, Calendar, CalendarCheck, CheckCheck, AlarmClock } from 'lucide-react';
 import { useNotificationContext } from '../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -15,11 +15,14 @@ export function notificationKind(n) {
   if (type === 'message') return { icon: MessageSquare, label: 'Wiadomość' };
   if (type === 'assignment') return { icon: CalendarCheck, label: 'Służba' };
   if (type === 'event') return { icon: Calendar, label: 'Wydarzenie' };
+  if (type === 'reminder') return { icon: AlarmClock, label: 'Przypomnienie' };
   return { icon: Bell, label: null };
 }
 
 // Rozmowa w Komunikatorze → jedna pozycja (wzmianki z komentarzy zadań NIE są łączone).
+// Przypomnienie o wiadomości ('reminder') to osobna pozycja — prowadzi do konkretnej wiadomości.
 const chatKey = (n) => {
+  if (n?.type === 'reminder') return null;
   const conv = n?.data?.conversation_id;
   if (conv) return `msg:${conv}`;
   return n?.type === 'message' && n.link ? `msg:${n.link}` : null;

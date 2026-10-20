@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical, Edit2, Trash2, Check, X, FileText, Image, Table, File, Download, CheckCheck, Reply, Smile, Forward, Pin, Copy, Plus, Eye, Languages, Flag, Ban, Loader, MessagesSquare } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Check, X, FileText, Image, Table, File, Download, CheckCheck, Reply, Smile, Forward, Pin, Copy, Plus, Eye, Languages, Flag, Ban, Loader, MessagesSquare, AlarmClock } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageTime, formatFileSize, isImageFile, getFileIcon } from '../utils/messageHelpers';
 import { REACTION_EMOJIS } from '../hooks/useReactions';
@@ -23,7 +23,7 @@ import { useAnchoredPopover, useOutsideClose } from '../../../components/pickers
 // Menu „Więcej działań”: portal w <body> (position: fixed), żeby nie ucinał go przewijany wątek;
 // przy dolnej krawędzi otwiera się w górę (useAnchoredPopover). Wysokość = najdłuższy wariant menu.
 const MENU_WIDTH = 180;
-const MENU_HEIGHT = 330;
+const MENU_HEIGHT = 402;
 // Wybór reakcji — też w portalu: nad dymkiem, a przy górnej krawędzi wątku (pierwsza wiadomość) pod nim.
 const REACTION_WIDTH = 340;
 const REACTION_BAR_HEIGHT = 56;
@@ -71,7 +71,9 @@ export default function MessageBubble({
   isGroupConversation = false,
   // Wątki (112): „Odpowiedz w wątku” w menu i pigułka „N odpowiedzi” pod dymkiem.
   onReplyInThread,
-  threadChip = null
+  threadChip = null,
+  // „Przypomnij mi” o tej wiadomości (otwiera wybór terminu)
+  onRemind
 }) {
   const { lang } = useI18n();
   const [showMenu, setShowMenu] = useState(false);
@@ -422,6 +424,9 @@ export default function MessageBubble({
                   )}
                   {onToggleReaction && (
                     <button type="button" role="menuitem" onClick={() => { setShowMenu(false); setShowReactionPicker(true); setShowFullEmoji(false); }} className={menuItem}><Smile size={14} className="text-gray-400" />{tr('Zareaguj')}</button>
+                  )}
+                  {onRemind && (
+                    <button type="button" role="menuitem" onClick={() => { setShowMenu(false); onRemind(message); }} className={menuItem}><AlarmClock size={14} className="text-gray-400" />{tr('Przypomnij mi')}</button>
                   )}
                   {isOwn && onShowSeenBy && (
                     <button type="button" role="menuitem" onClick={() => { setShowMenu(false); onShowSeenBy(message); }} className={menuItem}><Eye size={14} className="text-gray-400" />{tr('Widziane przez')}</button>

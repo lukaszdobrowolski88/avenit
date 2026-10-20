@@ -29,6 +29,8 @@ export default function ThreadPanel({
   canEditOwn = true,
   nameOf,
   onClose,
+  // „Przypomnij mi” o wiadomości wątku (okno wyboru terminu trzyma rozmowa).
+  onRemind,
 }) {
   const { root, replies, loading, error, following, sendReply, editReply, deleteReply, setFollowing, refetch } =
     useThread(conversation?.id, rootId, userEmail, { initialRoot });
@@ -106,6 +108,7 @@ export default function ThreadPanel({
       reactions: getReactionsForMessage(m.id),
       onEdit: isOwn && canEditOwn ? handleEdit : undefined,
       onDelete: isOwn && canEditOwn && m.id !== rootId ? handleDelete : undefined,
+      onRemind: m.message_type === 'system' ? undefined : onRemind,
     };
   };
 
