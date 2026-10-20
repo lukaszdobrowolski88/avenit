@@ -6,25 +6,25 @@
 // na liście „Zablokowane osoby”.
 // Brak wpisu w FN_CAPABILITY => preHandler = requireUser (każdy zalogowany).
 import { notifyNewReport } from '../lib/moderation.js';
+import { isPrayerLeader } from '../dataapi/prayerScope.js';
 
 export const name = 'content-report';
 export const method = 'POST';
 export const rateLimit = { max: 20, timeWindow: '10 minutes' };
 
-const LEADER_ROLES = ['superadmin', 'rada_starszych', 'koordynator', 'lider'];
 const TYPES = ['prayer', 'wall_post'];
 const lower = (v) => String(v || '').trim().toLowerCase();
 const clip = (v, n) => { const s = String(v ?? '').replace(/\s+/g, ' ').trim(); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
 
-async function loadTarget(db, type, id, user) {
+async function loadTarget(db, type, id, user, dbName) {
   if (type === 'prayer') {
     const { rows } = await db.query(
       `SELECT id, content, user_email, is_anonymous, visibility FROM prayer_requests WHERE id::text = $1`, [id]);
     const r = rows[0];
     if (!r) return null;
     if (r.visibility === 'leaders_only' && lower(r.user_email) !== lower(user.email)) {
-      const { rows: u } = await db.query('SELECT role, is_super_admin FROM app_users WHERE id = $1', [user.id]);
-      if (!u[0]?.is_super_admin && !LEADER_ROLES.includes(String(u[0]?.role || ''))) return null;
+      // Prośba „tylko dla liderów” — zgłosić może ten, kto ją widzi (capability jak /api/db).
+      if (!(await isPrayerLeader(db, dbName, user))) return null;
     }
     return { authorEmail: r.user_email, content: r.content, anonymous: !!r.is_anonymous };
   }
@@ -45,7 +45,7 @@ export default async function handler(req, reply) {
   if (!TYPES.includes(type) || !id) return reply.code(400).send({ error: 'Wskaż treść do zgłoszenia.' });
 
   const me = lower(req.user.email);
-  const target = await loadTarget(req.db, type, id, req.user).catch(() => null);
+  const target = await loadTarget(req.db, type, id, req.user, req.tenant.db_name).catch(() => null);
   if (!target) return reply.code(404).send({ error: 'Nie znaleziono tej treści.' });
   if (lower(target.authorEmail) === me) return reply.code(400).send({ error: 'Nie można zgłosić własnej treści.' });
 

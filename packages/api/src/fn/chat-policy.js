@@ -10,6 +10,9 @@
 //   }
 // Egzekucja i tak jest na serwerze (komunikator.js → 403 DM_NOT_ALLOWED / BLOCKED); to tylko
 // podpowiedź, żeby klient mógł ukryć albo objaśnić „Nową rozmowę prywatną”.
+// `allowedWith` (audyt 2026-10, runda 5): przy ochronie niepełnoletnich odpowiedź zdradza, czy osoba
+// jest niepełnoletnia — dlatego tylko dla e-maili KONT aplikacji (te same osoby, które klient
+// pokazuje w wyborze rozmówcy). Dowolny adres (np. dziecka z kartoteki bez konta) — bez wpisu.
 import { loadChatSettings, dmParties, dmDecision, hasBlocked } from '../dataapi/komunikatorPlus.js';
 
 export const name = 'chat-policy';
@@ -47,7 +50,11 @@ export default async function handler(req, reply) {
     };
     if (others.length) {
       out.allowedWith = {};
-      for (const o of others) {
+      const { rows: accounts } = await req.db.query(
+        `SELECT DISTINCT lower(email) AS e FROM app_users WHERE lower(email) = ANY($1::text[])`, [others]
+      );
+      const known = new Set(accounts.map((r) => r.e));
+      for (const o of others.filter((e) => known.has(e))) {
         const blocked = await hasBlocked(req.db, o, me);
         out.allowedWith[o] = !blocked && dmDecision(settings, mine, parties[o]).ok;
       }

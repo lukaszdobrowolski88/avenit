@@ -4,7 +4,7 @@
 // Osoba z samym action:settings:manage_users (bez roli admina) nie nada roli administracyjnej
 // ani szerszej niż własna i nie zmieni konta administratora (lib/admin-guard.js).
 import { getCaller, isAdmin, isLastActiveAdmin, revokeSessions } from '../lib/user-admin.js';
-import { accountChangeDenied } from '../lib/admin-guard.js';
+import { accountChangeDenied, canChangeAccountIdentity } from '../lib/admin-guard.js';
 import { logAccountEvent } from '../lib/account-audit.js';
 
 export const name = 'admin-update-user';
@@ -57,6 +57,10 @@ export default async function handler(req, reply) {
   }
 
   if (email.toLowerCase() !== String(target.email).toLowerCase()) {
+    // Zmiana e-maila przepina konto na inną osobę (darowizny, grupy, zaproszenia po e-mailu).
+    if (!(await canChangeAccountIdentity(req.db, req.tenant.db_name, caller))) {
+      return reply.code(403).send({ error: 'E-mail konta zmienia administrator albo obsługa Członków.' });
+    }
     const { rows: dup } = await req.db.query('SELECT id FROM app_users WHERE lower(email) = lower($1) AND id <> $2', [email, userId]);
     if (dup[0]) return reply.code(409).send({ error: 'Inny użytkownik ma już ten adres e-mail.' });
   }

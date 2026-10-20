@@ -9,6 +9,7 @@ import { ApiError, buildWhere } from './querybuilder.js';
 import { canModuleScoped } from '@avenit/shared/src/permissions/moduleScope.js';
 import { accountChangeDenied, exceedsCaller, roleIsAdmin } from '../lib/admin-guard.js';
 import { getTableRule } from './registry.js';
+import { MINISTRY_MODULES, DENY_PREFIX, isCustomMinistryKey, membershipCapabilities } from '@avenit/shared/src/permissions/ministry.js';
 
 const WRITE_OPS = new Set(['insert', 'upsert', 'update', 'delete']);
 const rowsOf = (q) => (Array.isArray(q.values) ? q.values : [q.values]).filter(Boolean);
@@ -245,7 +246,17 @@ async function enforceSettingsWrite(q, req, caller) {
   }
 }
 
-export async function enforceAccountWrite(q, req, { isAdmin, user }) {
+// Kolumny wiążące konto z TOŻSAMOŚCIĄ osoby (audyt 2026-10, runda 5). member_id łączy konto
+// z profilem członka (fn my-giving pokazuje darowizny tego profilu, my-* — jego dane), e-mail jest
+// kluczem dopasowania w wielu miejscach (darowizny po members.email, grupy domowe, zaproszenia).
+// Osoba z samym manage_users mogła przez /api/db podpiąć SWOJE konto do cudzego profilu
+// (accountChangeDenied przepuszcza zmiany własnego konta) i czytać cudze darowizny. Zmiana tych
+// kolumn — także we własnym koncie — wymaga dostępu do Członków albo prawa do uprawnień.
+export const IDENTITY_COLUMNS = ['member_id', 'email', 'auth_user_id'];
+export const identityChangeAllowed = (resolver) =>
+  !resolver || resolver.can('module:members') || resolver.can('action:settings:manage_permissions');
+
+export async function enforceAccountWrite(q, req, { isAdmin, user, resolver = null }) {
   if (isAdmin || !WRITE_OPS.has(q.op) || !['app_users', 'app_settings'].includes(q.table)) return;
   const caller = {
     id: req.user.id, email: req.user.email, role: user?.role ?? req.user.role,
@@ -256,6 +267,9 @@ export async function enforceAccountWrite(q, req, { isAdmin, user }) {
   const rows = rowsOf(q);
   if (rows.some((r) => 'is_super_admin' in r)) {
     throw new ApiError(403, 'Tylko administrator może zmieniać uprawnienia super-administratora.');
+  }
+  if (rows.some((r) => IDENTITY_COLUMNS.some((c) => c in r)) && !identityChangeAllowed(resolver)) {
+    throw new ApiError(403, 'Powiązanie konta z osobą (e-mail, profil członka) zmienia administrator albo obsługa Członków.');
   }
   const dbName = req.tenant.db_name;
   if (q.op === 'upsert') {
@@ -282,5 +296,103 @@ export async function enforceAccountWrite(q, req, { isAdmin, user }) {
   for (const t of targets) {
     const denied = await accountChangeDenied(req.db, dbName, caller, t, { newRole });
     if (denied) throw new ApiError(403, denied);
+  }
+}
+
+
+// ── Przynależność do służb i role (audyt 2026-10, runda 5) ─────────────────────────────────
+// ministry_memberships zapisuje każdy z action:settings:manage_users, a przynależność NADAJE
+// uprawnienia (ministry.js). Do rundy 5 osoba z samym manage_users mogła dopisać sobie wiersz
+// { ministry_key: 'members' | 'finance' | 'settings', role: 'leader' } i dostać Członków, darowizny,
+// a nawet action:settings:manage_permissions. Teraz:
+//   • klucz musi być służbą: moduł zespołu z katalogu (MINISTRY_MODULES) albo istniejący moduł
+//     własny z kreatora (app_modules, nie systemowy) — dla każdego, także administratora
+//     (granty i tak dostają tylko służby; wiersz z innym kluczem byłby martwy),
+//   • rola: 'member' albo 'leader',
+//   • nie-administrator nie dotknie przynależności konta administratora ani konta szerszego
+//     niż własne (accountChangeDenied) i nie nada przynależności, której uprawnienia
+//     przekraczają jego własne (każda capability z membershipCapabilities musi być już jego).
+//     Lider służby z manage_users przypisuje więc ludzi do swojej służby, ale nie do cudzych
+//     ani sam siebie na lidera. Upsert — zabroniony (nadpisałby cudzy wiersz bez sprawdzenia).
+const MEMBERSHIP_ROLES = new Set(['member', 'leader']);
+
+async function ministryKeyAllowed(db, key) {
+  if (MINISTRY_MODULES.includes(key)) return true;
+  if (!isCustomMinistryKey(key)) return false;
+  try {
+    const { rows } = await db.query('SELECT is_system FROM app_modules WHERE key = $1 LIMIT 1', [key]);
+    return rows.length > 0 && rows[0].is_system !== true;
+  } catch {
+    return false;
+  }
+}
+
+export async function enforceMembershipWrite(q, req, { isAdmin, user, resolver }) {
+  if (q.table !== 'ministry_memberships' || !WRITE_OPS.has(q.op)) return;
+  const db = req.db;
+  const rows = rowsOf(q);
+  if (q.op !== 'delete') {
+    for (const r of rows) {
+      if ((q.op !== 'update' || 'ministry_key' in r) && !(await ministryKeyAllowed(db, String(r.ministry_key ?? '')))) {
+        throw new ApiError(400, `'${r.ministry_key ?? ''}' nie jest służbą — przypisać można tylko do zespołów i modułów własnych`);
+      }
+      if ((q.op !== 'update' || 'role' in r) && r.role != null && !MEMBERSHIP_ROLES.has(String(r.role))) {
+        throw new ApiError(400, "Rola w służbie: 'member' albo 'leader'");
+      }
+    }
+  }
+  if (isAdmin || !resolver) return;
+  if (q.op === 'upsert') {
+    throw new ApiError(403, 'Przynależność dodawaj albo zmieniaj osobno — upsert mógłby nadpisać cudzy wiersz');
+  }
+
+  // Stan przed (update/delete) i po (insert/update) zmianie.
+  let before = [];
+  if (q.op === 'update' || q.op === 'delete') {
+    const params = [];
+    ({ rows: before } = await db.query(`SELECT t.user_id, t.ministry_key, t.role FROM ministry_memberships t${whereOf(q, params)}`, params));
+  }
+  const after = q.op === 'insert'
+    ? rows.map((r) => ({ user_id: r.user_id, ministry_key: r.ministry_key, role: r.role ?? 'member' }))
+    : q.op === 'update' ? before.map((b) => ({ ...b, ...rows[0] })) : [];
+
+  // Konta, których dotyczy zmiana: bez kont administratora i kont szerszych niż moje.
+  const caller = {
+    id: req.user.id, email: req.user.email, role: user?.role ?? req.user.role,
+    is_active: true, is_super_admin: !!user?.is_super_admin, role_admin: false,
+  };
+  const ids = [...new Set([...before, ...after].map((r) => r.user_id).filter((v) => v != null).map(String))];
+  if (ids.length) {
+    const { rows: accounts } = await db.query(
+      'SELECT id, role, is_super_admin FROM app_users WHERE id::text = ANY($1::text[])', [ids]
+    );
+    for (const t of accounts) {
+      const denied = await accountChangeDenied(db, req.tenant.db_name, caller, t);
+      if (denied) throw new ApiError(403, denied);
+    }
+  }
+
+  for (const m of after) {
+    const missing = membershipCapabilities(String(m.ministry_key ?? ''), m.role)
+      .filter((c) => !c.startsWith(DENY_PREFIX))
+      .find((c) => !resolver.can(c));
+    if (missing) {
+      throw new ApiError(403, `Nie możesz przypisać przynależności z uprawnieniami, których sam nie masz (${missing})`);
+    }
+  }
+}
+
+// Role administracyjne (app_roles.is_admin) daje i zmienia wyłącznie administrator. Osoba z samym
+// manage_roles mogła ustawić is_admin=true na SWOJEJ roli i od razu stać się administratorem.
+export async function enforceRoleWrite(q, req, { isAdmin }) {
+  if (isAdmin || q.table !== 'app_roles' || !WRITE_OPS.has(q.op)) return;
+  if (q.op !== 'delete' && rowsOf(q).some((r) => 'is_admin' in r && r.is_admin != null && r.is_admin !== false)) {
+    throw new ApiError(403, 'Rolę administratora nadaje tylko administrator.');
+  }
+  if (q.op === 'upsert') throw new ApiError(403, 'Role dodawaj albo zmieniaj osobno — upsert mógłby nadpisać rolę administratora');
+  if (q.op === 'update' || q.op === 'delete') {
+    const params = [];
+    const { rows } = await req.db.query(`SELECT count(*)::int AS n FROM app_roles t${whereOf(q, params)} AND COALESCE(t.is_admin, false)`, params);
+    if (rows[0]?.n > 0) throw new ApiError(403, 'Rolę administratora zmienia tylko administrator.');
   }
 }

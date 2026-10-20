@@ -170,7 +170,8 @@ export async function buildServer() {
           if (!access.ok) return false;
           const base = await baseRealtimeFilter(table, access);
           // Ograniczenia pól i wierszy jak w /api/db (realtime/redact.js) — na wyniku filtra wierszy.
-          const redact = realtimeRedactor({ table, isAdmin, resolver: isAdmin ? null : access.resolver, user });
+          const { moduleKeys } = await loadGrants(pool, tenant.db_name);
+          const redact = realtimeRedactor({ table, isAdmin, resolver: isAdmin ? null : access.resolver, user, moduleKeys });
           if (!redact) return base === true ? true : base;
           const rowFilter = base === true ? null : base.filter;
           return { filter: async (op, rows) => redact(rowFilter ? await rowFilter(op, rows) : rows) };

@@ -12,7 +12,7 @@ import { notifyOnWrite, prepareUserTaskAssign, notifyUserTaskAssign } from '../r
 import { platformDisabledModules } from '../lib/platform-modules.js';
 import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
 import { PII_TABLES, enforcePiiWrite, isPiiTable, redactPii } from './pii.js';
-import { enforceSharedWrite, enforceExpenseApproval, enforceCampaignStatus, enforceAccountWrite } from './sharedWrites.js';
+import { enforceSharedWrite, enforceExpenseApproval, enforceCampaignStatus, enforceAccountWrite, enforceMembershipWrite, enforceRoleWrite } from './sharedWrites.js';
 import { isConversationTable, conversationScope, enforceConversationWrite, conversationAudience, conversationDeleteAudience, assertConversationFilters, pollVotesRedactor } from './komunikator.js';
 import { applyMainFeedDefault, emitThreadRoots } from './komunikatorThreads.js';
 import { MODERATE_CAPABILITY, reportScope, enforceReportWrite, reportAudience, normalizeBlockWrite, assertVoteFilters, anonymousPollIds, redactVotes } from './komunikatorPlus.js';
@@ -27,7 +27,9 @@ import { financeTeamTypes, applyTeamFinanceScope, TEAM_FINANCE_OPS, isBudgetWrit
 import { isPrayerTable, prayerViewer, prayerScope, enforcePrayerWrite, redactPrayerRows } from './prayerScope.js';
 import { isSecretSetting, settingsSecretScope } from './settingsScope.js';
 import { redactAccounts } from './accountFields.js';
-import { seesAllHomeGroupContacts, myHomeGroupIds, redactHomeGroupMembers } from './homeGroupContacts.js';
+import { seesAllHomeGroupContacts, myHomeGroupIds, isHomeGroupContactTable, redactHomeGroupRows } from './homeGroupContacts.js';
+import { sensitiveColumnsFor, assertSensitiveQuery } from './sensitiveColumns.js';
+import { isMaterialsTable, materialsViewer, materialsScope, enforceMaterialsTeamWrite } from './materialsScope.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -182,7 +184,11 @@ export default async function dataApiRoutes(app) {
       // Konta i ustawienia SSO: nie-admin z manage_users / manage_integrations nie nada roli admina,
       // nie ruszy konta administratora ani konfiguracji SSO (sharedWrites.js). Także ścieżka
       // samoobsługi (własny profil) — tam przepuszcza tylko kolumny selfUpdateColumns.
-      await enforceAccountWrite(q, req, { isAdmin, user });
+      await enforceAccountWrite(q, req, { isAdmin, user, resolver });
+      // Przynależność do służb nadaje uprawnienia — tylko służby i bez eskalacji ponad własne prawa;
+      // rolę administratora (app_roles.is_admin) zmienia tylko administrator (sharedWrites.js, runda 5).
+      if (access.ok) await enforceMembershipWrite(q, req, { isAdmin, user, resolver });
+      if (access.ok) await enforceRoleWrite(q, req, { isAdmin });
 
       // Złączenia (embed) nie mogą omijać uprawnień: tabela dociągana wymaga dostępu do
       // SWOJEGO modułu (i floorów readRoles), jak tabela główna. Wcześniej sprawdzano tylko
@@ -198,6 +204,8 @@ export default async function dataApiRoutes(app) {
       // z board_item_updates nie pokaże elementów prywatnej tablicy.
       if (embedTables.length) {
         const moderatorForEmbeds = isAdmin || !!resolver?.can(MODERATE_CAPABILITY);
+        const embedPrayerViewer = prayerViewer({ isAdmin, resolver, email: req.user.email });
+        const embedMaterialsViewer = materialsViewer({ resolver, email: req.user.email, moduleKeys: (await loadGrants(req.db, req.tenant.db_name)).moduleKeys });
         q.__embedScopes = {};
         q.__embedHidden = {};
         for (const child of embedTables) {
@@ -218,11 +226,16 @@ export default async function dataApiRoutes(app) {
           if (isConversationTable(child)) scope = andScopes(scope, conversationScope(child, req.user));
           if (isBoardTable(child)) scope = andScopes(scope, boardScope(child, req.user));
           if (isMailTable(child)) scope = andScopes(scope, mailScope(child, req.user));
+          // Prośby „tylko dla liderów” i pliki przestrzeni bez dostępu — także w złączeniu (runda 5).
+          if (isPrayerTable(child)) scope = andScopes(scope, prayerScope(child, embedPrayerViewer));
+          if (isMaterialsTable(child)) scope = andScopes(scope, materialsScope(child, embedMaterialsViewer));
           if (scope?.select) q.__embedScopes[child] = scope.select;
-          if (resolver) {
-            const denied = fieldColumns(child).filter((c) => !resolver.fieldReadable(child, c));
-            if (denied.length) q.__embedHidden[child] = denied;
-          }
+          // Kolumny wrażliwe dociąganej tabeli (zakazy pól, telefony i logowania kont, kontakty grup
+          // domowych, autorzy próśb anonimowych — sensitiveColumns.js) w złączeniu są po prostu
+          // pomijane: redakcja po odczycie działa tylko na tabeli głównej (runda 5 — wcześniej np.
+          // ministry_memberships → app_users:user_id(phone, last_login_at) oddawało je każdemu).
+          const hiddenInEmbed = [...sensitiveColumnsFor(child, { isAdmin, resolver })];
+          if (hiddenInEmbed.length) q.__embedHidden[child] = hiddenInEmbed;
         }
       }
 
@@ -282,6 +295,11 @@ export default async function dataApiRoutes(app) {
       }
 
       if (piiRestricted) enforcePiiWrite(q, piiMe);
+
+      // Kolumny ukrywane przed czytającym (sensitiveColumns.js, runda 5): bez aliasów, które omijały
+      // redakcję po nazwie klucza, i bez filtrów / sortowania po nich (wyrocznia, także head+count).
+      // Wyjątek: dopasowanie do własnej wartości (np. user_email = mój e-mail — „moje modlitwy”).
+      assertSensitiveQuery(q, { isAdmin, resolver }, { email: req.user.email, userId: req.user.id, memberId: piiMe.memberId });
 
       // Treści użytkowników (wiadomości, modlitwy, tablice): wulgaryzmy maskowane przy zapisie
       // (wytyczna App Store 1.2 — filtrowanie treści obraźliwych; lib/moderation.js).
@@ -352,6 +370,14 @@ export default async function dataApiRoutes(app) {
         });
       }
 
+      // Materiały / Pliki: przestrzeń modułu (team_type) tylko z dostępem do modułu, poza plikami
+      // ogólnymi, własnymi i udostępnionymi (materialsScope.js, runda 5).
+      if (isMaterialsTable(q.table) && resolver) {
+        const viewer = materialsViewer({ resolver, email: req.user.email, moduleKeys: (await loadGrants(req.db, req.tenant.db_name)).moduleKeys });
+        q.__ownerScope = materialsScope(q.table, viewer);
+        enforceMaterialsTeamWrite(q, viewer);
+      }
+
       // Prawo tylko „w zakresie służby” (events/grafik/tablice modułu): wiersze zawężone do służb
       // osoby, AND z zakresem powyżej; zapis tylko do nich (moduleScope.js).
       if (access.ok && access.moduleScope) await applyModuleScope(q, req, access.moduleScope);
@@ -399,8 +425,9 @@ export default async function dataApiRoutes(app) {
       }
 
       if (prayerCtx && q.op === 'select' && Array.isArray(data)) data = redactPrayerRows(data, prayerCtx);
-      if (q.table === 'home_group_members' && q.op === 'select' && Array.isArray(data) && data.length && !seesAllHomeGroupContacts(resolver)) {
-        redactHomeGroupMembers(data, { groupIds: await myHomeGroupIds(req.db, req.user.email), email: req.user.email });
+      // Kontakty grup domowych (członkowie, telefon/e-mail grupy, liderzy) — tylko z moich grup.
+      if (isHomeGroupContactTable(q.table) && q.op === 'select' && Array.isArray(data) && data.length && !seesAllHomeGroupContacts(resolver)) {
+        redactHomeGroupRows(q.table, data, { groupIds: await myHomeGroupIds(req.db, req.user.email), email: req.user.email });
       }
       if (q.table === 'app_users' && q.op === 'select' && resolver) redactAccounts(Array.isArray(data) ? data : [data], resolver, req.user);
 

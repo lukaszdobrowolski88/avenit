@@ -11,9 +11,13 @@
 //  • realtime: ten sam filtr wierszy (redactPrayerRows).
 // Administrator aplikacji widzi wszystko (jak dotąd).
 
+import { loadGrants } from './registry.js';
+import { can } from '@avenit/shared/src/permissions/resolve.js';
+
 export const PRAYER_TABLES = new Set(['prayer_requests', 'prayer_requests_with_counts']);
 export const LEADER_PRAYERS_CAPABILITY = 'tab:prayer:leaders_requests';
-const ANON_FIELDS = ['user_name', 'user_email', 'user_id', 'requester_name'];
+// Dane autora ukrywane w cudzej prośbie anonimowej — także lista kolumn strażnika filtrów (sensitiveColumns.js).
+export const ANON_FIELDS = ['user_name', 'user_email', 'user_id', 'requester_name'];
 
 const lower = (v) => String(v ?? '').toLowerCase();
 
@@ -88,4 +92,21 @@ export function redactPrayerRows(rows, viewer, { dropHidden = false } = {}) {
     }
   }
   return out;
+}
+
+// Czy osoba widzi prośby „tylko dla liderów” w funkcjach serwera (fn prayer-wall, content-report) —
+// ta sama capability co /api/db (runda 5: wcześniej sztywna lista ról z „lider”, więc rola lider
+// bez zakładki „Prośby dla Liderów” je widziała, a rola własna z tą zakładką — nie).
+// Administrator — zawsze; tryb legacy (bez grantów) — jak /api/db: tylko administrator.
+export async function isPrayerLeader(db, dbName, user) {
+  try {
+    const { rows } = await db.query('SELECT role, is_super_admin FROM app_users WHERE id = $1', [user.id]);
+    const role = rows[0]?.role ?? user.role;
+    const { grants, adminRoles } = await loadGrants(db, dbName);
+    if (rows[0]?.is_super_admin || adminRoles.has(role)) return true;
+    if (grants === null) return false;
+    return can(grants, { role, userId: user.id }, LEADER_PRAYERS_CAPABILITY);
+  } catch {
+    return false;
+  }
 }
