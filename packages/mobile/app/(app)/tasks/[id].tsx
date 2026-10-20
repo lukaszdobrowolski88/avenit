@@ -78,6 +78,7 @@ import { F, PersonAvatar, StatusPill } from '../../../src/features/tasks/compone
 import { OptionSheet, PeopleSheet } from '../../../src/features/tasks/components/Pickers';
 import { TaskComments } from '../../../src/features/tasks/components/Comments';
 import { ShareTaskToChatSheet } from '../../../src/features/tasks/components/ShareTaskToChatSheet';
+import { SourceMessageCard } from '../../../src/features/tasks/components/SourceMessageCard';
 import { absoluteTaskUrl } from '../../../src/features/tasks/share';
 import { FitLabel } from '../../../src/components/ui/FitLabel';
 
@@ -406,6 +407,14 @@ const TaskBody = ({ d, refreshing, onRefresh }: { d: Ok; refreshing: boolean; on
             </Text>
           </View>
         </View>
+
+        {/* Zadanie utworzone z wiadomości czatu — rozmowa na tej wiadomości (migracja 114) */}
+        {item.source_message_id && item.source_conversation_id ? (
+          <>
+            <SectionLabel>Z wiadomości</SectionLabel>
+            <SourceMessageCard messageId={item.source_message_id} conversationId={item.source_conversation_id} />
+          </>
+        ) : null}
 
         {/* Opis */}
         <SectionLabel>Opis</SectionLabel>

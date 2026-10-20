@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Plus, MessageSquare, Star, Archive, Pin, MoreHorizontal, BellOff, Flag, RefreshCw, CalendarPlus, AlarmClock } from 'lucide-react';
+import { Search, Plus, MessageSquare, Star, Archive, Pin, MoreHorizontal, BellOff, Flag, RefreshCw, CalendarPlus, AlarmClock, Bookmark } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { ChannelIcon } from './ConversationHeader';
 import { muteUntilLabel } from './MuteMenu';
@@ -42,7 +42,8 @@ export default function ConversationList({
   openReportsCount = 0,
   onSyncChannels,      // „odśwież składy kanałów” (administrator aplikacji) — K8
   syncingChannels = false,
-  onOpenReminders      // „Moje przypomnienia” (Przypomnij mi o wiadomości)
+  onOpenReminders,     // „Moje przypomnienia” (Przypomnij mi o wiadomości)
+  onOpenSaved          // „Zapisane” — moje zapisane wiadomości ze wszystkich rozmów (migracja 114)
 }) {
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
@@ -402,6 +403,13 @@ export default function ConversationList({
               </button>
             );
           })}
+          {onOpenSaved && (
+            <button type="button" onClick={onOpenSaved}
+              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50">
+              <Bookmark size={12} />
+              {t('Zapisane')}
+            </button>
+          )}
         </div>
       </div>
 

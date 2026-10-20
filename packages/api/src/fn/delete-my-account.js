@@ -49,6 +49,7 @@ export default async function handler(req, reply) {
   await tryQuery(req.db, 'DELETE FROM push_tokens WHERE lower(user_email) = $1', [email]);
   await tryQuery(req.db, 'DELETE FROM push_subscriptions WHERE lower(user_email) = $1', [email]);
   await tryQuery(req.db, 'DELETE FROM user_blocks WHERE lower(blocker_email) = $1', [email]);
+  await tryQuery(req.db, 'DELETE FROM saved_messages WHERE lower(user_email) = $1', [email]);
   await tryQuery(req.db, 'DELETE FROM prayer_interactions WHERE lower(user_email) = $1', [email]);
   await tryQuery(req.db, 'DELETE FROM prayer_requests WHERE lower(user_email) = $1', [email]);
   await tryQuery(req.db, 'DELETE FROM conversation_participants WHERE lower(user_email) = $1', [email]);

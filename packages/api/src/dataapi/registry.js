@@ -339,6 +339,9 @@ export const REGISTRY = {
   message_thread_followers: T(null),
   // Zablokowane osoby — tabela osobista (ownership.js, właściciel blocker_email).
   user_blocks: T(null),
+  // Zapisane wiadomości (migracja 114) — tabela osobista (ownership.js, właściciel user_email);
+  // zapis tylko wiadomości z moich rozmów (messageTasks.js).
+  saved_messages: T(null),
   // Połączenia audio/wideo (migracja 096): odczyt tylko w rozmowach, w których jestem
   // (komunikator.js — CONV_TABLES; jak message_reports bez osobnego zasobu w macierzy uprawnień),
   // zapis wyłącznie serwer (fn call-* z module:komunikator, webhook LiveKit, worker).

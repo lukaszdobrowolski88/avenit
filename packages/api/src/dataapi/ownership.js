@@ -30,6 +30,7 @@ export const OWNED_TABLES = {
   user_blocks: { owner: 'blocker_email' }, // Komunikator+ (088): moje blokady widzę tylko ja
   scheduled_messages: { owner: 'sender_email' }, // 113: zaplanowane wiadomości — tylko nadawca
   message_reminders: { owner: 'user_email' }, // 113: „Przypomnij mi” — tylko właściciel
+  saved_messages: { owner: 'user_email' }, // zapisane wiadomości (114) — tylko moje
   totp_auth_logs: { owner: 'user_id', byId: true },
 };
 

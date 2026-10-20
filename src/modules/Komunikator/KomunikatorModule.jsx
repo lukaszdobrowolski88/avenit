@@ -9,6 +9,7 @@ import ReportsPanel, { countOpenReports } from './components/ReportsPanel';
 import MeetingModal from './meetings/MeetingModal';
 import { threadParam } from './threads/threadLogic';
 import MyRemindersPanel from './schedule/MyRemindersPanel';
+import SavedMessagesPanel from './messageTasks/SavedMessagesPanel';
 import { useCalls } from './calls/callContext';
 import useConversations from './hooks/useConversations';
 import useMinistryChannels from './hooks/useMinistryChannels';
@@ -110,6 +111,7 @@ export default function KomunikatorModule() {
   // Skok do wiadomości po otwarciu rozmowy (przypomnienie: link ?conversation=…&message=…).
   const [jumpTarget, setJumpTarget] = useState(null); // { conversationId, messageId }
   const [showReminders, setShowReminders] = useState(false);
+  const [showSaved, setShowSaved] = useState(false); // „Zapisane” (migracja 114)
   const urlRefetchRef = useRef(null); // rozmowa z linku, dla której już odświeżyliśmy listę
   const [showNewModal, setShowNewModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -225,6 +227,14 @@ export default function KomunikatorModule() {
     }
   }, [pendingOpenId, conversations, handleSelectConversation]);
 
+  // Rozmowa na tej wiadomości („Moje przypomnienia”, „Zapisane”). Odpowiedź w wątku → skok do
+  // wiadomości głównej wątku w rozmowie, a panel wątku otwiera się obok.
+  const openMessageAt = useCallback((conversationId, messageId, threadRootId = null) => {
+    setJumpTarget({ conversationId: String(conversationId), messageId: threadRootId || messageId });
+    if (threadRootId) setThreadRequest({ conversationId, id: threadRootId, at: Date.now() });
+    openConversationById(conversationId);
+  }, [openConversationById]);
+
   // Wróć do listy (mobile)
   const handleBack = () => {
     setShowList(true);
@@ -304,6 +314,7 @@ export default function KomunikatorModule() {
           onSyncChannels={isAppAdmin ? handleSyncChannels : undefined}
           syncingChannels={syncingChannels}
           onOpenReminders={() => setShowReminders(true)}
+          onOpenSaved={() => setShowSaved(true)}
         />
       </div>
 
@@ -358,11 +369,7 @@ export default function KomunikatorModule() {
       <MyRemindersPanel
         isOpen={showReminders}
         onClose={() => setShowReminders(false)}
-        onOpen={(conversationId, messageId, threadRootId) => {
-          setJumpTarget({ conversationId: String(conversationId), messageId: threadRootId || messageId });
-          if (threadRootId) setThreadRequest({ conversationId, id: threadRootId, at: Date.now() });
-          openConversationById(conversationId);
-        }}
+        onOpen={openMessageAt}
       />
 
       {/* Modal ustawień grupy */}
@@ -374,6 +381,14 @@ export default function KomunikatorModule() {
         onUpdate={handleSettingsUpdate}
         onLeave={perms.removeParticipants ? handleLeaveConversation : undefined}
         perms={perms}
+      />
+
+      {/* Zapisane wiadomości (migracja 114) */}
+      <SavedMessagesPanel
+        isOpen={showSaved}
+        onClose={() => setShowSaved(false)}
+        conversations={conversations}
+        onOpenMessage={openMessageAt}
       />
 
       {/* Panel zgłoszeń (moderacja) */}

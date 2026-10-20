@@ -31,6 +31,9 @@ export default function ThreadPanel({
   onClose,
   // „Przypomnij mi” o wiadomości wątku (okno wyboru terminu trzyma rozmowa).
   onRemind,
+  // Dodatkowe pozycje menu wiadomości (message → [{ key, label, icon, onClick }]) — „Zapisz”,
+  // „Utwórz zadanie” (migracja 114); okna trzyma rozmowa.
+  extraActionsFor,
 }) {
   const { root, replies, loading, error, following, sendReply, editReply, deleteReply, setFollowing, refetch } =
     useThread(conversation?.id, rootId, userEmail, { initialRoot });
@@ -109,6 +112,7 @@ export default function ThreadPanel({
       onEdit: isOwn && canEditOwn ? handleEdit : undefined,
       onDelete: isOwn && canEditOwn && m.id !== rootId ? handleDelete : undefined,
       onRemind: m.message_type === 'system' ? undefined : onRemind,
+      extraActions: extraActionsFor ? extraActionsFor(m) : null,
     };
   };
 

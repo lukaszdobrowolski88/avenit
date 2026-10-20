@@ -33,6 +33,7 @@ import {
   CloudOff,
   SearchX,
   CheckCheck,
+  Bookmark,
 } from "lucide-react-native";
 import { PageHeader } from "../../../../src/components/ui/PageHeader";
 import { MeetingSheet } from "../../../../src/features/meetings/components/MeetingSheet";
@@ -264,6 +265,17 @@ export default function MessengerScreen() {
                 style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
               >
                 <AlarmClock size={18} color="#2A2312" strokeWidth={2.2} />
+              </Pressable>
+              {/* Zapisane wiadomości (migracja 114) — dla każdego uczestnika rozmów */}
+              <Pressable
+                onPress={() => router.push("/(app)/messenger/saved" as never)}
+                accessibilityRole="button"
+                accessibilityLabel="Zapisane wiadomości"
+                hitSlop={8}
+                className="active:opacity-70"
+                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
+              >
+                <Bookmark size={18} color="#2A2312" strokeWidth={2.2} />
               </Pressable>
             {canCreate ? (
               <View style={{ flexDirection: "row", gap: 8 }}>

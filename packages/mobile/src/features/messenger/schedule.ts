@@ -204,6 +204,8 @@ export interface ReminderItem {
   id: string;
   message_id: string;
   conversation_id: string;
+  /** Odpowiedź w wątku (112) — wiadomość główna wątku. */
+  thread_root_id?: string | null;
   remind_at: string;
   available: boolean;
   conversation_title: string | null;

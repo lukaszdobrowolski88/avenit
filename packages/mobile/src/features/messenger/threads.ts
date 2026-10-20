@@ -70,6 +70,23 @@ export const threadFromLink = (link: string | null | undefined): string | null =
   return m ? m[1] : null;
 };
 
+// Rozmowa otwarta na wiadomości (skok przez parametr messageId, jak przypomnienie). Odpowiedź
+// w wątku: skok do wiadomości głównej, a nad rozmową ekran wątku („wstecz” wraca do rozmowy).
+export const openMessageInConversation = (
+  router: { push: (href: never) => void },
+  conversationId: string,
+  messageId: string,
+  threadRootId?: string | null,
+) => {
+  router.push({
+    pathname: "/(app)/messenger/[conversationId]",
+    params: { conversationId, messageId: threadRootId || messageId },
+  } as never);
+  if (threadRootId) {
+    router.push({ pathname: "/(app)/messenger/thread/[rootId]", params: { rootId: threadRootId, conversationId } } as never);
+  }
+};
+
 // ── Zapytania ───────────────────────────────────────────────────────────
 export const threadKey = (rootId: string) => ["thread", rootId] as const;
 const followersKey = (rootId: string) => ["threadFollowers", rootId] as const;

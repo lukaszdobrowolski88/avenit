@@ -46,6 +46,9 @@ export interface BoardItem {
   cells: Record<string, unknown>;
   created_at: string | null;
   created_by: string | null;
+  /** Zadanie utworzone z wiadomości czatu (migracja 114). */
+  source_message_id?: string | null;
+  source_conversation_id?: string | null;
 }
 
 // Osoba w kolumnie „Osoby” — kanoniczny kształt wartości komórki (web PeopleCell).
@@ -127,6 +130,8 @@ export const toItem = (r: any): BoardItem => ({
   cells: asObject(r.cells),
   created_at: strOrNull(r.created_at),
   created_by: strOrNull(r.created_by),
+  source_message_id: strOrNull(r.source_message_id),
+  source_conversation_id: strOrNull(r.source_conversation_id),
 });
 
 // likes bywa {} (domyślny JSONB) albo listą e-maili.
