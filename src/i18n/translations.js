@@ -5,6 +5,10 @@
 // Lista języków: src/i18n/languages.js (mała, w głównej paczce). Ten plik ładuje się leniwie.
 
 const en = {
+  'przed chwilą': 'just now',
+  'zaraz wraca': 'be right back',
+  'w ostatniej godzinie': 'in the last hour',
+  'Nikt nie był aktywny w ostatniej godzinie': 'Nobody was active in the last hour',
   'Nieaktywna osoba nie pojawia się przy przypisywaniu do grafiku.': 'An inactive person is not offered when assigning the schedule.',
   'Kampus': 'Campus',
   'Kampusy': 'Campuses',
@@ -8086,6 +8090,10 @@ const en = {
 };
 
 const uk = {
+  'przed chwilą': 'щойно',
+  'zaraz wraca': 'зараз повернуться',
+  'w ostatniej godzinie': 'за останню годину',
+  'Nikt nie był aktywny w ostatniej godzinie': 'Ніхто не був активний за останню годину',
   'Nieaktywna osoba nie pojawia się przy przypisywaniu do grafiku.': 'Неактивна особа не пропонується під час призначення в графік.',
   'Kampus': 'Кампус',
   'Kampusy': 'Кампуси',

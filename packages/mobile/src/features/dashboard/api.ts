@@ -1,3 +1,4 @@
+import { presenceState, PRESENCE_ORDER, PRESENCE_RECENT_MS } from '@avenit/shared/src/lib/presence.js';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { fetchAssignments, roleText, todayYmd, type AssignmentRow } from '../schedule/assignments';
@@ -57,7 +58,8 @@ export interface DashboardStats {
 
 export interface OnlineUser {
   email: string;
-  status: 'online' | 'away';
+  // Reguła wspólna z webem: @avenit/shared/src/lib/presence.js (recent = aktywny w ostatniej godzinie).
+  status: 'online' | 'away' | 'recent';
   lastSeen: string;
   memberId: number | string | null;
   firstName: string | null;
@@ -163,16 +165,17 @@ export const useDashboard = (
         .select('conversation_id, last_read_at')
         .eq('user_email', userEmail);
 
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      // Aktywni w ostatniej godzinie (online / w tle / niedawno) — wcześniej 5 min, więc lista
+      // była prawie pusta, choć z aplikacji korzystało wiele osób.
+      const hourAgo = new Date(Date.now() - PRESENCE_RECENT_MS).toISOString();
 
       const onlineListP = supabase
         .from('user_presence')
         .select('user_email, status, last_seen')
-        .in('status', ['online', 'away'])
-        .gte('last_seen', fiveMinutesAgo)
+        .gte('last_seen', hourAgo)
         .neq('user_email', userEmail)
         .order('last_seen', { ascending: false })
-        .limit(12);
+        .limit(40);
 
       const myTasksP = supabase
         .from('user_tasks')
@@ -296,18 +299,21 @@ export const useDashboard = (
             lastName: parts.length > 1 ? parts.slice(1).join(' ') : null,
           });
         }
-        onlineUsers = ((onlineRows ?? []) as any[]).map((r) => {
+        const nowMs = Date.now();
+        onlineUsers = ((onlineRows ?? []) as any[]).flatMap((r) => {
+          const state = presenceState(r, nowMs);
+          if (state === 'offline' || String(r.user_email).toLowerCase() === String(userEmail).toLowerCase()) return [];
           const m = memberByEmail.get(r.user_email);
           const u = userByEmail.get(r.user_email);
-          return {
+          return [{
             email: r.user_email,
-            status: r.status,
+            status: state,
             lastSeen: r.last_seen,
             memberId: m?.id ?? null,
             firstName: m?.first_name ?? u?.firstName ?? null,
             lastName: m?.last_name ?? u?.lastName ?? null,
-          } satisfies OnlineUser;
-        });
+          } satisfies OnlineUser];
+        }).sort((a, b) => PRESENCE_ORDER[a.status] - PRESENCE_ORDER[b.status]);
       }
       if (progErr) console.warn('[dashboard] programs:', progErr.message);
 

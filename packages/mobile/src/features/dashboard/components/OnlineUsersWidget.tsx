@@ -7,6 +7,7 @@ import { WidgetCard } from './WidgetCard';
 import type { OnlineUser } from '../api';
 import { goToTab } from '../../../lib/navigation';
 import { showError } from '../../../lib/errors';
+import { lastSeenLabel } from '@avenit/shared/src/lib/presence.js';
 
 interface Props {
   users: OnlineUser[];
@@ -27,7 +28,8 @@ const displayName = (u: OnlineUser): string => {
 };
 
 const UserAvatar = ({ user, onPress }: { user: OnlineUser; onPress: () => void }) => {
-  const isOnline = user.status === 'online';
+  // Kropka: online — zielona, w tle / brak sygnału — kurkuma, ostatnio aktywny — szara.
+  const dot = user.status === 'online' ? '#10b981' : user.status === 'away' ? '#FFBE0B' : '#C9C3B5';
   const content = (
     <View style={{ alignItems: 'center', width: 64 }}>
       <View style={{ position: 'relative' }}>
@@ -55,7 +57,7 @@ const UserAvatar = ({ user, onPress }: { user: OnlineUser; onPress: () => void }
             borderRadius: 7,
             borderWidth: 2,
             borderColor: '#ffffff',
-            backgroundColor: isOnline ? '#10b981' : '#FFBE0B',
+            backgroundColor: dot,
           }}
         />
       </View>
@@ -71,6 +73,11 @@ const UserAvatar = ({ user, onPress }: { user: OnlineUser; onPress: () => void }
       >
         {displayName(user)}
       </Text>
+      {user.status === 'recent' ? (
+        <Text numberOfLines={1} style={{ fontSize: 10, color: D.ink2, opacity: 0.7, textAlign: 'center', fontFamily: F.medium }}>
+          {lastSeenLabel(user.lastSeen)}
+        </Text>
+      ) : null}
     </View>
   );
   // Jak na webie: stuknięcie osoby otwiera (lub zakłada) rozmowę 1:1.

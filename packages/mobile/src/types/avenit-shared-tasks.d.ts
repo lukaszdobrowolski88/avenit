@@ -34,3 +34,16 @@ declare module '@avenit/shared/src/lib/boardStatus.js' {
     column: { settings?: { labels?: T[] } | null } | null | undefined,
   ): T | null;
 }
+
+declare module '@avenit/shared/src/lib/presence.js' {
+  export const PRESENCE_ONLINE_MS: number;
+  export const PRESENCE_AWAY_MS: number;
+  export const PRESENCE_RECENT_MS: number;
+  export const PRESENCE_ORDER: Record<'online' | 'away' | 'recent' | 'offline', number>;
+  export function presenceState(
+    presence: { status?: string | null; last_seen?: string | null } | null | undefined,
+    now?: number,
+  ): 'online' | 'away' | 'recent' | 'offline';
+  export function lastSeenLabel(lastSeen: string | null | undefined, now?: number): string;
+  export function presenceByEmail<T extends { user_email?: string | null }>(rows: T[] | null | undefined): Map<string, T>;
+}

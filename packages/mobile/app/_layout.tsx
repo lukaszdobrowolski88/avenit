@@ -74,6 +74,8 @@ function RootEffects() {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     const tick = async () => {
+      // Tylko z apką na wierzchu — wybudzenie w tle (push, VoIP) nie może ustawiać „online”.
+      if (AppState.currentState !== 'active') return;
       const { data } = await supabase.auth.getSession();
       const email = data.session?.user?.email;
       if (email) updatePresence(email, 'online').catch(() => undefined);
