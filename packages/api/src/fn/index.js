@@ -87,6 +87,9 @@ const MODULES = [
   'translate-message',
   'chat-policy',
   'chat-channels-sync',
+  // „Ważne — potwierdź przeczytanie” (115) oraz media/pliki/linki/głosówki rozmowy.
+  'chat-ack',
+  'chat-media',
   'content-report',
   'moderate-content',
   'community-terms',

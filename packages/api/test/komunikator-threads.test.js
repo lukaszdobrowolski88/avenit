@@ -91,6 +91,14 @@ test('odpowiedź: rozmowa z wiadomości głównej, spłaszczenie do korzenia, li
   const plain = { table: 'messages', op: 'insert', values: { conversation_id: 'c1', content: 'x', thread_root_id: '', thread_reply_count: 3 } };
   await enforceConversationWrite(plain, req(rootsDb(ROOTS)));
   assert.ok(!('thread_root_id' in plain.values) && !('thread_reply_count' in plain.values));
+
+  // „Ważne” (115) tylko na głównej osi: w odpowiedzi w wątku requires_ack znika, w zwykłej zostaje.
+  const ackReply = { table: 'messages', op: 'insert', values: { thread_root_id: 'r1', content: 'ok', requires_ack: true } };
+  await enforceConversationWrite(ackReply, req(rootsDb(ROOTS)));
+  assert.ok(!('requires_ack' in ackReply.values));
+  const ackMain = { table: 'messages', op: 'insert', values: { conversation_id: 'c1', content: 'ok', requires_ack: true } };
+  await enforceConversationWrite(ackMain, req(rootsDb(ROOTS)));
+  assert.equal(ackMain.values.requires_ack, true);
 });
 
 test('odpowiedź: inny wątek rozmowy, usunięta lub nieistniejąca wiadomość główna — odmowa', async () => {

@@ -68,6 +68,9 @@ export async function normalizeThreadWrite(q, req) {
         throw new ApiError(403, 'Odpowiedź w wątku musi być w tej samej rozmowie', 'THREAD_OTHER_CONVERSATION');
       }
       r.thread_root_id = root.id;
+      // „Ważne — potwierdź przeczytanie” (115) tylko na głównej osi rozmowy — tam jest pasek
+      // „Rozumiem” i lista potwierdzeń; odpowiedź w wątku wychodzi jako zwykła.
+      delete r.requires_ack;
     }
     return;
   }

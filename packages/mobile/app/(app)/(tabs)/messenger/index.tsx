@@ -40,6 +40,7 @@ import { MeetingSheet } from "../../../../src/features/meetings/components/Meeti
 import { useCallsEnabled } from "../../../../src/features/calls/api";
 import { EmptyState } from "../../../../src/components/ui/EmptyState";
 import { usePermissions } from "../../../../src/lib/permissions";
+import { usePendingAcks } from "../../../../src/features/messenger/acks";
 import { friendlyError } from "../../../../src/lib/errors";
 import {
   useConversations,
@@ -233,6 +234,9 @@ export default function MessengerScreen() {
         .includes(q);
     });
   }, [data, filter, search, members, myEmail]);
+
+  // „Ważne” — rozmowy z ważną wiadomością czekającą na moje „Rozumiem” (migracja 115).
+  const pendingAcks = usePendingAcks(myEmail).data ?? {};
 
   const totalUnread = (data ?? []).reduce(
     (sum: number, c: ConversationListItem) => sum + (c.archived ? 0 : c.unread_count ?? 0),
@@ -568,6 +572,24 @@ export default function MessengerScreen() {
                               {peerBlocked ? "Osoba zablokowana" : last ? previewOf(item) : "Brak wiadomości"}
                             </Text>
                           )}
+                          {(pendingAcks[item.id] ?? 0) > 0 ? (
+                            <View
+                              accessibilityLabel={`Ważne wiadomości do potwierdzenia: ${pendingAcks[item.id]}`}
+                              style={{
+                                height: 20,
+                                borderRadius: 10,
+                                paddingHorizontal: 7,
+                                backgroundColor: "#FFF1C2",
+                                borderWidth: 1,
+                                borderColor: "#F2D27A",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginRight: unread ? 6 : 0,
+                              }}
+                            >
+                              <Text style={{ fontSize: 10, color: "#8A6606", fontFamily: "Manrope_700Bold" }}>Ważne</Text>
+                            </View>
+                          ) : null}
                           {unread ? (
                             <View
                               style={{

@@ -26,6 +26,9 @@ const CONV_TABLES = {
   message_read_receipts: 'msg',
   poll_votes: 'msg',
   prayer_responses: 'msg',
+  // „Rozumiem” przy ważnych wiadomościach (migracja 115) — tylko odczyt (readOnly w registry),
+  // zapis wyłącznie fn chat-ack (src/dataapi/komunikatorAcks.js).
+  message_acks: 'msg',
   // Połączenia audio/wideo (migracja 096) — tylko odczyt przez /api/db (readOnly w registry),
   // zapis wyłącznie przez fn call-* i webhook LiveKit (src/calls).
   calls: 'conv',

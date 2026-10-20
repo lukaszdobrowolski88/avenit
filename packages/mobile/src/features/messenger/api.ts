@@ -291,6 +291,8 @@ export interface MessageRow {
   thread_root_id?: string | null;
   thread_reply_count?: number | null;
   thread_last_reply_at?: string | null;
+  /** „Ważne — potwierdź przeczytanie” (migracja 115). */
+  requires_ack?: boolean | null;
 }
 
 // Jak web (MessageBubble): edytować można własną wiadomość tekstową z treścią — bez limitu
@@ -626,6 +628,8 @@ export interface SendMessageInput {
   messageType?: MessageType;
   metadata?: Record<string, any>;
   mentions?: string[];
+  /** „Ważne — poproś o potwierdzenie” (migracja 115) — wysyłane tylko, gdy zaznaczone. */
+  requiresAck?: boolean;
 }
 
 // Dopisz wiadomość do cache wątku bez duplikatów (wysłana albo z realtime).
@@ -656,6 +660,7 @@ export const useSendMessage = (conversationId: string, senderEmail: string | nul
           message_type: data.messageType ?? "text",
           metadata: data.metadata ?? {},
           mentions: data.mentions ?? [],
+          ...(data.requiresAck ? { requires_ack: true } : {}),
         })
         .select()
         .single();

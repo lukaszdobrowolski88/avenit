@@ -1,5 +1,5 @@
 import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect, useLayoutEffect } from 'react';
-import { Send, Paperclip, X, FileText, Loader, Reply, Mic, Plus, BarChart3, Calendar, Lock, Smile, HeartHandshake, Users, Clock } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Loader, Reply, Mic, Plus, BarChart3, Calendar, Lock, Smile, HeartHandshake, Users, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatFileSize, isImageFile } from '../utils/messageHelpers';
 import AudioRecorder from './AudioRecorder';
@@ -33,7 +33,8 @@ const MessageInput = forwardRef(function MessageInput({
   richTypes = true,
   // Zaplanuj wysyłkę: (content, attachments, replyToId, extra, sendAtIso) — długie przytrzymanie
   // / prawy klik na „Wyślij” albo zegar obok. Bez propsa — brak planowania.
-  onSchedule
+  onSchedule,
+  canMarkImportant = false // „Ważne — poproś o potwierdzenie” (migracja 115): grupy, kanały, ogłoszenia
 }, ref) {
   const draftId = draftKey || conversationId;
   const t = useT();
@@ -43,6 +44,7 @@ const MessageInput = forwardRef(function MessageInput({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [composerMode, setComposerMode] = useState('text'); // 'text' | 'prayer'
+  const [important, setImportant] = useState(false); // „Ważne — poproś o potwierdzenie”
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [mention, setMention] = useState({ open: false, query: '', start: 0 });
@@ -65,6 +67,7 @@ const MessageInput = forwardRef(function MessageInput({
       setContent(draft || '');
     } catch { setContent(''); }
     setComposerMode('text');
+    setImportant(false);
     setShowAttachMenu(false);
     mentionMapRef.current.clear();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,7 +132,8 @@ const MessageInput = forwardRef(function MessageInput({
         duration,
         isVoiceMessage: true
       };
-      await onSend('', [voiceAttachment], replyingTo?.id || null);
+      await onSend('', [voiceAttachment], replyingTo?.id || null, important && canMarkImportant ? { requiresAck: true } : {});
+      setImportant(false);
       setIsRecordingVoice(false);
     } catch (err) {
       // Błąd zapisu wiadomości pokazał już wątek (err.handled); błąd przesyłania pliku pokaże AudioRecorder.
@@ -202,7 +206,11 @@ const MessageInput = forwardRef(function MessageInput({
         setComposerMode('text');
       } else {
         const mentions = resolveMentions(content);
-        await onSend(content.trim(), attachments, replyingTo?.id || null, { mentions });
+        await onSend(content.trim(), attachments, replyingTo?.id || null, {
+          mentions,
+          ...(important && canMarkImportant ? { requiresAck: true } : {}),
+        });
+        setImportant(false);
       }
       setContent('');
       setAttachments([]);
@@ -218,7 +226,9 @@ const MessageInput = forwardRef(function MessageInput({
   };
 
   // Zaplanowana wysyłka — to samo co „Wyślij” (treść, załączniki, odpowiedź, wzmianki), tylko później.
-  const canSchedule = !!onSchedule && composerMode === 'text';
+  // „Ważne” (requires_ack) nie przechodzi przez zaplanowaną wysyłkę — przy włączonym „Ważne”
+  // planowanie jest ukryte (wiadomość wychodzi od razu, z prośbą o potwierdzenie).
+  const canSchedule = !!onSchedule && composerMode === 'text' && !(important && canMarkImportant);
   const handleSchedule = async (sendAtIso) => {
     if ((!content.trim() && attachments.length === 0) || disabled || uploading || sendingRef.current) return;
     sendingRef.current = true;
@@ -367,6 +377,19 @@ const MessageInput = forwardRef(function MessageInput({
         </div>
       )}
 
+      {/* „Ważne — poproś o potwierdzenie” */}
+      {important && canMarkImportant && composerMode === 'text' && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/60">
+          <AlertCircle size={16} className="text-amber-800 dark:text-amber-200 flex-shrink-0" aria-hidden="true" />
+          <p className="flex-1 text-xs font-semibold text-amber-900 dark:text-amber-100">
+            {tr('Ważne — odbiorcy zostaną poproszeni o potwierdzenie przeczytania')}
+          </p>
+          <button type="button" onClick={() => setImportant(false)} aria-label={t('Wyłącz „Ważne”')} title={t('Wyłącz „Ważne”')} className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition">
+            <X size={16} className="text-gray-500" />
+          </button>
+        </div>
+      )}
+
       {/* Pasek odpowiedzi */}
       {replyingTo && composerMode === 'text' && (
         <div className="flex items-center gap-3 mb-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border border-accent-primary-lighter/60 dark:border-accent-primary-dark/40">
@@ -472,6 +495,11 @@ const MessageInput = forwardRef(function MessageInput({
           <button type="button" onClick={() => { setShowAttachMenu(false); setComposerMode('prayer'); textareaRef.current?.focus(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
             <HeartHandshake size={18} className="text-accent-primary-light" /> {tr('Prośba o modlitwę')}
           </button>
+          {canMarkImportant && (
+            <button type="button" aria-pressed={important} onClick={() => { setShowAttachMenu(false); setComposerMode('text'); setImportant(v => !v); textareaRef.current?.focus(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
+              <AlertCircle size={18} className="text-accent-primary-light" /> {important ? tr('Wyłącz „Ważne”') : tr('Ważne — poproś o potwierdzenie')}
+            </button>
+          )}
           </>}
         </div>
       )}

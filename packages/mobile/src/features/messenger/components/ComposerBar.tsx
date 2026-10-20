@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import {
+  AlertCircle,
   AtSign,
   BarChart3,
   Calendar,
@@ -64,6 +65,9 @@ interface Props {
   canMentionAll?: boolean;
   /** Przytrzymanie „Wyślij” — zaplanuj wysyłkę (arkusz z terminami). */
   onLongPressSend?: () => void;
+  /** „Ważne — poproś o potwierdzenie” (migracja 115): stan i przełącznik (brak = opcja ukryta). */
+  important?: boolean;
+  onToggleImportant?: () => void;
 }
 
 export const ComposerBar = ({
@@ -92,6 +96,8 @@ export const ComposerBar = ({
   mentionCandidates,
   canMentionAll = false,
   onLongPressSend,
+  important = false,
+  onToggleImportant,
 }: Props) => {
   // Hooki ZAWSZE przed warunkowym returnem (prawo pisania zmienia się po wczytaniu rozmowy).
   const [recording, setRecording] = useState(false);
@@ -162,6 +168,9 @@ export const ComposerBar = ({
     ...(onCreatePoll ? [{ key: "poll", label: "Ankieta", Icon: BarChart3, tint: "#2A2312", bg: "#ECE8DE", onPress: onCreatePoll }] : []),
     ...(onShareEvent ? [{ key: "event", label: "Wydarzenie", Icon: Calendar, tint: "#2A2312", bg: "#ECE8DE", onPress: onShareEvent }] : []),
     ...(onStartPrayer ? [{ key: "prayer", label: "Prośba o modlitwę", Icon: HeartHandshake, tint: "#2A2312", bg: "#ECE8DE", onPress: onStartPrayer }] : []),
+    ...(onToggleImportant && !editing
+      ? [{ key: "important", label: important ? "Wyłącz „Ważne”" : "Ważne — poproś o potwierdzenie", Icon: AlertCircle, tint: "#8A6606", bg: "#FFF1C2", onPress: onToggleImportant }]
+      : []),
   ];
   const runAction = (fn: () => void) => {
     setShowActions(false);
@@ -222,6 +231,37 @@ export const ComposerBar = ({
             style={{ padding: 4 }}
             accessibilityRole="button"
             accessibilityLabel="Anuluj prośbę o modlitwę"
+          >
+            <X size={16} color="#6E685A" />
+          </Pressable>
+        </View>
+      ) : null}
+
+      {important && onToggleImportant && !editing && !prayerMode ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingTop: 8 }}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              borderRadius: 12,
+              backgroundColor: "#FFF1C2",
+              paddingHorizontal: 10,
+              paddingVertical: 8,
+            }}
+          >
+            <AlertCircle size={13} color="#8A6606" />
+            <Text style={{ flex: 1, fontSize: 12, color: "#8A6606", fontFamily: "Manrope_700Bold" }}>
+              Ważne — odbiorcy potwierdzą przeczytanie
+            </Text>
+          </View>
+          <Pressable
+            onPress={onToggleImportant}
+            hitSlop={10}
+            style={{ padding: 4 }}
+            accessibilityRole="button"
+            accessibilityLabel="Wyłącz „Ważne”"
           >
             <X size={16} color="#6E685A" />
           </Pressable>
@@ -488,12 +528,14 @@ export const ComposerBar = ({
         ) : (
           <Pressable
             onPress={onSend}
-            onLongPress={!editing && !prayerMode && canSend && onLongPressSend ? onLongPressSend : undefined}
+            // „Ważne” (requires_ack) nie przechodzi przez zaplanowaną wysyłkę — przy włączonym
+            // „Ważne” przytrzymanie nie planuje (wiadomość wychodzi od razu, z potwierdzeniem).
+            onLongPress={!editing && !prayerMode && !important && canSend && onLongPressSend ? onLongPressSend : undefined}
             delayLongPress={400}
             disabled={sending || !canSend}
             accessibilityRole="button"
             accessibilityLabel={editing ? "Zapisz zmiany" : "Wyślij"}
-            accessibilityHint={!editing && !prayerMode && onLongPressSend ? "Przytrzymaj, żeby zaplanować wysyłkę" : undefined}
+            accessibilityHint={!editing && !prayerMode && !important && onLongPressSend ? "Przytrzymaj, żeby zaplanować wysyłkę" : undefined}
             style={{ opacity: canSend ? 1 : 0.4 }}
           >
             {sending || uploading ? (

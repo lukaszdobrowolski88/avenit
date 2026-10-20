@@ -274,7 +274,7 @@ export default function useMessages(conversationId, userEmail) {
   }, [messages, conversationId]);
 
   // Wyślij wiadomość. Rzuca błąd (np. 403 w kanale ogłoszeń) — wywołujący pokazuje komunikat.
-  // extra: { messageType, metadata, mentions } – dla ankiet/modlitw/wydarzeń oraz @wzmianek
+  // extra: { messageType, metadata, mentions, requiresAck } – dla ankiet/modlitw/wydarzeń, @wzmianek i „Ważne”
   const sendMessage = async (content, attachments = [], replyToId = null, extra = {}) => {
     const convId = conversationId;
     if (!convId || !userEmail) throw new Error(tr('Nie wybrano rozmowy.'));
@@ -292,6 +292,8 @@ export default function useMessages(conversationId, userEmail) {
     // Wzmianki @ (lista e-maili) – do podświetlenia i powiadomień
     const mentions = Array.isArray(extra.mentions) ? extra.mentions.filter(Boolean) : [];
     if (mentions.length > 0) messageData.mentions = mentions;
+    // „Ważne — poproś o potwierdzenie” (migracja 115) — tylko gdy zaznaczone (starszy serwer bez kolumny).
+    if (extra.requiresAck === true) messageData.requires_ack = true;
 
     const { data, error: sendError } = await supabase
       .from('messages')
