@@ -45,6 +45,9 @@ const TEAM_MEMBER_TABLE = {
   kids: 'kids_teachers', mc: 'custom_mc_members',
 };
 const memberTableFor = (teamType) => TEAM_MEMBER_TABLE[teamType] || `custom_${teamType}_members`;
+// Osoba wyłączona z zespołu: worship_team/media_team mają status „Nieaktywny”, inne tabele is_active.
+// Nie trafia do wyboru w rolach ani do propozycji (już wpisani zostają widoczni) — jak w mobilce.
+export const isInactiveMember = (m) => m?.status === 'Nieaktywny' || m?.is_active === false;
 const csvNames = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
 const pad2 = (n) => String(n).padStart(2, '0');
 // Dzień/miesiąc LOKALNY (toISOString dawał UTC — między 00:00 a 02:00 „wczoraj”).
@@ -763,6 +766,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     return m;
   }, [schedAssignments, teamType]);
   const memberByName = useMemo(() => new Map(members.map((m) => [m.full_name, m])), [members]);
+  const activeMembers = useMemo(() => members.filter((m) => !isInactiveMember(m)), [members]);
   const personStatus = (eventId, roleKey, name) => {
     const a = assignmentByKey.get(`${eventId}|${roleKey}|${name}`);
     if (!a) return memberByName.get(name) && !memberByName.get(name).email ? 'noemail' : 'draft';
@@ -774,12 +778,12 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
 
   // Filtrowanie osób według roli
   const getMembersForRole = (roleId) => {
-    if (!roleId || memberRoles.length === 0) return members;
+    if (!roleId || memberRoles.length === 0) return activeMembers;
     const assignedMemberIds = memberRoles
       .filter(mr => mr.role_id === roleId)
       .map(mr => String(mr.member_id));
-    if (assignedMemberIds.length === 0) return members;
-    return members.filter(member => assignedMemberIds.includes(String(member.id)));
+    if (assignedMemberIds.length === 0) return activeMembers;
+    return activeMembers.filter(member => assignedMemberIds.includes(String(member.id)));
   };
 
   // Kontekst wiersza: kto nieobecny (i dlaczego), kto już w której roli, konflikty.
@@ -812,7 +816,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     if (!col?.roleId || !memberRoles.length) return null;
     const ids = memberRoles.filter((mr) => mr.role_id === col.roleId).map((mr) => String(mr.member_id));
     if (!ids.length) return null;
-    return new Set(members.filter((m) => ids.includes(String(m.id))).map((m) => m.full_name));
+    return new Set(activeMembers.filter((m) => ids.includes(String(m.id))).map((m) => m.full_name));
   };
   const eventLabel = (ev) => `${shortDay(ev.date)} · ${ev.title || tr('Wydarzenie')}`;
 
@@ -834,7 +838,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const fillFrom = async (ev, source) => {
     const ctx = rowContext(ev);
     const { changes, skipped } = fillEmptyRoles(lineupOf(ctx.team, roleKeys), source, {
-      blocked: ctx.blocked, allowedFor: roleMembers, teamNames: new Set(members.map((m) => m.full_name)),
+      blocked: ctx.blocked, allowedFor: roleMembers, teamNames: new Set(activeMembers.map((m) => m.full_name)),
     });
     const res = Object.keys(changes).length ? await applyRoles(ev.id, changes, { quiet: true }) : { added: 0 };
     const absent = [...new Set(skipped.filter((x) => x.reason === 'absent').map((x) => x.name))];
@@ -868,7 +872,10 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const openProposal = (evs) => {
     const targets = evs.filter((ev) => dayKey(ev.date) >= today).map((ev) => {
       const ctx = rowContext(ev);
-      return { id: ev.id, date: ev.date, lineup: lineupOf(ctx.team, roleKeys), blocked: ctx.blocked };
+      // Nieaktywni wypadają też z kandydatów „z historii roli”.
+      const blocked = new Map(ctx.blocked);
+      for (const m of members) if (isInactiveMember(m) && !blocked.has(m.full_name)) blocked.set(m.full_name, tr('nieaktywny'));
+      return { id: ev.id, date: ev.date, lineup: lineupOf(ctx.team, roleKeys), blocked };
     });
     if (!targets.length) { toast.info(tr('Propozycje dotyczą tylko nadchodzących wydarzeń.')); return; }
     const rolesSpec = columns.map((c) => { const set = roleMembers(c.key); return { key: c.key, candidates: set ? [...set] : null }; });

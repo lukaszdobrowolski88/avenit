@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import MemberStatusField, { memberStatusColor } from '../shared/MemberStatusField';
 import { useSearchParams } from 'react-router-dom';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
@@ -2136,7 +2137,7 @@ export default function WorshipModule() {
                       )}
                     </div>
                   </TD>
-                  <TD>{m.status && <StatusPill color={STATUS_COLORS.success}>{tr(m.status)}</StatusPill>}</TD>
+                  <TD>{m.status && <StatusPill color={memberStatusColor(m.status)}>{tr(m.status)}</StatusPill>}</TD>
                   <TD muted numeric>{m.phone}</TD>
                   <TD muted>{m.email}</TD>
                   <TD align="right">
@@ -2253,6 +2254,8 @@ export default function WorshipModule() {
                   )}
                 </div>
               </div>
+
+              <MemberStatusField value={memberForm.status} onChange={(v) => setMemberForm({ ...memberForm, status: v })} />
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

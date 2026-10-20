@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
+import MemberStatusField, { isInactiveStatus, memberStatusColor } from './shared/MemberStatusField';
 import { supabase } from '../lib/supabase';
 import ModuleBoard, { hasItemDeepLink } from './Boards/ModuleBoard';
 import {
@@ -44,7 +45,7 @@ export default function MediaTeamModule() {
 
 
   const [showMemberModal, setShowMemberModal] = useState(false);
-  const [memberForm, setMemberForm] = useState({ id: null, full_name: '', role: '', email: '', phone: '' });
+  const [memberForm, setMemberForm] = useState({ id: null, full_name: '', role: '', email: '', phone: '', status: 'Aktywny' });
   const [selectedMemberRoles, setSelectedMemberRoles] = useState([]);
   // Służby z team_roles
   const [mediaRoles, setMediaRoles] = useState([]);
@@ -247,7 +248,7 @@ export default function MediaTeamModule() {
     try {
       // Grafik żyje na wydarzeniach (ScheduleTab), zadania na Tablicy (ModuleBoard) —
       // stare programy i media_tasks nie są tu już pobierane.
-      const teamResult = await supabase.from('media_team').select('id, full_name, role, email, phone').order('full_name');
+      const teamResult = await supabase.from('media_team').select('id, full_name, role, email, phone, status').order('full_name');
       if (teamResult.error) throw new Error(tr('Błąd zespołu: {msg}', { msg: teamResult.error.message }));
       setTeam(teamResult.data || []);
     } catch (err) {
@@ -271,7 +272,8 @@ export default function MediaTeamModule() {
           full_name: memberForm.full_name,
           role: memberForm.role,
           email: memberForm.email,
-          phone: memberForm.phone
+          phone: memberForm.phone,
+          status: memberForm.status === 'Nieaktywny' ? 'Nieaktywny' : 'Aktywny',
         }).eq('id', memberForm.id);
         if (error) throw error;
       } else {
@@ -279,7 +281,8 @@ export default function MediaTeamModule() {
           full_name: memberForm.full_name,
           role: memberForm.role,
           email: memberForm.email,
-          phone: memberForm.phone
+          phone: memberForm.phone,
+          status: memberForm.status === 'Nieaktywny' ? 'Nieaktywny' : 'Aktywny',
         }]).select().single();
         if (error) throw error;
         memberId = newMember.id;
@@ -388,7 +391,7 @@ export default function MediaTeamModule() {
       {activeTab === 'members' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[30] transition-colors duration-300">
         <TabHeader title={tr('Członkowie ({n})', { n: team.length })} actions={
-          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '', status: 'Aktywny' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
         } />
         <DataTable tableClassName="min-w-[700px]">
           <THead>
@@ -399,7 +402,10 @@ export default function MediaTeamModule() {
               const roleNames = getMemberRoleNames(m.id);
               return (
                 <TR key={m.id}>
-                  <TD className="font-medium text-gray-900 dark:text-white">{m.full_name}</TD>
+                  <TD className="font-medium text-gray-900 dark:text-white">
+                    {m.full_name}
+                    {isInactiveStatus(m.status) && <span className="ml-2 align-middle"><StatusPill color={memberStatusColor(m.status)}>{tr('Nieaktywny')}</StatusPill></span>}
+                  </TD>
                   <TD>
                     <div className="flex flex-wrap gap-1">
                       {roleNames.length > 0 ? (
@@ -516,6 +522,7 @@ export default function MediaTeamModule() {
             </div>
           </div>
 
+          <MemberStatusField value={memberForm.status} onChange={(v) => setMemberForm({ ...memberForm, status: v })} />
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
