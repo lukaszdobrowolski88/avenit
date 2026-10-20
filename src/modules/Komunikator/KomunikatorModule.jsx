@@ -7,6 +7,7 @@ import NewConversationModal from './components/NewConversationModal';
 import GroupSettingsModal from './components/GroupSettingsModal';
 import ReportsPanel, { countOpenReports } from './components/ReportsPanel';
 import MeetingModal from './meetings/MeetingModal';
+import { threadParam } from './threads/threadLogic';
 import { useCalls } from './calls/callContext';
 import useConversations from './hooks/useConversations';
 import useMinistryChannels from './hooks/useMinistryChannels';
@@ -21,6 +22,8 @@ const USER_EMAIL_CACHE_KEY = 'user_email_cache';
 
 export default function KomunikatorModule() {
   const [searchParams, setSearchParams] = useSearchParams();
+  // Wątek z linku powiadomienia (?thread=) — przekazywany do otwartej rozmowy.
+  const [threadRequest, setThreadRequest] = useState(null);
   const { can, subject, ready } = usePermissions();
   const isAppAdmin = !!subject?.isAdmin;
   // Moderacja zgłoszeń (K10): administrator aplikacji albo akcja „Rozpatruj zgłoszenia wiadomości”
@@ -169,6 +172,9 @@ export default function KomunikatorModule() {
         if (live) calls.joinCall(live, conv, join);
         else calls.startCall(conv, join);
       }
+      // ?thread=<id> (powiadomienie o odpowiedzi w wątku) — otwórz panel wątku tej rozmowy.
+      const thread = threadParam(searchParams.get('thread'));
+      if (thread) setThreadRequest({ conversationId: conv.id, id: thread, at: Date.now() });
       // Wyczyść parametr z URL po otwarciu konwersacji
       setSearchParams({}, { replace: true });
     } else if (!loading && urlRefetchRef.current !== conversationId) {
@@ -176,6 +182,11 @@ export default function KomunikatorModule() {
       refetch();
     }
   }, [searchParams, conversations, handleSelectConversation, setSearchParams, loading, refetch, userEmail, calls]);
+
+  // Prośba o wątek dotyczy tylko rozmowy z linku — po przejściu do innej znika (bez ponownego otwarcia).
+  useEffect(() => {
+    if (threadRequest && selectedConversation && String(selectedConversation.id) !== String(threadRequest.conversationId)) setThreadRequest(null);
+  }, [selectedConversation, threadRequest]);
 
   // Oznacz powiadomienia jako przeczytane gdy użytkownik wejdzie w konwersację
   useEffect(() => {
@@ -306,6 +317,7 @@ export default function KomunikatorModule() {
           allConversations={conversations}
           perms={perms}
           isAppAdmin={isAppAdmin}
+          threadRequest={threadRequest && threadRequest.conversationId === selectedConversation?.id ? threadRequest : null}
         />
       </div>
 

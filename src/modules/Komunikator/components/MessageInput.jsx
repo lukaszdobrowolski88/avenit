@@ -26,8 +26,12 @@ const MessageInput = forwardRef(function MessageInput({
   canPost = true,
   canMentionAll = false, // K5: „@wszyscy” — administrator rozmowy / lider kanału / admin aplikacji
   onOpenPoll,
-  onOpenEventShare
+  onOpenEventShare,
+  // Wątki: osobny szkic (inaczej pole wątku i rozmowy dzieliłyby jeden) i bez ankiet/wydarzeń/modlitw.
+  draftKey = null,
+  richTypes = true
 }, ref) {
+  const draftId = draftKey || conversationId;
   const t = useT();
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState([]);
@@ -48,25 +52,25 @@ const MessageInput = forwardRef(function MessageInput({
 
   // Wczytaj wersję roboczą (draft) przy zmianie konwersacji
   useEffect(() => {
-    if (!conversationId) return;
+    if (!draftId) return;
     try {
-      const draft = localStorage.getItem(`${DRAFT_PREFIX}${conversationId}`);
+      const draft = localStorage.getItem(`${DRAFT_PREFIX}${draftId}`);
       setContent(draft || '');
     } catch { setContent(''); }
     setComposerMode('text');
     setShowAttachMenu(false);
     mentionMapRef.current.clear();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+  }, [draftId]);
 
   // Zapisz draft
   useEffect(() => {
-    if (!conversationId) return;
+    if (!draftId) return;
     try {
-      if (content) localStorage.setItem(`${DRAFT_PREFIX}${conversationId}`, content);
-      else localStorage.removeItem(`${DRAFT_PREFIX}${conversationId}`);
+      if (content) localStorage.setItem(`${DRAFT_PREFIX}${draftId}`, content);
+      else localStorage.removeItem(`${DRAFT_PREFIX}${draftId}`);
     } catch { /* ignoruj */ }
-  }, [content, conversationId]);
+  }, [content, draftId]);
 
   // Zamknij menu załączników po kliknięciu poza
   useEffect(() => {
@@ -80,8 +84,8 @@ const MessageInput = forwardRef(function MessageInput({
   }, []);
 
   const clearDraft = () => {
-    if (conversationId) {
-      try { localStorage.removeItem(`${DRAFT_PREFIX}${conversationId}`); } catch { /* ignoruj */ }
+    if (draftId) {
+      try { localStorage.removeItem(`${DRAFT_PREFIX}${draftId}`); } catch { /* ignoruj */ }
     }
   };
 
@@ -409,6 +413,7 @@ const MessageInput = forwardRef(function MessageInput({
           <button type="button" onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
             <Paperclip size={18} className="text-accent-primary-light" /> {tr('Zdjęcie lub plik')}
           </button>
+          {richTypes && <>
           <button type="button" onClick={() => { setShowAttachMenu(false); onOpenPoll?.(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
             <BarChart3 size={18} className="text-accent-primary-light" /> {tr('Ankieta')}
           </button>
@@ -418,6 +423,7 @@ const MessageInput = forwardRef(function MessageInput({
           <button type="button" onClick={() => { setShowAttachMenu(false); setComposerMode('prayer'); textareaRef.current?.focus(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
             <HeartHandshake size={18} className="text-accent-primary-light" /> {tr('Prośba o modlitwę')}
           </button>
+          </>}
         </div>
       )}
 

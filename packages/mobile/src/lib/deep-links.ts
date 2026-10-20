@@ -3,6 +3,7 @@ import { parseTaskLink } from '@avenit/shared/src/lib/taskLinks.js';
 import { goToTab } from './navigation';
 import { MODULE_REGISTRY, type ModuleEntry } from '../features/modules/registry';
 import { openModule, openOnWeb } from '../features/modules/useModules';
+import { threadFromLink } from '../features/messenger/threads';
 
 // Ekran zadania (element tablicy) — wspólny cel linków z powiadomień, pulpitu i list zadań.
 export const openTask = (router: Router, itemId: string | number, boardId?: string | number | null) => {
@@ -101,6 +102,14 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
       pathname: '/(app)/messenger/[conversationId]',
       params: { conversationId: komunikatorMatch[1] },
     });
+    // Odpowiedź w wątku (&thread=<id>): ekran wątku nad rozmową — „wstecz” wraca do rozmowy.
+    const thread = threadFromLink(path);
+    if (thread) {
+      router.push({
+        pathname: '/(app)/messenger/thread/[rootId]',
+        params: { rootId: thread, conversationId: komunikatorMatch[1] },
+      } as never);
+    }
     return;
   }
   const songMatch = path.match(/^\/?(?:\(app\)\/)?songs?\/(\d+)/);

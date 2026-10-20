@@ -13,6 +13,10 @@ import EventShareModal from './EventShareModal';
 import SeenByModal from './SeenByModal';
 import ActiveCallBanner from '../calls/ActiveCallBanner';
 import MeetingPanel from '../meetings/MeetingPanel';
+import ThreadPanel from '../threads/ThreadPanel';
+import ThreadChip from '../threads/ThreadChip';
+import useThreadRepliers from '../threads/useThreadRepliers';
+import { canStartThread } from '../threads/threadLogic';
 import useMessages from '../hooks/useMessages';
 import useRealtimeMessages from '../hooks/useRealtimeMessages';
 import useTypingStatus from '../hooks/useTypingStatus';
@@ -51,7 +55,9 @@ export default function MessageThread({
   onDeleteConversation,
   allConversations = [],
   perms = {},
-  isAppAdmin = false
+  isAppAdmin = false,
+  // Wątek do otwarcia (link z powiadomienia: ?thread=<id wiadomości głównej>) — { id, at }.
+  threadRequest = null
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -71,6 +77,11 @@ export default function MessageThread({
   const [seenByMessage, setSeenByMessage] = useState(null);
   const [jumping, setJumping] = useState(false);
   const [pendingJump, setPendingJump] = useState(null);
+  // Otwarty wątek (panel po prawej): { id, initial } — initial = wiadomość główna z listy (od razu widać).
+  const [openThread, setOpenThread] = useState(null);
+  useEffect(() => {
+    if (threadRequest?.id) setOpenThread({ id: threadRequest.id, initial: null });
+  }, [threadRequest]);
   // „Przeczytane” z chwili wejścia (separator „Nowe wiadomości” i otwarcie przy pierwszej nieprzeczytanej).
   const [initialLastRead] = useState(() => readSince({ last_read_at: conversation?.lastReadAt, joined_at: conversation?.joinedAt }));
   const initialUnreadRef = useRef(conversation?.unreadCount || 0);
@@ -139,6 +150,8 @@ export default function MessageThread({
   }, [typingUsers, participants, blocked]);
 
   const handleNewMessage = useCallback(async (newMessage) => {
+    // Odpowiedzi w wątku nie trafiają na główną oś (panel wątku ma własną subskrypcję).
+    if (newMessage?.thread_root_id) return;
     if (!sameEmail(newMessage.sender_email, userEmail)) {
       await addMessage(newMessage);
       onMarkAsRead?.(conversation?.id, newMessage.created_at);
@@ -401,6 +414,12 @@ export default function MessageThread({
   }, [peerEmail, peerBlocked, blockPerson, unblockPerson]);
 
   const handleReply = useCallback((message) => setReplyingTo(message), []);
+  const handleOpenThread = useCallback((message) => { if (message?.id) setOpenThread({ id: message.id, initial: message }); }, []);
+  const threadRepliers = useThreadRepliers(messages);
+  const participantOf = useCallback((email) => {
+    const p = participants.find(x => sameEmail(x.user_email, email));
+    return p ? { ...p, email: p.user_email } : { email };
+  }, [participants]);
   const handleCancelReply = useCallback(() => setReplyingTo(null), []);
   const handleForward = useCallback((message) => setForwardingMessage(message), []);
   // Przekazanie: każda rozmowa osobno; modal zamyka się tylko, gdy coś się udało.
@@ -624,6 +643,8 @@ export default function MessageThread({
                             onBlockSender={!isOwn && !isDirect ? handleBlockSender : undefined}
                             hiddenAsBlocked={!isDirect && isFromBlocked(message, blocked, userEmail)}
                             isGroupConversation={!isDirect}
+                            onReplyInThread={canPost && !peerBlocked && canStartThread(message) ? handleOpenThread : undefined}
+                            threadChip={<ThreadChip message={message} repliers={threadRepliers[message.id] || []} userOf={participantOf} onOpen={handleOpenThread} align={isOwn ? 'end' : 'start'} />}
                           />
                         </div>
                       </React.Fragment>
@@ -676,6 +697,22 @@ export default function MessageThread({
           canMentionAll={mentionAllAllowed}
           onOpenPoll={() => setShowPollComposer(true)}
           onOpenEventShare={() => setShowEventShare(true)}
+        />
+      )}
+
+      {openThread && (
+        <ThreadPanel
+          key={openThread.id}
+          conversation={conversation}
+          rootId={openThread.id}
+          initialRoot={openThread.initial}
+          userEmail={userEmail}
+          participants={participants}
+          canPost={canPost && !peerBlocked}
+          canMentionAll={mentionAllAllowed}
+          canEditOwn={canEditOwn}
+          nameOf={nameOf}
+          onClose={() => setOpenThread(null)}
         />
       )}
 

@@ -2,6 +2,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "rea
 import {
   Ban,
   Eye,
+  MessagesSquare,
   Flag,
   Languages,
   Share2,
@@ -31,6 +32,8 @@ interface Props {
   isPinned: boolean;
   onPickReaction: (emoji: string) => void;
   onReply: () => void;
+  /** Wątki (112): „Odpowiedz w wątku” — otwiera ekran wątku tej wiadomości. */
+  onReplyInThread?: () => void;
   onForward: () => void;
   onCopy: () => void;
   onTogglePin: () => void;
@@ -143,6 +146,7 @@ export const MessageActionsSheet = ({
   isPinned,
   onPickReaction,
   onReply,
+  onReplyInThread,
   onForward,
   onCopy,
   onTogglePin,
@@ -164,6 +168,7 @@ export const MessageActionsSheet = ({
 
   const actions: ActionRow[] = [
     ...(canReply ? [{ key: "reply", label: "Odpowiedz", Icon: CornerUpLeft, onPress: wrap(onReply) }] : []),
+    ...(onReplyInThread ? [{ key: "thread", label: "Odpowiedz w wątku", Icon: MessagesSquare, onPress: wrap(onReplyInThread) }] : []),
     ...(canForward ? [{ key: "forward", label: "Przekaż", Icon: Forward, onPress: wrap(onForward) }] : []),
     { key: "copy", label: "Udostępnij tekst", Icon: Share2, onPress: wrap(onCopy) },
     ...(onTranslate && translateLabel
