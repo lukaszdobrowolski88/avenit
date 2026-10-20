@@ -10,40 +10,23 @@ import { brandTone } from '../../../lib/brandTone';
 import { toast } from '../../../lib/toast';
 import { openOrCreateDirect } from '../../Komunikator/utils/directConversation';
 import { thumbUrl } from '../../../lib/imageThumb';
+import { presenceState, presenceByEmail, PRESENCE_ORDER } from '@avenit/shared/src/lib/presence.js';
 
-// Kolory statusów
+// Kolory statusów (reguła stanów: @avenit/shared/src/lib/presence.js — wspólna z mobilką)
 const statusColors = {
   online: 'bg-green-500',
   away: 'bg-yellow-500',
+  recent: 'bg-gray-300 dark:bg-gray-600',
   offline: 'bg-gray-400'
 };
 
-// Etykiety statusów
-const statusLabels = {
-  online: 'Online',
-  away: 'Zaraz wracam',
-  offline: 'Offline'
-};
-
-// Sprawdź status na podstawie last_seen
-function calculateStatus(presence) {
-  if (!presence || !presence.last_seen) return 'offline';
-
-  const lastSeenTime = new Date(presence.last_seen).getTime();
-  const now = Date.now();
-  const timeDiff = now - lastSeenTime;
-
-  // Jeśli ostatnia aktywność była ponad 2 minuty temu, użytkownik jest offline
-  if (timeDiff > 120000) {
-    return 'offline';
-  }
-
-  // Jeśli ostatnia aktywność była ponad 45 sekund temu, oznacz jako away
-  if (timeDiff > 45000 && presence.status === 'online') {
-    return 'away';
-  }
-
-  return presence.status || 'offline';
+// Etykieta pod nazwiskiem: online / zaraz wracam / „12 min temu”.
+function statusText(status, lastSeen) {
+  if (status === 'online') return tr('Online');
+  if (status === 'away') return tr('Zaraz wracam');
+  const min = Math.floor(Math.max(0, Date.now() - new Date(lastSeen || 0).getTime()) / 60000);
+  if (min < 1) return tr('przed chwilą');
+  return min < 60 ? tr('{n} min temu', { n: min }) : tr('{n} godz. temu', { n: Math.floor(min / 60) });
 }
 
 export default function OnlineUsersWidget({ userEmail }) {
@@ -73,26 +56,19 @@ export default function OnlineUsersWidget({ userEmail }) {
 
       if (presenceError) throw presenceError;
 
-      // Mapuj presence do użytkowników
-      const presenceMap = new Map();
-      (presenceData || []).forEach(p => {
-        presenceMap.set(p.user_email, { status: p.status, last_seen: p.last_seen });
+      // Mapuj presence do użytkowników (e-maile bez względu na wielkość liter)
+      const presenceMap = presenceByEmail(presenceData);
+      const now = Date.now();
+      const usersWithStatus = (users || []).map(user => {
+        const presence = presenceMap.get(String(user.email || '').toLowerCase());
+        return { ...user, presence, calculatedStatus: presenceState(presence, now) };
       });
 
-      // Oblicz rzeczywiste statusy i filtruj
-      const usersWithStatus = (users || []).map(user => ({
-        ...user,
-        presence: presenceMap.get(user.email),
-        calculatedStatus: calculateStatus(presenceMap.get(user.email))
-      }));
-
-      // Filtruj aktywnych (online/away) i sortuj
+      // Online / zaraz wracam / ostatnio aktywni (do godziny) — od najświeższych
       const active = usersWithStatus
-        .filter(u => u.calculatedStatus === 'online' || u.calculatedStatus === 'away')
-        .sort((a, b) => {
-          const statusOrder = { online: 0, away: 1 };
-          return statusOrder[a.calculatedStatus] - statusOrder[b.calculatedStatus];
-        });
+        .filter(u => u.calculatedStatus !== 'offline')
+        .sort((a, b) => (PRESENCE_ORDER[a.calculatedStatus] - PRESENCE_ORDER[b.calculatedStatus])
+          || (new Date(b.presence?.last_seen || 0) - new Date(a.presence?.last_seen || 0)));
 
       const offline = usersWithStatus.filter(u => u.calculatedStatus === 'offline').length;
 
@@ -149,11 +125,12 @@ export default function OnlineUsersWidget({ userEmail }) {
 
   const onlineCount = activeUsers.filter(u => u.calculatedStatus === 'online').length;
   const awayCount = activeUsers.filter(u => u.calculatedStatus === 'away').length;
+  const recentCount = activeUsers.filter(u => u.calculatedStatus === 'recent').length;
 
   return (
     <div className="space-y-4">
       {/* Podsumowanie */}
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
         <div className="flex items-center gap-1.5">
           <Circle size={8} className="fill-green-500 text-green-500" />
           <span className="text-gray-600 dark:text-gray-400">
@@ -164,7 +141,15 @@ export default function OnlineUsersWidget({ userEmail }) {
           <div className="flex items-center gap-1.5">
             <Circle size={8} className="fill-yellow-500 text-yellow-500" />
             <span className="text-gray-600 dark:text-gray-400">
-              <span className="font-semibold text-gray-800 dark:text-white">{awayCount}</span> away
+              <span className="font-semibold text-gray-800 dark:text-white">{awayCount}</span> {tr('zaraz wraca')}
+            </span>
+          </div>
+        )}
+        {recentCount > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Circle size={8} className="fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600" />
+            <span className="text-gray-600 dark:text-gray-400">
+              <span className="font-semibold text-gray-800 dark:text-white">{recentCount}</span> {tr('w ostatniej godzinie')}
             </span>
           </div>
         )}
@@ -172,13 +157,13 @@ export default function OnlineUsersWidget({ userEmail }) {
 
       {/* Lista użytkowników */}
       {activeUsers.length === 0 ? (
-        <EmptyState compact icon={Users} title={tr('Brak aktywnych użytkowników')} />
+        <EmptyState compact icon={Users} title={tr('Nikt nie był aktywny w ostatniej godzinie')} />
       ) : (
         <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
           {activeUsers.map(user => {
             const status = user.calculatedStatus;
             const statusColor = statusColors[status];
-            const statusLabel = statusLabels[status];
+            const statusLabel = statusText(status, user.presence?.last_seen);
 
             return (
               <button
