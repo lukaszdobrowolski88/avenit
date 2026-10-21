@@ -122,6 +122,8 @@ export const MODULES = [
     tabs: [],
     actions: [
       { key: 'export_ical', label: 'Eksport iCal' },
+      // Tłumaczenie na żywo przy wydarzeniu (kanały, tłumacze, link/QR) — src/interpretation.
+      { key: 'manage_interpretation', label: 'Zarządzaj tłumaczeniem na żywo' },
     ],
     fields: [],
   },

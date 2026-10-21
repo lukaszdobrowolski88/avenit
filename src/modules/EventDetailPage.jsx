@@ -26,6 +26,7 @@ import { DateInput, TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
 import { tr } from '../i18n';
 import OnlineMeetingCard from './Events/OnlineMeetingCard';
+import InterpretationCard from './Events/InterpretationCard';
 import { EventFormatPicker, EventFormatBadge, JoinEventButton, hasPlace, isOnlineFormat, joinWindowOpen } from './Events/eventFormat';
 
 // Token z kryptograficznego źródła losowości (randomUUID nie ma poza bezpiecznym kontekstem/HTTP —
@@ -576,6 +577,9 @@ export default function EventDetailPage() {
         canManage={canManage}
         wideAudience={!Array.isArray(ev.visibility_segments) || !ev.visibility_segments.length || ev.visibility_segments.some((s) => s?.type === 'everyone')}
       />
+
+      {/* Tłumaczenie na żywo (kanały językowe, link/QR dla słuchaczy, konsola tłumacza) */}
+      <InterpretationCard ev={ev} />
 
       {/* Szczegóły (rich text) */}
       <Card icon={FileText} title={tr('Szczegóły wydarzenia')}>

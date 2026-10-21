@@ -39,15 +39,22 @@ export function createLivekit({ settings = livekitSettings(), sdk = null } = {})
 
     // Token dostępu: tożsamość = e-mail (małymi literami), tylko ten pokój, ważny 2 h.
     // Gość (guests.js): tożsamość guest:<hex>, krótszy ttl, bez kanału danych.
-    async mintToken({ identity, name, room, canPublish = true, canPublishData, ttl = TOKEN_TTL, metadata = {} }) {
-      const { AccessToken } = await getSdk();
-      const at = new AccessToken(settings.apiKey, settings.apiSecret, {
+    // Tłumaczenie (src/interpretation): hidden — słuchacz niewidoczny; canPublishSources — np. tylko
+    // mikrofon (nazwy jak w kliencie: 'microphone', 'camera'… → enum TrackSource SDK).
+    async mintToken({ identity, name, room, canPublish = true, canPublishData, hidden, canPublishSources, ttl = TOKEN_TTL, metadata = {} }) {
+      const lk = await getSdk();
+      const at = new lk.AccessToken(settings.apiKey, settings.apiSecret, {
         identity: String(identity).toLowerCase(),
         name: name || identity,
         ttl,
         metadata: JSON.stringify(metadata),
       });
-      at.addGrant(videoGrant(room, { canPublish, canPublishData }));
+      const grant = videoGrant(room, { canPublish, canPublishData, hidden, canPublishSources });
+      if (grant.canPublishSources) {
+        const TS = lk.TrackSource || {};
+        grant.canPublishSources = grant.canPublishSources.map((s) => TS[String(s).toUpperCase()]).filter((v) => v !== undefined);
+      }
+      at.addGrant(grant);
       return at.toJwt();
     },
 
@@ -72,6 +79,70 @@ export function createLivekit({ settings = livekitSettings(), sdk = null } = {})
     async removeParticipant(room, identity) {
       try {
         await (await roomService()).removeParticipant(room, identity);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    // Jawne założenie pokoju z własnym limitem osób (tłumaczenie: setki słuchaczy — globalny
+    // max_participants z konfiguracji LiveKit dotyczy pokoi zakładanych przez wejście uczestnika).
+    // Istniejący pokój LiveKit zwraca bez błędu. → true | false (LiveKit niedostępny).
+    async createRoom({ name, maxParticipants, emptyTimeout, departureTimeout, metadata } = {}) {
+      try {
+        await (await roomService()).createRoom({
+          name,
+          ...(maxParticipants ? { maxParticipants } : {}),
+          ...(emptyTimeout ? { emptyTimeout } : {}),
+          ...(departureTimeout ? { departureTimeout } : {}),
+          ...(metadata !== undefined ? { metadata: typeof metadata === 'string' ? metadata : JSON.stringify(metadata) } : {}),
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    // Uczestnicy pokoju (także ukryci) w prostym kształcie:
+    //   [{ identity, name, hidden, tracks: [{ sid, kind: 'audio'|'video', source, muted }] }]
+    // [] — pokoju nie ma; null — LiveKit nie odpowiada.
+    async listParticipants(room) {
+      let lk;
+      try { lk = await getSdk(); } catch { return null; }
+      const TT = lk.TrackType || {};
+      const TS = lk.TrackSource || {};
+      const kindOf = (t) => (t === TT.AUDIO ? 'audio' : t === TT.VIDEO ? 'video' : String(t ?? '').toLowerCase());
+      const sourceOf = (s) => (typeof s === 'number' ? String(TS[s] || '').toLowerCase() : String(s ?? '').toLowerCase());
+      try {
+        const list = await (await roomService()).listParticipants(room);
+        return (list || []).map((p) => ({
+          identity: String(p.identity || '').toLowerCase(),
+          name: p.name || '',
+          hidden: !!p.permission?.hidden,
+          tracks: (p.tracks || []).map((t) => ({ sid: t.sid, kind: kindOf(t.type), source: sourceOf(t.source), muted: !!t.muted })),
+        }));
+      } catch (err) {
+        // Pokój nie istnieje (nikt nie wszedł / zamknięty) — to nie awaria.
+        if (err?.status === 404 || err?.code === 'not_found' || /not.?found|does not exist/i.test(String(err?.message || ''))) return [];
+        return null;
+      }
+    },
+
+    // Wyciszenie opublikowanej ścieżki (zmiana tłumacza). Wyciszać może serwer zawsze; odciszyć —
+    // tylko sam uczestnik (bez enable_remote_unmute). → true | false.
+    async mutePublishedTrack(room, identity, trackSid, muted = true) {
+      try {
+        await (await roomService()).mutePublishedTrack(room, identity, trackSid, !!muted);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    // Metadane pokoju (np. { active: e-mail tłumacza }) — klienci dostają RoomMetadataChanged.
+    async updateRoomMetadata(room, metadata) {
+      try {
+        await (await roomService()).updateRoomMetadata(room, typeof metadata === 'string' ? metadata : JSON.stringify(metadata ?? {}));
         return true;
       } catch {
         return false;

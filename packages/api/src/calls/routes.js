@@ -2,12 +2,14 @@
 // Publiczny (LiveKit woła http://api:3001 z sieci compose), ale każde żądanie musi mieć ważny
 // podpis: nagłówek Authorization = JWT podpisany sekretem API z sha256 SUROWEGO body
 // (WebhookReceiver). Tenant z nazwy pokoju (avn_<slug>_<uuid>); nieznany pokój — 200 i nic.
+// Pokoje tłumaczeń (avi_<slug>_<uuid>) idą do src/interpretation (osobny model, nie calls).
 // Parser body tylko w tym (enkapsulowanym) pluginie: surowy tekst zamiast JSON — podpis liczony
 // jest z bajtów, a LiveKit wysyła Content-Type application/webhook+json.
 import { getTenantPool, resolveTenant } from '../db.js';
 import { parseRoomName } from './logic.js';
 import { callDeps, handleLivekitEvent } from './service.js';
 import { CALLS_DISABLED } from './livekit.js';
+import { handleLivekitEvent as handleInterpretationEvent } from '../interpretation/service.js';
 
 export const WEBHOOK_PATH = '/api/calls/livekit-webhook';
 
@@ -41,7 +43,8 @@ export function buildCallsRoutes(deps = {}) {
       const db = (deps.getTenantPool || getTenantPool)(tenant.db_name);
       const ctx = { db, tenantSlug: tenant.slug, log: req.log, deps: { ...base, livekit } };
       try {
-        const result = await handleLivekitEvent(ctx, event);
+        const handler = parsed.kind === 'interpretation' ? (deps.handleInterpretationEvent || handleInterpretationEvent) : handleLivekitEvent;
+        const result = await handler(ctx, event);
         return reply.send({ ok: true, ...result });
       } catch (err) {
         // 5xx → LiveKit ponowi; przejścia stanu są idempotentne.

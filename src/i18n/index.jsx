@@ -96,12 +96,14 @@ export function I18nProvider({ children }) {
   }, [ready]);
 
   // Zmiana języka czeka na słownik, potem przełącza całe drzewo naraz.
-  const setLang = useCallback((code) => {
+  // { persist: false } — bez zapamiętania (np. strona słuchacza tłumaczenia dobiera język
+  // z przeglądarki, a wybór zapamiętujemy dopiero, gdy ktoś sam go zmieni).
+  const setLang = useCallback((code, { persist = true } = {}) => {
     if (!SUPPORTED.includes(code)) return;
     const apply = () => {
       setLangState(code);
       setReady(true);
-      try { localStorage.setItem(STORAGE_KEY, code); } catch { /* ignore */ }
+      if (persist) { try { localStorage.setItem(STORAGE_KEY, code); } catch { /* ignore */ } }
     };
     if (code === 'pl') apply();
     else loadDicts().then(apply, apply);
@@ -114,6 +116,11 @@ export function I18nProvider({ children }) {
 
   if (!ready) return null;
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+// Czy użytkownik sam wybrał język (zapisany w przeglądarce).
+export function hasSavedLang() {
+  try { return SUPPORTED.includes(localStorage.getItem(STORAGE_KEY)); } catch { return false; }
 }
 
 // Hook zwracający { t, lang, setLang, languages }.
