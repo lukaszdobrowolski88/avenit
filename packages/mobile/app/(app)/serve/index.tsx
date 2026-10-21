@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StatusBar, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StatusBar, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CalendarOff, Check, ChevronRight, Plus, Search, Trash2 } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
@@ -20,6 +20,7 @@ import {
   type VolunteerBlockout,
 } from '../../../src/features/serve/api';
 import { daysLabel, rangeLabel, todayIso } from '../../../src/features/serve/format';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 // Moduł „Dostępność” (jak web: Dostępność — kto z wolontariuszy nie może służyć i kiedy).
 // Tylko niedostępności wolontariuszy; Raport CCLI jest w Analityce na webie. Własne
@@ -85,7 +86,7 @@ export default function AvailabilityModuleScreen() {
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130, gap: 12 }}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={B.ink} />}
+          refreshControl={<PullToRefresh onRefresh={() => q.refetch()} tintColor={B.ink} />}
         >
           <Pressable
             onPress={() => router.push('/(app)/serve/availability')}

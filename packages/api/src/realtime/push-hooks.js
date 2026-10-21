@@ -20,6 +20,7 @@ import { buildQuery } from '../dataapi/querybuilder.js';
 import { deliverNotifications, displayNameOf } from '../dataapi/boardNotify.js';
 import { threadFollowerEmails, threadPushAllowed } from '../dataapi/komunikatorThreads.js';
 import { canMentionAll } from '../dataapi/komunikatorPlus.js';
+import { unreadBadgeCount } from '../dataapi/komunikatorBadge.js';
 
 export async function notifyOnWrite({ pool, table, op, values, actingUserEmail, log }) {
   if (op !== 'insert' || !values) return;
@@ -108,6 +109,9 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
       now,
     });
     const extra = { ...threadExtra, ...(important ? { important: true, ...(msg.id ? { message_id: msg.id } : {}) } : {}) };
+    // Plakietka ikony: liczba rozmów z nieprzeczytanymi (z tą wiadomością) — liczona tylko,
+    // gdy push faktycznie idzie; min. 1, bo ta wiadomość właśnie przyszła.
+    const badge = kind ? Math.max(1, await unreadBadgeCount(pool, p.user_email)) : undefined;
     if (kind === 'mention') {
       await sendPushCore(pool, {
         user_email: p.user_email,
@@ -115,6 +119,7 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
         link,
         data: { type: 'mention', conversation_id: conversationId, ...extra },
         sound: 'receive.wav',
+        badge,
       });
     } else if (kind === 'message' || kind === 'important') {
       await sendPushCore(pool, {
@@ -123,6 +128,7 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
         link,
         data: { type: 'message', conversation_id: conversationId, ...extra },
         sound: 'receive.wav',
+        badge,
       });
     }
   }

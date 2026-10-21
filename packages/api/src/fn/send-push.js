@@ -6,6 +6,7 @@
 //   user_email, title, body — wymagane
 //   link?, tag?, icon?, big_image?, category_id?, data?, actions?,
 //   campaign_id?, recipient_id?, variant?,
+//   badge? — liczba na ikonie aplikacji iOS (liczba całkowita ≥ 0; brak = bez zmian),
 //   exclude_expo_tokens? — tokeny Expo do pominięcia (urządzenia, które dostały już VoIP push
 //                          przy dzwonieniu — src/calls/service.js); web push bez zmian
 //
@@ -109,7 +110,9 @@ async function sendExpo(pool, payload, sharedData, accessToken) {
     channelId: 'default',
     categoryId: payload.category_id,
     data: sharedData,
-    badge: undefined,
+    // iOS: liczba na ikonie aplikacji (np. rozmowy z nieprzeczytanymi — push wiadomości);
+    // brak = plakietka bez zmian. Android liczy ją sam z powiadomień.
+    badge: Number.isInteger(payload.badge) && payload.badge >= 0 ? payload.badge : undefined,
   }));
 
   const headers = {

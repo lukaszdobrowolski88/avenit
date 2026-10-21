@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -28,6 +27,7 @@ import {
 } from '../../../src/features/members/api';
 import { groupLinksLabel, memberGroupLinks, type GroupLink } from '../../../src/features/home-groups/utils';
 import { friendlyError } from '../../../src/lib/errors';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 const STATUSES: { key: MemberStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'Wszyscy' },
@@ -42,7 +42,7 @@ export default function MembersScreen() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'all'>('all');
   const [ministryFilter, setMinistryFilter] = useState<string | null>(null);
-  const { data, isLoading, isError, error, refetch, isRefetching } = useMembers({
+  const { data, isLoading, isError, error, refetch } = useMembers({
     selectedCampusId,
     withCampusFilter,
   });
@@ -245,7 +245,7 @@ export default function MembersScreen() {
             data={filtered}
             keyExtractor={(item) => String(item.id)}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
             ItemSeparatorComponent={() => (
               <View style={{ backgroundColor: B.card }}>

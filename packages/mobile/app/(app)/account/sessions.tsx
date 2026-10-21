@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -21,6 +20,7 @@ import { plural } from '../../../src/lib/domain';
 import { showError } from '../../../src/lib/errors';
 import { toast } from '../../../src/lib/toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 interface SessionRow {
   id: string | number;
@@ -55,7 +55,7 @@ const isMobileUa = (ua: string | null): boolean => {
 
 export default function SessionsScreen() {
   const qc = useQueryClient();
-  const { data, isLoading, refetch, isRefetching } = useSessions();
+  const { data, isLoading, refetch } = useSessions();
   const sessions = (data ?? []) as SessionRow[];
   const [busy, setBusy] = useState(false);
   const others = sessions.filter((s) => !s.current).length;
@@ -104,7 +104,7 @@ export default function SessionsScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {/* Bieżące urządzenie — ciemna karta marki; pozostałe w jednej białej liście. */}

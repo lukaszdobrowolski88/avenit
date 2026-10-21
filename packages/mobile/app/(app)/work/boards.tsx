@@ -1,4 +1,4 @@
-import { ActivityIndicator, RefreshControl, ScrollView, StatusBar, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StatusBar, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CloudOff, LayoutGrid, Lock } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
@@ -9,6 +9,7 @@ import { friendlyError } from '../../../src/lib/errors';
 import { FONT as F } from '../../../src/lib/fonts';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useProjectBoards, type BoardFolder, type ProjectBoard } from '../../../src/features/work/boards';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 // Lista tablic Projektów (jak web /projekty): aktywne tablice bez służb i szablonów, pogrupowane
 // po folderach. Stuknięcie → tablica w widoku „Tabela” / „Kanban”. Tworzenie i edycja struktury
@@ -46,7 +47,7 @@ const BoardsList = () => {
       ) : (
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
-          refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={B.ink} />}
+          refreshControl={<PullToRefresh onRefresh={() => q.refetch()} tintColor={B.ink} />}
         >
           {total === 0 ? (
             <EmptyState

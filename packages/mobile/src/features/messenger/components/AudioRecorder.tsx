@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { showError } from "../../../lib/errors";
+import { acquireAudio } from "../../../lib/audioMode";
 import {
   createAudioPlayer,
   requestRecordingPermissionsAsync,
   RecordingPresets,
-  setAudioModeAsync,
   useAudioRecorder,
   useAudioRecorderState,
   type AudioPlayer,
@@ -52,6 +52,22 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
   const ringRef = useRef<number[]>(new Array(BARS).fill(4));
   const recordingRef = useRef(false);
   const durationRef = useRef(0);
+  // Tryb dźwięku (src/lib/audioMode.ts): nagrywanie na czas nagrania, „głos” na czas odsłuchu
+  // podglądu; po zwolnieniu apka wraca do trybu UI (dźwięki respektują przełącznik wyciszenia).
+  const recordHold = useRef<null | (() => Promise<void>)>(null);
+  const playHold = useRef<null | (() => Promise<void>)>(null);
+  const release = (ref: typeof recordHold) => {
+    const r = ref.current;
+    ref.current = null;
+    return r ? r().catch(() => undefined) : Promise.resolve();
+  };
+  useEffect(
+    () => () => {
+      release(recordHold);
+      release(playHold);
+    },
+    [],
+  );
 
   // Auto-start nagrywania.
   useEffect(() => {
@@ -67,14 +83,22 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
           onCancel();
           return;
         }
-        await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+        if (!recordHold.current) recordHold.current = await acquireAudio("record");
+        if (cancelled) {
+          release(recordHold);
+          return;
+        }
         await recorder.prepareToRecordAsync();
-        if (cancelled) return;
+        if (cancelled) {
+          release(recordHold);
+          return;
+        }
         recorder.record();
         recordingRef.current = true;
         setIsRecording(true);
       } catch (e: any) {
         if (__DEV__) console.warn("[recorder] start failed", e);
+        release(recordHold);
         showError("Nie udało się nagrywać", e, "Nie udało się uruchomić nagrywania. Spróbuj ponownie.");
         onCancel();
       }
@@ -114,9 +138,9 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
       const durationMs = durationRef.current || seconds * 1000;
       await recorder.stop();
       recordingRef.current = false;
-      // Zresetuj tryb audio po nagrywaniu — inaczej na iOS sesja zostaje w trybie
-      // nagrywania i późniejsze odtwarzanie bywa ciche / „do ucha".
-      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => undefined);
+      // Koniec nagrywania — oddaj tryb (inaczej na iOS sesja zostaje w trybie nagrywania:
+      // odtwarzanie bywa ciche / „do ucha”, a dźwięki UI grały mimo wyciszenia).
+      await release(recordHold);
       const uri = recorder.uri;
       // Rejestrator nie podaje mime'a — heurystyka na podstawie URI.
       const mime = uri?.endsWith(".m4a")
@@ -151,8 +175,10 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
     if (isPlaying && sound) {
       sound.pause();
       setIsPlaying(false);
+      release(playHold);
       return;
     }
+    if (!playHold.current) playHold.current = await acquireAudio("playback").catch(() => null);
     if (sound) {
       await sound.seekTo(0).catch(() => undefined);
       sound.play();
@@ -165,6 +191,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
         setIsPlaying(false);
         p.pause();
         p.seekTo(0).catch(() => undefined);
+        release(playHold);
       }
     });
     p.play();
@@ -190,6 +217,8 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
       await recorder.stop().catch(() => undefined);
     }
     sound?.pause();
+    release(recordHold);
+    release(playHold);
     onCancel();
   };
 

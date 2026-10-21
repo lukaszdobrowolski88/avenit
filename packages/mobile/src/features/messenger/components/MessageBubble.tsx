@@ -326,7 +326,7 @@ const MessageBubbleBase = ({
               // Długość: duration (s) jak w webie; starsze nagrania z telefonu — size w ms.
               return (
                 <View key={i} style={gap}>
-                  <AudioPlayer uri={att.url} durationHintMs={voiceDurationMs(att)} variant={mine ? "light" : "dark"} />
+                  <AudioPlayer uri={att.url} mime={att.type} durationHintMs={voiceDurationMs(att)} variant={mine ? "light" : "dark"} />
                 </View>
               );
             }

@@ -249,6 +249,8 @@ export const registerPushToken = async (userEmail: string) => {
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 200, 120, 200],
       lightColor: '#E9B949',
+      // Liczba na ikonie (launcher) z powiadomień tego kanału.
+      showBadge: true,
     }).catch(() => undefined);
   }
 

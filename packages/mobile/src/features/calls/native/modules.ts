@@ -51,3 +51,13 @@ export function loadLiveKit() {
   lk = { rn, client };
   return lk;
 }
+
+// CallKit / Telecom trzyma teraz sesję audio (trwa rozmowa) — wtedy nikt inny jej nie przestawia.
+export function callOwnsAudioSession(): boolean {
+  try {
+    const s = callkit()?.getAudioSession?.() as { isActive?: boolean } | undefined;
+    return !!s?.isActive;
+  } catch {
+    return false;
+  }
+}

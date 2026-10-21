@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
-import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatus } from 'expo-audio';
+import { createAudioPlayer, type AudioPlayer, type AudioStatus } from 'expo-audio';
 import { Pause, Play } from 'lucide-react-native';
+import { acquireAudio } from '../../../lib/audioMode';
 
 // Odtwarzacz audio dla kazań — ten sam mechanizm expo-audio co w messenger/AudioPlayer,
 // ale w większym, „podcastowym" układzie (pasek postępu + czas).
@@ -25,6 +26,17 @@ export const SermonAudioPlayer = ({ uri, dark }: Props) => {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(false);
+  // Tryb „głos” (słychać mimo wyciszenia) tylko na czas grania — src/lib/audioMode.ts.
+  const holdRef = useRef<null | (() => Promise<void>)>(null);
+  const releaseMode = () => {
+    const r = holdRef.current;
+    holdRef.current = null;
+    r?.().catch(() => undefined);
+  };
+  const holdMode = async () => {
+    if (!holdRef.current) holdRef.current = await acquireAudio('playback');
+  };
+  useEffect(() => () => releaseMode(), []);
 
   // createAudioPlayer nie zwalnia się sam — zwolnij przy odmontowaniu / zmianie.
   useEffect(() => {
@@ -42,6 +54,7 @@ export const SermonAudioPlayer = ({ uri, dark }: Props) => {
       setPosition(0);
       p.pause();
       p.seekTo(0).catch(() => undefined);
+      releaseMode();
     } else {
       setIsPlaying(st.playing);
     }
@@ -53,7 +66,9 @@ export const SermonAudioPlayer = ({ uri, dark }: Props) => {
       if (sound.playing) {
         sound.pause();
         setIsPlaying(false);
+        releaseMode();
       } else {
+        await holdMode().catch(() => undefined);
         sound.play();
         setIsPlaying(true);
       }
@@ -61,13 +76,14 @@ export const SermonAudioPlayer = ({ uri, dark }: Props) => {
     }
     setLoading(true);
     try {
-      await setAudioModeAsync({ playsInSilentMode: true });
+      await holdMode();
       const p = createAudioPlayer({ uri }, { updateInterval: 250 });
       p.addListener('playbackStatusUpdate', onStatus(p));
       p.play();
       setSound(p);
       setIsPlaying(true);
     } catch {
+      releaseMode();
       Alert.alert('Nie udało się odtworzyć', 'Nie udało się odtworzyć nagrania. Sprawdź połączenie i spróbuj ponownie.');
     } finally {
       setLoading(false);

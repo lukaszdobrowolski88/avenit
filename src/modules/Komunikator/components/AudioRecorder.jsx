@@ -3,6 +3,12 @@ import { Mic, Square, Send, X, Loader, Pause, Play } from 'lucide-react';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 
+// Format nagrania głosowego — pierwszy obsługiwany przez przeglądarkę.
+const VOICE_MIME_TYPES = ['audio/mp4;codecs=mp4a.40.2', 'audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+export function pickVoiceMimeType(isSupported = (t) => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(t)) {
+  return VOICE_MIME_TYPES.find((t) => { try { return !!isSupported(t); } catch { return false; } }) || '';
+}
+
 export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
   const [isRecording, setIsRecording] = useState(true); // Automatycznie zaczynamy nagrywanie
   const [isPaused, setIsPaused] = useState(false);
@@ -64,9 +70,11 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
       source.connect(analyserRef.current);
 
       // Ustawienie MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
-      });
+      // Najpierw MP4/AAC (Safari, Chrome z koderem systemowym): takie nagranie zagra też aplikacja
+      // na iPhonie. WebM/Opus (Chrome/Firefox bez AAC) iOS w aplikacji nie odtworzy — mobilka
+      // otwiera je wtedy w Safari.
+      const mimeType = pickVoiceMimeType();
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
 
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];

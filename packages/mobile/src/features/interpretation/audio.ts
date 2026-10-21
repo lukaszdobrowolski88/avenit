@@ -12,7 +12,8 @@
 // Ekran: expo-keep-awake (moduł z pakietu expo), ładowany leniwie — brak modułu = bez błędu.
 import { NativeModules, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
-import { callkit, loadLiveKit } from '../calls/native/modules';
+import { callOwnsAudioSession, loadLiveKit } from '../calls/native/modules';
+import { setExternalAudioOwner } from '../../lib/audioMode';
 
 type LiveKitRN = typeof import('@livekit/react-native');
 type LiveKitClient = typeof import('livekit-client');
@@ -30,18 +31,15 @@ export function loadListenerLiveKit(): { rn: LiveKitRN; client: LiveKitClient } 
 
 // CallKit / Telecom trzyma teraz sesję audio (trwa rozmowa).
 export function callOwnsAudio(): boolean {
-  try {
-    const s = callkit()?.getAudioSession?.() as { isActive?: boolean } | undefined;
-    return !!s?.isActive;
-  } catch {
-    return false;
-  }
+  return callOwnsAudioSession();
 }
 
 let held = false; // nasza aktywacja sesji (LiveKit liczy aktywacje — trzeba je bilansować)
 
 export async function beginListeningAudio(): Promise<void> {
   const { rn } = loadLiveKit();
+  // Dźwięki UI i odtwarzacze expo-audio nie przestawiają w tym czasie sesji (src/lib/audioMode.ts).
+  setExternalAudioOwner(true);
   const AS = rn.AudioSession;
   if (Platform.OS === 'ios') {
     // Zaległa aktywacja (poprzednie słuchanie przerwała rozmowa) — najpierw wyrównaj licznik.
@@ -69,6 +67,7 @@ export async function beginListeningAudio(): Promise<void> {
 
 // takenByCall — przerwała nas rozmowa: na iOS nie ruszamy sesji, jeśli CallKit już ją przejął.
 export async function endListeningAudio({ takenByCall = false }: { takenByCall?: boolean } = {}): Promise<void> {
+  setExternalAudioOwner(false);
   let rn: LiveKitRN;
   try {
     rn = loadLiveKit().rn;

@@ -1,8 +1,11 @@
 import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
+import { prepareUiSound } from './audioMode';
 
 // Dźwięk wysłania: miękki „szum wysłania” (filtrowany szum w górę, ~0,16 s; wybrany przez właściciela) + lekka wibracja.
-// Na iPhonie respektuje przełącznik wyciszenia (playsInSilentMode domyślnie false).
+// Na iPhonie respektuje przełącznik wyciszenia: tuż przed zagraniem tryb UI (ambient) —
+// src/lib/audioMode.ts (dawniej głosówka/nagrywanie zostawiały „playback” na stałe i dźwięki
+// grały mimo wyciszenia). Gdy gra głos, trwa rozmowa albo tłumaczenie — bez dźwięku UI.
 // Błędy odtwarzania ignorujemy — dźwięk to dodatek, nie może psuć wysyłki.
 let sendSound: AudioPlayer | null = null;
 
@@ -18,8 +21,9 @@ const makePlayer = (asset: number, volume: number): AudioPlayer | null => {
 };
 
 // Od początku — ten sam dźwięk może grać kilka razy pod rząd.
-const replay = (p: AudioPlayer | null) => {
+const replay = async (p: AudioPlayer | null) => {
   if (!p) return;
+  if (!(await prepareUiSound().catch(() => false))) return;
   p.seekTo(0)
     .catch(() => undefined)
     .finally(() => p.play());
@@ -33,7 +37,7 @@ const loadSendSound = () => {
 export const playSendSound = async (): Promise<void> => {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
   try {
-    replay(loadSendSound());
+    replay(loadSendSound()).catch(() => undefined);
   } catch {
     // brak dźwięku — bez znaczenia dla wysyłki
   }
@@ -62,7 +66,7 @@ export const playReceiveSound = async (): Promise<void> => {
   if (now - lastReceiveAt < 1500) return;
   lastReceiveAt = now;
   try {
-    replay(loadReceiveSound());
+    replay(loadReceiveSound()).catch(() => undefined);
   } catch {
     // bez dźwięku
   }

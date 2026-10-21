@@ -6,7 +6,6 @@ import {
   Alert,
   Modal,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -46,6 +45,7 @@ import { useT } from '../../../src/i18n';
 import { friendlyError, showError } from '../../../src/lib/errors';
 import { toast } from '../../../src/lib/toast';
 import { ReportModal } from '../../../src/features/messenger/components/ReportModal';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 // Krótki cytat intencji do potwierdzeń.
 const excerpt = (text: string | null | undefined, max = 60) => {
@@ -332,7 +332,7 @@ export default function PrayersScreen() {
   const [answeredFor, setAnsweredFor] = useState<PrayerRequest | null>(null);
   const [testimony, setTestimony] = useState('');
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = usePrayerRequests();
+  const { data, isLoading, isError, error, refetch } = usePrayerRequests();
   const markAnswered = useMarkAnswered();
   const del = useDeletePrayer();
   const report = useReportPrayer();
@@ -576,7 +576,7 @@ export default function PrayersScreen() {
               padding: 32,
             }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -611,7 +611,7 @@ export default function PrayersScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {list.map((p: PrayerRequest) => (

@@ -143,6 +143,8 @@ const MODULES = [
   // capability module:komunikator z eksportu modułu; worker co minutę woła runForTenant.
   'chat-scheduled',
   'chat-reminders',
+  // Plakietka ikony aplikacji mobilnej (liczba rozmów z nieprzeczytanymi) — tylko własne wiersze.
+  'chat-badge',
 ];
 
 export async function registerFunctions(app) {

@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
-  RefreshControl,
   ScrollView,
   SectionList,
   StatusBar,
@@ -77,6 +76,7 @@ import { MuteSheet } from "../../../../src/features/messenger/components/MuteShe
 import { useAuthSession } from "../../../../src/lib/auth";
 import { usePresence, type PresenceStatus } from "../../../../src/lib/presence";
 import { PresenceDot } from "../../../../src/features/messenger/components/PresenceDot";
+import { PullToRefresh } from "../../../../src/components/ui/PullToRefresh";
 
 // Kafelek ikony rozmowy (grupa, kanał) — neutralny papier ze słodem, jak web w motywie Avenit.
 const Tile = ({ children, round }: { children: React.ReactNode; round?: boolean }) => (
@@ -175,7 +175,7 @@ export default function MessengerScreen() {
   const [meetingOpen, setMeetingOpen] = useState(false);
   const callsEnabled = useCallsEnabled();
   const qc = useQueryClient();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useConversations(myEmail);
+  const { data, isLoading, isError, error, refetch } = useConversations(myEmail);
   const toggleStar = useToggleStarred(myEmail);
   const toggleArchive = useToggleArchived(myEmail);
   const togglePin = useTogglePinConversation(myEmail);
@@ -417,7 +417,7 @@ export default function MessengerScreen() {
             sections={sections}
             keyExtractor={(item) => item.id}
             stickySectionHeadersEnabled={false}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
+            refreshControl={<PullToRefresh onRefresh={refetch} tintColor="#2A2312" />}
             ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: "#ECE8DE" }} />}
             renderSectionHeader={({ section: { title } }) => (
               <Text

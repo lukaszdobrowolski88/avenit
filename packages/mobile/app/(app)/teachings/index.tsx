@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Linking,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -17,6 +16,7 @@ import { useTeachings, type ProgramTeaching } from '../../../src/features/teachi
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { B, InfoBlock, Monogram } from '../../../src/components/ui/brand';
 import { friendlyError } from '../../../src/lib/errors';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
   <Pressable
@@ -186,7 +186,7 @@ const TeachingCard = ({ teaching, latest }: { teaching: ProgramTeaching; latest?
 
 export default function TeachingsScreen() {
   const { selectedCampusId, withCampusFilter } = useCampusQuery();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useTeachings({
+  const { data, isLoading, isError, error, refetch } = useTeachings({
     selectedCampusId,
     withCampusFilter,
   });
@@ -284,7 +284,7 @@ export default function TeachingsScreen() {
               padding: 32,
             }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -317,7 +317,7 @@ export default function TeachingsScreen() {
           <ScrollView
             contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -355,7 +355,7 @@ export default function TeachingsScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {list.map((t: ProgramTeaching, i: number) => (

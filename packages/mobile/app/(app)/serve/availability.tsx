@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StatusBar, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import { CalendarOff, Plus, Trash2 } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B } from '../../../src/components/ui/brand';
@@ -9,6 +9,7 @@ import { daysLabel, rangeLabel, todayIso } from '../../../src/features/serve/for
 import { friendlyError } from '../../../src/lib/errors';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { toast } from '../../../src/lib/toast';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 // „Moje nieobecności” — jedna funkcja zamiast dwóch (dawne „Moje nieobecności” przy
 // programach + „Moja dostępność”). Dane: volunteer_blockouts przez fn my-blockouts; lider
@@ -18,7 +19,7 @@ import { toast } from '../../../src/lib/toast';
 const F = { medium: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' } as const;
 
 export default function AbsencesScreen() {
-  const { data, isLoading, isError, error, refetch, isRefetching } = useMyBlockouts();
+  const { data, isLoading, isError, error, refetch } = useMyBlockouts();
   const del = useDeleteBlockout();
   const [onlyUpcoming, setOnlyUpcoming] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -84,7 +85,7 @@ export default function AbsencesScreen() {
         ) : (
           <ScrollView
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130, gap: 10 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={B.ink} />}
+            refreshControl={<PullToRefresh onRefresh={refetch} tintColor={B.ink} />}
           >
             {!memberResolved ? (
               <View style={{ padding: 16, borderRadius: 20, backgroundColor: B.kurkumaSoft }}>

@@ -1,17 +1,48 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { createAudioPlayer, setAudioModeAsync, type AudioPlayer as Player, type AudioStatus } from "expo-audio";
+import { Platform, Pressable, Text, View } from "react-native";
+import { createAudioPlayer, type AudioPlayer as Player, type AudioStatus } from "expo-audio";
+import { File as FsFile, Paths } from "expo-file-system";
 import { Mic, Pause, Play } from "lucide-react-native";
-import { resolveAttachmentUrl } from "../signedUrl";
+import { openAttachment, resolveAttachmentUrl } from "../signedUrl";
+import { voiceCacheName, voiceNeedsBrowserOnIos } from "../logic";
+import { acquireAudio } from "../../../lib/audioMode";
 import { showError } from "../../../lib/errors";
 
 interface Props {
   uri: string;
+  /** Typ pliku z załącznika (np. audio/mp4, audio/webm) — WebM na iOS otwieramy w Safari. */
+  mime?: string | null;
   /** Długość w ms (jeśli znana z metadanych — u nas: zapisana w MessageAttachment.size). */
   durationHintMs?: number;
   /** Wariant kolorystyczny: jasny (na różowym bąbelku, "mine") albo ciemny (na szarym, "theirs"). */
   variant?: "light" | "dark";
 }
+
+// Nagranie do odtworzenia: plik w pamięci podręcznej telefonu (pobrany raz przez podpisany link).
+// AVPlayer nie gra pliku z naszego serwera strumieniowo (brak obsługi Range i typu audio w
+// starszym serwerze) — plik lokalny gra zawsze. Gdy pobranie się nie uda — adres z sieci.
+const dropCachedVoice = (uri: string) => {
+  try {
+    const file = new FsFile(Paths.cache, voiceCacheName(uri));
+    if (file.exists) file.delete();
+  } catch {
+    // nic do sprzątania
+  }
+};
+
+const localVoiceSource = async (uri: string): Promise<string> => {
+  const remote = await resolveAttachmentUrl(uri);
+  const target = remote || uri;
+  try {
+    const file = new FsFile(Paths.cache, voiceCacheName(uri));
+    if (file.exists && (file.size ?? 0) > 0) return file.uri;
+    const saved = await FsFile.downloadFileAsync(target, file, { idempotent: true });
+    return saved.uri;
+  } catch (e) {
+    if (__DEV__) console.warn("[voice] pobranie nagrania:", (e as Error)?.message);
+    return target;
+  }
+};
 
 const formatTime = (ms: number) => {
   const total = Math.max(0, Math.round(ms / 1000));
@@ -36,13 +67,24 @@ const fakeWaveform = (uri: string): number[] => {
   return out;
 };
 
-export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) => {
+export const AudioPlayer = ({ uri, mime, durationHintMs, variant = "dark" }: Props) => {
   const [sound, setSound] = useState<Player | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(durationHintMs ?? 0);
   const [loading, setLoading] = useState(false);
   const wave = useRef(fakeWaveform(uri)).current;
+  // Tryb „głos” (słychać mimo wyciszenia) tylko na czas grania — potem dźwięki UI znów milczą
+  // przy przełączniku wyciszenia (src/lib/audioMode.ts).
+  const releaseRef = useRef<null | (() => Promise<void>)>(null);
+  const releaseMode = () => {
+    const r = releaseRef.current;
+    releaseRef.current = null;
+    r?.().catch(() => undefined);
+  };
+  const holdMode = async () => {
+    if (!releaseRef.current) releaseRef.current = await acquireAudio("playback");
+  };
 
   const colors =
     variant === "light"
@@ -65,8 +107,24 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
       sound?.remove();
     };
   }, [sound]);
+  // Odmontowanie (wyjście z rozmowy w trakcie) — oddaj tryb dźwięku.
+  useEffect(() => () => releaseMode(), []);
 
   const onStatus = (p: Player) => (st: AudioStatus) => {
+    const failed = st.playbackState === "failed" || !!(st as AudioStatus & { error?: string | null }).error;
+    if (failed) {
+      setIsPlaying(false);
+      p.pause();
+      releaseMode();
+      setSound(null); // następne stuknięcie spróbuje od nowa
+      dropCachedVoice(uri); // uszkodzony plik w pamięci (np. przerwane pobieranie) — pobierz ponownie
+      showError(
+        "Nie udało się odtworzyć",
+        null,
+        "Nie udało się odtworzyć wiadomości głosowej. Spróbuj ponownie za chwilę.",
+      );
+      return;
+    }
     if (!st.isLoaded) return;
     setPosition(Math.round((st.currentTime ?? 0) * 1000));
     if (st.duration) setDuration((d) => d || Math.round(st.duration * 1000));
@@ -75,6 +133,7 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
       setPosition(0);
       p.pause();
       p.seekTo(0).catch(() => undefined);
+      releaseMode();
     } else {
       setIsPlaying(st.playing);
     }
@@ -82,11 +141,18 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
 
   const toggle = async () => {
     if (loading) return;
+    // Nagranie z przeglądarki (WebM/Ogg) — iOS nie ma do niego dekodera w odtwarzaczu; Safari ma.
+    if (Platform.OS === "ios" && voiceNeedsBrowserOnIos(mime, uri)) {
+      await openAttachment(uri);
+      return;
+    }
     if (sound) {
       if (sound.playing) {
         sound.pause();
         setIsPlaying(false);
+        releaseMode();
       } else {
+        await holdMode().catch(() => undefined);
         sound.play();
         setIsPlaying(true);
       }
@@ -94,15 +160,16 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
     }
     setLoading(true);
     try {
-      await setAudioModeAsync({ playsInSilentMode: true });
-      // K1: głosówka z magazynu czatu — podpisany link w chwili odtworzenia (zawsze świeży).
-      const source = await resolveAttachmentUrl(uri);
-      const p = createAudioPlayer({ uri: source || uri }, { updateInterval: 150 });
+      // K1: głosówka z magazynu czatu — podpisany link w chwili pobrania, potem plik lokalny.
+      const source = await localVoiceSource(uri);
+      await holdMode();
+      const p = createAudioPlayer({ uri: source }, { updateInterval: 150 });
       p.addListener("playbackStatusUpdate", onStatus(p));
       p.play();
       setSound(p);
       setIsPlaying(true);
     } catch (e) {
+      releaseMode();
       showError("Nie udało się odtworzyć", e, "Nie udało się odtworzyć wiadomości głosowej. Spróbuj ponownie.");
     } finally {
       setLoading(false);

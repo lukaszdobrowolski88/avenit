@@ -1,7 +1,6 @@
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -14,9 +13,10 @@ import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { friendlyError } from '../../../src/lib/errors';
 import { usePlannedSongs, type PlannedProgram, type PlannedSong } from '../../../src/features/setlist/api';
 import { usePermissions } from '../../../src/lib/permissions';
+import { PullToRefresh } from "../../../src/components/ui/PullToRefresh";
 
 export default function SetlistScreen() {
-  const { data, isLoading, isError, error, refetch, isRefetching } = usePlannedSongs();
+  const { data, isLoading, isError, error, refetch } = usePlannedSongs();
   // Kto ma bazę pieśni, przechodzi z planu do tekstu/akordów/materiałów.
   const canOpenSong = usePermissions().can('res:songs:read');
   const programs = (data ?? []).filter((p: PlannedProgram) => p.songs.length > 0);
@@ -40,7 +40,7 @@ export default function SetlistScreen() {
         ) : programs.length === 0 ? (
           <ScrollView
             contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
+            refreshControl={<PullToRefresh onRefresh={refetch} tintColor="#2A2312" />}
           >
             <View
               style={{
@@ -65,7 +65,7 @@ export default function SetlistScreen() {
         ) : (
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
+            refreshControl={<PullToRefresh onRefresh={refetch} tintColor="#2A2312" />}
           >
             {programs.map((p: PlannedProgram) => (
               <View

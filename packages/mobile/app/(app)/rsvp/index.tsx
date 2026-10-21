@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -29,6 +28,7 @@ import {
 } from '../../../src/features/rsvp/api';
 import { friendlyError, showError } from '../../../src/lib/errors';
 import { toast } from '../../../src/lib/toast';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 // Stonowane statusy marki (jak brand.tsx: ok/danger) — bez jaskrawej zieleni i czerwieni.
 const OK = { color: '#1E6B34', bg: '#E7F3EA' };
@@ -272,7 +272,7 @@ const InvitationCard = ({
 export default function RsvpScreen() {
   const { user } = useAuthSession();
   const queryClient = useQueryClient();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useMyInvitations(
+  const { data, isLoading, isError, error, refetch } = useMyInvitations(
     user?.email ?? null,
   );
 
@@ -318,7 +318,7 @@ export default function RsvpScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {summary.invitations.length === 0 ? (

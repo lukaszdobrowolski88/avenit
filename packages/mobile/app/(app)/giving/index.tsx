@@ -1,7 +1,6 @@
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -26,6 +25,7 @@ import {
   type GivingCampaign,
   type GivingFund,
 } from '../../../src/features/giving/api';
+import { PullToRefresh } from "../../../src/components/ui/PullToRefresh";
 
 const DonationCard = ({
   donation,
@@ -135,7 +135,7 @@ const DonationCard = ({
 export default function GivingScreen() {
   const router = useRouter();
   const { user } = useAuthSession();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useMyGiving(
+  const { data, isLoading, isError, error, refetch } = useMyGiving(
     user?.email ?? null,
   );
   const campaigns = useGivingCampaigns();
@@ -188,7 +188,7 @@ export default function GivingScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {/* Karta podsumowania roku */}

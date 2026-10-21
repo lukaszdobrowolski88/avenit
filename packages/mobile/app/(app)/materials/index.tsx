@@ -6,7 +6,6 @@ import {
   Linking,
   Platform,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -51,6 +50,7 @@ import { IconWell, ListCard, ListRow, SectionLabel, Tile } from '../../../src/co
 import { goBack } from '../../../src/lib/navigation';
 import { friendlyError, showError } from '../../../src/lib/errors';
 import { toast } from '../../../src/lib/toast';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 const downloadsLabel = (n: number) => {
   if (n === 1) return '1 pobranie';
@@ -172,12 +172,8 @@ export default function MaterialsScreen() {
 
   const isLoading = folders.isLoading || files.isLoading;
   const isError = folders.isError || files.isError;
-  const isRefetching = folders.isRefetching || files.isRefetching;
-
-  const onRefresh = () => {
-    folders.refetch();
-    files.refetch();
-  };
+  // Promise — wskaźnik pociągnięcia znika, gdy oba się wczytają.
+  const onRefresh = () => Promise.all([folders.refetch(), files.refetch()]);
 
   const handleOpenFile = async (file: FileRow) => {
     try {
@@ -394,8 +390,7 @@ export default function MaterialsScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl
-                refreshing={isRefetching}
+              <PullToRefresh
                 onRefresh={onRefresh}
                 tintColor="#2A2312"
               />

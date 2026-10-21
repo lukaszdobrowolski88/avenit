@@ -553,3 +553,52 @@ export function formatListTime(value: string | null | undefined, now: Date = new
   if (diffDays < 7) return WEEKDAYS[d.getDay()];
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
+
+// ── Głosówki: plik w pamięci telefonu ─────────────────────────────────────────
+// AVPlayer (iOS) gra plik z sieci tylko, gdy serwer obsługuje zakresy (Range → 206) i podaje
+// typ audio. Serwer plików oddawał całość (200, bez Content-Length, application/octet-stream
+// dla .m4a) — głosówki nie dało się odsłuchać. Dlatego najpierw pobieramy nagranie do pamięci
+// podręcznej i gramy plik lokalny (rozszerzenie decyduje o formacie).
+const VOICE_EXTS = ["m4a", "mp4", "aac", "3gp", "caf", "mp3", "wav", "webm", "ogg", "opus"];
+
+/** Rozszerzenie nagrania z adresu / nazwy (bez zapytania); nieznane — m4a. */
+export function voiceFileExt(url: string | null | undefined): string {
+  const clean = String(url ?? "").replace(/[?#].*$/, "");
+  const m = clean.match(/\.([a-z0-9]{2,5})$/i);
+  const ext = m ? m[1].toLowerCase() : "";
+  return VOICE_EXTS.includes(ext) ? ext : "m4a";
+}
+
+/** Stała nazwa pliku w pamięci podręcznej dla danego nagrania (ta sama głosówka = ten sam plik). */
+export function voiceCacheName(url: string | null | undefined): string {
+  const key = attachmentStoragePath(url) ?? String(url ?? "").replace(/[?#].*$/, "");
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return `voice-${(h >>> 0).toString(36)}-${key.length.toString(36)}.${voiceFileExt(key)}`;
+}
+
+/**
+ * Czy natywny odtwarzacz iOS NIE zagra tego nagrania (WebM/Ogg — nagrania z Chrome/Firefox
+ * w webie). Wtedy otwieramy plik w Safari, która WebM/Opus odtwarza.
+ */
+export function voiceNeedsBrowserOnIos(type: string | null | undefined, url: string | null | undefined): boolean {
+  const t = String(type ?? "").toLowerCase();
+  if (t.includes("webm") || t.includes("ogg")) return true;
+  const ext = voiceFileExt(url);
+  return ext === "webm" || ext === "ogg" || ext === "opus";
+}
+
+/**
+ * Plakietka ikony aplikacji: liczba rozmów z nieprzeczytanymi wiadomościami (bez archiwum) —
+ * ta sama reguła co serwer (packages/api/src/dataapi/komunikatorBadge.js) i filtr „Nieprzeczytane”.
+ */
+export function unreadConversationsBadge(
+  list: readonly { archived?: boolean | null; unread_count?: number | null }[] | null | undefined,
+): number {
+  let n = 0;
+  for (const c of list ?? []) if (c && !c.archived && (c.unread_count ?? 0) > 0) n += 1;
+  return n;
+}
