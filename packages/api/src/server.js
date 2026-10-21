@@ -93,6 +93,9 @@ export async function buildServer() {
   // weryfikacji OAuth Google nie wykonuje JS, więc SPA jest dla niego pusta.
   const { default: legalHtmlRoutes } = await import('./public/legal-html.js');
   await app.register(legalHtmlRoutes);
+  // Universal Links / App Links (/.well-known/…): kod QR tłumaczenia otwiera aplikację mobilną.
+  const { default: appLinksRoutes } = await import('./public/app-links.js');
+  await app.register(appLinksRoutes);
   // Analityka first-party: ingestia zdarzeń z landingu i aplikacji (POST /api/track).
   const { default: analyticsRoutes } = await import('./analytics/routes.js');
   await app.register(analyticsRoutes);

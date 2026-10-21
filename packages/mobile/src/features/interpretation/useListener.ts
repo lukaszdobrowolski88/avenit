@@ -1,8 +1,9 @@
 // Słuchacz tłumaczenia na żywo w aplikacji — stan i połączenie (odpowiednik webowego
 // ListenerPage.jsx). Źródła danych:
 //   • zalogowany (ekran wydarzenia, link /tlumaczenie/sluchaj/<id>): interp-session-get + interp-member-listen;
-//   • publiczny link/QR /tlumaczenie/<token> (web tego kościoła): interp-public-info + interp-listen
-//     (tenant idzie nagłówkiem X-Tenant z shimu supabase — jak każde wywołanie funkcji).
+//   • publiczny link/QR /tlumaczenie/<token>: interp-public-info + interp-listen — kościół z linku
+//     (Universal/App Link https://<kościół>.avenit.pl/…), także bez logowania albo z kontem w innym
+//     kościele (shim: opcja `tenant` → X-Tenant linku, bez tokenu sesji); link bez hosta — kościół sesji.
 // Wybór języka → „Słuchaj” → ukryty słuchacz pokoju LiveKit kanału (tylko odbiór; dźwięk zdalnej
 // ścieżki gra sam po subskrypcji). Kanał jeszcze nie nadaje (409) — odpytujemy co 10 s i łączymy
 // sami. Zerwane połączenie / powrót sieci / powrót apki na wierzch — łączymy ponownie.
@@ -37,14 +38,16 @@ export interface ListenerSource {
   key: string;
   isPublic: boolean;
   eventId: string | null;
+  // Kościół z linku (null = kościół sesji).
+  tenant: string | null;
   info: () => Promise<ListenerInfo>;
   listen: (channelId: string) => Promise<ListenResponse>;
 }
 
 type FnError = Error & { status?: number; code?: string; context?: { error?: string; code?: string } | null };
 
-async function fn<T>(name: string, body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(name, { body, silent: true } as never);
+async function fn<T>(name: string, body: Record<string, unknown>, tenant: string | null = null): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body, silent: true, ...(tenant ? { tenant } : {}) } as never);
   if (error) {
     const e = error as { message?: string; status?: number; context?: { error?: string; code?: string } | null };
     throw Object.assign(new Error(e.context?.error || e.message || 'Błąd'), {
@@ -63,6 +66,7 @@ export function memberSource(eventId: string): ListenerSource {
     key: `ev:${eventId}`,
     isPublic: false,
     eventId,
+    tenant: null,
     info: async () => {
       const info = infoFromSession(await fetchSession(eventId));
       if (!info) throw Object.assign(new Error('not found'), { status: 404, code: 'INTERP_NOT_FOUND' });
@@ -72,13 +76,14 @@ export function memberSource(eventId: string): ListenerSource {
   };
 }
 
-export function tokenSource(token: string): ListenerSource {
+export function tokenSource(token: string, tenant: string | null = null): ListenerSource {
   return {
     key: token,
     isPublic: true,
     eventId: null,
-    info: () => fn<ListenerInfo>('interp-public-info', { token }),
-    listen: (channelId) => fn<ListenResponse>('interp-listen', { token, channel_id: channelId }),
+    tenant,
+    info: () => fn<ListenerInfo>('interp-public-info', { token }, tenant),
+    listen: (channelId) => fn<ListenResponse>('interp-listen', { token, channel_id: channelId }, tenant),
   };
 }
 

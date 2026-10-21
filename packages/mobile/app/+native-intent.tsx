@@ -1,16 +1,17 @@
-import { interpretationTargetFromPath } from '../src/features/interpretation/logic';
+import { appDomainFromApiUrl, appLinkFromUrl, appRouteForLink } from '../src/features/interpretation/logic';
 
-// Linki systemowe (avenit://…) przed dopasowaniem trasy. Przepisujemy WYŁĄCZNIE ścieżki weba
-// tłumaczenia na żywo (avenit://tlumaczenie/<token>, avenit://tlumaczenie/sluchaj/<id>) na ekran
-// słuchacza; każdy inny adres wraca bez zmian (dotychczasowe zachowanie).
+const APP_DOMAIN = appDomainFromApiUrl(process.env.EXPO_PUBLIC_API_URL);
+
+// Linki systemowe przed dopasowaniem trasy. Przepisujemy WYŁĄCZNIE linki tłumaczenia na żywo:
+//   • Universal Link / App Link https://<kościół>.avenit.pl/tlumaczenie/<token> (kod QR, plakat)
+//     i …/tlumaczenie/sluchaj/<id> — host = kościół z linku;
+//   • avenit://tlumaczenie/<token>[?tenant=<kościół>], avenit://tlumaczenie/sluchaj/<id>.
+// Cel to publiczne ekrany /listen/… (poza (app), działają bez logowania); konsola tłumacza
+// i „Oryginał” → /listen/web (otwiera przeglądarkę). Każdy inny adres wraca bez zmian.
 export function redirectSystemPath({ path }: { path: string; initial: boolean }): string | null {
   try {
-    const bare = String(path ?? '').replace(/^(?:avenit|schtomy):\/\//i, '/');
-    if (!/^\/*tlumaczenie\//i.test(bare)) return path;
-    const t = interpretationTargetFromPath(bare);
-    if (t?.kind === 'event') return `/interpretation/${encodeURIComponent(t.eventId)}`;
-    if (t?.kind === 'token') return `/interpretation/link/${t.token}`;
-    return path;
+    const link = appLinkFromUrl(path, APP_DOMAIN);
+    return link ? appRouteForLink(link) : path;
   } catch {
     return path;
   }

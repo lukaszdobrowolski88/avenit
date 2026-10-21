@@ -19,6 +19,30 @@ export function isPublicListenerPath(pathname) {
   return !!m;
 }
 
+// ── „Otwórz w aplikacji Avenit” (publiczna strona słuchacza) ─────────────────
+// Kod QR (https://<kościół>.avenit.pl/tlumaczenie/<token>) sam otwiera aplikację przez Universal
+// Links / App Links, gdy jest zainstalowana. Kto i tak trafił na stronę (np. wybrał przeglądarkę),
+// dostaje: iOS — baner Safari (meta apple-itunes-app; app-argument = ten adres), Android — link
+// intent:// do aplikacji (jawnie pakiet, z Google Play jako zapasem, gdy aplikacji nie ma).
+export const APP_STORE_ID = '6820247671';
+export const ANDROID_PACKAGE = 'pl.avenit.app';
+export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
+
+export function appOpenOffer({ userAgent = '', maxTouchPoints = 0, host = '', pathname = '' } = {}) {
+  if (!isPublicListenerPath(pathname) || !host) return null;
+  const path = String(pathname).replace(/\/+$/, '');
+  const ua = String(userAgent);
+  if (/Android/i.test(ua)) {
+    const href = `intent://${host}${path}#Intent;scheme=https;package=${ANDROID_PACKAGE};`
+      + `S.browser_fallback_url=${encodeURIComponent(PLAY_STORE_URL)};end`;
+    return { platform: 'android', href };
+  }
+  if (/iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && maxTouchPoints > 1)) {
+    return { platform: 'ios', meta: `app-id=${APP_STORE_ID}, app-argument=https://${host}${path}` };
+  }
+  return null;
+}
+
 // Ponowienie połączenia: 1,5 s, 3 s, 6 s, 12 s, potem co 15 s.
 export function retryDelay(attempt) {
   const n = Math.max(0, Number(attempt) || 0);

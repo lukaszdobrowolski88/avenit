@@ -135,6 +135,11 @@ html.dark .ip-msg--error { background: rgba(220, 80, 60, 0.16); color: #F7B9AE; 
 .ip-hint { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ip-muted); display: flex; gap: 6px; align-items: flex-start; }
 .ip-hint svg { flex-shrink: 0; margin-top: 3px; }
 .ip-foot { margin: 0; font-size: 12px; color: var(--ip-muted); text-align: center; }
+.ip-app-link {
+  display: inline-flex; align-self: center; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px;
+  border-radius: 999px; font-size: 14px; font-weight: 600; text-decoration: none;
+  background: var(--ip-chip); color: var(--ip-ink);
+}
 
 /* ── Konsola i nadawanie (w aplikacji) ─────────────────────────────────── */
 .ip-onair {

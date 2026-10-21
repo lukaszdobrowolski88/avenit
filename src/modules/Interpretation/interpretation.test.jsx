@@ -55,6 +55,19 @@ describe('interpretationLogic', () => {
     expect(L.originalPath('a b')).toBe('/tlumaczenie/oryginal/a%20b');
   });
 
+  it('„Otwórz w aplikacji”: Android — intent z pakietem i Google Play, iOS — baner Safari, reszta — nic', () => {
+    const host = 'schwro.avenit.pl';
+    const android = L.appOpenOffer({ userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 9)', host, pathname: `/tlumaczenie/${TOKEN}/` });
+    expect(android.platform).toBe('android');
+    expect(android.href).toBe(`intent://${host}/tlumaczenie/${TOKEN}#Intent;scheme=https;package=pl.avenit.app;S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=pl.avenit.app')};end`);
+    const ios = L.appOpenOffer({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X)', host, pathname: `/tlumaczenie/${TOKEN}` });
+    expect(ios).toEqual({ platform: 'ios', meta: `app-id=6820247671, app-argument=https://${host}/tlumaczenie/${TOKEN}` });
+    expect(L.appOpenOffer({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', maxTouchPoints: 5, host, pathname: `/tlumaczenie/${TOKEN}` }).platform).toBe('ios');
+    expect(L.appOpenOffer({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', host, pathname: `/tlumaczenie/${TOKEN}` })).toBeNull();
+    expect(L.appOpenOffer({ userAgent: 'Android', host, pathname: '/tlumaczenie/konsola/12' })).toBeNull();
+    expect(L.appOpenOffer({ userAgent: 'Android', host: '', pathname: `/tlumaczenie/${TOKEN}` })).toBeNull();
+  });
+
   it('kody błędów → stany, ponawianie, język z przeglądarki, domyślny kanał', () => {
     expect(L.interpErrorState({ code: 'CHANNEL_NOT_LIVE' })).toBe('not_live');
     expect(L.interpErrorState({ context: { code: 'INTERP_ENDED' } })).toBe('ended');

@@ -30,6 +30,15 @@
 	@www host www.{$APP_DOMAIN}
 	redir @www https://{$APP_DOMAIN}{uri} permanent
 
+	# Universal Links (iOS) / App Links (Android): pliki weryfikacyjne z API na KAŻDYM hoście
+	# (avenit.pl dla hostów z gwiazdką, subdomeny kościołów, app./admin.). Musi być przed
+	# fallbackami SPA/landingu (try_files … /index.html połknąłby ścieżkę) — handle z nazwanym
+	# matcherem zachowuje kolejność z pliku, więc stoi pierwszy. Apple wymaga 200 bez przekierowań.
+	@applinks path /.well-known/apple-app-site-association /.well-known/assetlinks.json
+	handle @applinks {
+		reverse_proxy api:3001
+	}
+
 	# Panel administracyjny
 	@admin host admin.{$APP_DOMAIN}
 	handle @admin {

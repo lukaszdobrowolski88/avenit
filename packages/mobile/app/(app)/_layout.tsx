@@ -1,9 +1,11 @@
-import { Redirect, Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { Redirect, Stack, useRouter } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuthSession } from '../../src/lib/auth';
 import { FloatingTabBar } from '../../src/components/navigation/FloatingTabBar';
 import { TermsGate } from '../../src/components/TermsGate';
 import { CallEngineHost } from '../../src/features/calls/native/CallEngineHost';
+import { takePendingLink } from '../../src/lib/pending-link';
 
 // Nawigacja: pięć zakładek w (tabs), a wszystkie pozostałe ekrany na JEDNYM wspólnym stosie
 // nad nimi. Każde wejście dokłada ekran do tej samej historii, więc „wstecz” zawsze wraca
@@ -17,6 +19,18 @@ export const unstable_settings = {
 
 export default function AppLayout() {
   const { session, loading } = useAuthSession();
+  const router = useRouter();
+
+  // Link otwarty przed zalogowaniem (np. słuchanie tłumaczenia z konta) — po zalogowaniu raz go otwieramy.
+  useEffect(() => {
+    if (loading || !session) return undefined;
+    // Po zamontowaniu stosu (app) — nawigacja w tym samym cyklu potrafi się zgubić.
+    const t = setTimeout(() => {
+      const pending = takePendingLink();
+      if (pending) router.push(pending as never);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [loading, session, router]);
 
   if (loading) {
     return (

@@ -91,3 +91,38 @@ describe('wylogowanie w trakcie pierwszego odczytu', () => {
     expect((await client.auth.getSession()).data.session).toBeNull();
   });
 });
+
+// Funkcja publiczna w INNYM kościele niż sesja (link/QR tłumaczenia z innego kościoła): X-Tenant
+// z linku, bez tokenu sesji; ten sam kościół — zwykłe wywołanie z sesją.
+describe('functions.invoke z opcją tenant', () => {
+  function client() {
+    const st = storage();
+    const calls = [];
+    const fetchImpl = async (url, opts) => {
+      calls.push({ url, headers: opts?.headers || {}, credentials: opts?.credentials });
+      return json(200, { ok: true });
+    };
+    return { calls, client: createApiClient({ apiUrl: 'https://api.test', tenant: 'k', storage: st, fetchImpl }) };
+  }
+
+  it('inny kościół — X-Tenant z opcji, bez Authorization i ciasteczek', async () => {
+    const { calls, client: c } = client();
+    const r = await c.functions.invoke('interp-public-info', { body: { token: 't' }, silent: true, tenant: 'inny' });
+    expect(r.data).toEqual({ ok: true });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe('https://api.test/api/fn/interp-public-info');
+    expect(calls[0].headers['X-Tenant']).toBe('inny');
+    expect(calls[0].headers.Authorization).toBeUndefined();
+    expect(calls[0].credentials).toBe('omit');
+  });
+
+  it('ten sam kościół albo bez opcji — z sesją', async () => {
+    const { calls, client: c } = client();
+    await c.functions.invoke('interp-public-info', { body: {}, silent: true, tenant: 'k' });
+    await c.functions.invoke('interp-public-info', { body: {}, silent: true });
+    for (const call of calls) {
+      expect(call.headers['X-Tenant']).toBe('k');
+      expect(call.headers.Authorization).toBe('Bearer old');
+    }
+  });
+});

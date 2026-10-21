@@ -11,7 +11,7 @@ import { FONT as F } from '../../lib/fonts';
 import { goBack } from '../../lib/navigation';
 import { tenantWebBase } from '../../lib/supabase';
 import { openOnWeb } from '../modules/useModules';
-import { fatalMessage, phaseView, type ListenerChannel, type ListenerInfo } from './logic';
+import { appDomainFromApiUrl, browserOnlyUrl, fatalMessage, phaseView, tenantWebUrl, type ListenerChannel, type ListenerInfo } from './logic';
 import { memberSource, tokenSource, useInterpretationListener, type ListenerSource } from './useListener';
 
 // Ekran słuchacza tłumaczenia na żywo: lista języków (duże przyciski z oznaczeniem „na żywo”),
@@ -121,8 +121,14 @@ function ListenerContent({ src, L }: { src: ListenerSource; L: ReturnType<typeof
 
   if (!L.available) {
     const openWeb = () => {
-      if (src.eventId) void openOnWeb(`/tlumaczenie/sluchaj/${encodeURIComponent(src.eventId)}`);
-      else Linking.openURL(`${tenantWebBase()}/tlumaczenie/${src.key}`).catch(() => undefined);
+      // /login?next=… — ścieżka spoza Universal/App Links (zalogowany web przechodzi od razu dalej).
+      if (src.eventId) void openOnWeb(browserOnlyUrl('', { kind: 'event', eventId: src.eventId }));
+      else {
+        // Adres „tylko przeglądarka” (ukośnik na końcu) — zwykły link tłumaczenia wróciłby
+        // Universal/App Linkiem z powrotem do aplikacji.
+        const base = tenantWebUrl(src.tenant, appDomainFromApiUrl(process.env.EXPO_PUBLIC_API_URL), tenantWebBase());
+        Linking.openURL(browserOnlyUrl(base, { kind: 'token', token: src.key })).catch(() => undefined);
+      }
     };
     return (
       <View style={{ paddingHorizontal: 16, gap: 12 }}>
@@ -267,9 +273,21 @@ function ListenerContent({ src, L }: { src: ListenerSource; L: ReturnType<typeof
   );
 }
 
-export function InterpretationListenerScreen({ eventId, token }: { eventId?: string | null; token?: string | null }) {
+export function InterpretationListenerScreen({
+  eventId,
+  token,
+  tenant = null,
+}: {
+  eventId?: string | null;
+  token?: string | null;
+  // Kościół z linku (Universal/App Link) — dla publicznego tokenu; null = kościół sesji.
+  tenant?: string | null;
+}) {
   const router = useRouter();
-  const src = useMemo(() => (token ? tokenSource(token) : eventId ? memberSource(eventId) : null), [eventId, token]);
+  const src = useMemo(
+    () => (token ? tokenSource(token, tenant) : eventId ? memberSource(eventId) : null),
+    [eventId, token, tenant],
+  );
   return (
     <ScreenContainer bottomInset={48}>
       {src ? (
