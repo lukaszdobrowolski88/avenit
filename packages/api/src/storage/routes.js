@@ -543,10 +543,54 @@ export default async function storageRoutes(app) {
         return reply.type('image/webp').send(fs.createReadStream(thumb));
       }
     }
-    return reply.sendFile
-      ? reply.sendFile(target) // jeśli zarejestrowano @fastify/static
-      : reply.type(mimeFor(target)).send(fs.createReadStream(target));
+    return sendFileWithRanges(req, reply, target);
   });
+}
+
+// Zakres bajtów z nagłówka Range (jeden przedział) → { start, end } | null (całość) | 'invalid' (416).
+// Obsługujemy „bytes=a-b”, „bytes=a-” i „bytes=-n” (ostatnie n bajtów); kilka przedziałów — całość.
+export function parseRange(header, size) {
+  if (!header) return null;
+  const m = /^bytes=(\d*)-(\d*)$/.exec(String(header).trim());
+  if (!m) return null;
+  const [, a, b] = m;
+  if (a === '' && b === '') return null;
+  let start;
+  let end;
+  if (a === '') {
+    const n = Number(b);
+    if (!n) return 'invalid';
+    start = Math.max(0, size - n);
+    end = size - 1;
+  } else {
+    start = Number(a);
+    end = b === '' ? size - 1 : Math.min(Number(b), size - 1);
+  }
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) return 'invalid';
+  return { start, end };
+}
+
+// Plik z dysku z typem, długością i zakresami (Range → 206). AVPlayer (iOS: głosówki w aplikacji,
+// audio/wideo w Safari) gra plik z sieci tylko, gdy serwer obsługuje zakresy — wcześniej szła
+// całość strumieniem (200, bez Content-Length, .m4a jako application/octet-stream) i nagrań
+// głosowych nie dało się odsłuchać na iPhonie.
+function sendFileWithRanges(req, reply, target) {
+  const size = fs.statSync(target).size;
+  reply.header('Accept-Ranges', 'bytes');
+  reply.type(mimeFor(target));
+  const range = parseRange(req.headers?.range, size);
+  if (range === 'invalid') {
+    reply.header('Content-Range', `bytes */${size}`);
+    return reply.code(416).send();
+  }
+  if (range) {
+    reply.code(206);
+    reply.header('Content-Range', `bytes ${range.start}-${range.end}/${size}`);
+    reply.header('Content-Length', String(range.end - range.start + 1));
+    return reply.send(fs.createReadStream(target, { start: range.start, end: range.end }));
+  }
+  reply.header('Content-Length', String(size));
+  return reply.send(fs.createReadStream(target));
 }
 
 export const STORAGE_CSP = "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox";
@@ -557,6 +601,11 @@ export function mimeFor(file) {
     '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif',
     '.webp': 'image/webp', '.svg': 'image/svg+xml', '.pdf': 'application/pdf',
     '.mp3': 'audio/mpeg', '.mp4': 'video/mp4', '.txt': 'text/plain', '.csv': 'text/csv',
+    // Nagrania głosowe i multimedia z telefonów / przeglądarek (głosówki: .m4a z iPhone'a,
+    // .mp4/.webm z webu, .3gp/.aac z Androida) — z typem audio odtwarzacze je grają.
+    '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.3gp': 'audio/3gpp', '.webm': 'audio/webm',
+    '.ogg': 'audio/ogg', '.opus': 'audio/ogg', '.wav': 'audio/wav', '.caf': 'audio/x-caf',
+    '.mov': 'video/quicktime', '.heic': 'image/heic',
     '.zip': 'application/zip', '.pro6': 'application/octet-stream', '.pro7': 'application/octet-stream',
   };
   return map[ext] || 'application/octet-stream';

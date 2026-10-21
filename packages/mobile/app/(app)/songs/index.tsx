@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -21,6 +20,7 @@ import { SongFormModal } from '../../../src/features/songs/components/SongFormMo
 import { TagsSheet } from '../../../src/features/songs/components/TagsSheet';
 import { useAuthSession } from '../../../src/lib/auth';
 import { usePermissions } from '../../../src/lib/permissions';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 export default function SongsScreen() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function SongsScreen() {
   const [programsVisible, setProgramsVisible] = useState(false);
   const [creating, setCreating] = useState(false);
   const [managingTags, setManagingTags] = useState(false);
-  const { data, isLoading, isError, error, refetch, isRefetching } = useSongLibrary();
+  const { data, isLoading, isError, error, refetch } = useSongLibrary();
   const allSongs = (data ?? []) as SongListItem[];
   const dict = useSongTagDictionary();
   // Do wyboru w formularzu: wspólny słownik tagów w bazie + tagi użyte na pieśniach.
@@ -186,7 +186,7 @@ export default function SongsScreen() {
             data={filtered}
             keyExtractor={(item) => String(item.id)}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
             ItemSeparatorComponent={() => (
               <View style={{ backgroundColor: B.card }}>

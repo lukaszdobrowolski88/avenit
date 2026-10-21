@@ -29,6 +29,7 @@ import {
 import { navigateFromDeepLink, openTask, taskFromNotificationData } from '../src/lib/deep-links';
 import { updatePresence } from '../src/lib/presence';
 import { initCallEngine } from '../src/features/calls/native/engine';
+import { clearAppBadge, syncAppBadge, watchConversationsBadge } from '../src/lib/badge';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -53,21 +54,41 @@ function RootEffects() {
   const responseSubRef = useRef<Notifications.EventSubscription | null>(null);
 
   // Rejestruj push token + presence przy każdym ustawieniu sesji.
+  // Plakietka ikony (liczba rozmów z nieprzeczytanymi): z serwera po zalogowaniu, potem za listą
+  // rozmów; wylogowanie — zero (src/lib/badge.ts).
   useEffect(() => {
+    let badgeEmail: string | null = null;
+    let unwatchBadge: (() => void) | null = null;
+    const watchBadge = (email: string) => {
+      if (badgeEmail === email) return;
+      unwatchBadge?.();
+      badgeEmail = email;
+      unwatchBadge = watchConversationsBadge(queryClient, email);
+      syncAppBadge(queryClient, email).catch(() => undefined);
+    };
     const register = (email?: string | null) => {
       if (!email) return;
       registerPushToken(email).catch((e) =>
         console.warn('[push] register failed:', (e as Error)?.message),
       );
       updatePresence(email, 'online').catch(() => undefined);
+      watchBadge(email);
     };
     supabase.auth.getSession().then(({ data }) => register(data.session?.user?.email));
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         register(session?.user?.email);
+      } else if (event === 'SIGNED_OUT') {
+        unwatchBadge?.();
+        unwatchBadge = null;
+        badgeEmail = null;
+        clearAppBadge().catch(() => undefined);
       }
     });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      sub.subscription.unsubscribe();
+      unwatchBadge?.();
+    };
   }, []);
 
   // AppState → presence: foreground=online, background=away.
@@ -90,6 +111,8 @@ function RootEffects() {
         // znamy tylko z powiadomień. Po powrocie odświeżamy rozmowy i otwarte wątki.
         queryClient.invalidateQueries({ queryKey: ['conversations'] });
         queryClient.invalidateQueries({ queryKey: ['messages'] });
+        // Plakietka: w tle mogły przyjść wiadomości albo rozmowy przeczytano na innym urządzeniu.
+        syncAppBadge(queryClient, email).catch(() => undefined);
       } else updatePresence(email, 'away').catch(() => undefined);
     };
     tick();

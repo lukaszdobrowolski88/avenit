@@ -9,7 +9,7 @@ import Fastify from 'fastify';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'storage-authz-'));
 process.env.STORAGE_DIR = dir;
-const { default: storageRoutes, STORAGE_CSP } = await import('../src/storage/routes.js');
+const { default: storageRoutes, STORAGE_CSP, parseRange, mimeFor } = await import('../src/storage/routes.js');
 const { presetGrantRows } = await import('@avenit/shared/src/permissions/presets.js');
 
 const USERS = {
@@ -150,6 +150,40 @@ test('serwowanie: SVG w piaskownicy CSP i nosniff, PDF bez CSP', async () => {
   const pdf = await app.inject({ method: 'GET', url: '/storage/public-assets/a.pdf', headers: host });
   assert.equal(pdf.headers['content-security-policy'], undefined);
   assert.equal(pdf.headers['x-content-type-options'], 'nosniff');
+});
+
+// Głosówki na iPhonie (AVPlayer): plik z sieci gra tylko z obsługą zakresów i typem audio.
+test('serwowanie: zakresy bajtów (206), długość i typ audio dla nagrań głosowych', async () => {
+  const body = 'ABCDEFGHIJ';
+  assert.equal((await upload('anna', 'public-assets', 'voice-1-3s.m4a', { body })).statusCode, 200);
+  const host = { 'x-test-user': '' };
+  const full = await app.inject({ method: 'GET', url: '/storage/public-assets/voice-1-3s.m4a', headers: host });
+  assert.equal(full.statusCode, 200);
+  assert.equal(full.headers['content-type'], 'audio/mp4');
+  assert.equal(full.headers['accept-ranges'], 'bytes');
+  assert.equal(full.headers['content-length'], '10');
+  assert.equal(full.body, body);
+  // AVPlayer pyta najpierw o 2 bajty.
+  const probe = await app.inject({ method: 'GET', url: '/storage/public-assets/voice-1-3s.m4a', headers: { ...host, range: 'bytes=0-1' } });
+  assert.equal(probe.statusCode, 206);
+  assert.equal(probe.headers['content-range'], 'bytes 0-1/10');
+  assert.equal(probe.headers['content-length'], '2');
+  assert.equal(probe.body, 'AB');
+  const tail = await app.inject({ method: 'GET', url: '/storage/public-assets/voice-1-3s.m4a', headers: { ...host, range: 'bytes=7-' } });
+  assert.equal(tail.statusCode, 206);
+  assert.equal(tail.body, 'HIJ');
+  const bad = await app.inject({ method: 'GET', url: '/storage/public-assets/voice-1-3s.m4a', headers: { ...host, range: 'bytes=50-60' } });
+  assert.equal(bad.statusCode, 416);
+  assert.equal(bad.headers['content-range'], 'bytes */10');
+
+  assert.deepEqual(parseRange('bytes=-3', 10), { start: 7, end: 9 });
+  assert.deepEqual(parseRange('bytes=2-100', 10), { start: 2, end: 9 });
+  assert.equal(parseRange('bytes=0-1,4-5', 10), null); // kilka przedziałów — całość
+  assert.equal(parseRange(undefined, 10), null);
+  assert.equal(parseRange('bytes=5-2', 10), 'invalid');
+  for (const [f, t] of [['a.m4a', 'audio/mp4'], ['a.webm', 'audio/webm'], ['a.3gp', 'audio/3gpp'], ['a.aac', 'audio/aac'], ['a.mp4', 'video/mp4']]) {
+    assert.equal(mimeFor(f), t);
+  }
 });
 
 // Runda 5: przestrzenie wrażliwe bucketu materials (Finanse, Członkowie…) — tylko podpisany link,

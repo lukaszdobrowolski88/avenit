@@ -1,7 +1,6 @@
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -21,6 +20,7 @@ import {
 } from '../../../src/features/home-groups/api';
 import { plural } from '../../../src/features/home-groups/utils';
 import { friendlyError } from '../../../src/lib/errors';
+import { PullToRefresh } from "../../../src/components/ui/PullToRefresh";
 
 const DAY_SHORT: Record<string, string> = {
   Poniedziałek: 'PN', Wtorek: 'WT', Środa: 'ŚR', Czwartek: 'CZ', Piątek: 'PT', Sobota: 'SO', Niedziela: 'ND',
@@ -68,7 +68,7 @@ const GroupRow = ({ group }: { group: HomeGroup }) => {
 export default function HomeGroupsListScreen() {
   const router = useRouter();
   const { selectedCampusId, withCampusFilter } = useCampusQuery();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useHomeGroups({
+  const { data, isLoading, isError, error, refetch } = useHomeGroups({
     selectedCampusId,
     withCampusFilter,
   });
@@ -142,7 +142,7 @@ export default function HomeGroupsListScreen() {
         ) : (
           <ScrollView
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
+            refreshControl={<PullToRefresh onRefresh={refetch} tintColor="#2A2312" />}
           >
             {(data ?? []).length > 0 ? (
               <>

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StatusBar, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StatusBar, View } from 'react-native';
 import { useAuthSession } from '../../../../src/lib/auth';
 import { usePermissions } from '../../../../src/lib/permissions';
 import { useDashboard, type UpcomingMinistryItem } from '../../../../src/features/dashboard/api';
@@ -32,6 +32,7 @@ import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import { friendlyError } from '../../../../src/lib/errors';
 import { CloudOff } from 'lucide-react-native';
 import { DEFAULT_LAYOUT, useDashboardLayout, type DashboardLayout, type SectionId } from '../../../../src/features/dashboard/layout';
+import { PullToRefresh } from '../../../../src/components/ui/PullToRefresh';
 
 // Tło strony pulpitu — białe karty odcinają się od niego bez ramek i cieni.
 const PAGE_BG = D.page;
@@ -55,7 +56,7 @@ export default function DashboardScreen() {
   const { user } = useAuthSession();
   const perms = usePermissions();
   const { selectedCampusId, withCampusFilter } = useCampusQuery();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useDashboard(user?.email ?? null, {
+  const { data, isLoading, isError, error, refetch } = useDashboard(user?.email ?? null, {
     selectedCampusId,
     withCampusFilter,
   });
@@ -69,15 +70,17 @@ export default function DashboardScreen() {
   // Układ pulpitu użytkownika (Konto → Pulpit); do wczytania — domyślny.
   const layout: DashboardLayout = useDashboardLayout(user?.email ?? null).data ?? DEFAULT_LAYOUT;
 
-  const refreshAll = () => {
-    refetch();
-    perms.refetch();
-    events.refetch();
-    birthdays.refetch();
-    giving.refetch();
-    attendance.refetch();
-    rsvp.refetch();
-  };
+  // Promise — wskaźnik pociągnięcia znika, gdy wszystko się wczyta.
+  const refreshAll = () =>
+    Promise.allSettled([
+      refetch(),
+      perms.refetch(),
+      events.refetch(),
+      birthdays.refetch(),
+      giving.refetch(),
+      attendance.refetch(),
+      rsvp.refetch(),
+    ]);
 
   if (isLoading) {
     return (
@@ -138,8 +141,7 @@ export default function DashboardScreen() {
         contentContainerStyle={{ paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
+          <PullToRefresh
             onRefresh={refreshAll}
             tintColor="#2A2312"
             progressViewOffset={40}

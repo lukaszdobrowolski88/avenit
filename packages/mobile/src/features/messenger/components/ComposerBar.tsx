@@ -489,6 +489,10 @@ export const ComposerBar = ({
             fontSize: 15,
             color: "#2A2312",
             fontFamily: "Manrope_400Regular",
+            // Puste pole = jedna linia. iOS (Fabric) nie zmniejsza rosnącego pola, gdy treść
+            // czyści program (po wysłaniu długiej wiadomości zostawało wysokie, puste pole);
+            // stała wysokość dla pustego pola, a od pierwszego znaku znów rośnie z treścią.
+            ...(text.length === 0 ? { height: 44 } : null),
           }}
           placeholder={
             editing ? "Edytuj…" : uploading ? "Wgrywanie…" : prayerMode ? "Treść prośby o modlitwę…" : "Napisz wiadomość…"

@@ -3,7 +3,6 @@ import {
   Alert,
   Linking,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -26,6 +25,7 @@ import {
   type SharedFile,
 } from '../../../src/features/materials/api';
 import { friendlyError, showError } from '../../../src/lib/errors';
+import { PullToRefresh } from "../../../src/components/ui/PullToRefresh";
 
 const ICON_BY_TYPE = {
   pdf: { Icon: FileText, tint: '#2A2312', bg: '#ECE8DE' },
@@ -37,7 +37,7 @@ const ICON_BY_TYPE = {
 } as const;
 
 export default function SharedMaterialsScreen() {
-  const { data, isLoading, isError, error, refetch, isRefetching } = useSharedMaterials();
+  const { data, isLoading, isError, error, refetch } = useSharedMaterials();
   const files = (data ?? []) as SharedFile[];
 
   const open = async (file: SharedFile) => {
@@ -79,7 +79,7 @@ export default function SharedMaterialsScreen() {
         ) : files.length === 0 ? (
           <ScrollView
             contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
+            refreshControl={<PullToRefresh onRefresh={refetch} tintColor="#2A2312" />}
           >
             <View
               style={{
@@ -106,7 +106,7 @@ export default function SharedMaterialsScreen() {
         ) : (
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
+            refreshControl={<PullToRefresh onRefresh={refetch} tintColor="#2A2312" />}
           >
             {files.map((f) => {
               const ic = ICON_BY_TYPE[fileIconType(f.mime_type)];

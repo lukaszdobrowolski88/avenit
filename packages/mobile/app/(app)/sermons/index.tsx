@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -17,6 +16,7 @@ import { useActiveSeriesNames, useSermons, type Sermon } from '../../../src/feat
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { B, Monogram } from '../../../src/components/ui/brand';
 import { friendlyError } from '../../../src/lib/errors';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 // Karta kazania jak post marki: musztardowa data, duży tytuł, werset, mówca, odtwarzanie w
 // kurkumie. Najnowsze kazanie — wariant ciemny (słód).
@@ -101,7 +101,7 @@ const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean
 export default function SermonsScreen() {
   const router = useRouter();
   const { selectedCampusId, withCampusFilter } = useCampusQuery();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useSermons({
+  const { data, isLoading, isError, error, refetch } = useSermons({
     selectedCampusId,
     withCampusFilter,
   });
@@ -207,7 +207,7 @@ export default function SermonsScreen() {
               padding: 32,
             }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -240,7 +240,7 @@ export default function SermonsScreen() {
           <ScrollView
             contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -278,7 +278,7 @@ export default function SermonsScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {list.map((s: Sermon, i: number) => (

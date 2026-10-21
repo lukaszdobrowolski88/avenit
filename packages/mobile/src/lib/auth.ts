@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { supabase } from './supabase';
+import { clearAppBadge } from './badge';
 
 // Kształty sesji/usera z Avenit API (zgodne z dotychczasowym użyciem pól).
 export interface AuthUser {
@@ -149,6 +150,8 @@ export const completeTwoFactorLogin = async (
 
 export const signOut = () => {
   clearPending2fa();
+  // Plakietka ikony nie może zostać po wylogowaniu (liczba cudzych nieprzeczytanych rozmów).
+  clearAppBadge().catch(() => undefined);
   return supabase.auth.signOut();
 };
 

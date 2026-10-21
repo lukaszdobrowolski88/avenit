@@ -5,7 +5,6 @@ import {
   Alert,
   Platform,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -22,6 +21,7 @@ import { useMyWork, useSetWorkStatus, type WorkItem } from '../../../src/feature
 import { useMyProfile } from '../../../src/features/account/api';
 import { usePermissions } from '../../../src/lib/permissions';
 import { openTask } from '../../../src/lib/deep-links';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 const todayIso = () => format(new Date(), 'yyyy-MM-dd');
 const fmtDue = (iso: string) => {
@@ -136,7 +136,7 @@ export default function MyWorkScreen() {
   const { user } = useAuthSession();
   const perms = usePermissions();
   const profile = useMyProfile(user?.email ?? null);
-  const { data, isLoading, isError, error, refetch, isRefetching } = useMyWork(user?.email ?? null);
+  const { data, isLoading, isError, error, refetch } = useMyWork(user?.email ?? null);
   const [showDone, setShowDone] = useState(false);
   const setStatus = useSetWorkStatus(user?.email ?? null);
   // Zadania tablicy służby edytuje lider/członek tej służby, Projektów — prawo globalne.
@@ -238,7 +238,7 @@ export default function MyWorkScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {showBoards ? (

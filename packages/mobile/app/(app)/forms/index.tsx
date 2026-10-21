@@ -3,7 +3,6 @@ import {
   Alert,
   Linking,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -15,6 +14,7 @@ import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useForms, type FormRow } from '../../../src/features/forms/api';
 import { tenantWebBase } from '../../../src/lib/supabase';
 import { friendlyError } from '../../../src/lib/errors';
+import { PullToRefresh } from "../../../src/components/ui/PullToRefresh";
 
 const answersLabel = (n: number) => {
   if (n === 1) return '1 odpowiedź';
@@ -22,7 +22,7 @@ const answersLabel = (n: number) => {
 };
 
 export default function FormsScreen() {
-  const { data, isLoading, isError, error, refetch, isRefetching } = useForms();
+  const { data, isLoading, isError, error, refetch } = useForms();
 
   return (
     <>
@@ -59,7 +59,7 @@ export default function FormsScreen() {
               padding: 32,
             }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -92,7 +92,7 @@ export default function FormsScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {data!.map((form: FormRow) => {

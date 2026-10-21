@@ -221,7 +221,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId, onJump }: 
           <Text numberOfLines={1} style={{ fontSize: 11, color: "#6E685A", fontFamily: "Manrope_500Medium" }}>
             {meta(item)}
           </Text>
-          <AudioPlayer uri={a.url} durationHintMs={voiceDurationMs(a)} variant="dark" />
+          <AudioPlayer uri={a.url} mime={a.type} durationHintMs={voiceDurationMs(a)} variant="dark" />
         </View>
         {jumpButton(item)}
       </View>

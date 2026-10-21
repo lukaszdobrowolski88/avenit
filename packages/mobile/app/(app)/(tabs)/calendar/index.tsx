@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -23,6 +22,7 @@ import { NewCalendarEventModal, useEventCalendarOptions } from '../../../../src/
 import { MyServicesCalendarSheet } from '../../../../src/features/calendar/components/MyServicesCalendarSheet';
 import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import { friendlyError } from '../../../../src/lib/errors';
+import { PullToRefresh } from '../../../../src/components/ui/PullToRefresh';
 
 type ViewMode = 'agenda' | 'month';
 
@@ -44,7 +44,7 @@ export default function CalendarScreen() {
   const openEvent = (e: AgendaEvent) =>
     router.push({ pathname: '/(app)/events/[id]', params: { id: String(e.eventId) } });
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = useAgenda({
+  const { data, isLoading, isError, error, refetch } = useAgenda({
     userEmail: user?.email ?? null,
     userName: profile.data?.full_name || profile.data?.name || user?.full_name || null,
     selectedCampusId,
@@ -211,7 +211,7 @@ export default function CalendarScreen() {
           <ScrollView
             contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {filter !== 'all' ? (
@@ -241,7 +241,7 @@ export default function CalendarScreen() {
             items={items}
             onPick={openEvent}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
           />
         )}

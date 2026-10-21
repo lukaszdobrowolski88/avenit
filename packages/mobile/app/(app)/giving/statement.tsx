@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  RefreshControl,
   ScrollView,
   Share,
   StatusBar,
@@ -17,13 +16,14 @@ import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useMyGiving, formatMoney, isCashDonation, type Donation } from '../../../src/features/giving/api';
 import { friendlyError } from '../../../src/lib/errors';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 const isCompleted = (d: Donation) => (d.status ?? 'completed') === 'completed';
 const yearOf = (iso: string) => String(iso ?? '').slice(0, 4);
 
 export default function GivingStatementScreen() {
   const { user } = useAuthSession();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useMyGiving(user?.email ?? null);
+  const { data, isLoading, isError, error, refetch } = useMyGiving(user?.email ?? null);
   const donations = useMemo(() => ((data?.donations ?? []) as Donation[]).filter(isCompleted), [data]);
   const currency = data?.currency ?? 'PLN';
 
@@ -95,7 +95,7 @@ export default function GivingStatementScreen() {
         ) : donations.length === 0 ? (
           <ScrollView
             contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
+            refreshControl={<PullToRefresh onRefresh={refetch} tintColor="#2A2312" />}
           >
             <View
               style={{
@@ -120,7 +120,7 @@ export default function GivingStatementScreen() {
         ) : (
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
+            refreshControl={<PullToRefresh onRefresh={refetch} tintColor="#2A2312" />}
           >
             {/* Wybór roku */}
             <ScrollView

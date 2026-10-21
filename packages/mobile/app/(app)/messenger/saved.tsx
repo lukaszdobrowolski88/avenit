@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StatusBar, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, StatusBar, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Bookmark, BookmarkMinus, CloudOff, Image as ImageIcon, Mic, Paperclip } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
@@ -20,6 +20,7 @@ import {
 import { attachmentsOf, formatListTime, isImageAttachment, isVoiceAttachment } from '../../../src/features/messenger/logic';
 import { useSavedMessages, useToggleSaved, type SavedListItem } from '../../../src/features/messenger/messageTasks';
 import { openMessageInConversation } from '../../../src/features/messenger/threads';
+import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
 
 // „Zapisane” — moje zapisane wiadomości ze wszystkich rozmów (saved_messages, migracja 114), jak web
 // (SavedMessagesPanel): nadawca, rozmowa, data, treść albo rodzaj załącznika; stuknięcie → rozmowa
@@ -89,7 +90,7 @@ export default function SavedMessagesScreen() {
         data={rows}
         keyExtractor={(r) => r.saved.id}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 10 }}
-        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={B.ink} />}
+        refreshControl={<PullToRefresh onRefresh={() => q.refetch()} tintColor={B.ink} />}
         renderItem={({ item: r }) => {
           const m = r.message;
           const conv = convById.get(String(m.conversation_id));

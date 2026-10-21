@@ -2,7 +2,6 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  RefreshControl,
   StatusBar,
   Text,
   View,
@@ -36,6 +35,7 @@ import {
 } from '../../../src/features/notifications/api';
 import { useAuthSession } from '../../../src/lib/auth';
 import { navigateFromDeepLink } from '../../../src/lib/deep-links';
+import { PullToRefresh } from "../../../src/components/ui/PullToRefresh";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
   message: MessageCircle,
@@ -49,7 +49,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
 export default function NotificationsScreen() {
   const router = useRouter();
   const { user } = useAuthSession();
-  const { data, isLoading, isError, error, refetch, isRefetching } = useNotifications(
+  const { data, isLoading, isError, error, refetch } = useNotifications(
     user?.email ?? null,
   );
   const markAll = useMarkAllRead(user?.email ?? null);
@@ -116,7 +116,7 @@ export default function NotificationsScreen() {
             data={items}
             keyExtractor={(item) => item.id}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
+              <PullToRefresh onRefresh={refetch} tintColor="#2A2312" />
             }
             ItemSeparatorComponent={() => (
               <View style={{ backgroundColor: B.card }}>
