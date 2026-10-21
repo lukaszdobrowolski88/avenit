@@ -24,6 +24,7 @@ import {
   eventsAfterWrite, reconcileUpcoming, upcomingEventIds,
 } from '../src/interpretation/scheduleSync.js';
 import { respondToAssignments } from '../src/public/routes.js';
+import { languagesFromRoles, candidatesFor, eligibilityError, interpreterWarning } from '../src/interpretation/team.js';
 import { utcToZoned } from '../src/meetings/logic.js';
 
 let PGlite = null;
@@ -86,7 +87,9 @@ test('rola grafiku → kod języka i etykieta kanału', () => {
   assert.equal(langForRole('koordynator', 'Koordynator'), null);
   assert.equal(labelForLang('uk'), 'Українська');
   assert.equal(labelForLang('fr', 'Tłumacz Français'), 'Français');
-  assert.equal(labelForLang('fr', 'Tłumacz'), 'FR');
+  assert.equal(labelForLang('fr', 'Tłumacz'), 'Français', 'endonim także spoza tabeli (Intl)');
+  assert.equal(labelForLang('qq', 'Tłumacz Zzz'), 'Zzz');
+  assert.equal(labelForLang('qq', 'Tłumacz'), 'QQ');
   const plan = planFromSchedule([
     { role_key: 'en', assigned_name: 'Ola', status: 'accepted', accounts: ['ola@x.pl'] },
     { role_key: 'en', assigned_name: 'Jan', status: 'pending', accounts: [] },
@@ -190,7 +193,10 @@ before(async () => {
       display_order int DEFAULT 0, is_active boolean DEFAULT true, created_at timestamptz DEFAULT now());
     CREATE TABLE schedule_assignments (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), program_id int, event_id integer, team_type text,
       role_key text, role_label text, assigned_name text, assigned_email text, status text DEFAULT 'pending', token uuid,
-      responded_at timestamptz, created_at timestamptz DEFAULT now());
+      responded_at timestamptz, created_at timestamptz DEFAULT now(), email_sent_at timestamptz);
+    CREATE TABLE team_member_roles (id serial PRIMARY KEY, member_id text, member_table text, role_id uuid);
+    ALTER TABLE members ADD COLUMN first_name text, ADD COLUMN last_name text;
+    CREATE TABLE volunteer_blockouts (id serial PRIMARY KEY, member_id int, start_date date, end_date date, reason text);
   `);
   // Żywy tenant: moduły i służby innych zespołów już są — migracja ich nie rusza.
   await db.query(`INSERT INTO app_modules (key, label, display_order, is_system, component_name) VALUES ('media', 'Media', 4, true, 'MediaTeamModule'), ('worship', 'Uwielbienie', 3, true, 'WorshipModule')`);
@@ -208,6 +214,10 @@ before(async () => {
   await pg.exec(m116);
   await pg.exec(m117);
   await pg.exec(m117); // idempotentna
+  // Skład służby (karta: tłumacze tylko stąd). Lider — bez wiersza w składzie (zarządza z przynależności).
+  await db.query(`INSERT INTO custom_tlumaczenia_members (full_name, email, status) VALUES
+    ('Ola Nowak', 'ola@x.pl', 'Aktywny'), ('Ewa Ręczna', 'ewa@x.pl', 'Aktywny'), ('Jan Kowalski', 'jan@x.pl', 'Aktywny'),
+    ('Olek Live', 'olek@x.pl', 'Aktywny')`);
 });
 
 test('migracja 117: moduł, zakładki, języki i kolumny źródła — raz, bez ruszania innych zespołów', { skip: skipDb }, async () => {
@@ -362,4 +372,110 @@ test('uprawnienie z przynależności: lider służby Tłumaczeń (rola członek)
   assert.equal(v.can_manage, true);
   await db.query(`UPDATE ministry_memberships SET role = 'member' WHERE user_id = $1`, [String(u.id)]);
   assert.equal(await canManageInterpretation(harness().ctx, 'lider@x.pl'), false, 'członek służby — nie');
+});
+
+// ── Karta ↔ moduł Tłumaczenia (spójność) ────────────────────────────────────
+test('moduł → karta: języki ze Służb (kolejność, bez kodu osobno), wybór tłumacza jak w Grafiku', () => {
+  const { languages, unmapped } = languagesFromRoles([
+    { id: 'r1', name: 'Tłumacz EN', field_key: 'en' }, { id: 'r2', name: 'Tłumacz UK', field_key: 'uk' },
+    { id: 'r3', name: 'Koordynator', field_key: 'koordynator' }, { id: 'r4', name: 'Tłumacz EN (zapas)', field_key: 'en' },
+  ]);
+  assert.deepEqual(languages.map((l) => [l.lang_code, l.role_name, l.label]), [['en', 'Tłumacz EN', 'English'], ['uk', 'Tłumacz UK', 'Українська']]);
+  assert.deepEqual(unmapped, ['Koordynator']);
+  const team = {
+    available: true,
+    members: [
+      { id: '1', name: 'Ola', email: 'ola@x.pl', active: true, langs: ['en'] },
+      { id: '2', name: 'Ewa', email: 'ewa@x.pl', active: true, langs: [] },
+      { id: '3', name: 'Stary', email: 'stary@x.pl', active: false, langs: ['en'] },
+      { id: '4', name: 'Bez Konta', email: null, active: true, langs: ['en'] },
+    ],
+    holders: new Map([['en', 3]]),
+  };
+  assert.deepEqual(candidatesFor(team, 'en').map((m) => m.id), ['1', '4'], 'ze Służbą EN, bez nieaktywnych');
+  assert.deepEqual(candidatesFor(team, 'uk').map((m) => m.id), ['1', '2', '4'], 'nikt nie ma Służby UK → cały aktywny zespół');
+  assert.equal(eligibilityError(team, 'ola@x.pl', 'en'), null);
+  assert.equal(eligibilityError(team, 'ewa@x.pl', 'en', 'Tłumacz EN').code, 'NO_LANGUAGE_ROLE');
+  assert.match(eligibilityError(team, 'ewa@x.pl', 'en', 'Tłumacz EN').message, /Tłumacz EN/);
+  assert.equal(eligibilityError(team, 'stary@x.pl', 'en').code, 'INACTIVE_MEMBER');
+  assert.equal(eligibilityError(team, 'obcy@x.pl', 'en').code, 'NOT_IN_TEAM');
+  assert.equal(interpreterWarning(team, 'ola@x.pl', 'en'), null);
+  assert.equal(interpreterWarning(team, 'ewa@x.pl', 'en'), 'no_role');
+  assert.equal(interpreterWarning(team, 'stary@x.pl', 'en'), 'inactive');
+  assert.equal(interpreterWarning(team, 'obcy@x.pl', 'en'), 'not_in_team');
+  assert.equal(interpreterWarning({ available: false }, 'obcy@x.pl', 'en'), null);
+});
+
+test('karta ↔ moduł: zapis tylko języków i osób z modułu; stare kanały/osoby zostają z ostrzeżeniem', { skip: skipDb }, async () => {
+  const { ctx } = harness();
+  const boss = U('boss', 1);
+  const day = soon(5);
+  const ev = await newEvent('Spójność', day);
+  let v = await getSession(ctx, boss, { event_id: ev });
+  assert.deepEqual(v.module.languages.map((l) => l.role_name), ['Tłumacz EN', 'Tłumacz UK', 'Tłumacz RU']);
+  assert.equal(v.module.path, '/tlumaczenia');
+  assert.deepEqual(v.team.map((m) => m.name).sort(), ['Ewa Ręczna', 'Jan Kowalski', 'Ola Nowak', 'Olek Live']);
+  assert.deepEqual(v.presets.map((p) => p.label), ['English', 'Українська', 'Русский'], 'starsza karta: tylko języki modułu');
+  assert.ok(!v.people.some((p) => p.email === 'boss@x.pl'), 'starsza karta: tylko zespół');
+
+  await assert.rejects(upsertSession(ctx, boss, { event_id: ev, channels: [{ lang_code: 'de' }] }),
+    (e) => e.status === 400 && e.code === 'LANG_NOT_IN_MODULE' && /Tłumaczenia → Służby/.test(e.message));
+  await assert.rejects(upsertSession(ctx, boss, { event_id: ev, channels: [{ lang_code: 'en', interpreters: ['boss@x.pl'] }] }),
+    (e) => e.status === 400 && e.code === 'NOT_IN_TEAM');
+  // Służba EN tylko u Oli → Ewa nie może tłumaczyć EN; UK (nikt nie ma Służby) — cały zespół.
+  const [en] = await q1(`SELECT id FROM team_roles WHERE team_type = 'tlumaczenia' AND field_key = 'en'`);
+  const [olaRow] = await q1(`SELECT id FROM custom_tlumaczenia_members WHERE email = 'ola@x.pl'`);
+  await db.query(`INSERT INTO team_member_roles (member_id, member_table, role_id) VALUES ($1, 'custom_tlumaczenia_members', $2)`, [String(olaRow.id), en.id]);
+  await assert.rejects(upsertSession(ctx, boss, { event_id: ev, channels: [{ lang_code: 'en', interpreters: ['ewa@x.pl'] }] }),
+    (e) => e.status === 400 && e.code === 'NO_LANGUAGE_ROLE');
+  v = await upsertSession(ctx, boss, { event_id: ev, channels: [{ lang_code: 'en', label: 'Angielski!', interpreters: ['ola@x.pl'] }, { lang_code: 'uk', interpreters: ['ewa@x.pl'] }] });
+  assert.deepEqual(v.session.channels.map((c) => [c.lang_code, c.label, c.role_name, c.in_module]),
+    [['en', 'English', 'Tłumacz EN', true], ['uk', 'Українська', 'Tłumacz UK', true]]);
+  assert.deepEqual(v.team.find((m) => m.name === 'Ola Nowak').langs, ['en']);
+  assert.deepEqual(v.team.find((m) => m.name === 'Ewa Ręczna').eligible, ['uk', 'ru'], 'bez Służby EN — EN nie');
+  assert.deepEqual(v.module.languages.map((l) => [l.lang_code, l.whole_team]), [['en', false], ['uk', true], ['ru', true]]);
+
+  // Kanał i tłumacz sprzed modułu (np. fr + konto spoza zespołu): widoczne z ostrzeżeniem, zapis ich nie odrzuca.
+  const [sess] = await q1(`SELECT id FROM interpretation_sessions WHERE event_id = $1`, [ev]);
+  const [fr] = await q1(`INSERT INTO interpretation_channels (id, session_id, lang_code, label, sort, room_name)
+    VALUES (gen_random_uuid(), $1, 'fr', 'Français', 5, 'avi_kosciol_fr') RETURNING id`, [sess.id]);
+  await db.query(`INSERT INTO interpretation_interpreters (channel_id, user_email) VALUES ($1, 'boss@x.pl')`, [fr.id]);
+  v = await getSession(ctx, boss, { event_id: ev });
+  const frView = v.session.channels.find((c) => c.lang_code === 'fr');
+  assert.deepEqual([frView.in_module, frView.role_name, frView.interpreters[0].warning], [false, null, 'not_in_team']);
+  const list = v.session.channels.map((c) => ({ id: c.id, lang_code: c.lang_code, label: c.label, interpreters: c.interpreters.map((i) => i.email) }));
+  v = await upsertSession(ctx, boss, { event_id: ev, channels: list });
+  assert.deepEqual(v.session.channels.map((c) => c.lang_code), ['en', 'uk', 'fr'], 'stary kanał zostaje');
+  list[2].interpreters = [];
+  await upsertSession(ctx, boss, { event_id: ev, channels: list });
+  list[2].interpreters = ['boss@x.pl'];
+  await assert.rejects(upsertSession(ctx, boss, { event_id: ev, channels: list }), (e) => e.code === 'NOT_IN_TEAM', 'ponownie — już nie');
+
+  // Ola „Nieaktywna” w składzie: zostaje w kanale (nie zdejmujemy po cichu), z ostrzeżeniem.
+  await db.query(`UPDATE custom_tlumaczenia_members SET status = 'Nieaktywny' WHERE id = $1`, [olaRow.id]);
+  v = await getSession(ctx, boss, { event_id: ev });
+  assert.equal(v.session.channels[0].interpreters[0].warning, 'inactive');
+  assert.ok(!v.team.some((m) => m.name === 'Ola Nowak'), 'nieaktywni poza listą wyboru');
+  list[2].interpreters = [];
+  await upsertSession(ctx, boss, { event_id: ev, channels: list });
+  assert.ok((await interpretersOfEvent(ev)).some((r) => r.email === 'ola@x.pl'));
+  await db.query(`UPDATE custom_tlumaczenia_members SET status = 'Aktywny' WHERE id = $1`, [olaRow.id]);
+
+  // Nieobecności w dniu wydarzenia: zgłoszona (Dostępność) i wpisana w kolumnie „Nieobecni” grafiku.
+  await db.query(`INSERT INTO members (email, full_name, first_name, last_name) VALUES ('ewa@x.pl', 'Ewa Ręczna', 'Ewa', 'Ręczna')`);
+  const [m] = await q1(`SELECT id FROM members WHERE email = 'ewa@x.pl'`);
+  await db.query(`INSERT INTO volunteer_blockouts (member_id, start_date, end_date) VALUES ($1, $2, $2)`, [m.id, day]);
+  await db.query(`UPDATE events SET assignments = '{"tlumaczenia":{"absencja":"Jan Kowalski"}}'::jsonb WHERE id = $1`, [Number(ev)]);
+  v = await getSession(ctx, boss, { event_id: ev });
+  assert.deepEqual(v.team.find((x) => x.name === 'Ewa Ręczna').absent, { from: day, to: day });
+  assert.deepEqual(v.team.find((x) => x.name === 'Jan Kowalski').absent, { manual: true });
+  assert.deepEqual(v.session.channels[1].interpreters[0].absent, { from: day, to: day }, 'przypisana mimo nieobecności — widać w karcie');
+
+  // Członek zespołu (nie tłumacz, nie lider): podgląd tłumaczy, bez edycji i bez linku.
+  const jan = await getSession(ctx, U('jan', 4), { event_id: ev });
+  assert.equal(jan.can_manage, false);
+  assert.ok(Array.isArray(jan.session.channels[0].interpreters));
+  assert.equal(jan.team, undefined);
+  assert.equal(jan.session.public_token, undefined);
+  await assert.rejects(upsertSession(ctx, U('jan', 4), { event_id: ev, enable: true }), (e) => e.status === 403 && /lider służby Tłumaczenia/.test(e.message));
 });

@@ -182,6 +182,12 @@ before(async () => {
     CREATE TABLE rsvp_invitations (id serial PRIMARY KEY, campaign_id int, member_id int, email text);
     CREATE TABLE events (id serial PRIMARY KEY, title text NOT NULL, description text, date date, time text, end_time text, end_date date,
       location text, module_key text, campus_id int, created_by text, is_archived boolean DEFAULT false, visibility_segments jsonb, format text);
+    CREATE TABLE app_modules (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), key text UNIQUE NOT NULL, label text, icon text, path text,
+      resource_key text, display_order int DEFAULT 0, is_system boolean DEFAULT false, is_enabled boolean DEFAULT true, component_name text);
+    CREATE TABLE app_module_tabs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), module_id uuid, key text NOT NULL, label text NOT NULL,
+      icon text, display_order int DEFAULT 0, is_system boolean DEFAULT false);
+    CREATE TABLE team_roles (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), team_type text NOT NULL, name text NOT NULL,
+      display_order int DEFAULT 0, is_active boolean DEFAULT true);
   `);
   await db.query(`INSERT INTO app_roles (key, is_admin) VALUES ('superadmin', true), ('czlonek', false), ('koordynator', false)`);
   await db.query(`INSERT INTO permission_grants (role, capability, allowed) VALUES
@@ -195,6 +201,11 @@ before(async () => {
   const sql = fs.readFileSync(new URL('../db/tenant-migrations/116_interpretation.sql', import.meta.url), 'utf8');
   await pg.exec(sql);
   await pg.exec(sql); // idempotentna
+  // Moduł Tłumaczenia (117): języki en/uk/ru z migracji + de; zespół: Ola i Ewa (konta po e-mailu).
+  await pg.exec(fs.readFileSync(new URL('../db/tenant-migrations/117_tlumaczenia_module.sql', import.meta.url), 'utf8'));
+  await db.query(`INSERT INTO team_roles (team_type, name, field_key, display_order) VALUES ('tlumaczenia', 'Tłumacz DE', 'de', 4)`);
+  await db.query(`INSERT INTO custom_tlumaczenia_members (full_name, email, status) VALUES
+    ('Ola Nowak', 'ola@x.pl', 'Aktywny'), ('Ewa Tłumacz', 'ewa@x.pl', 'Aktywny'), ('Nieaktywny', 'stary@x.pl', 'Aktywny')`);
 });
 
 test('zarządzanie: tylko z uprawnieniem (albo admin); członek widzi tylko języki, bez linku i osób', { skip: skipDb }, async () => {
@@ -206,9 +217,12 @@ test('zarządzanie: tylko z uprawnieniem (albo admin); członek widzi tylko jęz
   assert.equal(empty.session, null);
   assert.ok(empty.people.some((p) => p.email === 'ola@x.pl'));
   assert.ok(!empty.people.some((p) => p.email === 'stary@x.pl'), 'bez nieaktywnych kont');
+  assert.ok(!empty.people.some((p) => p.email === 'jan@x.pl'), 'tylko zespół Tłumaczeń');
+  assert.deepEqual(empty.module.languages.map((l) => [l.lang_code, l.role_name, l.label]),
+    [['en', 'Tłumacz EN', 'English'], ['uk', 'Tłumacz UK', 'Українська'], ['ru', 'Tłumacz RU', 'Русский'], ['de', 'Tłumacz DE', 'Deutsch']]);
 
   await assert.rejects(upsertSession(ctx, U('koord'), { event_id: evId, channels: [{ lang_code: 'en', interpreters: ['stary@x.pl'] }] }),
-    (e) => e.status === 400 && e.code === 'UNKNOWN_INTERPRETER');
+    (e) => e.status === 400 && e.code === 'NOT_IN_TEAM', 'konto nieaktywne = bez konta w aplikacji');
   const v = await upsertSession(ctx, U('koord'), {
     event_id: evId, original_enabled: true,
     channels: [{ lang_code: 'en', interpreters: ['ola@x.pl', 'ewa@x.pl'] }, { lang_code: 'uk' }],
@@ -245,7 +259,7 @@ test('zarządzanie: tylko z uprawnieniem (albo admin); członek widzi tylko jęz
   // Usunięcie języka zamyka jego pokój; nowy link unieważnia stary.
   const ukRoom = rooms[1].room_name;
   const v2 = await upsertSession(ctx, U('boss'), { event_id: evId, regenerate_token: true, channels: [{ id: v.session.channels[0].id, lang_code: 'en', label: 'English (US)', interpreters: ['ola@x.pl'] }] });
-  assert.deepEqual(v2.session.channels.map((c) => c.label), ['English (US)']);
+  assert.deepEqual(v2.session.channels.map((c) => [c.label, c.role_name]), [['English', 'Tłumacz EN']], 'etykieta z modułu, nie z formularza');
   assert.equal(v2.session.channels[0].id, v.session.channels[0].id, 'kanał zachowany (ten sam pokój)');
   assert.ok(livekit.deleted.includes(ukRoom));
   assert.notEqual(v2.session.public_token, v.session.public_token);

@@ -9,7 +9,7 @@ import { toast } from '../../lib/toast';
 import { tr, trPlural } from '../../i18n';
 import { callFn } from '../Komunikator/calls/callApi';
 import { loadLivekit, mediaFailure } from '../Komunikator/calls/livekit';
-import { STATS_POLL_MS, retryDelay, parseRoomMeta, consoleState, interpErrorState } from './interpretationLogic';
+import { STATS_POLL_MS, retryDelay, parseRoomMeta, consoleState, interpErrorState, staffLabel } from './interpretationLogic';
 import { useWakeLock, useLevelMeter, createAudioBox, attachTrack, detachTrack, audioInputs } from './media';
 import { LevelMeter, InputSelect, VolumeSlider } from './controls';
 import './interpretation.css';
@@ -337,7 +337,7 @@ export default function InterpreterConsole() {
       <div className="max-w-3xl mx-auto px-4 py-6">
         {header}
         <EmptyState icon={Languages} title={tr('Nie jesteś tłumaczem tego wydarzenia')}
-          subtitle={view.session ? tr('Poproś organizatora o przypisanie do kanału językowego.') : tr('To wydarzenie nie ma jeszcze tłumaczenia na żywo.')} />
+          subtitle={view.session ? tr('Poproś lidera służby Tłumaczenia o przypisanie w Grafiku albo w karcie wydarzenia.') : tr('To wydarzenie nie ma jeszcze tłumaczenia na żywo.')} />
       </div>
     );
   }
@@ -360,7 +360,7 @@ export default function InterpreterConsole() {
             <button key={c.id} type="button" disabled={connected || phase === 'joining'} aria-pressed={c.id === channelId}
               onClick={() => setChannelId(c.id)}
               className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors disabled:opacity-60 ${c.id === channelId ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'}`}>
-              {c.label}
+              {staffLabel(c)}
             </button>
           ))}
         </div>
@@ -370,7 +370,10 @@ export default function InterpreterConsole() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1 min-w-[10rem]">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{tr('Kanał')}</p>
-            <p className="text-2xl font-extrabold text-gray-900 dark:text-white" lang={channel?.lang_code}>{channel?.label}</p>
+            <p className="text-2xl font-extrabold text-gray-900 dark:text-white">{channel ? staffLabel(channel) : ''}</p>
+            {channel?.label && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Słuchacze widzą:')} <span lang={channel.lang_code} className="font-medium">{channel.label}</span></p>
+            )}
           </div>
           {connected && state === 'on_air' && <span className="ip-onair">{tr('Na żywo')}</span>}
           {connected && state !== 'on_air' && <span className="ip-onair ip-onair--off">{state === 'muted' ? tr('Wyciszony') : tr('Mikrofon wyłączony')}</span>}

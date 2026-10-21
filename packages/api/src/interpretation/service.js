@@ -6,8 +6,9 @@
 // „Oryginał”: nadawanie z miksera (stół akustyka), tłumacze słyszą go w konsoli. Bez nagrywania.
 //
 // Kto co może:
-//   • zarządza (kanały, tłumacze, link, zakończenie): action:calendar:manage_interpretation albo
-//     administrator — i musi WIDZIEĆ wydarzenie (visibleEventFor, jak /api/db);
+//   • zarządza (kanały, tłumacze, link, zakończenie): action:calendar:manage_interpretation (ma ją
+//     też lider służby Tłumaczeń — ministry.js) albo administrator — i musi WIDZIEĆ wydarzenie;
+//   • członek zespołu Tłumaczeń (aktywny w składzie): podgląd kanałów i tłumaczy (bez edycji);
 //   • konsola tłumacza / przejęcie mikrofonu: przypisany tłumacz kanału (albo zarządzający);
 //   • nadawanie „Oryginału”: zarządzający albo tłumacz którejkolwiek sesji wydarzenia;
 //   • słucha: każdy z publicznym linkiem (bez konta) albo zalogowany, który widzi wydarzenie.
@@ -21,14 +22,19 @@
 //     → { event: { id, title, date, time, end_time, end_date }, can_manage, my_channels: [channel_id],
 //         session: null | {
 //           id, status: 'idle'|'live'|'ended', original_enabled, original_status: 'idle'|'live',
-//           channels: [{ id, lang_code, label, sort, status: 'idle'|'live', mine,
-//                        active_interpreter_email?, active_interpreter_name?, interpreters?: [{ email, name }] }],
-//           public_token?, public_path?, public_url? },          // ? — tylko zarządzający (tłumacze: osoby)
-//         presets?: [{ lang_code, label }], people?: [{ email, name }], church_name? }   // tylko zarządzający
+//           channels: [{ id, lang_code, label (dla słuchacza: „English”), role_name (Służba: „Tłumacz EN”),
+//                        in_module (język jest aktywną Służbą modułu Tłumaczenia), sort, status: 'idle'|'live', mine,
+//                        active_interpreter_email?, active_interpreter_name?,
+//                        interpreters?: [{ email, name, source, warning: null|'not_in_team'|'inactive'|'no_role', absent }] }],
+//           public_token?, public_path?, public_url? },          // ? — zarządzający (osoby: też tłumacze i zespół)
+//         module?: { available, path, languages: [{ lang_code, role_name, label, whole_team }], unmapped: [nazwa Służby] },
+//         team?: [{ id, name, email|null, langs: [kod Służby], eligible: [kod — może tłumaczyć], absent: null|{from,to}|{manual} }],   // tylko zarządzający
+//         presets?, people?  (zgodność ze starszą kartą: języki modułu / aktywny zespół z kontem), church_name? }
+// Języki i tłumacze — tylko z modułu Tłumaczenia (interpretation/team.js); zapis spoza → 400.
 //   interp-session-upsert { event_id, enable?, remove?, channels?: [{ id?, lang_code, label, interpreters: [email] }],
 //                           original_enabled?, regenerate_token?, end?, reopen? }  → jak interp-session-get
 //   interp-interpreter-join { channel_id }
-//     → { url, token, identity, channel: { id, lang_code, label, status, active_interpreter_email, active_interpreter_name },
+//     → { url, token, identity, channel: { id, lang_code, label, role_name, status, active_interpreter_email, active_interpreter_name },
 //         partners: [{ email, name }], original: null | { token }, session_status }
 //   interp-take-over      { channel_id }               → { channel, muted: email|null }
 //   interp-release        { channel_id, force? }       → { channel }
@@ -60,6 +66,7 @@ import { interpRoomNameFor } from '../calls/logic.js';
 import { rsvpBase } from '../fn/rsvp-send.js';
 import * as I from './logic.js';
 import { scheduleStatusOf } from './scheduleSync.js';
+import * as T from './team.js';
 
 export const MANAGE_CAPABILITY = 'action:calendar:manage_interpretation';
 const lower = (v) => String(v ?? '').trim().toLowerCase();
@@ -72,7 +79,7 @@ export const MESSAGES = {
   ended: 'Tłumaczenie zostało zakończone.',
   unavailable: 'Tłumaczenie nie jest teraz dostępne.',
   notLive: 'Tłumaczenie na ten język jeszcze się nie zaczęło.',
-  forbidden: 'Tłumaczeniem zarządza osoba z uprawnieniem „Zarządzaj tłumaczeniem na żywo”.',
+  forbidden: 'Tłumaczeniem na żywo zarządza lider służby Tłumaczenia albo osoba z uprawnieniem „Zarządzaj tłumaczeniem na żywo”.',
   notInterpreter: 'Do konsoli tego kanału wchodzi przypisany tłumacz.',
   livekit: 'Serwer połączeń nie odpowiada. Spróbuj za chwilę.',
 };
@@ -181,14 +188,31 @@ async function isInterpreterOf(db, channelId, me) {
   return !!(await one(db, `SELECT 1 FROM interpretation_interpreters WHERE channel_id = $1 AND lower(user_email) = $2`, [channelId, me]));
 }
 
-async function peopleOf(db) {
-  const { rows } = await db.query(
-    `SELECT lower(email) AS email, COALESCE(NULLIF(full_name, ''), NULLIF(name, ''), email) AS name
-       FROM app_users WHERE COALESCE(is_active, true) = true AND email IS NOT NULL AND email <> ''
-      ORDER BY 2 LIMIT 3000`);
-  const seen = new Set();
-  return rows.filter((r) => !seen.has(r.email) && seen.add(r.email));
+// Moduł Tłumaczenia (języki, skład, nieobecności) — bez tabel modułu: pusty (karta pokaże link).
+async function moduleSafe(ctx, ev) {
+  try { return await T.loadModule(ctx.db, ev); } catch (err) {
+    warn(ctx, err, 'moduł Tłumaczenia');
+    return { available: false, languages: [], unmapped: [], team: { available: false, members: [], holders: new Map() }, absences: new Map() };
+  }
 }
+
+// Czy zalogowany jest aktywnym członkiem składu Tłumaczeń (podgląd tłumaczy w karcie).
+async function isTeamMember(db, me) {
+  try {
+    return !!(await one(db,
+      `SELECT 1 FROM ${T.MEMBER_TABLE} t
+        WHERE COALESCE(t.status, 'Aktywny') <> 'Nieaktywny'
+          AND (lower(t.email) = $1 OR t.user_id::text IN (SELECT id::text FROM app_users WHERE lower(email) = $1))
+        LIMIT 1`, [me]));
+  } catch (err) {
+    if (err?.code === '42703') {
+      try { return !!(await one(db, `SELECT 1 FROM ${T.MEMBER_TABLE} WHERE COALESCE(status, 'Aktywny') <> 'Nieaktywny' AND lower(email) = $1 LIMIT 1`, [me])); } catch { return false; }
+    }
+    return false;
+  }
+}
+
+const absentOf = (mod, name) => mod.absences.get(String(name || '').trim().toLowerCase()) || null;
 
 // ── Uprawnienia ─────────────────────────────────────────────────────────────
 // Zarządzanie: superadmin / rola administratora albo capability. Tryb legacy (bez grantów) —
@@ -278,12 +302,33 @@ async function scheduleStatusSafe(ctx, eventId) {
   }
 }
 
-async function sessionView(ctx, { ev, session, manage, mine }) {
+async function sessionView(ctx, { ev, session, manage, mine, me }) {
   const { db } = ctx;
   const out = { event: eventSummary(ev), can_manage: !!manage, my_channels: [...mine], session: null };
+  const teamViewer = !manage && !mine.size && !!me && (await isTeamMember(db, me));
+  const showPeople = !!manage || mine.size > 0 || teamViewer;
+  const mod = showPeople ? await moduleSafe(ctx, ev) : await T.moduleLanguages(db).catch(() => ({ available: false, languages: [], unmapped: [] }));
+  const langOf = new Map(mod.languages.map((l) => [l.lang_code, l]));
+  if (showPeople) {
+    out.module = {
+      available: !!mod.available, path: T.MODULE_PATH,
+      // whole_team: nikt w zespole nie ma tej Służby → wybór z całego aktywnego zespołu (jak Grafik).
+      languages: mod.languages.map((l) => ({ lang_code: l.lang_code, role_name: l.role_name, label: l.label, whole_team: !(mod.team?.holders?.get(l.lang_code) > 0) })),
+      unmapped: mod.unmapped,
+    };
+  }
   if (manage) {
-    out.presets = I.LANGUAGE_PRESETS;
-    out.people = await peopleOf(db);
+    const members = (mod.team?.members || []).filter((m) => m.active);
+    // eligible: języki modułu, do których ta osoba może zostać tłumaczem (T.candidatesFor — ta sama reguła co zapis).
+    const eligible = new Map(mod.languages.map((l) => [l.lang_code, new Set(T.candidatesFor(mod.team, l.lang_code).map((m) => m.id))]));
+    out.team = members.map((m) => ({
+      id: m.id, name: m.name, email: m.email, langs: m.langs,
+      eligible: mod.languages.filter((l) => eligible.get(l.lang_code).has(m.id)).map((l) => l.lang_code),
+      absent: absentOf(mod, m.name),
+    }));
+    // Zgodność ze starszą kartą (PWA w cache): tylko języki i osoby z modułu.
+    out.presets = mod.languages.map((l) => ({ lang_code: l.lang_code, label: l.label }));
+    out.people = members.filter((m) => m.email).map((m) => ({ email: m.email, name: m.name }));
     out.church_name = await churchName(db, ctx.tenant?.name); // plakat do druku
   }
   if (!session) {
@@ -291,12 +336,12 @@ async function sessionView(ctx, { ev, session, manage, mine }) {
     return out;
   }
   const channels = await channelsOf(db, session.id);
-  const showPeople = !!manage || mine.size > 0;
   const interp = showPeople ? await interpretersOf(db, channels.map((c) => c.id)) : new Map();
   const sources = showPeople ? await interpreterSourcesOf(db, channels.map((c) => c.id)) : new Map();
   const names = showPeople
     ? await namesOf(db, [...[...interp.values()].flat(), ...channels.map((c) => c.active_interpreter_email)])
     : new Map();
+  const nameOfAccount = new Map((mod.team?.members || []).filter((m) => m.email).map((m) => [m.email, m.name]));
   out.session = {
     id: session.id,
     status: session.status,
@@ -304,10 +349,16 @@ async function sessionView(ctx, { ev, session, manage, mine }) {
     original_status: session.original_status,
     channels: channels.map((c) => ({
       ...(showPeople ? channelOut(c, names) : { id: c.id, lang_code: c.lang_code, label: c.label, status: c.status }),
+      role_name: langOf.get(c.lang_code)?.role_name || null,
+      in_module: langOf.has(c.lang_code),
       sort: c.sort,
       mine: mine.has(c.id),
       ...(showPeople ? {
-        interpreters: (interp.get(c.id) || []).map((e) => ({ email: e, name: names.get(e) || e, source: sources.get(`${c.id}|${e}`) || 'manual' })),
+        interpreters: (interp.get(c.id) || []).map((e) => ({
+          email: e, name: names.get(e) || e, source: sources.get(`${c.id}|${e}`) || 'manual',
+          warning: T.interpreterWarning(mod.team, e, c.lang_code),
+          absent: absentOf(mod, nameOfAccount.get(e) || names.get(e)),
+        })),
         from_schedule: (c.source || 'manual') === 'schedule',
       } : {}),
     })),
@@ -401,7 +452,7 @@ export async function endSession(ctx, session) {
   return !!ended;
 }
 
-async function replaceChannels(ctx, session, input) {
+async function replaceChannels(ctx, session, input, ev) {
   const { db } = ctx;
   let list;
   try {
@@ -422,10 +473,6 @@ async function replaceChannels(ctx, session, input) {
   }
   const fromSchedule = new Set([...scheduled.values()].flatMap((x) => [...x]));
   for (const c of list) c.interpreters = c.interpreters.filter((e) => !fromSchedule.has(e));
-  const wanted = [...new Set(list.flatMap((c) => c.interpreters))];
-  const accounts = await activeAccounts(db, wanted);
-  const unknown = wanted.find((e) => !accounts.has(e));
-  if (unknown) throw new ApiError(400, `Tłumaczem może być tylko osoba z aktywnym kontem w aplikacji: ${unknown}`, 'UNKNOWN_INTERPRETER');
 
   const used = new Set();
   const pairs = list.map((c) => {
@@ -434,6 +481,28 @@ async function replaceChannels(ctx, session, input) {
     if (match) used.add(match.id);
     return { c, match };
   });
+
+  // Spójność z modułem Tłumaczenia (team.js): NOWY język tylko spośród aktywnych Służb, NOWY
+  // tłumacz tylko z aktywnego składu z kontem (i ze Służbą języka, jak w Grafiku). Kanały i osoby
+  // sprzed modułu / spoza niego zostają, dopóki zarządzający ich nie usunie (karta ostrzega).
+  const mod = await moduleSafe(ctx, ev);
+  const langOf = new Map(mod.languages.map((l) => [l.lang_code, l]));
+  const assignedBefore = await interpretersOf(db, existing.map((e) => e.id));
+  for (const { c, match } of pairs) {
+    const lang = langOf.get(c.lang_code);
+    if (!lang && !(match && match.lang_code === c.lang_code)) {
+      throw new ApiError(400, `Język „${c.lang_code}” nie jest Służbą w module Tłumaczenia. Dodaj go w Tłumaczenia → Służby (klucz pola = kod języka).`, 'LANG_NOT_IN_MODULE');
+    }
+    // Etykieta dla słuchacza: z modułu (nazwa języka w tym języku); kanał spoza modułu — bez zmian.
+    c.label = lang ? I.channelLabel(c.lang_code, lang.role_name) : (match?.label || c.label);
+    const had = new Set(match ? assignedBefore.get(match.id) || [] : []);
+    for (const e of c.interpreters) {
+      if (had.has(e)) continue;
+      const bad = T.eligibilityError(mod.team, e, c.lang_code, lang?.role_name);
+      if (bad) throw new ApiError(400, bad.message, bad.code);
+    }
+  }
+
   const removed = existing.filter((e) => !used.has(e.id) && !scheduled.get(e.id)?.size);
   const cleared = [];
   await withTx(db, async (tx) => {
@@ -499,7 +568,7 @@ export async function upsertSession(ctx, user, body = {}) {
   if (body.regenerate_token === true) {
     session = await one(db, `UPDATE interpretation_sessions SET public_token = $2, updated_at = now() WHERE id = $1 RETURNING *`, [session.id, I.newPublicToken()]);
   }
-  if (body.channels !== undefined) await replaceChannels(ctx, session, body.channels);
+  if (body.channels !== undefined) await replaceChannels(ctx, session, body.channels, a.ev);
   if (body.end === true) await endSession(ctx, session);
   if (body.reopen === true) {
     await db.query(`UPDATE interpretation_sessions SET status = 'idle', ended_at = NULL, updated_at = now() WHERE id = $1 AND status = 'ended'`, [session.id]);
@@ -519,6 +588,7 @@ export async function interpreterJoin(ctx, user, body = {}) {
   const lk = ctx.deps.livekit;
   await ensureRoom(ctx, ch.room_name, I.roomMetadata(ch));
   const partnersList = (await interpretersOf(db, [ch.id])).get(ch.id) || [];
+  const roleName = (await T.moduleLanguages(db).catch(() => ({ languages: [] }))).languages.find((l) => l.lang_code === ch.lang_code)?.role_name || null;
   const names = await namesOf(db, [me, ...partnersList, ch.active_interpreter_email]);
   const token = await lk.mintToken({
     identity: me, name: names.get(me) || me, room: ch.room_name,
@@ -539,7 +609,7 @@ export async function interpreterJoin(ctx, user, body = {}) {
     url: lk.settings?.url || null,
     token,
     identity: me,
-    channel: channelOut(ch, names),
+    channel: { ...channelOut(ch, names), role_name: roleName },
     partners: partnersList.filter((e) => e !== me).map((e) => ({ email: e, name: names.get(e) || e })),
     original,
     session_status: session.status,

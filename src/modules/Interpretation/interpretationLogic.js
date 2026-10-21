@@ -133,27 +133,70 @@ export function removeInterpreter(channels, id, email) {
   return (channels || []).map((c) => (c.id === id ? { ...c, interpreters: (c.interpreters || []).filter((i) => i.email !== email) } : c));
 }
 
-// Języki z podpowiedzi, których jeszcze nie ma na liście.
-export function remainingPresets(presets, channels) {
+// ── Karta ↔ moduł Tłumaczenia ───────────────────────────────────────────────
+// Języki kanałów = Służby modułu Tłumaczenia (interp-session-get → module.languages; serwer
+// odrzuca inne). Konwencja nazw: personel widzi nazwę Służby („Tłumacz EN”), słuchacz — nazwę
+// języka w tym języku (channel.label: „English”, „Українська”: strona słuchacza, plakat, aplikacja).
+export const MODULE_ROLES_PATH = '/tlumaczenia?tab=roles';
+export const MODULE_MEMBERS_PATH = '/tlumaczenia?tab=members';
+export const MODULE_SCHEDULE_PATH = '/tlumaczenia?tab=schedule';
+
+export const staffLabel = (c) => String(c?.role_name || c?.label || String(c?.lang_code || '').toUpperCase());
+
+// Języki modułu, których jeszcze nie ma wśród kanałów (przyciski „+ Tłumacz DE”).
+export function languagesToAdd(module, channels) {
   const have = new Set((channels || []).map((c) => c.lang_code));
-  return (presets || []).filter((p) => !have.has(p.lang_code));
+  return (module?.languages || []).filter((l) => !have.has(l.lang_code));
 }
 
-export const LANG_CODE_RE = /^[a-z]{2,3}(-[a-z0-9]{2,8})?$/;
-export const isLangCode = (v) => LANG_CODE_RE.test(String(v || '').trim().toLowerCase().replace(/_/g, '-'));
+// Kogo można dopisać jako tłumacza kanału — tylko zespół Tłumaczeń (serwer: team[].eligible —
+// Służba języka, a gdy nikt jej nie ma, cały aktywny zespół; jak w Grafiku). Bez konta albo
+// z nieobecnością — widoczni, ale zablokowani (jak lista wyboru w Grafiku). Dostępni najpierw.
+export function interpreterOptions(team, channel) {
+  const taken = new Set((channel?.interpreters || []).map((i) => String(i?.email || i || '').toLowerCase()));
+  const code = channel?.lang_code;
+  return (team || [])
+    .filter((m) => (m.eligible || []).includes(code) && !(m.email && taken.has(m.email)))
+    .map((m) => ({ ...m, blocked: !m.email ? 'no_account' : m.absent ? 'absent' : null }))
+    .sort((a, b) => (a.blocked ? 1 : 0) - (b.blocked ? 1 : 0) || String(a.name).localeCompare(String(b.name), 'pl'));
+}
+
+const shortDay = (v) => { const [, m, d] = String(v || '').slice(0, 10).split('-'); return d && m ? `${d}.${m}` : ''; };
+// Nieobecność jak w Grafiku: „nieobecność 17.10–19.10” (zgłoszona) / „nieobecność” (kolumna Nieobecni).
+export function absenceText(absent) {
+  if (!absent) return '';
+  if (absent.manual) return tr('nieobecność');
+  const range = absent.from === absent.to || !absent.to ? shortDay(absent.from) : `${shortDay(absent.from)}–${shortDay(absent.to)}`;
+  return tr('nieobecność {range}', { range });
+}
+
+// Ostrzeżenie przy przypisanym tłumaczu (serwer: interpreters[].warning) — osoba zostaje w kanale.
+export function interpreterWarningText(warning, channel) {
+  switch (warning) {
+    case 'not_in_team': return tr('spoza zespołu Tłumaczeń');
+    case 'inactive': return tr('nieaktywny w zespole Tłumaczeń');
+    case 'no_role': return tr('bez Służby {role}', { role: staffLabel(channel) });
+    default: return '';
+  }
+}
 
 // Słuchacze: „1 słuchacz” itp. robi trPlural w komponencie; tu tylko suma bez nulli.
 export const totalListeners = (stats) => (stats?.channels || []).reduce((n, c) => n + (Number(c.listeners) || 0), 0);
 
-// Grafik służby Tłumaczeń (interp-session-get → schedule): osoby czekające na potwierdzenie i bez
-// konta, przypięte do kanałów po kodzie języka; osoby z językiem bez kanału — osobno (`orphans`).
+// Grafik służby Tłumaczeń (interp-session-get → schedule): osoby, które jeszcze nie tłumaczą
+// (czekają na odpowiedź / nie powiadomiono / bez e-maila / potwierdzone bez konta), przypięte do
+// kanałów po kodzie języka; osoby z językiem bez kanału — osobno (`orphans`). state jak legenda
+// Grafiku (SCHEDULE_STATUS) + 'no_account'. Starszy serwer: bez state → z listy.
 export function scheduleByChannel(schedule, channels) {
   const codes = new Set((channels || []).map((c) => c.lang_code));
   const byLang = new Map();
   const orphans = [];
   const push = (list, kind) => {
     for (const p of list || []) {
-      const entry = { name: p?.name || '', label: p?.label || p?.lang_code || '', lang_code: p?.lang_code || null, kind };
+      const entry = {
+        name: p?.name || '', label: p?.role_name || p?.label || p?.lang_code || '', lang_code: p?.lang_code || null,
+        kind, state: p?.state || kind,
+      };
       if (entry.lang_code && codes.has(entry.lang_code)) {
         if (!byLang.has(entry.lang_code)) byLang.set(entry.lang_code, []);
         byLang.get(entry.lang_code).push(entry);

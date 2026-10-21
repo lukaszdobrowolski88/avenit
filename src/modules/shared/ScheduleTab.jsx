@@ -5,7 +5,7 @@ import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import Button from '../../components/Button';
 import { supabase, getCachedUser } from '../../lib/supabase';
-import { ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX, Users, Calendar, AlertTriangle, RefreshCw, Plus, MapPin, CircleDashed, Rows, Columns, Wand2, Copy, Bookmark, Printer, BellRing, CalendarPlus } from 'lucide-react';
+import { ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download, CalendarX, Users, Calendar, AlertTriangle, RefreshCw, Plus, MapPin, Rows, Columns, Wand2, Copy, Bookmark, Printer, BellRing, CalendarPlus } from 'lucide-react';
 import { toast } from '../../lib/toast';
 import { useCampusBadge } from '../../components/CampusBadge';
 import { useT, tr, appLocale } from '../../i18n';
@@ -21,6 +21,7 @@ import ProposalModal from './schedule/ProposalModal';
 import TemplatesModal from './schedule/TemplatesModal';
 import ReminderSettingsModal from './schedule/ReminderSettingsModal';
 import MyServicesModal from './schedule/MyServicesModal';
+import { SCHEDULE_STATUS } from './schedule/statusMeta';
 import './scheduleGrid.css';
 import '../../components/pickList.css';
 import '../../components/toolbar.css';
@@ -151,14 +152,8 @@ function useDropdownPosition(triggerRef, isOpen) {
   return coords;
 }
 
-// Status osoby w komórce — kolorowy jest tylko znak, pigułka zostaje neutralna (bez „tęczy”).
-const STATUS = {
-  accepted: { icon: Check, cls: 'text-green-700 dark:text-green-400', label: () => tr('potwierdzone') },
-  pending: { icon: Clock, cls: 'text-amber-700 dark:text-amber-400', label: () => tr('czeka na odpowiedź') },
-  rejected: { icon: XIcon, cls: 'text-red-600 dark:text-red-400', label: () => tr('odmowa') },
-  draft: { icon: CircleDashed, cls: 'text-gray-400 dark:text-gray-500', label: () => tr('jeszcze nie powiadomiono') },
-  noemail: { icon: AlertTriangle, cls: 'text-amber-700 dark:text-amber-400', label: () => tr('brak e-maila — bez powiadomienia') },
-};
+// Status osoby w komórce — wspólna legenda (też karta „Tłumaczenie na żywo”).
+const STATUS = SCHEDULE_STATUS;
 
 function PersonChip({ name, status = 'draft', conflict = null }) {
   const meta = STATUS[status] || STATUS.draft;
