@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { ACCOUNTS_FN, ACCOUNTS_TEAM, accountsById, type TeamAccount } from '@avenit/shared/src/lib/teamAccounts.js';
 
 // Skład zespołu (Członkowie / Nauczyciele) i służby (team_roles + team_member_roles) —
 // kontrakt jak na webie: WorshipModule/MediaTeamModule/AtmosferaTeamModule/KidsModule/Tłumaczenia
@@ -70,6 +71,21 @@ export const useRoster = (team: string, table: string | undefined) =>
           memberIds: links.filter((l) => String(l.role_id) === String(r.id)).map((l) => String(l.member_id)),
         })),
       };
+    },
+  });
+
+// Konta w aplikacji osób ze składu (tylko Tłumaczenia — konto jest potrzebne do tłumaczenia na
+// żywo): id osoby → 'active' | 'inactive' | 'none'. Obiekt, nie Map (cache zapytań jest trwały).
+// Błąd / starszy serwer — pusto (bez oznaczeń).
+export const useRosterAccounts = (team: string) =>
+  useQuery({
+    queryKey: ['team', team, 'accounts'],
+    enabled: team === ACCOUNTS_TEAM,
+    staleTime: 60_000,
+    queryFn: async (): Promise<Record<string, TeamAccount>> => {
+      const { data, error } = await supabase.functions.invoke(ACCOUNTS_FN, { body: {}, silent: true } as never);
+      if (error) return {};
+      return Object.fromEntries(accountsById(data));
     },
   });
 

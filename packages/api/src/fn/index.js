@@ -37,6 +37,8 @@ const MODULES = [
   'my-blockouts',
   'ministry-roster',
   'team-availability',
+  // Moduł Tłumaczenia → Członkowie: kto ze składu nie ma konta w aplikacji (interpretation/team.js).
+  'tlumaczenia-accounts',
   'my-shared-materials',
   'program-songs-preview',
   'prayer-wall',

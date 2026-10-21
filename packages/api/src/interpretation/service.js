@@ -58,7 +58,9 @@ import { loadGrants } from '../dataapi/registry.js';
 import { isAppAdmin } from '../dataapi/komunikatorPlus.js';
 import { can } from '@avenit/shared/src/permissions/resolve.js';
 import { visibleEventFor, loadEvent } from '../meetings/events.js';
-import { activeAccounts, namesOf, withTx } from '../meetings/service.js';
+import { activeAccounts, namesOf, withTx, background } from '../meetings/service.js';
+import { deliverNotifications } from '../dataapi/boardNotify.js';
+import { sendEmail } from '../lib/email.js';
 import { eventTimes } from '../meetings/logic.js';
 import { churchName } from '../calls/guests.js';
 import { getLivekit, CALLS_DISABLED } from '../calls/livekit.js';
@@ -67,6 +69,7 @@ import { rsvpBase } from '../fn/rsvp-send.js';
 import * as I from './logic.js';
 import { scheduleStatusOf } from './scheduleSync.js';
 import * as T from './team.js';
+import { canNotify, emptySnapshot, notifyInterpreterChanges, snapshotInterpreters } from './notify.js';
 
 export const MANAGE_CAPABILITY = 'action:calendar:manage_interpretation';
 const lower = (v) => String(v ?? '').trim().toLowerCase();
@@ -88,7 +91,8 @@ export const MESSAGES = {
 let overrides = null;
 export function setInterpDeps(o) { overrides = o; } // testy (null = przywróć)
 export function interpDeps(extra = {}) {
-  return { livekit: getLivekit(), ...(overrides || {}), ...extra };
+  // sendEmail / deliver — powiadomienia tłumaczy dodanych ręcznie w karcie (notify.js).
+  return { livekit: getLivekit(), sendEmail, deliver: deliverNotifications, ...(overrides || {}), ...extra };
 }
 
 export function interpCtxFromRequest(req) {
@@ -547,10 +551,18 @@ export async function upsertSession(ctx, user, body = {}) {
   const { db } = ctx;
   const a = await assertManager(ctx, user, body.event_id);
   let session = a.session;
+  // Tłumacze dodani / zdjęci ręcznie → e-mail + dzwonek + push PO zapisie (notify.js).
+  // Błąd odczytu stanu nigdy nie psuje zapisu — wtedy bez powiadomień (null = nie wiemy, kto nowy).
+  const snap = (id) => snapshotInterpreters(db, id).catch((err) => { warn(ctx, err, 'stan tłumaczy do powiadomień'); return null; });
+  const wants = canNotify(ctx) && (body.remove === true || body.channels !== undefined);
+  const before = wants ? (session ? await snap(session.id) : emptySnapshot()) : null;
+  const notify = !!before;
+  const announce = (after) => (after ? background(ctx, () => notifyInterpreterChanges(ctx, { ev: a.ev, before, after, actorEmail: a.me })) : undefined);
   if (body.remove === true) {
     if (session) {
       await endSession(ctx, session);
       await db.query(`DELETE FROM interpretation_sessions WHERE id = $1`, [session.id]);
+      if (notify) await announce(emptySnapshot());
     }
     return sessionView(ctx, { ...a, session: null, mine: new Set() });
   }
@@ -574,6 +586,7 @@ export async function upsertSession(ctx, user, body = {}) {
     await db.query(`UPDATE interpretation_sessions SET status = 'idle', ended_at = NULL, updated_at = now() WHERE id = $1 AND status = 'ended'`, [session.id]);
   }
   session = await sessionById(db, session.id);
+  if (notify) await announce(await snap(session.id));
   const mine = await myChannelIds(db, session.id, a.me);
   return sessionView(ctx, { ...a, session, mine });
 }
