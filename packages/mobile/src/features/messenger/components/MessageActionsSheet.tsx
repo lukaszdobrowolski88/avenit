@@ -13,6 +13,7 @@ import {
   Pin,
   PinOff,
   Trash2,
+  Users,
   type LucideIcon,
 } from "lucide-react-native";
 import { REACTION_EMOJIS } from "../api";
@@ -46,6 +47,8 @@ interface Props {
   onTranslate?: () => void;
   /** K6: „Kto przeczytał” (moje wiadomości w grupach i kanałach). */
   onReadBy?: () => void;
+  /** „Kto zareagował” — gdy wiadomość ma reakcje (arkusz „Reakcje”). */
+  onShowReactions?: () => void;
   /** K10: zgłoszenie wiadomości i blokada nadawcy (cudze wiadomości). */
   onReport?: () => void;
   blockLabel?: string | null;
@@ -161,6 +164,7 @@ export const MessageActionsSheet = ({
   translating,
   onTranslate,
   onReadBy,
+  onShowReactions,
   onReport,
   blockLabel,
   onToggleBlock,
@@ -183,6 +187,7 @@ export const MessageActionsSheet = ({
       : []),
     ...(onRemind ? [{ key: "remind", label: "Przypomnij mi", Icon: AlarmClock, onPress: wrap(onRemind) }] : []),
     ...(onReadBy ? [{ key: "readby", label: "Kto przeczytał", Icon: Eye, onPress: wrap(onReadBy) }] : []),
+    ...(onShowReactions ? [{ key: "reactions", label: "Kto zareagował", Icon: Users, onPress: wrap(onShowReactions) }] : []),
     ...(extraActions ?? []).map((a) => ({ key: a.key, label: a.label, Icon: a.Icon, onPress: wrap(a.onPress) })),
   ];
   if (canPin) {

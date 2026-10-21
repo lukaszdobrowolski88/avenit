@@ -33,9 +33,11 @@ import {
   SearchX,
   CheckCheck,
   Bookmark,
+  MoreHorizontal,
 } from "lucide-react-native";
 import { PageHeader } from "../../../../src/components/ui/PageHeader";
 import { MeetingSheet } from "../../../../src/features/meetings/components/MeetingSheet";
+import { MessengerMoreSheet } from "../../../../src/features/messenger/components/MessengerMoreSheet";
 import { useCallsEnabled } from "../../../../src/features/calls/api";
 import { EmptyState } from "../../../../src/components/ui/EmptyState";
 import { usePermissions } from "../../../../src/lib/permissions";
@@ -173,6 +175,7 @@ export default function MessengerScreen() {
   const [filter, setFilter] = useState<ConversationFilter>("all");
   const [search, setSearch] = useState("");
   const [meetingOpen, setMeetingOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const callsEnabled = useCallsEnabled();
   const qc = useQueryClient();
   const { data, isLoading, isError, error, refetch } = useConversations(myEmail);
@@ -258,64 +261,65 @@ export default function MessengerScreen() {
           subtitle={totalUnread > 0 ? `Nieprzeczytane: ${totalUnread}` : "Wiadomości wspólnoty"}
           Icon={MessageCircle}
           right={
+            // Dwa przyciski, nie cztery — inaczej tytuł łamał się w środku słowa („Komunik/ator”).
+            // Przypomnienia, zapisane i „Zaplanuj spotkanie” są w „Więcej”.
             <View style={{ flexDirection: "row", gap: 8 }}>
-              {/* „Moje przypomnienia” — przypomnienia o wiadomościach (Przypomnij mi). */}
               <Pressable
-                onPress={() => router.push("/(app)/messenger/reminders" as never)}
+                onPress={() => setMoreOpen(true)}
                 accessibilityRole="button"
-                accessibilityLabel="Moje przypomnienia"
+                accessibilityLabel="Więcej opcji Komunikatora"
                 hitSlop={8}
                 className="active:opacity-70"
                 style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
               >
-                <AlarmClock size={18} color="#2A2312" strokeWidth={2.2} />
+                <MoreHorizontal size={18} color="#2A2312" strokeWidth={2.2} />
               </Pressable>
-              {/* Zapisane wiadomości (migracja 114) — dla każdego uczestnika rozmów */}
-              <Pressable
-                onPress={() => router.push("/(app)/messenger/saved" as never)}
-                accessibilityRole="button"
-                accessibilityLabel="Zapisane wiadomości"
-                hitSlop={8}
-                className="active:opacity-70"
-                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
-              >
-                <Bookmark size={18} color="#2A2312" strokeWidth={2.2} />
-              </Pressable>
-            {canCreate ? (
-              <View style={{ flexDirection: "row", gap: 8 }}>
-              {callsEnabled ? (
+              {canCreate ? (
                 <Pressable
-                  onPress={() => setMeetingOpen(true)}
+                  onPress={() => router.push("/(app)/messenger/new")}
                   accessibilityRole="button"
-                  accessibilityLabel="Zaplanuj spotkanie"
+                  accessibilityLabel="Nowa rozmowa"
                   hitSlop={8}
                   className="active:opacity-70"
-                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: "#2A2312",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
-                  <CalendarPlus size={18} color="#2A2312" strokeWidth={2.2} />
+                  <SquarePen size={18} color="#ffffff" strokeWidth={2.2} />
                 </Pressable>
               ) : null}
-              <Pressable
-                onPress={() => router.push("/(app)/messenger/new")}
-                accessibilityRole="button"
-                accessibilityLabel="Nowa rozmowa"
-                hitSlop={8}
-                className="active:opacity-70"
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: "#2A2312",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <SquarePen size={18} color="#ffffff" strokeWidth={2.2} />
-              </Pressable>
-              </View>
-            ) : null}
             </View>
           }
+        />
+
+        <MessengerMoreSheet
+          visible={moreOpen}
+          onClose={() => setMoreOpen(false)}
+          actions={[
+            // „Moje przypomnienia” — przypomnienia o wiadomościach (Przypomnij mi).
+            {
+              key: "reminders",
+              label: "Moje przypomnienia",
+              hint: "Wiadomości z „Przypomnij mi”",
+              Icon: AlarmClock,
+              onPress: () => router.push("/(app)/messenger/reminders" as never),
+            },
+            // Zapisane wiadomości (migracja 114) — dla każdego uczestnika rozmów.
+            {
+              key: "saved",
+              label: "Zapisane wiadomości",
+              Icon: Bookmark,
+              onPress: () => router.push("/(app)/messenger/saved" as never),
+            },
+            ...(canCreate && callsEnabled
+              ? [{ key: "meeting", label: "Zaplanuj spotkanie", hint: "Rozmowa wideo z zaproszeniami", Icon: CalendarPlus, onPress: () => setMeetingOpen(true) }]
+              : []),
+          ]}
         />
 
         {/* „Zaplanuj spotkanie” (jak web) — po zapisaniu otwieramy rozmowę spotkania. */}

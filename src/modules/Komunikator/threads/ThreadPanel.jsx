@@ -107,6 +107,7 @@ export default function ThreadPanel({
       isOwn,
       currentUserEmail: userEmail,
       nameOf,
+      userOf,
       onToggleReaction: toggleReaction,
       reactions: getReactionsForMessage(m.id),
       onEdit: isOwn && canEditOwn ? handleEdit : undefined,

@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, useId } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical, Edit2, Trash2, Check, X, FileText, Image, Table, File, Download, CheckCheck, Reply, Smile, Forward, Pin, Copy, Plus, Eye, Languages, Flag, Ban, Loader, MessagesSquare, AlarmClock } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Check, X, FileText, Image, Table, File, Download, CheckCheck, Reply, Smile, Forward, Pin, Copy, Plus, Eye, Languages, Flag, Ban, Loader, MessagesSquare, AlarmClock, Users } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageTime, formatFileSize, isImageFile, getFileIcon } from '../utils/messageHelpers';
 import { REACTION_EMOJIS } from '../hooks/useReactions';
 import EmojiPicker from './EmojiPicker';
+import ReactionsModal from './ReactionsModal';
+import { reactionTabs, formatReactorNames } from '@avenit/shared/src/lib/reactionPeople.js';
 import PollCard from './PollCard';
 import PrayerCard from './PrayerCard';
 import EventCard from './EventCard';
@@ -56,6 +58,8 @@ export default function MessageBubble({
   onVote,
   onTogglePraying,
   nameOf,
+  // Osoba z składu rozmowy po e-mailu ({ full_name, avatar_url, email }) — avatary w „Reakcje”.
+  userOf,
   // Kanały ogłoszeń: „Przeczytało N z M” (K6)
   showReadCount = false,
   readCount = 0,
@@ -83,6 +87,9 @@ export default function MessageBubble({
   const [showMenu, setShowMenu] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showFullEmoji, setShowFullEmoji] = useState(false);
+  // Widok „Reakcje” (kto zareagował): null = zamknięty, 'all' albo konkretne emoji.
+  const [reactionsView, setReactionsView] = useState(null);
+  const tipId = useId();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [copied, setCopied] = useState(false);
@@ -291,6 +298,13 @@ export default function MessageBubble({
   }
 
   const quickReactions = REACTION_EMOJIS;
+  // Kto zareagował: imiona ze składu rozmowy (nameOf), „Ty” dla mnie, bez e-maili.
+  const whoNameOf = (email) => userOf?.(email)?.full_name || nameOf?.(email) || null;
+  const { tabs: reactionTabsList, total: reactionTotal } = reactionTabs(reactions, { me: currentUserEmail, nameOf: whoNameOf });
+  const peopleOf = (emoji) => reactionTabsList.find((t) => t.emoji === emoji)?.people || [];
+  const whoLabel = (emoji) => formatReactorNames(peopleOf(emoji), {
+    meLabel: tr('Ty'), and: tr('i'), others: (n) => tr('{n} innych', { n }),
+  });
   const menuItem = 'flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 transition';
   const status = deliveryStatus || (isRead ? 'read' : 'sent');
 
@@ -429,6 +443,9 @@ export default function MessageBubble({
                   {onToggleReaction && (
                     <button type="button" role="menuitem" onClick={() => { setShowMenu(false); setShowReactionPicker(true); setShowFullEmoji(false); }} className={menuItem}><Smile size={14} className="text-gray-400" />{tr('Zareaguj')}</button>
                   )}
+                  {reactionTotal > 0 && (
+                    <button type="button" role="menuitem" onClick={() => { setShowMenu(false); setReactionsView('all'); }} className={menuItem}><Users size={14} className="text-gray-400" />{tr('Kto zareagował')}</button>
+                  )}
                   {onRemind && (
                     <button type="button" role="menuitem" onClick={() => { setShowMenu(false); onRemind(message); }} className={menuItem}><AlarmClock size={14} className="text-gray-400" />{tr('Przypomnij mi')}</button>
                   )}
@@ -490,14 +507,32 @@ export default function MessageBubble({
         {/* Reakcje pod wiadomością */}
         {reactions.length > 0 && (
           <div className={`flex flex-wrap gap-1.5 mt-1.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-            {reactions.map(({ emoji, count, hasUserReacted }) => (
-              <button type="button" key={emoji} onClick={() => onToggleReaction?.(message.id, emoji)}
-                aria-pressed={!!hasUserReacted}
-                className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${hasUserReacted ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 border border-accent-primary-light/50' : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
-                <span className="text-sm">{emoji}</span>
-                <span className={`font-medium ${hasUserReacted ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{count}</span>
-              </button>
-            ))}
+            {reactions.map(({ emoji, count, hasUserReacted }) => {
+              const who = whoLabel(emoji);
+              const tip = `${tipId}-${emoji}`;
+              return (
+                // Klik = moja reakcja tak/nie; najechanie lub fokus = kto zareagował (dymek);
+                // prawy przycisk / Shift+F10 / menu „Kto zareagował” = pełna lista w oknie „Reakcje”.
+                <span key={emoji} className="relative group/rx">
+                  <button type="button" onClick={() => onToggleReaction?.(message.id, emoji)}
+                    onContextMenu={(e) => { e.preventDefault(); setReactionsView(emoji); }}
+                    onKeyDown={(e) => { if (e.key === 'F10' && e.shiftKey) { e.preventDefault(); setReactionsView(emoji); } }}
+                    aria-pressed={!!hasUserReacted}
+                    aria-label={tr('Reakcja {emoji}: {n}', { emoji, n: count })}
+                    aria-describedby={who ? tip : undefined}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${hasUserReacted ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 border border-accent-primary-light/50' : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
+                    <span className="text-sm" aria-hidden="true">{emoji}</span>
+                    <span aria-hidden="true" className={`font-medium ${hasUserReacted ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{count}</span>
+                  </button>
+                  {who && (
+                    <span id={tip} role="tooltip"
+                      className={`pointer-events-none absolute bottom-full mb-1.5 z-20 w-max max-w-[240px] px-2.5 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-700 text-white text-[11px] leading-snug shadow-lg invisible opacity-0 group-hover/rx:visible group-hover/rx:opacity-100 group-focus-within/rx:visible group-focus-within/rx:opacity-100 transition-opacity ${isOwn ? 'right-0' : 'left-0'}`}>
+                      <span className="font-semibold">{emoji}</span> {who}
+                    </span>
+                  )}
+                </span>
+              );
+            })}
           </div>
         )}
 
@@ -538,6 +573,19 @@ export default function MessageBubble({
       </div>
 
       {showAvatar && isOwn && <div className="w-8 flex-shrink-0" />}
+
+      {/* Okno jest w portalu, ale zdarzenia React idą w górę drzewa — nie odpalaj swipe-to-reply. */}
+      <div className="hidden" onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+      <ReactionsModal
+        isOpen={!!reactionsView && reactionTotal > 0}
+        onClose={() => setReactionsView(null)}
+        tabs={reactionTabsList}
+        total={reactionTotal}
+        initialEmoji={reactionsView === 'all' ? null : reactionsView}
+        userOf={userOf}
+        onRemoveMine={onToggleReaction ? (emoji) => onToggleReaction(message.id, emoji) : undefined}
+      />
+      </div>
     </div>
   );
 }
