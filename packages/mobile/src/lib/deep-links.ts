@@ -4,6 +4,9 @@ import { goToTab } from './navigation';
 import { MODULE_REGISTRY, type ModuleEntry } from '../features/modules/registry';
 import { openModule, openOnWeb } from '../features/modules/useModules';
 import { threadFromLink } from '../features/messenger/threads';
+import { interpretationTargetFromPath } from '../features/interpretation/logic';
+import { openInterpretation } from '../features/interpretation/navigation';
+import { tenantWebBase } from './supabase';
 
 // Ekran zadania (element tablicy) — wspólny cel linków z powiadomień, pulpitu i list zadań.
 export const openTask = (router: Router, itemId: string | number, boardId?: string | number | null) => {
@@ -64,6 +67,15 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
   let path = link;
   // Strip schemat avenit:// (i toleruj dawne linki schtomy:// oraz church://, jeśli ktoś by je miał).
   path = path.replace(/^avenit:\/\//, '/').replace(/^schtomy:\/\//, '/').replace(/^church:\/\//, '/');
+  // Pełny adres weba TEGO kościoła (np. https://<kościół>.avenit.pl/tlumaczenie/…) → sama ścieżka.
+  path = stripOwnWebHost(path);
+  // Tłumaczenie na żywo: /tlumaczenie/<token> (link/QR), /tlumaczenie/sluchaj/<id> → ekran słuchacza;
+  // konsola tłumacza i „Oryginał” → web.
+  const interp = interpretationTargetFromPath(path);
+  if (interp) {
+    openInterpretation(router, interp);
+    return;
+  }
   // Zadanie (link z ?item=) — ekran zadania, a nie sama strona modułu (zapytanie ginęło).
   const task = taskFromLink(path);
   if (task) {
@@ -174,6 +186,15 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
   }
   // Nie umiemy rozpoznać — Start (zakładka, bez dokładania jej na stos).
   goToTab(router, 'dashboard');
+};
+
+// https://<host weba tego kościoła>/ścieżka → /ścieżka (obce adresy bez zmian).
+const stripOwnWebHost = (link: string): string => {
+  const m = /^https?:\/\/([^/?#:]+)(?::\d+)?/i.exec(link);
+  if (!m) return link;
+  const own = /^https?:\/\/([^/?#:]+)/i.exec(tenantWebBase())?.[1]?.toLowerCase();
+  if (!own || m[1].toLowerCase() !== own) return link;
+  return link.slice(m[0].length) || '/';
 };
 
 // Ścieżki weba bez osobnego modułu w menu → miejsce w apce.
