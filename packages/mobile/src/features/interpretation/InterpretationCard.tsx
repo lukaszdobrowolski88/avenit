@@ -5,14 +5,15 @@ import { Headphones, Mic } from 'lucide-react-native';
 import { B } from '../../components/ui/brand';
 import { FONT as F } from '../../lib/fonts';
 import { openOnWeb } from '../modules/useModules';
-import { CARD_POLL_MS, cardDataFromSession, cardSummary, cardTeamSections, type CardData, type CardTeamSection, type SessionGetFull } from './logic';
+import { CARD_POLL_MS, PERSON_NOTE, cardDataFromSession, cardSummary, cardTeamSections, warningNote, type CardData, type CardTeamSection, type SessionGetFull } from './logic';
 import { fetchSession } from './useListener';
 
 // Karta „Tłumaczenie na żywo” na ekranie wydarzenia (obok „Spotkania online”). Jedno wywołanie
 // interp-session-get na wejście w wydarzenie; karta tylko, gdy wydarzenie ma niezakończone
 // tłumaczenie z językami (błąd / brak sesji / starszy serwer — bez karty, po cichu).
-// Zarządzający i tłumacze widzą też, kto tłumaczy (ręcznie / z grafiku Tłumaczeń, niepotwierdzeni,
-// bez konta) — tylko podgląd; zmiany w składzie robi się na webie.
+// Zarządzający, tłumacze i członkowie zespołu Tłumaczeń widzą też, kto tłumaczy (ręcznie / z grafiku,
+// niepotwierdzeni, bez konta, ostrzeżenia spoza zespołu) — tylko podgląd; nagłówki kanałów jak
+// w module (Służba „Tłumacz EN”), zmiany robi się na webie (karta wydarzenia / moduł Tłumaczenia).
 export function InterpretationCard({ eventId, style }: { eventId: number; style?: ViewStyle }) {
   const router = useRouter();
   const q = useQuery({
@@ -77,8 +78,6 @@ export function InterpretationCard({ eventId, style }: { eventId: number; style?
   );
 }
 
-const NOTE: Record<string, string> = { pending: 'czeka na potwierdzenie', no_account: 'bez konta w aplikacji' };
-
 // „Tłumacze” — per język: imiona; z grafiku z plakietką, niepotwierdzeni i bez konta wyszarzeni.
 function TeamSections({ sections }: { sections: CardTeamSection[] }) {
   return (
@@ -89,16 +88,19 @@ function TeamSections({ sections }: { sections: CardTeamSection[] }) {
           <Text style={{ fontSize: 13, color: B.ink, fontFamily: F.semibold }}>{sec.label}</Text>
           {sec.people.length ? (
             sec.people.map((p) => {
-              const muted = p.state === 'pending' || p.state === 'no_account';
+              const muted = p.state !== 'manual' && p.state !== 'schedule';
+              const warn = warningNote(p.warning, sec.label);
               return (
                 <View key={`${p.state}:${p.name}`} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, rowGap: 2 }}>
                   <Text style={{ fontSize: 13, lineHeight: 19, color: muted ? B.ink4 : B.ink2, fontFamily: F.medium }}>{p.name}</Text>
                   {p.state === 'schedule' ? (
                     <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: B.kurkumaSoft }}>
-                      <Text style={{ fontSize: 11, color: B.goldDeep, fontFamily: F.semibold }}>z grafiku</Text>
+                      <Text style={{ fontSize: 11, color: B.goldDeep, fontFamily: F.semibold }}>z grafiku · potwierdzone</Text>
                     </View>
                   ) : null}
-                  {muted ? <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.medium }}>· {NOTE[p.state]}</Text> : null}
+                  {muted ? <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.medium }}>· {PERSON_NOTE[p.state as keyof typeof PERSON_NOTE]}</Text> : null}
+                  {warn ? <Text style={{ fontSize: 12, color: B.goldDeep, fontFamily: F.semibold }}>· {warn}</Text> : null}
+                  {p.absent ? <Text style={{ fontSize: 12, color: B.danger, fontFamily: F.semibold }}>· nieobecność</Text> : null}
                 </View>
               );
             })

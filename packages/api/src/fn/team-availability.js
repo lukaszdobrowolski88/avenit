@@ -41,9 +41,21 @@ export default async function handler(req, reply) {
   if (!access.ok) return reply.code(403).send({ error: 'Brak dostępu do tej służby' });
 
   try {
-    // Osoby zespołu → profil członka (po e-mailu, awaryjnie po imieniu i nazwisku) → wpisy.
-    const { rows } = await req.db.query(
-      `WITH team AS (
+    return reply.send({ blockouts: await teamBlockouts(req.db, table, from, to) });
+  } catch (e) {
+    // Brak tabeli zespołu / kolumn w tenancie — pusta lista zamiast błędu grafiku.
+    req.log?.warn?.({ err: e }, 'team-availability failed');
+    return reply.send({ blockouts: [] });
+  }
+}
+
+// Zgłoszone nieobecności osób zespołu (tabela składu `table`) w zakresie dat:
+// [{ name, start_date, end_date }] — imię z listy zespołu, BEZ powodu. Używane też przez kartę
+// „Tłumaczenie na żywo” (interpretation/team.js) — ta sama reguła dopasowania co w grafiku.
+export async function teamBlockouts(db, table, from, to) {
+  if (!KEY_RE.test(String(table || ''))) return [];
+  const { rows } = await db.query(
+    `WITH team AS (
          SELECT DISTINCT trim(full_name) AS name, lower(email) AS email
            FROM ${'"' + table + '"'}
           WHERE full_name IS NOT NULL AND trim(full_name) <> ''
@@ -62,12 +74,7 @@ export default async function handler(req, reply) {
          JOIN volunteer_blockouts b ON b.member_id = l.member_id
         WHERE b.start_date <= $2::date AND b.end_date >= $1::date
         ORDER BY l.name, b.start_date`,
-      [from, to]
-    );
-    return reply.send({ blockouts: rows });
-  } catch (e) {
-    // Brak tabeli zespołu / kolumn w tenancie — pusta lista zamiast błędu grafiku.
-    req.log?.warn?.({ err: e }, 'team-availability failed');
-    return reply.send({ blockouts: [] });
-  }
+    [from, to]
+  );
+  return rows;
 }

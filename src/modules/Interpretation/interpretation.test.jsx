@@ -89,13 +89,35 @@ describe('interpretationLogic', () => {
     ch = [{ id: 'x', lang_code: 'en', label: 'English', interpreters: [] }];
     ch = L.addInterpreter(ch, 'x', { email: 'ola@x.pl', name: 'Ola' });
     ch = L.addInterpreter(ch, 'x', { email: 'ola@x.pl', name: 'Ola' });
-    ch = L.updateChannel(ch, 'x', { label: 'English (US)' });
-    expect(L.channelsPayload(ch)).toEqual([{ id: 'x', lang_code: 'en', label: 'English (US)', interpreters: ['ola@x.pl'] }]);
+    expect(L.channelsPayload(ch)).toEqual([{ id: 'x', lang_code: 'en', label: 'English', interpreters: ['ola@x.pl'] }]);
     expect(L.channelsPayload(L.removeInterpreter(ch, 'x', 'ola@x.pl'))[0].interpreters).toEqual([]);
-    expect(L.remainingPresets([{ lang_code: 'en' }, { lang_code: 'uk' }], ch).map((p) => p.lang_code)).toEqual(['uk']);
-    expect(L.isLangCode('pt_BR')).toBe(true);
-    expect(L.isLangCode('angielski')).toBe(false);
     expect(L.totalListeners({ channels: [{ listeners: 3 }, { listeners: null }, { listeners: 2 }] })).toBe(5);
+  });
+
+  it('moduł Tłumaczenia: nazwy, języki do dodania, wybór tłumacza jak w Grafiku', () => {
+    expect(L.staffLabel({ role_name: 'Tłumacz EN', label: 'English', lang_code: 'en' })).toBe('Tłumacz EN');
+    expect(L.staffLabel({ label: 'English', lang_code: 'en' })).toBe('English');
+    expect(L.staffLabel({ lang_code: 'en' })).toBe('EN');
+    const module = { languages: [{ lang_code: 'en', role_name: 'Tłumacz EN', label: 'English' }, { lang_code: 'uk', role_name: 'Tłumacz UK', label: 'Українська' }] };
+    expect(L.languagesToAdd(module, [{ lang_code: 'en' }]).map((l) => l.role_name)).toEqual(['Tłumacz UK']);
+    expect(L.languagesToAdd(null, [])).toEqual([]);
+    const team = [
+      { id: '1', name: 'Ola', email: 'ola@x.pl', eligible: ['en', 'uk'] },
+      { id: '2', name: 'Ewa', email: 'ewa@x.pl', eligible: ['uk'], absent: { from: '2026-10-25', to: '2026-10-27' } },
+      { id: '3', name: 'Adam', email: null, eligible: ['en', 'uk'] },
+      { id: '4', name: 'Basia', email: 'basia@x.pl', eligible: ['uk'] },
+    ];
+    expect(L.interpreterOptions(team, { lang_code: 'en', interpreters: [] }).map((m) => [m.name, m.blocked])).toEqual([['Ola', null], ['Adam', 'no_account']]);
+    expect(L.interpreterOptions(team, { lang_code: 'uk', interpreters: [{ email: 'ola@x.pl' }] }).map((m) => [m.name, m.blocked]))
+      .toEqual([['Basia', null], ['Adam', 'no_account'], ['Ewa', 'absent']]);
+    expect(L.absenceText({ from: '2026-10-25', to: '2026-10-27' })).toBe('nieobecność 25.10–27.10');
+    expect(L.absenceText({ from: '2026-10-25', to: '2026-10-25' })).toBe('nieobecność 25.10');
+    expect(L.absenceText({ manual: true })).toBe('nieobecność');
+    expect(L.absenceText(null)).toBe('');
+    expect(L.interpreterWarningText('no_role', { role_name: 'Tłumacz EN' })).toBe('bez Służby Tłumacz EN');
+    expect(L.interpreterWarningText('not_in_team')).toBe('spoza zespołu Tłumaczeń');
+    expect(L.interpreterWarningText(null)).toBe('');
+    expect(L.MODULE_ROLES_PATH).toBe('/tlumaczenia?tab=roles');
   });
 
   it('grafik Tłumaczeń: tłumacze z grafiku poza ładunkiem, oczekujący przypięci do kanałów', () => {
@@ -104,10 +126,10 @@ describe('interpretationLogic', () => {
     expect(L.hasScheduleInterpreters(ch[0])).toBe(true);
     expect(L.hasScheduleInterpreters({ interpreters: [{ email: 'a', source: 'manual' }] })).toBe(false);
     const { byLang, orphans } = L.scheduleByChannel({
-      pending: [{ lang_code: 'en', label: 'English', name: 'Jan' }, { lang_code: 'de', label: 'Deutsch', name: 'Hans' }],
-      no_account: [{ lang_code: 'en', label: 'English', name: 'Gość' }],
+      pending: [{ lang_code: 'en', label: 'English', role_name: 'Tłumacz EN', name: 'Jan', state: 'draft' }, { lang_code: 'de', label: 'Deutsch', name: 'Hans' }],
+      no_account: [{ lang_code: 'en', label: 'English', name: 'Gość', state: 'no_account' }],
     }, ch);
-    expect(byLang.get('en').map((p) => [p.name, p.kind])).toEqual([['Jan', 'pending'], ['Gość', 'no_account']]);
+    expect(byLang.get('en').map((p) => [p.name, p.kind, p.state, p.label])).toEqual([['Jan', 'pending', 'draft', 'Tłumacz EN'], ['Gość', 'no_account', 'no_account', 'English']]);
     expect(orphans.map((p) => p.name)).toEqual(['Hans']);
     expect(L.scheduleByChannel(undefined, ch).orphans).toEqual([]);
   });
@@ -115,7 +137,7 @@ describe('interpretationLogic', () => {
 
 const session = (over = {}) => ({
   id: 's1', status: 'idle', original_enabled: false, original_status: 'idle',
-  channels: [{ id: 'c1', lang_code: 'en', label: 'English', status: 'idle', mine: false, interpreters: [{ email: 'ola@x.pl', name: 'Ola' }] }],
+  channels: [{ id: 'c1', lang_code: 'en', label: 'English', role_name: 'Tłumacz EN', in_module: true, status: 'idle', mine: false, interpreters: [{ email: 'ola@x.pl', name: 'Ola' }] }],
   ...over,
 });
 const renderCard = () => render(<MemoryRouter><InterpretationCard ev={{ id: 7, title: 'Nabożeństwo', date: '2026-10-25', time: '10:00' }} /></MemoryRouter>);
@@ -128,12 +150,17 @@ describe('karta „Tłumaczenie na żywo”', () => {
     expect(container.textContent).toBe('');
   });
 
-  it('zarządzający: włączenie, języki z podpowiedzi, link i QR', async () => {
-    h.fns['interp-session-get'] = ok({ can_manage: true, my_channels: [], session: null, presets: [{ lang_code: 'en', label: 'English' }, { lang_code: 'uk', label: 'Українська' }], people: [] });
+  it('zarządzający: włączenie, języki tylko z modułu, link i QR', async () => {
+    const module = { available: true, path: '/tlumaczenia', unmapped: [], languages: [
+      { lang_code: 'en', role_name: 'Tłumacz EN', label: 'English', whole_team: false },
+      { lang_code: 'uk', role_name: 'Tłumacz UK', label: 'Українська', whole_team: true },
+    ] };
+    const team = [{ id: '1', name: 'Ola', email: 'ola@x.pl', eligible: ['en', 'uk'] }, { id: '2', name: 'Ewa', email: 'ewa@x.pl', eligible: ['uk'] }];
+    h.fns['interp-session-get'] = ok({ can_manage: true, my_channels: [], session: null, module, team });
     const upserts = [];
     h.fns['interp-session-upsert'] = (body) => {
       upserts.push(body);
-      return ok({ can_manage: true, my_channels: [], presets: [{ lang_code: 'en', label: 'English' }, { lang_code: 'uk', label: 'Українська' }], people: [],
+      return ok({ can_manage: true, my_channels: [], module, team,
         session: session({ public_url: `https://k.avenit.pl/tlumaczenie/${TOKEN}`, public_token: TOKEN }) });
     };
     h.fns['interp-stats'] = ok({ status: 'idle', channels: [{ id: 'c1', listeners: 4, status: 'idle' }], original: {} });
@@ -143,17 +170,42 @@ describe('karta „Tłumaczenie na żywo”', () => {
     expect(upserts[0]).toEqual({ event_id: '7', enable: true });
     expect(screen.getByRole('img', { name: /Kod QR/ }).innerHTML).toContain('<svg');
     expect(await screen.findByText(/4 słuchaczy/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Українська/ }));
+    // Personel widzi Służbę, słuchacz — nazwę języka; bez wolnej listy języków i „Inny język”.
+    expect(screen.getByText('Tłumacz EN')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Inny język/ })).toBeNull();
+    expect(screen.getByRole('link', { name: /Zarządzaj językami w module Tłumaczenia/ }).getAttribute('href')).toBe('/tlumaczenia?tab=roles');
+    // Wybór tłumacza EN: tylko osoby uprawnione z zespołu (Ewa nie ma Służby EN).
+    fireEvent.click(screen.getByRole('button', { name: /Dodaj tłumacza/ }));
+    expect(screen.queryByRole('list', { name: /Wybierz tłumacza/ })).toBeNull(); // Ola już jest, Ewa bez Służby EN
+    expect(screen.getByText(/Nikogo do wyboru/)).toBeTruthy();
+    expect(screen.getByText(/Członkowie zespołu Tłumaczeń ze Służbą Tłumacz EN/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Anuluj/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Tłumacz UK/ }));
     await waitFor(() => expect(upserts).toHaveLength(2));
     expect(upserts[1].channels.map((c) => c.lang_code)).toEqual(['en', 'uk']);
     expect(upserts[1].channels[0]).toEqual({ id: 'c1', lang_code: 'en', label: 'English', interpreters: ['ola@x.pl'] });
+  });
+
+  it('zarządzający: moduł bez języków — pusty stan z linkiem; kanał i osoba spoza modułu — ostrzeżenie', async () => {
+    h.fns['interp-session-get'] = ok({ can_manage: true, my_channels: [], module: { available: true, languages: [], unmapped: ['Koordynator'] }, team: [],
+      session: session({ public_url: `https://k.avenit.pl/tlumaczenie/${TOKEN}`, channels: [{ id: 'c1', lang_code: 'fr', label: 'Français', role_name: null, in_module: false, status: 'idle',
+        interpreters: [{ email: 'obcy@x.pl', name: 'Obcy', source: 'manual', warning: 'not_in_team', absent: { manual: true } }] }] }) });
+    h.fns['interp-stats'] = ok({ channels: [] });
+    renderCard();
+    expect(await screen.findByText(/Moduł Tłumaczenia nie ma jeszcze języków/)).toBeTruthy();
+    expect(screen.getByText(/Spoza modułu Tłumaczenia/)).toBeTruthy();
+    expect(screen.getByText(/spoza zespołu Tłumaczeń/)).toBeTruthy();
+    expect(screen.getByText(/Służby bez kodu języka/).textContent).toContain('Koordynator');
+    expect(screen.getByRole('button', { name: /Usuń tłumacza: Obcy/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Usuń kanał/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Dodaj tłumacza/ })).toBeNull();
   });
 
   it('tłumacz: wejście do konsoli; członek: tylko „Słuchaj”, bez linku', async () => {
     h.fns['interp-session-get'] = ok({ can_manage: false, my_channels: ['c1'], session: session({ channels: [{ ...session().channels[0], mine: true }] }) });
     h.fns['interp-stats'] = ok({ channels: [] });
     const a = renderCard();
-    expect(await screen.findByText(/Tłumaczysz: English/)).toBeTruthy();
+    expect(await screen.findByText(/Twoje kanały: Tłumacz EN/)).toBeTruthy();
     expect(screen.getByRole('link', { name: /Otwórz konsolę tłumacza/ }).getAttribute('href')).toBe('/tlumaczenie/konsola/7');
     a.unmount();
     h.fns['interp-session-get'] = ok({ can_manage: false, my_channels: [], session: { ...session(), channels: [{ id: 'c1', lang_code: 'en', label: 'English', status: 'live' }] } });

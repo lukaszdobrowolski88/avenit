@@ -8,7 +8,8 @@
 // Mapowanie: rola grafiku (schedule_assignments.role_key = team_roles.field_key) → kod języka
 // kanału: field_key, gdy jest kodem języka (en, uk, pt-br); inaczej ostatni człon klucza
 // („tumacz_de” → de) albo nazwy roli („Tłumacz DE” → de). Brak kanału → zakładamy go (etykieta
-// z LANGUAGE_PRESETS w języku słuchacza albo nazwa roli bez „Tłumacz”), brak sesji → zakładamy ją.
+// I.channelLabel: nazwa języka w tym języku — „English”, „Українська” — jak przy zapisie z karty),
+// brak sesji → zakładamy ją.
 // Osoba z grafiku ↔ konto: lib/assigneeIdentity (ten sam e-mail, user_id w składzie, kartoteka,
 // jedyne konto o tym imieniu) — tylko AKTYWNE konta; bez konta pomijamy (karta pokazuje
 // „bez konta w aplikacji”).
@@ -37,31 +38,18 @@ const lower = (v) => String(v ?? '').trim().toLowerCase();
 const one = async (db, sql, params) => (await db.query(sql, params)).rows[0] || null;
 
 // ── Czyste reguły (testowane) ───────────────────────────────────────────────
-// Kod języka z roli grafiku. role: { field_key, name } (name może być pusta).
-export function langForRole(roleKey, roleName = '') {
-  const direct = I.normalizeLangCode(roleKey);
-  if (direct) return direct;
-  const tail = (s) => {
-    const parts = String(s ?? '').trim().split(/[\s_]+/).filter(Boolean);
-    const last = parts.length > 1 ? parts[parts.length - 1] : null;
-    const code = last ? I.normalizeLangCode(last) : null;
-    return code && /^[a-z]{2,3}(-[a-z0-9]{2,8})?$/.test(code) ? code : null;
-  };
-  return tail(roleKey) || tail(roleName) || null;
-}
-
-// Etykieta nowego kanału: preset (w języku słuchacza) → nazwa roli bez „Tłumacz/Tłumaczka” → KOD.
-export function labelForLang(code, roleName = '') {
-  const preset = I.LANGUAGE_PRESETS.find((p) => p.lang_code === code);
-  if (preset) return preset.label;
-  const stripped = I.normalizeLabel(String(roleName || '').replace(/^\s*t[łl]umacz(ka|e)?\b[\s:–-]*/i, ''));
-  return stripped || String(code).toUpperCase();
-}
+// Kod języka z roli grafiku / Służby modułu i etykieta kanału — jedna reguła (logic.js).
+export const langForRole = I.langForRole;
+export const labelForLang = (code, roleName = '') => I.channelLabel(code, roleName);
 
 // Wiersze grafiku → { desired: Map(lang → Set(e-mail konta)), labels: Map(lang → etykieta nowego
 // kanału), pending, noAccount, unmapped }.
-// rows: [{ role_key, assigned_name, assigned_email, status, accounts: [e-mail aktywnego konta] }]
+// rows: [{ role_key, assigned_name, assigned_email, status, email_sent_at?, accounts: [e-mail aktywnego konta] }]
 // roles: Map(field_key → name).
+// Wpis osoby: { lang_code, label (dla słuchacza), role_name (Służba — „Tłumacz EN”), name, state }.
+// state jak legenda Grafiku (ScheduleTab personStatus): 'pending' (czeka na odpowiedź), 'draft'
+// (jeszcze nie powiadomiono), 'noemail' (brak e-maila — bez powiadomienia), 'no_account'
+// (potwierdzone, ale bez aktywnego konta w aplikacji).
 export function planFromSchedule(rows, roles = new Map()) {
   const desired = new Map();
   const labels = new Map();
@@ -71,12 +59,19 @@ export function planFromSchedule(rows, roles = new Map()) {
   for (const r of rows || []) {
     const roleName = roles.get(r.role_key) || r.role_label || '';
     const lang = langForRole(r.role_key, roleName);
-    const who = { lang_code: lang, label: lang ? labelForLang(lang, roleName) : roleName || r.role_key, name: r.assigned_name || r.assigned_email || '' };
+    const who = {
+      lang_code: lang, label: lang ? labelForLang(lang, roleName) : roleName || r.role_key,
+      role_name: roleName || (lang ? `Tłumacz ${lang.toUpperCase()}` : r.role_key || ''),
+      name: r.assigned_name || r.assigned_email || '',
+    };
     if (!lang) { unmapped.push(who); continue; }
-    if (r.status === 'pending') { pending.push(who); continue; }
+    if (r.status === 'pending') {
+      pending.push({ ...who, state: !r.assigned_email ? 'noemail' : (r.email_sent_at || r.email_sent_at === undefined ? 'pending' : 'draft') });
+      continue;
+    }
     if (r.status !== 'accepted') continue;
     const acc = (r.accounts || [])[0];
-    if (!acc) { noAccount.push(who); continue; }
+    if (!acc) { noAccount.push({ ...who, state: 'no_account' }); continue; }
     if (!desired.has(lang)) desired.set(lang, new Set());
     desired.get(lang).add(lower(acc));
     if (!labels.has(lang)) labels.set(lang, who.label);
@@ -97,10 +92,11 @@ export async function scheduleRowsOf(db, eventId) {
   let rows;
   try {
     ({ rows } = await db.query(
-      `SELECT role_key, role_label, assigned_name, assigned_email, status FROM schedule_assignments
+      `SELECT role_key, role_label, assigned_name, assigned_email, status, email_sent_at FROM schedule_assignments
         WHERE event_id::text = $1 AND team_type = $2 ORDER BY created_at NULLS LAST, assigned_name`,
       [String(eventId), TEAM_TYPE]));
   } catch (err) {
+    // Starszy schemat (bez role_label / email_sent_at): bez stanu „nie powiadomiono” (= czeka).
     if (err?.code === '42703') ({ rows } = await db.query(
       `SELECT role_key, NULL AS role_label, assigned_name, assigned_email, status FROM schedule_assignments
         WHERE event_id::text = $1 AND team_type = $2`, [String(eventId), TEAM_TYPE]));

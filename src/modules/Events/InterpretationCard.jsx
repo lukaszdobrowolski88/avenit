@@ -2,26 +2,32 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
-  Languages, Copy, Check, Printer, RefreshCw, X, Plus, Headphones, Radio, Users, Trash2, Power,
+  Languages, Copy, Check, Printer, RefreshCw, X, Plus, Headphones, Radio, Users, Trash2, Power, AlertTriangle, CalendarX, Settings2,
 } from 'lucide-react';
 import Button from '../../components/Button';
-import MemberPicker from '../Giving/components/MemberPicker';
+import { SCHEDULE_STATUS } from '../shared/schedule/statusMeta';
 import { toast } from '../../lib/toast';
 import { confirmDialog } from '../../lib/dialog';
 import { tr, trPlural, appLocale } from '../../i18n';
 import { callFn } from '../Komunikator/calls/callApi';
 import {
-  STATS_POLL_MS, channelsPayload, addChannel, removeChannel, updateChannel, addInterpreter, removeInterpreter,
-  remainingPresets, isLangCode, consolePath, originalPath, memberListenPath, totalListeners,
-  scheduleByChannel, hasScheduleInterpreters,
+  STATS_POLL_MS, channelsPayload, addChannel, removeChannel, addInterpreter, removeInterpreter,
+  consolePath, originalPath, memberListenPath, totalListeners, scheduleByChannel, hasScheduleInterpreters,
+  staffLabel, languagesToAdd, interpreterOptions, absenceText, interpreterWarningText,
+  MODULE_ROLES_PATH, MODULE_MEMBERS_PATH,
 } from '../Interpretation/interpretationLogic';
 import { qrSvg } from '../Interpretation/qr';
 import '../Interpretation/interpretation.css';
 
 // Karta „Tłumaczenie na żywo” na stronie wydarzenia (src/interpretation na serwerze):
-//   • zarządzający (action:calendar:manage_interpretation / admin): włączenie, języki, tłumacze,
-//     „Oryginał”, link + QR + plakat A4 do druku, stan kanałów i licznik słuchaczy, zakończenie;
-//   • tłumacz: wejście do konsoli; • pozostali widzący wydarzenie: „Słuchaj” (w aplikacji).
+//   • zarządzający (action:calendar:manage_interpretation — ma ją lider służby Tłumaczenia — albo
+//     admin): włączenie, kanały, tłumacze, „Oryginał”, link + QR + plakat A4, stan i licznik
+//     słuchaczy, zakończenie;
+//   • tłumacz: wejście do konsoli; członek zespołu Tłumaczeń: podgląd kanałów i tłumaczy;
+//   • pozostali widzący wydarzenie: „Słuchaj” (w aplikacji).
+// Spójnie z modułem Tłumaczenia (api interpretation/team.js): języki = Służby modułu (personel
+// widzi „Tłumacz EN”, słuchacz „English”), tłumacz = aktywny członek zespołu z kontem (ze Służbą
+// języka, jak w Grafiku), nieobecności jak w Grafiku. Kanały/osoby spoza modułu — z ostrzeżeniem.
 // Kart nie ma, gdy tłumaczenia nie ma, a osoba nie może go włączyć.
 
 // Odnośnik wyglądający jak przycisk (bez <button> w <a> — zagnieżdżone elementy interaktywne).
@@ -80,38 +86,107 @@ const STATUS = {
   ended: { label: 'Zakończone', tone: 'text-gray-500 dark:text-gray-400' },
 };
 
-// Osoba z grafiku, która jeszcze nie może tłumaczyć (czeka na potwierdzenie / bez konta).
-const SCHEDULE_HINT = {
-  pending: 'czeka na potwierdzenie',
-  no_account: 'bez konta w aplikacji',
-};
+// Osoba z grafiku, która jeszcze nie tłumaczy — status jak w legendzie Grafiku.
 function SchedulePerson({ p }) {
+  const meta = p.state === 'no_account' ? null : (SCHEDULE_STATUS[p.state] || SCHEDULE_STATUS.pending);
+  const Icon = meta ? meta.icon : AlertTriangle;
+  const label = meta ? meta.label() : tr('bez konta w aplikacji');
+  const title = p.state === 'no_account'
+    ? tr('Potwierdził w grafiku, ale nie ma aktywnego konta w aplikacji — nie może wejść do konsoli.')
+    : tr('Przypisany w grafiku Tłumaczeń — trafi do kanału po potwierdzeniu.');
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-xs text-gray-500 dark:text-gray-400"
-      title={p.kind === 'pending' ? tr('Przypisany w grafiku Tłumaczeń — trafi do kanału po potwierdzeniu.') : tr('Potwierdził w grafiku, ale nie ma aktywnego konta w aplikacji — nie może wejść do konsoli.')}>
-      {p.name} <span className="text-gray-400">· {tr(SCHEDULE_HINT[p.kind])}</span>
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-xs text-gray-500 dark:text-gray-400" title={title}>
+      <Icon size={12} strokeWidth={2.5} className={meta ? meta.cls : 'text-amber-700 dark:text-amber-400'} aria-hidden="true" />
+      {p.name} <span className="text-gray-400">· {label}</span>
     </span>
   );
 }
 
-function ChannelRow({ c, people, stat, canManage, onRename, onRemove, onAddPerson, onRemovePerson, scheduled = [] }) {
-  const [label, setLabel] = useState(c.label);
-  useEffect(() => { setLabel(c.label); }, [c.label]);
+// Przypisany tłumacz: z grafiku (potwierdzone), ostrzeżenie (spoza zespołu / nieaktywny / bez
+// Służby), nieobecność w dniu wydarzenia.
+function InterpreterChip({ i, c, canRemove, onRemove }) {
+  const warning = interpreterWarningText(i.warning, c);
+  const absent = absenceText(i.absent);
+  const flagged = !!(warning || absent);
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-900 border pl-2.5 pr-1 py-0.5 text-xs text-gray-800 dark:text-gray-100 ${flagged ? 'border-amber-300 dark:border-amber-700' : 'border-gray-200 dark:border-gray-700'}`}>
+      {i.source === 'schedule' && (
+        <Check size={12} strokeWidth={2.5} className={SCHEDULE_STATUS.accepted.cls} aria-hidden="true" />
+      )}
+      {i.name || i.email}
+      {i.source === 'schedule' && (
+        <span className="ml-0.5 mr-1 rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 text-[10px] font-semibold text-gray-500 dark:text-gray-400"
+          title={tr('Potwierdzone w grafiku służby Tłumaczenia — zmienisz to w grafiku.')}>{tr('z grafiku')}</span>
+      )}
+      {warning && (
+        <span className="inline-flex items-center gap-0.5 mr-1 text-amber-700 dark:text-amber-400" title={tr('Osoba zostaje w kanale, dopóki jej nie usuniesz.')}>
+          <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" />{warning}
+        </span>
+      )}
+      {absent && (
+        <span className="inline-flex items-center gap-0.5 mr-1 text-red-600 dark:text-red-400">
+          <CalendarX size={11} strokeWidth={2.5} aria-hidden="true" />{absent}
+        </span>
+      )}
+      {canRemove && (
+        <button type="button" onClick={onRemove} aria-label={tr('Usuń tłumacza: {name}', { name: i.name || i.email })}
+          className="p-0.5 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X size={12} aria-hidden="true" /></button>
+      )}
+    </span>
+  );
+}
+
+// Wybór tłumacza — tylko zespół Tłumaczeń (jak lista osób w Grafiku); nieobecni i bez konta zablokowani.
+function InterpreterPicker({ c, team, wholeTeam, onPick, onCancel }) {
+  const options = interpreterOptions(team, c);
+  const role = staffLabel(c);
+  return (
+    <div className="mt-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2">
+      {options.length ? (
+        <ul className="flex flex-wrap gap-1.5" aria-label={tr('Wybierz tłumacza')}>
+          {options.map((m) => {
+            const why = m.blocked === 'no_account' ? tr('bez konta w aplikacji') : m.blocked === 'absent' ? absenceText(m.absent) : '';
+            return (
+              <li key={m.id}>
+                <button type="button" disabled={!!m.blocked} onClick={() => onPick(m)}
+                  title={why ? `${m.name} — ${why}` : m.name}
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-xs font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed disabled:font-normal">
+                  {m.blocked === 'absent' && <CalendarX size={12} strokeWidth={2.5} className="text-red-600 dark:text-red-400" aria-hidden="true" />}
+                  {m.name}{why && <span className="text-gray-400 font-normal">· {why}</span>}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Nikogo do wyboru. Dodaj osobę z kontem w aplikacji w zespole Tłumaczeń.')}</p>
+      )}
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
+        <span>{wholeTeam
+          ? tr('Nikt w zespole nie ma jeszcze Służby {role} — pokazujemy cały aktywny zespół.', { role })
+          : tr('Członkowie zespołu Tłumaczeń ze Służbą {role}.', { role })}</span>
+        <Link to={MODULE_MEMBERS_PATH} className="font-semibold text-gray-700 dark:text-gray-200 hover:underline">{tr('Członkowie i Służby')}</Link>
+        <button type="button" onClick={onCancel} className="ml-auto font-semibold text-gray-600 dark:text-gray-300 hover:underline">{tr('Anuluj')}</button>
+      </div>
+    </div>
+  );
+}
+
+function ChannelRow({ c, team, moduleLang, stat, canManage, moduleKnown, onRemove, onAddPerson, onRemovePerson, scheduled = [] }) {
   const [adding, setAdding] = useState(false);
   const live = (stat?.status || c.status) === 'live';
   const activeName = stat?.active_interpreter_name || c.active_interpreter_name;
-  const candidates = useMemo(() => (people || [])
-    .filter((p) => !(c.interpreters || []).some((i) => i.email === p.email))
-    .map((p) => ({ id: p.email, first_name: p.name, email: p.email })), [people, c.interpreters]);
+  const outside = moduleKnown && c.in_module === false;
   return (
-    <li className="rounded-xl bg-gray-50 dark:bg-gray-800/60 px-4 py-3">
+    <li className={`rounded-xl px-4 py-3 ${outside ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-gray-50 dark:bg-gray-800/60'}`}>
       <div className="flex flex-wrap items-center gap-2">
-        {canManage ? (
-          <input value={label} onChange={(e) => setLabel(e.target.value)} onBlur={() => { if (label.trim() && label !== c.label) onRename(label.trim()); else setLabel(c.label); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} maxLength={40} aria-label={tr('Nazwa języka')}
-            className="flex-1 min-w-[8rem] bg-transparent text-sm font-semibold text-gray-900 dark:text-white border-0 border-b border-transparent hover:border-gray-300 focus:border-gray-500 focus:outline-none px-0 py-0.5" />
-        ) : <span className="flex-1 min-w-[8rem] text-sm font-semibold text-gray-900 dark:text-white">{c.label}</span>}
-        <span className="text-xs font-mono text-gray-400">{c.lang_code}</span>
+        <span className="flex-1 min-w-[8rem]">
+          <span className="block text-sm font-semibold text-gray-900 dark:text-white">{staffLabel(c)}</span>
+          <span className="block text-xs text-gray-500 dark:text-gray-400">
+            {tr('Słuchacze widzą:')} <span lang={c.lang_code} className="font-medium text-gray-700 dark:text-gray-200">{c.label}</span>
+            <span className="ml-1.5 font-mono text-gray-400">{c.lang_code}</span>
+          </span>
+        </span>
         <span className={`inline-flex items-center gap-1.5 text-xs ${live ? 'text-red-700 dark:text-red-300 font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>
           <span className={`w-2 h-2 rounded-full ${live ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'}`} aria-hidden="true" />
           {live ? (activeName ? tr('Na żywo: {name}', { name: activeName }) : tr('Na żywo')) : tr('Nie nadaje')}
@@ -120,46 +195,78 @@ function ChannelRow({ c, people, stat, canManage, onRename, onRemove, onAddPerso
           <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><Users size={12} aria-hidden="true" /> {stat.listeners}</span>
         )}
         {canManage && (hasScheduleInterpreters(c) ? (
-          <span className="p-1 text-gray-300 dark:text-gray-600" title={tr('Język ma tłumaczy z grafiku — zmień przypisania w grafiku służby Tłumaczenia.')}>
+          <span className="p-1 text-gray-300 dark:text-gray-600" title={tr('Kanał ma tłumaczy z grafiku — zmień przypisania w grafiku służby Tłumaczenia.')}>
             <Trash2 size={14} aria-hidden="true" />
           </span>
         ) : (
-          <button type="button" onClick={onRemove} aria-label={tr('Usuń język: {name}', { name: c.label })} title={tr('Usuń język')}
+          <button type="button" onClick={onRemove} aria-label={tr('Usuń kanał: {name}', { name: staffLabel(c) })} title={tr('Usuń kanał')}
             className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-gray-200/60 dark:hover:bg-gray-700">
             <Trash2 size={14} aria-hidden="true" />
           </button>
         ))}
       </div>
+      {outside && (
+        <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-800 dark:text-amber-300">
+          <AlertTriangle size={13} className="mt-px shrink-0" aria-hidden="true" />
+          {tr('Spoza modułu Tłumaczenia — tego języka nie ma (już) w Służbach. Kanał działa, możesz go usunąć albo dodać Służbę w module.')}
+        </p>
+      )}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">{tr('Tłumacze:')}</span>
         {(c.interpreters || []).length === 0 && !scheduled.length && <span className="text-xs text-gray-400">{tr('nikt jeszcze')}</span>}
         {(c.interpreters || []).map((i) => (
-          <span key={i.email} className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 pl-2.5 pr-1 py-0.5 text-xs text-gray-800 dark:text-gray-100">
-            {i.name || i.email}
-            {i.source === 'schedule' && (
-              <span className="ml-0.5 mr-1 rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 text-[10px] font-semibold text-gray-500 dark:text-gray-400"
-                title={tr('Z grafiku służby Tłumaczenia — zmień w grafiku.')}>{tr('z grafiku')}</span>
-            )}
-            {canManage && i.source !== 'schedule' && (
-              <button type="button" onClick={() => onRemovePerson(i.email)} aria-label={tr('Usuń tłumacza: {name}', { name: i.name || i.email })}
-                className="p-0.5 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X size={12} aria-hidden="true" /></button>
-            )}
-          </span>
+          <InterpreterChip key={i.email} i={i} c={c} canRemove={canManage && i.source !== 'schedule'} onRemove={() => onRemovePerson(i.email)} />
         ))}
-        {canManage && !adding && (
+        {canManage && !adding && !outside && (
           <button type="button" onClick={() => setAdding(true)} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-gray-700">
             <Plus size={12} aria-hidden="true" /> {tr('Dodaj tłumacza')}
           </button>
         )}
-        {scheduled.map((p, i) => <SchedulePerson key={`${p.kind}-${p.name}-${i}`} p={p} />)}
+        {scheduled.map((p, i) => <SchedulePerson key={`${p.state}-${p.name}-${i}`} p={p} />)}
       </div>
       {canManage && adding && (
-        <div className="mt-2 max-w-md">
-          <MemberPicker label={tr('Tłumacz (konto w aplikacji)')} value="" members={candidates} emptyLabel={tr('— anuluj —')}
-            onChange={(email) => { setAdding(false); if (email) onAddPerson(people.find((p) => p.email === email)); }} />
-        </div>
+        <InterpreterPicker c={c} team={team} wholeTeam={!!moduleLang?.whole_team} onCancel={() => setAdding(false)}
+          onPick={(m) => { setAdding(false); onAddPerson(m); }} />
       )}
     </li>
+  );
+}
+
+// Języki to Służby modułu — skrót do zarządzania nimi.
+function ModuleLink() {
+  return (
+    <Link to={MODULE_ROLES_PATH} className="inline-flex items-center gap-1 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:underline">
+      <Settings2 size={13} aria-hidden="true" /> {tr('Zarządzaj językami w module Tłumaczenia')}
+    </Link>
+  );
+}
+
+function NoLanguages() {
+  return (
+    <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 px-4 py-3">
+      <p className="text-sm font-semibold text-gray-900 dark:text-white">{tr('Moduł Tłumaczenia nie ma jeszcze języków')}</p>
+      <p className="mt-0.5 mb-2 text-xs text-gray-500 dark:text-gray-400">{tr('Każdy język to Służba w module Tłumaczenia (np. „Tłumacz EN” z kluczem pola en). Dodaj ją, a pojawi się tutaj i w Grafiku.')}</p>
+      <ModuleLink />
+    </div>
+  );
+}
+
+// Czytelny podgląd kanałów (tłumacz, członek zespołu): Służba, nadawanie, tłumacze.
+function ReadOnlyChannels({ channels, schedule }) {
+  if (!channels.some((c) => Array.isArray(c.interpreters))) return null;
+  const fromSchedule = scheduleByChannel(schedule, channels);
+  return (
+    <ul className="space-y-1.5" aria-label={tr('Kanały')}>
+      {channels.map((c) => (
+        <li key={c.id} className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="font-semibold text-gray-900 dark:text-white mr-1">{staffLabel(c)}</span>
+          {c.status === 'live' && <span className="text-red-700 dark:text-red-300 font-semibold">{tr('Na żywo')}</span>}
+          {(c.interpreters || []).map((i) => <InterpreterChip key={i.email} i={i} c={c} canRemove={false} />)}
+          {(fromSchedule.byLang.get(c.lang_code) || []).map((p, i) => <SchedulePerson key={`${p.state}-${p.name}-${i}`} p={p} />)}
+          {!(c.interpreters || []).length && !(fromSchedule.byLang.get(c.lang_code) || []).length && <span className="text-gray-400">{tr('nikt jeszcze')}</span>}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -169,8 +276,6 @@ export default function InterpretationCard({ ev }) {
   const [stats, setStats] = useState(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [custom, setCustom] = useState({ code: '', label: '' });
-  const [customOpen, setCustomOpen] = useState(false);
   const [error, setError] = useState('');
   const copyTimer = useRef(null);
 
@@ -179,6 +284,14 @@ export default function InterpretationCard({ ev }) {
     try { setView(await callFn('interp-session-get', { event_id: String(eventId) })); } catch { setView((v) => v || { failed: true }); }
   }, [eventId]);
   useEffect(() => { load(); }, [load]);
+  // Zmiany w module Tłumaczenia (Członkowie, Służby, Grafik) w innej karcie przeglądarki — odśwież
+  // po powrocie na stronę wydarzenia.
+  useEffect(() => {
+    const onBack = () => { if (document.visibilityState !== 'hidden') load(); };
+    window.addEventListener('focus', onBack);
+    document.addEventListener('visibilitychange', onBack);
+    return () => { window.removeEventListener('focus', onBack); document.removeEventListener('visibilitychange', onBack); };
+  }, [load]);
 
   const session = view?.session || null;
   const canManage = !!view?.can_manage;
@@ -238,15 +351,6 @@ export default function InterpretationCard({ ev }) {
     if (!(await confirmDialog({ title: tr('Wyłączyć tłumaczenie na żywo?'), message: tr('Usuniemy języki, przypisania tłumaczy i link (kody QR przestaną działać).'), confirmLabel: tr('Wyłącz'), danger: true }))) return;
     save({ remove: true }, { okMsg: tr('Tłumaczenie wyłączone') });
   };
-  const addCustom = () => {
-    const code = custom.code.trim().toLowerCase().replace(/_/g, '-');
-    if (!isLangCode(code)) { setError(tr('Podaj kod języka, np. fr, pt-br.')); return; }
-    if (channels.some((c) => c.lang_code === code)) { setError(tr('Ten język jest już na liście.')); return; }
-    setCustom({ code: '', label: '' });
-    setCustomOpen(false);
-    saveChannels(addChannel(channels, { lang_code: code, label: custom.label }));
-  };
-
   const card = 'bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5';
   const heading = (
     <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">
@@ -255,6 +359,15 @@ export default function InterpretationCard({ ev }) {
   );
 
   const fromSchedule = scheduleByChannel(view.schedule, channels);
+  const mod = view.module || null;
+  const moduleLanguages = mod?.languages || [];
+  const langMeta = (code) => moduleLanguages.find((l) => l.lang_code === code) || null;
+  const unmapped = (mod?.unmapped || []).length > 0 && (
+    <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-800 dark:text-amber-300">
+      <AlertTriangle size={13} className="mt-px shrink-0" aria-hidden="true" />
+      {tr('Służby bez kodu języka (uzupełnij klucz pola, np. en): {names}', { names: mod.unmapped.join(', ') })}
+    </p>
+  );
   const orphanList = fromSchedule.orphans.length > 0 && (
     <div className="mt-2 flex flex-wrap items-center gap-1.5">
       <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">{tr('Z grafiku:')}</span>
@@ -273,10 +386,12 @@ export default function InterpretationCard({ ev }) {
       <section className={card}>
         {heading}
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-          {tr('Tłumacz mówi do mikrofonu w aplikacji, a goście słuchają w słuchawkach na swoich telefonach — przez kod QR, bez konta. Możesz dodać kilka języków naraz.')}
+          {tr('Tłumacz mówi do mikrofonu w aplikacji, a goście słuchają w słuchawkach na swoich telefonach — przez kod QR, bez konta. Języki i tłumacze pochodzą z modułu Tłumaczenia.')}
         </p>
+        {mod && !moduleLanguages.length && <div className="mb-3"><NoLanguages /></div>}
         <Button icon={Languages} onClick={() => save({ enable: true })} loading={busy}>{tr('Włącz tłumaczenie na żywo')}</Button>
         {orphanList}
+        {unmapped}
         {error && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
       </section>
     );
@@ -284,11 +399,11 @@ export default function InterpretationCard({ ev }) {
 
   const status = STATUS[session.status] || STATUS.idle;
   const listeners = stats ? totalListeners(stats) : null;
-  const presets = remainingPresets(view.presets, channels);
+  const toAdd = languagesToAdd(mod, channels);
 
   // Widok dla tłumacza / słuchacza (bez zarządzania).
   if (!canManage) {
-    const myLabels = channels.filter((c) => mine.includes(c.id)).map((c) => c.label);
+    const myLabels = channels.filter((c) => mine.includes(c.id)).map(staffLabel);
     return (
       <section className={card}>
         {heading}
@@ -297,8 +412,9 @@ export default function InterpretationCard({ ev }) {
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-gray-700 dark:text-gray-200">
-              {myLabels.length ? tr('Tłumaczysz: {langs}', { langs: myLabels.join(', ') }) : tr('Dostępne języki: {langs}', { langs: channels.map((c) => c.label).join(', ') || '—' })}
+              {myLabels.length ? tr('Twoje kanały: {langs}', { langs: myLabels.join(', ') }) : tr('Dostępne języki: {langs}', { langs: channels.map((c) => c.label).join(', ') || '—' })}
             </p>
+            <ReadOnlyChannels channels={channels} schedule={view.schedule} />
             <div className="flex flex-wrap gap-2">
               {myLabels.length > 0 && <LinkButton to={consolePath(eventId)} icon={Headphones}>{tr('Otwórz konsolę tłumacza')}</LinkButton>}
               {session.original_enabled && myLabels.length > 0 && <LinkButton to={originalPath(eventId)} icon={Radio} variant="outline">{tr('Nadawanie oryginału')}</LinkButton>}
@@ -321,54 +437,39 @@ export default function InterpretationCard({ ev }) {
           )}
         </div>
 
-        {/* Języki i tłumacze */}
+        {/* Kanały = Służby modułu Tłumaczenia */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{tr('Języki')}</h3>
-          {channels.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{tr('Dodaj co najmniej jeden język i przypisz do niego tłumacza.')}</p>}
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{tr('Kanały')}</h3>
+            {mod && moduleLanguages.length > 0 && <ModuleLink />}
+          </div>
+          {mod && !moduleLanguages.length && <div className="mb-2"><NoLanguages /></div>}
+          {channels.length === 0 && moduleLanguages.length > 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{tr('Dodaj co najmniej jeden język i przypisz do niego tłumacza.')}</p>}
           {channels.length > 0 && (
             <ul className="space-y-2" aria-label={tr('Kanały językowe')}>
               {channels.map((c) => (
-                <ChannelRow key={c.id} c={c} people={view.people} stat={statOf(c.id)} canManage
-                  onRename={(label) => saveChannels(updateChannel(channels, c.id, { label }))}
+                <ChannelRow key={c.id} c={c} team={view.team} moduleLang={langMeta(c.lang_code)} moduleKnown={!!mod} stat={statOf(c.id)} canManage
                   onRemove={async () => {
-                    if (!(await confirmDialog({ title: tr('Usunąć język {name}?', { name: c.label }), message: tr('Słuchacze tego języka zostaną rozłączeni.'), confirmLabel: tr('Usuń'), danger: true }))) return;
+                    if (!(await confirmDialog({ title: tr('Usunąć kanał {name}?', { name: staffLabel(c) }), message: tr('Słuchacze tego języka zostaną rozłączeni.'), confirmLabel: tr('Usuń'), danger: true }))) return;
                     saveChannels(removeChannel(channels, c.id));
                   }}
                   scheduled={fromSchedule.byLang.get(c.lang_code) || []}
-                  onAddPerson={(p) => p && saveChannels(addInterpreter(channels, c.id, p))}
+                  onAddPerson={(p) => p?.email && saveChannels(addInterpreter(channels, c.id, p))}
                   onRemovePerson={(email) => saveChannels(removeInterpreter(channels, c.id, email))} />
               ))}
             </ul>
           )}
           {orphanList}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {presets.map((p) => (
-              <button key={p.lang_code} type="button" disabled={busy} onClick={() => saveChannels(addChannel(channels, p))} lang={p.lang_code}
-                className="inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50">
-                <Plus size={12} aria-hidden="true" /> {p.label}
-              </button>
-            ))}
-            {!customOpen && (
-              <button type="button" onClick={() => setCustomOpen(true)} className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                <Plus size={12} aria-hidden="true" /> {tr('Inny język')}
-              </button>
-            )}
-          </div>
-          {customOpen && (
-            <div className="mt-2 flex flex-wrap items-end gap-2">
-              <div>
-                <label htmlFor="ic-code" className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Kod')}</label>
-                <input id="ic-code" value={custom.code} onChange={(e) => setCustom({ ...custom, code: e.target.value })} placeholder="fr" maxLength={12}
-                  className="w-24 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
-              </div>
-              <div className="flex-1 min-w-[10rem]">
-                <label htmlFor="ic-label" className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{tr('Nazwa (w tym języku)')}</label>
-                <input id="ic-label" value={custom.label} onChange={(e) => setCustom({ ...custom, label: e.target.value })} placeholder="Français" maxLength={40}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }}
-                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
-              </div>
-              <Button size="sm" onClick={addCustom} disabled={busy}>{tr('Dodaj')}</Button>
-              <Button size="sm" variant="ghost" onClick={() => setCustomOpen(false)}>{tr('Anuluj')}</Button>
+          {unmapped}
+          {toAdd.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {toAdd.map((l) => (
+                <button key={l.lang_code} type="button" disabled={busy || channels.length >= 8} onClick={() => saveChannels(addChannel(channels, l))}
+                  title={tr('Słuchacze zobaczą: {label}', { label: l.label })}
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50">
+                  <Plus size={12} aria-hidden="true" /> {l.role_name}
+                </button>
+              ))}
             </div>
           )}
         </div>

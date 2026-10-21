@@ -15,14 +15,40 @@ export const ROOM_DEPARTURE_TIMEOUT = 2 * 60;
 export const IDLE_AFTER_SEC = 3 * 60; // kanał bez nadającego > 3 min → „nie nadaje”
 export const END_AFTER_EVENT_SEC = 6 * 3600; // sesja kończy się sama 6 h po końcu wydarzenia
 
-// Języki do szybkiego dodania (etykieta w języku słuchacza — tak ją zobaczy na stronie i plakacie).
-export const LANGUAGE_PRESETS = [
-  { lang_code: 'en', label: 'English' },
-  { lang_code: 'uk', label: 'Українська' },
-  { lang_code: 'ru', label: 'Русский' },
-  { lang_code: 'de', label: 'Deutsch' },
-  { lang_code: 'es', label: 'Español' },
-];
+// Nazwy języków W TYM JĘZYKU (endonimy) — po kodzie. Języki kanałów pochodzą WYŁĄCZNIE z modułu
+// Tłumaczenia (Służby: team_roles team_type 'tlumaczenia', klucz pola = kod języka); ta tabela
+// służy tylko do etykiety kanału, którą widzi słuchacz (strona /tlumaczenie, plakat, aplikacja).
+// Konwencja (2026-10-21): personel (karta, konsola, grafik) widzi nazwę Służby („Tłumacz EN”),
+// słuchacz — nazwę języka w tym języku („English”, „Українська”).
+export const LANGUAGE_NAMES = {
+  en: 'English', uk: 'Українська', ru: 'Русский', de: 'Deutsch', es: 'Español', fr: 'Français',
+  it: 'Italiano', pt: 'Português', 'pt-br': 'Português (Brasil)', pl: 'Polski', be: 'Беларуская',
+  ro: 'Română', hu: 'Magyar', cs: 'Čeština', sk: 'Slovenčina', lt: 'Lietuvių', lv: 'Latviešu',
+  et: 'Eesti', bg: 'Български', sr: 'Српски', hr: 'Hrvatski', ka: 'ქართული', hy: 'Հայերեն',
+  tr: 'Türkçe', ar: 'العربية', fa: 'فارسی', he: 'עברית', hi: 'हिन्दी', zh: '中文', ja: '日本語',
+  ko: '한국어', vi: 'Tiếng Việt', nl: 'Nederlands', sv: 'Svenska', no: 'Norsk', da: 'Dansk',
+  fi: 'Suomi', el: 'Ελληνικά', sq: 'Shqip', kk: 'Қазақ тілі', sw: 'Kiswahili', am: 'አማርኛ',
+};
+
+const capFirst = (s) => (s ? s.charAt(0).toLocaleUpperCase() + s.slice(1) : s);
+// Endonim z Intl (Node z pełnym ICU), gdy kodu nie ma w tabeli. null — nieznany.
+function intlName(code) {
+  try {
+    const n = new Intl.DisplayNames([code], { type: 'language', fallback: 'none' }).of(code);
+    return n && n.toLowerCase() !== code ? capFirst(n) : null;
+  } catch {
+    return null;
+  }
+}
+// Etykieta kanału dla słuchacza: endonim → nazwa Służby bez „Tłumacz/Tłumaczka” → KOD.
+// Jedna reguła dla karty (zapis), synchronizacji z grafiku i odczytu.
+export function channelLabel(code, roleName = '') {
+  const c = String(code || '').toLowerCase();
+  const known = LANGUAGE_NAMES[c] || intlName(c);
+  if (known) return known;
+  const stripped = normalizeLabel(String(roleName || '').replace(/^\s*t[łl]umacz(ka|e)?\b[\s:–-]*/i, ''));
+  return stripped || c.toUpperCase();
+}
 
 const lower = (v) => String(v ?? '').trim().toLowerCase();
 const LANG_RE = /^[a-z]{2,3}(-[a-z0-9]{2,8})?$/;
@@ -51,6 +77,19 @@ export function normalizeLangCode(raw) {
   return LANG_RE.test(s) ? s : null;
 }
 
+// Kod języka ze Służby modułu Tłumaczenia (team_roles: field_key, name) — field_key, gdy jest
+// kodem (en, uk, pt-br); inaczej ostatni człon klucza („tumacz_de” → de) albo nazwy („Tłumacz DE”).
+export function langForRole(roleKey, roleName = '') {
+  const direct = normalizeLangCode(roleKey);
+  if (direct) return direct;
+  const tail = (s) => {
+    const parts = String(s ?? '').trim().split(/[\s_]+/).filter(Boolean);
+    const last = parts.length > 1 ? parts[parts.length - 1] : null;
+    return last ? normalizeLangCode(last) : null;
+  };
+  return tail(roleKey) || tail(roleName) || null;
+}
+
 // Lista kanałów z formularza → [{ id?, lang_code, label, interpreters: [email] }] w kolejności
 // (sort = indeks). Rzuca { message, code } przy błędzie — serwis zamienia na 400.
 export function normalizeChannels(list) {
@@ -62,8 +101,7 @@ export function normalizeChannels(list) {
     if (!code) throw Object.assign(new Error('Nieprawidłowy kod języka (np. en, uk, pt-br)'), { code: 'BAD_LANG' });
     if (seen.has(code)) throw Object.assign(new Error(`Język ${code} jest już na liście`), { code: 'DUPLICATE_LANG' });
     seen.add(code);
-    const preset = LANGUAGE_PRESETS.find((p) => p.lang_code === code);
-    const label = normalizeLabel(c?.label) || preset?.label || code.toUpperCase();
+    const label = normalizeLabel(c?.label) || channelLabel(code);
     const interpreters = [...new Set((Array.isArray(c?.interpreters) ? c.interpreters : []).map((e) => lower(typeof e === 'object' ? e?.email : e)).filter(isEmail))];
     if (interpreters.length > MAX_INTERPRETERS) throw Object.assign(new Error(`Najwyżej ${MAX_INTERPRETERS} tłumaczy na kanał`), { code: 'TOO_MANY_INTERPRETERS' });
     const id = typeof c?.id === 'string' && /^[0-9a-f-]{36}$/i.test(c.id) ? c.id.toLowerCase() : null;

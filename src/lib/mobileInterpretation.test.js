@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   retryDelay, interpErrorState, fatalFromError, infoFromSession, defaultChannel, pollDecision, pollInterval,
   shouldKeepAwake, phaseView, cardSummary, cardDataFromSession, cardTeamSections, interpretationTargetFromPath, interpretationTargetFromUrl, isPublicToken,
-  INFO_POLL_MS, INFO_POLL_LISTENING_MS,
+  INFO_POLL_MS, INFO_POLL_LISTENING_MS, PERSON_NOTE, warningNote,
 } from '../../packages/mobile/src/features/interpretation/logic';
 import { redirectSystemPath } from '../../packages/mobile/app/+native-intent';
 
@@ -79,13 +79,13 @@ describe('tłumacze na karcie wydarzenia', () => {
     session: {
       status: 'live', public_token: 'x'.repeat(32), public_url: 'https://x/tlumaczenie/x',
       channels: [
-        { ...channels[0], interpreters: [{ email: 'anna@x.pl', name: 'Anna', source: 'manual' }, { email: 'jan@x.pl', name: 'Jan', source: 'schedule' }] },
-        { ...channels[1], interpreters: [] },
+        { ...channels[0], role_name: 'Tłumacz EN', interpreters: [{ email: 'anna@x.pl', name: 'Anna', source: 'manual', warning: 'not_in_team', absent: { manual: true } }, { email: 'jan@x.pl', name: 'Jan', source: 'schedule', warning: null }] },
+        { ...channels[1], role_name: 'Tłumacz UK', interpreters: [] },
       ],
     },
     schedule: {
-      pending: [{ lang_code: 'uk', label: 'Українська', name: 'Olha' }],
-      no_account: [{ lang_code: 'en', label: 'English', name: 'Piotr' }, { lang_code: 'ru', label: 'Русский', name: 'Igor' }],
+      pending: [{ lang_code: 'uk', label: 'Українська', role_name: 'Tłumacz UK', name: 'Olha', state: 'draft' }],
+      no_account: [{ lang_code: 'en', label: 'English', name: 'Piotr' }, { lang_code: 'ru', label: 'Русский', role_name: 'Tłumacz RU', name: 'Igor', state: 'no_account' }],
     },
   };
   it('słuchacz: bez osób i bez sekcji', () => {
@@ -97,12 +97,15 @@ describe('tłumacze na karcie wydarzenia', () => {
   it('zarządzający: imiona i źródło, bez e-maili i linku', () => {
     const d = cardDataFromSession(manager);
     expect(JSON.stringify(d)).not.toMatch(/@|public_/);
-    expect(d.session.channels[0].interpreters).toEqual([{ name: 'Anna', source: 'manual' }, { name: 'Jan', source: 'schedule' }]);
+    expect(d.session.channels[0].interpreters).toEqual([{ name: 'Anna', source: 'manual', warning: 'not_in_team', absent: true }, { name: 'Jan', source: 'schedule' }]);
+    // Nagłówki jak w module (Służba), stany jak w legendzie Grafiku.
     expect(cardTeamSections(d)).toEqual([
-      { key: 'a', label: 'English', people: [{ name: 'Anna', state: 'manual' }, { name: 'Jan', state: 'schedule' }, { name: 'Piotr', state: 'no_account' }] },
-      { key: 'b', label: 'Українська', people: [{ name: 'Olha', state: 'pending' }] },
-      { key: 'lang:ru', label: 'Русский', people: [{ name: 'Igor', state: 'no_account' }] },
+      { key: 'a', label: 'Tłumacz EN', people: [{ name: 'Anna', state: 'manual', warning: 'not_in_team', absent: true }, { name: 'Jan', state: 'schedule' }, { name: 'Piotr', state: 'no_account' }] },
+      { key: 'b', label: 'Tłumacz UK', people: [{ name: 'Olha', state: 'draft' }] },
+      { key: 'lang:ru', label: 'Tłumacz RU', people: [{ name: 'Igor', state: 'no_account' }] },
     ]);
+    expect(PERSON_NOTE.pending).toBe('czeka na odpowiedź');
+    expect(warningNote('no_role', 'Tłumacz EN')).toBe('bez Służby Tłumacz EN');
   });
   it('starszy serwer: bez source (= ręcznie) i bez schedule', () => {
     const d = cardDataFromSession({ my_channels: ['a'], session: { status: 'idle', channels: [{ ...channels[0], interpreters: [{ email: 'anna@x.pl', name: '' }] }] } });
