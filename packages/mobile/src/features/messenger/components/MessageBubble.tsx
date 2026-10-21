@@ -20,12 +20,21 @@ import { CallMessageCard } from "../../calls/components/CallMessageCard";
 import { taskFromChatLink, taskNameFromMessage } from "../../tasks/share";
 import { openTask } from "../../tasks/navigation";
 import { TaskLinkCard } from "../../tasks/components/TaskLinkCard";
+import { interpretationTargetFromUrl } from "../../interpretation/logic";
+import { openInterpretation } from "../../interpretation/navigation";
+import { tenantWebBase } from "../../../lib/supabase";
 import type { PrayerMetadata, EventMetadata, DeliveryStatus } from "../api";
 
 // Link do zadania tego tenanta („Wyślij do czatu”) otwiera ekran zadania w apce, reszta — przeglądarkę.
+// Link do tłumaczenia na żywo tego kościoła (/tlumaczenie/…) — ekran słuchacza w apce.
 const openMessageLink = (url: string) => {
   const task = taskFromChatLink(url);
-  if (task) openTask(router, task);
+  if (task) {
+    openTask(router, task);
+    return;
+  }
+  const interp = interpretationTargetFromUrl(url, tenantWebBase());
+  if (interp && interp.kind !== "web") openInterpretation(router, interp);
   else openLink(url);
 };
 

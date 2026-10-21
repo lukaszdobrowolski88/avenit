@@ -71,6 +71,7 @@ import {
 import { addToPhoneCalendar } from '../../../src/features/calendar/add-to-calendar';
 import { NewCalendarEventModal } from '../../../src/features/calendar/components/NewCalendarEventModal';
 import { OnlineMeetingCard, isOnlineFormat } from '../../../src/features/calendar/components/EventFormat';
+import { InterpretationCard } from '../../../src/features/interpretation/InterpretationCard';
 import { EventTasksSection } from '../../../src/features/calendar/components/EventTasksSection';
 import { cap, isOngoing, isOver, relativeDay, timeRange, useCalendarLabel } from '../../../src/features/calendar/meta';
 
@@ -409,6 +410,9 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
               <OnlineMeetingCard ev={ev} canManage={canEdit} wideAudience={d.wideAudience} />
             </View>
           ) : null}
+
+          {/* Tłumaczenie na żywo — karta tylko, gdy wydarzenie ma tłumaczenie (sama się chowa). */}
+          <InterpretationCard eventId={ev.eventId} style={{ marginTop: 12 }} />
 
           {showMyService ? (
             <MyServiceCard assignments={d.myAssignments} fallbackRole={ev.myRole} over={over} eventId={ev.eventId} />
