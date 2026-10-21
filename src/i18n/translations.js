@@ -5,6 +5,21 @@
 // Lista języków: src/i18n/languages.js (mała, w głównej paczce). Ten plik ładuje się leniwie.
 
 const en = {
+  // ── Moduł służby Tłumaczenia (migracja 117) ──
+  'Tłumaczenia': 'Interpretation',
+  'Zadania Tłumaczeń': 'Interpretation tasks',
+  'Każda służba to język tłumaczenia. Klucz pola to kod języka (np. en, uk, ru, de) — po nim grafik trafia do właściwego kanału tłumaczenia na żywo.': 'Each role is an interpretation language. The field key is the language code (e.g. en, uk, ru, de) — the schedule uses it to reach the right live interpretation channel.',
+  'Tłumacz, który potwierdzi przypisanie, trafia sam do kanału swojego języka w „Tłumaczeniu na żywo” wydarzenia. Odmowa albo zdjęcie z grafiku go stamtąd usuwa.': 'An interpreter who confirms the assignment is added automatically to their language channel in the event\'s “Live interpretation”. Declining or being removed from the schedule takes them off it.',
+  'kod języka, np. en, uk, de': 'language code, e.g. en, uk, de',
+  'Język ma tłumaczy z grafiku — zmień przypisania w grafiku służby Tłumaczenia.': 'This language has interpreters from the schedule — change the assignments in the Interpretation ministry schedule.',
+  'Nabożeństwa z tłumaczeniem, próby, szkolenia': 'Interpreted services, rehearsals, training',
+  'Potwierdził w grafiku, ale nie ma aktywnego konta w aplikacji — nie może wejść do konsoli.': 'Confirmed in the schedule but has no active app account — cannot open the console.',
+  'Przypisany w grafiku Tłumaczeń — trafi do kanału po potwierdzeniu.': 'Assigned in the Interpretation schedule — will join the channel after confirming.',
+  'Z grafiku służby Tłumaczenia — zmień w grafiku.': 'From the Interpretation ministry schedule — change it in the schedule.',
+  'Z grafiku:': 'From the schedule:',
+  'z grafiku': 'from schedule',
+  'czeka na potwierdzenie': 'awaiting confirmation',
+  'bez konta w aplikacji': 'no app account',
   // ── Tłumaczenie na żywo (kanały językowe przy wydarzeniu) ──
   'Zarządzaj tłumaczeniem na żywo': 'Manage live interpretation',
   'Nie znaleziono tłumaczenia': 'Interpretation not found',
@@ -8390,6 +8405,21 @@ const en = {
 };
 
 const uk = {
+  // ── Moduł służby Tłumaczenia (migracja 117) ──
+  'Tłumaczenia': 'Переклад',
+  'Zadania Tłumaczeń': 'Завдання перекладачів',
+  'Każda służba to język tłumaczenia. Klucz pola to kod języka (np. en, uk, ru, de) — po nim grafik trafia do właściwego kanału tłumaczenia na żywo.': 'Кожне служіння — це мова перекладу. Ключ поля — код мови (напр. en, uk, ru, de): за ним графік потрапляє до відповідного каналу живого перекладу.',
+  'Tłumacz, który potwierdzi przypisanie, trafia sam do kanału swojego języka w „Tłumaczeniu na żywo” wydarzenia. Odmowa albo zdjęcie z grafiku go stamtąd usuwa.': 'Перекладач, який підтвердить призначення, автоматично потрапляє до каналу своєї мови в «Живому перекладі» події. Відмова або зняття з графіка прибирає його звідти.',
+  'kod języka, np. en, uk, de': 'код мови, напр. en, uk, de',
+  'Język ma tłumaczy z grafiku — zmień przypisania w grafiku służby Tłumaczenia.': 'Ця мова має перекладачів із графіка — змініть призначення в графіку служіння «Переклад».',
+  'Nabożeństwa z tłumaczeniem, próby, szkolenia': 'Богослужіння з перекладом, репетиції, навчання',
+  'Potwierdził w grafiku, ale nie ma aktywnego konta w aplikacji — nie może wejść do konsoli.': 'Підтвердив у графіку, але не має активного облікового запису в застосунку — не може відкрити консоль.',
+  'Przypisany w grafiku Tłumaczeń — trafi do kanału po potwierdzeniu.': 'Призначений у графіку перекладачів — потрапить до каналу після підтвердження.',
+  'Z grafiku służby Tłumaczenia — zmień w grafiku.': 'З графіка служіння «Переклад» — змініть у графіку.',
+  'Z grafiku:': 'З графіка:',
+  'z grafiku': 'з графіка',
+  'czeka na potwierdzenie': 'очікує підтвердження',
+  'bez konta w aplikacji': 'без облікового запису',
   // ── Tłumaczenie na żywo (kanały językowe przy wydarzeniu) ──
   'Zarządzaj tłumaczeniem na żywo': 'Керувати синхронним перекладом',
   'Nie znaleziono tłumaczenia': 'Переклад не знайдено',

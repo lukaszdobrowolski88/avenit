@@ -45,6 +45,8 @@ const FIXED_SOURCES = {
   media_tasks: { moduleKey: 'media', comments: 'media_task_comments', people: ['media_team'], title: 'Zadania Media Team' },
   mlodziezowka_tasks: { moduleKey: 'mlodziezowka', comments: 'mlodziezowka_task_comments', people: ['mlodziezowka_leaders', 'mlodziezowka_members'], title: 'Zadania młodzieżówki' },
   home_group_tasks: { moduleKey: 'homegroups', comments: 'home_group_task_comments', people: ['home_group_leaders'], title: 'Zadania grup domowych' },
+  // Tłumaczenia (117): bez starej tabeli — import zakłada pustą tablicę zakładki „Zadania”.
+  tlumaczenia_tasks: { moduleKey: 'tlumaczenia', comments: null, people: ['custom_tlumaczenia_members'], title: 'Zadania Tłumaczeń' },
   // Kalendarz: zadania bez komentarzy; kolumny godzin/kategorii/miejsca dla widoku kalendarza.
   tasks: { moduleKey: 'calendar', comments: null, people: [], calendar: true, title: 'Zadania' },
 };
@@ -140,7 +142,7 @@ export function buildLabels(values, canon) {
 // Kalendarz: klucze „kalendarzy” zadań (CalendarModule TEAMS bez 'program').
 const CALENDAR_TEAMS = [
   ['media', 'Media'], ['atmosfera', 'Atmosfera'], ['worship', 'Uwielbienie'],
-  ['kids', 'Dzieci'], ['groups', 'Grupy domowe'], ['mlodziezowka', 'Młodzieżówka'],
+  ['kids', 'Dzieci'], ['groups', 'Grupy domowe'], ['mlodziezowka', 'Młodzieżówka'], ['tlumaczenia', 'Tłumaczenia'],
 ];
 export function calendarTeamOptions(values) {
   const opts = CALENDAR_TEAMS.map(([id, title], i) => ({ id, title, color: EXTRA_COLORS[i % EXTRA_COLORS.length] }));

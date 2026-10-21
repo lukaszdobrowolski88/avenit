@@ -97,6 +97,7 @@ export default function Members() {
   const lblAtmosfera = useModuleLabel('atmosfera', tr('Gościnność'));
   const lblKids = useModuleLabel('kids', tr('Dzieci'));
   const lblMc = useModuleLabel('mc', tr('Scena / MC'));
+  const lblTlumaczenia = useModuleLabel('tlumaczenia', tr('Tłumaczenia'));
   const { modules } = useModules();
   const MINISTRY_OPTIONS = React.useMemo(() => {
     const sys = [
@@ -105,6 +106,7 @@ export default function Members() {
       { key: 'atmosfera_team', label: lblAtmosfera, table: 'atmosfera_members' },
       { key: 'kids_ministry', label: lblKids, table: 'kids_teachers' },
       { key: 'mc_team', label: lblMc, table: 'custom_mc_members' },
+      { key: 'tlumaczenia_team', label: lblTlumaczenia, table: 'custom_tlumaczenia_members' },
     ];
     // Młodzieżówka ma własną tabelę składu; klucz 'custom_mlodziezowka' zostaje taki jak
     // dotąd (zapisane członkostwa osób), zmienia się tylko tabela (custom_mlodziezowka_members nie istnieje).

@@ -7,7 +7,7 @@ export const NAV_GROUPS = [
   // fixedOrder: kolejność wg listy kluczy (Pulpit, Wydarzenia, Programy), nie wg display_order.
   { id: 'start', label: 'Start', keys: ['dashboard', 'calendar', 'programs'], fixedOrder: true },
   { id: 'people', label: 'Ludzie', keys: ['members', 'homegroups', 'groups', 'attendance', 'rsvp', 'prayer'] },
-  { id: 'ministries', label: 'Służby', keys: ['worship', 'media', 'atmosfera', 'kids', 'mlodziezowka', 'teaching', 'serve'] },
+  { id: 'ministries', label: 'Służby', keys: ['worship', 'media', 'atmosfera', 'kids', 'mlodziezowka', 'tlumaczenia', 'teaching', 'serve'] },
   { id: 'communication', label: 'Komunikacja', keys: ['komunikator', 'mail', 'mailing', 'push_campaigns', 'sms_campaigns'] },
   { id: 'finance', label: 'Finanse', keys: ['finance', 'giving'] },
   { id: 'tools', label: 'Narzędzia', keys: ['boards', 'forms', 'rooms', 'automation', 'analytics', 'ai'] },
@@ -40,6 +40,7 @@ export const KEY_ICONS = {
   atmosfera: 'Coffee',
   kids: 'Baby',
   mlodziezowka: 'Flame',
+  tlumaczenia: 'Languages',
   teaching: 'BookOpen',
   serve: 'UserCheck',
   komunikator: 'MessageCircle',

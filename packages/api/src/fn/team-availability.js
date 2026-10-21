@@ -20,6 +20,7 @@ const MEMBER_TABLE = {
   atmosfera: 'atmosfera_members',
   kids: 'kids_teachers',
   mc: 'custom_mc_members',
+  tlumaczenia: 'custom_tlumaczenia_members',
 };
 
 export default async function handler(req, reply) {

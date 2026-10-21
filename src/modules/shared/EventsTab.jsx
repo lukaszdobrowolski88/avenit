@@ -119,6 +119,20 @@ const MINISTRY_CONFIG = {
     ],
     color: 'yellow'
   },
+  tlumaczenia: {
+    tableName: 'module_events', teamType: 'tlumaczenia',
+    icon: '🎧',
+    title: tr('Tłumaczenia'),
+    defaultType: 'nabozenstwo',
+    types: [
+      { value: 'nabozenstwo', label: tr('Nabożeństwo') },
+      { value: 'proba', label: tr('Próba') },
+      { value: 'szkolenie', label: tr('Szkolenie') },
+      { value: 'spotkanie', label: tr('Spotkanie') },
+      { value: 'inne', label: tr('Inne') }
+    ],
+    color: 'blue'
+  },
   mlodziezowka: {
     tableName: 'events', teamType: 'mlodziezowka',
     icon: '🔥',

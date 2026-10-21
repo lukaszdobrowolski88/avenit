@@ -12,6 +12,7 @@ const TEAM_MEMBER_TABLE: Record<string, string> = {
   atmosfera: 'atmosfera_members',
   kids: 'kids_teachers',
   mc: 'custom_mc_members',
+  tlumaczenia: 'custom_tlumaczenia_members',
 };
 const memberTableFor = (team: string) => TEAM_MEMBER_TABLE[team] || `custom_${team}_members`;
 const csv = (v: unknown) =>

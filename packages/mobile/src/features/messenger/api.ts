@@ -198,6 +198,7 @@ export const MINISTRY_CHANNEL_META: Record<string, { label: string; tint: string
   worship_team: { label: "Zespół Uwielbienia", ...MINISTRY_TILE },
   media_team: { label: "Media Team", ...MINISTRY_TILE },
   atmosfera_team: { label: "Atmosfera Team", ...MINISTRY_TILE },
+  tlumaczenia_team: { label: "Tłumaczenia", ...MINISTRY_TILE },
   kids_ministry: { label: "Dzieci", ...MINISTRY_TILE },
   home_groups: { label: "Liderzy Grup Domowych", ...MINISTRY_TILE },
   youth_ministry: { label: "Młodzieżówka", ...MINISTRY_TILE },

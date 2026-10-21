@@ -177,6 +177,125 @@ export function cardSummary(r: SessionGetResponse | null | undefined): { show: f
   };
 }
 
+// ── Tłumacze na karcie (zarządzający i tłumacze) ─────────────────────────────
+// interp-session-get dla zarządzającego / tłumacza kanału dokłada kanałom `interpreters`
+// [{ email, name, source: 'manual' | 'schedule' }], a odpowiedzi `schedule` { pending, no_account }
+// (osoby z grafiku Tłumaczeń: niepotwierdzone / bez konta w aplikacji). Zwykły słuchacz tego nie
+// dostaje — i karta nie trzyma wtedy żadnych osób (cache trafia na dysk). Starszy serwer: bez
+// `source` (= ręcznie) i bez `schedule`.
+
+export type InterpreterSource = 'manual' | 'schedule';
+export interface CardInterpreter {
+  name: string;
+  source: InterpreterSource;
+}
+export interface CardScheduleEntry {
+  lang_code: string;
+  label: string;
+  name: string;
+}
+export interface CardChannel {
+  id: string;
+  lang_code: string;
+  label: string;
+  status: 'idle' | 'live';
+  interpreters?: CardInterpreter[];
+}
+export interface CardData {
+  my_channels: string[];
+  session: { status: 'idle' | 'live' | 'ended'; channels: CardChannel[] } | null;
+  schedule?: { pending: CardScheduleEntry[]; no_account: CardScheduleEntry[] };
+}
+
+type RawPerson = { email?: string | null; name?: string | null; source?: string | null } | null | undefined;
+type RawScheduleEntry = { lang_code?: string | null; label?: string | null; name?: string | null } | null | undefined;
+export interface SessionGetFull {
+  event?: SessionGetResponse['event'];
+  my_channels?: string[];
+  can_manage?: boolean;
+  session?: {
+    status: 'idle' | 'live' | 'ended';
+    channels?: { id: string; lang_code: string; label: string; status: 'idle' | 'live'; interpreters?: RawPerson[] }[];
+  } | null;
+  schedule?: { pending?: RawScheduleEntry[]; no_account?: RawScheduleEntry[] } | null;
+}
+
+const personName = (p: RawPerson) => String(p?.name || p?.email || '').trim();
+const scheduleList = (list: unknown): CardScheduleEntry[] =>
+  (Array.isArray(list) ? (list as RawScheduleEntry[]) : [])
+    .map((x) => ({ lang_code: String(x?.lang_code ?? ''), label: String(x?.label || x?.lang_code || ''), name: String(x?.name ?? '').trim() }))
+    .filter((x) => x.name);
+
+// Odpowiedź serwera → to, co karta trzyma w cache (bez linku publicznego i e-maili; osoby tylko,
+// gdy serwer je przysłał, czyli dzwoni zarządzający albo tłumacz).
+export function cardDataFromSession(r: SessionGetFull | null | undefined): CardData {
+  const s = r?.session;
+  const channels: CardChannel[] = (s?.channels ?? []).map((c) => ({
+    id: c.id,
+    lang_code: c.lang_code,
+    label: c.label,
+    status: c.status,
+    ...(Array.isArray(c.interpreters)
+      ? {
+          interpreters: c.interpreters
+            .map((p) => ({ name: personName(p), source: (p?.source === 'schedule' ? 'schedule' : 'manual') as InterpreterSource }))
+            .filter((p) => p.name),
+        }
+      : {}),
+  }));
+  const myChannels = Array.isArray(r?.my_channels) ? r!.my_channels.map(String) : [];
+  const seesPeople = !!r?.can_manage || myChannels.length > 0 || channels.some((c) => c.interpreters);
+  const sch = r?.schedule;
+  return {
+    my_channels: myChannels,
+    session: s ? { status: s.status, channels } : null,
+    ...(seesPeople && sch && typeof sch === 'object'
+      ? { schedule: { pending: scheduleList(sch.pending), no_account: scheduleList(sch.no_account) } }
+      : {}),
+  };
+}
+
+export type CardPersonState = 'manual' | 'schedule' | 'pending' | 'no_account';
+export interface CardTeamSection {
+  key: string;
+  label: string;
+  people: { name: string; state: CardPersonState }[];
+}
+
+// Sekcja „Tłumacze”: per kanał (kolejność kanałów) — przypisani, potem z grafiku niepotwierdzeni
+// i bez konta. Wpisy grafiku w języku bez kanału — osobne sekcje na końcu. null = karta nie zna
+// osób (zwykły słuchacz albo starszy serwer) → bez sekcji.
+export function cardTeamSections(d: CardData | null | undefined): CardTeamSection[] | null {
+  const channels = d?.session?.channels ?? [];
+  const hasPeople = channels.some((c) => Array.isArray(c.interpreters)) || !!d?.schedule;
+  if (!hasPeople) return null;
+  const sections: CardTeamSection[] = channels.map((c) => ({
+    key: c.id,
+    label: c.label || c.lang_code,
+    people: (c.interpreters ?? []).map((p) => ({ name: p.name, state: p.source === 'schedule' ? 'schedule' : 'manual' })),
+  }));
+  const sectionFor = (e: CardScheduleEntry): CardTeamSection => {
+    const i = channels.findIndex((c) => (e.lang_code && c.lang_code === e.lang_code) || (!e.lang_code && c.label === e.label));
+    if (i >= 0) return sections[i];
+    const key = `lang:${e.lang_code || e.label}`;
+    let extra = sections.find((x) => x.key === key);
+    if (!extra) {
+      extra = { key, label: e.label || e.lang_code, people: [] };
+      sections.push(extra);
+    }
+    return extra;
+  };
+  const add = (list: CardScheduleEntry[] | undefined, state: CardPersonState) => {
+    for (const e of list ?? []) {
+      const sec = sectionFor(e);
+      if (!sec.people.some((p) => p.name.toLowerCase() === e.name.toLowerCase())) sec.people.push({ name: e.name, state });
+    }
+  };
+  add(d?.schedule?.pending, 'pending');
+  add(d?.schedule?.no_account, 'no_account');
+  return sections;
+}
+
 // ── Linki /tlumaczenie/… ────────────────────────────────────────────────────
 // Web: /tlumaczenie/<token> (publiczny link/QR), /tlumaczenie/sluchaj/<id wydarzenia> (zalogowany),
 // /tlumaczenie/konsola/<id> i /tlumaczenie/oryginal/<id> (konsola tłumacza, stół akustyka — web).

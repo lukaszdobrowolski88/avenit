@@ -10,7 +10,7 @@
 import { MODULES } from '@avenit/shared/src/permissions/catalog.js';
 
 // Wbudowane moduły zespołów (klucze app_modules). 'mc' bywa modułem własnym („Scena / MC”).
-export const BUILTIN_MINISTRY_KEYS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'mc'];
+export const BUILTIN_MINISTRY_KEYS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'tlumaczenia', 'mc'];
 
 const BUILTIN_MODULE_KEYS = new Set(MODULES.map((m) => m.key));
 const BUILTIN_MINISTRY_SET = new Set(BUILTIN_MINISTRY_KEYS);

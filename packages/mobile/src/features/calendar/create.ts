@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 // Ogólne wydarzenie = module_key NULL; kalendarze modułów z app_settings.event_calendars
 // (JSON-owa tablica kluczy), domyślnie lista jak na webie.
 
-const DEFAULT_CALENDARS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
+const DEFAULT_CALENDARS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'tlumaczenia'];
 
 export const useEventCalendarKeys = () =>
   useQuery({

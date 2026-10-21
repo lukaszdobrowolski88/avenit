@@ -53,6 +53,7 @@ const MINISTRY_TABLES = {
   atmosfera_team: 'atmosfera_members',
   kids_ministry: 'kids_teachers',
   home_groups: 'home_group_leaders',
+  tlumaczenia_team: 'custom_tlumaczenia_members',
 };
 
 const lower = (v) => String(v ?? '').toLowerCase();

@@ -26,6 +26,9 @@ export const BUILTIN_TEAMS = [
   { channelKey: 'media_team', moduleKey: 'media', table: 'media_team' },
   { channelKey: 'atmosfera_team', moduleKey: 'atmosfera', table: 'atmosfera_members' },
   { channelKey: 'kids_ministry', moduleKey: 'kids', table: 'kids_teachers' },
+  // Tłumaczenia (117): skład w custom_tlumaczenia_members — jako zespół wbudowany (klucz
+  // zarezerwowany niżej, więc odkrywanie modułów z kreatora go nie zdubluje).
+  { channelKey: 'tlumaczenia_team', moduleKey: 'tlumaczenia', table: 'custom_tlumaczenia_members' },
 ];
 export const HG_LEADERS_KEY = 'home_groups'; // kanał liderów grup domowych (moduł homegroups)
 export const HG_PREFIX = 'home_group:';

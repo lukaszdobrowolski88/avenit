@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Users, Settings, Bell, BellOff, Trash2, Image, Search, MoreVertical, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Megaphone, Ban, Link2, CalendarClock } from 'lucide-react';
+import { ArrowLeft, Users, Settings, Bell, BellOff, Trash2, Image, Search, MoreVertical, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Megaphone, Ban, Link2, CalendarClock, Languages } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import CallButtons from '../calls/CallButtons';
 import { useCalls } from '../calls/callContext';
@@ -22,6 +22,7 @@ const ministryIcons = {
   youth_ministry: Users,
   prayer_team: Heart,
   welcome_team: UserCheck,
+  tlumaczenia_team: Languages,
   small_groups: Home,
   admin_team: Shield,
 };

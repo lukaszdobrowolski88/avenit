@@ -19,6 +19,7 @@ const MEMBER_TABLE: Record<string, string> = {
   atmosfera: 'atmosfera_members',
   kids: 'kids_teachers',
   mc: 'custom_mc_members',
+  tlumaczenia: 'custom_tlumaczenia_members',
 };
 export const memberTableFor = (team: string) => MEMBER_TABLE[team] ?? `custom_${team}_members`;
 
@@ -158,7 +159,7 @@ export const useGrafik = (team: string) =>
             name: String(m.full_name).trim(),
             email: m.email ?? null,
             roleIds: roleIdsOf.get(String(m.id)) ?? [],
-            // worship_team/media_team: status „Nieaktywny”; reszta: is_active.
+            // worship_team/media_team/custom_tlumaczenia_members: status „Nieaktywny”; reszta: is_active.
             active: 'status' in m ? m.status !== 'Nieaktywny' : m.is_active !== false,
           })),
         events: evRows.map((ev) => ({

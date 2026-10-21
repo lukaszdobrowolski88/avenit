@@ -25,7 +25,7 @@ import {
 //   • wall_posts.ministry → nazwa (tylko Uwielbienie ma tablicę na webie),
 //   • boards.source_kind → '<x>_tasks' (zadania jako tablica Projektów).
 
-export type TeamKey = 'worship' | 'media' | 'atmosfera' | 'kids' | 'mlodziezowka' | 'homegroups';
+export type TeamKey = 'worship' | 'media' | 'atmosfera' | 'kids' | 'mlodziezowka' | 'homegroups' | 'tlumaczenia';
 
 export type TeamTabKey =
   | 'overview'
@@ -57,6 +57,8 @@ export interface TeamConfig {
   // Zakładka „Członkowie” na webie dla Dzieci to „Nauczyciele” (tab:kids:teachers).
   membersTabKey?: string;
   membersLabel?: string;
+  // Nazwy zakładek inne niż domyślne TAB_META (np. Tłumaczenia: „Sprzęt” zamiast „Wyposażenie”).
+  tabLabels?: Partial<Record<TeamTabKey, string>>;
 }
 
 export const TEAM_CONFIG: Record<TeamKey, TeamConfig> = {
@@ -82,6 +84,17 @@ export const TEAM_CONFIG: Record<TeamKey, TeamConfig> = {
     financeName: 'AtmosferaTeam',
     memberTable: 'atmosfera_members',
     eventsTable: 'events',
+  },
+  // Służba tłumaczy (migracja 117) — jak Media; skład w custom_tlumaczenia_members (status
+  // Aktywny/Nieaktywny), służby = języki (team_roles.field_key = kod języka 'en'/'uk'/'ru').
+  tlumaczenia: {
+    key: 'tlumaczenia',
+    tabs: ['overview', 'events', 'schedule', 'tasks', 'members', 'roles', 'finance', 'files', 'equipment'],
+    financeName: 'Tłumaczenia',
+    memberTable: 'custom_tlumaczenia_members',
+    boardSourceKind: 'tlumaczenia_tasks',
+    eventsTable: 'events',
+    tabLabels: { equipment: 'Sprzęt' },
   },
   kids: {
     key: 'kids',

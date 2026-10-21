@@ -65,10 +65,11 @@ const TEAM_TABLES = [
   { key: 'media', table: 'media_team', hasStatus: true, fallback: 'Media' },
   { key: 'atmosfera', table: 'atmosfera_members', fallback: 'Gościnność' },
   { key: 'kids', table: 'kids_teachers', hasGroup: true, fallback: 'Służba dzieci' },
+  { key: 'tlumaczenia', table: 'custom_tlumaczenia_members', hasStatus: true, fallback: 'Tłumaczenia' },
 ];
 // Służby wbudowane (moduły zespołów). Własne moduły z kreatora (bez komponentu, spoza tej listy
 // i spoza modułów systemowych) też są służbami — np. „Faceci”.
-const MINISTRY_MODULE_KEYS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
+const MINISTRY_MODULE_KEYS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'tlumaczenia'];
 const SYSTEM_MODULE_KEYS = new Set(['dashboard', 'programs', 'calendar', 'members', 'finance', 'teaching', 'prayer', 'komunikator',
   'mailing', 'settings', 'push_campaigns', 'mail', 'boards', 'sms_campaigns', 'giving', 'care', 'attendance', 'serve', 'rooms',
   'rsvp', 'sermons', 'automation', 'analytics', 'ai', 'forms']);

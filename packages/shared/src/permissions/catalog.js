@@ -42,6 +42,9 @@ export const RESOURCE_LABELS = {
   songs: 'Pieśni', song_attachments: 'Załączniki pieśni',
   // Atmosfera
   atmosfera_events: 'Wydarzenia Atmosfera', atmosfera_members: 'Członkowie Atmosfera',
+  // Tłumaczenia (migracja 117) — skład w custom_tlumaczenia_members, wydarzenia/zadania = wycinki wspólnych tabel
+  tlumaczenia_events: 'Wydarzenia Tłumaczeń', custom_tlumaczenia_members: 'Członkowie Tłumaczeń',
+  tlumaczenia_tasks: 'Zadania Tłumaczeń', tlumaczenia_task_comments: 'Komentarze zadań Tłumaczeń',
   // Finanse
   finance_transactions: 'Transakcje finansowe', finance_balances: 'Salda finansowe',
   expenses: 'Wydatki', expense_categories: 'Kategorie finansów', finance_tags: 'Tagi finansów',
@@ -205,6 +208,22 @@ export const MODULES = [
       { key: 'schedule', label: 'Grafik' },
       { key: 'members', label: 'Członkowie' },
       { key: 'finances', label: 'Finanse' },
+    ],
+    actions: [],
+    fields: [],
+  },
+  {
+    // Służba tłumaczy (migracja 117): grafik tłumaczy → kanały tłumaczenia na żywo przy wydarzeniu
+    // (interpretation/scheduleSync.js). Lider służby zarządza też tłumaczeniem (ministry.js).
+    key: 'tlumaczenia', label: 'Tłumaczenia',
+    resources: ['tlumaczenia_events', 'custom_tlumaczenia_members', 'tlumaczenia_tasks', 'tlumaczenia_task_comments'],
+    tabs: [
+      { key: 'events', label: 'Wydarzenia' },
+      { key: 'schedule', label: 'Grafik' },
+      { key: 'tasks', label: 'Zadania' },
+      { key: 'members', label: 'Członkowie' },
+      { key: 'finances', label: 'Finanse' },
+      { key: 'equipment', label: 'Sprzęt' },
     ],
     actions: [],
     fields: [],

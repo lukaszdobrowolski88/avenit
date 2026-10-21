@@ -1,7 +1,7 @@
 export const SYSTEM_MODULE_KEYS = [
   'dashboard', 'programs', 'calendar', 'members', 'worship',
   'media', 'atmosfera', 'kids', 'home-groups', 'finance',
-  'teaching', 'prayer', 'komunikator', 'mlodziezowka',
+  'teaching', 'prayer', 'komunikator', 'mlodziezowka', 'tlumaczenia',
   'mailing', 'mail', 'forms', 'settings'
 ];
 

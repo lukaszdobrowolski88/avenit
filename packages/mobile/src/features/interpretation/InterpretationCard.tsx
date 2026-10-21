@@ -5,27 +5,23 @@ import { Headphones, Mic } from 'lucide-react-native';
 import { B } from '../../components/ui/brand';
 import { FONT as F } from '../../lib/fonts';
 import { openOnWeb } from '../modules/useModules';
-import { CARD_POLL_MS, cardSummary, type SessionGetResponse } from './logic';
+import { CARD_POLL_MS, cardDataFromSession, cardSummary, cardTeamSections, type CardData, type CardTeamSection, type SessionGetFull } from './logic';
 import { fetchSession } from './useListener';
 
 // Karta „Tłumaczenie na żywo” na ekranie wydarzenia (obok „Spotkania online”). Jedno wywołanie
 // interp-session-get na wejście w wydarzenie; karta tylko, gdy wydarzenie ma niezakończone
 // tłumaczenie z językami (błąd / brak sesji / starszy serwer — bez karty, po cichu).
+// Zarządzający i tłumacze widzą też, kto tłumaczy (ręcznie / z grafiku Tłumaczeń, niepotwierdzeni,
+// bez konta) — tylko podgląd; zmiany w składzie robi się na webie.
 export function InterpretationCard({ eventId, style }: { eventId: number; style?: ViewStyle }) {
   const router = useRouter();
   const q = useQuery({
     queryKey: ['interp-session', eventId],
     queryFn: async () => {
       try {
-        const r = (await fetchSession(eventId)) as SessionGetResponse & { my_channels?: string[] };
-        // Tylko to, czego potrzebuje karta (cache trafia na dysk — bez linku publicznego i osób).
-        const s = r?.session;
-        return {
-          my_channels: Array.isArray(r?.my_channels) ? r.my_channels : [],
-          session: s
-            ? { status: s.status, channels: (s.channels ?? []).map((c) => ({ id: c.id, lang_code: c.lang_code, label: c.label, status: c.status })) }
-            : null,
-        };
+        // Tylko to, czego potrzebuje karta (cache trafia na dysk — bez linku publicznego i e-maili;
+        // imiona tłumaczy tylko, gdy serwer je przysłał: zarządzający albo tłumacz).
+        return cardDataFromSession((await fetchSession(eventId)) as SessionGetFull);
       } catch {
         return null;
       }
@@ -33,11 +29,12 @@ export function InterpretationCard({ eventId, style }: { eventId: number; style?
     staleTime: 15_000,
     retry: false,
     // Odświeżamy tylko, gdy karta jest widoczna (stan „na żywo”).
-    refetchInterval: (query) => (cardSummary(query.state.data as SessionGetResponse | null).show ? CARD_POLL_MS : false),
+    refetchInterval: (query) => (cardSummary(query.state.data as CardData | null).show ? CARD_POLL_MS : false),
   });
-  const data = q.data ?? null;
+  const data: CardData | null = q.data ?? null;
   const sum = cardSummary(data);
   if (!sum.show) return null;
+  const team = cardTeamSections(data);
   const interpreter = (data?.my_channels?.length ?? 0) > 0;
   const live = sum.live.length > 0;
 
@@ -56,6 +53,7 @@ export function InterpretationCard({ eventId, style }: { eventId: number; style?
       <Text style={{ fontSize: 13, lineHeight: 19, color: B.ink2, fontFamily: F.medium }}>
         {live ? `Teraz nadaje: ${sum.live.join(', ')}.` : `Języki: ${sum.languages.join(', ')}. Tłumacz jeszcze nie zaczął.`}
       </Text>
+      {team?.length ? <TeamSections sections={team} /> : null}
       <Pressable
         onPress={() => router.push({ pathname: '/(app)/interpretation/[eventId]', params: { eventId: String(eventId) } } as never)}
         accessibilityRole="button"
@@ -75,6 +73,40 @@ export function InterpretationCard({ eventId, style }: { eventId: number; style?
           <Text style={{ fontSize: 12, color: B.ink, fontFamily: F.bold }}>Konsola tłumacza (w przeglądarce)</Text>
         </Pressable>
       ) : null}
+    </View>
+  );
+}
+
+const NOTE: Record<string, string> = { pending: 'czeka na potwierdzenie', no_account: 'bez konta w aplikacji' };
+
+// „Tłumacze” — per język: imiona; z grafiku z plakietką, niepotwierdzeni i bez konta wyszarzeni.
+function TeamSections({ sections }: { sections: CardTeamSection[] }) {
+  return (
+    <View style={{ gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: B.line }}>
+      <Text style={{ fontSize: 11, color: B.gold, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: F.bold }}>Tłumacze</Text>
+      {sections.map((sec) => (
+        <View key={sec.key} style={{ gap: 3 }}>
+          <Text style={{ fontSize: 13, color: B.ink, fontFamily: F.semibold }}>{sec.label}</Text>
+          {sec.people.length ? (
+            sec.people.map((p) => {
+              const muted = p.state === 'pending' || p.state === 'no_account';
+              return (
+                <View key={`${p.state}:${p.name}`} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, rowGap: 2 }}>
+                  <Text style={{ fontSize: 13, lineHeight: 19, color: muted ? B.ink4 : B.ink2, fontFamily: F.medium }}>{p.name}</Text>
+                  {p.state === 'schedule' ? (
+                    <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: B.kurkumaSoft }}>
+                      <Text style={{ fontSize: 11, color: B.goldDeep, fontFamily: F.semibold }}>z grafiku</Text>
+                    </View>
+                  ) : null}
+                  {muted ? <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.medium }}>· {NOTE[p.state]}</Text> : null}
+                </View>
+              );
+            })
+          ) : (
+            <Text style={{ fontSize: 13, color: B.ink4, fontFamily: F.medium }}>Brak przypisanego tłumacza</Text>
+          )}
+        </View>
+      ))}
     </View>
   );
 }

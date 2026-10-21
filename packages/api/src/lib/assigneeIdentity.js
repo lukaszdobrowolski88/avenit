@@ -12,7 +12,7 @@
 
 export const TEAM_MEMBER_TABLE = {
   worship: 'worship_team', media: 'media_team', atmosfera: 'atmosfera_members',
-  kids: 'kids_teachers', mc: 'custom_mc_members',
+  kids: 'kids_teachers', mc: 'custom_mc_members', tlumaczenia: 'custom_tlumaczenia_members',
 };
 const KEY_RE = /^[a-z0-9_]+$/;
 export function teamTableFor(teamType) {

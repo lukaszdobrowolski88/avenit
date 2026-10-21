@@ -24,6 +24,7 @@ export const MINISTRY_CHANNEL_MODULES = {
   kids_ministry: 'kids',
   home_groups: 'homegroups',
   youth_ministry: 'mlodziezowka',
+  tlumaczenia_team: 'tlumaczenia',
 };
 const HOME_GROUP_PREFIX = 'home_group:';
 

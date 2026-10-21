@@ -131,6 +131,8 @@ export const MINISTRY_LABELS: Record<string, string> = {
   worship: 'Worship',
   media: 'Media',
   atmosfera: 'Atmosfera',
+  tlumaczenia: 'Tłumaczenia',
+  tlumaczenia_team: 'Tłumaczenia',
   kids: 'Dzieci',
   groups: 'Grupy domowe',
   mlodziezowka: 'Młodzieżówka',

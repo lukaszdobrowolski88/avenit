@@ -12,6 +12,7 @@ import { moduleForTasksSource } from '../permissions/moduleScope.js';
 export const FALLBACK_MODULE_PATHS = {
   media: '/media', homegroups: '/home-groups', mlodziezowka: '/mlodziezowka',
   atmosfera: '/atmosfera', worship: '/worship', kids: '/kids', calendar: '/wydarzenia',
+  tlumaczenia: '/tlumaczenia',
 };
 
 export function modulePathFor(key, paths = {}) {

@@ -143,7 +143,8 @@ const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
 };
 
 // Główny komponent zakładki Służby
-export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate }) {
+// intro / fieldKeyPlaceholder — opcjonalne (np. Tłumaczenia: służba = język, klucz = kod języka).
+export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate, intro = null, fieldKeyPlaceholder = null }) {
   const t = useT();
   const [roles, setRoles] = useState([]);
   const [memberRoles, setMemberRoles] = useState([]);
@@ -291,7 +292,7 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
     <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
       <TabHeader
         title={t('Służby')}
-        subtitle={tr('Zarządzaj służbami i przypisuj do nich członków zespołu')}
+        subtitle={intro || tr('Zarządzaj służbami i przypisuj do nich członków zespołu')}
         actions={
           <button
             onClick={() => {
@@ -410,7 +411,7 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
             </label>
             <input
               className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 font-mono text-sm"
-              placeholder={tr('np. piano, naglosnienie')}
+              placeholder={fieldKeyPlaceholder || tr('np. piano, naglosnienie')}
               value={roleForm.field_key}
               onChange={e => setRoleForm({ ...roleForm, field_key: e.target.value })}
             />

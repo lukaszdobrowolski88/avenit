@@ -20,6 +20,7 @@ const MINISTRY_SOURCES = [
   { key: 'atmosfera_team', table: 'atmosfera_members' },
   { key: 'kids_ministry', table: 'kids_teachers' },
   { key: 'home_groups', table: 'home_group_leaders' },
+  { key: 'tlumaczenia_team', table: 'custom_tlumaczenia_members' },
 ];
 
 export default function NewConversationModal({

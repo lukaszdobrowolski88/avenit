@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import {
   Calendar as CalIcon, ChevronLeft, ChevronRight,
   Plus, CheckCircle, Clock, Video, Music, X, Save,
-  Users, HeartHandshake, Home, Baby, Trash2,
+  Users, HeartHandshake, Home, Baby, Trash2, Languages,
   MapPin, Search, Check,
   LayoutGrid, List, LayoutList, Columns, CalendarPlus, ListTodo,
   Filter, Church
@@ -99,6 +99,7 @@ const MODULE_TEAM = {
   kids: { emoji: '👶', team: 'kids' },
   homegroups: { emoji: '🏠', team: 'groups' },
   mlodziezowka: { emoji: '🎉', team: 'mlodziezowka' },
+  tlumaczenia: { emoji: '🎧', team: 'tlumaczenia' },
 };
 const isModuleKey = (k) => k && k !== 'general' && k !== 'program';
 
@@ -189,9 +190,10 @@ const TEAMS = {
   kids: { label: tr('Dzieci'), color: 'yellow', icon: Baby },
   groups: { label: tr('Grupy domowe'), color: 'blue', icon: Home },
   mlodziezowka: { label: tr('Młodzieżówka'), color: 'rose', icon: Users },
+  tlumaczenia: { label: tr('Tłumaczenia'), color: 'blue', icon: Languages },
 };
 // Klucz „kalendarza” → klucz modułu (do nazwy z app_modules).
-const TEAM_MODULE = { media: 'media', atmosfera: 'atmosfera', worship: 'worship', kids: 'kids', groups: 'homegroups', mlodziezowka: 'mlodziezowka' };
+const TEAM_MODULE = { media: 'media', atmosfera: 'atmosfera', worship: 'worship', kids: 'kids', groups: 'homegroups', mlodziezowka: 'mlodziezowka', tlumaczenia: 'tlumaczenia' };
 // Kolor kalendarza = kropka (bez pionowych pasków-akcentów).
 const DOT = {
   pink: 'bg-accent-primary-light', orange: 'bg-accent-secondary-light', purple: 'bg-purple-500',
@@ -262,7 +264,8 @@ export const MINISTRY_CALENDARS = [
   { key: 'atmosfera', iconName: 'Coffee', title: tr('Atmosfera'), description: tr('Spotkania, integracje') },
   { key: 'kids', iconName: 'Baby', title: tr('Dzieci'), description: tr('Zajęcia, warsztaty, wycieczki') },
   { key: 'homegroups', iconName: 'Home', title: tr('Grupy domowe'), description: tr('Spotkania grupowe') },
-  { key: 'mlodziezowka', iconName: 'Flame', title: tr('Młodzieżówka'), description: tr('Wydarzenia młodzieżowe') }
+  { key: 'mlodziezowka', iconName: 'Flame', title: tr('Młodzieżówka'), description: tr('Wydarzenia młodzieżowe') },
+  { key: 'tlumaczenia', iconName: 'Languages', title: tr('Tłumaczenia'), description: tr('Nabożeństwa z tłumaczeniem, próby, szkolenia') }
 ];
 const calendarIcon = (name) => LucideIcons[name] || CalIcon;
 

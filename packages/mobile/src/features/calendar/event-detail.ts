@@ -102,10 +102,11 @@ const TEAM_LABELS: Record<string, string> = {
   worship: 'Zespół uwielbienia',
   media: 'MediaTeam',
   atmosfera: 'Atmosfera Team',
+  tlumaczenia: 'Tłumaczenia',
   kids: 'Dzieci',
   mc: 'Scena / MC',
 };
-const KNOWN_TEAM_MODULES = ['worship', 'media', 'atmosfera', 'kids'];
+const KNOWN_TEAM_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'tlumaczenia'];
 const GENERAL_TYPES: Record<string, string> = {
   // Web zapisuje typ z polskimi znakami ('nabożeństwo'); starsze wpisy — bez.
   nabożeństwo: 'Nabożeństwo',

@@ -16,6 +16,7 @@ export const FINANCE_TEAM_TYPES = {
   kids: 'małe Avenit',
   homegroups: 'Grupy domowe',
   mlodziezowka: 'Mlodziezowka',
+  tlumaczenia: 'Tłumaczenia',
 };
 const BUILTIN_MODULE_KEYS = new Set(MODULES.map((m) => m.key));
 

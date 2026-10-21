@@ -1,0 +1,703 @@
+import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import MemberStatusField, { isInactiveStatus, memberStatusColor } from './shared/MemberStatusField';
+import { supabase } from '../lib/supabase';
+import ModuleBoard, { hasItemDeepLink } from './Boards/ModuleBoard';
+import {
+  Plus, X, FileText, Calendar, User, Users,
+  CheckSquare, Check, DollarSign, Tag, Upload, FolderOpen, Package, Languages
+} from 'lucide-react';
+import FinanceTab from './shared/FinanceTab';
+import EventsTab from './shared/EventsTab';
+import EventScheduleTab from './shared/ScheduleTab';
+import MaterialsTab from './shared/MaterialsTab';
+import EquipmentTab from './shared/EquipmentTab';
+import RolesTab from '../components/RolesTab';
+import CustomSelect from '../components/CustomSelect';
+import ResponsiveTabs from '../components/ResponsiveTabs';
+import TabHeader from '../components/TabHeader';
+import PageHeader from '../components/PageHeader';
+import { useTabAccess } from '../components/Can';
+import { useCampusQuery } from '../hooks/useCampusQuery';
+import { useT } from '../i18n';
+import { tr } from '../i18n';
+import { toast } from '../lib/toast';
+import Spinner from '../components/Spinner';
+import Modal from '../components/Modal';
+import Button from '../components/Button';
+import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
+import { confirmDialog } from '../lib/dialog';
+import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
+
+// Moduł służby „Tłumaczenia” (migracja 117) — wzorzec MediaTeamModule. Skład w
+// custom_tlumaczenia_members (status Aktywny/Nieaktywny), Służby = języki (team_roles
+// team_type 'tlumaczenia', klucz pola = kod języka: en, uk, ru…). Potwierdzeni w Grafiku tłumacze
+// trafiają sami do kanału swojego języka w „Tłumaczeniu na żywo” wydarzenia (api
+// interpretation/scheduleSync.js). Zadania — Tablica (source_kind 'tlumaczenia_tasks').
+const TEAM = 'tlumaczenia';
+const MEMBER_TABLE = 'custom_tlumaczenia_members';
+const FINANCE_TEAM = 'Tłumaczenia';
+
+export default function TlumaczeniaModule() {
+  const t = useT();
+  const hasTabAccess = useTabAccess();
+  const { withCampusFilter, selectedCampusId } = useCampusQuery();
+  const [activeTab, setActiveTab] = useState(() => (hasItemDeepLink() ? 'tasks' : 'schedule'));
+  const { search: locationSearch } = useLocation();
+  useEffect(() => { if (hasItemDeepLink()) setActiveTab('tasks'); }, [locationSearch]); // link z powiadomienia na tej samej stronie
+  const [team, setTeam] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState(null);
+
+
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [memberForm, setMemberForm] = useState({ id: null, full_name: '', role: '', email: '', phone: '', status: 'Aktywny' });
+  const [selectedMemberRoles, setSelectedMemberRoles] = useState([]);
+  // Służby z team_roles
+  const [teamRoles, setTeamRoles] = useState([]);
+  const [memberRoles, setMemberRoles] = useState([]);
+
+  // Finance data
+  const [budgetItems, setBudgetItems] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [newTag, setNewTag] = useState('');
+  const [expenseForm, setExpenseForm] = useState({
+    payment_date: '',
+    amount: '',
+    contractor: '',
+    category: FINANCE_TEAM,
+    description: '',
+    detailed_description: '',
+    responsible_person: '',
+    documents: [],
+    tags: [],
+    ministry: FINANCE_TEAM
+  });
+
+  useEffect(() => {
+    fetchData();
+    getCurrentUser();
+    fetchTeamRoles();
+  }, [selectedCampusId]);
+
+  useEffect(() => {
+    if (activeTab === 'finances') {
+      fetchFinanceData();
+    }
+  }, [activeTab, selectedCampusId]);
+
+  const fetchTeamRoles = async () => {
+    try {
+      const { data: rolesData } = await supabase
+        .from('team_roles')
+        .select('*')
+        .eq('team_type', TEAM)
+        .eq('is_active', true)
+        .order('display_order');
+      setTeamRoles(rolesData || []);
+
+      // Pobierz przypisania członków do służb
+      const { data: memberRolesData } = await supabase
+        .from('team_member_roles')
+        .select('*')
+        .eq('member_table', MEMBER_TABLE);
+      setMemberRoles(memberRolesData || []);
+    } catch (err) {
+      console.error('Błąd pobierania służb:', err);
+    }
+  };
+
+  async function getCurrentUser() {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) {
+      setCurrentUserEmail(data.user.email);
+    }
+  }
+
+  const fetchFinanceData = async () => {
+    const currentYear = new Date().getFullYear();
+    const ministryName = FINANCE_TEAM;
+
+    try {
+      const { data: budget, error: budgetError } = await withCampusFilter(supabase
+        .from('budget_items')
+        .select('*'))
+        .eq('team_type', ministryName)
+        .eq('year', currentYear)
+        .order('id', { ascending: true });
+
+      if (budgetError) throw budgetError;
+      setBudgetItems(budget || []);
+
+      const { data: exp, error: expError } = await supabase
+        .from('expense_transactions')
+        .select('*')
+        .eq('team_type', ministryName)
+        .gte('payment_date', `${currentYear}-01-01`)
+        .lte('payment_date', `${currentYear}-12-31`)
+        .order('payment_date', { ascending: false });
+
+      if (expError) throw expError;
+      setExpenses(exp || []);
+    } catch (error) {
+      console.error('Error fetching finance data:', error);
+    }
+  };
+
+  const handleExpenseFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setUploadingFile(true);
+    try {
+      const uploadedDocs = [];
+
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `expense_documents/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('finance')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage.from('finance').getPublicUrl(filePath);
+
+        uploadedDocs.push({
+          name: file.name,
+          url: data.publicUrl,
+          uploadedAt: new Date().toISOString()
+        });
+      }
+
+      setExpenseForm({
+        ...expenseForm,
+        documents: [...expenseForm.documents, ...uploadedDocs]
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error(tr('Błąd przesyłania pliku: ') + error.message);
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const removeExpenseDocument = (index) => {
+    setExpenseForm({
+      ...expenseForm,
+      documents: expenseForm.documents.filter((_, i) => i !== index)
+    });
+  };
+
+  const addExpenseTag = () => {
+    if (newTag.trim() && !expenseForm.tags.includes(newTag.trim())) {
+      setExpenseForm({ ...expenseForm, tags: [...expenseForm.tags, newTag.trim()] });
+      setNewTag('');
+    }
+  };
+
+  const removeExpenseTag = (tag) => {
+    setExpenseForm({ ...expenseForm, tags: expenseForm.tags.filter(t => t !== tag) });
+  };
+
+  const saveExpense = async () => {
+    if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
+      toast.error(tr('Wypełnij wymagane pola'));
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('expense_transactions').insert([{
+        payment_date: expenseForm.payment_date,
+        amount: parseFloat(expenseForm.amount),
+        contractor: expenseForm.contractor,
+        category: expenseForm.category,
+        description: expenseForm.description,
+        detailed_description: expenseForm.detailed_description,
+        responsible_person: expenseForm.responsible_person,
+        documents: expenseForm.documents,
+        tags: expenseForm.tags,
+        team_type: expenseForm.ministry
+      }]);
+
+      if (error) throw error;
+
+      setShowExpenseModal(false);
+      const ministryName = expenseForm.ministry;
+      setExpenseForm({
+        payment_date: '',
+        amount: '',
+        contractor: '',
+        category: ministryName,
+        description: '',
+        detailed_description: '',
+        responsible_person: '',
+        documents: [],
+        tags: [],
+        ministry: ministryName
+      });
+      fetchFinanceData();
+    } catch (error) {
+      console.error('Error saving expense:', error);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
+    }
+  };
+
+  async function fetchData() {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Grafik żyje na wydarzeniach (ScheduleTab), zadania na Tablicy (ModuleBoard).
+      const teamResult = await supabase.from(MEMBER_TABLE).select('id, full_name, role, email, phone, status').order('full_name');
+      if (teamResult.error) throw new Error(tr('Błąd zespołu: {msg}', { msg: teamResult.error.message }));
+      setTeam(teamResult.data || []);
+    } catch (err) {
+      console.error('❌ Błąd pobierania danych:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const saveMember = async () => {
+    try {
+      if (!memberForm.full_name.trim()) {
+        toast.error(tr('Imię i nazwisko jest wymagane'));
+        return;
+      }
+      let memberId = memberForm.id;
+
+      if (memberForm.id) {
+        const { error } = await supabase.from(MEMBER_TABLE).update({
+          full_name: memberForm.full_name,
+          role: memberForm.role,
+          email: memberForm.email,
+          phone: memberForm.phone,
+          status: memberForm.status === 'Nieaktywny' ? 'Nieaktywny' : 'Aktywny',
+        }).eq('id', memberForm.id);
+        if (error) throw error;
+      } else {
+        const { data: newMember, error } = await supabase.from(MEMBER_TABLE).insert([{
+          full_name: memberForm.full_name,
+          role: memberForm.role,
+          email: memberForm.email,
+          phone: memberForm.phone,
+          status: memberForm.status === 'Nieaktywny' ? 'Nieaktywny' : 'Aktywny',
+        }]).select().single();
+        if (error) throw error;
+        memberId = newMember.id;
+      }
+
+      // Zapisz przypisania do służb
+      if (memberId) {
+        // Usuń obecne przypisania
+        await supabase
+          .from('team_member_roles')
+          .delete()
+          .eq('member_id', String(memberId))
+          .eq('member_table', MEMBER_TABLE);
+
+        // Dodaj nowe przypisania
+        if (selectedMemberRoles.length > 0) {
+          const assignments = selectedMemberRoles.map(roleId => ({
+            member_id: String(memberId),
+            member_table: MEMBER_TABLE,
+            role_id: roleId
+          }));
+          await supabase.from('team_member_roles').insert(assignments);
+        }
+      }
+
+      setShowMemberModal(false);
+      setSelectedMemberRoles([]);
+      await fetchData();
+      await fetchTeamRoles();
+    } catch (err) {
+      console.error('Błąd zapisywania członka:', err);
+      toast.error(tr('Błąd: ') + err.message);
+    }
+  };
+
+  const loadMemberRoles = (memberId) => {
+    const roles = memberRoles
+      .filter(mr => String(mr.member_id) === String(memberId))
+      .map(mr => mr.role_id);
+    setSelectedMemberRoles(roles);
+  };
+
+  const getMemberRoleNames = (memberId) => {
+    const roleIds = memberRoles
+      .filter(mr => String(mr.member_id) === String(memberId))
+      .map(mr => mr.role_id);
+    return teamRoles
+      .filter(r => roleIds.includes(r.id))
+      .map(r => r.name);
+  };
+
+  const deleteMember = async (id) => {
+    if (await confirmDialog(tr('Usunąć członka zespołu?'))) {
+      try {
+        const { error } = await supabase.from(MEMBER_TABLE).delete().eq('id', id);
+        if (error) throw error;
+        await fetchData();
+      } catch (err) {
+        console.error('Błąd usuwania członka:', err);
+        toast.error(tr('Błąd: ') + err.message);
+      }
+    }
+  };
+
+  if (loading) return <Spinner center />;
+  if (error) return <div className="p-10 text-red-600 dark:text-red-400">{tr('Błąd:')} {error}</div>;
+
+  return (
+    <div className="space-y-8">
+      <PageHeader moduleKey={TEAM} icon={Languages} title={t('Tłumaczenia')} />
+
+      {/* TAB NAVIGATION */}
+      <ResponsiveTabs moduleKey={TEAM}
+        tabs={[
+          { id: 'events', label: t('Wydarzenia'), icon: Calendar },
+          { id: 'schedule', label: t('Grafik'), icon: Calendar },
+          { id: 'tasks', label: t('Zadania'), icon: CheckSquare },
+          ...(hasTabAccess(TEAM, 'members') ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
+          ...(hasTabAccess(TEAM, 'members') ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
+          ...(hasTabAccess(TEAM, 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+          { id: 'files', label: t('Pliki'), icon: FolderOpen },
+          ...(hasTabAccess(TEAM, 'equipment') ? [{ id: 'equipment', label: t('Sprzęt'), icon: Package }] : []),
+        ]}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
+
+      {/* SEKCJA: WYDARZENIA */}
+      {activeTab === 'events' && (
+        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[50] transition-colors duration-300">
+          <EventsTab ministry={TEAM} currentUserEmail={currentUserEmail} />
+        </section>
+      )}
+
+      {/* GRAFIK — tłumacze na wydarzeniach; po potwierdzeniu trafiają do kanałów tłumaczenia */}
+      {activeTab === 'schedule' && (
+      <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[50] transition-colors duration-300">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tr('Tłumacz, który potwierdzi przypisanie, trafia sam do kanału swojego języka w „Tłumaczeniu na żywo” wydarzenia. Odmowa albo zdjęcie z grafiku go stamtąd usuwa.')}</p>
+        <EventScheduleTab moduleKey={TEAM} />
+      </section>
+      )}
+
+      {/* ZADANIA — Tablica służby */}
+      {activeTab === 'tasks' && (
+        <ModuleBoard sourceKind="tlumaczenia_tasks" moduleKey={TEAM} title={tr('Zadania Tłumaczeń')} />
+      )}
+      {activeTab === 'members' && (
+      <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[30] transition-colors duration-300">
+        <TabHeader title={tr('Członkowie ({n})', { n: team.length })} actions={
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '', status: 'Aktywny' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
+        } />
+        <DataTable tableClassName="min-w-[700px]">
+          <THead>
+            <tr><TH>{tr('Imię i nazwisko')}</TH><TH>{t('Służby')}</TH><TH>{tr('Email')}</TH><TH>{tr('Telefon')}</TH><TH align="right"><span className="sr-only">{tr('Akcje')}</span></TH></tr>
+          </THead>
+          <tbody>
+            {team.map(m => {
+              const roleNames = getMemberRoleNames(m.id);
+              return (
+                <TR key={m.id}>
+                  <TD className="font-medium text-gray-900 dark:text-white">
+                    {m.full_name}
+                    {isInactiveStatus(m.status) && <span className="ml-2 align-middle"><StatusPill color={memberStatusColor(m.status)}>{tr('Nieaktywny')}</StatusPill></span>}
+                  </TD>
+                  <TD>
+                    <div className="flex flex-wrap gap-1">
+                      {roleNames.length > 0 ? (
+                        roleNames.map((name, idx) => (
+                          <StatusPill key={idx} color={STATUS_COLORS.accent}>{name}</StatusPill>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500 text-xs italic">{tr('Brak przypisanych')}</span>
+                      )}
+                    </div>
+                  </TD>
+                  <TD muted>{m.email}</TD>
+                  <TD muted numeric>{m.phone}</TD>
+                  <TD align="right">
+                    <div className="flex justify-end gap-2 opacity-60 group-hover/row:opacity-100 transition-opacity">
+                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">{tr('Edytuj')}</button>
+                      <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 font-medium">{tr('Usuń')}</button>
+                    </div>
+                  </TD>
+                </TR>
+              );
+            })}
+          </tbody>
+        </DataTable>
+      </section>
+      )}
+
+      {/* FINANCES TAB */}
+      {activeTab === 'finances' && (
+        <FinanceTab
+          ministry={FINANCE_TEAM}
+          budgetItems={budgetItems}
+          expenses={expenses}
+          onAddExpense={() => setShowExpenseModal(true)}
+          onRefresh={fetchFinanceData}
+        />
+      )}
+
+      {/* ROLES TAB */}
+      {activeTab === 'roles' && (
+        <RolesTab
+          intro={tr('Każda służba to język tłumaczenia. Klucz pola to kod języka (np. en, uk, ru, de) — po nim grafik trafia do właściwego kanału tłumaczenia na żywo.')}
+          fieldKeyPlaceholder={tr('kod języka, np. en, uk, de')}
+          teamType={TEAM}
+          teamMembers={team}
+          memberTable={MEMBER_TABLE}
+          onUpdate={fetchTeamRoles}
+        />
+      )}
+
+      {/* FILES TAB */}
+      {activeTab === 'files' && (
+        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-300">
+          <MaterialsTab moduleKey={TEAM} canEdit={true} />
+        </section>
+      )}
+
+      {/* EQUIPMENT TAB */}
+      {activeTab === 'equipment' && (
+        <EquipmentTab
+          ministryKey={TEAM}
+          currentUserEmail={currentUserEmail}
+          canEdit={hasTabAccess(TEAM, 'equipment')}
+        />
+      )}
+
+      {/* MODAL CZŁONKA */}
+      <Modal
+        isOpen={showMemberModal}
+        onClose={() => setShowMemberModal(false)}
+        title={memberForm.id ? tr('Edytuj członka') : tr('Nowy członek')}
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowMemberModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveMember}>{tr('Zapisz')}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
+            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Służby')}</label>
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
+              <div className="flex flex-wrap gap-2">
+                {teamRoles.map(role => {
+                  const isSelected = selectedMemberRoles.includes(role.id);
+                  return (
+                    <button
+                      key={role.id}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedMemberRoles(prev => prev.filter(id => id !== role.id));
+                        } else {
+                          setSelectedMemberRoles(prev => [...prev, role.id]);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {isSelected && <Check size={14} />}
+                      {role.name}
+                    </button>
+                  );
+                })}
+              </div>
+              {teamRoles.length === 0 && (
+                <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-2">{t('Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".')}</p>
+              )}
+            </div>
+          </div>
+
+          <MemberStatusField value={memberForm.status} onChange={(v) => setMemberForm({ ...memberForm, status: v })} />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
+              <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="+48 123 456 789" value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
+              <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="jan@example.com" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} />
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL: Add Expense */}
+      <Modal
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        title={tr('Nowy wydatek - {ministry}', { ministry: expenseForm.ministry })}
+        size="xl"
+        closeOnBackdrop={false}
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowExpenseModal(false)}>{tr('Anuluj')}</Button>
+          <Button onClick={saveExpense}>{tr('Zapisz')}</Button>
+        </>}
+      >
+        <div className="p-6 space-y-4">
+          {/* Wiersz 1: Data i Kwota */}
+          <div className="grid grid-cols-2 gap-4">
+            <CustomDatePicker
+              label={tr('Data dokumentu')}
+              value={expenseForm.payment_date}
+              onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
+            />
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+              <input
+                type="number"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm({...expenseForm, amount: e.target.value})}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          {/* Wiersz 2: Kontrahent i Osoba odpowiedzialna */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
+              <input
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={expenseForm.contractor}
+                onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
+                placeholder={t('Nazwa firmy/osoby')}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Osoba odpowiedzialna')}</label>
+              <input
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={expenseForm.responsible_person}
+                onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
+                placeholder={t('Imię i nazwisko')}
+              />
+            </div>
+          </div>
+
+          {/* Wiersz 3: Pozycja budżetowa (pełna szerokość) */}
+          <div>
+            <CustomSelect
+              label={tr('Pozycja budżetowa (opis kosztu)')}
+              value={expenseForm.description}
+              onChange={(value) => setExpenseForm({...expenseForm, description: value})}
+              options={[
+                { value: '', label: t('Wybierz pozycję') },
+                ...budgetItems.map(item => ({
+                  value: item.description,
+                  label: item.description
+                }))
+              ]}
+              placeholder={tr('Wybierz pozycję')}
+            />
+          </div>
+
+          {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Szczegółowy opis')}</label>
+            <textarea
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+              rows={2}
+              value={expenseForm.detailed_description}
+              onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
+              placeholder={tr('Dodatkowe informacje o wydatku...')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Załączniki (opcjonalnie)')}</label>
+            <div className="space-y-2">
+              <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
+                <Upload size={18} className="text-gray-400" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {uploadingFile ? tr('Przesyłanie...') : tr('Dodaj plik(i)')}
+                </span>
+                <input
+                  type="file"
+                  onChange={handleExpenseFileUpload}
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                  disabled={uploadingFile}
+                  multiple
+                />
+              </label>
+              {expenseForm.documents && expenseForm.documents.length > 0 && (
+                <div className="space-y-2">
+                  {expenseForm.documents.map((doc, idx) => (
+                    <div key={idx} className="flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                      <span className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1 truncate">
+                        <FileText size={14} />
+                        {doc.name}
+                      </span>
+                      <button
+                        onClick={() => removeExpenseDocument(idx)}
+                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 ml-2 flex-shrink-0"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tagi')}</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder={tr('Dodaj tag')}
+                onKeyPress={(e) => e.key === 'Enter' && addExpenseTag()}
+              />
+              <button
+                onClick={addExpenseTag}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {expenseForm.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light rounded-lg text-xs flex items-center gap-1"
+                >
+                  <Tag size={12} />
+                  {tag}
+                  <button onClick={() => removeExpenseTag(tag)}>
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}

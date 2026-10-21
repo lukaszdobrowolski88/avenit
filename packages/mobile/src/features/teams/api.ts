@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react-native';
-import { Baby, Music, Sparkles, Users, Video } from 'lucide-react-native';
+import { Baby, Languages, Music, Sparkles, Users, Video } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
 
-export type MinistryKey = 'worship' | 'media' | 'atmosfera' | 'kids' | 'mlodziezowka';
+export type MinistryKey = 'worship' | 'media' | 'atmosfera' | 'kids' | 'mlodziezowka' | 'tlumaczenia';
 
-// Wygląd i klucze 5 wbudowanych zespołów. Dane zakładek: features/teams/config.ts + data.ts.
+// Wygląd i klucze wbudowanych zespołów. Dane zakładek: features/teams/config.ts + data.ts.
 export interface MinistryMeta {
   key: MinistryKey;
   label: string;
@@ -74,6 +74,17 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     gradTo: '#8A6606',
     teamType: null,
   },
+  tlumaczenia: {
+    key: 'tlumaczenia',
+    label: 'Tłumaczenia',
+    shortLabel: 'Tłumacze',
+    Icon: Languages,
+    tint: '#2A2312',
+    bg: '#ECE8DE',
+    gradFrom: '#6B6557',
+    gradTo: '#6B6557',
+    teamType: 'tlumaczenia',
+  },
 };
 
 export const ALL_MINISTRIES: MinistryMeta[] = [
@@ -82,6 +93,7 @@ export const ALL_MINISTRIES: MinistryMeta[] = [
   MINISTRY_META.atmosfera,
   MINISTRY_META.kids,
   MINISTRY_META.mlodziezowka,
+  MINISTRY_META.tlumaczenia,
 ];
 
 interface CampusScope {

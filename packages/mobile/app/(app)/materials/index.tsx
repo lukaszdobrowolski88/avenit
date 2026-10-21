@@ -71,7 +71,7 @@ const ICON_BY_TYPE = {
 
 
 // Moduły, które mają na webie zakładkę „Pliki” (MaterialsTab z team_type = klucz modułu).
-const FILE_SPACES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'teaching'];
+const FILE_SPACES = ['worship', 'media', 'atmosfera', 'tlumaczenia', 'kids', 'homegroups', 'teaching'];
 
 export default function MaterialsScreen() {
   const router = useRouter();

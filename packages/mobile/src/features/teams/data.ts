@@ -155,6 +155,12 @@ const DEFAULT_EVENT_TYPES: Record<TeamKey, EventTypeOption[]> = {
     { key: 'streaming', label: 'Streaming' },
     { key: 'inne', label: 'Inne' },
   ],
+  tlumaczenia: [
+    { key: 'nabozenstwo', label: 'Nabożeństwo' },
+    { key: 'proba', label: 'Próba' },
+    { key: 'szkolenie', label: 'Szkolenie' },
+    { key: 'spotkanie', label: 'Spotkanie' },
+  ],
   atmosfera: [
     { key: 'spotkanie', label: 'Spotkanie' },
     { key: 'szkolenie', label: 'Szkolenie' },

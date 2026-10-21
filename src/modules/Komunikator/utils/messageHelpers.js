@@ -82,6 +82,7 @@ export const ministryKeyToName = {
   youth_ministry: 'Młodzieżówka',
   prayer_team: 'Grupa Modlitewna',
   welcome_team: 'Zespół Powitalny',
+  tlumaczenia_team: 'Tłumaczenia',
   small_groups: 'Grupy Domowe',
   admin_team: 'Administracja',
 };

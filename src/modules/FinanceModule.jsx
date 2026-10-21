@@ -77,6 +77,7 @@ const TEAM_TYPE_BY_KEY = {
   kids: 'małe Avenit',
   homegroups: 'Grupy domowe',
   mlodziezowka: 'Mlodziezowka',
+  tlumaczenia: 'Tłumaczenia',
 };
 
 // Lista służb = tylko SŁUŻBY (wbudowane zespoły + moduły własne; lib/ministryModules).
@@ -92,6 +93,7 @@ const FALLBACK_SERVICES = [
   { value: 'Grupy domowe', label: 'Grupy domowe' },
   { value: 'małe Avenit', label: 'Dzieci' },
   { value: 'Mlodziezowka', label: 'Młodzieżówka' },
+  { value: 'Tłumaczenia', label: 'Tłumaczenia' },
 ];
 
 // Puste formularze — „Dodaj…” zawsze startuje od nich (bez id poprzednio edytowanego rekordu).

@@ -44,12 +44,13 @@ const NAV_TABS = new Set<TeamTabKey>(['files', 'songs']);
 // Nazwy tablic zadań tworzonych przy pierwszym otwarciu zakładki — jak na webie (ModuleBoard).
 const TASK_BOARD_TITLES: Record<string, string> = {
   media: 'Zadania Media Team',
+  tlumaczenia: 'Zadania Tłumaczeń',
   mlodziezowka: 'Zadania młodzieżówki',
   homegroups: 'Zadania grup domowych',
 };
 
 // Zespoły ze składem w tabeli zespołu i służbami (team_roles) — reszta ma prostą listę osób.
-const ROSTER_TEAMS = new Set(['worship', 'media', 'atmosfera', 'kids']);
+const ROSTER_TEAMS = new Set(['worship', 'media', 'atmosfera', 'kids', 'tlumaczenia']);
 
 const plural = (n: number, one: string, few: string, many: string) => {
   if (n === 1) return one;
@@ -89,7 +90,7 @@ export default function TeamDetailScreen() {
         })
         .map((t) => ({
           key: t,
-          label: t === 'members' && cfg.membersLabel ? cfg.membersLabel : TAB_META[t].label,
+          label: cfg.tabLabels?.[t] ?? (t === 'members' && cfg.membersLabel ? cfg.membersLabel : TAB_META[t].label),
           Icon: TAB_META[t].Icon,
         })),
     [cfg, perms.tabVisible, perms.can],

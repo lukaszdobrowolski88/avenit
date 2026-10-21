@@ -61,6 +61,7 @@ const Members = lazy(() => import('./modules/Members'));
 const WorshipModule = lazy(() => import('./modules/MusicTeam/WorshipModule'));
 const MediaTeamModule = lazy(() => import('./modules/MediaTeamModule'));
 const AtmosferaTeamModule = lazy(() => import('./modules/AtmosferaTeamModule'));
+const TlumaczeniaModule = lazy(() => import('./modules/TlumaczeniaModule'));
 const KidsModule = lazy(() => import('./modules/Kids/KidsModule'));
 const HomeGroupsModule = lazy(() => import('./modules/HomeGroups/HomeGroupsModule'));
 const FinanceModule = lazy(() => import('./modules/FinanceModule'));
@@ -95,7 +96,7 @@ import { AI_ENABLED } from './lib/features';
 const SYSTEM_MODULE_KEYS = [
   'dashboard', 'programs', 'calendar', 'members', 'worship', 'media',
   'atmosfera', 'kids', 'homegroups', 'finance', 'giving', 'teaching', 'prayer',
-  'komunikator', 'mlodziezowka', 'mailing', 'mail', 'forms', 'settings', 'push_campaigns', 'sms_campaigns',
+  'komunikator', 'mlodziezowka', 'tlumaczenia', 'mailing', 'mail', 'forms', 'settings', 'push_campaigns', 'sms_campaigns',
   'attendance', 'analytics', 'automation', 'ai', 'sermons', 'care', 'rooms', 'serve', 'rsvp', 'boards'
 ];
 
@@ -626,6 +627,9 @@ function AppInner() {
                 } />
                 <Route path="/atmosfera" element={
                   <ProtectedRoute resource="module:atmosfera"><AtmosferaTeamModule /></ProtectedRoute>
+                } />
+                <Route path="/tlumaczenia" element={
+                  <ProtectedRoute resource="module:tlumaczenia"><TlumaczeniaModule /></ProtectedRoute>
                 } />
                 <Route path="/kids" element={
                   <ProtectedRoute resource="module:kids"><KidsModule /></ProtectedRoute>

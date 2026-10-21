@@ -138,6 +138,7 @@ const STATIC_MODULES = [
   { key: 'prayer', path: '/prayer', iconName: 'Heart', label: 'Ściana modlitwy', setting: 'prayer' },
   { key: 'komunikator', path: '/komunikator', iconName: 'MessageCircle', label: 'Komunikator', resource: 'module:komunikator' },
   { key: 'mlodziezowka', path: '/mlodziezowka', iconName: 'Flame', label: 'Młodzieżówka', resource: 'module:mlodziezowka' },
+  { key: 'tlumaczenia', path: '/tlumaczenia', iconName: 'Languages', label: 'Tłumaczenia', resource: 'module:tlumaczenia' },
   { key: 'mailing', path: '/mailing', iconName: 'Send', label: 'Kampanie e-mail', resource: 'module:mailing' },
   { key: 'push_campaigns', path: '/push-campaigns', iconName: 'BellRing', label: 'Kampanie push', resource: 'module:push_campaigns' },
   { key: 'sms_campaigns', path: '/sms-campaigns', iconName: 'Smartphone', label: 'Kampanie SMS', resource: 'module:sms_campaigns' },
