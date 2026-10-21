@@ -85,6 +85,8 @@ interface Props {
   senderStatus?: PresenceStatus;
   onLongPress?: () => void;
   onToggleReaction?: (emoji: string) => void;
+  /** Przytrzymanie pigułki reakcji — arkusz „Reakcje” (kto zareagował). */
+  onShowReactions?: (emoji: string) => void;
   currentUserEmail?: string | null;
   /** Ptaszki (K6): „read” dopiero, gdy przeczytali wszyscy pozostali. */
   deliveryStatus?: DeliveryStatus;
@@ -144,6 +146,7 @@ const MessageBubbleBase = ({
   senderStatus,
   onLongPress,
   onToggleReaction,
+  onShowReactions,
   currentUserEmail,
   deliveryStatus,
   readInfo,
@@ -478,10 +481,17 @@ const MessageBubbleBase = ({
               <Pressable
                 key={r.emoji}
                 onPress={() => onToggleReaction?.(r.emoji)}
+                onLongPress={onShowReactions ? () => onShowReactions(r.emoji) : undefined}
+                delayLongPress={350}
                 hitSlop={4}
                 accessibilityRole="button"
                 accessibilityState={{ selected: r.hasUserReacted }}
                 accessibilityLabel={`Reakcja ${r.emoji}: ${r.count}`}
+                accessibilityHint={onShowReactions ? "Przytrzymaj, aby zobaczyć, kto zareagował" : undefined}
+                accessibilityActions={onShowReactions ? [{ name: "longpress", label: "Kto zareagował" }] : undefined}
+                onAccessibilityAction={(e) => {
+                  if (e.nativeEvent.actionName === "longpress") onShowReactions?.(r.emoji);
+                }}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",

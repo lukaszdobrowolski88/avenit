@@ -38,6 +38,43 @@ const { default: SeenByModal } = await import('./SeenByModal');
 beforeEach(() => { invoke.mockClear(); });
 
 describe('Komunikator+ — renderowanie (bez sieci)', () => {
+  it('reakcje: dymek „kto zareagował”, klik przełącza, prawy przycisk otwiera „Reakcje”', () => {
+    const onToggleReaction = vi.fn();
+    const people = { 'olaf@x.pl': { full_name: 'Olaf Karel' }, 'mateusz@x.pl': { full_name: 'Mateusz Waciński' } };
+    render(
+      <MessageBubble
+        message={{ id: 'm9', sender_email: 'olaf@x.pl', content: 'Hej', created_at: '2026-10-07T10:00:00Z' }}
+        isOwn={false}
+        currentUserEmail="ja@x.pl"
+        onToggleReaction={onToggleReaction}
+        userOf={(e) => ({ ...(people[e] || {}), email: e })}
+        nameOf={(e) => people[e]?.full_name || e}
+        reactions={[
+          { emoji: '👍', count: 3, users: ['olaf@x.pl', 'ja@x.pl', 'mateusz@x.pl'], hasUserReacted: true },
+          { emoji: '❤️', count: 1, users: ['nieznany@x.pl'], hasUserReacted: false },
+        ]}
+      />
+    );
+    const pill = screen.getByRole('button', { name: 'Reakcja 👍: 3' });
+    const tip = document.getElementById(pill.getAttribute('aria-describedby'));
+    expect(tip.textContent).toContain('Ty, Olaf Karel i Mateusz Waciński');
+    // Bez imienia — tylko część adresu przed „@”.
+    const heart = screen.getByRole('button', { name: 'Reakcja ❤️: 1' });
+    expect(document.getElementById(heart.getAttribute('aria-describedby')).textContent).toContain('nieznany');
+    expect(document.body.textContent).not.toContain('nieznany@x.pl');
+
+    fireEvent.click(pill);
+    expect(onToggleReaction).toHaveBeenCalledWith('m9', '👍');
+
+    fireEvent.contextMenu(pill);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent).toContain('Reakcje');
+    expect(screen.getByRole('tab', { name: 'Reakcja 👍: 3' }).getAttribute('aria-selected')).toBe('true');
+    expect(dialog.textContent).toContain('Mateusz Waciński');
+    fireEvent.click(screen.getByText('Usuń moją reakcję'));
+    expect(onToggleReaction).toHaveBeenLastCalledWith('m9', '👍');
+  });
+
   it('dymek: klikalny link, @wszyscy, „Widziane przez N” i ptaszki', () => {
     const onShowSeenBy = vi.fn();
     render(

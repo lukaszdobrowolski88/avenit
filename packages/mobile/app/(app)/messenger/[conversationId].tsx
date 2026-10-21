@@ -101,6 +101,7 @@ import { MediaGalleryModal } from "../../../src/features/messenger/components/Me
 import { ConversationInfoModal } from "../../../src/features/messenger/components/ConversationInfoModal";
 import { MuteSheet } from "../../../src/features/messenger/components/MuteSheet";
 import { ReadByModal } from "../../../src/features/messenger/components/ReadByModal";
+import { ReactionsSheet } from "../../../src/features/messenger/components/ReactionsSheet";
 import { AckBar } from "../../../src/features/messenger/components/AckBar";
 import { AckStatusModal } from "../../../src/features/messenger/components/AckStatusModal";
 import { isImportantMessage, useAckMessage, useMessageAcks } from "../../../src/features/messenger/acks";
@@ -309,6 +310,9 @@ export default function ConversationScreen() {
   const [infoVisible, setInfoVisible] = useState(false);
   const [muteOpen, setMuteOpen] = useState(false);
   const [readByTarget, setReadByTarget] = useState<MessageRow | null>(null);
+  // „Reakcje” — kto zareagował (przytrzymanie pigułki reakcji pod wiadomością).
+  const [reactionsTarget, setReactionsTarget] = useState<{ messageId: string; emoji: string | null } | null>(null);
+  const closeReactions = useCallback(() => setReactionsTarget(null), []);
   const [reportTarget, setReportTarget] = useState<MessageRow | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [translations, setTranslations] = useState<Record<string, TranslationState>>({});
@@ -1223,6 +1227,7 @@ export default function ConversationScreen() {
                     senderStatus={mine ? undefined : getStatus(m.sender_email)}
                     onLongPress={() => setActionTarget(m)}
                     onToggleReaction={(emoji) => reactionMutation.mutate({ messageId: m.id, emoji })}
+                    onShowReactions={(emoji) => setReactionsTarget({ messageId: m.id, emoji })}
                     footer={
                       <ThreadChip
                         message={m}
@@ -1479,6 +1484,11 @@ export default function ConversationScreen() {
           if (actionTarget) void handleTranslate(actionTarget);
         }}
         onReadBy={canSeeReadBy(actionTarget) ? () => actionTarget && setReadByTarget(actionTarget) : undefined}
+        onShowReactions={
+          actionTarget && (reactionsQuery.data?.[actionTarget.id]?.length ?? 0) > 0
+            ? () => actionTarget && setReactionsTarget({ messageId: actionTarget.id, emoji: null })
+            : undefined
+        }
         onReport={
           details?.is_participant && actionTarget && !actionMine && actionTarget.message_type !== "system"
             ? () => setReportTarget(actionTarget)
@@ -1582,6 +1592,18 @@ export default function ConversationScreen() {
         muted={isMutedNow({ muted: details?.my_muted, muted_until: details?.my_muted_until })}
         mutedUntil={details?.my_muted_until ?? null}
         onPick={handlePickMute}
+      />
+
+      <ReactionsSheet
+        visible={!!reactionsTarget}
+        onClose={closeReactions}
+        reactions={reactionsTarget ? reactionsQuery.data?.[reactionsTarget.messageId] : undefined}
+        initialEmoji={reactionsTarget?.emoji ?? null}
+        members={members}
+        myEmail={myEmail}
+        onRemoveMine={(emoji) => {
+          if (reactionsTarget && !reactionMutation.isPending) reactionMutation.mutate({ messageId: reactionsTarget.messageId, emoji });
+        }}
       />
 
       <ReadByModal

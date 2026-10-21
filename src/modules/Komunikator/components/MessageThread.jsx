@@ -735,6 +735,7 @@ export default function MessageThread({
                             onVote={castVote}
                             onTogglePraying={togglePraying}
                             nameOf={nameOf}
+                            userOf={participantOf}
                             showReadCount={isAnnouncement && isOwn}
                             readCount={seen.length}
                             readTotal={isAnnouncement ? recipientsCount : null}

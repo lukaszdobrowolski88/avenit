@@ -5,6 +5,13 @@
 // Lista języków: src/i18n/languages.js (mała, w głównej paczce). Ten plik ładuje się leniwie.
 
 const en = {
+  // ── Komunikator: kto zareagował ──
+  'i': 'and',
+  '{n} innych': '{n} others',
+  'Kto zareagował': 'Who reacted',
+  'Reakcje': 'Reactions',
+  'Reakcja {emoji}: {n}': 'Reaction {emoji}: {n}',
+  'Usuń moją reakcję': 'Remove my reaction',
   // ── Moduł służby Tłumaczenia (migracja 117) ──
   // Tłumaczenia → Członkowie: osoby bez konta w aplikacji (fn tlumaczenia-accounts)
   'Brak konta w aplikacji': 'No app account',
@@ -8436,6 +8443,13 @@ const en = {
 };
 
 const uk = {
+  // ── Komunikator: kto zareagował ──
+  'i': 'і',
+  '{n} innych': 'ще {n}',
+  'Kto zareagował': 'Хто відреагував',
+  'Reakcje': 'Реакції',
+  'Reakcja {emoji}: {n}': 'Реакція {emoji}: {n}',
+  'Usuń moją reakcję': 'Видалити мою реакцію',
   // ── Moduł służby Tłumaczenia (migracja 117) ──
   // Tłumaczenia → Członkowie: osoby bez konta w aplikacji (fn tlumaczenia-accounts)
   'Brak konta w aplikacji': 'Немає облікового запису в застосунку',
