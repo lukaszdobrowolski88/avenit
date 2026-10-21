@@ -15,6 +15,7 @@ import DialogHost from './components/DialogHost';
 
 import Sidebar, { SidebarProvider } from './components/Sidebar';
 import Navbar from './components/Navbar';
+import { isPublicListenerPath } from './modules/Interpretation/interpretationLogic';
 import ProtectedRoute from './components/ProtectedRoute';
 import KioskGuard from './modules/Kids/checkin/KioskGuard';
 import ChatFab from './components/ChatFab';
@@ -44,6 +45,11 @@ import PublicBoardForm from './modules/Boards/pages/PublicBoardForm';
 import AssignmentResponsePage from './modules/AssignmentResponse/AssignmentResponsePage';
 // Strona gościa rozmowy audio/wideo (/rozmowa/:token) — leniwie, z własnym <Suspense> w gałęzi.
 const GuestCallPage = lazy(() => import('./modules/Komunikator/calls/guest/GuestCallPage'));
+// Tłumaczenie na żywo: strona słuchacza (/tlumaczenie/:token — publiczna, także /tlumaczenie/sluchaj/:id
+// w aplikacji), konsola tłumacza i nadawanie „Oryginału” (zalogowani) — leniwie.
+const InterpretationListenerPage = lazy(() => import('./modules/Interpretation/ListenerPage'));
+const InterpreterConsole = lazy(() => import('./modules/Interpretation/InterpreterConsole'));
+const OriginalBroadcastPage = lazy(() => import('./modules/Interpretation/OriginalBroadcastPage'));
 
 // Moduły uwierzytelnionej apki — code-splitting (React.lazy): każdy trafia do
 // osobnego chunku ładowanego dopiero przy wejściu w trasę. Skraca bundle logowania
@@ -386,6 +392,21 @@ function AppInner() {
     );
   }
 
+  // Słuchacz tłumaczenia na żywo z linku/QR — bez logowania (także dla zalogowanych: link z plakatu
+  // otwiera stronę słuchacza, nie aplikację). Konsola i nadawanie mają dłuższe ścieżki (po zalogowaniu).
+  if (isPublicListenerPath(window.location.pathname)) {
+    return (
+      <BrowserRouter>
+        <Suspense fallback={<div className="h-screen flex items-center justify-center"><Spinner size={32} /></div>}>
+          <Routes>
+            <Route path="/tlumaczenie/:token" element={<InterpretationListenerPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    );
+  }
+
   // Gość rozmowy audio/wideo z linku „zaproś gościa” — bez logowania (także dla zalogowanych:
   // link otwiera stronę gościa, a nie aplikację).
   if (window.location.pathname.startsWith('/rozmowa/')) {
@@ -676,6 +697,10 @@ function AppInner() {
                 <Route path="/wydarzenie/:id" element={
                   <ProtectedRoute resource="module:calendar"><EventDetailPage /></ProtectedRoute>
                 } />
+                {/* Tłumaczenie na żywo — dostęp sprawdza serwer (tłumacz / zarządzający / widzący wydarzenie) */}
+                <Route path="/tlumaczenie/konsola/:eventId" element={<InterpreterConsole />} />
+                <Route path="/tlumaczenie/oryginal/:eventId" element={<OriginalBroadcastPage />} />
+                <Route path="/tlumaczenie/sluchaj/:eventId" element={<InterpretationListenerPage />} />
                 <Route path="/settings" element={
                   <ProtectedRoute resource="module:settings"><GlobalSettings /></ProtectedRoute>
                 } />

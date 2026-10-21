@@ -24,14 +24,23 @@ export const normalizeKind = (kind) => (CALL_KINDS.includes(kind) ? kind : 'audi
 
 // Pokój LiveKit: avn_<slug tenanta>_<uuid połączenia>. Slug (a-z, 0-9, „-”) w nazwie pokoju — webhook
 // LiveKit przychodzi bez hosta tenanta, więc tenant odczytujemy z nazwy pokoju.
+// Tłumaczenie na żywo (src/interpretation): avi_<slug>_<uuid kanału albo sesji> — osobny prefiks,
+// webhook kieruje je do serwisu tłumaczeń (kind: 'interpretation'), a nie do połączeń.
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-const ROOM_RE = new RegExp(`^avn_([a-z0-9-]+)_(${UUID})$`);
+const ROOM_RE = new RegExp(`^(avn|avi)_([a-z0-9-]+)_(${UUID})$`);
+export const INTERP_ROOM_PREFIX = 'avi_';
 export function roomNameFor(tenantSlug, callId) {
   return `avn_${String(tenantSlug)}_${String(callId)}`;
 }
+export function interpRoomNameFor(tenantSlug, id) {
+  return `${INTERP_ROOM_PREFIX}${String(tenantSlug)}_${String(id)}`;
+}
+// → { tenantSlug, callId } (rozmowa — kształt jak dotąd) | { kind: 'interpretation', tenantSlug, id } | null
 export function parseRoomName(name) {
   const m = String(name ?? '').match(ROOM_RE);
-  return m ? { tenantSlug: m[1], callId: m[2] } : null;
+  if (!m) return null;
+  if (m[1] === 'avi') return { kind: 'interpretation', tenantSlug: m[2], id: m[3] };
+  return { tenantSlug: m[2], callId: m[3] };
 }
 
 // Czas trwania po polsku: „45 s”, „12 min”, „1 h 05 min”.
@@ -125,8 +134,12 @@ export function canPublishIn(conv, role) {
 
 // Grant tokenu LiveKit — wyłącznie ten jeden pokój. canPublishData domyślnie jak canPublish
 // (gość: false — bez kanału danych).
-export function videoGrant(room, { canPublish = true, canPublishData } = {}) {
-  return {
+// hidden: uczestnik niewidoczny dla innych (słuchacz tłumaczenia); canPublishSources: tylko te
+// źródła (np. ['microphone'] — tłumacz nie włączy kamery ani ekranu). Klucze dodawane tylko,
+// gdy podane — token rozmów bez zmian.
+export const PUBLISH_SOURCES = ['camera', 'microphone', 'screen_share', 'screen_share_audio'];
+export function videoGrant(room, { canPublish = true, canPublishData, hidden, canPublishSources } = {}) {
+  const grant = {
     room,
     roomJoin: true,
     canPublish: !!canPublish,
@@ -134,4 +147,9 @@ export function videoGrant(room, { canPublish = true, canPublishData } = {}) {
     canPublishData: canPublishData === undefined ? !!canPublish : !!canPublishData,
     canUpdateOwnMetadata: false,
   };
+  if (hidden) grant.hidden = true;
+  if (Array.isArray(canPublishSources) && canPublish) {
+    grant.canPublishSources = canPublishSources.filter((s) => PUBLISH_SOURCES.includes(s));
+  }
+  return grant;
 }

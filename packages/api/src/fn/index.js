@@ -127,6 +127,18 @@ const MODULES = [
   // Wydarzenia online/hybrydowe (099): stan spotkania wydarzenia i „Dołącz” wg widoczności wydarzenia.
   'event-meeting',
   'event-meeting-guests',
+  // Tłumaczenie na żywo przy wydarzeniu (migracja 116, src/interpretation): dostęp liczony w funkcjach
+  // (zarządzający / tłumacz / widzący wydarzenie); strona słuchacza — publiczne z limitem per IP.
+  'interp-session-get',
+  'interp-session-upsert',
+  'interp-interpreter-join',
+  'interp-take-over',
+  'interp-release',
+  'interp-stats',
+  'interp-original-join',
+  'interp-member-listen',
+  'interp-public-info',
+  'interp-listen',
   // Komunikator: zaplanowane wiadomości i „Przypomnij mi” (migracja 113, src/chatSchedule) —
   // capability module:komunikator z eksportu modułu; worker co minutę woła runForTenant.
   'chat-scheduled',
