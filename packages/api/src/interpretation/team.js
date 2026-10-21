@@ -108,6 +108,7 @@ export async function teamRoster(db, languages = []) {
       name: String(r.full_name || '').trim(),
       email,
       roster_email: lower(r.email) || null,
+      user_id: r.user_id != null ? String(r.user_id) : null,
       active: !isInactiveStatus(r),
       langs: [...(langsOf.get(String(r.id)) || [])],
     });
@@ -115,6 +116,33 @@ export async function teamRoster(db, languages = []) {
   const holders = new Map();
   for (const m of members) for (const code of m.langs) holders.set(code, (holders.get(code) || 0) + 1);
   return { available: true, members, holders };
+}
+
+// ── Konta osób ze składu (Tłumaczenia → Członkowie) ─────────────────────────
+// Ta sama reguła tożsamości co wybór tłumacza (teamRoster): 'active' — jest aktywne konto
+// (może tłumaczyć), 'inactive' — konto jest, ale wyłączone (is_active = false: zablokowane,
+// czeka na zatwierdzenie), 'none' — brak konta w aplikacji.
+export const accountState = ({ activeEmail, anyAccount }) => (activeEmail ? 'active' : anyAccount ? 'inactive' : 'none');
+
+// → { available, members: [{ id, account }] } (bez e-maili kont — lista tylko oznacza osoby).
+export async function rosterAccounts(db) {
+  const team = await teamRoster(db, []);
+  if (!team.available) return { available: false, members: [] };
+  const members = [];
+  for (const m of team.members) {
+    let anyAccount = false;
+    if (!m.email) {
+      const candidates = (await accountEmailsForAssignee(db, { email: m.roster_email, name: m.name, teamType: TEAM_TYPE })).map(lower).filter(Boolean);
+      if (candidates.length || m.user_id) {
+        const { rows } = await db.query(
+          `SELECT 1 FROM app_users WHERE (lower(email) = ANY($1::text[]) OR ($2::text IS NOT NULL AND id::text = $2::text)) LIMIT 1`,
+          [candidates, m.user_id]);
+        anyAccount = rows.length > 0;
+      }
+    }
+    members.push({ id: m.id, account: accountState({ activeEmail: m.email, anyAccount }) });
+  }
+  return { available: true, members };
 }
 
 // ── Reguły (czyste, testowane) ──────────────────────────────────────────────

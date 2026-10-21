@@ -26,7 +26,7 @@ import {
   handleCampaignAction,
   handleRsvpInviteAction,
 } from '../src/lib/push';
-import { navigateFromDeepLink, openTask, taskFromNotificationData } from '../src/lib/deep-links';
+import { appLinkOf, navigateFromDeepLink, openTask, taskFromNotificationData } from '../src/lib/deep-links';
 import { updatePresence } from '../src/lib/presence';
 import { initCallEngine } from '../src/features/calls/native/engine';
 import { clearAppBadge, syncAppBadge, watchConversationsBadge } from '../src/lib/badge';
@@ -190,7 +190,7 @@ function RootEffects() {
           openTask(router, task.itemId, task.boardId);
           return;
         }
-        navigateFromDeepLink(router, data?.rsvp_token ? '/(app)/rsvp' : data?.link);
+        navigateFromDeepLink(router, data?.rsvp_token ? '/(app)/rsvp' : appLinkOf(data as Record<string, unknown> | null));
       }
     };
     responseSubRef.current = Notifications.addNotificationResponseReceivedListener(handle);

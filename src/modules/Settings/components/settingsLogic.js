@@ -116,3 +116,26 @@ export function describeUserAgent(ua) {
   }
   return { device, browser, app: app === 'app' };
 }
+
+// ── „Zaproś do aplikacji” z modułu służby (np. Tłumaczenia → Członkowie) ─────────────────────
+// Link do Ustawienia → Użytkownicy z otwartym formularzem nowego konta (imię, e-mail, służba).
+// Po otwarciu formularza parametry znikają z adresu (odświeżenie nie otwiera go drugi raz).
+export const INVITE_PARAMS = ['invite', 'invite_name', 'invite_email', 'invite_team'];
+export function inviteUserPath({ name = '', email = '', team = '' } = {}) {
+  const p = new URLSearchParams({ tab: 'users', invite: '1' });
+  if (String(name).trim()) p.set('invite_name', String(name).trim());
+  if (String(email).trim()) p.set('invite_email', String(email).trim());
+  if (String(team).trim()) p.set('invite_team', String(team).trim());
+  return `/settings?${p.toString()}`;
+}
+// → null albo { full_name, email, team } (team tylko z dozwolonych kluczy służb).
+export function invitePrefill(params, allowedTeams = []) {
+  const get = (k) => (typeof params?.get === 'function' ? params.get(k) : params?.[k]) || '';
+  if (get('invite') !== '1') return null;
+  const team = String(get('invite_team')).trim();
+  return {
+    full_name: String(get('invite_name')).trim().slice(0, 200),
+    email: String(get('invite_email')).trim().slice(0, 320),
+    team: allowedTeams.includes(team) ? team : null,
+  };
+}

@@ -18,7 +18,7 @@ import SubscriptionInfo from './components/SubscriptionInfo';
 import { Toggle } from './components/SettingsUI';
 import TaskDigestSettings from './components/TaskDigestSettings';
 import Can from '../../components/Can';
-import { resolveSettingsTab, groupDuplicateMembers, mergeFill } from './components/settingsLogic';
+import { resolveSettingsTab, groupDuplicateMembers, mergeFill, invitePrefill, INVITE_PARAMS } from './components/settingsLogic';
 import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
@@ -184,6 +184,22 @@ export default function GlobalSettings() {
     fetchRoles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // „Zaproś do aplikacji” z modułu służby (Tłumaczenia → Członkowie): formularz nowego konta
+  // z imieniem, e-mailem i służbą; parametry znikają z adresu (settingsLogic.inviteUserPath).
+  useEffect(() => {
+    const pre = invitePrefill(searchParams, MINISTRY_MODULE_KEYS);
+    if (!pre) return;
+    setUserForm({ id: null, full_name: pre.full_name, email: pre.email, role: '', is_active: true });
+    setSelectedTeams(pre.team ? [pre.team] : []);
+    setTeamRoles({});
+    setRequire2FA(false);
+    setShowUserModal(true);
+    const next = new URLSearchParams(searchParams);
+    INVITE_PARAMS.forEach((k) => next.delete(k));
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const fetchRoles = async () => {
     const { data, error } = await supabase.from('app_roles').select('key, label, display_order').order('display_order', { ascending: true });

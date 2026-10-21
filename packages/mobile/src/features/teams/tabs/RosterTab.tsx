@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import { Mail, MessageSquare, Phone, Users } from 'lucide-react-native';
 import { B, Monogram } from '../../../components/ui/brand';
-import { useRoster, type RosterPerson, type RosterRole } from '../roster';
+import { accountBadge } from '@avenit/shared/src/lib/teamAccounts.js';
+import { useRoster, useRosterAccounts, type RosterPerson, type RosterRole } from '../roster';
 import { PersonSheet } from '../components/PersonSheet';
 import { Empty, Loading, SearchBar, fold } from './ui';
 
@@ -10,6 +11,8 @@ import { Empty, Loading, SearchBar, fold } from './ui';
 // custom_tlumaczenia_members):
 // lista z kontaktem jednym dotknięciem, wyszukiwanie po imieniu, służbie i e-mailu;
 // z prawem edycji — dodawanie, edycja, służby osoby i usuwanie.
+// Tłumaczenia: oznaczenie „Brak konta w aplikacji” / „Konto nieaktywne” (bez konta nie tłumaczy
+// na żywo; zaproszenie do aplikacji — na webie, Ustawienia → Użytkownicy).
 
 const F = { medium: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' } as const;
 
@@ -43,6 +46,7 @@ export const RosterTab = ({
   withFunction?: boolean;
 }) => {
   const roster = useRoster(team, table);
+  const accounts = useRosterAccounts(team).data;
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<RosterPerson | 'new' | null>(null);
   const roles = roster.data?.roles ?? [];
@@ -59,6 +63,7 @@ export const RosterTab = ({
 
   const row = (p: RosterPerson, i: number) => {
     const sub = p.roleIds.length ? p.roleIds.map((id) => roleName.get(id)).filter(Boolean).join(', ') : p.role;
+    const badge = accounts ? accountBadge(accounts[p.id], { active: p.active }) : null;
     const body = (
       <>
         <View style={{ opacity: p.active ? 1 : 0.5 }}>
@@ -72,6 +77,24 @@ export const RosterTab = ({
             <Text numberOfLines={1} style={{ marginTop: 1, fontSize: 12, color: B.ink3, fontFamily: F.medium }}>
               {sub}
             </Text>
+          ) : null}
+          {badge ? (
+            <View
+              accessible
+              accessibilityLabel={`${badge.label}. ${badge.hint}`}
+              style={{
+                alignSelf: 'flex-start',
+                marginTop: 4,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 999,
+                backgroundColor: badge.kind === 'none' ? B.kurkumaSoft : B.paper2,
+              }}
+            >
+              <Text numberOfLines={1} style={{ fontSize: 11, color: badge.kind === 'none' ? B.goldDeep : B.ink3, fontFamily: F.semibold }}>
+                {badge.label}
+              </Text>
+            </View>
           ) : null}
         </View>
         <View style={{ flexDirection: 'row', gap: 6 }}>

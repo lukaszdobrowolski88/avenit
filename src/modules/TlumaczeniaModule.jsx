@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import MemberStatusField, { isInactiveStatus, memberStatusColor } from './shared/MemberStatusField';
 import { supabase } from '../lib/supabase';
@@ -28,6 +28,8 @@ import Button from '../components/Button';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import { confirmDialog } from '../lib/dialog';
 import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
+import { ACCOUNTS_FN, accountsById, accountBadge, canInvite } from '@avenit/shared/src/lib/teamAccounts.js';
+import { inviteUserPath } from './Settings/components/settingsLogic';
 
 // Moduł służby „Tłumaczenia” (migracja 117) — wzorzec MediaTeamModule. Skład w
 // custom_tlumaczenia_members (status Aktywny/Nieaktywny), Służby = języki (team_roles
@@ -37,6 +39,29 @@ import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole
 const TEAM = 'tlumaczenia';
 const MEMBER_TABLE = 'custom_tlumaczenia_members';
 const FINANCE_TEAM = 'Tłumaczenia';
+
+// Oznaczenie osoby bez (aktywnego) konta w aplikacji — bez konta nie tłumaczy na żywo.
+// Z prawem zakładania kont: „Zaproś do aplikacji” (Ustawienia → Użytkownicy z wypełnionym formularzem).
+function AccountBadge({ badge, email, name, allowInvite, onInvite, block = false }) {
+  if (!badge) return null;
+  const pill = (
+    <span title={tr(badge.hint)}>
+      <StatusPill color={badge.kind === 'none' ? STATUS_COLORS.warning : STATUS_COLORS.neutral}>{tr(badge.label)}</StatusPill>
+    </span>
+  );
+  const invite = canInvite(badge, email, allowInvite) ? (
+    <button type="button" onClick={() => onInvite({ name, email })} className="text-accent-primary dark:text-accent-primary-light text-xs font-medium hover:underline">
+      {tr('Zaproś do aplikacji')}
+    </button>
+  ) : null;
+  if (!block) return <span className="ml-2 inline-flex items-center gap-2 align-middle">{pill}{invite}</span>;
+  return (
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 text-sm">
+      <div className="flex flex-wrap items-center gap-2">{pill}{invite}</div>
+      <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{tr(badge.hint)}</p>
+    </div>
+  );
+}
 
 export default function TlumaczeniaModule() {
   const t = useT();
@@ -49,6 +74,12 @@ export default function TlumaczeniaModule() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
+  const navigate = useNavigate();
+  // Konta osób ze składu (fn tlumaczenia-accounts): id → 'active' | 'inactive' | 'none'.
+  const [accounts, setAccounts] = useState(() => new Map());
+  const [canInviteUsers, setCanInviteUsers] = useState(false);
+  const badgeOf = (m) => accountBadge(accounts.get(String(m.id)), { active: !isInactiveStatus(m.status) });
+  const inviteToApp = ({ name, email }) => navigate(inviteUserPath({ name, email, team: TEAM }));
 
 
   const [showMemberModal, setShowMemberModal] = useState(false);
@@ -248,6 +279,16 @@ export default function TlumaczeniaModule() {
     }
   };
 
+  // Bez odpowiedzi (starszy serwer, brak dostępu) — po prostu bez oznaczeń.
+  async function fetchAccounts() {
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke(ACCOUNTS_FN, { body: {}, silent: true });
+      if (fnError) return;
+      setAccounts(accountsById(data));
+      setCanInviteUsers(!!data?.can_invite);
+    } catch { /* bez oznaczeń */ }
+  }
+
   async function fetchData() {
     setLoading(true);
     setError(null);
@@ -257,6 +298,7 @@ export default function TlumaczeniaModule() {
       const teamResult = await supabase.from(MEMBER_TABLE).select('id, full_name, role, email, phone, status').order('full_name');
       if (teamResult.error) throw new Error(tr('Błąd zespołu: {msg}', { msg: teamResult.error.message }));
       setTeam(teamResult.data || []);
+      fetchAccounts();
     } catch (err) {
       console.error('❌ Błąd pobierania danych:', err);
       setError(err.message);
@@ -412,6 +454,7 @@ export default function TlumaczeniaModule() {
                   <TD className="font-medium text-gray-900 dark:text-white">
                     {m.full_name}
                     {isInactiveStatus(m.status) && <span className="ml-2 align-middle"><StatusPill color={memberStatusColor(m.status)}>{tr('Nieaktywny')}</StatusPill></span>}
+                    <AccountBadge badge={badgeOf(m)} email={m.email} name={m.full_name} allowInvite={canInviteUsers} onInvite={inviteToApp} />
                   </TD>
                   <TD>
                     <div className="flex flex-wrap gap-1">
@@ -531,6 +574,10 @@ export default function TlumaczeniaModule() {
             </div>
           </div>
 
+          {memberForm.id && (
+            <AccountBadge block badge={badgeOf(memberForm)} email={memberForm.email} name={memberForm.full_name} allowInvite={canInviteUsers}
+              onInvite={(p) => { setShowMemberModal(false); inviteToApp(p); }} />
+          )}
           <MemberStatusField value={memberForm.status} onChange={(v) => setMemberForm({ ...memberForm, status: v })} />
           <div className="grid grid-cols-2 gap-4">
             <div>

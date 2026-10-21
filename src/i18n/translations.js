@@ -6,6 +6,12 @@
 
 const en = {
   // ── Moduł służby Tłumaczenia (migracja 117) ──
+  // Tłumaczenia → Członkowie: osoby bez konta w aplikacji (fn tlumaczenia-accounts)
+  'Brak konta w aplikacji': 'No app account',
+  'Konto nieaktywne': 'Account inactive',
+  'Zaproś do aplikacji': 'Invite to the app',
+  'Bez konta nie może tłumaczyć na żywo. Zaproś do aplikacji — konto z tym samym e-mailem połączy się samo.': 'Without an account they cannot interpret live. Invite them to the app — an account with the same e-mail links automatically.',
+  'Konto w aplikacji jest wyłączone albo czeka na zatwierdzenie — bez aktywnego konta nie może tłumaczyć na żywo.': 'The app account is disabled or awaiting approval — without an active account they cannot interpret live.',
   'Tłumaczenia': 'Interpretation',
   'Zadania Tłumaczeń': 'Interpretation tasks',
   'Każda służba to język tłumaczenia. Klucz pola to kod języka (np. en, uk, ru, de) — po nim grafik trafia do właściwego kanału tłumaczenia na żywo.': 'Each role is an interpretation language. The field key is the language code (e.g. en, uk, ru, de) — the schedule uses it to reach the right live interpretation channel.',
@@ -8431,6 +8437,12 @@ const en = {
 
 const uk = {
   // ── Moduł służby Tłumaczenia (migracja 117) ──
+  // Tłumaczenia → Członkowie: osoby bez konta w aplikacji (fn tlumaczenia-accounts)
+  'Brak konta w aplikacji': 'Немає облікового запису в застосунку',
+  'Konto nieaktywne': 'Обліковий запис неактивний',
+  'Zaproś do aplikacji': 'Запросити до застосунку',
+  'Bez konta nie może tłumaczyć na żywo. Zaproś do aplikacji — konto z tym samym e-mailem połączy się samo.': 'Без облікового запису не може перекладати наживо. Запросіть до застосунку — обліковий запис з тією самою електронною адресою під’єднається автоматично.',
+  'Konto w aplikacji jest wyłączone albo czeka na zatwierdzenie — bez aktywnego konta nie może tłumaczyć na żywo.': 'Обліковий запис у застосунку вимкнено або він очікує на схвалення — без активного облікового запису не може перекладати наживо.',
   'Tłumaczenia': 'Переклад',
   'Zadania Tłumaczeń': 'Завдання перекладачів',
   'Każda służba to język tłumaczenia. Klucz pola to kod języka (np. en, uk, ru, de) — po nim grafik trafia do właściwego kanału tłumaczenia na żywo.': 'Кожне служіння — це мова перекладу. Ключ поля — код мови (напр. en, uk, ru, de): за ним графік потрапляє до відповідного каналу живого перекладу.',

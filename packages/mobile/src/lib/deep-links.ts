@@ -56,6 +56,15 @@ export const taskFromNotificationData = (
   return taskFromLink(link ?? (typeof data?.link === 'string' ? data.link : null));
 };
 
+// Link powiadomienia w aplikacji: data.app_link (gdy cel w aplikacji różni się od weba — np.
+// tłumacz dodany w karcie: web otwiera konsolę /tlumaczenie/konsola/<id>, aplikacja — ekran
+// wydarzenia /events/<id>), inaczej link weba.
+export const appLinkOf = (data: Record<string, unknown> | null | undefined, link?: string | null): string | null => {
+  if (typeof data?.app_link === 'string' && data.app_link) return data.app_link;
+  if (link) return link;
+  return typeof data?.link === 'string' ? data.link : null;
+};
+
 // Mapowanie URL/data.link na route w aplikacji.
 // Akceptuje:
 //   - "avenit://program/123"

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { plural } from '../../lib/domain';
-import { taskFromNotificationData } from '../../lib/deep-links';
+import { appLinkOf, taskFromNotificationData } from '../../lib/deep-links';
 
 export type NotificationType = 'message' | 'mention' | 'task' | 'event' | 'system' | 'reminder';
 
@@ -151,7 +151,8 @@ export const groupNotifications = (rows: NotificationRow[]): NotificationItem[] 
       ...n,
       // Zadanie: link z id tablicy (ekran listy otwiera pozycję po linku → ekran zadania z boardId);
       // ścieżka modułu z ?item= nie niesie tablicy.
-      link: task ? taskLinkOf(task, n.link) : n.link,
+      // Cel w aplikacji (data.app_link), gdy różni się od weba — np. konsola tłumacza jest tylko na webie.
+      link: task ? taskLinkOf(task, n.link) : appLinkOf(data, n.link),
       ids: [n.id],
       unreadIds: n.read ? [] : [n.id],
       count: 1,
