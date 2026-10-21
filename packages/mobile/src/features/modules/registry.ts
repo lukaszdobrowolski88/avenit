@@ -17,6 +17,7 @@ import {
   HandHeart,
   HeartHandshake,
   Home,
+  Languages,
   LayoutGrid,
   ListChecks,
   Mail,
@@ -76,6 +77,7 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
   songs: m({ key: 'songs', label: 'Baza pieśni', Icon: Music, tint: '#2A2312', bg: '#ECE8DE', section: 'teams', route: '/(app)/songs', webPath: '/worship' }),
   media: m({ key: 'media', label: 'MediaTeam', Icon: Video, tint: '#2A2312', bg: '#ECE8DE', section: 'teams', route: '/(app)/teams/media', webPath: '/media' }),
   atmosfera: m({ key: 'atmosfera', label: 'Atmosfera Team', Icon: Sparkles, tint: '#2A2312', bg: '#ECE8DE', section: 'teams', route: '/(app)/teams/atmosfera', webPath: '/atmosfera' }),
+  tlumaczenia: m({ key: 'tlumaczenia', label: 'Tłumaczenia', Icon: Languages, tint: '#2A2312', bg: '#ECE8DE', section: 'teams', route: '/(app)/teams/tlumaczenia', webPath: '/tlumaczenia', keywords: 'tłumacze tłumaczenie języki interpretacja przekład' }),
   kids: m({ key: 'kids', label: 'Dzieci', Icon: Baby, tint: '#2A2312', bg: '#ECE8DE', section: 'teams', route: '/(app)/teams/kids', webPath: '/kids', keywords: 'kids meldowanie szkółka' }),
   mlodziezowka: m({ key: 'mlodziezowka', label: 'Młodzieżówka', Icon: UsersRound, tint: '#2A2312', bg: '#ECE8DE', section: 'teams', route: '/(app)/teams/mlodziezowka', webPath: '/mlodziezowka' }),
 

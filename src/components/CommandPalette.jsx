@@ -35,6 +35,7 @@ const KEY_KEYWORDS = {
   atmosfera: 'kawiarnia powitanie',
   kids: 'dzieci szkółka meldowanie',
   mlodziezowka: 'młodzież',
+  tlumaczenia: 'tłumaczenie tłumacze język angielski ukraiński słuchawki',
   teaching: 'nauczanie kazania kazanie mówcy serie',
   serve: 'dostępność nieobecności wolontariusze służba',
   komunikator: 'czat wiadomości rozmowy',

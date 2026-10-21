@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   retryDelay, interpErrorState, fatalFromError, infoFromSession, defaultChannel, pollDecision, pollInterval,
-  shouldKeepAwake, phaseView, cardSummary, interpretationTargetFromPath, interpretationTargetFromUrl, isPublicToken,
+  shouldKeepAwake, phaseView, cardSummary, cardDataFromSession, cardTeamSections, interpretationTargetFromPath, interpretationTargetFromUrl, isPublicToken,
   INFO_POLL_MS, INFO_POLL_LISTENING_MS,
 } from '../../packages/mobile/src/features/interpretation/logic';
 import { redirectSystemPath } from '../../packages/mobile/app/+native-intent';
@@ -65,6 +65,51 @@ describe('dane słuchacza z interp-session-get', () => {
     expect(cardSummary({ session: { status: 'ended', channels: r.session.channels } }).show).toBe(false);
     expect(cardSummary({ session: { status: 'idle', channels: [] } }).show).toBe(false);
     expect(cardSummary(null).show).toBe(false);
+  });
+});
+
+describe('tłumacze na karcie wydarzenia', () => {
+  const channels = [
+    { id: 'a', lang_code: 'en', label: 'English', status: 'live' },
+    { id: 'b', lang_code: 'uk', label: 'Українська', status: 'idle' },
+  ];
+  const manager = {
+    can_manage: true,
+    my_channels: [],
+    session: {
+      status: 'live', public_token: 'x'.repeat(32), public_url: 'https://x/tlumaczenie/x',
+      channels: [
+        { ...channels[0], interpreters: [{ email: 'anna@x.pl', name: 'Anna', source: 'manual' }, { email: 'jan@x.pl', name: 'Jan', source: 'schedule' }] },
+        { ...channels[1], interpreters: [] },
+      ],
+    },
+    schedule: {
+      pending: [{ lang_code: 'uk', label: 'Українська', name: 'Olha' }],
+      no_account: [{ lang_code: 'en', label: 'English', name: 'Piotr' }, { lang_code: 'ru', label: 'Русский', name: 'Igor' }],
+    },
+  };
+  it('słuchacz: bez osób i bez sekcji', () => {
+    const d = cardDataFromSession({ my_channels: [], session: { status: 'live', channels }, schedule: { pending: [{ lang_code: 'en', label: 'English', name: 'X' }] } });
+    expect(d.session.channels[0]).toEqual(channels[0]);
+    expect(d.schedule).toBeUndefined();
+    expect(cardTeamSections(d)).toBeNull();
+  });
+  it('zarządzający: imiona i źródło, bez e-maili i linku', () => {
+    const d = cardDataFromSession(manager);
+    expect(JSON.stringify(d)).not.toMatch(/@|public_/);
+    expect(d.session.channels[0].interpreters).toEqual([{ name: 'Anna', source: 'manual' }, { name: 'Jan', source: 'schedule' }]);
+    expect(cardTeamSections(d)).toEqual([
+      { key: 'a', label: 'English', people: [{ name: 'Anna', state: 'manual' }, { name: 'Jan', state: 'schedule' }, { name: 'Piotr', state: 'no_account' }] },
+      { key: 'b', label: 'Українська', people: [{ name: 'Olha', state: 'pending' }] },
+      { key: 'lang:ru', label: 'Русский', people: [{ name: 'Igor', state: 'no_account' }] },
+    ]);
+  });
+  it('starszy serwer: bez source (= ręcznie) i bez schedule', () => {
+    const d = cardDataFromSession({ my_channels: ['a'], session: { status: 'idle', channels: [{ ...channels[0], interpreters: [{ email: 'anna@x.pl', name: '' }] }] } });
+    expect(d.schedule).toBeUndefined();
+    expect(cardTeamSections(d)).toEqual([{ key: 'a', label: 'English', people: [{ name: 'anna@x.pl', state: 'manual' }] }]);
+    expect(cardTeamSections(null)).toBeNull();
+    expect(cardDataFromSession(null)).toEqual({ my_channels: [], session: null });
   });
 });
 

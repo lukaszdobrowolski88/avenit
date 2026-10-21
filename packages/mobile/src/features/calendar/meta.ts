@@ -12,6 +12,7 @@ const CALENDAR_LABELS: Record<string, string> = {
   worship: 'Zespół uwielbienia',
   media: 'MediaTeam',
   atmosfera: 'Atmosfera Team',
+  tlumaczenia: 'Tłumaczenia',
   kids: 'Dzieci',
   mc: 'Scena / MC',
   homegroups: 'Grupy domowe',

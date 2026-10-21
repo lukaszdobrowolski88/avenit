@@ -97,6 +97,20 @@ describe('interpretationLogic', () => {
     expect(L.isLangCode('angielski')).toBe(false);
     expect(L.totalListeners({ channels: [{ listeners: 3 }, { listeners: null }, { listeners: 2 }] })).toBe(5);
   });
+
+  it('grafik Tłumaczeń: tłumacze z grafiku poza ładunkiem, oczekujący przypięci do kanałów', () => {
+    const ch = [{ id: 'x', lang_code: 'en', label: 'English', interpreters: [{ email: 'ola@x.pl', source: 'schedule' }, { email: 'ewa@x.pl', source: 'manual' }] }];
+    expect(L.channelsPayload(ch)[0].interpreters).toEqual(['ewa@x.pl']);
+    expect(L.hasScheduleInterpreters(ch[0])).toBe(true);
+    expect(L.hasScheduleInterpreters({ interpreters: [{ email: 'a', source: 'manual' }] })).toBe(false);
+    const { byLang, orphans } = L.scheduleByChannel({
+      pending: [{ lang_code: 'en', label: 'English', name: 'Jan' }, { lang_code: 'de', label: 'Deutsch', name: 'Hans' }],
+      no_account: [{ lang_code: 'en', label: 'English', name: 'Gość' }],
+    }, ch);
+    expect(byLang.get('en').map((p) => [p.name, p.kind])).toEqual([['Jan', 'pending'], ['Gość', 'no_account']]);
+    expect(orphans.map((p) => p.name)).toEqual(['Hans']);
+    expect(L.scheduleByChannel(undefined, ch).orphans).toEqual([]);
+  });
 });
 
 const session = (over = {}) => ({

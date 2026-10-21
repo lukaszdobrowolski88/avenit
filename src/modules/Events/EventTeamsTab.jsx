@@ -21,18 +21,18 @@ import { tr } from '../../i18n';
 
 const TEAM_MEMBER_TABLE = {
   worship: 'worship_team', media: 'media_team', atmosfera: 'atmosfera_members',
-  kids: 'kids_teachers', mc: 'custom_mc_members',
+  kids: 'kids_teachers', mc: 'custom_mc_members', tlumaczenia: 'custom_tlumaczenia_members',
 };
 const memberTableFor = (teamType) => TEAM_MEMBER_TABLE[teamType] || `custom_${teamType}_members`;
 const TEAM_LABELS = {
   worship: 'Zespół Uwielbienia', media: 'Media Team', atmosfera: 'Atmosfera Team',
-  kids: 'Dzieci', mc: 'Scena / MC',
+  kids: 'Dzieci', mc: 'Scena / MC', tlumaczenia: 'Tłumaczenia',
 };
 // Bazowe (systemowe) służby zawsze dostępne w pickerze; custom moduły dochodzą z app_modules.
 const SYSTEM_TEAM_OPTIONS = [
   { value: 'worship', label: 'Zespół Uwielbienia' }, { value: 'media', label: 'Media Team' },
   { value: 'atmosfera', label: 'Atmosfera Team' }, { value: 'kids', label: 'Dzieci' },
-  { value: 'mc', label: 'Scena / MC' },
+  { value: 'tlumaczenia', label: 'Tłumaczenia' }, { value: 'mc', label: 'Scena / MC' },
 ];
 // Nazwa służby: najpierw nazwa modułu nadana przez kościół (app_modules), potem domyślna.
 const teamLabel = (t, moduleLabelMap) => moduleLabelMap?.[t] || (TEAM_LABELS[t] ? tr(TEAM_LABELS[t]) : t);

@@ -59,6 +59,7 @@ import { getLivekit, CALLS_DISABLED } from '../calls/livekit.js';
 import { interpRoomNameFor } from '../calls/logic.js';
 import { rsvpBase } from '../fn/rsvp-send.js';
 import * as I from './logic.js';
+import { scheduleStatusOf } from './scheduleSync.js';
 
 export const MANAGE_CAPABILITY = 'action:calendar:manage_interpretation';
 const lower = (v) => String(v ?? '').trim().toLowerCase();
@@ -153,6 +154,20 @@ async function interpretersOf(db, channelIds) {
   const { rows } = await db.query(
     `SELECT channel_id, lower(user_email) AS e FROM interpretation_interpreters WHERE channel_id = ANY($1::uuid[]) ORDER BY created_at`, [channelIds]);
   for (const r of rows) out.get(r.channel_id)?.push(r.e);
+  return out;
+}
+// Źródło przypisania tłumacza (117): 'manual' (karta) albo 'schedule' (grafik służby Tłumaczeń).
+// Przed migracją 117 (brak kolumny) — wszyscy ręczni.
+async function interpreterSourcesOf(db, channelIds) {
+  const out = new Map();
+  if (!channelIds.length) return out;
+  try {
+    const { rows } = await db.query(
+      `SELECT channel_id, lower(user_email) AS e, source FROM interpretation_interpreters WHERE channel_id = ANY($1::uuid[])`, [channelIds]);
+    for (const r of rows) out.set(`${r.channel_id}|${r.e}`, r.source || 'manual');
+  } catch (err) {
+    if (err?.code !== '42703') throw err;
+  }
   return out;
 }
 async function myChannelIds(db, sessionId, me) {
@@ -255,6 +270,14 @@ function channelOut(c, names) {
   };
 }
 
+// Grafik tłumaczy (117): oczekujący na potwierdzenie i potwierdzeni bez konta — do karty.
+async function scheduleStatusSafe(ctx, eventId) {
+  try { return await scheduleStatusOf(ctx.db, eventId); } catch (err) {
+    if (err?.code !== '42P01' && err?.code !== '42703') warn(ctx, err, 'stan grafiku tłumaczy');
+    return { pending: [], no_account: [] };
+  }
+}
+
 async function sessionView(ctx, { ev, session, manage, mine }) {
   const { db } = ctx;
   const out = { event: eventSummary(ev), can_manage: !!manage, my_channels: [...mine], session: null };
@@ -263,10 +286,14 @@ async function sessionView(ctx, { ev, session, manage, mine }) {
     out.people = await peopleOf(db);
     out.church_name = await churchName(db, ctx.tenant?.name); // plakat do druku
   }
-  if (!session) return out;
+  if (!session) {
+    if (manage) out.schedule = await scheduleStatusSafe(ctx, ev.id);
+    return out;
+  }
   const channels = await channelsOf(db, session.id);
   const showPeople = !!manage || mine.size > 0;
   const interp = showPeople ? await interpretersOf(db, channels.map((c) => c.id)) : new Map();
+  const sources = showPeople ? await interpreterSourcesOf(db, channels.map((c) => c.id)) : new Map();
   const names = showPeople
     ? await namesOf(db, [...[...interp.values()].flat(), ...channels.map((c) => c.active_interpreter_email)])
     : new Map();
@@ -279,9 +306,13 @@ async function sessionView(ctx, { ev, session, manage, mine }) {
       ...(showPeople ? channelOut(c, names) : { id: c.id, lang_code: c.lang_code, label: c.label, status: c.status }),
       sort: c.sort,
       mine: mine.has(c.id),
-      ...(showPeople ? { interpreters: (interp.get(c.id) || []).map((e) => ({ email: e, name: names.get(e) || e })) } : {}),
+      ...(showPeople ? {
+        interpreters: (interp.get(c.id) || []).map((e) => ({ email: e, name: names.get(e) || e, source: sources.get(`${c.id}|${e}`) || 'manual' })),
+        from_schedule: (c.source || 'manual') === 'schedule',
+      } : {}),
     })),
   };
+  if (showPeople) out.schedule = await scheduleStatusSafe(ctx, ev.id);
   if (manage) {
     out.session.public_token = session.public_token;
     out.session.public_path = I.publicPath(session.public_token);
@@ -311,7 +342,7 @@ async function ensureRoom(ctx, room, metadata) {
   ensured.set(room, Date.now());
 }
 
-async function closeRoom(ctx, room) {
+export async function closeRoom(ctx, room) {
   forgetRoom(room);
   try { await ctx.deps?.livekit?.deleteRoom?.(room); } catch (err) { warn(ctx, err, `zamknięcie pokoju ${room}`); }
 }
@@ -378,12 +409,24 @@ async function replaceChannels(ctx, session, input) {
   } catch (err) {
     throw new ApiError(400, err.message, err.code || 'BAD_CHANNELS');
   }
+  const existing = await channelsOf(db, session.id);
+  // Tłumacze z grafiku (117) należą do synchronizacji: karta ich nie zdejmuje ani nie „przejmuje”
+  // (klient może ich odesłać na liście — pomijamy), a kanał z nimi zostaje, choć zniknął z listy.
+  const sources = await interpreterSourcesOf(db, existing.map((e) => e.id));
+  const scheduled = new Map(); // channel_id → Set(e-mail z grafiku)
+  for (const [k, src] of sources) {
+    if (src !== 'schedule') continue;
+    const [chId, e] = k.split('|');
+    if (!scheduled.has(chId)) scheduled.set(chId, new Set());
+    scheduled.get(chId).add(e);
+  }
+  const fromSchedule = new Set([...scheduled.values()].flatMap((x) => [...x]));
+  for (const c of list) c.interpreters = c.interpreters.filter((e) => !fromSchedule.has(e));
   const wanted = [...new Set(list.flatMap((c) => c.interpreters))];
   const accounts = await activeAccounts(db, wanted);
   const unknown = wanted.find((e) => !accounts.has(e));
   if (unknown) throw new ApiError(400, `Tłumaczem może być tylko osoba z aktywnym kontem w aplikacji: ${unknown}`, 'UNKNOWN_INTERPRETER');
 
-  const existing = await channelsOf(db, session.id);
   const used = new Set();
   const pairs = list.map((c) => {
     const match = existing.find((e) => !used.has(e.id) && c.id && e.id === c.id)
@@ -391,7 +434,7 @@ async function replaceChannels(ctx, session, input) {
     if (match) used.add(match.id);
     return { c, match };
   });
-  const removed = existing.filter((e) => !used.has(e.id));
+  const removed = existing.filter((e) => !used.has(e.id) && !scheduled.get(e.id)?.size);
   const cleared = [];
   await withTx(db, async (tx) => {
     if (removed.length) await tx.query(`DELETE FROM interpretation_channels WHERE id = ANY($1::uuid[])`, [removed.map((r) => r.id)]);
@@ -404,7 +447,8 @@ async function replaceChannels(ctx, session, input) {
     for (const { c, match } of pairs) {
       let id = match?.id;
       if (match) {
-        const active = match.active_interpreter_email && !c.interpreters.includes(lower(match.active_interpreter_email));
+        const holder = match.active_interpreter_email ? lower(match.active_interpreter_email) : null;
+        const active = !!holder && !c.interpreters.includes(holder) && !scheduled.get(match.id)?.has(holder);
         const row = await one(tx,
           `UPDATE interpretation_channels SET lang_code = $2, label = $3, sort = $4, updated_at = now(),
                   active_interpreter_email = CASE WHEN $5 THEN NULL ELSE active_interpreter_email END
@@ -417,7 +461,7 @@ async function replaceChannels(ctx, session, input) {
           [id, session.id, c.lang_code, c.label, c.sort, interpRoomNameFor(ctx.tenantSlug, id)]);
       }
       await tx.query(
-        `DELETE FROM interpretation_interpreters WHERE channel_id = $1 AND NOT (lower(user_email) = ANY($2::text[]))`, [id, c.interpreters]);
+        `DELETE FROM interpretation_interpreters WHERE channel_id = $1 AND NOT (lower(user_email) = ANY($2::text[]))${sources.size || fromSchedule.size ? " AND source <> 'schedule'" : ''}`, [id, c.interpreters]);
       for (const e of c.interpreters) {
         await tx.query(
           `INSERT INTO interpretation_interpreters (channel_id, user_email) VALUES ($1, $2) ON CONFLICT (channel_id, user_email) DO NOTHING`, [id, e]);

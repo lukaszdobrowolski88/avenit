@@ -17,6 +17,7 @@ export const rateLimit = { max: 10, timeWindow: '10 minutes' };
 const EMAIL_SOURCES = [
   ['app_users', 'email'], ['members', 'email'], ['worship_team', 'email'], ['media_team', 'email'],
   ['atmosfera_members', 'email'], ['kids_teachers', 'email'], ['mlodziezowka_members', 'email'],
+  ['custom_tlumaczenia_members', 'email'],
   ['schedule_assignments', 'assigned_email'],
 ];
 

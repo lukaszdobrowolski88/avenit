@@ -102,7 +102,9 @@ export function channelsPayload(channels) {
     ...(c.id ? { id: c.id } : {}),
     lang_code: c.lang_code,
     label: c.label,
-    interpreters: (c.interpreters || []).map((i) => (typeof i === 'string' ? i : i.email)).filter(Boolean),
+    // Tłumacze z grafiku (source 'schedule') należą do synchronizacji grafiku — nie wysyłamy ich.
+    interpreters: (c.interpreters || []).filter((i) => typeof i === 'string' || i?.source !== 'schedule')
+      .map((i) => (typeof i === 'string' ? i : i.email)).filter(Boolean),
   }));
 }
 
@@ -142,3 +144,25 @@ export const isLangCode = (v) => LANG_CODE_RE.test(String(v || '').trim().toLowe
 
 // Słuchacze: „1 słuchacz” itp. robi trPlural w komponencie; tu tylko suma bez nulli.
 export const totalListeners = (stats) => (stats?.channels || []).reduce((n, c) => n + (Number(c.listeners) || 0), 0);
+
+// Grafik służby Tłumaczeń (interp-session-get → schedule): osoby czekające na potwierdzenie i bez
+// konta, przypięte do kanałów po kodzie języka; osoby z językiem bez kanału — osobno (`orphans`).
+export function scheduleByChannel(schedule, channels) {
+  const codes = new Set((channels || []).map((c) => c.lang_code));
+  const byLang = new Map();
+  const orphans = [];
+  const push = (list, kind) => {
+    for (const p of list || []) {
+      const entry = { name: p?.name || '', label: p?.label || p?.lang_code || '', lang_code: p?.lang_code || null, kind };
+      if (entry.lang_code && codes.has(entry.lang_code)) {
+        if (!byLang.has(entry.lang_code)) byLang.set(entry.lang_code, []);
+        byLang.get(entry.lang_code).push(entry);
+      } else orphans.push(entry);
+    }
+  };
+  push(schedule?.pending, 'pending');
+  push(schedule?.no_account, 'no_account');
+  return { byLang, orphans };
+}
+
+export const hasScheduleInterpreters = (c) => (c?.interpreters || []).some((i) => i?.source === 'schedule');

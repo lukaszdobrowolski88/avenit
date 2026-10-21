@@ -150,6 +150,7 @@ const LEADER_SOURCES = [
     WHERE mm.role = 'leader' AND lower(u.email) = ANY($1::text[])`,
   `SELECT lower(email) AS e FROM kids_teachers WHERE is_leader IS TRUE AND lower(email) = ANY($1::text[])`,
   `SELECT lower(email) AS e FROM atmosfera_members WHERE is_leader IS TRUE AND lower(email) = ANY($1::text[])`,
+  `SELECT lower(email) AS e FROM custom_tlumaczenia_members WHERE is_leader IS TRUE AND lower(email) = ANY($1::text[])`,
   `SELECT lower(email) AS e FROM mlodziezowka_leaders WHERE lower(email) = ANY($1::text[])`,
 ];
 

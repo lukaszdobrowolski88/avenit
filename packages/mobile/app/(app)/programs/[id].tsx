@@ -114,6 +114,7 @@ const TEAM_NAMES: Record<string, string> = {
   produkcja: 'MediaTeam',
   atmosfera: 'Atmosfera Team',
   atmosfera_team: 'Atmosfera Team',
+  tlumaczenia: 'Tłumaczenia',
   scena: 'Scena',
   mc: 'MC',
   kids: 'Dzieci',

@@ -32,6 +32,7 @@ export const MODULE_SLICES = {
   homegroups: { events: 'homegroups_events', tasks: 'home_group_tasks', task_comments: 'home_group_task_comments' },
   mlodziezowka: { events: 'mlodziezowka_events', tasks: 'mlodziezowka_tasks', task_comments: 'mlodziezowka_task_comments' },
   teaching: { events: 'teachings' },
+  tlumaczenia: { events: 'tlumaczenia_events', tasks: 'tlumaczenia_tasks', task_comments: 'tlumaczenia_task_comments' },
   // Zadania Kalendarza żyją na tablicy (source_kind 'tasks') — prawa jak do dawnej tabeli tasks.
   calendar: { tasks: 'tasks' },
 };

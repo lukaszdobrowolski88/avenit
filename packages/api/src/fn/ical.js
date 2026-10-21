@@ -48,8 +48,8 @@ const addHour = (t) => {
 };
 
 // Preferencje modułów służb (UserSettings) → module_key wydarzeń.
-const MODULE_PREFS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
-const MODULE_LABEL = { worship: 'Uwielbienie', media: 'Media', atmosfera: 'Atmosfera', kids: 'Dzieci', homegroups: 'Grupy Domowe', mlodziezowka: 'Młodzieżówka' };
+const MODULE_PREFS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'tlumaczenia'];
+const MODULE_LABEL = { worship: 'Uwielbienie', media: 'Media', atmosfera: 'Atmosfera', kids: 'Dzieci', homegroups: 'Grupy Domowe', mlodziezowka: 'Młodzieżówka', tlumaczenia: 'Tłumaczenia' };
 
 export function vevent(e) {
   // Całodniowe (bez godziny): DTSTART;VALUE=DATE, DTEND = dzień po ostatnim.

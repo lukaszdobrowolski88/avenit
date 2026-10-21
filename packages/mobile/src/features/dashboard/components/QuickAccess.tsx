@@ -12,7 +12,7 @@ import { goToTab } from '../../../lib/navigation';
 // najczęściej. Kalendarz i Czat są na dolnym pasku, więc ich tu nie dublujemy.
 const PRIORITY = [
   'programs', 'homegroups', 'prayer', 'teaching', 'worship', 'media',
-  'atmosfera', 'kids', 'mlodziezowka', 'members', 'boards', 'songs', 'forms',
+  'atmosfera', 'tlumaczenia', 'kids', 'mlodziezowka', 'members', 'boards', 'songs', 'forms',
 ];
 const SKIP = new Set(['calendar', 'komunikator']);
 const MAX = 6; // 3 rzędy po 2 — reszta pod „Wszystkie”

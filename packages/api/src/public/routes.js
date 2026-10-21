@@ -5,6 +5,8 @@
 import { applyOps } from '../fn/event-assignments-patch.js';
 import { emitChange } from '../realtime/hub.js';
 import { isAccountForAssignee } from '../lib/assigneeIdentity.js';
+import { interpCtxFromRequest } from '../interpretation/service.js';
+import { syncAfterResponse } from '../interpretation/scheduleSync.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ID_RE = /^[0-9A-Za-z-]{1,64}$/;
@@ -51,7 +53,7 @@ const groupBy = (rows, col) => {
 // z blokadą wiersza wydarzenia (FOR UPDATE) i zmianą tylko jej pól (applyOps). Grafik zmienia
 // się wyłącznie, gdy status faktycznie się zmienił (wyścig „Akceptuję” + „Odrzucam” nie wymaże
 // osoby, która zdążyła zaakceptować).
-// whereSql: warunek wyboru wierszy, parametry od $2 (params). Zwraca { updated, status, events }.
+// whereSql: warunek wyboru wierszy, parametry od $2 (params). Zwraca { updated, status, events, rows }.
 export async function respondToAssignments(db, { action, whereSql, params }) {
   const newStatus = action === 'accept' ? 'accepted' : 'rejected';
   const client = await db.connect();
@@ -105,8 +107,14 @@ export async function respondToAssignments(db, { action, whereSql, params }) {
   } finally {
     client.release();
   }
-  return { updated: updated.length, status: newStatus, events: changedEvents };
+  return { updated: updated.length, status: newStatus, events: changedEvents, rows: updated };
 }
+
+// Tłumacz z grafiku służby Tłumaczeń trafia do kanału tłumaczenia po akceptacji, znika po
+// odrzuceniu (interpretation/scheduleSync.js) — w tle, nie blokuje odpowiedzi.
+const syncInterpreters = (req, rows) => {
+  try { syncAfterResponse(interpCtxFromRequest(req), rows); } catch { /* nieobowiązkowe */ }
+};
 
 const emitEvents = (req, events) => {
   if (!events?.length) return;
@@ -170,6 +178,7 @@ export default async function publicPageRoutes(app) {
         return reply.send({ ok: true, status: rows[0].status, already: true });
       }
       emitEvents(req, result.events);
+      syncInterpreters(req, result.rows);
       return reply.send({ ok: true, status: result.status });
     } catch (err) {
       req.log?.error?.({ err }, 'public assignment respond failed');
@@ -201,6 +210,7 @@ export default async function publicPageRoutes(app) {
       const result = await respondToAssignments(req.db, { action, whereSql: 'id = $2', params: [id] });
       if (!result.updated) return reply.send({ ok: true, status: a.status, already: true });
       emitEvents(req, result.events);
+      syncInterpreters(req, result.rows);
       return reply.send({ ok: true, status: result.status });
     } catch (err) {
       if (isInvalidIdError(err)) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });

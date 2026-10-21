@@ -68,7 +68,7 @@ const PROG_ITEM_TYPES = {
 
 // Widoczność wydarzenia — presety (PR B). Zaawansowany builder (służby/grupy/osoby) w PR C.
 // module_key wydarzenia → klucz służby (dla presetu „Ta służba").
-const MODULE_TO_MINISTRY = { media: 'media_team', worship: 'worship_team', atmosfera: 'atmosfera_team', kids: 'kids_ministry' };
+const MODULE_TO_MINISTRY = { media: 'media_team', worship: 'worship_team', atmosfera: 'atmosfera_team', kids: 'kids_ministry', tlumaczenia: 'tlumaczenia_team' };
 const STAFF_ROLES = ['rada_starszych', 'koordynator', 'lider'];
 const presetToSegments = (id, ministryKey) => {
   switch (id) {
@@ -440,7 +440,7 @@ export default function EventDetailPage() {
 
   // Służby dla tej zakładki. Priorytet: override per wydarzenie (events.team_types, CSV) →
   // reguła event_type_teams (module_key+event_type) → fallback moduł-służba.
-  const KNOWN_TEAM_MODULES = ['worship', 'media', 'atmosfera', 'kids'];
+  const KNOWN_TEAM_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'tlumaczenia'];
   const teamRule = (typeTeams || []).find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type && r.event_type === ev.event_type);
   const defaultTeamTypes = (teamRule && Array.isArray(teamRule.teams) && teamRule.teams.length)
     ? teamRule.teams
@@ -1194,8 +1194,8 @@ const VIS_ROLES = [
 ];
 // Klucz służby (members.ministries) → nazwa modułu nadana przez kościół (app_modules),
 // a dopiero potem domyślna. Dawniej: „Małe Avenit”, „Home Groups”, „Administration”.
-const VIS_MINISTRY_MODULE = { worship_team: 'worship', media_team: 'media', atmosfera_team: 'atmosfera', kids_ministry: 'kids', mc_team: 'mc' };
-const VIS_MINISTRY_LABELS = { worship_team: 'Zespół Uwielbienia', media_team: 'Media Team', atmosfera_team: 'Atmosfera Team', kids_ministry: 'Dzieci', mc_team: 'Scena / MC', administration: 'Administracja', home_groups: 'Grupy domowe' };
+const VIS_MINISTRY_MODULE = { worship_team: 'worship', media_team: 'media', atmosfera_team: 'atmosfera', kids_ministry: 'kids', mc_team: 'mc', tlumaczenia_team: 'tlumaczenia' };
+const VIS_MINISTRY_LABELS = { worship_team: 'Zespół Uwielbienia', media_team: 'Media Team', atmosfera_team: 'Atmosfera Team', kids_ministry: 'Dzieci', mc_team: 'Scena / MC', tlumaczenia_team: 'Tłumaczenia', administration: 'Administracja', home_groups: 'Grupy domowe' };
 const prettyMin = (k, moduleLabels = {}) => {
   const modKey = VIS_MINISTRY_MODULE[k] || (String(k || '').startsWith('custom_') ? String(k).slice(7) : null);
   if (modKey && moduleLabels[modKey]) return moduleLabels[modKey];

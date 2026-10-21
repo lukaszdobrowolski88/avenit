@@ -343,6 +343,7 @@ async function fetchMinistries(pool) {
     { key: 'media_team', table: 'media_team' },
     { key: 'atmosfera_team', table: 'atmosfera_members' },
     { key: 'kids_ministry', table: 'kids_teachers' },
+    { key: 'tlumaczenia_team', table: 'custom_tlumaczenia_members' },
   ];
   const results = await Promise.all(defs.map(async (d) => {
     const members = await safeRows(pool, `SELECT email, full_name FROM ${d.table}`);

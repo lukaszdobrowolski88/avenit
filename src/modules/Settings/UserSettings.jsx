@@ -82,7 +82,8 @@ export default function UserSettings() {
     media: false,
     atmosfera: false,
     kids: false,
-    homegroups: false
+    homegroups: false,
+    tlumaczenia: false
   });
 
   // Push notifications
@@ -999,7 +1000,8 @@ export default function UserSettings() {
                   { key: 'media', label: t('Media'), icon: Clapperboard },
                   { key: 'atmosfera', label: t('Atmosfera'), icon: HeartHandshake },
                   { key: 'kids', label: t('Dzieci'), icon: Baby },
-                  { key: 'homegroups', label: t('Grupy domowe'), icon: Home }
+                  { key: 'homegroups', label: t('Grupy domowe'), icon: Home },
+                  { key: 'tlumaczenia', label: t('Tłumaczenia'), icon: Languages }
                 ].map(item => (
                   <label
                     key={item.key}

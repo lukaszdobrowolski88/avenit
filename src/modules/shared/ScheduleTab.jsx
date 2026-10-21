@@ -42,7 +42,7 @@ import '../../components/toolbar.css';
 // Mapowanie tabeli osób służby (zgodne z EventTeamsTab).
 const TEAM_MEMBER_TABLE = {
   worship: 'worship_team', media: 'media_team', atmosfera: 'atmosfera_members',
-  kids: 'kids_teachers', mc: 'custom_mc_members',
+  kids: 'kids_teachers', mc: 'custom_mc_members', tlumaczenia: 'custom_tlumaczenia_members',
 };
 const memberTableFor = (teamType) => TEAM_MEMBER_TABLE[teamType] || `custom_${teamType}_members`;
 // Osoba wyłączona z zespołu: worship_team/media_team mają status „Nieaktywny”, inne tabele is_active.

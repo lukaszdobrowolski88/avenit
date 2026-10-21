@@ -13,6 +13,7 @@ import { callFn } from '../Komunikator/calls/callApi';
 import {
   STATS_POLL_MS, channelsPayload, addChannel, removeChannel, updateChannel, addInterpreter, removeInterpreter,
   remainingPresets, isLangCode, consolePath, originalPath, memberListenPath, totalListeners,
+  scheduleByChannel, hasScheduleInterpreters,
 } from '../Interpretation/interpretationLogic';
 import { qrSvg } from '../Interpretation/qr';
 import '../Interpretation/interpretation.css';
@@ -79,7 +80,21 @@ const STATUS = {
   ended: { label: 'Zakończone', tone: 'text-gray-500 dark:text-gray-400' },
 };
 
-function ChannelRow({ c, people, stat, canManage, onRename, onRemove, onAddPerson, onRemovePerson }) {
+// Osoba z grafiku, która jeszcze nie może tłumaczyć (czeka na potwierdzenie / bez konta).
+const SCHEDULE_HINT = {
+  pending: 'czeka na potwierdzenie',
+  no_account: 'bez konta w aplikacji',
+};
+function SchedulePerson({ p }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-xs text-gray-500 dark:text-gray-400"
+      title={p.kind === 'pending' ? tr('Przypisany w grafiku Tłumaczeń — trafi do kanału po potwierdzeniu.') : tr('Potwierdził w grafiku, ale nie ma aktywnego konta w aplikacji — nie może wejść do konsoli.')}>
+      {p.name} <span className="text-gray-400">· {tr(SCHEDULE_HINT[p.kind])}</span>
+    </span>
+  );
+}
+
+function ChannelRow({ c, people, stat, canManage, onRename, onRemove, onAddPerson, onRemovePerson, scheduled = [] }) {
   const [label, setLabel] = useState(c.label);
   useEffect(() => { setLabel(c.label); }, [c.label]);
   const [adding, setAdding] = useState(false);
@@ -104,20 +119,28 @@ function ChannelRow({ c, people, stat, canManage, onRename, onRemove, onAddPerso
         {stat && stat.listeners != null && (
           <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><Users size={12} aria-hidden="true" /> {stat.listeners}</span>
         )}
-        {canManage && (
+        {canManage && (hasScheduleInterpreters(c) ? (
+          <span className="p-1 text-gray-300 dark:text-gray-600" title={tr('Język ma tłumaczy z grafiku — zmień przypisania w grafiku służby Tłumaczenia.')}>
+            <Trash2 size={14} aria-hidden="true" />
+          </span>
+        ) : (
           <button type="button" onClick={onRemove} aria-label={tr('Usuń język: {name}', { name: c.label })} title={tr('Usuń język')}
             className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-gray-200/60 dark:hover:bg-gray-700">
             <Trash2 size={14} aria-hidden="true" />
           </button>
-        )}
+        ))}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">{tr('Tłumacze:')}</span>
-        {(c.interpreters || []).length === 0 && <span className="text-xs text-gray-400">{tr('nikt jeszcze')}</span>}
+        {(c.interpreters || []).length === 0 && !scheduled.length && <span className="text-xs text-gray-400">{tr('nikt jeszcze')}</span>}
         {(c.interpreters || []).map((i) => (
           <span key={i.email} className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 pl-2.5 pr-1 py-0.5 text-xs text-gray-800 dark:text-gray-100">
             {i.name || i.email}
-            {canManage && (
+            {i.source === 'schedule' && (
+              <span className="ml-0.5 mr-1 rounded-full bg-gray-100 dark:bg-gray-800 px-1.5 text-[10px] font-semibold text-gray-500 dark:text-gray-400"
+                title={tr('Z grafiku służby Tłumaczenia — zmień w grafiku.')}>{tr('z grafiku')}</span>
+            )}
+            {canManage && i.source !== 'schedule' && (
               <button type="button" onClick={() => onRemovePerson(i.email)} aria-label={tr('Usuń tłumacza: {name}', { name: i.name || i.email })}
                 className="p-0.5 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X size={12} aria-hidden="true" /></button>
             )}
@@ -128,6 +151,7 @@ function ChannelRow({ c, people, stat, canManage, onRename, onRemove, onAddPerso
             <Plus size={12} aria-hidden="true" /> {tr('Dodaj tłumacza')}
           </button>
         )}
+        {scheduled.map((p, i) => <SchedulePerson key={`${p.kind}-${p.name}-${i}`} p={p} />)}
       </div>
       {canManage && adding && (
         <div className="mt-2 max-w-md">
@@ -230,6 +254,19 @@ export default function InterpretationCard({ ev }) {
     </h2>
   );
 
+  const fromSchedule = scheduleByChannel(view.schedule, channels);
+  const orphanList = fromSchedule.orphans.length > 0 && (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">{tr('Z grafiku:')}</span>
+      {fromSchedule.orphans.map((p, i) => (
+        <span key={`o-${i}`} className="inline-flex items-center gap-1">
+          <span className="text-xs text-gray-500 dark:text-gray-400">{p.label}:</span>
+          <SchedulePerson p={p} />
+        </span>
+      ))}
+    </div>
+  );
+
   // Bez sesji — tylko zarządzający widzi zachętę.
   if (!session) {
     return (
@@ -239,6 +276,7 @@ export default function InterpretationCard({ ev }) {
           {tr('Tłumacz mówi do mikrofonu w aplikacji, a goście słuchają w słuchawkach na swoich telefonach — przez kod QR, bez konta. Możesz dodać kilka języków naraz.')}
         </p>
         <Button icon={Languages} onClick={() => save({ enable: true })} loading={busy}>{tr('Włącz tłumaczenie na żywo')}</Button>
+        {orphanList}
         {error && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
       </section>
     );
@@ -296,11 +334,13 @@ export default function InterpretationCard({ ev }) {
                     if (!(await confirmDialog({ title: tr('Usunąć język {name}?', { name: c.label }), message: tr('Słuchacze tego języka zostaną rozłączeni.'), confirmLabel: tr('Usuń'), danger: true }))) return;
                     saveChannels(removeChannel(channels, c.id));
                   }}
+                  scheduled={fromSchedule.byLang.get(c.lang_code) || []}
                   onAddPerson={(p) => p && saveChannels(addInterpreter(channels, c.id, p))}
                   onRemovePerson={(email) => saveChannels(removeInterpreter(channels, c.id, email))} />
               ))}
             </ul>
           )}
+          {orphanList}
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {presets.map((p) => (
               <button key={p.lang_code} type="button" disabled={busy} onClick={() => saveChannels(addChannel(channels, p))} lang={p.lang_code}

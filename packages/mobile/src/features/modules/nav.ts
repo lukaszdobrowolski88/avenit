@@ -18,7 +18,7 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'start', label: 'Start', keys: ['dashboard', 'calendar', 'programs', 'songs'], fixedOrder: true },
   { id: 'people', label: 'Ludzie', keys: ['members', 'homegroups', 'groups', 'attendance', 'rsvp', 'prayer'] },
-  { id: 'ministries', label: 'Służby', keys: ['worship', 'media', 'atmosfera', 'kids', 'mlodziezowka', 'teaching', 'serve'] },
+  { id: 'ministries', label: 'Służby', keys: ['worship', 'media', 'atmosfera', 'tlumaczenia', 'kids', 'mlodziezowka', 'teaching', 'serve'] },
   { id: 'communication', label: 'Komunikacja', keys: ['komunikator', 'mail', 'mailing', 'push_campaigns', 'sms_campaigns'] },
   { id: 'finance', label: 'Finanse', keys: ['finance', 'giving'] },
   { id: 'tools', label: 'Narzędzia', keys: ['boards', 'forms', 'rooms', 'automation', 'analytics', 'ai'] },

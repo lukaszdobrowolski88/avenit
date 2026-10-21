@@ -59,6 +59,7 @@ export const MINISTRY_DEFINITIONS = [
   { key: 'media_team', name: 'Media Team', table: 'media_team', emailField: 'email', nameField: 'full_name' },
   { key: 'atmosfera_team', name: 'Atmosfera Team', table: 'atmosfera_members', emailField: 'email', nameField: 'full_name' },
   { key: 'kids_ministry', name: 'Dzieci', table: 'kids_teachers', emailField: 'email', nameField: 'full_name' },
+  { key: 'tlumaczenia_team', name: 'Tłumaczenia', table: 'custom_tlumaczenia_members', emailField: 'email', nameField: 'full_name' },
 ] as const;
 
 export const ROLE_OPTIONS = [

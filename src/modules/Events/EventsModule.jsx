@@ -22,7 +22,7 @@ import { DateInput } from '../../components/pickers';
 import { EventFormatPicker, hasPlace, isOnlineFormat } from './eventFormat';
 
 // Domyślne moduły-kalendarze w pickerze (gdy admin nic nie skonfiguruje w Ustawieniach).
-const DEFAULT_EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
+const DEFAULT_EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'tlumaczenia'];
 
 async function readEventCalendars() {
   try {

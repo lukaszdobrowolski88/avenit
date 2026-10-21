@@ -19,12 +19,13 @@ const OGOLNE_TYPES = [
   { value: 'szkolenie', label: 'Szkolenie' },
   { value: 'inne', label: 'Inne' },
 ];
-const DEFAULT_EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
+const DEFAULT_EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'tlumaczenia'];
 const TEAM_OPTIONS = [
   { value: 'worship', label: 'Zespół Uwielbienia' },
   { value: 'media', label: 'Media Team' },
   { value: 'atmosfera', label: 'Atmosfera Team' },
   { value: 'kids', label: 'Dzieci' },
+  { value: 'tlumaczenia', label: 'Tłumaczenia' },
   { value: 'mc', label: 'Scena / MC' },
 ];
 const slugTab = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || ('t' + Math.random().toString(36).slice(2, 7));

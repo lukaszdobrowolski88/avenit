@@ -143,6 +143,12 @@ export const REGISTRY = {
   equipment: T('module:media'),
   atmosfera_events: T('module:atmosfera'),
   atmosfera_members: T('module:atmosfera'),
+  // Tłumaczenia (migracja 117): skład służby; wydarzenia/zadania = wycinki events/board_* (moduleScope).
+  // custom_tlumaczenia_members jawnie (pierwszeństwo przed regułą tabel modułów z kreatora).
+  custom_tlumaczenia_members: T('module:tlumaczenia'),
+  tlumaczenia_events: T('module:tlumaczenia'),
+  tlumaczenia_tasks: T('module:tlumaczenia', { readOnly: true }), // zadania → Tablice (bez starej tabeli)
+  tlumaczenia_task_comments: T('module:tlumaczenia', { readOnly: true }),
   team_members: T(null),
   team_roles: T(null),
   team_member_roles: T(null),

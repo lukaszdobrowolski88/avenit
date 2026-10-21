@@ -6,7 +6,8 @@ import { useRoster, type RosterPerson, type RosterRole } from '../roster';
 import { PersonSheet } from '../components/PersonSheet';
 import { Empty, Loading, SearchBar, fold } from './ui';
 
-// Członkowie zespołu (worship_team / media_team / atmosfera_members / kids_teachers):
+// Członkowie zespołu (worship_team / media_team / atmosfera_members / kids_teachers /
+// custom_tlumaczenia_members):
 // lista z kontaktem jednym dotknięciem, wyszukiwanie po imieniu, służbie i e-mailu;
 // z prawem edycji — dodawanie, edycja, służby osoby i usuwanie.
 

@@ -11,6 +11,7 @@ const TEAM_LABELS: Record<string, string> = {
   worship: 'Uwielbienie',
   media: 'MediaTeam',
   atmosfera: 'Atmosfera Team',
+  tlumaczenia: 'Tłumaczenia',
   kids: 'Dzieci',
   mlodziezowka: 'Młodzieżówka',
   scena: 'Scena',

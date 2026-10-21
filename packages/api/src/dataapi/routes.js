@@ -8,6 +8,8 @@ import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { emitChange } from '../realtime/hub.js';
 import { meetingCtxFromRequest } from '../meetings/service.js';
 import { syncEventsAfterWrite, syncRegistrationsAfterWrite } from '../meetings/events.js';
+import { interpCtxFromRequest } from '../interpretation/service.js';
+import { prepareScheduleSync, syncScheduleAfterWrite } from '../interpretation/scheduleSync.js';
 import { notifyOnWrite, prepareUserTaskAssign, notifyUserTaskAssign } from '../realtime/push-hooks.js';
 import { platformDisabledModules } from '../lib/platform-modules.js';
 import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
@@ -405,6 +407,9 @@ export default async function dataApiRoutes(app) {
       const boardAssign = await prepareBoardAssignNotify(req.db, q);
       // Zadanie osobiste przypisywane innej osobie — stan przed zapisem (nie rzuca; push-hooks.js).
       const taskAssign = await prepareUserTaskAssign(req.db, q);
+      // Grafik służby Tłumaczeń → kanały tłumaczenia (117): wydarzenia zmienianych wierszy PRZED
+      // zapisem (usunięcie z przeglądarki nie zwraca wierszy). Nie rzuca.
+      const interpPrep = q.table === 'schedule_assignments' ? await prepareScheduleSync(req.db, q) : null;
 
       // Ślad zmian budżetu zapisuje serwer (wcześniej przeglądarka — dało się go pominąć).
       const budgetBefore = isBudgetWrite(q) ? await budgetRowsBefore(req.db, q, buildQuery) : null;
@@ -476,6 +481,8 @@ export default async function dataApiRoutes(app) {
           if (q.table === 'events') syncEventsAfterWrite(ctx, q.op, changed, req.user.email);
           else syncRegistrationsAfterWrite(ctx, q.op, changed, req.user.email);
         }
+        // Potwierdzeni tłumacze z grafiku → kanały tłumaczenia na żywo wydarzenia — w tle.
+        if (q.table === 'schedule_assignments') syncScheduleAfterWrite(interpCtxFromRequest(req), q, interpPrep, changed);
       }
 
       // Push: nowa wiadomość / zaproszenie do służby. Fire-and-forget — nie blokuje

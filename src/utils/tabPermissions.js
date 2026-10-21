@@ -64,6 +64,16 @@ export const TAB_PERMISSIONS = {
     equipment: ['rada_starszych', 'koordynator', 'lider']
   },
 
+  // Moduł Tłumaczenia
+  tlumaczenia: {
+    events: null,
+    schedule: null,
+    tasks: null,
+    members: ['rada_starszych', 'koordynator', 'lider'],
+    finances: ['rada_starszych', 'koordynator'],
+    equipment: ['rada_starszych', 'koordynator', 'lider']
+  },
+
   // Moduł Nauczanie
   teaching: {
     wall: null, // Tablica dostępna dla wszystkich

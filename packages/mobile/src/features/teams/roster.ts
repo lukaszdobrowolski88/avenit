@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 
 // Skład zespołu (Członkowie / Nauczyciele) i służby (team_roles + team_member_roles) —
-// kontrakt jak na webie: WorshipModule/MediaTeamModule/AtmosferaTeamModule/KidsModule
+// kontrakt jak na webie: WorshipModule/MediaTeamModule/AtmosferaTeamModule/KidsModule/Tłumaczenia
 // (członkowie) i components/RolesTab.jsx (służby).
 
 const asList = (d: unknown) => ((d ?? []) as any[]);
@@ -91,6 +91,8 @@ export interface PersonInput {
 
 // Domyślne pole `role` przy dodawaniu — jak formularze weba.
 const DEFAULT_ROLE: Record<string, string> = { atmosfera_members: 'Atmosfera', kids_teachers: 'Nauczyciel' };
+// Tabele z kolumną status (Aktywny/Nieaktywny) zamiast is_active — dla nowej osoby.
+const STATUS_TABLES = new Set(['worship_team', 'media_team', 'custom_tlumaczenia_members']);
 
 export const useSavePerson = (team: string, table: string) => {
   const qc = useQueryClient();
@@ -98,7 +100,7 @@ export const useSavePerson = (team: string, table: string) => {
     mutationFn: async ({ person, input }: { person: RosterPerson | null; input: PersonInput }) => {
       const row: Record<string, unknown> = { full_name: input.name, email: input.email, phone: input.phone };
       if (input.role != null || !person) row.role = input.role ?? DEFAULT_ROLE[table] ?? '';
-      if (person ? person.hasStatus : table === 'worship_team' || table === 'media_team') row.status = input.active ? 'Aktywny' : 'Nieaktywny';
+      if (person ? person.hasStatus : STATUS_TABLES.has(table)) row.status = input.active ? 'Aktywny' : 'Nieaktywny';
       else if (person ? person.hasIsActive : true) row.is_active = input.active;
 
       let id = person?.id ?? null;

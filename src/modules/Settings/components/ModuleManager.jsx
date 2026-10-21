@@ -184,7 +184,7 @@ const CORE_MODULE_KEYS = ['dashboard', 'programs'];
 // Moduły wtopione w inny moduł (istnieją tylko technicznie) — nie pokazuj jako osobne.
 const MERGED_INTO_OTHER = ['sermons']; // Kazania są zakładką w Nauczaniu
 // Moduły z kalendarzem wydarzeń (mają konfigurację Typy/Pola/Zakładki). 'calendar' = kalendarz „Ogólne".
-const EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
+const EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'tlumaczenia'];
 const isEventModule = (key) => key === 'calendar' || EVENT_MODULES.includes(key);
 
 export default function ModuleManager() {

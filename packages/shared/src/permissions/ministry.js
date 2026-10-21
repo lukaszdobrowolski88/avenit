@@ -35,7 +35,7 @@ export const DENY_PREFIX = '!';
 // Frekwencja, Sale, Analityka, Automatyzacje, AI, Opieka, RSVP…) nadaje wyłącznie rola lub
 // nadpisanie w macierzy uprawnień. Strażnik zapisu ministry_memberships (api, sharedWrites.js)
 // dodatkowo sprawdza, czy moduł własny istnieje w app_modules.
-export const MINISTRY_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'teaching'];
+export const MINISTRY_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'teaching', 'tlumaczenia'];
 // Klucze modułów systemowych spoza katalogu MODULES (app_modules z szablonu i migracji) oraz
 // zarezerwowane module_key wydarzeń — nigdy nie są modułem własnym.
 export const SYSTEM_MODULE_KEYS = [
@@ -76,6 +76,9 @@ export function membershipCapabilities(ministryKey, role) {
   if (isLeader) caps.push(LEADER_SCHEDULE_ACTION);
   // Program nabożeństwa (wspólny, bez służby) edytuje lider Uwielbienia — decyzja 2026-10-11.
   if (isLeader && PROGRAM_EDITOR_MINISTRIES.includes(ministryKey)) caps.push(...PROGRAM_EDITOR_CAPS);
+  // Kanały tłumaczenia na żywo przy wydarzeniach (języki, tłumacze, link/QR) prowadzi lider służby
+  // Tłumaczeń — decyzja 2026-10-21 (migracja 117). Wydarzenie i tak musi widzieć (visibleEventFor).
+  if (isLeader && INTERPRETATION_MANAGER_MINISTRIES.includes(ministryKey)) caps.push(...INTERPRETATION_MANAGER_CAPS);
   return caps;
 }
 
@@ -91,6 +94,10 @@ export const PROGRAM_EDITOR_CAPS = [
   'res:program_song_suggestions:update', 'res:program_song_suggestions:delete',
   'action:programs:publish', 'action:programs:send_email',
 ];
+
+// Służby, których LIDER zarządza tłumaczeniem na żywo przy wydarzeniach (src/interpretation).
+export const INTERPRETATION_MANAGER_MINISTRIES = ['tlumaczenia'];
+export const INTERPRETATION_MANAGER_CAPS = ['action:calendar:manage_interpretation'];
 
 // Z listy przynależności osoby → płaskie granty { capability, allowed:true } (bez duplikatów)
 // do dołożenia w resolverze. memberships: [{ ministry_key, role }].
