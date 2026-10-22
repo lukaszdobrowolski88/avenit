@@ -65,6 +65,18 @@ const schema = z.object({
   SSO_MICROSOFT_CLIENT_SECRET: z.string().optional(),
   SSO_MICROSOFT_TENANT: z.string().default('common'),
 
+  // Integracje Google Workspace / Microsoft 365 (src/integrations, docs/integrations-workspace.md).
+  // Jeden URI przekierowania: https://app.APP_DOMAIN/api/integrations/oauth/<provider>/callback
+  //  MS_*     — platformowa aplikacja WIELODOSTĘPNA Entra ID (katalog: uprawnienie aplikacji
+  //             User.Read.All + zgoda administratora kościoła; tokeny client credentials per katalog).
+  //  GOOGLE_* — platformowy klient OAuth Google (opcjonalnie; kościół może podać własny, a gdy ma
+  //             własne SSO Google — jego klient jest używany ponownie).
+  // Puste = karta pokazuje „skonfiguruj na platformie” albo korzysta z własnej aplikacji kościoła.
+  MS_CLIENT_ID: z.string().optional(),
+  MS_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
   // Połączenia audio/wideo (LiveKit SFU, usługa `livekit` w docker-compose). Bez klucza i sekretu
   // połączenia są wyłączone: fn call-* → 503 calls_disabled, web chowa przyciski.
   //  LIVEKIT_URL  — publiczny adres sygnalizacji dla klientów (domyślnie wss://rtc.APP_DOMAIN),

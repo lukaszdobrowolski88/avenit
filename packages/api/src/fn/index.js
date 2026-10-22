@@ -147,6 +147,11 @@ const MODULES = [
   'chat-reminders',
   // Plakietka ikony aplikacji mobilnej (liczba rozmów z nieprzeczytanymi) — tylko własne wiersze.
   'chat-badge',
+  // Integracje Google Workspace / Microsoft 365 (migracja 118, src/integrations): połączenie kościoła
+  // i synchronizacja kont z katalogu. Capability manage_integrations z eksportu modułu + kontrola
+  // w funkcji (zastosowanie synchronizacji także manage_users); worker co 6 h woła runForTenant.
+  'workspace-integration',
+  'directory-sync',
 ];
 
 export async function registerFunctions(app) {
