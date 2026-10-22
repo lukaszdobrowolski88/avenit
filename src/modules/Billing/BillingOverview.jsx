@@ -5,8 +5,8 @@ import { getPlanUsage } from '../../lib/subscriptions';
 import PlanUsageCard from './components/PlanUsageCard';
 import PlanPicker from './components/PlanPicker';
 
-// Ekran rozliczeń kościoła (Ustawienia → Subskrypcja): plan, cena, wykorzystanie (dorośli w bazie
-// członków) i wybór planu. Dane z GET /api/tenant/plan-usage — tylko dla osób z dostępem do rozliczeń.
+// Ekran rozliczeń kościoła (Ustawienia → Subskrypcja): plan, cena, wykorzystanie (aktywne konta
+// użytkowników) i wybór planu. Dane z GET /api/tenant/plan-usage — tylko dla osób z dostępem do rozliczeń.
 export default function BillingOverview() {
   const [data, setData] = useState(null);
   const [state, setState] = useState('loading'); // loading | ready | denied | error

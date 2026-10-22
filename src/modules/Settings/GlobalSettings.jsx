@@ -32,6 +32,7 @@ import { toast } from '../../lib/toast';
 import { injectCustomFont, applyFont, setBgUrl, applyBgPattern } from '../../lib/appearance';
 import { confirmDialog } from '../../lib/dialog';
 import { usePermissions } from '../../contexts/PermissionsContext';
+import { notifyPlanUsageChanged } from '../../lib/subscriptions';
 
 // Grupy nawigacji ustawień (menu po lewej). Adres zakładki: /settings?tab=<id> (UXE-10).
 // Ukryte: „Regionalne” i „Powiadomienia” (ich ustawień nic nie czytało — UXE-07),
@@ -424,6 +425,7 @@ export default function GlobalSettings() {
           if (createErr) throw new Error(createErr.message);
           userId = created?.id || null;
           toast.success(tr('Utworzono {email} — wysłano zaproszenie do ustawienia hasła (ważne 7 dni).', { email: userForm.email }));
+          notifyPlanUsageChanged();
         }
 
         // Przynależność do wybranych służb (uprawnienia) — z rolą członek/lider. Serwer po zapisie
@@ -570,6 +572,7 @@ export default function GlobalSettings() {
     }
     e.target.value = '';
     fetchData(); loadAccountEvents();
+    if (ok) notifyPlanUsageChanged();
     if (fail) toast.error(tr('Import CSV: utworzono {ok}, pominięto {fail}.', { ok, fail }));
     else toast.success(tr('Import CSV: utworzono {ok}.', { ok }));
   };
@@ -669,7 +672,7 @@ export default function GlobalSettings() {
   const approveUser = async (id) => {
     const { error } = await supabase.functions.invoke('approve-user', { body: { userId: id } });
     if (error) { toast.error(error.message || tr('Nie udało się zatwierdzić konta')); return; }
-    fetchData(); loadAccountEvents();
+    fetchData(); loadAccountEvents(); notifyPlanUsageChanged();
     toast.success(tr('Konto zatwierdzone — wysłano powitanie'));
   };
   const rejectUser = async (user) => {

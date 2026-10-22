@@ -30,7 +30,7 @@ const FONT = "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
 const EN_NAMES = { start: 'Start', wspolnota: 'Community', kosciol: 'Church', kosciol_plus: 'Church+', siec: 'Network' };
 export const LANDING_PLANS = PRICING_PLANS.map((p) => ({
   key: p.key, pl: p.name, en: EN_NAMES[p.key] || p.name,
-  limit: p.maxAdults > 0 ? p.maxAdults : null,
+  limit: p.maxAccounts > 0 ? p.maxAccounts : null, // limit KONT UŻYTKOWNIKÓW
   monthly: Math.round(p.priceMonthly / 100), yearly: p.priceYearly != null ? Math.round(p.priceYearly / 100) : null,
   ...(p.isCustom ? { custom: true } : {}), ...(p.prioritySupport ? { priority: true } : {}),
 }));
@@ -71,10 +71,11 @@ export function parsePlanInterest(message) {
   return null;
 }
 
-// Wielkość wspólnoty, jeśli padła w wiadomości („ok. 120 osób”, „80–100 członków”, „300+ ludzi”).
+// Wielkość wspólnoty, jeśli padła w wiadomości („ok. 120 osób”, „80–100 członków”, „300+ ludzi”,
+// „60 kont”, „40 użytkowników”).
 const NUM = '(\\d{1,2}[ \\u00a0.,]\\d{3}(?!\\d)|\\d{1,5})';
 const SIZE_RE = new RegExp(
-  `(?<![\\d.,])${NUM}(?:\\s*[-–]\\s*${NUM})?\\s*\\+?\\s*(os[oó]b|osoby|cz[lł]onk\\p{L}*|doros[lł]\\p{L}*|ludzi|wiernych|uczestnik\\p{L}*|people|members|adults|attendees)`,
+  `(?<![\\d.,])${NUM}(?:\\s*[-–]\\s*${NUM})?\\s*\\+?\\s*(os[oó]b|osoby|cz[lł]onk\\p{L}*|doros[lł]\\p{L}*|kont(?:a|o)?(?!\\p{L})|u[zż]ytkownik\\p{L}*|ludzi|wiernych|uczestnik\\p{L}*|people|members|adults|users|accounts|attendees)`,
   'iu'
 );
 const toInt = (s) => Number(String(s).replace(/[\s.,]/g, ''));
@@ -139,8 +140,8 @@ const zl = (n, lang) => `${fmtNum(n, lang)} zł`;
 function planLines(plan, yearly, lang) {
   const en = lang === 'en';
   const size = plan.limit == null
-    ? (en ? 'over 1000 adults, multiple locations' : 'powyżej 1000 dorosłych, wiele lokalizacji')
-    : (en ? `up to ${plan.limit} adults` : `do ${plan.limit} dorosłych`); // jak na stronie: „1000”
+    ? (en ? 'over 1000 user accounts, multiple locations' : 'powyżej 1000 kont użytkowników, wiele lokalizacji')
+    : (en ? `up to ${plan.limit} user accounts` : `do ${plan.limit} kont użytkowników`); // jak na stronie: „1000”
   if (plan.custom) {
     return {
       size,
@@ -282,9 +283,9 @@ const COPY = {
     intro: (church) => `Twoje zgłoszenie dotarło do nas. Odezwiemy się zwykle w ciągu ${B('1–2 dni roboczych')} i umówimy prezentację Avenit dopasowaną do ${church ? `wspólnoty ${B(esc(church))}` : 'Waszej wspólnoty'}.`,
     planEyebrow: 'Plan, który Cię interesuje',
     yearlyTag: 'płatność roczna',
-    planFoot: 'Ceny brutto (z VAT). Wszystkie moduły i bez limitu użytkowników. Liczymy tylko dorosłych w bazie członków, z 10% zapasu ponad limit.',
+    planFoot: 'Ceny brutto (z VAT). Wszystkie moduły w każdym planie. Liczymy aktywne konta użytkowników w aplikacji, z 10% zapasu ponad limit. Osoby w bazie członków bez konta są bez limitu.',
     noPlanEyebrow: 'Cennik',
-    noPlan: `Plany od ${B('79 zł brutto miesięcznie')}. Cena zależy od liczby dorosłych w bazie członków, a wszystkie moduły są w każdym planie.`,
+    noPlan: `Plany od ${B('79 zł brutto miesięcznie')}. Cena zależy od liczby kont użytkowników w aplikacji, a wszystkie moduły są w każdym planie.`,
     nextEyebrow: 'Co dalej',
     steps: [
       ['Odezwiemy się', 'Pokażemy system na żywo i odpowiemy na pytania Twojej wspólnoty.'],
@@ -312,9 +313,9 @@ const COPY = {
     intro: (church) => `Your message has reached us. We usually reply within ${B('1–2 business days')} to set up an Avenit demo tailored to ${church ? B(esc(church)) : 'your church'}.`,
     planEyebrow: 'The plan you’re interested in',
     yearlyTag: 'annual billing',
-    planFoot: 'Prices in Polish złoty, VAT included. Every module and unlimited users. Only adults in your member directory count, with a 10% buffer over the limit.',
+    planFoot: 'Prices in Polish złoty, VAT included. Every module in every plan. We count active user accounts in the app, with a 10% buffer over the limit. People in your member directory without an account are unlimited.',
     noPlanEyebrow: 'Pricing',
-    noPlan: `Plans from ${B('79 zł a month, VAT included')}. The price depends on the number of adults in your member directory, and every module is in every plan.`,
+    noPlan: `Plans from ${B('79 zł a month, VAT included')}. The price depends on the number of user accounts in the app, and every module is in every plan.`,
     nextEyebrow: 'What happens next',
     steps: [
       ['We get in touch', 'We show you the system live and answer your church’s questions.'],
@@ -490,8 +491,8 @@ export function leadNotificationEmail(lead = {}, meta = {}) {
   }
   let sizeHtml = ''; let sizeText = '';
   if (size) {
-    sizeText = `${size.text} → pasuje ${suggested.pl}${mismatch ? ` (wybrany: ${interest.plan.pl}; liczymy tylko dorosłych — dopytaj)` : ''}`;
-    sizeHtml = `<div style="${T(14, 21, 400, C.text)}padding-top:10px;">Wielkość z wiadomości: ${B(esc(size.text))} → pasuje ${B(esc(suggested.pl))}${mismatch ? `<br><span style="color:${C.mustard};font-weight:700;">Inny niż wybrany plan (${esc(interest.plan.pl)}). Liczymy tylko dorosłych, dopytaj.</span>` : ''}</div>`;
+    sizeText = `${size.text} → pasuje ${suggested.pl}${mismatch ? ` (wybrany: ${interest.plan.pl}; liczymy konta użytkowników, nie wszystkich członków — dopytaj)` : ''}`;
+    sizeHtml = `<div style="${T(14, 21, 400, C.text)}padding-top:10px;">Wielkość z wiadomości: ${B(esc(size.text))} → pasuje ${B(esc(suggested.pl))}${mismatch ? `<br><span style="color:${C.mustard};font-weight:700;">Inny niż wybrany plan (${esc(interest.plan.pl)}). Liczymy konta użytkowników, nie wszystkich członków — dopytaj.</span>` : ''}</div>`;
   }
 
   const when = warsawTime(meta.createdAt || lead.created_at, 'pl');

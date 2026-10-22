@@ -9,7 +9,7 @@ import {
   Checkbox, ErrorBox, Loading, UsageBar, Notice,
 } from '../components/ui.jsx';
 
-// Użycie (dorośli vs limit) dla listy kościołów: z wiersza listy, jeśli API je dołącza,
+// Użycie (konta użytkowników vs limit) dla listy kościołów: z wiersza listy, jeśli API je dołącza,
 // inaczej z /tenants/:id/usage — po kilka zapytań naraz. Gdy endpointu nie ma (null), przestajemy pytać.
 function useTenantUsages(tenants, plansByName) {
   const [usages, setUsages] = useState({});
@@ -22,7 +22,7 @@ function useTenantUsages(tenants, plansByName) {
     if (!tenants.length) return undefined;
     const inline = {};
     tenants.forEach((t) => {
-      const u = t.usage || (t.adults != null ? { adults: t.adults, limit: t.adults_limit, state: t.usage_state } : null);
+      const u = t.usage || (t.accounts != null ? { accounts: t.accounts, limit: t.accounts_limit, state: t.usage_state } : null);
       if (u) inline[t.id] = normalizeUsage(u, plansRef.current[t.plan_name]);
     });
     if (Object.keys(inline).length) { setUsages((p) => ({ ...p, ...inline })); return undefined; }
@@ -91,12 +91,12 @@ export default function Tenants() {
     <div>
       <PageHeader
         title="Kościoły"
-        subtitle="Tenanci platformy: status, plan i liczba dorosłych względem limitu planu."
+        subtitle="Tenanci platformy: status, plan i liczba kont użytkowników względem limitu planu."
         actions={<Button variant="primary" icon="plus" onClick={() => setShowNew(true)}>Nowy kościół</Button>}
       />
       <ErrorBox error={err} onRetry={load} />
       {!available && (
-        <Notice tone="info">Liczba dorosłych pojawi się po wdrożeniu endpointu <code>/api/admin/tenants/:id/usage</code>.</Notice>
+        <Notice tone="info">Liczba kont użytkowników pojawi się po wdrożeniu endpointu <code>/api/admin/tenants/:id/usage</code>.</Notice>
       )}
 
       <div className="toolbar">

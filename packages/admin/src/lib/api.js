@@ -68,7 +68,7 @@ export const api = {
   // extra: pola opcjonalne (np. customPriceMonthly/customPriceYearly w groszach dla planu indywidualnego).
   changePlan: (id, planId, billingCycle, extra = {}) =>
     request(`/api/admin/tenants/${id}/change-plan`, { method: 'POST', body: { planId, billingCycle, ...extra } }),
-  // Dorośli vs limit planu: { adults, limit, bufferLimit, pct, state, plan, suggestedPlan }.
+  // Konta użytkowników vs limit planu: { accounts, pending, limit, bufferLimit, pct, state, plan, suggestedPlan, history }.
   // null, gdy endpoint jeszcze nie istnieje (404) — panel wtedy degraduje widok.
   tenantUsage: (id) => request(`/api/admin/tenants/${id}/usage`).catch((e) => {
     if (e.status === 404 || e.status === 501) return null;

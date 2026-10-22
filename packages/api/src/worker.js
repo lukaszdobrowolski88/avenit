@@ -22,7 +22,7 @@
 //  - calendar-sync           co 1 min (kalendarz Google / Outlook w obie strony: kolejka zapisów wydarzeń,
 //                            zmiany od dostawców co ~5 min, pełne uzgodnienie co 24 h — osobiste i kościoła)
 //  - process-dunning         codziennie 08:00 (baza platform; zawiesza WYŁĄCZNIE za brak płatności)
-//  - usage-snapshot          1. dnia miesiąca 04:30 Europe/Warsaw (liczba dorosłych per tenant → panel admina;
+//  - usage-snapshot          1. dnia miesiąca 04:30 Europe/Warsaw (liczba kont użytkowników per tenant → panel admina;
 //                            przekroczenie limitu planu niczego nie blokuje)
 import cron from 'node-cron';
 import { platformPool, getTenantPool } from './db.js';
@@ -159,10 +159,10 @@ cron.schedule('0 8 * * *', exclusive(async () => {
   }
 }));
 
-// Licencjonowanie = dorośli w bazie członków: comiesięczny zapis do tenant_usage_snapshots.
+// Licencjonowanie = aktywne konta użytkowników (app_users): comiesięczny zapis do tenant_usage_snapshots.
 cron.schedule('30 4 1 * *', exclusive(async () => {
   try {
-    const { recordUsageSnapshots } = await import('./tenant/adults.js');
+    const { recordUsageSnapshots } = await import('./tenant/accounts.js');
     const r = await recordUsageSnapshots(platformPool, getTenantPool, { log });
     log(`usage-snapshot: zapisano ${r.saved}/${r.tenants}`);
   } catch (err) {

@@ -72,8 +72,8 @@ export function createTenantContext(supabase, getCachedUser) {
     }
   }
 
-  // Cennik „za dorosłych”: każdy plan ma wszystkie moduły i bez limitu użytkowników/zasobów,
-  // a przekroczenie limitu dorosłych niczego nie blokuje (tylko komunikat w Subskrypcji).
+  // Cennik 2026-10: każdy plan ma wszystkie moduły, limit planu = aktywne konta użytkowników,
+  // a przekroczenie limitu kont niczego nie blokuje (tylko komunikat w Subskrypcji).
   // Dlatego nie bramkujemy funkcji ani limitów planem — zostawione dla zgodności wywołań.
   async function checkFeature(_feature) {
     return true;

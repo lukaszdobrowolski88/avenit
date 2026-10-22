@@ -4,8 +4,8 @@ import { tr } from '../../i18n';
 import BillingOverview from './BillingOverview';
 
 // Moduł rozliczeń (samodzielny widok). Główne miejsce w aplikacji to Ustawienia → Subskrypcja,
-// które renderuje ten sam BillingOverview. Cennik = liczba dorosłych w bazie członków; wszystkie
-// moduły i bez limitu użytkowników w każdym planie — nic nie jest bramkowane planem.
+// które renderuje ten sam BillingOverview. Cennik = liczba aktywnych kont użytkowników; wszystkie
+// moduły w każdym planie — nic nie jest bramkowane planem (przekroczenie = tylko komunikat).
 export default function BillingModule() {
   return (
     <div className="min-h-full">

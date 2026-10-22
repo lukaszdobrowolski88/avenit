@@ -12,7 +12,7 @@ import '../../../components/toolbar.css';
 // Wybór wysyła prośbę do zespołu Avenit (plan zmieniamy od kolejnego okresu); Sieć → „Porozmawiajmy”.
 const INCLUDED = [
   'Wszystkie moduły, bez dopłat za kolejne',
-  'Bez limitu użytkowników: loguje się cały kościół',
+  'Baza członków bez limitu: płacicie tylko za konta w aplikacji',
   'Aplikacja na iPhone\'a i Androida oraz wersja w przeglądarce',
   'Po polsku, angielsku i ukraińsku',
   'Dane w UE, osobna baza i kopia co noc',
@@ -48,14 +48,14 @@ export default function PlanPicker({ plans = [], currentKey, currentCycle = 'mon
 
   const regular = plans.filter((p) => !p.isCustom);
   const custom = plans.filter((p) => p.isCustom);
-  const topLimit = Math.max(1000, ...regular.map((p) => Number(p.maxAdults) || 0));
+  const topLimit = Math.max(1000, ...regular.map((p) => Number(p.maxAccounts) || 0));
 
   return (
     <section className="bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-2xl p-6 mb-5" aria-labelledby="billing-plans-h">
       <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
         <div>
           <h3 id="billing-plans-h" className="font-bold text-gray-800 dark:text-white">{tr('Plany')}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tr('Płacicie za wielkość kościoła, nie za moduły. Ceny brutto (z VAT).')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tr('Płacicie za liczbę kont użytkowników, nie za moduły. Ceny brutto (z VAT).')}</p>
         </div>
         <div className="seg-bar" role="group" aria-label={tr('Okres rozliczenia')}>
           <button type="button" className="seg-btn" aria-pressed={cycle === 'monthly'} onClick={() => setCycle('monthly')}>{tr('Miesięcznie')}</button>
@@ -83,7 +83,7 @@ export default function PlanPicker({ plans = [], currentKey, currentCycle = 'mon
                 {current && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-100">{tr('Obecny plan')}</span>}
                 {suggested && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-accent-primary-lightest text-accent-primary-darkest dark:bg-accent-primary/20 dark:text-accent-primary-light">{tr('Pasuje do Was')}</span>}
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tr('do {n} dorosłych', { n: p.maxAdults })}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tr('do {n} kont użytkowników', { n: p.maxAccounts })}</p>
               <p className="mt-3 flex items-baseline gap-1">
                 <span className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{price.main}</span>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{price.unit}</span>
@@ -109,7 +109,7 @@ export default function PlanPicker({ plans = [], currentKey, currentCycle = 'mon
           <div key={p.key} className={`mt-3 rounded-2xl border p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6 ${current ? 'border-gray-400 bg-gray-50 dark:bg-gray-700' : 'border-gray-200 dark:border-gray-600'}`}>
             <div className="md:w-56 shrink-0">
               <h4 className="font-bold text-gray-900 dark:text-white">{p.name}</h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('powyżej {n} dorosłych, wiele lokalizacji, denominacje', { n: topLimit })}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('powyżej {n} kont użytkowników, wiele lokalizacji, denominacje', { n: topLimit })}</p>
             </div>
             <p className="flex items-baseline gap-1 shrink-0">
               <span className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{price.main}</span>

@@ -596,7 +596,7 @@ function AppInner() {
               <OfflineBanner />
               {/* Ogłoszenia systemowe z platformy */}
               <AnnouncementBanner />
-              {/* Limit dorosłych w planie — tylko dla osób z dostępem do rozliczeń, do zamknięcia */}
+              {/* Limit kont użytkowników w planie — tylko dla osób z dostępem do rozliczeń, do zamknięcia */}
               <PlanUsageNotice />
               <main id="tresc" tabIndex={-1} className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar outline-none focus:outline-none">
               <RouteErrorBoundary>

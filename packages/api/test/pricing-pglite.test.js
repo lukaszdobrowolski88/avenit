@@ -1,8 +1,9 @@
-// Cennik „za dorosłych” na PRAWDZIWYM SQL (PGlite — Postgres w procesie):
-//  • schema.sql + migracja platform 004 na bazie „jak produkcja” (stare plany, tenant, subskrypcja)
-//    — idempotentne przy ponownym uruchomieniu, plany = katalog (strona), stare ukryte, subskrypcje
-//    nietknięte; na świeżej bazie dokładnie 5 planów;
-//  • liczenie dorosłych (countTenantAdults) na różnych wariantach tabeli members.
+// Cennik 2026-10 na PRAWDZIWYM SQL (PGlite — Postgres w procesie):
+//  • schema.sql + migracje platformy od 004 (cennik) wzwyż — w kolejności, jak runner — na bazie
+//    „jak produkcja” (stare plany, tenant, subskrypcja): idempotentne przy ponownym uruchomieniu,
+//    plany = katalog (strona), stare ukryte, subskrypcje nietknięte; na świeżej bazie 5 planów;
+//    odczyty miesięczne mają kolumnę accounts (007), stara kolumna adults przestaje być wymagana;
+//  • liczenie KONT UŻYTKOWNIKÓW (countTenantAccounts) na różnych wariantach tabeli app_users.
 //
 // PGlite nie jest zależnością API — test sam się pomija, gdy go brak. Uruchomienie:
 //   PGLITE_MODULE=/ścieżka/node_modules/@electric-sql/pglite/dist/index.js npm test
@@ -11,8 +12,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { splitSqlStatements } from '../src/lib/sqlscript.js';
 import { PRICING_PLANS, RETIRED_PLAN_KEYS } from '@avenit/shared/src/billing/catalog.js';
-import { isAdultMember } from '@avenit/shared/src/billing/adults.js';
-import { countTenantAdults } from '../src/tenant/adults.js';
+import { countAccounts } from '@avenit/shared/src/billing/accounts.js';
+import { countTenantAccounts, recordUsageSnapshots } from '../src/tenant/accounts.js';
 import { resolveSignupPlan } from '../src/admin/provisioning.js';
 
 let PGlite = null;
@@ -22,8 +23,16 @@ try {
 const skip = PGlite ? false : 'brak @electric-sql/pglite (ustaw PGLITE_MODULE)';
 
 const SCHEMA = fs.readFileSync(new URL('../db/platform/schema.sql', import.meta.url), 'utf8');
-const MIG_004 = fs.readFileSync(new URL('../db/platform/migrations/004_pricing_adults.sql', import.meta.url), 'utf8');
-const TODAY = '2026-10-09';
+// Wszystkie migracje platformy od cennika (004) wzwyż, w kolejności nazw — jak migrate.mjs applyDir.
+// Dzięki temu test sprawdza STAN KOŃCOWY (np. 006 poprawia opisy planów), a nie treść jednego pliku.
+const MIG_DIR = new URL('../db/platform/migrations/', import.meta.url);
+const PRICING_MIGRATIONS = fs.readdirSync(MIG_DIR).filter((f) => /\.sql$/.test(f) && f >= '004').sort()
+  .map((f) => ({ file: f, sql: fs.readFileSync(new URL(f, MIG_DIR), 'utf8') }));
+async function applyPricingMigrations(pg) {
+  for (const m of PRICING_MIGRATIONS) {
+    try { await pg.exec(m.sql); } catch (err) { throw new Error(`${m.file}: ${err.message}`); }
+  }
+}
 
 function poolOf(pg) {
   return { async query(sql, params) { const r = await pg.query(sql, params); return { rows: r.rows, rowCount: r.affectedRows ?? r.rows.length }; } };
@@ -63,14 +72,14 @@ before(async () => {
       SELECT '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', id, 'active', 'yearly'
         FROM subscription_plans WHERE slug = 'standard';
   `);
-  // Migracja + ponowne uruchomienie całości (deploy po deployu).
-  await prod.exec(MIG_004);
+  // Migracje + ponowne uruchomienie całości (deploy po deployu).
+  await applyPricingMigrations(prod);
   await applySchema(prod);
-  await prod.exec(MIG_004);
+  await applyPricingMigrations(prod);
   await applySchema(prod);
 });
 
-test('migracja 004: 5 planów dokładnie jak na stronie (ceny brutto, limity dorosłych, opisy)', { skip }, async () => {
+test('migracje cennika: 5 planów dokładnie jak w katalogu (ceny brutto, limity kont, opisy)', { skip }, async () => {
   const bySlug = await plansBySlug(prod);
   for (const p of PRICING_PLANS) {
     const r = bySlug[p.key];
@@ -80,7 +89,7 @@ test('migracja 004: 5 planów dokładnie jak na stronie (ceny brutto, limity dor
     assert.equal(r.description, p.tagline);
     assert.equal(r.price_monthly, p.priceMonthly);
     assert.equal(r.price_yearly, p.priceYearly);
-    assert.equal(r.max_members, p.maxAdults);
+    assert.equal(r.max_members, p.maxAccounts, `${p.key}: limit kont w max_members`);
     for (const c of ['max_users', 'max_groups', 'max_kids', 'max_events', 'max_storage_mb']) assert.equal(r[c], -1, `${p.key}.${c}`);
     assert.deepEqual(r.features, { all_modules: true, priority_support: p.prioritySupport });
     assert.equal(r.trial_days, 14);
@@ -92,7 +101,7 @@ test('migracja 004: 5 planów dokładnie jak na stronie (ceny brutto, limity dor
   }
 });
 
-test('migracja 004: stare plany ukryte i nieaktywne, bez duplikatów, subskrypcje nietknięte', { skip }, async () => {
+test('migracje cennika: stare plany ukryte i nieaktywne, bez duplikatów, subskrypcje nietknięte', { skip }, async () => {
   const bySlug = await plansBySlug(prod);
   assert.equal(Object.keys(bySlug).length, PRICING_PLANS.length + RETIRED_PLAN_KEYS.length);
   for (const k of RETIRED_PLAN_KEYS) {
@@ -113,14 +122,14 @@ test('schema.sql ponownie po edycji planu w panelu nie nadpisuje cen (upsert tyl
   await prod.exec(`UPDATE subscription_plans SET price_monthly = 8900 WHERE slug = 'start'`);
   await applySchema(prod);
   assert.equal((await plansBySlug(prod)).start.price_monthly, 8900);
-  await prod.exec(MIG_004); // migracja (uruchamiana raz przez runner) przywraca cennik strony
+  await applyPricingMigrations(prod); // migracje (uruchamiane raz przez runner) przywracają cennik strony
   assert.equal((await plansBySlug(prod)).start.price_monthly, 7900);
 });
 
-test('świeża baza: schema.sql + 004 → dokładnie 5 planów; provisioning wybiera start, a stary klucz → start', { skip }, async () => {
+test('świeża baza: schema.sql + migracje → dokładnie 5 planów; provisioning wybiera start, a stary klucz → start', { skip }, async () => {
   const fresh = new PGlite();
   await applySchema(fresh);
-  await fresh.exec(MIG_004);
+  await applyPricingMigrations(fresh);
   const { rows } = await fresh.query(`SELECT slug FROM subscription_plans ORDER BY sort_order`);
   assert.deepEqual(rows.map((r) => r.slug), PRICING_PLANS.map((p) => p.key));
   const pool = poolOf(fresh);
@@ -133,52 +142,66 @@ test('świeża baza: schema.sql + 004 → dokładnie 5 planów; provisioning wyb
   assert.equal((await resolveSignupPlan('standard', poolOf(prod))).key, 'start');
 });
 
-// ── Dorośli na prawdziwym SQL ────────────────────────────────────────────────
-const PEOPLE = [
-  { first_name: 'Anna', status: 'Członek', birth_date: '1980-05-01' },        // dorosła
-  { first_name: 'Bartek', status: 'Sympatyk', birth_date: null },             // brak daty → dorosły
-  { first_name: 'Cela', status: 'Gość', birth_date: '1990-01-01' },           // gość
-  { first_name: 'Darek', status: 'Członek', birth_date: '2010-03-03' },       // dziecko
-  { first_name: 'Ewa', status: 'Członek', birth_date: '2008-10-09' },         // 18 dziś
-  { first_name: 'Franek', status: 'Członek', birth_date: '2008-10-10' },      // 18 jutro
-  { first_name: 'Gosia', status: 'zarchiwizowany', birth_date: '1970-01-01' },// archiwum
-  { first_name: 'Henio', status: null, birth_date: null },                    // dorosły
-];
-
-test('countTenantAdults: tabela members jak na produkcji (status + birth_date DATE)', { skip }, async () => {
-  const pg = new PGlite();
-  await pg.exec(`CREATE TABLE members (id SERIAL PRIMARY KEY, first_name TEXT, last_name TEXT, status TEXT, birth_date DATE, home_group_id UUID)`);
-  for (const p of PEOPLE) await pg.query(`INSERT INTO members (first_name, status, birth_date) VALUES ($1, $2, $3)`, [p.first_name, p.status, p.birth_date]);
-  const r = await countTenantAdults(poolOf(pg), { today: TODAY });
-  const expected = PEOPLE.filter((p) => isAdultMember(p, { today: TODAY })).length;
-  assert.equal(expected, 4, 'Anna, Bartek, Ewa, Henio');
-  assert.deepEqual(r, { adults: expected, total: PEOPLE.length, approximate: false, columns: ['birth_date', 'status'] });
-  // Bez parametru — dzisiejsza data liczona w SQL w strefie Europe/Warsaw (nie wysypuje się).
-  const live = await countTenantAdults(poolOf(pg));
-  assert.equal(live.approximate, false);
-  assert.ok(live.adults >= 3 && live.adults <= 5);
+// ── Odczyty miesięczne: kolumna accounts (007) ───────────────────────────────
+test('migracja 007: tenant_usage_snapshots ma accounts/pending_accounts, adults już nie wymagane; worker zapisuje konta', { skip }, async () => {
+  const { rows: cols } = await prod.query(`SELECT column_name, is_nullable FROM information_schema.columns WHERE table_name = 'tenant_usage_snapshots'`);
+  const byName = Object.fromEntries(cols.map((c) => [c.column_name, c.is_nullable]));
+  assert.equal(byName.accounts, 'YES');
+  assert.equal(byName.pending_accounts, 'YES');
+  assert.equal(byName.adults, 'YES', 'historia: kolumna zostaje, ale nie jest wymagana');
+  // Stary odczyt (sprzed zmiany) przeżywa migrację.
+  await prod.exec(`INSERT INTO tenant_usage_snapshots (tenant_id, period, adults, plan_key, plan_limit, state)
+    VALUES ('00000000-0000-4000-8000-000000000001', '2026-09-01', 120, 'standard', 200, 'ok')`);
+  // Worker: tenant z bazą app_users (2 aktywne, 1 oczekujące, 1 zablokowane).
+  const tenantPg = new PGlite();
+  await tenantPg.exec(`CREATE TABLE app_users (id SERIAL PRIMARY KEY, email TEXT, is_active BOOLEAN DEFAULT TRUE, status VARCHAR(20) NOT NULL DEFAULT 'active');
+    INSERT INTO app_users (email, is_active, status) VALUES ('a@x', true, 'active'), ('b@x', true, 'active'), ('c@x', false, 'pending'), ('d@x', false, 'blocked');`);
+  const r = await recordUsageSnapshots(poolOf(prod), () => poolOf(tenantPg));
+  assert.deepEqual(r, { tenants: 1, saved: 1 });
+  const { rows } = await prod.query(`SELECT period::text AS period, accounts, pending_accounts, adults, plan_key FROM tenant_usage_snapshots ORDER BY period`);
+  assert.deepEqual(rows[0], { period: '2026-09-01', accounts: null, pending_accounts: null, adults: 120, plan_key: 'standard' });
+  assert.equal(rows.length, 2);
+  assert.deepEqual([rows[1].accounts, rows[1].pending_accounts, rows[1].adults, rows[1].plan_key], [2, 1, null, 'standard']);
+  // Ponowny zapis w tym samym miesiącu nadpisuje (bez duplikatu).
+  await tenantPg.exec(`UPDATE app_users SET status = 'active', is_active = true WHERE email = 'c@x'`);
+  await recordUsageSnapshots(poolOf(prod), () => poolOf(tenantPg));
+  const { rows: again } = await prod.query(`SELECT accounts, pending_accounts FROM tenant_usage_snapshots WHERE adults IS NULL`);
+  assert.deepEqual(again, [{ accounts: 3, pending_accounts: 0 }]);
+  await prod.exec(`DELETE FROM tenant_usage_snapshots`);
 });
 
-test('countTenantAdults: szablon v1 (membership_status, is_active) i tekstowa data ze śmieciami', { skip }, async () => {
+// ── Konta użytkowników na prawdziwym SQL ─────────────────────────────────────
+const USERS = [
+  { email: 'admin@k.pl', is_active: true, status: 'active', is_super_admin: true, role: 'superadmin' }, // liczy się
+  { email: 'lider@k.pl', is_active: true, status: 'active', role: 'lider' },                             // liczy się
+  { email: 'czl@k.pl', is_active: null, status: 'active', role: 'czlonek' },                             // NULL = aktywne
+  { email: 'mail@k.pl', is_active: false, status: 'pending', pending_kind: 'email' },                    // oczekujące
+  { email: 'zgoda@k.pl', is_active: false, status: 'pending', pending_kind: 'admin' },                   // oczekujące
+  { email: 'blok@k.pl', is_active: false, status: 'blocked' },                                           // zablokowane
+  { email: 'wyl@k.pl', is_active: false, status: 'active' },                                             // wyłączone
+  { email: 'Duzy@k.pl', is_active: true, status: 'ACTIVE ' },                                            // liczy się
+];
+
+test('countTenantAccounts: app_users jak na produkcji (status + is_active) = lustro countAccounts w JS', { skip }, async () => {
+  const pg = new PGlite();
+  await pg.exec(`CREATE TABLE app_users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email VARCHAR(255) UNIQUE NOT NULL,
+    role VARCHAR(50) DEFAULT 'user', is_active BOOLEAN DEFAULT TRUE, is_super_admin BOOLEAN DEFAULT FALSE,
+    status VARCHAR(20) NOT NULL DEFAULT 'active', pending_kind VARCHAR(10))`);
+  for (const u of USERS) {
+    await pg.query(`INSERT INTO app_users (email, role, is_active, is_super_admin, status, pending_kind) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [u.email, u.role || 'user', u.is_active, !!u.is_super_admin, u.status, u.pending_kind || null]);
+  }
+  const r = await countTenantAccounts(poolOf(pg));
+  const js = countAccounts(USERS);
+  assert.deepEqual(js, { accounts: 4, pending: 2, blocked: 2, total: 8 });
+  assert.deepEqual(r, { ...js, approximate: false, columns: ['status', 'is_active'] });
+});
+
+test('countTenantAccounts: stara baza bez kolumny status (tylko is_active) i brak tabeli', { skip }, async () => {
   const v1 = new PGlite();
-  await v1.exec(`CREATE TABLE members (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), first_name VARCHAR(100), birth_date DATE,
-    membership_status VARCHAR(50) DEFAULT 'active', is_active BOOLEAN DEFAULT TRUE, archived_at TIMESTAMPTZ)`);
-  await v1.exec(`INSERT INTO members (first_name, birth_date, membership_status, is_active, archived_at) VALUES
-    ('a', '1980-01-01', 'active', true, NULL), ('b', NULL, 'inactive', true, NULL), ('c', NULL, 'active', false, NULL),
-    ('d', NULL, 'active', NULL, NULL), ('e', NULL, 'active', true, now()), ('f', '2015-01-01', 'active', true, NULL)`);
-  const r1 = await countTenantAdults(poolOf(v1), { today: TODAY });
-  assert.equal(r1.adults, 2, 'a i d');
-  assert.deepEqual(r1.columns, ['birth_date', 'membership_status', 'is_active', 'archived_at']);
-
-  const txt = new PGlite();
-  await txt.exec(`CREATE TABLE members (id SERIAL PRIMARY KEY, status TEXT, birth_date TEXT)`);
-  await txt.exec(`INSERT INTO members (status, birth_date) VALUES ('Członek', '1980-01-01'), ('Członek', '2015-01-01'), ('Gość', NULL), ('Członek', 'kiedyś')`);
-  const ok = await countTenantAdults(poolOf(txt), { today: TODAY });
-  assert.deepEqual([ok.adults, ok.approximate], [2, false], 'tekst ISO rzutowany, „kiedyś” = brak daty');
-  await txt.exec(`INSERT INTO members (status, birth_date) VALUES ('Członek', '2020-13-45')`);
-  const bad = await countTenantAdults(poolOf(txt), { today: TODAY });
-  assert.deepEqual([bad.adults, bad.approximate, bad.total], [4, true, 5], 'nierzutowalna data → liczymy bez wieku');
-
+  await v1.exec(`CREATE TABLE app_users (id SERIAL PRIMARY KEY, email TEXT, is_active BOOLEAN DEFAULT TRUE);
+    INSERT INTO app_users (email, is_active) VALUES ('a', true), ('b', NULL), ('c', false);`);
+  assert.deepEqual(await countTenantAccounts(poolOf(v1)), { accounts: 2, pending: 0, blocked: 1, total: 3, approximate: false, columns: ['is_active'] });
   const none = new PGlite();
-  assert.deepEqual(await countTenantAdults(poolOf(none)), { adults: 0, total: 0, approximate: false, columns: [] });
+  assert.deepEqual(await countTenantAccounts(poolOf(none)), { accounts: 0, pending: 0, blocked: 0, total: 0, approximate: false, columns: [] });
 });
