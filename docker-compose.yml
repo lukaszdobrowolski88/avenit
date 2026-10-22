@@ -67,6 +67,11 @@ services:
       LIVEKIT_HOST: http://livekit:7880
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
+      # Integracje Google Workspace / Microsoft 365 (puste = tylko własne aplikacje kościołów).
+      MS_CLIENT_ID: ${MS_CLIENT_ID:-}
+      MS_CLIENT_SECRET: ${MS_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     volumes:
       - storage:/srv/storage
       # Klucze VoIP push (APNs .p8, konto serwisowe FCM) — na VPS /opt/avenit/secrets, poza repo.
@@ -110,6 +115,11 @@ services:
       LIVEKIT_HOST: http://livekit:7880
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
+      # Synchronizacja katalogu co 6 h (tokeny Microsoft client credentials / odświeżanie Google).
+      MS_CLIENT_ID: ${MS_CLIENT_ID:-}
+      MS_CLIENT_SECRET: ${MS_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     volumes:
       - storage:/srv/storage
       - ./secrets:/run/secrets/avenit:ro

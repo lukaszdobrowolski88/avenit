@@ -5,6 +5,8 @@ import CustomSelect from '../../../components/CustomSelect';
 import { useT } from '../../../i18n';
 import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
+import Can from '../../../components/Can';
+import WorkspaceIntegrations from './WorkspaceIntegrations';
 
 // Konfiguracja asystenta AI (provider + model + klucz) — zapis do integration_settings
 // (ai_provider/ai_model/ai_api_key/ai_base_url); odczyt serwerowo w fn ai-assist.
@@ -288,6 +290,10 @@ export default function IntegrationsTab() {
 
   return (
     <div className="space-y-8 max-w-3xl">
+      {/* Google Workspace / Microsoft 365 — własne fn z kontrolą manage_integrations (niezależnie od integration_settings). */}
+      <Can cap="action:settings:manage_integrations">
+        <WorkspaceIntegrations />
+      </Can>
       {denied && (
         <div className="p-4 rounded-xl flex items-start gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
           <Info size={18} className="shrink-0 mt-0.5" aria-hidden="true" />

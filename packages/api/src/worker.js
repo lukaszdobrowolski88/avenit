@@ -17,6 +17,8 @@
 //  - schedule-reminders      codziennie 18:00 Europe/Warsaw (grafik: przypomnienia + ponaglenia)
 //  - task-digest             codziennie 07:00 Europe/Warsaw (skrót zadań na dziś; nadrabianie przy starcie do 12:00)
 //  - board-import-legacy     przy starcie + codziennie 03:40 (stare tabele *_tasks → Tablice, raz na tenanta)
+//  - directory-sync          co 6 h (konta z katalogu Google Workspace / Microsoft 365 — tylko po
+//                            pierwszym ręcznym „Zastosuj” i z włączonym automatem)
 //  - process-dunning         codziennie 08:00 (baza platform; zawiesza WYŁĄCZNIE za brak płatności)
 //  - usage-snapshot          1. dnia miesiąca 04:30 Europe/Warsaw (liczba dorosłych per tenant → panel admina;
 //                            przekroczenie limitu planu niczego nie blokuje)
@@ -104,6 +106,10 @@ cron.schedule('* * * * *', exclusive(() => forEachTenant('chat-reminders', 'chat
 cron.schedule('* * * * *', exclusive(() => forEachTenant('interp-sweep', 'interp-sweep')));
 // Komunikator+: kanały służb i grup domowych — skład z zespołów/grup (dopisz/usuń/role), co 10 min.
 cron.schedule('*/10 * * * *', exclusive(() => forEachTenant('chat-channels-sync', 'chat-channels-sync')));
+
+// Integracje: konta z katalogu Google Workspace / Microsoft 365 — co 6 h (minuta 17, poza szczytem
+// innych zadań). Funkcja sama pomija kościoły bez połączenia / bez włączonego automatu.
+cron.schedule('17 */6 * * *', exclusive(() => forEachTenant('directory-sync', 'directory-sync')));
 
 // Automatyzacje: co 5 min — auto-zapis nowych oraz wykonanie należnych kroków.
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('automation', 'automation-run')));

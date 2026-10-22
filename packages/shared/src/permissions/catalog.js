@@ -574,4 +574,8 @@ export const FN_CAPABILITY = {
   // Asystent AI (koszt + dane w promptach) — domyślnie tylko administratorzy i role z '*';
   // dodatkowo serwerowy przełącznik AI_ENABLED (fn/ai-assist.js).
   'ai-assist': 'action:ai:use',
+  // Integracje Google Workspace / Microsoft 365: połączenie, ustawienia i podgląd katalogu.
+  // Zastosowanie synchronizacji wymaga dodatkowo manage_users (sprawdzane w funkcji).
+  'workspace-integration': 'action:settings:manage_integrations',
+  'directory-sync': 'action:settings:manage_integrations',
 };

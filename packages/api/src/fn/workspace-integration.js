@@ -1,0 +1,152 @@
+// Ustawienia → Integracje → Google Workspace / Microsoft 365 (Faza 1: połączenie kościoła + katalog).
+// POST /api/fn/workspace-integration { action, provider, ... }
+//   status            — stan obu dostawców (bez tokenów i sekretów), ustawienia, historia synchronizacji
+//   connect           — adres autoryzacji (Google / Microsoft) + ciasteczko wiążące przeglądarkę
+//   disconnect        — usunięcie połączenia kościoła
+//   save_settings     — ustawienia synchronizacji katalogu (włączenie automatu wymaga manage_users)
+//   save_credentials  — własna aplikacja OAuth kościoła (tylko pełny administrator, sekret szyfrowany)
+// Capability: action:settings:manage_integrations (FN_CAPABILITY) + kontrola w funkcji (access.js).
+import { config, isProd } from '../config.js';
+import { encryptPassword } from '../lib/mailcrypto.js';
+import { roleIsAdmin, exceedsCaller } from '../lib/admin-guard.js';
+import { logAccountEvent } from '../lib/account-audit.js';
+import { integrationCaller } from '../integrations/access.js';
+import {
+  PROVIDERS, isProvider, integrationRedirectUri, integrationSecret, resolveIntegrationCreds, loadProviderSettings,
+} from '../integrations/providers.js';
+import { loadConnection, publicConnection, IntegrationError } from '../integrations/tokens.js';
+import { startConnect, disconnect, NONCE_COOKIE, STATE_TTL_MS } from '../integrations/oauth.js';
+import { loadDirectorySettings, saveDirectorySettings, effectiveAllowedDomains, syncHistory, parseDomains } from '../integrations/directory.js';
+
+export const name = 'workspace-integration';
+export const isPublic = false;
+export const capability = 'action:settings:manage_integrations';
+export const rateLimit = { max: 60, timeWindow: '10 minutes' };
+
+const SETTINGS_KEYS = ['enabled', 'allowed_domains', 'default_role', 'mode', 'on_disable', 'send_invite'];
+
+async function providerStatus(db, provider, access) {
+  const [creds, own, conn, settings] = await Promise.all([
+    resolveIntegrationCreds(db, provider), loadProviderSettings(db, provider).catch(() => null),
+    loadConnection(db, provider), loadDirectorySettings(db, provider),
+  ]);
+  const { rows } = await db.query(`SELECT value FROM app_settings WHERE key = $1`, [`sso_${provider}_enabled`]).catch(() => ({ rows: [] }));
+  const effective = await effectiveAllowedDomains(db, settings, conn);
+  return {
+    provider,
+    available: !!(creds.clientId && creds.clientSecret),
+    creds_source: creds.source,
+    own_client_id: own?.client_id || null,
+    own_secret_set: !!own?.client_secret_enc,
+    own_ms_tenant: own?.ms_tenant || null,
+    redirect_uri: integrationRedirectUri(provider),
+    sso_enabled: rows[0]?.value === 'on',
+    connection: publicConnection(conn),
+    settings,
+    allowed_domains_effective: effective.domains,
+    allowed_domains_source: effective.source,
+    history: await syncHistory(db, provider, 10),
+    can_apply: !!access.canUsers,
+    can_credentials: !!access.fullAdmin,
+  };
+}
+
+export async function workspaceAction(req, access) {
+  const db = req.db;
+  const b = req.body || {};
+  const action = String(b.action || 'status');
+  const provider = String(b.provider || '');
+  if (!access.canIntegrations) throw new IntegrationError('Integracjami zarządza osoba z uprawnieniem „Zarządzaj integracjami”.', { status: 403, code: 'forbidden' });
+  if (action !== 'status' && !isProvider(provider)) throw new IntegrationError('Nieznany dostawca.', { status: 400 });
+  const actor = access.caller?.email || null;
+
+  if (action === 'status') {
+    const out = {};
+    for (const p of PROVIDERS) out[p] = await providerStatus(db, p, access);
+    return { providers: out, purposes: ['directory'] };
+  }
+
+  if (action === 'connect') {
+    const creds = await resolveIntegrationCreds(db, provider);
+    const { url, nonce } = await startConnect(db, {
+      provider, purpose: 'directory', tenant: req.tenant.subdomain, user: { id: access.caller.id, email: actor }, creds,
+    });
+    return { url, __cookie: nonce };
+  }
+
+  if (action === 'disconnect') {
+    const removed = await disconnect(db, provider);
+    if (removed) await logAccountEvent(db, { email: actor, action: 'integration_disconnected', actor, detail: provider });
+    return { success: true, removed };
+  }
+
+  if (action === 'save_settings') {
+    const patch = {};
+    for (const k of SETTINGS_KEYS) if (b.settings && k in b.settings) patch[k] = b.settings[k];
+    if ('allowed_domains' in patch) patch.allowed_domains = parseDomains(patch.allowed_domains);
+    const cur = await loadDirectorySettings(db, provider);
+    // Automat zakłada / blokuje konta bez udziału człowieka — jak „Zastosuj”: także manage_users.
+    const touchesAccounts = (patch.enabled === true && !cur.enabled)
+      || (cur.enabled && ((patch.mode && patch.mode !== cur.mode) || (patch.on_disable && patch.on_disable !== cur.on_disable)));
+    if (touchesAccounts && !access.canUsers) {
+      throw new IntegrationError('Synchronizację automatyczną włącza osoba z uprawnieniem „Zarządzaj użytkownikami”.', { status: 403, code: 'forbidden' });
+    }
+    if (patch.enabled === true && !cur.first_applied_at) {
+      throw new IntegrationError('Najpierw wykonaj podgląd i zastosuj synchronizację ręcznie.', { status: 409, code: 'preview_first' });
+    }
+    if ('default_role' in patch) {
+      const role = String(patch.default_role || '').trim() || 'czlonek';
+      if (await roleIsAdmin(db, role)) throw new IntegrationError('Rola administratora nie może być domyślną rolą kont z katalogu.', { status: 403 });
+      if (!access.fullAdmin && await exceedsCaller(db, req.tenant.db_name, { role, userId: null }, access.caller)) {
+        throw new IntegrationError('Nie możesz ustawić domyślnej roli z uprawnieniami, których sam nie masz.', { status: 403 });
+      }
+      const { rows } = await db.query(`SELECT 1 FROM app_roles WHERE key = $1`, [role]);
+      if (!rows[0]) throw new IntegrationError('Nieznana rola.', { status: 400 });
+      patch.default_role = role;
+    }
+    const settings = await saveDirectorySettings(db, provider, patch, actor);
+    return { success: true, settings };
+  }
+
+  if (action === 'save_credentials') {
+    if (!access.fullAdmin) throw new IntegrationError('Własną aplikację OAuth ustawia tylko administrator.', { status: 403, code: 'forbidden' });
+    const clientId = String(b.client_id ?? '').trim().slice(0, 300);
+    const secret = b.client_secret ? String(b.client_secret).trim().slice(0, 500) : '';
+    const msTenant = provider === 'microsoft' ? String(b.ms_tenant ?? '').trim().slice(0, 100) : null;
+    if (!clientId) {
+      await db.query(
+        `UPDATE workspace_integration_settings SET client_id = NULL, client_secret_enc = NULL, ms_tenant = NULL, updated_by = $2, updated_at = now() WHERE provider = $1`,
+        [provider, actor]);
+      return { success: true, cleared: true };
+    }
+    const enc = secret ? await encryptPassword(secret, integrationSecret()) : null;
+    await db.query(
+      `INSERT INTO workspace_integration_settings (provider, client_id, client_secret_enc, ms_tenant, updated_by, updated_at)
+       VALUES ($1, $2, $3, $4, $5, now())
+       ON CONFLICT (provider) DO UPDATE SET client_id = $2, client_secret_enc = COALESCE($3, workspace_integration_settings.client_secret_enc),
+         ms_tenant = $4, updated_by = $5, updated_at = now()`,
+      [provider, clientId, enc, msTenant || null, actor]);
+    return { success: true };
+  }
+
+  throw new IntegrationError('Nieznana akcja.', { status: 400 });
+}
+
+export default async function handler(req, reply) {
+  try {
+    const access = await integrationCaller(req.db, req.user.id, req.tenant.db_name);
+    const out = await workspaceAction(req, access);
+    if (out.__cookie) {
+      // Nonce na domenie nadrzędnej — czytelny na centralnym callbacku app.<domena> (jak SSO).
+      reply.setCookie(NONCE_COOKIE, out.__cookie, {
+        httpOnly: true, secure: isProd, sameSite: 'lax', path: '/', domain: `.${config.APP_DOMAIN}`, maxAge: Math.floor(STATE_TTL_MS / 1000),
+      });
+      delete out.__cookie;
+    }
+    return reply.send(out);
+  } catch (e) {
+    if (e instanceof IntegrationError) return reply.code(e.status || 400).send({ error: e.message, code: e.code });
+    req.log.error({ err: e }, 'workspace-integration failed');
+    return reply.code(500).send({ error: 'Błąd integracji.' });
+  }
+}

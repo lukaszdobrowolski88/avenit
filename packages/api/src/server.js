@@ -85,6 +85,9 @@ export async function buildServer() {
   // Globalny callback SSO (jeden URI przekierowania dla wszystkich subdomen; tenant ze state).
   const { default: ssoCallbackRoutes } = await import('./auth/sso-callback.js');
   await app.register(ssoCallbackRoutes);
+  // Globalny callback integracji Google Workspace / Microsoft 365 (ten sam model: tenant ze state).
+  const { default: integrationRoutes } = await import('./integrations/routes.js');
+  await app.register(integrationRoutes);
   // Publiczny formularz zgłoszeniowy ze strony głównej (avenit.pl).
   const { default: landingRoutes } = await import('./landing/routes.js');
   await app.register(landingRoutes);
