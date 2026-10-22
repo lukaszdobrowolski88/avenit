@@ -67,6 +67,16 @@
         "mainEntity": [
           {
             "@type": "Question",
+            "name": "Jak działa tłumaczenie na żywo?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Przy nabożeństwie uruchamiasz kanały w kilku językach. Tłumacz mówi do mikrofonu w przeglądarce albo w aplikacji, a słuchacze skanują kod QR, wybierają język i słuchają na swoich telefonach w słuchawkach, bez zakładania konta." }
+          },
+          {
+            "@type": "Question",
+            "name": "Czy Avenit działa z Microsoft 365 albo Google Workspace?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Tak. Konta z katalogu kościoła trafiają do Avenit automatycznie albo do kolejki zatwierdzeń, wydarzenia i służby synchronizują się z Outlookiem i Kalendarzem Google w obie strony, a pliki z OneDrive, SharePointa i Dysku Google są dostępne bez kopiowania. Połączenie włącza raz administrator kościoła." }
+          },
+          {
+            "@type": "Question",
             "name": "W jakich językach działa Avenit?",
             "acceptedAnswer": { "@type": "Answer", "text": "Po polsku, angielsku i ukraińsku. Każdy użytkownik wybiera swój język w aplikacji, w przeglądarce i na telefonie." }
           },
@@ -83,7 +93,7 @@
           {
             "@type": "Question",
             "name": "Ile kosztuje aplikacja dla kościoła?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Od 79 zł brutto miesięcznie. Cena zależy od liczby dorosłych w bazie członków, a wszystkie moduły są w każdym planie: Start do 50 dorosłych 79 zł, Wspólnota do 150 dorosłych 159 zł, Kościół do 400 dorosłych 299 zł, Kościół+ do 1000 dorosłych 499 zł miesięcznie. Płatność roczna to 2 miesiące gratis. Okres próbny bez karty płatniczej." }
+            "acceptedAnswer": { "@type": "Answer", "text": "Od 79 zł brutto miesięcznie. Cena zależy od liczby kont użytkowników w aplikacji, a wszystkie moduły są w każdym planie: Start do 50 kont 79 zł, Wspólnota do 150 kont 159 zł, Kościół do 400 kont 299 zł, Kościół+ do 1000 kont 499 zł miesięcznie. Płatność roczna to 2 miesiące gratis. Okres próbny bez karty płatniczej." }
           },
           {
             "@type": "Question",
@@ -563,6 +573,47 @@
     .vc-ctl svg { width: 1.3em; height: 1.3em; }
     @media (max-width: 900px) { .calls { grid-template-columns: minmax(0, 1fr); } .calls-phone { font-size: 13px; } }
 
+    /* ── tłumaczenie na żywo ── */
+    .tl { background: var(--kurkuma-j); }
+    .tl .qa li { border-color: rgba(42, 35, 18, .16); }
+    .tl .qa li > span { color: #4F4426; }
+    .tl-note { margin-top: 18px; font-size: 15px; color: #4F4426; }
+    .lt { position: absolute; inset: 0; background: var(--papier); display: flex; flex-direction: column; }
+    .lt-head { padding: .3em 1.3em .9em; }
+    .lt-head b { display: block; font-size: 1.15em; letter-spacing: -.01em; }
+    .lt-head small { display: flex; align-items: center; gap: .4em; font-size: .76em; color: var(--pomoc); margin-top: .2em; }
+    .lt-head small i { width: .55em; height: .55em; border-radius: 50%; background: #E0483A; }
+    .lt-list { margin: 0 1em; background: var(--biel); border-radius: 1.2em; padding: .35em; }
+    .lt-row { display: flex; align-items: center; gap: .7em; padding: .75em .8em; border-radius: .9em; font-size: .86em; }
+    .lt-row + .lt-row { margin-top: .1em; }
+    .lt-row.on { background: var(--kurkuma-j); }
+    .lt-row .code { width: 2.6em; height: 2.6em; border-radius: 50%; background: var(--papier-2); display: grid; place-items: center; font-weight: 800; font-size: .82em; flex: none; }
+    .lt-row.on .code { background: var(--slod); color: var(--kurkuma); }
+    .lt-row .tx { flex: 1; min-width: 0; }
+    .lt-row .tx b { display: block; }
+    .lt-row .tx small { display: block; font-size: .85em; color: var(--pomoc); }
+    .lt-row .rd { width: 1.2em; height: 1.2em; border-radius: 50%; box-shadow: inset 0 0 0 .14em rgba(42, 35, 18, .3); flex: none; }
+    .lt-row.on .rd { box-shadow: inset 0 0 0 .38em var(--slod); }
+    .lt-play { margin: 1em; display: flex; align-items: center; justify-content: center; gap: .5em; padding: .95em; border-radius: 99em; background: var(--kurkuma); color: var(--slod); font-weight: 800; font-size: .95em; }
+    .lt-play svg { width: 1.2em; height: 1.2em; }
+    .lt-wave { display: flex; align-items: flex-end; justify-content: center; gap: .22em; height: 2.4em; margin-top: auto; padding-bottom: .4em; }
+    .lt-wave i { display: block; width: .32em; height: 1.2em; border-radius: .2em; background: var(--slod); opacity: .75; animation: wave 1.1s ease-in-out infinite; }
+    .lt-wave i:nth-child(2n) { height: 1.8em; } .lt-wave i:nth-child(3n) { height: .8em; }
+    .lt-wave i:nth-child(2n) { animation-delay: .15s; } .lt-wave i:nth-child(3n) { animation-delay: .3s; } .lt-wave i:nth-child(5n) { animation-delay: .45s; }
+    @keyframes wave { 0%, 100% { height: .5em; } 50% { height: 2em; } }
+    .lt-foot { display: flex; justify-content: space-between; padding: .2em 1.4em 1.8em; font-size: .74em; color: var(--pomoc); }
+    .lt-foot b { color: var(--slod); }
+
+    /* ── integracje ── */
+    .intg { margin-top: clamp(36px, 4.5vw, 56px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 clamp(20px, 3vw, 48px); }
+    .intg > div { padding-top: 22px; border-top: 1px solid var(--linia); }
+    .intg i { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--papier-2); color: var(--slod); }
+    .intg i .ico { width: 22px; height: 22px; }
+    .intg h3 { margin-top: 16px; font-size: clamp(20px, 1.6vw, 23px); font-weight: 800; letter-spacing: -.02em; color: var(--slod); line-height: 1.25; }
+    .intg p { margin-top: 8px; font-size: 16.5px; line-height: 1.6; }
+    .intg-note { margin-top: 28px; font-size: 15px; color: var(--pomoc); }
+    @media (max-width: 900px) { .intg { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
     /* ── SChWro ── */
     .proof { background: var(--kurkuma-j); padding: clamp(72px, 9vw, 128px) 0; }
     .proof-in { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 40px clamp(32px, 5vw, 96px); align-items: center; }
@@ -711,6 +762,11 @@
       <symbol id="i-kanban" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/></symbol>
       <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-8"/></symbol>
       <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></symbol>
+      <symbol id="i-lang" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></symbol>
+      <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></symbol>
+      <symbol id="i-sync" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/></symbol>
+      <symbol id="i-idcard" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.5"/><circle cx="8" cy="12" r="2.5"/><path d="M14 10h5"/><path d="M14 14h4"/></symbol>
+      <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H8a6 6 0 1 1 5.7-7.9A4.5 4.5 0 1 1 17.5 19z"/></symbol>
     </defs>
   </svg>
 
@@ -1147,6 +1203,37 @@
       </div>
     </section>
 
+    <!-- ═══════════ TŁUMACZENIE NA ŻYWO ═══════════ -->
+    <section class="sec tl" id="tlumaczenie" aria-labelledby="tl-h">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="dw h2" id="tl-h" data-rv><span>Tłumaczenie na żywo<span class="pt">.</span></span><span class="l">Każdy słucha w swoim języku<span class="pt">.</span></span></h2>
+          <p data-rv style="--d:.1s">Tłumacz mówi do mikrofonu, a goście słuchają w słuchawkach na swoich telefonach. Bez zakładania kont i bez wypożyczania odbiorników.</p>
+        </div>
+        <div class="calls">
+          <div data-rv>
+            <ul class="qa">
+              <li><b>Kilka języków naraz<span class="pt">.</span></b><span>Przy nabożeństwie uruchamiasz kanały, np. angielski, ukraiński i rosyjski. Tłumacz mówi z konsoli w przeglądarce albo z aplikacji.</span></li>
+              <li><b>Słuchacz nie potrzebuje konta<span class="pt">.</span></b><span>Skanuje kod QR z plakatu, który drukujesz jednym kliknięciem, wybiera język i słucha. W aplikacji Avenit słucha też przy zablokowanym ekranie iPhone'a.</span></li>
+              <li><b>Tłumacz może siedzieć poza salą<span class="pt">.</span></b><span>Kanał „Oryginał” przesyła mu dźwięk z miksera. Zmiana tłumacza w trakcie to jedno „Przejmij mikrofon”.</span></li>
+              <li><b>Tłumacze jak każda służba<span class="pt">.</span></b><span>Skład zespołu, języki, grafik na nabożeństwa i licznik słuchaczy na żywo. Po potwierdzeniu służby tłumacz od razu ma swój kanał.</span></li>
+            </ul>
+            <p class="tl-note">Sprawdzone przy kilkuset słuchaczach jednocześnie. Tłumaczy człowiek, nie automat.</p>
+          </div>
+          <div class="calls-phone" aria-hidden="true">
+            <div class="phone"><div class="scr"><div class="lt">
+              <div class="sb"><span>9:41</span><span class="bt"><s></s><i></i></span></div>
+              <div class="lt-head"><b>Nabożeństwo niedzielne</b><small><i></i>Tłumaczenie na żywo</small></div>
+              <div class="lt-list"><div class="lt-row on"><span class="code">EN</span><span class="tx"><b>English</b><small>tłumaczy Anna</small></span><span class="rd"></span></div><div class="lt-row"><span class="code">UK</span><span class="tx"><b>Українська</b><small>tłumaczy Olena</small></span><span class="rd"></span></div><div class="lt-row"><span class="code">RU</span><span class="tx"><b>Русский</b><small>tłumaczy Igor</small></span><span class="rd"></span></div></div>
+              <div class="lt-play"><svg class="ico"><use href="#i-headphones"/></svg>Słuchaj</div>
+              <div class="lt-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="lt-foot"><span><b>128</b> słuchaczy</span><span>bez konta</span></div>
+            </div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ═══════════ WSZĘDZIE (słód) ═══════════ -->
     <section class="sec dark" id="wszedzie" aria-labelledby="ws-h">
       <div class="wrap">
@@ -1155,7 +1242,7 @@
           <div class="fact" data-rv>
             <i class="fi"><svg class="ico"><use href="#i-mobile"/></svg></i>
             <h3>Aplikacja na telefon</h3>
-            <p>iPhone i Android. Powiadomienia push o służbach, zmianach i nowych prośbach o modlitwę.</p>
+            <p>iPhone i Android, z tymi samymi funkcjami co w przeglądarce. Powiadomienia push o służbach, zmianach i nowych prośbach o modlitwę.</p>
             <div class="stores" aria-label="Pobierz aplikację Avenit"><a href="https://apps.apple.com/pl/app/id6820247671" target="_blank" rel="noopener" data-track="store-appstore-facts"><img src="/assets/brand/stores/appstore-pl.svg" alt="Pobierz w App Store" width="120" height="40" loading="lazy" /></a><a href="https://play.google.com/store/apps/details?id=pl.avenit.app&amp;hl=pl" target="_blank" rel="noopener" data-track="store-googleplay-facts"><img src="/assets/brand/stores/googleplay-pl.png" alt="Pobierz z Google Play" width="148" height="44" loading="lazy" /></a></div>
           </div>
           <div class="fact" data-rv style="--d:.08s">
@@ -1175,6 +1262,22 @@
             <p>Osobna baza Waszego kościoła, kopia co noc i umowa powierzenia danych.</p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ INTEGRACJE ═══════════ -->
+    <section class="sec" id="integracje" aria-labelledby="int-h">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="dw h2" id="int-h" data-rv><span>Microsoft 365 i Google Workspace<span class="pt">.</span></span><span class="l">Avenit pracuje z tym, czego już używacie<span class="pt">.</span></span></h2>
+          <p data-rv style="--d:.1s">Konta, kalendarze i pliki kościoła łączą się z Avenit. Bez przepisywania i bez kopiowania plików.</p>
+        </div>
+        <div class="intg">
+          <div data-rv><i><svg class="ico"><use href="#i-idcard"/></svg></i><h3>Konta z katalogu</h3><p>Osoby z domeny kościoła, np. @twojkosciol.pl, trafiają do Avenit same albo do kolejki zatwierdzeń. Przed zmianą widzisz podgląd.</p></div>
+          <div data-rv style="--d:.06s"><i><svg class="ico"><use href="#i-sync"/></svg></i><h3>Kalendarz w obie strony</h3><p>Wydarzenia i służby od razu w Outlooku i Kalendarzu Google, także we wspólnym kalendarzu kościoła. Zmiany wracają do Avenit.</p></div>
+          <div data-rv style="--d:.12s"><i><svg class="ico"><use href="#i-cloud"/></svg></i><h3>Pliki bez kopiowania</h3><p>Pliki z OneDrive, SharePointa i Dysku Google w wiadomościach, wydarzeniach i Plikach, z zachowaniem ich uprawnień.</p></div>
+        </div>
+        <p class="intg-note" data-rv>Logowanie kontem Google albo Microsoft. Połączenie włącza raz administrator Microsoft 365 lub Google Workspace Waszego kościoła.</p>
       </div>
     </section>
 
@@ -1209,6 +1312,7 @@
           <button class="mod" type="button" role="switch" aria-checked="false">Materiały<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="false">Poczta<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="false">Moduły własne<span class="sw" aria-hidden="true"></span></button>
+          <button class="mod" type="button" role="switch" aria-checked="true">Tłumaczenia<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="true">Rozmowy i spotkania online<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="false">Projekty i zadania<span class="sw" aria-hidden="true"></span></button>
         </div>
@@ -1220,7 +1324,7 @@
       <div class="wrap">
         <div class="sec-head">
           <h2 class="dw h2" id="cen-h" data-rv><span>Ile to kosztuje<span class="pt">?</span></span><span class="l">Płacisz za wielkość zboru, nie za moduły<span class="pt">.</span></span></h2>
-          <p data-rv style="--d:.1s">Wszystkie moduły są w każdym planie, a z aplikacji korzysta cały zbór, bez limitu użytkowników. Liczymy tylko dorosłych w bazie członków: dzieci, goście i osoby zarchiwizowane się nie liczą.</p>
+          <p data-rv style="--d:.1s">Wszystkie moduły są w każdym planie. Liczymy aktywne konta użytkowników w aplikacji: konta oczekujące i zablokowane się nie liczą, a osoby w bazie członków bez konta (np. dzieci, goście) są bez limitu.</p>
         </div>
 
         <div class="price-bar" data-rv>
@@ -1234,23 +1338,23 @@
         <div class="plans" aria-live="polite">
           <div class="plan" data-rv data-m="79" data-y="790" data-ym="65,83 zł miesięcznie">
             <h3>Start</h3>
-            <p class="size">do <b>50</b> dorosłych</p>
+            <p class="size">do <b>50</b> kont użytkowników</p>
             <p class="amount"><b class="num">79</b><span>zł / mies.</span></p>
             <p class="per"></p>
-            <p class="extra">Dla małego zboru, który chce uporządkować niedzielę i ludzi.</p>
+            <p class="extra">Dla małego kościoła, który chce uporządkować niedzielę i ludzi.</p>
             <a class="pill" href="#kontakt" data-plan="Start" data-track="cta-pricing-start">Wybierz Start</a>
           </div>
           <div class="plan" data-rv style="--d:.06s" data-m="159" data-y="1 590" data-ym="132,50 zł miesięcznie">
             <h3>Wspólnota</h3>
-            <p class="size">do <b>150</b> dorosłych</p>
+            <p class="size">do <b>150</b> kont użytkowników</p>
             <p class="amount"><b class="num">159</b><span>zł / mies.</span></p>
             <p class="per"></p>
-            <p class="extra">Dla zboru z kilkoma służbami, grupami domowymi i szkółką.</p>
+            <p class="extra">Dla kościoła z kilkoma służbami, grupami domowymi i szkółką.</p>
             <a class="pill" href="#kontakt" data-plan="Wspólnota" data-track="cta-pricing-wspolnota">Wybierz Wspólnotę</a>
           </div>
           <div class="plan" data-rv style="--d:.12s" data-m="299" data-y="2 990" data-ym="249,17 zł miesięcznie">
             <h3>Kościół</h3>
-            <p class="size">do <b>400</b> dorosłych</p>
+            <p class="size">do <b>400</b> kont użytkowników</p>
             <p class="amount"><b class="num">299</b><span>zł / mies.</span></p>
             <p class="per"></p>
             <p class="extra">Dla kościoła z wieloma zespołami, młodzieżówką i finansami służb.</p>
@@ -1258,16 +1362,16 @@
           </div>
           <div class="plan" data-rv style="--d:.18s" data-m="499" data-y="4 990" data-ym="415,83 zł miesięcznie">
             <h3>Kościół+</h3>
-            <p class="size">do <b>1000</b> dorosłych</p>
+            <p class="size">do <b>1000</b> kont użytkowników</p>
             <p class="amount"><b class="num">499</b><span>zł / mies.</span></p>
             <p class="per"></p>
             <p class="extra">Dla dużego kościoła. Z priorytetowym wsparciem.</p>
             <a class="pill" href="#kontakt" data-plan="Kościół+" data-track="cta-pricing-kosciolplus">Wybierz Kościół+</a>
           </div>
           <div class="plan wide" data-rv>
-            <div><h3>Sieć</h3><p class="size">powyżej <b>1000</b> dorosłych, wiele lokalizacji, denominacje</p></div>
+            <div><h3>Sieć</h3><p class="size">powyżej <b>1000</b> kont użytkowników, wiele lokalizacji, denominacje</p></div>
             <p class="amount"><b class="num">od 899</b><span>zł / mies.</span></p>
-            <p class="extra">Wycena indywidualna: kampusy, wdrożenie dla wielu zborów i priorytetowe wsparcie.</p>
+            <p class="extra">Wycena indywidualna: kampusy, wdrożenie dla wielu kościołów i priorytetowe wsparcie.</p>
             <a class="pill" href="#kontakt" data-plan="Sieć" data-track="cta-pricing-siec">Porozmawiajmy</a>
           </div>
         </div>
@@ -1276,7 +1380,7 @@
           <h3>W każdym planie<span class="pt">.</span></h3>
           <ul>
             <li><svg class="ico"><use href="#i-check"/></svg><span><b>Wszystkie moduły</b>, bez dopłat za kolejne</span></li>
-            <li><svg class="ico"><use href="#i-check"/></svg><span><b>Bez limitu użytkowników</b>: loguje się cały zbór</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>Baza członków bez limitu</b>: płacicie tylko za konta w aplikacji</span></li>
             <li><svg class="ico"><use href="#i-check"/></svg><span>Aplikacja na <b>iPhone'a i Androida</b> oraz wersja w przeglądarce</span></li>
             <li><svg class="ico"><use href="#i-check"/></svg><span>Po <b>polsku, angielsku i ukraińsku</b></span></li>
             <li><svg class="ico"><use href="#i-check"/></svg><span><b>Dane w UE</b>, osobna baza i kopia co noc</span></li>
@@ -1327,6 +1431,14 @@
             <p>Po polsku, angielsku i ukraińsku. Każdy użytkownik wybiera swój język w aplikacji, w przeglądarce i na telefonie.</p>
           </details>
           <details>
+            <summary>Jak działa tłumaczenie na żywo?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
+            <p>Przy nabożeństwie uruchamiasz kanały w kilku językach. Tłumacz mówi do mikrofonu w przeglądarce albo w aplikacji, a słuchacze skanują kod QR, wybierają język i słuchają na swoich telefonach w słuchawkach, bez zakładania konta.</p>
+          </details>
+          <details>
+            <summary>Czy Avenit działa z Microsoft 365 albo Google Workspace?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
+            <p>Tak. Konta z katalogu kościoła trafiają do Avenit automatycznie albo do kolejki zatwierdzeń, wydarzenia i służby synchronizują się z Outlookiem i Kalendarzem Google w obie strony, a pliki z OneDrive, SharePointa i Dysku Google są dostępne bez kopiowania. Połączenie włącza raz administrator kościoła.</p>
+          </details>
+          <details>
             <summary>Czy jest aplikacja mobilna?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
             <p>Tak. Avenit działa w przeglądarce oraz jako aplikacja mobilna na iOS i Androida, z powiadomieniami push dla członków i służb. Pobierzesz ją z <a href="https://apps.apple.com/pl/app/id6820247671" target="_blank" rel="noopener">App Store</a> i <a href="https://play.google.com/store/apps/details?id=pl.avenit.app&amp;hl=pl" target="_blank" rel="noopener">Google Play</a>.</p>
           </details>
@@ -1336,7 +1448,7 @@
           </details>
           <details>
             <summary>Ile kosztuje aplikacja dla kościoła?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
-            <p>Od 79 zł brutto miesięcznie. Cena zależy od liczby dorosłych w bazie członków, a wszystkie moduły są w każdym planie. Zobacz <a href="#cennik">cennik</a>. Na start umawiasz prezentację przez <a href="#kontakt">formularz kontaktowy</a> i dostajesz okres próbny bez podawania karty płatniczej.</p>
+            <p>Od 79 zł brutto miesięcznie. Cena zależy od liczby kont użytkowników w aplikacji, a wszystkie moduły są w każdym planie. Zobacz <a href="#cennik">cennik</a>. Na start umawiasz prezentację przez <a href="#kontakt">formularz kontaktowy</a> i dostajesz okres próbny bez podawania karty płatniczej.</p>
           </details>
           <details>
             <summary>Czy Avenit jest zgodny z RODO?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
@@ -1422,6 +1534,8 @@
           <h2 id="f-prod">Produkt</h2>
           <a href="#sluzby">Służby</a>
           <a href="#rozmowy">Rozmowy i spotkania</a>
+          <a href="#tlumaczenie">Tłumaczenie na żywo</a>
+          <a href="#integracje">Microsoft 365 i Google</a>
           <a href="#wszedzie">Telefon i przeglądarka</a>
           <a href="#moduly">Moduły</a>
           <a href="#cennik">Cennik</a>
