@@ -296,7 +296,7 @@ export function startPlaybackService(title: string, text: string, mode: 'listen'
   try {
     const ok =
       mode === 'console'
-        ? (m.start as unknown as (t: string, x: string, mode: string) => boolean)(title, text, 'console') === true
+        ? m.start(title, text, 'console') === true
         : m.start(title, text) === true;
     if (ok) serviceMode = mode;
     return ok;

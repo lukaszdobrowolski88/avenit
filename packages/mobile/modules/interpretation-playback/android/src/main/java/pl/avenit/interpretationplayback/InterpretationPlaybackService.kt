@@ -20,7 +20,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 
 /**
- * Usługa pierwszoplanowa (mediaPlayback) na czas słuchania tłumaczenia na żywo.
+ * Usługa pierwszoplanowa na czas słuchania tłumaczenia na żywo (tryb „listen”: mediaPlayback)
+ * albo zmiany tłumacza w konsoli (tryb „console”: mediaPlayback + microphone — bez typu microphone
+ * Android 11+ odcina mikrofon apce w tle, a 14+ wymaga FOREGROUND_SERVICE_MICROPHONE i przyznanego
+ * RECORD_AUDIO PRZED startForeground; start tylko z apki na wierzchu — dotknięcie „Dołącz”).
  *
  * Bez niej Android przy wygaszonym ekranie / apce w tle usypia proces (i Wi-Fi), a dźwięk WebRTC
  * się urywa. Usługa:
@@ -89,21 +92,54 @@ class InterpretationPlaybackService : Service() {
   }
 
   private fun enterForeground(): Boolean {
-    val notification = buildNotification(this, title, text)
+    val notification = buildNotification(this, title, text, mode)
+    val console = mode == MODE_CONSOLE
     return try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-      } else {
-        startForeground(NOTIFICATION_ID, notification)
-      }
+      startForegroundTyped(notification, console)
       inForeground = true
       true
     } catch (e: Exception) {
       // Android 12+: ForegroundServiceStartNotAllowedException (start z tła), 14+: SecurityException
-      // (brak uprawnienia typu). JS wraca wtedy do trybu „nie wyłączaj ekranu”.
-      Log.w(TAG, "startForeground failed", e)
+      // (brak uprawnienia typu / RECORD_AUDIO). JS wraca wtedy do trybu „nie wyłączaj ekranu”.
+      Log.w(TAG, "startForeground failed (console=$console)", e)
+      if (console) {
+        // Konsola bez typu microphone: i tak musimy wejść na pierwszy plan (umowa
+        // startForegroundService), więc próbujemy samego mediaPlayback — odsłuch gra w tle,
+        // a JS dostaje onFailed i trzyma ekran włączony (mikrofon w tle nie jest pewny).
+        try {
+          startForegroundTyped(notification, false)
+          inForeground = true
+          notifyFailed()
+          return true
+        } catch (e2: Exception) {
+          Log.w(TAG, "startForeground media fallback failed", e2)
+        }
+      }
       inForeground = false
       false
+    }
+  }
+
+  private fun startForegroundTyped(notification: Notification, console: Boolean) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && console) {
+      startForeground(
+        NOTIFICATION_ID,
+        notification,
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+      )
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+    } else {
+      startForeground(NOTIFICATION_ID, notification)
+    }
+  }
+
+  /** Zmiana trybu na działającej usłudze (słuchanie ↔ konsola) — nowy typ usługi i powiadomienie. */
+  fun switchMode() {
+    if (!enterForeground()) {
+      wanted = false
+      notifyFailed()
+      shutdown()
     }
   }
 
@@ -112,7 +148,7 @@ class InterpretationPlaybackService : Service() {
     if (!inForeground) return
     try {
       val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-      nm.notify(NOTIFICATION_ID, buildNotification(this, title, text))
+      nm.notify(NOTIFICATION_ID, buildNotification(this, title, text, mode))
     } catch (e: Exception) {
       // Android 13+ bez zgody na powiadomienia — usługa działa dalej, powiadomienie ukryte.
       Log.w(TAG, "notify failed", e)
@@ -204,6 +240,9 @@ class InterpretationPlaybackService : Service() {
     private const val NOTIFICATION_ID = 41207
     private const val ACTION_STOP = "pl.avenit.interpretationplayback.action.STOP"
     private const val STOP_LABEL = "Zatrzymaj"
+    private const val END_LABEL = "Zakończ"
+    const val MODE_LISTEN = "listen"
+    const val MODE_CONSOLE = "console"
     private const val WAKE_LOCK_TIMEOUT_MS = 6L * 60L * 60L * 1000L
     const val REASON_NOTIFICATION = "notification"
     const val REASON_TASK_REMOVED = "task_removed"
@@ -215,6 +254,7 @@ class InterpretationPlaybackService : Service() {
     @Volatile private var wanted = false
     @Volatile private var title = "Słuchasz tłumaczenia"
     @Volatile private var text = ""
+    @Volatile private var mode = MODE_LISTEN
 
     /** Zdarzenia dla modułu (ustawia je InterpretationPlaybackModule). */
     @Volatile var onStopRequested: ((String) -> Unit)? = null
@@ -227,12 +267,17 @@ class InterpretationPlaybackService : Service() {
      * Start (albo — gdy już działa — tylko nowy tekst powiadomienia). Wywołuj, gdy użytkownik
      * zaczyna słuchać (apka na wierzchu): Android 12+ nie pozwala uruchomić usługi z tła.
      */
-    fun start(context: Context, newTitle: String, newText: String): Boolean {
+    fun start(context: Context, newTitle: String, newText: String, newMode: String = MODE_LISTEN): Boolean {
       title = newTitle
       text = newText
+      val modeChanged = newMode != mode
+      mode = newMode
       val running = instance
       if (wanted && running != null) {
-        main.post { instance?.refreshNotification() }
+        main.post {
+          val svc = instance ?: return@post
+          if (modeChanged) svc.switchMode() else svc.refreshNotification()
+        }
         return true
       }
       wanted = true
@@ -286,7 +331,7 @@ class InterpretationPlaybackService : Service() {
     private fun resId(context: Context, name: String, type: String): Int =
       context.resources.getIdentifier(name, type, context.packageName)
 
-    private fun buildNotification(context: Context, title: String, text: String): Notification {
+    private fun buildNotification(context: Context, title: String, text: String, mode: String): Notification {
       // Dotknięcie = powrót do działającej aplikacji (ekran słuchacza jest na wierzchu stosu).
       // Celowo bez linku avenit://… — otworzyłby DRUGI ekran słuchacza (podwójny dźwięk).
       val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
@@ -321,7 +366,7 @@ class InterpretationPlaybackService : Service() {
         .setPriority(NotificationCompat.PRIORITY_LOW)
         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-        .addAction(android.R.drawable.ic_media_pause, STOP_LABEL, stopPending)
+        .addAction(android.R.drawable.ic_media_pause, if (mode == MODE_CONSOLE) END_LABEL else STOP_LABEL, stopPending)
       if (text.isNotEmpty()) builder.setContentText(text)
       if (contentIntent != null) builder.setContentIntent(contentIntent)
       return builder.build()

@@ -119,6 +119,14 @@ Brak dokładnych alarmów i lokalizacji w tle.
   aplikacji. Powiadomienie »Słuchasz tłumaczenia« z przyciskiem »Zatrzymaj« jest widoczne przez cały czas.
   Przerwanie usługi = urwany dźwięk w trakcie nabożeństwa.” Wymagany link do filmu (YouTube niepubliczny / Dysk):
   Słuchaj → powiadomienie → wyłączenie ekranu → dźwięk gra dalej → Zatrzymaj z powiadomienia.
+- **Mikrofon** (`FOREGROUND_SERVICE_MICROPHONE`, od 1.2.0, ten sam moduł, tryb „console”) — tłumacz nadaje
+  tłumaczenie na żywo z konsoli tłumacza przy wygaszonym ekranie / w tle. Opis do formularza: „Tłumacz
+  przypisany do nabożeństwa otwiera »Konsolę tłumacza« i dotyka »Dołącz«, a potem »Przejmij mikrofon«.
+  Aplikacja przesyła jego głos na żywo do słuchaczy (tłumaczenie kazania) i jednocześnie odtwarza mu dźwięk
+  z sali. Usługa utrzymuje mikrofon i odsłuch, gdy tłumacz wyłączy ekran albo przełączy aplikację.
+  Powiadomienie »Tłumaczysz na żywo« z przyciskiem »Zakończ« jest widoczne przez cały czas. Przerwanie usługi =
+  słuchacze tracą tłumaczenie w trakcie nabożeństwa.” Film: Konsola tłumacza → Dołącz → Przejmij mikrofon →
+  powiadomienie → wyłączenie ekranu → słuchacz na drugim telefonie dalej słyszy tłumacza → Zakończ z powiadomienia.
 
 ## 6. Wymogi treści użytkowników (polityka UGC Google Play)
 Te same co dla App Store i już wdrożone: akceptacja zasad społeczności przy pierwszym uruchomieniu, zgłaszanie

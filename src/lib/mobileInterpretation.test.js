@@ -451,13 +451,24 @@ describe('moduł interpretation-playback (Android)', () => {
     expect(read('android/build.gradle')).toContain(`namespace "${pkg}"`);
   });
 
-  it('manifest: usługa mediaPlayback + uprawnienia', () => {
+  it('manifest: usługa mediaPlayback|microphone + uprawnienia', () => {
     const m = read('android/src/main/AndroidManifest.xml');
-    for (const perm of ['FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK', 'WAKE_LOCK', 'POST_NOTIFICATIONS']) {
+    for (const perm of ['FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK', 'FOREGROUND_SERVICE_MICROPHONE', 'WAKE_LOCK', 'POST_NOTIFICATIONS']) {
       expect(m).toContain(`android.permission.${perm}"`);
     }
-    expect(m).toMatch(/<service[^>]*InterpretationPlaybackService"[^>]*android:foregroundServiceType="mediaPlayback"/s);
+    expect(m).toMatch(/<service[^>]*InterpretationPlaybackService"[^>]*android:foregroundServiceType="mediaPlayback\|microphone"/s);
     expect(m).toMatch(/android:exported="false"/);
+  });
+
+  it('moduł v2: tryb „console” (stałe apiVersion/modes, typ microphone, RECORD_AUDIO przed startem)', () => {
+    const mod = read('android/src/main/java/pl/avenit/interpretationplayback/InterpretationPlaybackModule.kt');
+    const svc = read('android/src/main/java/pl/avenit/interpretationplayback/InterpretationPlaybackService.kt');
+    expect(mod).toMatch(/"apiVersion" to API_VERSION/);
+    expect(mod).toMatch(/API_VERSION = 2/);
+    expect(mod).toMatch(/MODE_CONSOLE/);
+    expect(mod).toMatch(/RECORD_AUDIO/);
+    expect(svc).toMatch(/FOREGROUND_SERVICE_TYPE_MICROPHONE/);
+    expect(svc).toMatch(/END_LABEL = "Zakończ"/);
   });
 
   it('runtime OTA wspólny z 1.1.0 (moduł opcjonalny w JS)', () => {

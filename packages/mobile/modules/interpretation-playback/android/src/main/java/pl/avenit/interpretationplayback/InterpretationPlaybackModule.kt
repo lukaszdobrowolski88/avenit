@@ -1,10 +1,13 @@
 package pl.avenit.interpretationplayback
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import androidx.core.content.ContextCompat
 
 /**
  * Moduł JS „AvenitInterpretationPlayback” (Android): usługa pierwszoplanowa słuchania tłumaczenia
@@ -54,6 +57,12 @@ class InterpretationPlaybackModule : Module() {
 
     Events(EVENT_STOP, EVENT_FAILED, EVENT_TICK)
 
+    // JS sprawdza możliwości (consoleLogic.consoleServiceSupported): v2 = tryb „console” (mikrofon w tle).
+    Constants(
+      "apiVersion" to API_VERSION,
+      "modes" to listOf(InterpretationPlaybackService.MODE_LISTEN, InterpretationPlaybackService.MODE_CONSOLE),
+    )
+
     OnCreate {
       InterpretationPlaybackService.onStopRequested = { reason ->
         stopTicking()
@@ -74,9 +83,15 @@ class InterpretationPlaybackModule : Module() {
     }
 
     // true = usługa uruchomiona (albo już działała — wtedy tylko nowy tekst powiadomienia).
-    Function("start") { title: String, text: String ->
+    // mode: „listen” (domyślnie) albo „console”. Konsola wymaga przyznanego RECORD_AUDIO — bez niego
+    // Android 14+ rzuca SecurityException przy startForeground z typem microphone.
+    Function("start") { title: String, text: String, mode: String? ->
       val context = appContext.reactContext
-      val ok = if (context != null) InterpretationPlaybackService.start(context, title, text) else false
+      val m = if (mode == InterpretationPlaybackService.MODE_CONSOLE) InterpretationPlaybackService.MODE_CONSOLE
+        else InterpretationPlaybackService.MODE_LISTEN
+      val micOk = m != InterpretationPlaybackService.MODE_CONSOLE || (context != null &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+      val ok = if (context != null && micOk) InterpretationPlaybackService.start(context, title, text, m) else false
       if (ok) startTicking()
       ok
     }
@@ -96,5 +111,6 @@ class InterpretationPlaybackModule : Module() {
     private const val EVENT_FAILED = "onFailed"
     private const val EVENT_TICK = "onTick"
     private const val TICK_MS = 1000L
+    private const val API_VERSION = 2
   }
 }
