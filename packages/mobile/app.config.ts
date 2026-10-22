@@ -17,11 +17,31 @@ const CAMERA_TEXT = 'Avenit używa aparatu, aby zrobić zdjęcie i dołączyć j
 const baseId = 'pl.avenit.app';
 const suffix = isPreview ? '.preview' : isDev ? '.dev' : '';
 
+// Universal Links (iOS) / App Links (Android): link z kodu QR tłumaczenia na żywo
+// (https://<kościół>.avenit.pl/tlumaczenie/<token>) otwiera aplikację, gdy jest zainstalowana —
+// inaczej przeglądarkę. Pliki weryfikacyjne serwuje API na każdym hoście
+// (packages/api/src/public/app-links.js — tam też identyfikatory aplikacji i odciski certyfikatów).
+// Zakres: /tlumaczenie/<token> (token = dokładnie 32 znaki) i /tlumaczenie/sluchaj/<id>; konsola
+// tłumacza i „Oryginał” zostają na webie. Zmiana = zmiana natywna (nowy build, nie OTA).
+// Wariant dev (pl.avenit.app.dev) bez linków — nie ma go w plikach weryfikacyjnych.
+const APP_LINK_DOMAIN = 'avenit.pl';
+const appLinks = !isDev;
+const INTERP_TOKEN_LENGTH = 32;
+const appLinkData = [`*.${APP_LINK_DOMAIN}`, APP_LINK_DOMAIN].flatMap((host) => [
+  // Android nie zna klas znaków ani wykluczeń: „.” = dowolny znak, więc wzorzec dokładnej długości
+  // tokenu nie łapie /tlumaczenie/konsola/<id> ani /tlumaczenie/oryginal/<id> (id wydarzeń są krótkie),
+  // ani wersji „tylko przeglądarka” /tlumaczenie/<token>/.
+  { scheme: 'https', host, pathPattern: `/tlumaczenie/${'.'.repeat(INTERP_TOKEN_LENGTH)}` },
+  { scheme: 'https', host, pathPrefix: '/tlumaczenie/sluchaj/' },
+]);
+
 const config: ExpoConfig = {
   name: isPreview ? 'Avenit (preview)' : isDev ? 'Avenit (dev)' : 'Avenit',
   slug: 'avenit',
   // 1.1.0 = Expo SDK 57 (nowy runtime natywny — OTA dla 1.0.x publikuje się osobno).
-  version: '1.1.0',
+  // 1.2.0 = Universal Links / App Links (entitlement associated-domains, intent-filter) — BEZ nowych
+  // modułów natywnych, więc runtime zostaje 1.1.0 (niżej): jedna aktualizacja OTA trafia do 1.1.0 i 1.2.0.
+  version: '1.2.0',
   orientation: 'portrait',
   scheme: ['avenit', 'schtomy'],
   icon: './assets/icon.png',
@@ -45,6 +65,9 @@ const config: ExpoConfig = {
   },
   ios: {
     bundleIdentifier: baseId + suffix,
+    // applinks:*.avenit.pl — Apple pobiera AASA z avenit.pl; avenit.pl osobno (gwiazdka nie obejmuje
+    // domeny głównej). EAS przy buildzie sam włącza „Associated Domains” w App ID i profilu.
+    ...(appLinks ? { associatedDomains: [`applinks:*.${APP_LINK_DOMAIN}`, `applinks:${APP_LINK_DOMAIN}`] } : {}),
     // Tylko iPhone: układ jest projektowany pod telefon w pionie. Na iPadzie apka i tak działa
     // (tryb zgodności iPhone). Wsparcia iPada nie da się zdjąć po pierwszej publikacji,
     // a dodać można zawsze — wtedy App Store wymaga też zrzutów 13".
@@ -95,6 +118,20 @@ const config: ExpoConfig = {
   },
   android: {
     package: baseId + suffix,
+    // App Links (autoVerify): weryfikacja przez https://avenit.pl/.well-known/assetlinks.json
+    // (host z gwiazdką) — pakiet + SHA-256 klucza podpisu Google Play i klucza przesyłania z EAS.
+    ...(appLinks
+      ? {
+          intentFilters: [
+            {
+              action: 'VIEW',
+              autoVerify: true,
+              data: appLinkData,
+              category: ['BROWSABLE', 'DEFAULT'],
+            },
+          ],
+        }
+      : {}),
     // FCM (push). google-services.json musi zawierać pakiet danego wariantu — projekt Firebase
     // avenit-app ma pl.avenit.app (produkcja) i pl.avenit.app.preview. Nowy wariant = dodaj
     // aplikację Android w Firebase i pobierz plik ponownie.
@@ -208,8 +245,10 @@ const config: ExpoConfig = {
     typedRoutes: true,
   },
   // Aktualizacje OTA (eas update): zmiany tylko w JS/TS trafiają na telefony bez nowego builda.
-  // runtimeVersion = wersja aplikacji — po zmianie natywnej podbij `version` i zbuduj od nowa.
-  runtimeVersion: { policy: 'appVersion' },
+  // runtimeVersion = wersja ABI natywnego, NIE wersja w sklepie. 1.2.0 różni się od 1.1.0 tylko
+  // entitlementem/intent-filtrem (bez nowych modułów natywnych), więc dzielą runtime '1.1.0'.
+  // Po dodaniu/aktualizacji modułu natywnego albo podniesieniu SDK ustaw tu nową wartość (np. '1.3.0').
+  runtimeVersion: '1.1.0',
   ...(process.env.EAS_PROJECT_ID
     ? { updates: { url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID}`, fallbackToCacheTimeout: 0 } }
     : {}),

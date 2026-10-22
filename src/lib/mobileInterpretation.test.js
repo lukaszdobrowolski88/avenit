@@ -5,8 +5,11 @@ import {
   retryDelay, interpErrorState, fatalFromError, infoFromSession, defaultChannel, pollDecision, pollInterval,
   shouldKeepAwake, phaseView, cardSummary, cardDataFromSession, cardTeamSections, interpretationTargetFromPath, interpretationTargetFromUrl, isPublicToken,
   INFO_POLL_MS, INFO_POLL_LISTENING_MS, PERSON_NOTE, warningNote,
+  appDomainFromApiUrl, tenantFromHost, appLinkFromUrl, appRouteForLink, browserOnlyUrl, tenantWebUrl,
 } from '../../packages/mobile/src/features/interpretation/logic';
 import { redirectSystemPath } from '../../packages/mobile/app/+native-intent';
+import mobileConfig from '../../packages/mobile/app.config';
+import { appleAppSiteAssociation, assetLinks, IOS_BUNDLE_IDS, APPLE_TEAM_ID, ANDROID_PACKAGE } from '../../packages/api/src/public/app-links.js';
 
 const TOKEN = 'AbCdEfGhIjKlMnOpQrStUvWxYz012345'; // 32 znaki base64url
 const err = (status, code) => ({ message: 'x', status, context: code ? { error: 'x', code } : null });
@@ -182,11 +185,109 @@ describe('linki /tlumaczenie/…', () => {
     expect(interpretationTargetFromUrl('/tlumaczenie/sluchaj/9', own)).toEqual({ kind: 'event', eventId: '9' });
     expect(interpretationTargetFromUrl('tlumaczenie/sluchaj/9', own)).toBeNull();
   });
-  it('avenit:// → ekran słuchacza; inne linki bez zmian', () => {
-    expect(redirectSystemPath({ path: `avenit://tlumaczenie/${TOKEN}`, initial: true })).toBe(`/interpretation/link/${TOKEN}`);
-    expect(redirectSystemPath({ path: 'avenit://tlumaczenie/sluchaj/42', initial: false })).toBe('/interpretation/42');
-    expect(redirectSystemPath({ path: '/tlumaczenie/sluchaj/42', initial: false })).toBe('/interpretation/42');
+  it('avenit:// → publiczne ekrany /listen; inne linki bez zmian', () => {
+    expect(redirectSystemPath({ path: `avenit://tlumaczenie/${TOKEN}`, initial: true })).toBe(`/listen/${TOKEN}`);
+    expect(redirectSystemPath({ path: `avenit://tlumaczenie/${TOKEN}?tenant=SchWro`, initial: true })).toBe(`/listen/${TOKEN}?tenant=schwro`);
+    expect(redirectSystemPath({ path: 'avenit://tlumaczenie/sluchaj/42', initial: false })).toBe('/listen/event/42');
+    expect(redirectSystemPath({ path: '/tlumaczenie/sluchaj/42', initial: false })).toBe('/listen/event/42');
+    expect(redirectSystemPath({ path: 'schtomy://tlumaczenie/sluchaj/42', initial: false })).toBe('/listen/event/42');
     expect(redirectSystemPath({ path: 'avenit://program/12', initial: true })).toBe('avenit://program/12');
-    expect(redirectSystemPath({ path: 'avenit://tlumaczenie/konsola/42', initial: true })).toBe('avenit://tlumaczenie/konsola/42');
+    expect(redirectSystemPath({ path: 'avenit://tlumaczenie/konsola/42', initial: true })).toBe('/listen/web?path=%2Ftlumaczenie%2Fkonsola%2F42');
+    expect(redirectSystemPath({ path: 'avenit://tlumaczenie/krotki', initial: true })).toBe('avenit://tlumaczenie/krotki');
+  });
+});
+
+describe('Universal Links / App Links (kod QR otwiera aplikację)', () => {
+  const D = 'avenit.pl';
+  it('domena z adresu API i kościół z hosta', () => {
+    expect(appDomainFromApiUrl('https://api.avenit.pl')).toBe('avenit.pl');
+    expect(appDomainFromApiUrl('https://api.avenit.pl/')).toBe('avenit.pl');
+    expect(appDomainFromApiUrl(undefined)).toBe('avenit.pl');
+    expect(tenantFromHost('schwro.avenit.pl', D)).toBe('schwro');
+    expect(tenantFromHost('SchWro.Avenit.pl:443', D)).toBe('schwro');
+    for (const h of ['avenit.pl', 'api.avenit.pl', 'app.avenit.pl', 'admin.avenit.pl', 'www.avenit.pl', 'rtc.avenit.pl', 'a.b.avenit.pl', 'schwro.evil.pl', 'avenit.pl.evil.pl', '']) {
+      expect(tenantFromHost(h, D)).toBeNull();
+    }
+  });
+  it('https z hosta kościoła → trasa z kościołem z linku', () => {
+    const r = (url) => redirectSystemPath({ path: url, initial: true });
+    expect(r(`https://schwro.avenit.pl/tlumaczenie/${TOKEN}`)).toBe(`/listen/${TOKEN}?tenant=schwro`);
+    expect(r(`https://schwro.avenit.pl/tlumaczenie/${TOKEN}?utm_source=qr`)).toBe(`/listen/${TOKEN}?tenant=schwro`);
+    expect(r(`https://Inny-Kosciol.avenit.pl/tlumaczenie/${TOKEN}`)).toBe(`/listen/${TOKEN}?tenant=inny-kosciol`);
+    expect(r('https://schwro.avenit.pl/tlumaczenie/sluchaj/42')).toBe('/listen/event/42?tenant=schwro');
+    expect(r('https://schwro.avenit.pl/tlumaczenie/konsola/42')).toBe('/listen/web?path=%2Ftlumaczenie%2Fkonsola%2F42&tenant=schwro');
+    expect(r('https://schwro.avenit.pl/tlumaczenie/oryginal/42')).toBe('/listen/web?path=%2Ftlumaczenie%2Foryginal%2F42&tenant=schwro');
+    // Bez kościoła w hoście (domena główna) — kościół z sesji.
+    expect(r(`https://avenit.pl/tlumaczenie/${TOKEN}`)).toBe(`/listen/${TOKEN}`);
+    // Obce hosty i inne ścieżki — bez zmian.
+    expect(r(`https://evil.pl/tlumaczenie/${TOKEN}`)).toBe(`https://evil.pl/tlumaczenie/${TOKEN}`);
+    expect(r(`https://avenit.pl.evil.pl/tlumaczenie/${TOKEN}`)).toBe(`https://avenit.pl.evil.pl/tlumaczenie/${TOKEN}`);
+    expect(r('https://schwro.avenit.pl/wydarzenie/42')).toBe('https://schwro.avenit.pl/wydarzenie/42');
+    expect(r('https://schwro.avenit.pl/tlumaczenie/krotki')).toBe('https://schwro.avenit.pl/tlumaczenie/krotki');
+  });
+  it('appLinkFromUrl / appRouteForLink', () => {
+    expect(appLinkFromUrl(`https://schwro.avenit.pl/tlumaczenie/${TOKEN}`, D)).toEqual({ target: { kind: 'token', token: TOKEN }, tenant: 'schwro' });
+    expect(appLinkFromUrl(`avenit://tlumaczenie/${TOKEN}?tenant=../x`, D)).toEqual({ target: { kind: 'token', token: TOKEN }, tenant: null });
+    expect(appLinkFromUrl('', D)).toBeNull();
+    expect(appLinkFromUrl(null, D)).toBeNull();
+    expect(appRouteForLink({ target: { kind: 'event', eventId: 'a b' }, tenant: null })).toBe('/listen/event/a%20b');
+  });
+  it('adresy „tylko przeglądarka” nie wracają do aplikacji', () => {
+    const base = 'https://schwro.avenit.pl';
+    expect(browserOnlyUrl(base, { kind: 'token', token: TOKEN })).toBe(`${base}/tlumaczenie/${TOKEN}/`);
+    expect(browserOnlyUrl(`${base}/`, { kind: 'event', eventId: '42' })).toBe(`${base}/login?next=%2Ftlumaczenie%2Fsluchaj%2F42`);
+    expect(browserOnlyUrl('', { kind: 'event', eventId: '42' })).toBe('/login?next=%2Ftlumaczenie%2Fsluchaj%2F42');
+    expect(browserOnlyUrl(base, { kind: 'web', path: '/tlumaczenie/konsola/42' })).toBe(`${base}/tlumaczenie/konsola/42`);
+    expect(tenantWebUrl('inny', D, base)).toBe('https://inny.avenit.pl');
+    expect(tenantWebUrl(null, D, base)).toBe(base);
+  });
+
+  // Ten sam zakres w trzech miejscach: AASA (API), intent-filter (app.config.ts) i aplikacja.
+  // Dopasowanie jak w systemach: Android PatternMatcher (SIMPLE_GLOB: „.” dowolny znak, „*” powtórzenie
+  // poprzedniego), pathPrefix; Apple components („*” dowolny ciąg, „?” jeden znak, pierwszy pasujący wygrywa).
+  const globRe = (p) => new RegExp(`^${p.split('').map((c) => (c === '.' || c === '*' ? c : c.replace(/[\\^$+?()[\]{}|/]/g, '\\$&'))).join('')}$`);
+  const androidOpens = (host, path) => {
+    const f = mobileConfig.android.intentFilters?.[0];
+    if (!f?.autoVerify) return false;
+    return f.data.some((d) => {
+      const hostOk = d.host.startsWith('*.') ? host.endsWith(d.host.slice(1)) : host === d.host;
+      if (d.scheme !== 'https' || !hostOk) return false;
+      if (d.pathPrefix) return path.startsWith(d.pathPrefix);
+      if (d.pathPattern) return globRe(d.pathPattern).test(path);
+      return false;
+    });
+  };
+  const aasaRe = (p) => new RegExp(`^${p.split('').map((c) => (c === '*' ? '.*' : c === '?' ? '.' : c.replace(/[.\\^$+()[\]{}|/]/g, '\\$&'))).join('')}$`);
+  const iosOpens = (path) => {
+    for (const c of appleAppSiteAssociation().applinks.details[0].components) {
+      if (aasaRe(c['/']).test(path)) return !c.exclude;
+    }
+    return false;
+  };
+  const cases = [
+    [`/tlumaczenie/${TOKEN}`, true],
+    ['/tlumaczenie/sluchaj/42', true],
+    ['/tlumaczenie/konsola/42', false],
+    ['/tlumaczenie/oryginal/42', false],
+    [`/tlumaczenie/${TOKEN}/`, false],
+    ['/login', false],
+    ['/wydarzenie/42', false],
+    ['/tlumaczenie/krotki', false],
+  ];
+  it.each(cases)('%s → aplikacja: %s (iOS i Android zgodnie)', (path, app) => {
+    expect(iosOpens(path)).toBe(app);
+    expect(androidOpens('schwro.avenit.pl', path)).toBe(app);
+    expect(androidOpens('avenit.pl', path)).toBe(app);
+    expect(androidOpens('evil.pl', path)).toBe(false);
+    // Aplikacja rozpoznaje każdy link, który system jej odda.
+    if (app) expect(redirectSystemPath({ path: `https://schwro.avenit.pl${path}`, initial: true })).toMatch(/^\/listen\//);
+  });
+  it('wpisy aplikacji zgodne z plikami weryfikacyjnymi', () => {
+    expect(mobileConfig.ios.associatedDomains).toEqual(['applinks:*.avenit.pl', 'applinks:avenit.pl']);
+    expect(IOS_BUNDLE_IDS).toContain(mobileConfig.ios.bundleIdentifier);
+    expect(appleAppSiteAssociation().applinks.details[0].appIDs).toContain(`${APPLE_TEAM_ID}.${mobileConfig.ios.bundleIdentifier}`);
+    expect(mobileConfig.android.package).toBe(ANDROID_PACKAGE);
+    expect(assetLinks()[0].target.package_name).toBe(mobileConfig.android.package);
+    expect(mobileConfig.version).toBe('1.2.0');
   });
 });

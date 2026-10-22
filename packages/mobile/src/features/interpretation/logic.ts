@@ -389,3 +389,85 @@ export function interpretationTargetFromUrl(url: string | null | undefined, ownW
   if (!s.startsWith('/')) return null;
   return interpretationTargetFromPath(s);
 }
+
+// ── Universal Links / App Links (kod QR otwiera aplikację) ──────────────────
+// System otwiera aplikację linkiem https://<kościół>.avenit.pl/tlumaczenie/… (zakres:
+// packages/api/src/public/app-links.js i intentFilters w app.config.ts). Host = kościół z linku —
+// słuchacz nie musi być zalogowany ani należeć do tego kościoła (funkcje publiczne z X-Tenant linku).
+
+// Subdomeny, które nie są kościołami (jak tenantSlugFromHost w API + app. = logowanie globalne).
+const NON_TENANT_SUBDOMAINS = new Set(['admin', 'api', 'www', 'rtc', 'app']);
+
+// Domena platformy z adresu API: https://api.avenit.pl → avenit.pl.
+export function appDomainFromApiUrl(apiUrl: string | null | undefined): string {
+  const host = hostOf(String(apiUrl ?? ''));
+  if (!host) return 'avenit.pl';
+  return host.startsWith('api.') ? host.slice(4) : host;
+}
+
+// Kościół (subdomena) z hosta: schwro.avenit.pl → schwro; domena główna / admin. / api. → null.
+export function tenantFromHost(host: string | null | undefined, appDomain: string): string | null {
+  const h = String(host ?? '').split(':')[0].toLowerCase();
+  const d = String(appDomain ?? '').toLowerCase();
+  if (!h || !d || !h.endsWith(`.${d}`)) return null;
+  const sub = h.slice(0, -(d.length + 1));
+  if (!sub || sub.includes('.') || NON_TENANT_SUBDOMAINS.has(sub) || !/^[a-z0-9-]+$/.test(sub)) return null;
+  return sub;
+}
+
+export interface AppLink {
+  target: InterpretationTarget;
+  // Kościół z linku (null = link bez hosta, np. avenit://tlumaczenie/… — kościół z sesji).
+  tenant: string | null;
+}
+
+const queryValue = (s: string, name: string): string | null => {
+  const m = new RegExp(`[?&]${name}=([^&#]*)`).exec(s);
+  return m && m[1] ? decode(m[1]) : null;
+};
+
+// Link systemowy (Universal/App Link https albo schemat avenit:// / schtomy://) → cel tłumaczenia.
+// https tylko z hostów platformy (avenit.pl i jej subdomeny); obce adresy i inne ścieżki → null.
+// avenit://tlumaczenie/<token>?tenant=<kościół> — przycisk „Otwórz w aplikacji” na stronie słuchacza.
+export function appLinkFromUrl(url: string | null | undefined, appDomain: string): AppLink | null {
+  const s = String(url ?? '').trim();
+  if (!s) return null;
+  const https = /^https?:\/\/([^/?#]+)(.*)$/i.exec(s);
+  if (https) {
+    const host = https[1].split(':')[0].toLowerCase();
+    const d = String(appDomain ?? '').toLowerCase();
+    if (!d || (host !== d && !host.endsWith(`.${d}`))) return null;
+    const target = interpretationTargetFromPath(https[2] || '/');
+    return target ? { target, tenant: tenantFromHost(host, d) } : null;
+  }
+  const bare = s.replace(/^(?:avenit|schtomy):\/\//i, '/');
+  if (!/^\/*tlumaczenie\//i.test(bare)) return null;
+  const target = interpretationTargetFromPath(bare);
+  if (!target) return null;
+  const t = queryValue(bare, 'tenant');
+  return { target, tenant: t && /^[a-z0-9-]+$/i.test(t) ? t.toLowerCase() : null };
+}
+
+// Cel linku → trasa aplikacji (publiczne ekrany poza (app) — działają bez logowania).
+export function appRouteForLink(link: AppLink): string {
+  const q = link.tenant ? `?tenant=${encodeURIComponent(link.tenant)}` : '';
+  const t = link.target;
+  if (t.kind === 'token') return `/listen/${t.token}${q}`;
+  if (t.kind === 'event') return `/listen/event/${encodeURIComponent(t.eventId)}${q}`;
+  return `/listen/web?path=${encodeURIComponent(t.path)}${link.tenant ? `&tenant=${encodeURIComponent(link.tenant)}` : ''}`;
+}
+
+// Adres strony w PRZEGLĄDARCE, który nie wraca do aplikacji (nie pasuje do Universal/App Links):
+// token z ukośnikiem na końcu (strona słuchacza go przyjmuje), słuchanie z konta przez
+// /login?next=… (zalogowany web przechodzi od razu dalej), konsola/oryginał bez zmian (wykluczone).
+export function browserOnlyUrl(webBase: string, target: InterpretationTarget): string {
+  const base = String(webBase ?? '').replace(/\/+$/, '');
+  if (target.kind === 'token') return `${base}/tlumaczenie/${target.token}/`;
+  if (target.kind === 'event') return `${base}/login?next=${encodeURIComponent(`/tlumaczenie/sluchaj/${encodeURIComponent(target.eventId)}`)}`;
+  return `${base}${target.path}`;
+}
+
+// Adres weba kościoła z linku: https://<kościół>.<domena>; bez kościoła — zapas (web z sesji).
+export function tenantWebUrl(tenant: string | null | undefined, appDomain: string, fallback: string): string {
+  return tenant ? `https://${tenant}.${appDomain}` : fallback;
+}

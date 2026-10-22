@@ -244,6 +244,8 @@ function RootNavigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(app)" />
+        {/* Linki tłumaczenia z systemu (Universal/App Links, kod QR) — bez logowania. */}
+        <Stack.Screen name="listen" />
         <Stack.Screen name="+not-found" />
       </Stack>
       <ToastHost />

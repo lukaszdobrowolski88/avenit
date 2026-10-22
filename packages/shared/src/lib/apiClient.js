@@ -215,6 +215,21 @@ export function createApiClient({
     return { res, payload };
   }
 
+  // Żądanie do INNEGO kościoła niż bieżący (tylko funkcje publiczne): bez sesji i ciasteczek.
+  async function foreignTenantJson(path, body, slug) {
+    const res = await doFetch(`${base}${path}`, {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant': slug },
+      body: JSON.stringify(body),
+    });
+    let payload = null;
+    try {
+      payload = await res.json();
+    } catch {}
+    return { res, payload };
+  }
+
   // Dociąga świeżego usera z /api/auth/me i zapisuje w sesji (np. po włączeniu/wyłączeniu
   // 2FA — totp_enabled zmienia się serwerowo, a lokalny session.user byłby nieaktualny).
   async function refreshSessionUser() {
@@ -628,12 +643,19 @@ export function createApiClient({
   // ── Functions ──────────────────────────────────────────────────────────
   const functions = {
     // opts.silent = true → błąd bez globalnego komunikatu (wywołujący obsługuje go sam po cichu).
+    // opts.tenant = slug kościoła dla funkcji PUBLICZNEJ, gdy może to być inny kościół niż ten,
+    // w którym jest sesja (np. link/QR tłumaczenia z innego kościoła albo bez logowania): inny niż
+    // bieżący → X-Tenant z opcji i BEZ tokenu sesji (token należy do innego kościoła).
     async invoke(name, opts = {}) {
       const signal = !opts.silent && !READ_ONLY_FN.test(String(name));
       let res;
       let payload;
       try {
-        ({ res, payload } = await requestJson(`/api/fn/${name}`, opts.body || {}));
+        const other = opts.tenant ? String(opts.tenant) : null;
+        if (other) await loadTenant();
+        ({ res, payload } = other && other !== tenant
+          ? await foreignTenantJson(`/api/fn/${name}`, opts.body || {}, other)
+          : await requestJson(`/api/fn/${name}`, opts.body || {}));
       } catch (e) {
         if (signal) emitWriteSignal(WRITE_ERROR_EVENT, { kind: 'fn', fn: name, status: 0, code: 'network', message: e?.message || 'Network error' });
         throw e;
@@ -826,6 +848,8 @@ export function createApiClient({
     getChannels,
     setTenant,
     getTenant,
+    // Tenant po odczycie z pamięci (getTenant() zaraz po starcie może być jeszcze pusty).
+    loadTenant,
     removeAllChannels: () => {
       wsHandlers = [];
       activeChannels = [];

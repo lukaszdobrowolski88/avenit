@@ -147,7 +147,7 @@ export interface AvenitClient {
   from(table: string): QueryBuilder;
   auth: AuthClient;
   storage: StorageClient;
-  functions: { invoke(name: string, opts?: { body?: any }): Promise<{ data: any; error: PostgrestError | null }> };
+  functions: { invoke(name: string, opts?: { body?: any; silent?: boolean; tenant?: string | null }): Promise<{ data: any; error: PostgrestError | null }> };
   rpc(name: string, args?: Record<string, any>): Promise<{ data: any; error: PostgrestError | null }>;
   channel(name: string): RealtimeChannel;
   removeChannel(chan: RealtimeChannel): void;
@@ -155,6 +155,7 @@ export interface AvenitClient {
   removeAllChannels(): void;
   setTenant(slug: string | null): Promise<void>;
   getTenant(): string | null;
+  loadTenant(): Promise<string | null>;
 }
 
 export interface StorageAdapter {

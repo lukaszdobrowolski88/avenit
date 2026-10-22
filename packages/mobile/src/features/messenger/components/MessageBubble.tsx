@@ -20,7 +20,7 @@ import { CallMessageCard } from "../../calls/components/CallMessageCard";
 import { taskFromChatLink, taskNameFromMessage } from "../../tasks/share";
 import { openTask } from "../../tasks/navigation";
 import { TaskLinkCard } from "../../tasks/components/TaskLinkCard";
-import { interpretationTargetFromUrl } from "../../interpretation/logic";
+import { appDomainFromApiUrl, appLinkFromUrl, appRouteForLink, interpretationTargetFromUrl } from "../../interpretation/logic";
 import { openInterpretation } from "../../interpretation/navigation";
 import { tenantWebBase } from "../../../lib/supabase";
 import type { PrayerMetadata, EventMetadata, DeliveryStatus } from "../api";
@@ -34,7 +34,13 @@ const openMessageLink = (url: string) => {
     return;
   }
   const interp = interpretationTargetFromUrl(url, tenantWebBase());
-  if (interp && interp.kind !== "web") openInterpretation(router, interp);
+  if (interp && interp.kind !== "web") {
+    openInterpretation(router, interp);
+    return;
+  }
+  // Publiczny link/QR tłumaczenia INNEGO kościoła — ten sam ekran słuchacza (kościół z linku).
+  const foreign = appLinkFromUrl(url, appDomainFromApiUrl(process.env.EXPO_PUBLIC_API_URL));
+  if (foreign?.target.kind === "token") router.push(appRouteForLink(foreign) as never);
   else openLink(url);
 };
 

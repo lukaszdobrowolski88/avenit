@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Headphones, Volume2, VolumeX, WifiOff, Smartphone } from 'lucide-react';
+import { Headphones, Volume2, VolumeX, WifiOff, Smartphone, ExternalLink } from 'lucide-react';
 import { tr, appLocale, useI18n, hasSavedLang } from '../../i18n';
 import { LANGUAGES } from '../../i18n/languages';
 import { callFn } from '../Komunikator/calls/callApi';
 import { loadLivekit } from '../Komunikator/calls/livekit';
 import {
   INFO_POLL_MS, INFO_POLL_LISTENING_MS, retryDelay, interpErrorState, listenerMessage, browserUiLang, defaultChannel,
+  appOpenOffer,
 } from './interpretationLogic';
 import { useWakeLock, useMediaSession, isIOS, createAudioBox, attachTrack, detachTrack } from './media';
 import './interpretation.css';
@@ -99,6 +100,22 @@ export default function ListenerPage() {
   volRef.current = { volume, muted };
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+
+  // „Otwórz w aplikacji Avenit” (tylko publiczny link na telefonie): iOS — baner Safari, Android — link.
+  const [offer] = useState(() => (typeof window === 'undefined' || !src.isPublic ? null : appOpenOffer({
+    userAgent: navigator.userAgent || '',
+    maxTouchPoints: navigator.maxTouchPoints || 0,
+    host: window.location.host,
+    pathname: window.location.pathname,
+  })));
+  useEffect(() => {
+    if (offer?.platform !== 'ios' || document.querySelector('meta[name="apple-itunes-app"]')) return undefined;
+    const meta = document.createElement('meta');
+    meta.name = 'apple-itunes-app';
+    meta.content = offer.meta;
+    document.head.appendChild(meta);
+    return () => meta.remove();
+  }, [offer]);
 
   // Język strony z przeglądarki (publiczna strona; wybór ręczny zapamiętuje przełącznik).
   useEffect(() => {
@@ -405,6 +422,11 @@ export default function ListenerPage() {
           {src.isPublic && <LangSwitch />}
         </div>
         {body}
+        {offer?.platform === 'android' && (
+          <a className="ip-app-link" href={offer.href}>
+            <ExternalLink size={15} aria-hidden="true" /> {tr('Otwórz w aplikacji Avenit')}
+          </a>
+        )}
         {src.isPublic && <p className="ip-foot">{tr('Konto nie jest potrzebne. Nikt nie widzi, kto słucha.')}</p>}
       </main>
     </div>
