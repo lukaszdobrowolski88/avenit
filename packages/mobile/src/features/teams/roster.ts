@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { ACCOUNTS_FN, ACCOUNTS_TEAM, accountsById, type TeamAccount } from '@avenit/shared/src/lib/teamAccounts.js';
+import {
+  PEOPLE_FN,
+  grantOutcome,
+  shouldGrantAccess,
+  type MinistryPeopleMeta,
+  type MinistryPerson,
+} from '@avenit/shared/src/lib/ministryPeople.js';
 
 // Skład zespołu (Członkowie / Nauczyciele) i służby (team_roles + team_member_roles) —
 // kontrakt jak na webie: WorshipModule/MediaTeamModule/AtmosferaTeamModule/KidsModule/Tłumaczenia
@@ -89,6 +96,22 @@ export const useRosterAccounts = (team: string) =>
     },
   });
 
+// Osoby do wyboru przy „Dodaj” (fn ministry-people): konta w aplikacji + Członkowie bez konta
+// (tylko z dostępem do Członków), z oznaczeniem „już w zespole” — jak web (MemberPickerField).
+// Zawsze świeże przy otwarciu formularza; błąd / starszy serwer → null (zostaje wpisanie ręczne).
+export const useMinistryPeople = (team: string, table: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ['team', team, 'people-picker', table],
+    enabled,
+    staleTime: 0,
+    gcTime: 60_000,
+    queryFn: async (): Promise<MinistryPeopleMeta | null> => {
+      const { data, error } = await supabase.functions.invoke(PEOPLE_FN, { body: { ministry_key: team, table }, silent: true } as never);
+      if (error || !data || !Array.isArray((data as MinistryPeopleMeta).people)) return null;
+      return data as MinistryPeopleMeta;
+    },
+  });
+
 const invalidate = (qc: ReturnType<typeof useQueryClient>, team: string) => {
   qc.invalidateQueries({ queryKey: ['team', team] });
   qc.invalidateQueries({ queryKey: ['team', 'people'] });
@@ -110,11 +133,26 @@ const DEFAULT_ROLE: Record<string, string> = { atmosfera_members: 'Atmosfera', k
 // Tabele z kolumną status (Aktywny/Nieaktywny) zamiast is_active — dla nowej osoby.
 const STATUS_TABLES = new Set(['worship_team', 'media_team', 'custom_tlumaczenia_members']);
 
+// Wynik dodania osoby z listy: dostęp do modułu nadany / już był / brak prawa (osoba tylko na liście).
+export type AccessOutcome = 'none' | 'granted' | 'already' | 'denied';
+
 export const useSavePerson = (team: string, table: string) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ person, input }: { person: RosterPerson | null; input: PersonInput }) => {
+    mutationFn: async ({
+      person,
+      input,
+      picked = null,
+      meta = null,
+    }: {
+      person: RosterPerson | null;
+      input: PersonInput;
+      picked?: MinistryPerson | null; // osoba wybrana z listy (tylko nowa osoba)
+      meta?: MinistryPeopleMeta | null;
+    }): Promise<{ id: string | null; access: AccessOutcome }> => {
       const row: Record<string, unknown> = { full_name: input.name, email: input.email, phone: input.phone };
+      // Powiązanie wiersza składu z kontem wybranej osoby (gdy tabela ma user_id).
+      if (!person && picked?.user_id && meta?.link_user) row.user_id = picked.user_id;
       if (input.role != null || !person) row.role = input.role ?? DEFAULT_ROLE[table] ?? '';
       if (person ? person.hasStatus : STATUS_TABLES.has(table)) row.status = input.active ? 'Aktywny' : 'Nieaktywny';
       else if (person ? person.hasIsActive : true) row.is_active = input.active;
@@ -142,7 +180,22 @@ export const useSavePerson = (team: string, table: string) => {
           if (insErr) throw insErr;
         }
       }
-      return id;
+
+      // Dostęp do modułu (przynależność 'member') dla osoby z kontem — przez /api/db, ten sam
+      // strażnik co w Ustawieniach (enforceMembershipWrite). Bez prawa: osoba zostaje tylko na liście.
+      let access: AccessOutcome = 'none';
+      if (!person && shouldGrantAccess(picked, { ministryKey: team, table })) {
+        if (meta && !meta.can_grant_access) access = 'denied';
+        else {
+          const { error: mErr } = await (supabase.from('ministry_memberships') as any).insert({
+            user_id: picked!.user_id,
+            ministry_key: team,
+            role: 'member',
+          });
+          access = grantOutcome(mErr);
+        }
+      }
+      return { id, access };
     },
     onSettled: () => invalidate(qc, team),
   });

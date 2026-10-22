@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import { B } from '../../../components/ui/brand';
 import { Chip, DangerLink, FormInput, FormLabel, PrimaryButton, Sheet } from '../../../components/ui/Sheet';
-import { useDeletePerson, useSavePerson, type RosterPerson, type RosterRole } from '../roster';
+import { useDeletePerson, useMinistryPeople, useSavePerson, type RosterPerson, type RosterRole } from '../roster';
 import { friendlyError } from '../../../lib/errors';
+import { ACCESS_NOTE, prefillFromPerson, type MinistryPerson } from '@avenit/shared/src/lib/ministryPeople.js';
+import { PersonPicker } from './PersonPicker';
 
 // Dodanie / edycja osoby w zespole (jak formularz „Dodaj członka” na webie):
 // imię i nazwisko, kontakt, służby (team_member_roles), aktywność; dla Nauczycieli — funkcja.
+// Nowa osoba — wybór z listy (konta + Członkowie bez konta, PersonPicker) albo ręcznie; osoba
+// z kontem dostaje też dostęp do modułu, jeśli dodający może nadawać przynależność.
 
 const F = { medium: 'Manrope_500Medium' } as const;
 
@@ -37,9 +41,23 @@ export const PersonSheet = ({
   const [fn, setFn] = useState('');
   const [active, setActive] = useState(true);
   const [roleIds, setRoleIds] = useState<string[]>([]);
+  const [picked, setPicked] = useState<MinistryPerson | null>(null);
+  const [manual, setManual] = useState(false);
+  const people = useMinistryPeople(team, table, visible && !person);
+
+  const pick = (p: MinistryPerson | null) => {
+    setPicked(p);
+    if (!p) return;
+    const f = prefillFromPerson(p);
+    setName(f.full_name);
+    setEmail(f.email);
+    setPhone(f.phone);
+  };
 
   useEffect(() => {
     if (!visible) return;
+    setPicked(null);
+    setManual(false);
     setName(person?.name ?? '');
     setEmail(person?.email ?? '');
     setPhone(person?.phone ?? '');
@@ -58,8 +76,16 @@ export const PersonSheet = ({
       {
         person,
         input: { name: n, email: e || null, phone: phone.trim() || null, role: withFunction ? fn.trim() || null : null, active, roleIds },
+        picked: person ? null : picked,
+        meta: people.data ?? null,
       },
-      { onSuccess: onClose, onError: (err: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(err, 'Spróbuj ponownie.')) },
+      {
+        onSuccess: (res) => {
+          onClose();
+          if (res?.access === 'denied') Alert.alert('Dodano do zespołu', ACCESS_NOTE);
+        },
+        onError: (err: unknown) => Alert.alert('Nie udało się zapisać', friendlyError(err, 'Spróbuj ponownie.')),
+      },
     );
   };
 
@@ -82,7 +108,14 @@ export const PersonSheet = ({
       onClose={onClose}
       footer={<PrimaryButton label={person ? 'Zapisz' : 'Dodaj'} busy={save.isPending} onPress={submit} />}
     >
-      <FormLabel first>Imię i nazwisko</FormLabel>
+      {!person ? (
+        <>
+          <FormLabel first>Osoba</FormLabel>
+          <PersonPicker meta={people.data} loading={people.isLoading} picked={picked} manual={manual} onManual={setManual} onPick={pick} />
+        </>
+      ) : null}
+
+      <FormLabel first={!!person}>Imię i nazwisko</FormLabel>
       <FormInput value={name} onChangeText={setName} placeholder="np. Anna Kowalska" autoCapitalize="words" />
 
       <FormLabel>Telefon</FormLabel>

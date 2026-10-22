@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import MemberStatusField, { isInactiveStatus, memberStatusColor } from './shared/MemberStatusField';
+import MemberPickerField, { useMemberPicker } from './shared/MemberPickerField';
 import { supabase } from '../lib/supabase';
 import ModuleBoard, { hasItemDeepLink } from './Boards/ModuleBoard';
 import {
@@ -47,6 +48,8 @@ export default function MediaTeamModule() {
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [memberForm, setMemberForm] = useState({ id: null, full_name: '', role: '', email: '', phone: '', status: 'Aktywny' });
   const [selectedMemberRoles, setSelectedMemberRoles] = useState([]);
+  // „Dodaj członka” z listy osób (konta + Członkowie) — powiązanie z kontem i dostęp do modułu.
+  const memberPicker = useMemberPicker({ ministryKey: 'media', table: 'media_team' });
   // Służby z team_roles
   const [mediaRoles, setMediaRoles] = useState([]);
   const [memberRoles, setMemberRoles] = useState([]);
@@ -283,9 +286,11 @@ export default function MediaTeamModule() {
           email: memberForm.email,
           phone: memberForm.phone,
           status: memberForm.status === 'Nieaktywny' ? 'Nieaktywny' : 'Aktywny',
+          ...memberPicker.linkFields(),
         }]).select().single();
         if (error) throw error;
         memberId = newMember.id;
+        await memberPicker.finishInsert();
       }
 
       // Zapisz przypisania do służb
@@ -391,7 +396,7 @@ export default function MediaTeamModule() {
       {activeTab === 'members' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[30] transition-colors duration-300">
         <TabHeader title={tr('Członkowie ({n})', { n: team.length })} actions={
-          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '', status: 'Aktywny' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '', status: 'Aktywny' }); setSelectedMemberRoles([]); memberPicker.open(); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
         } />
         <DataTable tableClassName="min-w-[700px]">
           <THead>
@@ -482,6 +487,7 @@ export default function MediaTeamModule() {
         </>}
       >
         <div className="p-6 space-y-4">
+          {!memberForm.id && <MemberPickerField picker={memberPicker} onPick={(f) => setMemberForm((prev) => ({ ...prev, ...f }))} />}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
             <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />

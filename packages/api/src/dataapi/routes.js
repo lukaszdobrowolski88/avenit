@@ -34,6 +34,7 @@ import { sensitiveColumnsFor, assertSensitiveQuery } from './sensitiveColumns.js
 import { redactRows } from './redactRows.js';
 import { isMaterialsTable, materialsViewer, materialsScope, enforceMaterialsTeamWrite } from './materialsScope.js';
 import { enforceCloudLinkWrite } from './cloudLinks.js';
+import { syncRosterAfterMembership } from '../lib/ministryRoster.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -428,6 +429,13 @@ export default async function dataApiRoutes(app) {
       const rawRows = result.rows.map(unwrapRow);
 
       if (budgetBefore) await writeBudgetAudit(req.db, q, budgetBefore, rawRows, req.user.email);
+
+      // Nowa przynależność do służby → osoba także na liście składu tej służby (Członkowie, grafik).
+      // Po strażniku enforceMembershipWrite; idempotentnie, nie rzuca (lib/ministryRoster.js).
+      if (q.table === 'ministry_memberships' && (q.op === 'insert' || q.op === 'upsert')) {
+        const written = rawRows.length ? rawRows : (Array.isArray(q.values) ? q.values : [q.values]).filter(Boolean);
+        await syncRosterAfterMembership(req.db, q, written, { actorEmail: req.user.email, log: req.log });
+      }
 
       // Odpowiedź dla czytającego: ta sama redakcja dla SELECT i dla wierszy zwróconych przez zapis
       // (RETURNING) — dane osobowe, głosy anonimowe, autorzy próśb anonimowych, kontakty grup

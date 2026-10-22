@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MemberStatusField, { memberStatusColor } from '../shared/MemberStatusField';
+import MemberPickerField, { useMemberPicker } from '../shared/MemberPickerField';
 import { useSearchParams } from 'react-router-dom';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
@@ -1478,6 +1479,8 @@ export default function WorshipModule() {
   const [songForm, setSongForm] = useState({});
   const [memberForm, setMemberForm] = useState({ id: null, full_name: '', role: '', status: 'Aktywny', phone: '', email: '' });
   const [selectedMemberRoles, setSelectedMemberRoles] = useState([]);
+  // „Dodaj członka” z listy osób (konta + Członkowie) — powiązanie z kontem i dostęp do modułu.
+  const memberPicker = useMemberPicker({ ministryKey: 'worship', table: 'worship_team' });
 
   const [songFilter, setSongFilter] = useState('');
   const [tagFilter, setTagFilter] = useState('');
@@ -1751,9 +1754,10 @@ export default function WorshipModule() {
         if (error) throw error;
       } else {
         const { id, ...rest } = memberForm;
-        const { data: newMember, error } = await supabase.from('worship_team').insert([rest]).select().single();
+        const { data: newMember, error } = await supabase.from('worship_team').insert([{ ...rest, ...memberPicker.linkFields() }]).select().single();
         if (error) throw error;
         memberId = newMember.id;
+        await memberPicker.finishInsert();
       }
 
       // Zapisz przypisania do służb
@@ -2107,7 +2111,7 @@ export default function WorshipModule() {
       <section className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[30] transition-colors">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
           <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Członkowie zespołu')}</h2>
-          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', status: 'Aktywny', phone: '', email: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="w-full sm:w-auto bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', status: 'Aktywny', phone: '', email: '' }); setSelectedMemberRoles([]); memberPicker.open(); setShowMemberModal(true); }} className="w-full sm:w-auto bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
         </div>
         <DataTable tableClassName="min-w-[800px]">
           <THead>
@@ -2215,6 +2219,7 @@ export default function WorshipModule() {
         </>}
       >
             <div className="p-6 space-y-4">
+              {!memberForm.id && <MemberPickerField picker={memberPicker} onPick={(f) => setMemberForm((prev) => ({ ...prev, ...f }))} />}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
                 <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />

@@ -10,6 +10,7 @@ import CustomSelect from '../../components/CustomSelect';
 import { useT, tr, appLocale } from '../../i18n';
 import ModuleManager from './components/ModuleManager';
 import PermissionsAdmin from './components/PermissionsAdmin';
+import MinistryMemberships from './components/MinistryMemberships';
 import CampusManager from './components/CampusManager';
 import IntegrationsTab from './components/IntegrationsTab';
 import AppearanceSettings from './components/AppearanceSettings';
@@ -338,9 +339,9 @@ export default function GlobalSettings() {
   // Dopisanie nowego konta do wybranych służb — BEZ scalania i usuwania czegokolwiek:
   // istniejący rekord z tym e-mailem → nic nie robimy; jeden rekord o tym imieniu bez e-maila →
   // uzupełniamy e-mail; w pozostałych przypadkach dodajemy nowy rekord.
-  const addUserToTeams = async (fullName, email) => {
+  const addUserToTeams = async (fullName, email, teamKeys = selectedTeams) => {
     const failed = [];
-    for (const teamKey of selectedTeams) {
+    for (const teamKey of teamKeys) {
       const def = teamDefinitions.find(d => d.key === teamKey);
       if (!def) continue; // służba bez listy składu (np. Grupy domowe) — tylko przynależność
       try {
@@ -425,22 +426,28 @@ export default function GlobalSettings() {
           toast.success(tr('Utworzono {email} — wysłano zaproszenie do ustawienia hasła (ważne 7 dni).', { email: userForm.email }));
         }
 
-        // Przynależność do wybranych służb (uprawnienia) — z rolą członek/lider.
+        // Przynależność do wybranych służb (uprawnienia) — z rolą członek/lider. Serwer po zapisie
+        // przynależności sam dopisuje osobę do listy składu służby (powiązaną z kontem —
+        // api lib/ministryRoster.js), więc z przeglądarki dopisujemy tylko tam, gdzie przynależność
+        // nie przeszła (np. już istniała albo brak prawa do tej służby) — jak dotąd, po e-mailu.
+        const synced = new Set();
         if (selectedTeams.length > 0 && userId) {
           const failedM = [];
           for (const key of selectedTeams) {
             const { error } = await supabase.from('ministry_memberships')
               .insert({ user_id: userId, ministry_key: key, role: teamRoles[key] === 'leader' ? 'leader' : 'member' });
+            if (!error) synced.add(key);
             // Już przypisany (unikalność user+służba) — nie jest błędem.
-            if (error && !/duplicate|unique|23505/i.test(`${error.code || ''} ${error.message || ''}`)) {
+            else if (!/duplicate|unique|23505/i.test(`${error.code || ''} ${error.message || ''}`)) {
               failedM.push(ministryOptions.find((m) => m.key === key)?.label || key);
             }
           }
           if (failedM.length) toast.error(tr('Konto zapisane, ale nie udało się przypisać do służb: {teams}.', { teams: failedM.join(', ') }));
         }
 
-        if (selectedTeams.length > 0) {
-          const failed = await addUserToTeams(userForm.full_name || userForm.email, userForm.email);
+        const rosterOnly = selectedTeams.filter((k) => !synced.has(k));
+        if (rosterOnly.length > 0) {
+          const failed = await addUserToTeams(userForm.full_name || userForm.email, userForm.email, rosterOnly);
           if (failed.length) toast.error(tr('Konto utworzone, ale nie udało się dopisać do: {teams}.', { teams: failed.join(', ') }));
         }
       }
@@ -1126,6 +1133,16 @@ export default function GlobalSettings() {
                 className="w-full py-2 border border-amber-200 dark:border-amber-900/50 rounded-lg text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-center gap-2">
                 <UserX size={15} aria-hidden="true" /> {tr('Wyloguj ze wszystkich urządzeń')}
               </button>
+            </div>
+          )}
+          {userForm.id && (
+            // Istniejąca osoba → kolejna służba: przynależność (dostęp do modułu) + wpis na liście
+            // Członków tej służby (serwer, lib/ministryRoster.js). Ten sam edytor co Uprawnienia → Służby.
+            <div>
+              <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2">{t('Służby / Zespoły')}</div>
+              <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
+                <MinistryMemberships userId={userForm.id} />
+              </div>
             </div>
           )}
           {!userForm.id && (

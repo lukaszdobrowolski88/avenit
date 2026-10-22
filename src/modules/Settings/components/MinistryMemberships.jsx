@@ -160,6 +160,7 @@ export default function MinistryMemberships({ userId = null }) {
               <Plus size={14} /> {tr('Dodaj')}
             </button>
           </div>
+          <p className="mt-2 text-xs text-gray-400">{tr('Osoba dodana do służby trafia też na listę Członków tej służby (i do wyboru w grafiku).')}</p>
         </>
       )}
     </div>

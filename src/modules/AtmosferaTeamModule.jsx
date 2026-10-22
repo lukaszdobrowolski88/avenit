@@ -3,6 +3,7 @@ import Spinner from '../components/Spinner';
 import { createPortal } from 'react-dom';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
+import MemberPickerField, { useMemberPicker } from './shared/MemberPickerField';
 import { supabase } from '../lib/supabase';
 import {
   Plus, Search, Trash2, X, Calendar, User, Users,
@@ -49,6 +50,8 @@ export default function AtmosferaTeamModule() {
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [memberForm, setMemberForm] = useState({ id: null, full_name: '', role: 'Atmosfera', email: '', phone: '' });
   const [selectedMemberRoles, setSelectedMemberRoles] = useState([]);
+  // „Dodaj” z listy osób (konta + Członkowie) — powiązanie z kontem i dostęp do modułu.
+  const memberPicker = useMemberPicker({ ministryKey: 'atmosfera', table: 'atmosfera_members' });
 
   // Służby z team_roles
   const [atmosferaRoles, setAtmosferaRoles] = useState([]);
@@ -287,10 +290,12 @@ export default function AtmosferaTeamModule() {
           full_name: memberForm.full_name,
           role: memberForm.role,
           email: memberForm.email,
-          phone: memberForm.phone
+          phone: memberForm.phone,
+          ...memberPicker.linkFields(),
         }]).select().single();
         if (error) throw error;
         memberId = newMember.id;
+        await memberPicker.finishInsert();
       }
 
       // Zapisz przypisania do służb
@@ -387,7 +392,7 @@ export default function AtmosferaTeamModule() {
       <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[30] transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Członkowie')} ({team.length})</h2>
-          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: 'Atmosfera', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj')}</button>
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: 'Atmosfera', email: '', phone: '' }); setSelectedMemberRoles([]); memberPicker.open(); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj')}</button>
         </div>
         <DataTable tableClassName="min-w-[700px]">
           <THead>
@@ -475,6 +480,7 @@ export default function AtmosferaTeamModule() {
         </>}
       >
         <div className="p-6 space-y-4">
+          {!memberForm.id && <MemberPickerField picker={memberPicker} onPick={(f) => setMemberForm((prev) => ({ ...prev, ...f }))} />}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
             <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />

@@ -36,6 +36,8 @@ const MODULES = [
   'home-groups-map',
   'my-blockouts',
   'ministry-roster',
+  // „Dodaj członka” w służbie z listy osób (konta + Członkowie bez konta); dostęp liczony w funkcji.
+  'ministry-people',
   'team-availability',
   // Moduł Tłumaczenia → Członkowie: kto ze składu nie ma konta w aplikacji (interpretation/team.js).
   'tlumaczenia-accounts',
