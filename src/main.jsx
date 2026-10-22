@@ -26,6 +26,16 @@ if ('serviceWorker' in navigator) {
     .catch(() => {})
 }
 
+// Okno łączenia plików z chmury (Faza 3 integracji): po zgodzie callback wraca na
+// /profile?files=…&files_result=… — wynik trafia do karty, która otworzyła okno (BroadcastChannel),
+// a okno próbuje się zamknąć. Gdy się nie da, ładuje się aplikacja (Mój profil pokaże komunikat).
+if (new URLSearchParams(window.location.search).get('files_result')) {
+  import('./lib/cloudConnectRelay.js').then(({ relayCloudConnectResult }) => {
+    // Przeglądarka zamknie tylko okno otwarte skryptem — zwykłą kartę zostawi (wtedy toast w Mój profil).
+    if (relayCloudConnectResult()) { try { window.close() } catch { /* */ } }
+  }).catch(() => {})
+}
+
 // Słowniki EN/UK ładują się leniwie (polski ich nie potrzebuje). Dla innego języka najpierw
 // słownik, potem aplikacja — żeby etykiety liczone przy imporcie modułów były już przetłumaczone.
 preloadI18n().then(() => import('./App.jsx')).then(({ default: App }) => {

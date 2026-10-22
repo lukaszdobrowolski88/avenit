@@ -3,7 +3,12 @@
 // udostępnianie per plik (osoby/grupy/grupy domowe), widok lista/kafelki, podgląd w lightboxie,
 // zmiana nazwy. Dla grup domowych upload trafia do folderu grupy (udostępniony członkom).
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Upload, Trash2, Plus, FileText, Search, LayoutGrid, List as ListIcon, Pencil, Share2, Eye, Check } from 'lucide-react';
+import { Upload, Trash2, Plus, FileText, Search, LayoutGrid, List as ListIcon, Pencil, Share2, Eye, Check, ExternalLink, Cloud } from 'lucide-react';
+import CloudAttachDialog from '../../components/cloud/CloudAttachDialog';
+import CloudProviderIcon from '../../components/cloud/CloudProviderIcon';
+import useCloudFiles from '../../components/cloud/useCloudFiles';
+import { cloudOpenText, cloudProviderName } from '../../components/cloud/cloudFilesLogic';
+import { cloudMaterialRow, cloudFromMaterialRow, cloudOpenUrl } from '@avenit/shared/src/lib/cloudFiles.js';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
 import Spinner from '../../components/Spinner';
@@ -20,6 +25,13 @@ import { signFiles } from '../Materials/hooks/useMaterials';
 const publicUrl = (path) => supabase.storage.from('materials').getPublicUrl(path).data.publicUrl;
 const fmtSize = (b) => (!b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 const isImage = (m) => (m || '').startsWith('image/');
+// Odnośnik do Dysku Google / OneDrive (Faza 3) — otwierany u dostawcy, bez podglądu w Avenit.
+const isCloud = (f) => !!f?.external_provider;
+const openCloud = (f) => {
+  const url = cloudOpenUrl(cloudFromMaterialRow(f));
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  else toast.error(tr('Nieprawidłowy adres pliku w chmurze'));
+};
 
 export default function EventMaterialsTab({ event, canManage }) {
   const teamType = event.module_key || null; // materiały tego modułu (null = ogólne/globalne)
@@ -37,6 +49,8 @@ export default function EventMaterialsTab({ event, canManage }) {
   const [renameVal, setRenameVal] = useState('');
   const fileRef = useRef(null);
   const shares = useShares();
+  const [showCloud, setShowCloud] = useState(false);
+  const cloud = useCloudFiles();
   // Pliki przestrzeni wrażliwych (Finanse, Członkowie, Opieka, Dawanie) serwer oddaje tylko
   // podpisanym linkiem — podpisujemy je po wczytaniu listy (jak useMaterials).
   const [signedUrls, setSignedUrls] = useState({});
@@ -83,6 +97,24 @@ export default function EventMaterialsTab({ event, canManage }) {
       toast.success(tr('Dodano materiał'));
     } catch (e) { toast.error(e, { fallback: tr('Nie udało się dodać materiału. Spróbuj ponownie.') }); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
+  };
+
+  // Pliki z Dysku Google / OneDrive: wiersz-odnośnik w Materiałach (przestrzeń modułu, folder grupy) + powiązanie.
+  const onAddCloud = async (attachments) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const folderId = (isHomeGroup && group) ? await ensureGroupFolder(group) : null;
+      const rows = attachments.map((a) => cloudMaterialRow(a, { folderId, teamType, uploadedBy: user?.email || null }));
+      const { data: mfs, error: insErr } = await supabase.from('materials_files').insert(rows).select();
+      if (insErr) throw insErr;
+      const links = (mfs || []).map((mf) => ({ event_id: event.id, file_id: mf.id }));
+      if (links.length) {
+        const { error: linkErr } = await supabase.from('event_materials').insert(links);
+        if (linkErr) throw linkErr;
+      }
+      await loadLinked();
+      toast.success(tr('Dodano materiał'));
+    } catch (e) { toast.error(e, { fallback: tr('Nie udało się dodać plików z chmury.') }); }
   };
 
   const openPicker = async () => {
@@ -132,11 +164,17 @@ export default function EventMaterialsTab({ event, canManage }) {
 
   if (linked === null) return <Spinner center size={24} />;
 
+  // Podgląd (lightbox) tylko dla plików z magazynu; odnośniki otwierają się u dostawcy.
+  const previewable = linked.filter((f) => !isCloud(f));
+  const openItem = (f) => (isCloud(f) ? openCloud(f) : setPreviewIdx(previewable.findIndex((x) => x.id === f.id)));
+
   const filteredPick = (pickList || []).filter((f) => !pickSearch || (f.name || '').toLowerCase().includes(pickSearch.toLowerCase()));
 
   const FileActions = ({ f }) => (
     <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-      <button onClick={() => setPreviewIdx(linked.findIndex((x) => x.id === f.id))} title={tr('Podgląd')} aria-label={tr('Podgląd: {name}', { name: f.name || '' })} className="p-1.5 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Eye size={16} aria-hidden="true" /></button>
+      {isCloud(f)
+        ? <button onClick={() => openCloud(f)} title={cloudOpenText(f.external_provider)} aria-label={`${cloudOpenText(f.external_provider)}: ${f.name || ''}`} className="p-1.5 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><ExternalLink size={16} aria-hidden="true" /></button>
+        : <button onClick={() => openItem(f)} title={tr('Podgląd')} aria-label={tr('Podgląd: {name}', { name: f.name || '' })} className="p-1.5 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Eye size={16} aria-hidden="true" /></button>}
       {canManage && <button onClick={() => setShareItem({ file_id: f.id, name: f.name })} title={tr('Udostępnij')} aria-label={tr('Udostępnij: {name}', { name: f.name || '' })} className="p-1.5 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Share2 size={16} aria-hidden="true" /></button>}
       {canManage && <button onClick={() => startRename(f)} title={tr('Zmień nazwę')} aria-label={tr('Zmień nazwę: {name}', { name: f.name || '' })} className="p-1.5 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-800"><Pencil size={15} aria-hidden="true" /></button>}
       {canManage && <button onClick={() => unlink(f)} title={tr('Odepnij od wydarzenia')} aria-label={tr('Odepnij od wydarzenia: {name}', { name: f.name || '' })} className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"><Trash2 size={16} aria-hidden="true" /></button>}
@@ -157,6 +195,12 @@ export default function EventMaterialsTab({ event, canManage }) {
               className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
               <Plus size={15} /> {tr('Podepnij istniejące')}
             </button>
+            {cloud.visible && (
+              <button onClick={() => setShowCloud(true)}
+                className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+                <Cloud size={15} /> {tr('Z Dysku Google lub OneDrive')}
+              </button>
+            )}
           </div>
         ) : <div />}
         <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5">
@@ -171,9 +215,10 @@ export default function EventMaterialsTab({ event, canManage }) {
       ) : view === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {linked.map((m) => (
-            <div key={m.id} className="group rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900 hover:shadow-md transition cursor-pointer" onClick={() => setPreviewIdx(linked.findIndex((x) => x.id === m.id))}>
+            <div key={m.id} className="group rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900 hover:shadow-md transition cursor-pointer" onClick={() => openItem(m)}>
               <div className="aspect-video bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                {isImage(m.mime_type) ? <img src={fileUrl(m.storage_path)} alt={m.name} className="w-full h-full object-cover" /> : <FileText size={32} className="text-gray-300 dark:text-gray-600" />}
+                {isCloud(m) ? <CloudProviderIcon provider={m.external_provider} size={34} title={cloudProviderName(m.external_provider)} />
+                  : isImage(m.mime_type) ? <img src={fileUrl(m.storage_path)} alt={m.name} className="w-full h-full object-cover" /> : <FileText size={32} className="text-gray-300 dark:text-gray-600" />}
               </div>
               <div className="p-2.5">
                 {renameId === m.id ? (
@@ -184,7 +229,7 @@ export default function EventMaterialsTab({ event, canManage }) {
                   <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate" title={m.name}>{m.name}</div>
                 )}
                 <div className="flex items-center justify-between mt-1">
-                  <span className="text-[11px] text-gray-400">{fmtSize(m.file_size)}</span>
+                  <span className="text-[11px] text-gray-400">{isCloud(m) ? cloudProviderName(m.external_provider) : fmtSize(m.file_size)}</span>
                   <FileActions f={m} />
                 </div>
               </div>
@@ -194,10 +239,11 @@ export default function EventMaterialsTab({ event, canManage }) {
       ) : (
         <div className="space-y-2">
           {linked.map((m) => (
-            <div key={m.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-sm transition cursor-pointer" onClick={() => setPreviewIdx(linked.findIndex((x) => x.id === m.id))}>
+            <div key={m.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-sm transition cursor-pointer" onClick={() => openItem(m)}>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/40 p-2 rounded-lg text-accent-secondary dark:text-accent-secondary-light shrink-0">
-                  {isImage(m.mime_type) ? <img src={fileUrl(m.storage_path)} alt="" className="w-6 h-6 object-cover rounded" /> : <FileText size={18} />}
+                  {isCloud(m) ? <CloudProviderIcon provider={m.external_provider} size={18} title={cloudProviderName(m.external_provider)} />
+                    : isImage(m.mime_type) ? <img src={fileUrl(m.storage_path)} alt="" className="w-6 h-6 object-cover rounded" /> : <FileText size={18} />}
                 </div>
                 <div className="min-w-0">
                   {renameId === m.id ? (
@@ -207,7 +253,8 @@ export default function EventMaterialsTab({ event, canManage }) {
                   ) : (
                     <div className="font-medium text-gray-800 dark:text-gray-200 truncate" title={m.name}>{m.name}</div>
                   )}
-                  {m.file_size ? <div className="text-xs text-gray-400">{fmtSize(m.file_size)}</div> : null}
+                  {isCloud(m) ? <div className="text-xs text-gray-400">{cloudProviderName(m.external_provider)}</div>
+                    : m.file_size ? <div className="text-xs text-gray-400">{fmtSize(m.file_size)}</div> : null}
                 </div>
               </div>
               <FileActions f={m} />
@@ -220,14 +267,16 @@ export default function EventMaterialsTab({ event, canManage }) {
       <FilePreviewModal
         isOpen={previewIdx !== null}
         onClose={() => setPreviewIdx(null)}
-        file={previewIdx !== null ? linked[previewIdx] : null}
-        fileUrl={previewIdx !== null && linked[previewIdx] ? fileUrl(linked[previewIdx].storage_path) : ''}
-        onDownload={() => { const f = linked[previewIdx]; if (f) window.open(fileUrl(f.storage_path), '_blank'); }}
+        file={previewIdx !== null ? previewable[previewIdx] : null}
+        fileUrl={previewIdx !== null && previewable[previewIdx] ? fileUrl(previewable[previewIdx].storage_path) : ''}
+        onDownload={() => { const f = previewable[previewIdx]; if (f) window.open(fileUrl(f.storage_path), '_blank'); }}
         onPrev={() => setPreviewIdx((i) => (i > 0 ? i - 1 : i))}
-        onNext={() => setPreviewIdx((i) => (i < linked.length - 1 ? i + 1 : i))}
+        onNext={() => setPreviewIdx((i) => (i < previewable.length - 1 ? i + 1 : i))}
         hasPrev={previewIdx > 0}
-        hasNext={previewIdx !== null && previewIdx < linked.length - 1}
+        hasNext={previewIdx !== null && previewIdx < previewable.length - 1}
       />
+
+      {showCloud && <CloudAttachDialog isOpen={showCloud} onClose={() => setShowCloud(false)} onAttach={onAddCloud} />}
 
       {/* Udostępnianie pliku */}
       <ShareModal isOpen={!!shareItem} onClose={() => setShareItem(null)} item={shareItem} shares={shares} />
@@ -250,7 +299,7 @@ export default function EventMaterialsTab({ event, canManage }) {
             ) : filteredPick.map((f) => (
               <div key={f.id} className="flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50">
                 <div className="flex items-center gap-2 min-w-0">
-                  <FileText size={16} className="text-gray-400 shrink-0" />
+                  {isCloud(f) ? <CloudProviderIcon provider={f.external_provider} size={16} className="shrink-0" /> : <FileText size={16} className="text-gray-400 shrink-0" />}
                   <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{f.name}</span>
                 </div>
                 <button onClick={() => attach(f)} className="text-xs px-2.5 py-1.5 rounded-lg bg-accent-primary text-white whitespace-nowrap inline-flex items-center gap-1"><Check size={13} /> {tr('Podepnij')}</button>

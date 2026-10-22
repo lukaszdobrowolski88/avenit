@@ -10,6 +10,8 @@
 //   calendar_save     — skrzynka (Microsoft) / konto (Google), filtr modułów i typów, import, włączenie
 //   calendar_remove   — wyłączenie (kalendarz u dostawcy zostaje)
 //   calendar_sync     — pełne uzgodnienie teraz
+//   Faza 3 — pliki z chmury (cloudFiles.js):
+//   files_save        — włączenie / wyłączenie plików z chmury dla dostawcy; Google: klucz API i numer projektu Pickera
 // Capability: action:settings:manage_integrations (FN_CAPABILITY) + kontrola w funkcji (access.js).
 import { config, isProd } from '../config.js';
 import { encryptPassword } from '../lib/mailcrypto.js';
@@ -21,6 +23,7 @@ import {
 } from '../integrations/providers.js';
 import { loadConnection, publicConnection, IntegrationError } from '../integrations/tokens.js';
 import { startConnect, disconnect, NONCE_COOKIE, STATE_TTL_MS } from '../integrations/oauth.js';
+import { loadFilesSettings, saveFilesSettings, googlePickerKeys } from '../integrations/cloudFiles.js';
 import { loadDirectorySettings, saveDirectorySettings, effectiveAllowedDomains, syncHistory, parseDomains } from '../integrations/directory.js';
 import {
   churchCalendarStatus, saveChurchCalendar, removeChurchCalendar, loadChurchTarget, syncTarget, calendarCtxFromRequest, publicTarget,
@@ -32,6 +35,19 @@ export const capability = 'action:settings:manage_integrations';
 export const rateLimit = { max: 60, timeWindow: '10 minutes' };
 
 const SETTINGS_KEYS = ['enabled', 'allowed_domains', 'default_role', 'mode', 'on_disable', 'send_invite'];
+
+// Pliki z chmury (Faza 3): stan dla administratora — klucz API Pickera nie jest sekretem (trafia do przeglądarek).
+async function filesAdminStatus(db, provider, creds) {
+  const settings = await loadFilesSettings(db, provider);
+  if (provider !== 'google') return { enabled: settings.enabled };
+  const keys = googlePickerKeys(settings, creds);
+  return {
+    enabled: settings.enabled,
+    picker_api_key: settings.picker_api_key, picker_app_id: settings.picker_app_id,
+    api_key_source: settings.picker_api_key ? 'tenant' : (config.GOOGLE_PICKER_API_KEY ? 'platform' : null),
+    app_id_effective: keys.appId, ready: !!(keys.apiKey && keys.appId),
+  };
+}
 
 async function providerStatus(db, provider, access) {
   const [creds, own, conn, settings] = await Promise.all([
@@ -55,6 +71,7 @@ async function providerStatus(db, provider, access) {
     allowed_domains_source: effective.source,
     history: await syncHistory(db, provider, 10),
     calendar: await churchCalendarStatus(db, provider, access.caller?.id).catch(() => null),
+    files: await filesAdminStatus(db, provider, creds),
     can_apply: !!access.canUsers,
     can_credentials: !!access.fullAdmin,
   };
@@ -72,7 +89,7 @@ export async function workspaceAction(req, access) {
   if (action === 'status') {
     const out = {};
     for (const p of PROVIDERS) out[p] = await providerStatus(db, p, access);
-    return { providers: out, purposes: ['directory', 'church_calendar'] };
+    return { providers: out, purposes: ['directory', 'church_calendar', 'files'] };
   }
 
   if (action === 'connect') {
@@ -106,6 +123,12 @@ export async function workspaceAction(req, access) {
     if (!t) throw new IntegrationError('Kalendarz kościoła nie jest skonfigurowany.', { status: 409 });
     const result = await syncTarget(db, { ...t, backoff_until: null }, calendarCtxFromRequest(req), { forceFull: true, forcePull: true });
     return { success: !result.error, result, target: await publicTarget(db, await loadChurchTarget(db, provider)) };
+  }
+
+  if (action === 'files_save') {
+    const files = await saveFilesSettings(db, provider, b.settings || {}, actor);
+    await logAccountEvent(db, { email: actor, action: 'integration_files', actor, detail: `${provider}:${files.enabled ? 'on' : 'off'}` });
+    return { success: true, files: await filesAdminStatus(db, provider, await resolveIntegrationCreds(db, provider)) };
   }
 
   if (action === 'disconnect') {

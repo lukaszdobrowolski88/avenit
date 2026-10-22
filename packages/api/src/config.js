@@ -76,6 +76,11 @@ const schema = z.object({
   MS_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  // Faza 3 (pliki z Dysku Google): klucz API przeglądarki dla Google Picker (ograniczony do
+  // odwołań HTTP *.APP_DOMAIN, tylko Picker API) i numer projektu Google Cloud (appId). Puste
+  // appId = numer z identyfikatora klienta OAuth. Kościół może podać własne (Ustawienia → Integracje).
+  GOOGLE_PICKER_API_KEY: z.string().optional(),
+  GOOGLE_PICKER_APP_ID: z.string().optional(),
 
   // Połączenia audio/wideo (LiveKit SFU, usługa `livekit` w docker-compose). Bez klucza i sekretu
   // połączenia są wyłączone: fn call-* → 503 calls_disabled, web chowa przyciski.

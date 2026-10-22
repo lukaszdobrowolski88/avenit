@@ -33,6 +33,7 @@ import { seesAllHomeGroupContacts } from './homeGroupContacts.js';
 import { sensitiveColumnsFor, assertSensitiveQuery } from './sensitiveColumns.js';
 import { redactRows } from './redactRows.js';
 import { isMaterialsTable, materialsViewer, materialsScope, enforceMaterialsTeamWrite } from './materialsScope.js';
+import { enforceCloudLinkWrite } from './cloudLinks.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -303,6 +304,11 @@ export default async function dataApiRoutes(app) {
       // redakcję po nazwie klucza, i bez filtrów / sortowania po nich (wyrocznia, także head+count).
       // Wyjątek: dopasowanie do własnej wartości (np. user_email = mój e-mail — „moje modlitwy”).
       assertSensitiveQuery(q, { isAdmin, resolver }, { email: req.user.email, userId: req.user.id, memberId: piiMe.memberId });
+
+      // Pliki z chmury (Faza 3, migracja 120): odnośnik w materials_files tylko z białej listy hostów
+      // https, autor z sesji, dostawca niewyłączony przez kościół — dla każdego, także administratora.
+      // (Załączniki wiadomości — w enforceConversationWrite, wspólnym z wysyłką zaplanowaną.)
+      if (q.table === 'materials_files') await enforceCloudLinkWrite(q, req);
 
       // Treści użytkowników (wiadomości, modlitwy, tablice): wulgaryzmy maskowane przy zapisie
       // (wytyczna App Store 1.2 — filtrowanie treści obraźliwych; lib/moderation.js).

@@ -11,6 +11,8 @@ import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
 import Button from '../../../components/Button';
 import { SignedImage, SignedLink, SignedAudio } from './SignedAttachment';
+import CloudFileLink from '../../../components/cloud/CloudFileLink';
+import { isCloudAttachment } from '@avenit/shared/src/lib/cloudFiles.js';
 import useConversationFiles from '../hooks/useConversationFiles';
 
 // Media, pliki, linki i głosówki rozmowy. Dane filtruje serwer (fn chat-media) — paczkami od
@@ -126,6 +128,15 @@ export default function MediaGalleryModal({ isOpen, onClose, conversationId, onJ
     <ul className="space-y-2">
       {list.items.map((item) => {
         const a = item.attachment || {};
+        // Plik z Dysku Google / OneDrive — odnośnik u dostawcy (biała lista hostów).
+        if (isCloudAttachment(a)) {
+          return (
+            <li key={item.key} className={rowClass}>
+              <CloudFileLink item={a} className="flex-1 min-w-0" />
+              {jumpButton(item)}
+            </li>
+          );
+        }
         return (
           <li key={item.key} className={rowClass}>
             <SignedLink url={a.url} className="flex items-center gap-3 flex-1 min-w-0 group">

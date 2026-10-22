@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Building2, Link2, Unlink, Eye, RefreshCw, Check, AlertCircle, Info, ChevronDown, Users, Copy, CalendarDays, Trash2 } from 'lucide-react';
+import { Building2, Link2, Unlink, Eye, RefreshCw, Check, AlertCircle, Info, ChevronDown, Users, Copy, CalendarDays, Trash2, Cloud } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
@@ -419,6 +419,84 @@ function ChurchCalendar({ provider, st, modules, reload }) {
   );
 }
 
+// Pliki z chmury (Faza 3): wyłączenie per dostawca i — dla Google — klucz API / numer projektu Pickera.
+// Każda osoba łączy WŁASNE konto (Mój profil albo przy pierwszym wyborze pliku); Avenit zapisuje tylko odnośnik.
+function CloudFilesSettings({ provider, st, reload }) {
+  const f = st.files || { enabled: true };
+  const [apiKey, setApiKey] = useState(f.picker_api_key || '');
+  const [appId, setAppId] = useState(f.picker_app_id || '');
+  const [busy, setBusy] = useState(null);
+  useEffect(() => { setApiKey(f.picker_api_key || ''); setAppId(f.picker_app_id || ''); }, [f.picker_api_key, f.picker_app_id]);
+  const domain = `*.${String(window.location.hostname || 'avenit.pl').split('.').slice(-2).join('.')}`;
+  const save = async (settings, key = 'save') => {
+    setBusy(key);
+    try {
+      await invoke('workspace-integration', { action: 'files_save', provider, settings });
+      toast.success(tr('Zapisano ustawienia plików z chmury.'));
+      reload();
+    } catch (e) { toast.error(e.message); } finally { setBusy(null); }
+  };
+  const isGoogle = provider === 'google';
+  return (
+    <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-600">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <div className="flex items-center gap-2">
+          <Cloud size={16} className="text-gray-500" aria-hidden="true" />
+          <h4 className="font-semibold text-gray-900 dark:text-white">{tr('Pliki z chmury')}</h4>
+          <StatusPill state={!f.enabled ? { tone: 'none', label: tr('Wyłączone') } : (isGoogle && !f.ready) ? { tone: 'error', label: tr('Wymaga konfiguracji') } : { tone: 'ok', label: tr('Włączone') }} />
+        </div>
+        <Toggle label={tr('Pliki z chmury')} checked={f.enabled !== false} disabled={busy === 'toggle'} onChange={(v) => save({ enabled: v }, 'toggle')} />
+      </div>
+      <p className={hintCls}>
+        {isGoogle
+          ? tr('Osoby dodają pliki z Dysku Google do wiadomości, materiałów wydarzeń i Plików jako odnośnik — bez kopiowania. Każdy łączy własne konto (zakres drive.file: dostęp tylko do wybranych plików).')
+          : tr('Osoby dodają pliki z OneDrive i SharePoint do wiadomości, materiałów wydarzeń i Plików jako odnośnik — bez kopiowania. Każdy łączy własne konto służbowe (odczyt plików, Files.Read.All).')}
+      </p>
+      {isGoogle && f.enabled && !f.ready && <Note tone="warn">{tr('Brakuje klucza API Google Picker — bez niego nie da się wybierać plików z Dysku Google.')}</Note>}
+      <details className="rounded-lg border border-gray-200 dark:border-gray-600 group">
+        <summary className="cursor-pointer select-none px-3 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center justify-between">
+          {tr('Jak włączyć pliki z chmury')}
+          <ChevronDown size={16} className="transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="px-3 pb-3 text-sm text-gray-700 dark:text-gray-300">
+          {isGoogle ? (
+            <ol className="list-decimal pl-5 space-y-1.5">
+              <li>{tr('W projekcie Google Cloud z klientem OAuth włącz „Google Drive API” i „Google Picker API”.')}</li>
+              <li>{tr('Na ekranie zgody dodaj zakres …/auth/drive.file — jest niewrażliwy (bez weryfikacji i audytu CASA).')}</li>
+              <li>{tr('Utwórz klucz API (Dane logowania → Klucz API), ogranicz go do odwołań HTTP {domain} i do „Google Picker API”, a potem wpisz go poniżej.', { domain })}</li>
+              <li>{tr('Numer projektu (identyfikator aplikacji Pickera) wyliczamy z identyfikatora klienta OAuth — wpisz go tylko, jeśli klucz pochodzi z innego projektu.')}</li>
+              <li>{tr('Udostępnianie organizacji przy dodawaniu pliku działa tylko dla kont Google Workspace i nigdy nie robi pliku publicznym.')}</li>
+            </ol>
+          ) : (
+            <ol className="list-decimal pl-5 space-y-1.5">
+              <li>{tr('W rejestracji aplikacji dodaj uprawnienia delegowane Microsoft Graph: Files.Read.All i offline_access.')}</li>
+              <li>{tr('Dla okna wyboru OneDrive / SharePoint dodaj uprawnienia delegowane SharePoint: MyFiles.Read i AllSites.Read.')}</li>
+              <li>{tr('Te uprawnienia zwykle wymagają zgody administratora: Entra → Aplikacje dla przedsiębiorstw → Avenit → Uprawnienia → „Udziel zgody administratora”.')}</li>
+              <li>{tr('Avenit nie zmienia udostępniania plików Microsoft 365 (wymagałoby prawa zapisu) — osoby udostępniają pliki w OneDrive / SharePoint.')}</li>
+            </ol>
+          )}
+        </div>
+      </details>
+      {isGoogle && f.enabled && (
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls} htmlFor="ws-picker-key">{tr('Klucz API Google Picker')}</label>
+            <input id="ws-picker-key" className={inputCls} value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={f.api_key_source === 'platform' ? tr('Używany klucz platformy') : 'AIza…'} autoComplete="off" spellCheck={false} />
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="ws-picker-app">{tr('Numer projektu Google (opcjonalnie)')}</label>
+            <input id="ws-picker-app" className={inputCls} value={appId} onChange={(e) => setAppId(e.target.value.replace(/\D/g, ''))} placeholder={f.app_id_effective || '123456789012'} inputMode="numeric" />
+            {f.app_id_effective && <p className={hintCls}>{tr('Używany: {id}', { id: f.app_id_effective })}</p>}
+          </div>
+          <div className="sm:col-span-2">
+            <Button size="sm" variant="outline" onClick={() => save({ picker_api_key: apiKey.trim(), picker_app_id: appId.trim() })} loading={busy === 'save'}>{tr('Zapisz')}</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProviderCard({ provider, st, roles, modules, reload }) {
   const [preview, setPreview] = useState(null);
   const [busy, setBusy] = useState(null);
@@ -506,6 +584,7 @@ function ProviderCard({ provider, st, roles, modules, reload }) {
       )}
 
       <ChurchCalendar provider={provider} st={st} modules={modules} reload={reload} />
+      <CloudFilesSettings provider={provider} st={st} reload={reload} />
     </div>
   );
 }
@@ -553,7 +632,7 @@ export default function WorkspaceIntegrations() {
         </div>
         <div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">{tr('Google Workspace i Microsoft 365')}</h2>
-          <p className="text-xs text-gray-500">{tr('Połączenie z kontem organizacji: konta z katalogu i kalendarz kościoła (wkrótce także pliki).')}</p>
+          <p className="text-xs text-gray-500">{tr('Połączenie z kontem organizacji: konta z katalogu, kalendarz kościoła i pliki z chmury.')}</p>
         </div>
       </div>
       {error && <Note tone="error">{error}</Note>}

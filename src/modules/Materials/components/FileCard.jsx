@@ -1,5 +1,7 @@
 import React from 'react';
-import { FileText, Image, File, Music, Video, Archive, Download, Trash2, Eye, Pencil, Share2, FolderInput } from 'lucide-react';
+import { FileText, Image, File, Music, Video, Archive, Download, Trash2, Eye, Pencil, Share2, FolderInput, ExternalLink } from 'lucide-react';
+import CloudProviderIcon from '../../../components/cloud/CloudProviderIcon';
+import { cloudOpenText, cloudProviderName } from '../../../components/cloud/cloudFilesLogic';
 import { tr, appLocale } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
 
@@ -71,11 +73,14 @@ export default function FileCard({
   canDelete = false,
   getFileUrl
 }) {
+  // Odnośnik do pliku w Dysku Google / OneDrive / SharePoint (Faza 3) — bez miniatury i podglądu
+  // w Avenit; kliknięcie otwiera plik u dostawcy.
+  const cloud = !!file.external_provider;
   const IconComponent = getFileIcon(file.mime_type);
   const iconColor = getIconColor(file.mime_type);
-  const isImage = isImageFile(file.mime_type);
-  const canPreview = isImage || file.mime_type === 'application/pdf';
-  const fileUrl = getFileUrl ? getFileUrl(file.storage_path) : null;
+  const isImage = !cloud && isImageFile(file.mime_type);
+  const canPreview = cloud || isImage || file.mime_type === 'application/pdf';
+  const fileUrl = getFileUrl && !cloud ? getFileUrl(file.storage_path) : null;
 
   const handleDownload = (e) => {
     e.stopPropagation();
@@ -90,6 +95,7 @@ export default function FileCard({
   };
 
   const handlePreview = () => {
+    if (cloud) { onDownload?.(file); return; }
     if (canPreview && onPreview) {
       onPreview(file);
     }
@@ -106,7 +112,11 @@ export default function FileCard({
       <div className="flex items-start gap-3">
         {/* Ikona lub miniatura */}
         <div className="flex-shrink-0">
-          {isImage && fileUrl ? (
+          {cloud ? (
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
+              <CloudProviderIcon provider={file.external_provider} size={26} title={cloudProviderName(file.external_provider)} />
+            </div>
+          ) : isImage && fileUrl ? (
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
               <img
                 src={fileUrl}
@@ -128,7 +138,7 @@ export default function FileCard({
             {isShared && <Share2 size={12} className="text-accent-primary shrink-0" title={tr('Udostępniony')} />}
           </h3>
           <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-            <span>{formatFileSize(file.file_size)}</span>
+            {cloud ? <span>{cloudProviderName(file.external_provider)}</span> : <span>{formatFileSize(file.file_size)}</span>}
             <span>•</span>
             <span>{formatDate(file.created_at)}</span>
             {file.download_count > 0 && (
@@ -150,7 +160,7 @@ export default function FileCard({
 
         {/* Akcje */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-          {canPreview && (
+          {canPreview && !cloud && (
             <button
               onClick={(e) => { e.stopPropagation(); handlePreview(); }}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-accent-primary transition-all duration-200"
@@ -162,9 +172,10 @@ export default function FileCard({
           <button
             onClick={handleDownload}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-accent-primary transition-all duration-200"
-            title={tr('Pobierz')}
+            title={cloud ? cloudOpenText(file.external_provider) : tr('Pobierz')}
+            aria-label={cloud ? `${cloudOpenText(file.external_provider)}: ${file.name}` : undefined}
           >
-            <Download size={16} />
+            {cloud ? <ExternalLink size={16} /> : <Download size={16} />}
           </button>
           {onMove && (
             <button

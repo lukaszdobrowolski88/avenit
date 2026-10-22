@@ -1,12 +1,12 @@
 # Integracje Google Workspace i Microsoft 365
 
-Plan trzech faz i to, co trzeba skonfigurować. Faza 1 (migracja tenanta 118) i Faza 2 (migracja 119) są zaimplementowane.
+Plan trzech faz i to, co trzeba skonfigurować. Faza 1 (migracja tenanta 118), Faza 2 (migracja 119) i Faza 3 (migracja 120) są zaimplementowane.
 
 | Faza | Zakres | Połączenie | Status |
 |------|--------|------------|--------|
 | 1 | Połączenie kościoła + synchronizacja kont z katalogu | kościoła (`scope_kind='tenant'`) | **zrobione** |
 | 2 | Dwukierunkowa synchronizacja kalendarza (wydarzenia ↔ Google Calendar / Outlook) | osoby (`scope_kind='user'`) + kalendarz kościoła | **zrobione** |
-| 3 | Wybór plików (Google Drive / OneDrive / SharePoint) w materiałach, zadaniach, Komunikatorze | osoby | schemat gotowy |
+| 3 | Pliki z Dysku Google / OneDrive / SharePoint bez kopiowania: Komunikator, materiały wydarzeń, Pliki (także grup domowych); mobilka — wyświetlanie | osoby (`scope_kind='user'`, cel `files`) | **zrobione** |
 
 ## Architektura (Faza 1)
 
@@ -130,6 +130,78 @@ Plan trzech faz i to, co trzeba skonfigurować. Faza 1 (migracja tenanta 118) i 
 - Webhooki (Google push channels / Graph subscriptions) — **nie** w tej wersji (odpytywanie co 5 min); dalsze usprawnienie:
   kanał `https://api.avenit.pl/api/integrations/calendar/webhook` + odnawianie subskrypcji przez workera.
 
+## Faza 3 — pliki z Dysku Google i OneDrive / SharePoint (bez kopiowania)
+
+### Model
+
+- **Odnośnik, nie kopia.** Avenit zapisuje tylko metadane: `{provider: 'google_drive'|'onedrive'|'sharepoint', file_id,
+  drive_id?, name, mime_type, size?, web_url, icon_url?, picked_by, picked_at}` (`@avenit/shared/src/lib/cloudFiles.js` —
+  wspólna normalizacja i biała lista dla serwera, weba i mobilki). Treść pliku nigdy nie przechodzi przez serwer Avenit
+  (bez pobierania, proxy i miniatur wymagających tokenu). O tym, kto może otworzyć plik, decydują uprawnienia u dostawcy.
+- **Połączenie osoby** (cel OAuth `files`, `scope_kind='user'`, zgoda przyrostowa — to samo połączenie co kalendarz):
+  - Google: **`drive.file`** (niewrażliwy; dostęp wyłącznie do plików wybranych w Google Picker). Picker potrzebuje
+    tokenu dostępu osoby + **klucza API przeglądarki** + **numeru projektu (appId)** — appId wyliczamy z identyfikatora
+    klienta OAuth (`123456789012-….apps.googleusercontent.com` → `123456789012`), inaczej `drive.file` nie obejmie plików.
+  - Microsoft: delegowane **`Files.Read.All` + `offline_access`**. File Picker v8 działa w oknie Microsoftu
+    (`<OneDrive osoby>/_layouts/15/FilePicker.aspx`, POST z tokenem) i prosi o tokeny dla zasobu SharePoint
+    (`https://<org>[-my].sharepoint.com`) — wydaje je serwer z refresh tokenu osoby (`scope=https://<host>/.default`,
+    rotacja refresh tokenu zapisywana zaszyfrowana; pamięć podręczna ~1 h w procesie). Dozwolone zasoby: tylko
+    `*.sharepoint.com` (→ `.default`) i Graph (→ `Files.Read.All`). Do przeglądarki trafiają wyłącznie krótko ważne tokeny
+    dostępu osoby — nigdy refresh token (fn odpowiada `Cache-Control: no-store`).
+- **Gdzie zapisujemy**:
+  - Pliki / materiały wydarzeń / materiały grup domowych → wiersz `materials_files` z kolumnami `external_provider`,
+    `external_id`, `external_drive_id`, `external_url` (migracja 120; `storage_path` NULL, CHECK: znany dostawca + https).
+    Dzięki temu odnośniki podlegają TYM SAMYM zakresom co pliki z magazynu: przestrzeń `team_type` (przestrzenie
+    wrażliwe Finanse/Członkowie… tylko z dostępem do modułu), udostępnienia, własność `uploaded_by` (rundy 5/6,
+    `materialsScope.js`), `event_materials` → materiały wydarzenia.
+  - Komunikator → element `messages.attachments` z `kind: 'cloud'`, `url = web_url` i `type =
+    application/vnd.avenit.cloud-link` (starsze klienty pokażą zwykły plik i otworzą adres, nigdy jako obrazek).
+- **Walidacja przy zapisie** (`dataapi/cloudLinks.js` → `integrations/cloudFiles.js#enforceCloudLinks`, dla każdego —
+  także administratora; wiadomości także przy wysyłce zaplanowanej): dostawca z białej listy; adres tylko `https` na
+  `drive.google.com`/`docs.google.com`, `*.sharepoint.com`, `onedrive.live.com`, `1drv.ms` (bez `user@`, portów,
+  podróbek hostów); autor = osoba z sesji; odnośnika nie da się podmienić `update`-em; dostawca wyłączony przez kościół →
+  403. Zwykłe załączniki wiadomości: tylko `/storage/…` albo `http(s)` (odrzucane `javascript:`/`data:`).
+- **Metadane** po wyborze pobiera serwer od dostawcy (`fn cloud-files → resolve`: Drive `files.get` z
+  `supportsAllDrives`, Graph `drives/{driveId}/items/{id}`) — klient nie podaje adresu. Foldery — odrzucane.
+- **Udostępnianie**: wybór pliku NIE zmienia uprawnień. Okno dodawania zawsze pokazuje „Odbiorcy muszą mieć dostęp do
+  pliku w Dysku Google / OneDrive / SharePoint”. Opcja (domyślnie wyłączona) **„Udostępnij plik osobom z linkiem w mojej
+  organizacji”** — tylko Google Workspace: `permissions.create {type:'domain', role:'reader', domain:<hd konta>,
+  allowFileDiscovery:false}` (w zakresie `drive.file` dla wybranych plików). Nigdy `anyone`. Microsoft: `createLink`
+  (`scope=organization`) wymaga `Files.ReadWrite` — świadomie pominięte, tylko komunikat.
+- **Rozłączenie**: Mój profil → „Pliki z Dysku Google i OneDrive” → Rozłącz. Gdy to samo połączenie obsługuje kalendarz,
+  odbieramy tylko zakres plików (odświeżenie tokenu nie rozszerza już zakresów połączenia osoby); inaczej połączenie
+  usuwane (Google: unieważnienie tokenu). Analogicznie rozłączenie kalendarza zostawia połączenie z plikami.
+
+### Gdzie w interfejsie
+
+- Web: Komunikator (+ → „Z Dysku Google lub OneDrive”, podgląd w polu, dymek, zakładka Pliki rozmowy), wydarzenie →
+  Materiały („Z Dysku Google lub OneDrive”), Pliki/Materiały (pod przesyłaniem plików; także zakładka Pliki modułów
+  i grup domowych), okno materiałów grupy domowej. Mój profil → karta „Pliki z Dysku Google i OneDrive”; łączenie także
+  z okna wyboru (nowe okno; wynik wraca kanałem `BroadcastChannel` — strony logowania Google/Microsoft zrywają
+  `window.opener` przez COOP; `main.jsx` → `lib/cloudConnectRelay.js`).
+- Ustawienia → Integracje → karta dostawcy → **„Pliki z chmury”**: włącz/wyłącz per dostawca (`workspace_integration_settings.files`),
+  Google: klucz API Picker i (opcjonalnie) numer projektu, instrukcja konfiguracji.
+- Mobilka: tylko wyświetlanie (Komunikator, Pliki, „Udostępnione mi”, materiały wydarzenia) — ikona dostawcy, nazwa,
+  „Otwórz w …” → `Linking.openURL` (przeglądarka albo aplikacja Dysk/OneDrive przez link uniwersalny). Wybór w apce — później.
+- CSP: aplikacja web nie ma nagłówka Content-Security-Policy (Caddy) ani meta CSP — skrypt `https://apis.google.com/js/api.js`
+  (ładowany dopiero przy pierwszym wyborze), ramka Google Picker i okno File Pickera działają bez zmian. Po dodaniu CSP
+  trzeba dopuścić: `script-src https://apis.google.com`, `frame-src https://docs.google.com https://drive.google.com`,
+  `connect-src` bez zmian (API Google/Microsoft woła serwer).
+
+### Konfiguracja (Faza 3)
+
+- **Google** (klient platformy albo kościoła): w tym samym projekcie Google Cloud włącz **Google Drive API** i **Google
+  Picker API**; ekran zgody: zakres `https://www.googleapis.com/auth/drive.file`; **klucz API** (Credentials → API key)
+  ograniczony do odwołań HTTP `*.avenit.pl/*` i do „Google Picker API”. Platforma: `.env` `GOOGLE_PICKER_API_KEY`
+  (+ opcjonalnie `GOOGLE_PICKER_APP_ID`, gdy numer projektu nie wynika z `GOOGLE_CLIENT_ID`). Kościół z własnym klientem:
+  wpisuje własny klucz w karcie „Pliki z chmury” (klucz platformy pochodzi z innego projektu).
+- **Microsoft** (rejestracja aplikacji): delegowane Microsoft Graph **`Files.Read.All`**, `offline_access`; delegowane
+  **SharePoint `MyFiles.Read` i `AllSites.Read`** (tokeny `.default` dla zasobu SharePoint w File Pickerze). `Files.Read.All`
+  /`AllSites.Read` zwykle wymagają **zgody administratora** organizacji (Entra → Enterprise applications → Avenit →
+  Permissions → Grant admin consent) — bez niej Picker zwraca czytelny błąd `consent_required`. Konto prywatne
+  Microsoft (MSA) nieobsługiwane (katalog `organizations`).
+- Migracja `120_cloud_files.sql` (idempotentna); `docker compose up -d api` (nowe zmienne środowiskowe).
+
 ## Co musi zrobić operator platformy
 
 1. **Microsoft (Entra ID → App registrations → New registration)**: „Accounts in any organizational directory (multitenant)”.
@@ -137,15 +209,18 @@ Plan trzech faz i to, co trzeba skonfigurować. Faza 1 (migracja tenanta 118) i 
    - API permissions: Microsoft Graph delegowane `openid`, `profile`, `email`, `User.Read`, **`offline_access`,
      `Calendars.ReadWrite`** (Faza 2 — kalendarze osób); **aplikacji** `User.Read.All` oraz **`Calendars.ReadWrite`**
      (Faza 2 — kalendarz kościoła; daje dostęp do wszystkich skrzynek organizacji — administrator kościoła może go
-     zawęzić `New-ApplicationAccessPolicy` w Exchange Online do grupy ze skrzynką kalendarza).
+     zawęzić `New-ApplicationAccessPolicy` w Exchange Online do grupy ze skrzynką kalendarza); Faza 3: delegowane
+     **`Files.Read.All`** (Graph) oraz **SharePoint `MyFiles.Read`, `AllSites.Read`** (File Picker v8).
    - Token configuration → Add groups claim → **Directory roles** (oświadczenie `wids` — bez niego działa fallback `/me/memberOf`).
    - Certificates & secrets → client secret; **Publisher verification** (MPN) zalecana — bez niej ekran zgody ostrzega „niezweryfikowany wydawca”.
    - `.env` na VPS: `MS_CLIENT_ID=…`, `MS_CLIENT_SECRET=…` → `docker compose up -d api worker`.
 2. **Google (opcjonalnie, klient platformy)**: OAuth client „Web application”, redirect URI
    `https://app.avenit.pl/api/integrations/oauth/google/callback`; `.env`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
    Faza 2: włącz **Google Calendar API** i dodaj na ekranie zgody zakresy `calendar.app.created` i `calendar.acls`.
+   Faza 3: włącz **Google Drive API** i **Google Picker API**, zakres `drive.file`, klucz API przeglądarki →
+   `.env` `GOOGLE_PICKER_API_KEY` (opcjonalnie `GOOGLE_PICKER_APP_ID`).
    Zob. „Weryfikacja Google” niżej — zalecany model to klient per kościół.
-3. Migracja tenantów: `node packages/api/db/migrate.mjs tenants` (118 i 119 są idempotentne). Worker: `docker compose up -d worker`
+3. Migracja tenantów: `node packages/api/db/migrate.mjs tenants` (118, 119 i 120 są idempotentne). Worker: `docker compose up -d worker`
    (nowe zadanie `calendar-sync` co minutę).
 
 ## Co musi zrobić administrator kościoła
@@ -167,6 +242,11 @@ Plan trzech faz i to, co trzeba skonfigurować. Faza 1 (migracja tenanta 118) i 
      `.../auth/calendar.app.created` i `.../auth/calendar.acls`. Kalendarz kościoła: Integracje → Google → „Połącz konto
      Google” → „Utwórz kalendarz kościoła” (udostępniany domenie do odczytu). Kalendarze osób: Mój profil → Połącz.
 
+- **Pliki z chmury (Faza 3)**: Ustawienia → Integracje → karta dostawcy → „Pliki z chmury” — domyślnie włączone, gdy
+  integracja ma aplikację OAuth (Google dodatkowo wymaga klucza API Picker). Microsoft 365: zatwierdź zgodę
+  administratora na `Files.Read.All` i uprawnienia SharePoint. Każda osoba łączy własne konto przy pierwszym wyborze
+  pliku albo w Mój profil.
+
 ## Weryfikacja aplikacji i zakresy w kolejnych fazach
 
 - **Google**: zakresy Admin SDK i kalendarza (także najwęższe `calendar.app.created`, `calendar.acls`) są „sensitive” — klient **External** wymaga weryfikacji;
@@ -179,6 +259,17 @@ Plan trzech faz i to, co trzeba skonfigurować. Faza 1 (migracja tenanta 118) i 
   przy zapisie). Weryfikacja wydawcy zalecana od Fazy 1.
 - Połączenia osób (`integration_connections.scope_kind='user'`, `user_id`) — używane od Fazy 2 (kalendarz); zakresy
   sumują się przy kolejnych zgodach (Google `include_granted_scopes`), Microsoft odświeża token z zakresami połączenia.
+
+## Ograniczenia Fazy 3
+
+- Wybór plików tylko na webie; mobilka wyświetla i otwiera odnośniki.
+- Microsoft: tylko konta służbowe/szkolne (OneDrive dla firm + SharePoint); bez automatycznego udostępniania.
+- Google: „Udostępnij organizacji” tylko dla kont Workspace (domena `hd`); konto prywatne Gmail — sam komunikat.
+  Token dla Pickera to token dostępu osoby (Google zwraca wszystkie zakresy udzielone Avenit, np. także kalendarz —
+  krótko ważny, tylko w przeglądarce tej osoby).
+- Bez miniatur i podglądu treści w Avenit (wymagałyby tokenu albo pośrednictwa serwera); zmiana nazwy pliku u dostawcy
+  nie aktualizuje nazwy w Avenit (odnośnik ma nazwę z chwili wyboru, można ją zmienić w Avenit).
+- Zadania (tablice) — bez plików z chmury w tej wersji.
 
 ## Ryzyka
 - Graph: przyrost dla kalendarza innego niż główny używa `calendars/{id}/calendarView/delta` (v1.0 dokumentuje delta dla

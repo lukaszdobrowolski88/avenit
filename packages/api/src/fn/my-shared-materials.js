@@ -117,6 +117,10 @@ export default async function handler(req, reply) {
             id: f.id,
             name: f.name,
             storage_path: f.storage_path,
+            // Odnośnik do pliku w chmurze (Faza 3, migracja 120) — otwierany u dostawcy.
+            external_provider: f.external_provider || null,
+            external_url: f.external_url || null,
+            external_id: f.external_id || null,
             mime_type: f.mime_type,
             file_size: f.file_size,
             folder_id: f.folder_id ?? null,
@@ -129,8 +133,10 @@ export default async function handler(req, reply) {
     if (fileIds.length) {
       try {
         const { rows } = await req.db.query(
-          `SELECT id, name, storage_path, mime_type, file_size, folder_id, created_at, team_type, uploaded_by
-             FROM materials_files WHERE id = ANY($1)`,
+          `SELECT id, name, storage_path, mime_type, file_size, folder_id, created_at, team_type, uploaded_by,
+                  to_jsonb(f)->>'external_provider' AS external_provider, to_jsonb(f)->>'external_url' AS external_url,
+                  to_jsonb(f)->>'external_id' AS external_id
+             FROM materials_files f WHERE id = ANY($1)`,
           [fileIds]
         );
         addFiles(rows, null);
@@ -139,8 +145,10 @@ export default async function handler(req, reply) {
     if (folderIds.length) {
       try {
         const { rows } = await req.db.query(
-          `SELECT id, name, storage_path, mime_type, file_size, folder_id, created_at, team_type, uploaded_by
-             FROM materials_files WHERE folder_id = ANY($1)`,
+          `SELECT id, name, storage_path, mime_type, file_size, folder_id, created_at, team_type, uploaded_by,
+                  to_jsonb(f)->>'external_provider' AS external_provider, to_jsonb(f)->>'external_url' AS external_url,
+                  to_jsonb(f)->>'external_id' AS external_id
+             FROM materials_files f WHERE folder_id = ANY($1)`,
           [folderIds]
         );
         addFiles(rows, 'folder');

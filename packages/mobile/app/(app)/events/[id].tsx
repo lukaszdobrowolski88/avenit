@@ -73,6 +73,8 @@ import { NewCalendarEventModal } from '../../../src/features/calendar/components
 import { OnlineMeetingCard, isOnlineFormat } from '../../../src/features/calendar/components/EventFormat';
 import { InterpretationCard } from '../../../src/features/interpretation/InterpretationCard';
 import { EventTasksSection } from '../../../src/features/calendar/components/EventTasksSection';
+import { CloudGlyph } from '../../../src/components/ui/CloudGlyph';
+import { cloudOpenLabel } from '../../../src/lib/cloudFiles';
 import { cap, isOngoing, isOver, relativeDay, timeRange, useCalendarLabel } from '../../../src/features/calendar/meta';
 
 // Pełny widok wydarzenia (jak strona wydarzenia na webie): termin i miejsce, szybkie akcje,
@@ -1137,7 +1139,7 @@ const Services = ({ sections }: { sections: ServiceSection[] }) => {
 };
 
 const FileRow = ({ file, first }: { file: EventFile; first: boolean }) => {
-  const image = (file.mime ?? '').startsWith('image/') || /\.(png|jpe?g|gif|webp|heic)$/i.test(file.name);
+  const image = !file.cloudProvider && ((file.mime ?? '').startsWith('image/') || /\.(png|jpe?g|gif|webp|heic)$/i.test(file.name));
   const Icon = image ? ImageIcon : FileText;
   return (
     <Pressable
@@ -1154,13 +1156,15 @@ const FileRow = ({ file, first }: { file: EventFile; first: boolean }) => {
       }}
     >
       <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: B.paper, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon size={17} color={B.ink2} />
+        {file.cloudProvider ? <CloudGlyph provider={file.cloudProvider} size={18} /> : <Icon size={17} color={B.ink2} />}
       </View>
       <View style={{ flex: 1 }}>
         <Text numberOfLines={1} style={{ fontSize: 15, color: B.ink, fontFamily: F.semibold }}>
           {file.name}
         </Text>
-        {fileSize(file.size) ? <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.medium }}>{fileSize(file.size)}</Text> : null}
+        {file.cloudProvider
+          ? <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.medium }}>{cloudOpenLabel(file.cloudProvider)}</Text>
+          : fileSize(file.size) ? <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.medium }}>{fileSize(file.size)}</Text> : null}
       </View>
       <ChevronRight size={16} color={B.ink4} />
     </Pressable>

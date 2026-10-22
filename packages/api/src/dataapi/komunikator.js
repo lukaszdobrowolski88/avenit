@@ -14,6 +14,7 @@ import {
 } from './komunikatorPlus.js';
 import { emitChange } from '../realtime/hub.js';
 import { normalizeThreadWrite } from './komunikatorThreads.js';
+import { enforceCloudLinkWrite } from './cloudLinks.js';
 
 // Rodzaj powiązania wiersza z rozmową.
 const CONV_TABLES = {
@@ -299,6 +300,8 @@ export async function enforceConversationWrite(q, req) {
   }
 
   if (q.table === 'messages') {
+    // Załączniki: odnośniki do plików w chmurze (Faza 3) i bezpieczne adresy zwykłych plików.
+    await enforceCloudLinkWrite(q, req);
     if (q.op === 'update') {
       for (const r of rows) {
         if ('sender_email' in r && lower(r.sender_email) !== me) throw new ApiError(403, 'Nie można zmienić nadawcy');

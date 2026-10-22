@@ -195,7 +195,13 @@ export async function getAccessToken(db, conn, { creds = null, force = false } =
   const accessEnc = await encryptToken(r.body.access_token);
   const refreshEnc = r.body.refresh_token ? await encryptToken(r.body.refresh_token) : null;
   const expiresAt = new Date(Date.now() + (Number(r.body.expires_in) || 3600) * 1000).toISOString();
-  const scopes = typeof r.body.scope === 'string' && r.body.scope && conn.provider === 'google' ? r.body.scope.split(/\s+/) : null;
+  let scopes = typeof r.body.scope === 'string' && r.body.scope && conn.provider === 'google' ? r.body.scope.split(/\s+/) : null;
+  // Połączenie osoby: odświeżenie może zakres tylko ZAWĘZIĆ (cofnięta zgoda), nie rozszerzyć — inaczej
+  // odłączony w Avenit cel (np. pliki przy pozostawionym kalendarzu) wracałby z tokenem Google, który
+  // dalej obejmuje wszystkie zakresy udzielone kiedyś aplikacji (include_granted_scopes).
+  if (scopes && conn.scope_kind === 'user' && Array.isArray(conn.scopes) && conn.scopes.length) {
+    scopes = scopes.filter((s) => conn.scopes.includes(s));
+  }
   await db.query(
     `UPDATE integration_connections
         SET access_token_enc = $2, refresh_token_enc = COALESCE($3, refresh_token_enc), expires_at = $4,
@@ -224,4 +230,55 @@ export async function apiGetJson(db, conn, url, { creds = null, headers = {} } =
     return body;
   }
   throw new IntegrationError('Token odrzucony przez dostawcę.', { code: 'unauthorized', status: 502 });
+}
+
+// ── Faza 3: tokeny delegowane Microsoft dla innego zasobu (File Picker v8) ──────────────────────
+// File Picker OneDrive/SharePoint działa w oknie Microsoftu i prosi stronę o token dla zasobu
+// SharePoint (https://<organizacja>[-my].sharepoint.com). Wydajemy go z refresh tokenu osoby
+// (refresh token Entra ID jest wielozasobowy), zwracamy WYŁĄCZNIE krótko ważny token dostępu —
+// refresh token zostaje zaszyfrowany w bazie (rotacja: nowy zapisujemy). Pamięć podręczna w procesie,
+// żeby każde „authenticate” Pickera nie szło do Microsoftu.
+const resourceTokenCache = new Map(); // `${conn.id}|${scope}` -> { accessToken, expiresAt }
+export function resetResourceTokenCache() { resourceTokenCache.clear(); }
+
+export async function msDelegatedToken(db, conn, scope, { creds = null } = {}) {
+  if (!conn || conn.provider !== 'microsoft' || conn.scope_kind !== 'user') {
+    throw new IntegrationError('Brak połączenia z kontem Microsoft.', { code: 'not_connected', status: 409 });
+  }
+  if (conn.status === 'revoked') throw new IntegrationError('Połączenie zostało cofnięte — połącz ponownie.', { code: 'revoked', status: 409 });
+  const key = `${conn.id}|${scope}`;
+  const hit = resourceTokenCache.get(key);
+  if (hit && new Date(hit.expiresAt).getTime() - Date.now() > 120_000) return { ...hit };
+  let refresh = '';
+  try { refresh = await decryptToken(conn.refresh_token_enc); } catch { refresh = ''; }
+  if (!refresh) {
+    await markConnection(db, conn.id, 'revoked', 'Brak tokenu odświeżania — połącz ponownie.');
+    throw new IntegrationError('Brak tokenu odświeżania — połącz ponownie.', { code: 'revoked', status: 409 });
+  }
+  const c = creds || await resolveIntegrationCreds(db, 'microsoft');
+  if (!c.clientId || !c.clientSecret) throw new IntegrationError('Integracja nie jest skonfigurowana (brak aplikacji OAuth).', { code: 'not_configured', status: 503 });
+  const r = await postForm(MICROSOFT.tokenUrl(conn.external_tenant || 'organizations'), {
+    client_id: c.clientId, client_secret: c.clientSecret, grant_type: 'refresh_token', refresh_token: refresh,
+    scope: `${scope} offline_access`,
+  });
+  if (!r.ok || !r.body?.access_token) {
+    const err = r.body?.error;
+    if (REVOKED_ERRORS.has(err) && !/AADSTS65001|consent/i.test(String(r.body?.error_description || ''))) {
+      const msg = `Zgoda cofnięta lub token wygasł: ${describeOAuthError(r.body)}`;
+      await markConnection(db, conn.id, 'revoked', msg);
+      throw new IntegrationError(msg, { code: 'revoked', status: 409 });
+    }
+    const consent = /AADSTS65001|consent_required|AADSTS650057/i.test(`${err} ${r.body?.error_description || ''}`);
+    throw new IntegrationError(consent
+      ? 'Organizacja nie zatwierdziła uprawnień do plików (SharePoint) dla Avenit — poproś administratora Microsoft 365 o zgodę.'
+      : `Microsoft odrzucił token dla plików: ${describeOAuthError(r.body)}`, { code: consent ? 'consent_required' : 'token_failed', status: consent ? 403 : 502 });
+  }
+  if (r.body.refresh_token) {
+    const enc = await encryptToken(r.body.refresh_token);
+    await db.query(`UPDATE integration_connections SET refresh_token_enc = $2, updated_at = now() WHERE id = $1`, [conn.id, enc]);
+    conn.refresh_token_enc = enc;
+  }
+  const out = { accessToken: r.body.access_token, expiresAt: new Date(Date.now() + (Number(r.body.expires_in) || 3600) * 1000).toISOString() };
+  resourceTokenCache.set(key, out);
+  return { ...out };
 }

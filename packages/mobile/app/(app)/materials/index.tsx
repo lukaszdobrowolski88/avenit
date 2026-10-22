@@ -51,6 +51,8 @@ import { goBack } from '../../../src/lib/navigation';
 import { friendlyError, showError } from '../../../src/lib/errors';
 import { toast } from '../../../src/lib/toast';
 import { PullToRefresh } from '../../../src/components/ui/PullToRefresh';
+import { isCloudItem, openCloudItem, cloudProviderOf, cloudProviderLabel } from '../../../src/lib/cloudFiles';
+import { CloudGlyph } from '../../../src/components/ui/CloudGlyph';
 
 const downloadsLabel = (n: number) => {
   if (n === 1) return '1 pobranie';
@@ -176,6 +178,8 @@ export default function MaterialsScreen() {
   const onRefresh = () => Promise.all([folders.refetch(), files.refetch()]);
 
   const handleOpenFile = async (file: FileRow) => {
+    // Plik z Dysku Google / OneDrive — otwieramy u dostawcy (przeglądarka / aplikacja dostawcy).
+    if (isCloudItem(file)) { await openCloudItem(file); return; }
     try {
       const url = await getDownloadUrl(file.storage_path);
       if (!url) {
@@ -420,6 +424,7 @@ export default function MaterialsScreen() {
                 <ListCard>
                   {files.data!.map((file: FileRow) => {
                     const meta = ICON_BY_TYPE[fileIconType(file.mime_type)];
+                    const cloudP = cloudProviderOf(file);
                     return (
                       <ListRow
                         key={file.id}
@@ -429,17 +434,19 @@ export default function MaterialsScreen() {
                               width: 42,
                               height: 42,
                               borderRadius: 21,
-                              backgroundColor: meta.bg,
+                              backgroundColor: cloudP ? '#FFFFFF' : meta.bg,
                               alignItems: 'center',
                               justifyContent: 'center',
                             }}
                           >
-                            <meta.Icon size={18} color={meta.tint} />
+                            {cloudP ? <CloudGlyph provider={cloudP} size={20} /> : <meta.Icon size={18} color={meta.tint} />}
                           </View>
                         }
                         dividerInset={72}
                         title={file.name}
-                        subtitle={`${formatBytes(file.file_size)}${file.download_count > 0 ? ` · ${downloadsLabel(file.download_count)}` : ''}`}
+                        subtitle={cloudP
+                          ? cloudProviderLabel(cloudP)
+                          : `${formatBytes(file.file_size)}${file.download_count > 0 ? ` · ${downloadsLabel(file.download_count)}` : ''}`}
                         onPress={() => handleOpenFile(file)}
                         onLongPress={() => fileActions(file)}
                         noChevron

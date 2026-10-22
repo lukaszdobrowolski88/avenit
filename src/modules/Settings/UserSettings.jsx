@@ -19,6 +19,7 @@ import { describeUserAgent } from './components/settingsLogic';
 import ChatQuietHours from '../Komunikator/components/ChatQuietHours';
 import TaskDigestPreference from './components/TaskDigestPreference';
 import CalendarSyncCard from './components/CalendarSyncCard';
+import CloudFilesCard from './components/CloudFilesCard';
 import {
   Church, CalendarDays, CalendarCheck, CheckSquare, PartyPopper, Music, Clapperboard, HeartHandshake, Baby, Home, Languages, Monitor,
 } from 'lucide-react';
@@ -972,6 +973,9 @@ export default function UserSettings() {
 
           {/* KALENDARZ GOOGLE / OUTLOOK — synchronizacja w obie strony (Faza 2) */}
           <CalendarSyncCard />
+
+          {/* PLIKI Z DYSKU GOOGLE / ONEDRIVE — odnośniki bez kopiowania (Faza 3) */}
+          <CloudFilesCard />
 
           {/* SUBSKRYPCJA KALENDARZA iCAL */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">

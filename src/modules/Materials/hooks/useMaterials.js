@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { isSignedMaterialsPath } from '@avenit/shared/src/lib/materialsAccess.js';
+import { cloudMaterialRow, cloudFromMaterialRow, cloudOpenUrl } from '@avenit/shared/src/lib/cloudFiles.js';
+import { tr } from '../../../i18n';
 
 // Pliki przestrzeni wrażliwych (Finanse, Członkowie…) serwer oddaje tylko podpisanym linkiem
 // (storage/routes.js) — podpisujemy je po pobraniu listy, żeby miniatury i podgląd działały.
@@ -117,6 +119,19 @@ export default function useMaterials(folderId = null, ministryKey = null) {
     }
   }, [folderId, ministryKey]);
 
+  // Pliki z Dysku Google / OneDrive (Faza 3 integracji): wiersze-odnośniki bez pliku w magazynie.
+  // Serwer sprawdza adres (biała lista hostów) i ustawia autora; zakres przestrzeni (team_type) jak dla plików.
+  const addCloudFiles = useCallback(async (attachments) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const folder = (folderId && folderId !== '__ALL__') ? folderId : null;
+    const rows = (attachments || []).map((a) => cloudMaterialRow(a, { folderId: folder, teamType: ministryKey, uploadedBy: user?.email || null }));
+    if (!rows.length) return [];
+    const { data, error: insertError } = await supabase.from('materials_files').insert(rows).select();
+    if (insertError) throw insertError;
+    await fetchFiles();
+    return data || [];
+  }, [folderId, ministryKey, fetchFiles]);
+
   // Upload wielu plików z progress
   const uploadFiles = useCallback(async (fileList) => {
     const files = Array.from(fileList);
@@ -152,13 +167,15 @@ export default function useMaterials(folderId = null, ministryKey = null) {
   // Usuń plik
   const deleteFile = useCallback(async (fileId, storagePath) => {
     try {
-      // Usuń z storage
-      const { error: storageError } = await supabase.storage
-        .from('materials')
-        .remove([storagePath]);
+      // Usuń z storage (odnośnik do pliku w chmurze nie ma pliku w magazynie — u dostawcy zostaje bez zmian)
+      if (storagePath) {
+        const { error: storageError } = await supabase.storage
+          .from('materials')
+          .remove([storagePath]);
 
-      if (storageError) {
-        console.warn('Error removing from storage:', storageError);
+        if (storageError) {
+          console.warn('Error removing from storage:', storageError);
+        }
       }
 
       // Usuń z bazy
@@ -179,6 +196,16 @@ export default function useMaterials(folderId = null, ministryKey = null) {
   // Pobierz plik (inkrementuje licznik pobrań)
   const downloadFile = useCallback(async (file) => {
     try {
+      // Plik w Dysku Google / OneDrive — otwieramy u dostawcy od razu (blokery okien), tylko adres
+      // z białej listy; licznik otwarć w tle.
+      if (file.external_provider) {
+        const url = cloudOpenUrl(cloudFromMaterialRow(file));
+        if (!url) throw new Error(tr('Nieprawidłowy adres pliku w chmurze'));
+        window.open(url, '_blank', 'noopener,noreferrer');
+        supabase.from('materials_files').update({ download_count: (file.download_count || 0) + 1 }).eq('id', file.id).then(() => {}, () => {});
+        return;
+      }
+
       // Inkrementuj licznik pobrań
       await supabase
         .from('materials_files')
@@ -209,6 +236,7 @@ export default function useMaterials(folderId = null, ministryKey = null) {
 
   // Pobierz URL pliku
   const getFileUrl = useCallback((storagePath) => {
+    if (!storagePath) return null; // odnośnik do pliku w chmurze — bez adresu w magazynie
     if (signedUrls[storagePath]) return signedUrls[storagePath];
     const { data } = supabase.storage
       .from('materials')
@@ -321,6 +349,7 @@ export default function useMaterials(folderId = null, ministryKey = null) {
     fetchFiles,
     uploadFile,
     uploadFiles,
+    addCloudFiles,
     deleteFile,
     downloadFile,
     getFileUrl,
