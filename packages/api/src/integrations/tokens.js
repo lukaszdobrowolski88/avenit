@@ -33,6 +33,42 @@ export async function loadConnection(db, provider, { scopeKind = 'tenant', userI
   return rows[0] || null;
 }
 
+export async function loadConnectionById(db, id) {
+  const { rows } = await db.query(`SELECT ${CONN_COLS} FROM integration_connections WHERE id = $1`, [id]);
+  return rows[0] || null;
+}
+
+// Zapis połączenia osoby (Faza 2+: kalendarz) — upsert po (provider, user_id) dla scope_kind 'user'.
+// Zakresy się sumują (zgoda przyrostowa: Google include_granted_scopes, kolejne cele u Microsoft).
+export async function saveUserConnection(db, {
+  provider, userId, externalTenant = null, accountEmail = null, scopes = [], accessToken = null,
+  refreshToken = null, expiresIn = null, createdBy = null,
+}) {
+  const accessEnc = await encryptToken(accessToken);
+  const refreshEnc = await encryptToken(refreshToken);
+  const expiresAt = expiresIn ? new Date(Date.now() + Number(expiresIn) * 1000).toISOString() : null;
+  const existing = await loadConnection(db, provider, { scopeKind: 'user', userId });
+  if (existing) {
+    const merged = [...new Set([...(existing.scopes || []), ...scopes])];
+    const { rows } = await db.query(
+      `UPDATE integration_connections
+          SET external_tenant = COALESCE($2, external_tenant), account_email = COALESCE($3, account_email), scopes = $4::text[],
+              access_token_enc = $5, refresh_token_enc = COALESCE($6, refresh_token_enc), expires_at = $7,
+              status = 'active', last_error = NULL, created_by = COALESCE($8, created_by), updated_at = now()
+        WHERE id = $1 RETURNING ${CONN_COLS}`,
+      [existing.id, externalTenant, accountEmail, merged, accessEnc, refreshEnc, expiresAt, createdBy]
+    );
+    return rows[0];
+  }
+  const { rows } = await db.query(
+    `INSERT INTO integration_connections
+       (provider, scope_kind, user_id, external_tenant, account_email, scopes, access_token_enc, refresh_token_enc, expires_at, status, created_by)
+     VALUES ($1, 'user', $2, $3, $4, $5::text[], $6, $7, $8, 'active', $9) RETURNING ${CONN_COLS}`,
+    [provider, userId, externalTenant, accountEmail, scopes, accessEnc, refreshEnc, expiresAt, createdBy]
+  );
+  return rows[0];
+}
+
 // Widok połączenia dla klienta — bez tokenów.
 export function publicConnection(conn) {
   if (!conn) return null;
@@ -144,9 +180,10 @@ export async function getAccessToken(db, conn, { creds = null, force = false } =
       throw new IntegrationError('Brak tokenu odświeżania — połącz ponownie.', { code: 'revoked', status: 409 });
     }
     const url = conn.provider === 'google' ? GOOGLE.tokenUrl : MICROSOFT.tokenUrl(conn.external_tenant || 'organizations');
-    r = await postForm(url, {
-      client_id: c.clientId, client_secret: c.clientSecret, grant_type: 'refresh_token', refresh_token: refresh,
-    });
+    const params = { client_id: c.clientId, client_secret: c.clientSecret, grant_type: 'refresh_token', refresh_token: refresh };
+    // Microsoft (v2): odświeżenie z zakresami połączenia (podzbiór udzielonych przy autoryzacji).
+    if (conn.provider === 'microsoft' && Array.isArray(conn.scopes) && conn.scopes.length) params.scope = conn.scopes.join(' ');
+    r = await postForm(url, params);
     if (!r.ok || !r.body?.access_token) {
       const revoked = REVOKED_ERRORS.has(r.body?.error);
       const msg = `${revoked ? 'Zgoda cofnięta lub token wygasł' : 'Nie udało się odświeżyć tokenu'}: ${describeOAuthError(r.body)}`;

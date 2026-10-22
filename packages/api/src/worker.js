@@ -19,6 +19,8 @@
 //  - board-import-legacy     przy starcie + codziennie 03:40 (stare tabele *_tasks → Tablice, raz na tenanta)
 //  - directory-sync          co 6 h (konta z katalogu Google Workspace / Microsoft 365 — tylko po
 //                            pierwszym ręcznym „Zastosuj” i z włączonym automatem)
+//  - calendar-sync           co 1 min (kalendarz Google / Outlook w obie strony: kolejka zapisów wydarzeń,
+//                            zmiany od dostawców co ~5 min, pełne uzgodnienie co 24 h — osobiste i kościoła)
 //  - process-dunning         codziennie 08:00 (baza platform; zawiesza WYŁĄCZNIE za brak płatności)
 //  - usage-snapshot          1. dnia miesiąca 04:30 Europe/Warsaw (liczba dorosłych per tenant → panel admina;
 //                            przekroczenie limitu planu niczego nie blokuje)
@@ -110,6 +112,9 @@ cron.schedule('*/10 * * * *', exclusive(() => forEachTenant('chat-channels-sync'
 // Integracje: konta z katalogu Google Workspace / Microsoft 365 — co 6 h (minuta 17, poza szczytem
 // innych zadań). Funkcja sama pomija kościoły bez połączenia / bez włączonego automatu.
 cron.schedule('17 */6 * * *', exclusive(() => forEachTenant('directory-sync', 'directory-sync')));
+// Kalendarz Google / Outlook (Faza 2): co minutę — zapisy wydarzeń z kolejki (debounce), zmiany od
+// dostawców co ~5 min, pełne uzgodnienie co 24 h. Bez połączonych kalendarzy — jedno zapytanie.
+cron.schedule('* * * * *', exclusive(() => forEachTenant('calendar-sync', 'calendar-sync')));
 
 // Automatyzacje: co 5 min — auto-zapis nowych oraz wykonanie należnych kroków.
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('automation', 'automation-run')));

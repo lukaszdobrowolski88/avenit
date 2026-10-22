@@ -18,6 +18,7 @@ import { toast } from '../../lib/toast';
 import { describeUserAgent } from './components/settingsLogic';
 import ChatQuietHours from '../Komunikator/components/ChatQuietHours';
 import TaskDigestPreference from './components/TaskDigestPreference';
+import CalendarSyncCard from './components/CalendarSyncCard';
 import {
   Church, CalendarDays, CalendarCheck, CheckSquare, PartyPopper, Music, Clapperboard, HeartHandshake, Baby, Home, Languages, Monitor,
 } from 'lucide-react';
@@ -968,6 +969,9 @@ export default function UserSettings() {
             </select>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{tr('Dotyczy tylko Ciebie i tej przeglądarki.')}</p>
           </div>
+
+          {/* KALENDARZ GOOGLE / OUTLOOK — synchronizacja w obie strony (Faza 2) */}
+          <CalendarSyncCard />
 
           {/* SUBSKRYPCJA KALENDARZA iCAL */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">

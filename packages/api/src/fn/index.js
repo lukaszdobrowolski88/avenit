@@ -152,6 +152,10 @@ const MODULES = [
   // w funkcji (zastosowanie synchronizacji także manage_users); worker co 6 h woła runForTenant.
   'workspace-integration',
   'directory-sync',
+  // Faza 2 (migracja 119): kalendarz Google / Outlook osoby — tylko własny kalendarz, bez wpisu
+  // w FN_CAPABILITY (wybór wydarzeń liczony uprawnieniami osoby); worker co minutę woła runForTenant
+  // (kolejka zapisów, zmiany od dostawców co ~5 min, pełne uzgodnienie co 24 h — także kalendarz kościoła).
+  'calendar-sync',
 ];
 
 export async function registerFunctions(app) {

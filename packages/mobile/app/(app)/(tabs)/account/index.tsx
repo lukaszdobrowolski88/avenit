@@ -7,6 +7,7 @@ import Constants from 'expo-constants';
 import {
   ArrowUpRight,
   Building2,
+  CalendarClock,
   Bell,
   BellRing,
   Send,
@@ -42,7 +43,7 @@ import { CampusSelector } from '../../../../src/components/CampusSelector';
 import { useCampus } from '../../../../src/contexts/CampusContext';
 import { supabase, tenantWebBase } from '../../../../src/lib/supabase';
 import { showError } from '../../../../src/lib/errors';
-import { useMyProfile, useRefreshProfileOnFocus, use2FAStatus } from '../../../../src/features/account/api';
+import { useMyProfile, useRefreshProfileOnFocus, use2FAStatus, useCalendarSyncStatus, calendarSyncSummary } from '../../../../src/features/account/api';
 import { storageImageUrl } from '../../../../src/lib/imageThumb';
 import { openModule, openOnWeb, useModules } from '../../../../src/features/modules/useModules';
 import { useT, useLang } from '../../../../src/i18n';
@@ -67,6 +68,7 @@ export default function AccountScreen() {
   const profile = useMyProfile(user?.email ?? null);
   useRefreshProfileOnFocus(user?.email ?? null);
   const twoFa = use2FAStatus();
+  const calendarSync = useCalendarSyncStatus(!!user?.email);
   const t = useT();
   const { lang, setLang, languages } = useLang();
   // Ustawienia kościoła (dla osób z dostępem) — przeniesione z zakładki Moduły.
@@ -365,6 +367,14 @@ export default function AccountScreen() {
           title={t('Dostosuj pulpit')}
           description={t('Sekcje, ich kolejność, skróty i moduły')}
           onPress={() => router.push('/(app)/account/dashboard')}
+        />
+        <SettingsRow
+          variant="nav"
+          Icon={CalendarClock}
+          title={t('Kalendarz Google / Outlook')}
+          description={calendarSyncSummary(calendarSync.data, t)}
+          rightElement={<ArrowUpRight size={17} color={B.ink4} strokeWidth={2} />}
+          onPress={() => openOnWeb('/profile')}
         />
         <SettingsRow
           variant="nav"

@@ -27,6 +27,7 @@ import { callDeps, emitRows, liveCallOf, assertEnabled, getCall } from '../calls
 import { churchName, linkPath, MESSAGES as GUEST_MESSAGES } from '../calls/guests.js';
 import * as L from '../calls/logic.js';
 import * as M from './logic.js';
+import { enqueueCalendarSync } from '../integrations/calendarQueue.js';
 
 const lower = (v) => String(v ?? '').trim().toLowerCase();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,13 +58,13 @@ async function mirrorEvent(db, meeting, { archive = false } = {}) {
   if (!meeting?.event_id || meeting.source !== 'meeting') return;
   if (archive) {
     await db.query(`UPDATE events SET is_archived = true WHERE id::text = $1`, [meeting.event_id]);
-    return;
+  } else {
+    const f = eventFieldsOf(meeting);
+    await db.query(
+      `UPDATE events SET title = $2, description = $3, date = $4::date, time = $5, end_time = $6, end_date = $7::date
+        WHERE id::text = $1`,
+      [meeting.event_id, f.title, f.description, f.date, f.time, f.end_time, f.end_date]);
   }
-  const f = eventFieldsOf(meeting);
-  await db.query(
-    `UPDATE events SET title = $2, description = $3, date = $4::date, time = $5, end_time = $6, end_date = $7::date
-      WHERE id::text = $1`,
-    [meeting.event_id, f.title, f.description, f.date, f.time, f.end_time, f.end_date]);
 }
 
 // ── Kontekst ────────────────────────────────────────────────────────────────
@@ -414,6 +415,7 @@ export async function createMeeting(ctx, user, body = {}) {
   });
 
   const { conv, parts, meeting, guestRows } = created;
+  if (meeting.event_id) await enqueueCalendarSync(db, [meeting.event_id], 'meeting');
   await emitRows(ctx, 'conversations', 'insert', [conv]);
   await emitRows(ctx, 'conversation_participants', 'insert', parts);
   await emitMeeting(ctx, meeting);
@@ -510,6 +512,7 @@ export async function updateMeeting(ctx, user, body = {}) {
   });
 
   const { meeting, conv, parts, removedParts, newGuests } = result;
+  if (meeting.event_id) await enqueueCalendarSync(db, [meeting.event_id], 'meeting'); // kalendarze Google / Outlook (119) — po transakcji
   if (conv) await emitRows(ctx, 'conversations', 'update', [conv]);
   if (parts.length) await emitRows(ctx, 'conversation_participants', 'insert', parts);
   // Usunięci: zdarzenie do nich samych (audience liczona po zapisie już ich nie obejmuje).
@@ -562,6 +565,7 @@ export async function cancelMeetingInternal(ctx, current, actor, { note = null }
   if (!meeting) return (await meetingById(db, current.id)) || current;
   await revokeGuestLinks(ctx, db, `meeting_id = $1`, [meeting.id]);
   await mirrorEvent(db, meeting, { archive: true });
+  if (meeting.event_id) await enqueueCalendarSync(db, [meeting.event_id], 'meeting');
   await emitMeeting(ctx, meeting);
   const me = lower(actor);
   const byName = (await namesOf(db, [me])).get(me) || me || 'Organizator';

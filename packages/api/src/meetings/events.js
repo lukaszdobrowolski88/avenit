@@ -346,6 +346,19 @@ async function assertEventManager(ctx, user, eventId) {
   return { ev, me };
 }
 
+// Czy osoba może edytować wydarzenie — te same zasady co zapis events przez /api/db (widoczność,
+// kampus, prawo update, zakres służby). Używane przez synchronizację kalendarzy (zmiana w Google /
+// Outlook trafia do Avenit tylko od osoby, która może edytować wydarzenie). Nie rzuca dla odmowy.
+export async function canEditEvent(ctx, user, eventId) {
+  try {
+    await assertEventManager(ctx, user, eventId);
+    return true;
+  } catch (e) {
+    if (e instanceof ApiError) return false;
+    throw e;
+  }
+}
+
 const guestRow = (i) => ({ id: i.id, email: i.email, name: i.name || M.nameFromEmail(i.email), response: i.response, email_sent: !!i.email_sent_at });
 
 // event-meeting-guests { event_id, add?: [{ email, name } | email], remove?: [invite_id] } → { guests, added, members_added }

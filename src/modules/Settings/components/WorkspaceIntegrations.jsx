@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Building2, Link2, Unlink, Eye, RefreshCw, Check, AlertCircle, Info, ChevronDown, Users, Copy } from 'lucide-react';
+import { Building2, Link2, Unlink, Eye, RefreshCw, Check, AlertCircle, Info, ChevronDown, Users, Copy, CalendarDays, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
@@ -11,6 +11,7 @@ import { Toggle } from './SettingsUI';
 import {
   WS_PROVIDERS, providerLabel, connectionState, callbackMessage, TRIGGER_LABEL, runSummary, SKIP_REASON, domainsToText,
 } from './workspaceLogic';
+import { syncSummary, listToText, textToList, formatWhen } from './calendarSyncLogic';
 
 // Ustawienia → Integracje → Google Workspace / Microsoft 365 (Faza 1: połączenie + konta z katalogu).
 // Dane i akcje wyłącznie przez fn workspace-integration / directory-sync — tokeny i sekrety nigdy
@@ -76,13 +77,15 @@ function SetupGuide({ provider, st }) {
             <li>{tr('Utwórz klienta OAuth typu „Aplikacja internetowa” (albo użyj klienta z logowania Google) i dodaj autoryzowany URI przekierowania:')}<CopyField value={st.redirect_uri} /></li>
             <li>{tr('Wpisz identyfikator i tajny klucz klienta poniżej (Własna aplikacja OAuth), chyba że platforma ma już skonfigurowanego klienta.')}</li>
             <li>{tr('Kliknij „Połącz” i zaloguj się kontem superadministratora Google Workspace — zaznacz wszystkie uprawnienia (odczyt użytkowników i grup).')}</li>
+            <li>{tr('Kalendarz (osobisty i kościoła): włącz „Google Calendar API” i dodaj na ekranie zgody zakresy calendar.app.created oraz calendar.acls. Zakresy kalendarza Google uznaje za wrażliwe — przy typie „Wewnętrzny” nie wymagają weryfikacji.')}</li>
           </ol>
         ) : (
           <ol className="list-decimal pl-5 space-y-1.5">
             <li>{tr('Kliknij „Połącz” i zaloguj się kontem Administratora globalnego Microsoft 365 (Entra ID).')}</li>
-            <li>{tr('Na drugim ekranie zatwierdź zgodę administratora w imieniu organizacji — aplikacja dostaje tylko odczyt listy użytkowników (User.Read.All).')}</li>
+            <li>{tr('Na drugim ekranie zatwierdź zgodę administratora w imieniu organizacji — aplikacja dostaje odczyt listy użytkowników (User.Read.All) oraz zapis kalendarzy (Calendars.ReadWrite) dla kalendarza kościoła.')}</li>
             <li>{tr('Zgodę można w każdej chwili cofnąć w centrum administracyjnym Entra: Aplikacje dla przedsiębiorstw → Avenit → Usuń.')}</li>
             <li>{tr('Własna rejestracja aplikacji (zaawansowane): URI przekierowania typu „Web”:')}<CopyField value={st.redirect_uri} />{tr('uprawnienia: delegowane User.Read oraz aplikacji User.Read.All, a w „Token configuration” oświadczenie grup → „Directory roles”.')}</li>
+            <li>{tr('Kalendarz: delegowane Calendars.ReadWrite i offline_access (kalendarze osób) oraz aplikacji Calendars.ReadWrite (kalendarz kościoła) — po dodaniu kliknij „Połącz ponownie”, żeby zatwierdzić zgodę. Dostęp aplikacji do skrzynek możesz zawęzić zasadą dostępu aplikacji w Exchange Online.')}</li>
           </ol>
         )}
       </div>
@@ -269,7 +272,154 @@ function History({ rows }) {
   );
 }
 
-function ProviderCard({ provider, st, roles, reload }) {
+// Kalendarz kościoła (Faza 2): Microsoft — skrzynka/zasób kościoła (uprawnienie aplikacji
+// Calendars.ReadWrite na połączeniu organizacji); Google — kalendarz na koncie administratora
+// udostępniony domenie. Tylko wydarzenia widoczne dla wszystkich członków (+ filtr modułów/typów).
+function ChurchCalendar({ provider, st, modules, reload }) {
+  const cal = st.calendar || {};
+  const t = cal.target;
+  const prefs = t?.prefs || {};
+  const [mailbox, setMailbox] = useState(t?.mailbox || '');
+  const [types, setTypes] = useState(listToText(prefs.event_types));
+  const [busy, setBusy] = useState(null);
+  useEffect(() => { setMailbox(t?.mailbox || ''); setTypes(listToText(t?.prefs?.event_types)); }, [t?.mailbox, t?.prefs?.event_types]);
+  const isMs = provider === 'microsoft';
+  const ready = isMs ? !!cal.tenant_connected : !!cal.admin_has_scope || !!t;
+
+  const run = async (key, fn) => { setBusy(key); try { await fn(); } catch (e) { toast.error(e.message); } finally { setBusy(null); } };
+  const save = (settings) => run('save', async () => {
+    await invoke('workspace-integration', { action: 'calendar_save', provider, settings });
+    toast.success(tr('Zapisano ustawienia kalendarza kościoła.'));
+    reload();
+  });
+  const savePrefs = (patch) => save({ prefs: patch });
+  const connectGoogle = () => run('connect', async () => {
+    const data = await invoke('workspace-integration', { action: 'calendar_connect', provider });
+    window.location.assign(data.url);
+  });
+  const syncNow = () => run('sync', async () => {
+    const r = await invoke('workspace-integration', { action: 'calendar_sync', provider });
+    if (r.result?.error) toast.error(r.result.error); else toast.success(tr('Kalendarz kościoła zsynchronizowany.'));
+    reload();
+  });
+  const remove = async () => {
+    if (!(await confirmDialog(tr('Wyłączyć kalendarz kościoła? Kalendarz u dostawcy zostaje, ale przestanie być aktualizowany.')))) return;
+    run('remove', async () => { await invoke('workspace-integration', { action: 'calendar_remove', provider }); reload(); });
+  };
+  const toggleModule = (key, on) => {
+    const cur = new Set(prefs.modules || []);
+    if (on) cur.add(key); else cur.delete(key);
+    savePrefs({ modules: [...cur] });
+  };
+  const moduleOptions = [{ key: 'general', label: tr('Ogólne') }, ...modules.filter((m) => m.key !== 'calendar').map((m) => ({ key: m.key, label: tr(m.label || m.key) }))];
+
+  return (
+    <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-600">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <div className="flex items-center gap-2">
+          <CalendarDays size={16} className="text-gray-500" aria-hidden="true" />
+          <h4 className="font-semibold text-gray-900 dark:text-white">{tr('Kalendarz kościoła')}</h4>
+          {t && <StatusPill state={t.status === 'error' ? { tone: 'error', label: tr('Błąd synchronizacji') } : t.enabled ? { tone: 'ok', label: tr('Włączony') } : { tone: 'none', label: tr('Wyłączony') }} />}
+        </div>
+        {t && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" icon={RefreshCw} onClick={syncNow} loading={busy === 'sync'}>{tr('Synchronizuj teraz')}</Button>
+            <Button variant="outline" size="sm" icon={Trash2} onClick={remove} loading={busy === 'remove'}>{tr('Wyłącz')}</Button>
+          </div>
+        )}
+      </div>
+      <p className={hintCls}>
+        {isMs
+          ? tr('Wydarzenia widoczne dla wszystkich członków trafiają do kalendarza wskazanej skrzynki (np. zasobu albo skrzynki współdzielonej) — każdy w organizacji może go dodać w Outlooku.')
+          : tr('Wydarzenia widoczne dla wszystkich członków trafiają do kalendarza „Avenit” na Twoim koncie Google, udostępnionego do odczytu całej domenie.')}
+      </p>
+      {t?.last_error && <Note tone="error">{t.last_error}</Note>}
+      {isMs && !cal.tenant_connected && <Note tone="warn">{tr('Najpierw połącz Microsoft 365 (przycisk „Połącz” powyżej).')}</Note>}
+      {isMs && cal.tenant_connected && !cal.app_role_ok && !t && (
+        <Note tone="warn">{tr('Aplikacja nie ma jeszcze uprawnienia Calendars.ReadWrite — po dodaniu go w rejestracji aplikacji kliknij „Połącz ponownie” i zatwierdź zgodę administratora.')}</Note>
+      )}
+      {!isMs && !cal.admin_has_scope && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button size="sm" icon={Link2} onClick={connectGoogle} loading={busy === 'connect'} disabled={!st.available}>{tr('Połącz konto Google')}</Button>
+          <span className={hintCls}>{tr('Twoje konto Google (najlepiej konto organizacji) zostanie właścicielem kalendarza kościoła.')}</span>
+        </div>
+      )}
+      {isMs && cal.tenant_connected && (
+        <div>
+          <label className={labelCls} htmlFor="ws-cal-mailbox">{tr('Skrzynka kalendarza kościoła')}</label>
+          <div className="flex gap-2">
+            <input id="ws-cal-mailbox" className={inputCls} value={mailbox} onChange={(e) => setMailbox(e.target.value)} placeholder="kalendarz@kosciol.pl" autoComplete="off" />
+            <Button size="sm" onClick={() => save({ mailbox: mailbox.trim(), enabled: true })} loading={busy === 'save'} disabled={!mailbox.trim()}>{t ? tr('Zapisz') : tr('Włącz')}</Button>
+          </div>
+          <p className={hintCls}>{tr('Skrzynka zasobu, współdzielona albo zwykła w Twojej organizacji Microsoft 365.')}</p>
+        </div>
+      )}
+      {!isMs && cal.admin_has_scope && !t && (
+        <Button size="sm" icon={CalendarDays} onClick={() => save({ use_my_account: true, enabled: true })} loading={busy === 'save'}>{tr('Utwórz kalendarz kościoła')}</Button>
+      )}
+      {ready && t && (
+        <div className="space-y-4">
+          <p className={hintCls}>
+            {t.calendar_name ? tr('Kalendarz „{name}”', { name: t.calendar_name }) : tr('Kalendarz zostanie utworzony przy pierwszej synchronizacji')}
+            {' · '}{syncSummary(t)}
+            {t.owner_email ? ` · ${tr('skonfigurował(a): {who}', { who: t.owner_email })}` : ''}
+          </p>
+          {!isMs && t.shared_with_domain === false && <Note tone="warn">{tr('Nie udało się udostępnić kalendarza domenie — udostępnij go ręcznie w ustawieniach kalendarza Google.')}</Note>}
+          {isMs && (
+            <fieldset className="space-y-2">
+              <legend className={labelCls}>{tr('Kalendarz w skrzynce')}</legend>
+              {[['dedicated', tr('Osobny kalendarz „Avenit”')], ['primary', tr('Główny kalendarz skrzynki')]].map(([v, label]) => (
+                <label key={v} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="ws-cal-mode" checked={(prefs.calendar_mode || 'dedicated') === v} onChange={() => savePrefs({ calendar_mode: v })} className="accent-accent-primary" />
+                  <span className="text-gray-800 dark:text-gray-100">{label}</span>
+                </label>
+              ))}
+            </fieldset>
+          )}
+          <fieldset>
+            <legend className={labelCls}>{tr('Moduły (puste = wszystkie)')}</legend>
+            <div className="flex flex-wrap gap-2">
+              {moduleOptions.map((m) => {
+                const on = (prefs.modules || []).includes(m.key);
+                return (
+                  <label key={m.key} className={`px-2.5 py-1 rounded-full text-xs cursor-pointer border ${on ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/40 border-accent-primary text-accent-primary-dark dark:text-accent-primary-light' : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                    <input type="checkbox" className="sr-only" checked={on} onChange={(e) => toggleModule(m.key, e.target.checked)} />
+                    {m.label}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div>
+            <label className={labelCls} htmlFor={`ws-cal-types-${provider}`}>{tr('Typy wydarzeń (puste = wszystkie)')}</label>
+            <input id={`ws-cal-types-${provider}`} className={inputCls} value={types} onChange={(e) => setTypes(e.target.value)}
+              onBlur={() => { if (types !== listToText(prefs.event_types)) savePrefs({ event_types: textToList(types) }); }} placeholder={tr('np. service, conference')} />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{tr('Importuj nowe wydarzenia z kalendarza kościoła')}</div>
+              <div className={hintCls}>{tr('Wydarzenie dodane w kalendarzu u dostawcy pojawi się w Avenit (kalendarz ogólny, widoczne dla wszystkich).')}</div>
+            </div>
+            <Toggle label={tr('Importuj nowe wydarzenia z kalendarza kościoła')} checked={!!prefs.import_new} onChange={(v) => savePrefs({ import_new: v })} />
+          </div>
+          {!isMs && (
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{tr('Udostępnij kalendarz całej domenie (odczyt)')}</div>
+              <Toggle label={tr('Udostępnij kalendarz całej domenie (odczyt)')} checked={prefs.share_domain !== false} onChange={(v) => savePrefs({ share_domain: v })} />
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{tr('Synchronizacja włączona')}</div>
+            <Toggle label={tr('Synchronizacja włączona')} checked={!!t.enabled} onChange={(v) => save({ enabled: v })} />
+          </div>
+          {t.last_pull_at && <p className={hintCls}>{tr('Zmiany z kalendarza sprawdzone: {when}', { when: formatWhen(t.last_pull_at) })}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProviderCard({ provider, st, roles, modules, reload }) {
   const [preview, setPreview] = useState(null);
   const [busy, setBusy] = useState(null);
   const state = connectionState(st);
@@ -354,6 +504,8 @@ function ProviderCard({ provider, st, roles, reload }) {
           <History rows={st.history} />
         </div>
       )}
+
+      <ChurchCalendar provider={provider} st={st} modules={modules} reload={reload} />
     </div>
   );
 }
@@ -361,6 +513,7 @@ function ProviderCard({ provider, st, roles, reload }) {
 export default function WorkspaceIntegrations() {
   const [status, setStatus] = useState(null);
   const [roles, setRoles] = useState([]);
+  const [modules, setModules] = useState([]);
   const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -376,6 +529,8 @@ export default function WorkspaceIntegrations() {
     load();
     supabase.from('app_roles').select('key, label, is_admin, display_order').order('display_order', { ascending: true })
       .then(({ data }) => setRoles(data || []));
+    supabase.from('app_modules').select('key, label, is_enabled').order('label', { ascending: true })
+      .then(({ data }) => setModules((data || []).filter((m) => m.is_enabled !== false)));
   }, [load]);
 
   // Powrót z ekranu zgody dostawcy: ?ws=google&ws_result=connected|error&ws_reason=…
@@ -386,7 +541,7 @@ export default function WorkspaceIntegrations() {
     const m = callbackMessage(ws, result, searchParams.get('ws_reason'));
     if (m.ok) toast.success(m.text); else toast.error(m.text);
     const next = new URLSearchParams(searchParams);
-    ['ws', 'ws_result', 'ws_reason'].forEach((k) => next.delete(k));
+    ['ws', 'ws_result', 'ws_reason', 'ws_target'].forEach((k) => next.delete(k));
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -398,14 +553,14 @@ export default function WorkspaceIntegrations() {
         </div>
         <div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">{tr('Google Workspace i Microsoft 365')}</h2>
-          <p className="text-xs text-gray-500">{tr('Połączenie z kontem organizacji: konta z katalogu (wkrótce także kalendarz i pliki).')}</p>
+          <p className="text-xs text-gray-500">{tr('Połączenie z kontem organizacji: konta z katalogu i kalendarz kościoła (wkrótce także pliki).')}</p>
         </div>
       </div>
       {error && <Note tone="error">{error}</Note>}
       {!status && !error && <div className="py-6 flex justify-center"><Spinner /></div>}
       {status && (
         <div className="space-y-4">
-          {WS_PROVIDERS.map((p) => status[p] && <ProviderCard key={p} provider={p} st={status[p]} roles={roles} reload={load} />)}
+          {WS_PROVIDERS.map((p) => status[p] && <ProviderCard key={p} provider={p} st={status[p]} roles={roles} modules={modules} reload={load} />)}
         </div>
       )}
     </section>

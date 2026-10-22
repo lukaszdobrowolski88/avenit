@@ -17,10 +17,12 @@
 import crypto from 'node:crypto';
 import { config } from '../config.js';
 import {
-  GOOGLE, MICROSOFT, PURPOSES, ENABLED_PURPOSES, GOOGLE_SCOPES, integrationRedirectUri, msAuthority,
+  GOOGLE, MICROSOFT, PURPOSES, ENABLED_PURPOSES, USER_PURPOSES, GOOGLE_SCOPES, integrationRedirectUri, msAuthority,
   isGuid, decodeJwt,
 } from './providers.js';
-import { IntegrationError, saveTenantConnection, markConnection, msClientCredentialsToken, describeOAuthError, loadConnection } from './tokens.js';
+import {
+  IntegrationError, saveTenantConnection, saveUserConnection, markConnection, msClientCredentialsToken, describeOAuthError, loadConnection,
+} from './tokens.js';
 
 export const STATE_TTL_MS = 10 * 60 * 1000;
 export const NONCE_COOKIE = 'avenit_intg';
@@ -35,8 +37,10 @@ const sha256 = (v) => crypto.createHash('sha256').update(String(v)).digest('hex'
 const b64url = (buf) => Buffer.from(buf).toString('base64url');
 const hmac = (payload) => crypto.createHmac('sha256', config.JWT_SECRET).update(`intg:${payload}`).digest('hex');
 
-export function signIntegrationState({ tenant, stateId, provider }) {
-  const payload = b64url(JSON.stringify({ t: tenant, s: stateId, p: provider }));
+export function signIntegrationState({ tenant, stateId, provider, purpose }) {
+  const o = { t: tenant, s: stateId, p: provider };
+  if (purpose && purpose !== 'directory') o.k = purpose; // cel (Faza 2) — tylko do wyboru strony powrotu
+  const payload = b64url(JSON.stringify(o));
   return `${payload}.${hmac(payload)}`;
 }
 
@@ -48,7 +52,7 @@ export function verifyIntegrationState(state) {
   try {
     const o = JSON.parse(Buffer.from(payload, 'base64url').toString());
     if (!o?.t || !o?.s || !o?.p) return null;
-    return { tenant: String(o.t), stateId: String(o.s), provider: String(o.p) };
+    return { tenant: String(o.t), stateId: String(o.s), provider: String(o.p), ...(o.k ? { purpose: String(o.k) } : {}) };
   } catch { return null; }
 }
 
@@ -62,6 +66,8 @@ export function pkcePair() {
 export async function startConnect(db, { provider, purpose = 'directory', tenant, user, creds }) {
   if (!ENABLED_PURPOSES.has(purpose)) throw new IntegrationError('Ten rodzaj połączenia nie jest jeszcze dostępny.', { code: 'purpose_disabled' });
   const P = PURPOSES[purpose];
+  if (!P[provider]) throw new IntegrationError('Ten rodzaj połączenia nie jest dostępny dla tego dostawcy.', { code: 'purpose_disabled' });
+  if (P.scopeKind === 'user' && !user?.id) throw new IntegrationError('Brak konta.', { code: 'forbidden', status: 403 });
   if (!creds?.clientId || !creds?.clientSecret) {
     throw new IntegrationError('Integracja niedostępna — brak aplikacji OAuth (skonfiguruj na platformie albo podaj własną).', { code: 'not_configured', status: 503 });
   }
@@ -74,7 +80,7 @@ export async function startConnect(db, { provider, purpose = 'directory', tenant
     [provider, purpose, P.scopeKind, user?.id ? String(user.id) : null, user?.email || null, verifier, sha256(nonce),
       new Date(Date.now() + STATE_TTL_MS).toISOString()]
   );
-  const state = signIntegrationState({ tenant, stateId: rows[0].id, provider });
+  const state = signIntegrationState({ tenant, stateId: rows[0].id, provider, purpose });
   const common = {
     client_id: creds.clientId, redirect_uri: integrationRedirectUri(provider), response_type: 'code',
     state, code_challenge: challenge, code_challenge_method: 'S256',
@@ -89,6 +95,8 @@ export async function startConnect(db, { provider, purpose = 'directory', tenant
   } else {
     const params = new URLSearchParams({
       ...common, scope: P.microsoft.join(' '), response_mode: 'query', prompt: 'select_account',
+      // Połączenie osoby: od razu jej adres w polu logowania (to samo konto co w Avenit — zwykle tak jest).
+      ...(P.scopeKind === 'user' && user?.email ? { login_hint: user.email } : {}),
     });
     url = `${MICROSOFT.authUrl(msAuthority(creds.msTenant))}?${params}`;
   }
@@ -128,6 +136,7 @@ export async function handleCallback(db, { provider, stateId, query, nonceCookie
   if (!creds?.clientId || !creds?.clientSecret) { await consume(); return fail('not_configured', 'Brak aplikacji OAuth.'); }
 
   try {
+    if (USER_PURPOSES.has(st.purpose)) return await userCallback(db, st, query, creds, consume, provider);
     if (provider === 'google') return await googleCallback(db, st, query, creds, consume);
     return await microsoftCallback(db, st, query, creds, consume, tenant);
   } catch (e) {
@@ -178,6 +187,64 @@ async function googleCallback(db, st, query, creds, consume) {
   return { result: 'connected', account: email };
 }
 
+// ── Połączenie osoby (Faza 2: kalendarz) ────────────────────────────────────
+// Google: dowolne konto (także prywatne Gmail — kalendarz osobisty), wymagany zakres
+// calendar.app.created. Microsoft: konto służbowe/szkolne (katalog z ustawień albo 'organizations'),
+// delegowane Calendars.ReadWrite + offline_access. Zapis: połączenie osoby (scope_kind 'user')
+// i — dla kalendarza osobistego — kalendarz docelowy (calendarSync.ensureUserTarget).
+async function userCallback(db, st, query, creds, consume, provider) {
+  const purpose = st.purpose;
+  const fail = (reason, message) => ({ result: 'error', reason, message, purpose });
+  const code = String(query.code || '');
+  if (!code) { await consume(); return fail('error', 'Brak kodu autoryzacji.'); }
+  if (!st.user_id) { await consume(); return fail('state', 'Brak konta.'); }
+  const P = PURPOSES[purpose];
+  const r = provider === 'google'
+    ? await postForm(GOOGLE.tokenUrl, {
+      client_id: creds.clientId, client_secret: creds.clientSecret, code, code_verifier: st.code_verifier,
+      redirect_uri: integrationRedirectUri('google'), grant_type: 'authorization_code',
+    })
+    : await postForm(MICROSOFT.tokenUrl(msAuthority(creds.msTenant)), {
+      client_id: creds.clientId, client_secret: creds.clientSecret, code, code_verifier: st.code_verifier,
+      redirect_uri: integrationRedirectUri('microsoft'), grant_type: 'authorization_code', scope: P.microsoft.join(' '),
+    });
+  await consume();
+  if (!r.ok || !r.body?.access_token) return fail('token', `${provider === 'google' ? 'Google' : 'Microsoft'}: ${describeOAuthError(r.body)}`);
+  const id = decodeJwt(r.body.id_token) || {};
+  let externalTenant = null;
+  let scopes;
+  if (provider === 'google') {
+    scopes = String(r.body.scope || '').split(/\s+/).filter(Boolean);
+    if (!scopes.includes(GOOGLE_SCOPES.calendarAppCreated)) {
+      return fail('scopes', 'Nie udzielono dostępu do kalendarza (zaznacz uprawnienie do kalendarzy tworzonych przez Avenit).');
+    }
+    externalTenant = id.hd ? String(id.hd).toLowerCase() : null;
+  } else {
+    const tid = String(id.tid || '').toLowerCase();
+    const aud = Array.isArray(id.aud) ? id.aud : [id.aud];
+    if (!isGuid(tid) || !aud.includes(creds.clientId)) return fail('token', 'Nieprawidłowy token Microsoft.');
+    externalTenant = tid;
+    scopes = P.microsoft.slice();
+    const granted = String(r.body.scope || '');
+    if (granted && !/Calendars\.ReadWrite/i.test(granted)) return fail('scopes', 'Nie udzielono dostępu do kalendarza (Calendars.ReadWrite).');
+  }
+  const email = String(id.email || id.preferred_username || '').toLowerCase() || null;
+  const existing = await loadConnection(db, provider, { scopeKind: 'user', userId: st.user_id });
+  if (!r.body.refresh_token && !existing?.refresh_token_enc) {
+    return fail('no_refresh', 'Dostawca nie zwrócił tokenu odświeżania — spróbuj ponownie.');
+  }
+  const conn = await saveUserConnection(db, {
+    provider, userId: st.user_id, externalTenant, accountEmail: email, scopes,
+    accessToken: r.body.access_token, refreshToken: r.body.refresh_token || null, expiresIn: r.body.expires_in,
+    createdBy: st.user_email,
+  });
+  if (purpose === 'calendar') {
+    const { ensureUserTarget } = await import('./calendarSync.js');
+    await ensureUserTarget(db, conn, { userId: st.user_id, email: st.user_email });
+  }
+  return { result: 'connected', account: email, purpose };
+}
+
 async function msIsConsentAdmin(idClaims, accessToken) {
   const wids = Array.isArray(idClaims.wids) ? idClaims.wids : [];
   if (wids.some((w) => MS_CONSENT_ROLES.has(String(w).toLowerCase()))) return true;
@@ -218,7 +285,7 @@ async function microsoftCallback(db, st, query, creds, consume, tenant) {
     );
     const params = new URLSearchParams({
       client_id: creds.clientId, scope: MICROSOFT.graphDefaultScope, redirect_uri: integrationRedirectUri('microsoft'),
-      state: signIntegrationState({ tenant, stateId: st.id, provider: 'microsoft' }),
+      state: signIntegrationState({ tenant, stateId: st.id, provider: 'microsoft', purpose: st.purpose }),
     });
     return { result: 'next', next: `${MICROSOFT.adminConsentUrl(tid)}?${params}` };
   }
