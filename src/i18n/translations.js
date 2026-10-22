@@ -5,6 +5,25 @@
 // Lista języków: src/i18n/languages.js (mała, w głównej paczce). Ten plik ładuje się leniwie.
 
 const en = {
+  // ── Służby: „Dodaj członka” z listy osób + dostęp do modułu ──
+  'Osoba jest na liście zespołu, ale nie ma dostępu do modułu — poproś administratora o dodanie jej do służby w Ustawieniach → Użytkownicy (Służby / Zespoły)': 'The person is on the team list but has no access to the module — ask an administrator to add them to the ministry in Settings → Users (Ministries / Teams)',
+  'Osoba dostała też dostęp do modułu służby.': 'The person also got access to the ministry module.',
+  'Ta osoba nie ma konta w aplikacji — trafi tylko na listę zespołu.': 'This person has no app account — they will only be added to the team list.',
+  'Ma już dostęp do modułu tej służby.': 'Already has access to this ministry\'s module.',
+  'Po zapisaniu dostanie też dostęp do modułu tej służby (jako członek).': 'After saving, they will also get access to this ministry\'s module (as a member).',
+  'Sposób dodania osoby': 'How to add the person',
+  'Wybierz z listy osób': 'Choose from the list of people',
+  'Dodaj ręcznie': 'Add manually',
+  'Wpisz dane osoby poniżej — np. kogoś, kto nie ma konta w aplikacji.': 'Enter the person\'s details below — e.g. someone without an app account.',
+  'Członek kościoła': 'Church member',
+  'Zmień osobę': 'Change person',
+  'Nie udało się wczytać listy osób — dodaj ręcznie.': 'Could not load the list of people — add manually.',
+  'Nikogo nie znaleziono — dodaj ręcznie.': 'No one found — add manually.',
+  'Brak osób do wyboru.': 'No people to choose from.',
+  'już w zespole': 'already on the team',
+  'bez konta': 'no account',
+  'Lista obejmuje konta w aplikacji.': 'The list includes app accounts.',
+  'Osoba dodana do służby trafia też na listę Członków tej służby (i do wyboru w grafiku).': 'A person added to a ministry also appears on that ministry\'s Members list (and can be picked in the schedule).',
   // ── Integracje: pliki z Dysku Google / OneDrive / SharePoint (Faza 3, migracja 120) ──
   'Dysk Google': 'Google Drive',
   'OneDrive': 'OneDrive',
@@ -8663,6 +8682,25 @@ const en = {
 };
 
 const uk = {
+  // ── Służby: „Dodaj członka” z listy osób + dostęp do modułu ──
+  'Osoba jest na liście zespołu, ale nie ma dostępu do modułu — poproś administratora o dodanie jej do służby w Ustawieniach → Użytkownicy (Służby / Zespoły)': 'Особа є в списку команди, але не має доступу до модуля — попросіть адміністратора додати її до служіння в Налаштуваннях → Користувачі (Служіння / Команди)',
+  'Osoba dostała też dostęp do modułu służby.': 'Особа також отримала доступ до модуля служіння.',
+  'Ta osoba nie ma konta w aplikacji — trafi tylko na listę zespołu.': 'Ця особа не має облікового запису в застосунку — її буде додано лише до списку команди.',
+  'Ma już dostęp do modułu tej służby.': 'Вже має доступ до модуля цього служіння.',
+  'Po zapisaniu dostanie też dostęp do modułu tej służby (jako członek).': 'Після збереження особа також отримає доступ до модуля цього служіння (як учасник).',
+  'Sposób dodania osoby': 'Спосіб додавання особи',
+  'Wybierz z listy osób': 'Вибрати зі списку людей',
+  'Dodaj ręcznie': 'Додати вручну',
+  'Wpisz dane osoby poniżej — np. kogoś, kto nie ma konta w aplikacji.': 'Введіть дані особи нижче — наприклад, когось без облікового запису в застосунку.',
+  'Członek kościoła': 'Член церкви',
+  'Zmień osobę': 'Змінити особу',
+  'Nie udało się wczytać listy osób — dodaj ręcznie.': 'Не вдалося завантажити список людей — додайте вручну.',
+  'Nikogo nie znaleziono — dodaj ręcznie.': 'Нікого не знайдено — додайте вручну.',
+  'Brak osób do wyboru.': 'Немає людей для вибору.',
+  'już w zespole': 'вже в команді',
+  'bez konta': 'без облікового запису',
+  'Lista obejmuje konta w aplikacji.': 'Список містить облікові записи застосунку.',
+  'Osoba dodana do służby trafia też na listę Członków tej służby (i do wyboru w grafiku).': 'Особа, додана до служіння, також з\'являється в списку учасників цього служіння (і її можна вибрати в графіку).',
   // ── Integracje: pliki z Dysku Google / OneDrive / SharePoint (Faza 3, migracja 120) ──
   'Dysk Google': 'Google Диск',
   'OneDrive': 'OneDrive',

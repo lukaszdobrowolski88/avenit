@@ -21,6 +21,7 @@ import { toast } from '../lib/toast';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
+import MemberPickerField, { useMemberPicker } from './shared/MemberPickerField';
 import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../components/ui/DataTable';
 import { confirmDialog } from '../lib/dialog';
 import CustomDatePicker from '../components/CustomDatePicker';  // wspólne pole daty (wcześniej lokalna kopia bez ramki pola)
@@ -45,6 +46,9 @@ export default function MlodziezowkaModule() {
 
   const [memberForm, setMemberForm] = useState({ id: null, full_name: '', email: '', phone: '', birth_date: '', notes: '' });
   const [leaderForm, setLeaderForm] = useState({ id: null, full_name: '', email: '', phone: '', role: '' });
+  // Dodawanie z listy osób (konta + Członkowie). Liderzy = służba (dostęp do modułu), uczestnicy — tylko lista.
+  const leaderPicker = useMemberPicker({ ministryKey: 'mlodziezowka', table: 'mlodziezowka_leaders' });
+  const memberPicker = useMemberPicker({ ministryKey: 'mlodziezowka', table: 'mlodziezowka_members' });
   // Finance data
   const [budgetItems, setBudgetItems] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -160,9 +164,11 @@ export default function MlodziezowkaModule() {
           phone: memberForm.phone,
           birth_date: memberForm.birth_date || null,
           notes: memberForm.notes,
-          created_by: currentUserEmail
+          created_by: currentUserEmail,
+          ...memberPicker.linkFields(),
         }]);
         if (error) throw error;
+        await memberPicker.finishInsert();
       }
 
       setShowMemberModal(false);
@@ -207,9 +213,11 @@ export default function MlodziezowkaModule() {
           full_name: leaderForm.full_name,
           email: leaderForm.email,
           phone: leaderForm.phone,
-          role: leaderForm.role
+          role: leaderForm.role,
+          ...leaderPicker.linkFields(),
         }]);
         if (error) throw error;
+        await leaderPicker.finishInsert();
       }
 
       setShowLeaderModal(false);
@@ -370,7 +378,7 @@ export default function MlodziezowkaModule() {
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Liderzy')} ({leaders.length})</h2>
-            <button onClick={() => { setLeaderForm({ id: null, full_name: '', email: '', phone: '', role: '' }); setShowLeaderModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj lidera')}</button>
+            <button onClick={() => { setLeaderForm({ id: null, full_name: '', email: '', phone: '', role: '' }); leaderPicker.open(); setShowLeaderModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj lidera')}</button>
           </div>
           <DataTable tableClassName="min-w-[700px]">
             <THead>
@@ -405,7 +413,7 @@ export default function MlodziezowkaModule() {
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Członkowie')} ({members.length})</h2>
-            <button onClick={() => { setMemberForm({ id: null, full_name: '', email: '', phone: '', birth_date: '', notes: '' }); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
+            <button onClick={() => { setMemberForm({ id: null, full_name: '', email: '', phone: '', birth_date: '', notes: '' }); memberPicker.open(); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj członka')}</button>
           </div>
           <DataTable tableClassName="min-w-[700px]">
             <THead>
@@ -463,6 +471,7 @@ export default function MlodziezowkaModule() {
         </>}
       >
         <div className="p-6 space-y-4">
+          {!memberForm.id && <MemberPickerField picker={memberPicker} onPick={(f) => setMemberForm((prev) => ({ ...prev, ...f }))} />}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
             <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
@@ -506,6 +515,7 @@ export default function MlodziezowkaModule() {
         </>}
       >
         <div className="p-6 space-y-4">
+          {!leaderForm.id && <MemberPickerField picker={leaderPicker} onPick={(f) => setLeaderForm((prev) => ({ ...prev, ...f }))} />}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
             <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={leaderForm.full_name} onChange={e => setLeaderForm({...leaderForm, full_name: e.target.value})} />

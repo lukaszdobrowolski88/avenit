@@ -9,6 +9,7 @@ import { tr } from '../../../i18n';
 import { useCampusQuery } from '../../../hooks/useCampusQuery';
 import { toast } from '../../../lib/toast';
 import { confirmDialog } from '../../../lib/dialog';
+import MemberPickerField, { useMemberPicker } from '../../shared/MemberPickerField';
 
 export default function MembersTab({ moduleKey, moduleName }) {
   const { withCampusFilter, campusIdForInsert } = useCampusQuery();
@@ -26,6 +27,8 @@ export default function MembersTab({ moduleKey, moduleName }) {
   const [selectedMemberRoles, setSelectedMemberRoles] = useState([]);
 
   const tableName = `custom_${moduleKey}_members`;
+  // „Dodaj członka” z listy osób (konta + Członkowie) — powiązanie z kontem i dostęp do modułu.
+  const memberPicker = useMemberPicker({ ministryKey: moduleKey, table: tableName });
 
   // Pobierz służby dla tego modułu
   const fetchModuleRoles = async () => {
@@ -125,7 +128,7 @@ export default function MembersTab({ moduleKey, moduleName }) {
       if (editingMember) {
         result = await supabase.from(tableName).update(form).eq('id', editingMember.id);
       } else {
-        result = await supabase.from(tableName).insert([{ ...form, campus_id: campusIdForInsert }]).select().single();
+        result = await supabase.from(tableName).insert([{ ...form, campus_id: campusIdForInsert, ...memberPicker.linkFields() }]).select().single();
         if (result.data) memberId = result.data.id;
       }
 
@@ -144,6 +147,7 @@ export default function MembersTab({ moduleKey, moduleName }) {
         }
         throw result.error;
       }
+      if (!editingMember) await memberPicker.finishInsert();
 
       // Zapisz przypisania do służb
       if (memberId) {
@@ -214,6 +218,7 @@ export default function MembersTab({ moduleKey, moduleName }) {
     setEditingMember(null);
     setForm({ full_name: '', email: '', phone: '' });
     setSelectedMemberRoles([]);
+    memberPicker.open();
     setShowModal(true);
   };
 
@@ -399,6 +404,7 @@ GRANT ALL ON ${tableName} TO anon;`;
         </>}
       >
         <div className="p-6 space-y-4">
+          {!editingMember && <MemberPickerField picker={memberPicker} onPick={(f) => setForm((prev) => ({ ...prev, ...f }))} />}
           {/* Imię i nazwisko */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">

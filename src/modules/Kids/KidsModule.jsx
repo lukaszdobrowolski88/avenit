@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
+import MemberPickerField, { useMemberPicker } from '../shared/MemberPickerField';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -90,6 +91,8 @@ export default function KidsModule() {
   const [showMaterialsModal, setShowMaterialsModal] = useState(false);
   const [showGlobalStudentModal, setShowGlobalStudentModal] = useState(false);
   const [teacherForm, setTeacherForm] = useState({ id: null, full_name: '', role: 'Nauczyciel', email: '', phone: '' });
+  // „Dodaj nauczyciela” z listy osób (konta + Członkowie) — powiązanie z kontem i dostęp do modułu.
+  const teacherPicker = useMemberPicker({ ministryKey: 'kids', table: 'kids_teachers' });
   const [groupForm, setGroupForm] = useState({ id: null, name: '', teacher_ids: [], room: '', age_range: '' });
   const [globalStudentForm, setGlobalStudentForm] = useState({ id: null, full_name: '', birth_year: '', parent_info: '', notes: '', group_id: null, household_id: null });
   const [households, setHouseholds] = useState([]);
@@ -297,9 +300,11 @@ export default function KidsModule() {
           full_name: teacherForm.full_name,
           role: teacherForm.role || 'Nauczyciel',
           email: teacherForm.email,
-          phone: teacherForm.phone
+          phone: teacherForm.phone,
+          ...teacherPicker.linkFields(),
         }]);
         if (error) throw error;
+        await teacherPicker.finishInsert();
       }
       setShowTeacherModal(false);
       fetchData();
@@ -495,7 +500,7 @@ export default function KidsModule() {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Nauczyciele')} ({teachers.length})</h2>
-            <button onClick={() => { setTeacherForm({ id: null, full_name: '', role: 'Nauczyciel', email: '', phone: '' }); setShowTeacherModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj nauczyciela')}</button>
+            <button onClick={() => { setTeacherForm({ id: null, full_name: '', role: 'Nauczyciel', email: '', phone: '' }); teacherPicker.open(); setShowTeacherModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> {tr('Dodaj nauczyciela')}</button>
           </div>
           <DataTable tableClassName="min-w-[600px]">
             <THead>
@@ -658,7 +663,7 @@ export default function KidsModule() {
         isOpen={showTeacherModal}
         onClose={() => setShowTeacherModal(false)}
         closeOnBackdrop={false}
-        size="sm"
+        size={teacherForm.id ? 'sm' : 'md'}
         title={tr('Nauczyciel')}
         footer={<>
           <Button variant="secondary" onClick={() => setShowTeacherModal(false)}>{tr('Anuluj')}</Button>
@@ -666,6 +671,7 @@ export default function KidsModule() {
         </>}
       >
             <div className="p-6 space-y-4">
+              {!teacherForm.id && <MemberPickerField picker={teacherPicker} onPick={(f) => setTeacherForm((prev) => ({ ...prev, ...f }))} />}
               <div><label htmlFor="kids-teacher-name" className={FIELD_LABEL}>{tr('Imię i nazwisko')} *</label><input id="kids-teacher-name" className={FIELD_INPUT} value={teacherForm.full_name || ''} onChange={e => setTeacherForm({...teacherForm, full_name: e.target.value})} /></div>
               <div><label htmlFor="kids-teacher-role" className={FIELD_LABEL}>{tr('Rola')}</label><input id="kids-teacher-role" className={FIELD_INPUT} placeholder={t('np. Nauczyciel')} value={teacherForm.role || ''} onChange={e => setTeacherForm({...teacherForm, role: e.target.value})} /></div>
               <div><label htmlFor="kids-teacher-phone" className={FIELD_LABEL}>{tr('Telefon')}</label><input id="kids-teacher-phone" type="tel" className={FIELD_INPUT} value={teacherForm.phone || ''} onChange={e => setTeacherForm({...teacherForm, phone: e.target.value})} /></div>
