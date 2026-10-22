@@ -67,6 +67,16 @@
         "mainEntity": [
           {
             "@type": "Question",
+            "name": "How does live translation work?",
+            "acceptedAnswer": { "@type": "Answer", "text": "You start channels in several languages for a service. The interpreter speaks into a microphone in the browser or in the app, and listeners scan a QR code, pick a language and listen on their own phones with headphones, without creating an account." }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Avenit work with Microsoft 365 or Google Workspace?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Yes. Accounts from your church directory join Avenit automatically or via an approval queue, events and services sync both ways with Outlook and Google Calendar, and files from OneDrive, SharePoint and Google Drive are available without copying. Your church admin connects it once." }
+          },
+          {
+            "@type": "Question",
             "name": "Which languages does Avenit support?",
             "acceptedAnswer": { "@type": "Answer", "text": "English, Polish and Ukrainian. Every user picks their own language in the app, in the browser and on the phone." }
           },
@@ -83,7 +93,7 @@
           {
             "@type": "Question",
             "name": "How much does the church app cost?",
-            "acceptedAnswer": { "@type": "Answer", "text": "From 79 zł a month, VAT included. The price depends on the number of adults in your member directory, and every module is in every plan: Start up to 50 adults 79 zł, Community up to 150 adults 159 zł, Church up to 400 adults 299 zł, Church+ up to 1000 adults 499 zł a month. Yearly billing gives 2 months free. Trial period with no credit card." }
+            "acceptedAnswer": { "@type": "Answer", "text": "From 79 zł a month, VAT included. The price depends on the number of user accounts in the app, and every module is in every plan: Start up to 50 user accounts 79 zł, Community up to 150 user accounts 159 zł, Church up to 400 user accounts 299 zł, Church+ up to 1000 user accounts 499 zł a month. Yearly billing gives 2 months free. Trial period with no credit card." }
           },
           {
             "@type": "Question",
@@ -563,6 +573,47 @@
     .vc-ctl svg { width: 1.3em; height: 1.3em; }
     @media (max-width: 900px) { .calls { grid-template-columns: minmax(0, 1fr); } .calls-phone { font-size: 13px; } }
 
+    /* ── tłumaczenie na żywo ── */
+    .tl { background: var(--kurkuma-j); }
+    .tl .qa li { border-color: rgba(42, 35, 18, .16); }
+    .tl .qa li > span { color: #4F4426; }
+    .tl-note { margin-top: 18px; font-size: 15px; color: #4F4426; }
+    .lt { position: absolute; inset: 0; background: var(--papier); display: flex; flex-direction: column; }
+    .lt-head { padding: .3em 1.3em .9em; }
+    .lt-head b { display: block; font-size: 1.15em; letter-spacing: -.01em; }
+    .lt-head small { display: flex; align-items: center; gap: .4em; font-size: .76em; color: var(--pomoc); margin-top: .2em; }
+    .lt-head small i { width: .55em; height: .55em; border-radius: 50%; background: #E0483A; }
+    .lt-list { margin: 0 1em; background: var(--biel); border-radius: 1.2em; padding: .35em; }
+    .lt-row { display: flex; align-items: center; gap: .7em; padding: .75em .8em; border-radius: .9em; font-size: .86em; }
+    .lt-row + .lt-row { margin-top: .1em; }
+    .lt-row.on { background: var(--kurkuma-j); }
+    .lt-row .code { width: 2.6em; height: 2.6em; border-radius: 50%; background: var(--papier-2); display: grid; place-items: center; font-weight: 800; font-size: .82em; flex: none; }
+    .lt-row.on .code { background: var(--slod); color: var(--kurkuma); }
+    .lt-row .tx { flex: 1; min-width: 0; }
+    .lt-row .tx b { display: block; }
+    .lt-row .tx small { display: block; font-size: .85em; color: var(--pomoc); }
+    .lt-row .rd { width: 1.2em; height: 1.2em; border-radius: 50%; box-shadow: inset 0 0 0 .14em rgba(42, 35, 18, .3); flex: none; }
+    .lt-row.on .rd { box-shadow: inset 0 0 0 .38em var(--slod); }
+    .lt-play { margin: 1em; display: flex; align-items: center; justify-content: center; gap: .5em; padding: .95em; border-radius: 99em; background: var(--kurkuma); color: var(--slod); font-weight: 800; font-size: .95em; }
+    .lt-play svg { width: 1.2em; height: 1.2em; }
+    .lt-wave { display: flex; align-items: flex-end; justify-content: center; gap: .22em; height: 2.4em; margin-top: auto; padding-bottom: .4em; }
+    .lt-wave i { display: block; width: .32em; height: 1.2em; border-radius: .2em; background: var(--slod); opacity: .75; animation: wave 1.1s ease-in-out infinite; }
+    .lt-wave i:nth-child(2n) { height: 1.8em; } .lt-wave i:nth-child(3n) { height: .8em; }
+    .lt-wave i:nth-child(2n) { animation-delay: .15s; } .lt-wave i:nth-child(3n) { animation-delay: .3s; } .lt-wave i:nth-child(5n) { animation-delay: .45s; }
+    @keyframes wave { 0%, 100% { height: .5em; } 50% { height: 2em; } }
+    .lt-foot { display: flex; justify-content: space-between; padding: .2em 1.4em 1.8em; font-size: .74em; color: var(--pomoc); }
+    .lt-foot b { color: var(--slod); }
+
+    /* ── integracje ── */
+    .intg { margin-top: clamp(36px, 4.5vw, 56px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 clamp(20px, 3vw, 48px); }
+    .intg > div { padding-top: 22px; border-top: 1px solid var(--linia); }
+    .intg i { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--papier-2); color: var(--slod); }
+    .intg i .ico { width: 22px; height: 22px; }
+    .intg h3 { margin-top: 16px; font-size: clamp(20px, 1.6vw, 23px); font-weight: 800; letter-spacing: -.02em; color: var(--slod); line-height: 1.25; }
+    .intg p { margin-top: 8px; font-size: 16.5px; line-height: 1.6; }
+    .intg-note { margin-top: 28px; font-size: 15px; color: var(--pomoc); }
+    @media (max-width: 900px) { .intg { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
     /* ── SChWro ── */
     .proof { background: var(--kurkuma-j); padding: clamp(72px, 9vw, 128px) 0; }
     .proof-in { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 40px clamp(32px, 5vw, 96px); align-items: center; }
@@ -711,6 +762,11 @@
       <symbol id="i-kanban" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/></symbol>
       <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-8"/></symbol>
       <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></symbol>
+      <symbol id="i-lang" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></symbol>
+      <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></symbol>
+      <symbol id="i-sync" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/></symbol>
+      <symbol id="i-idcard" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.5"/><circle cx="8" cy="12" r="2.5"/><path d="M14 10h5"/><path d="M14 14h4"/></symbol>
+      <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H8a6 6 0 1 1 5.7-7.9A4.5 4.5 0 1 1 17.5 19z"/></symbol>
     </defs>
   </svg>
 
@@ -1143,6 +1199,37 @@
       </div>
     </section>
 
+    <!-- ═══════════ TŁUMACZENIE NA ŻYWO ═══════════ -->
+    <section class="sec tl" id="tlumaczenie" aria-labelledby="tl-h">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="dw h2" id="tl-h" data-rv><span>Live translation<span class="pt">.</span></span><span class="l">Everyone listens in their own language<span class="pt">.</span></span></h2>
+          <p data-rv style="--d:.1s">The interpreter speaks into a microphone, and guests listen on their own phones with headphones. No accounts to create and no receivers to hand out.</p>
+        </div>
+        <div class="calls">
+          <div data-rv>
+            <ul class="qa">
+              <li><b>Several languages at once<span class="pt">.</span></b><span>Start channels for a service, e.g. English, Ukrainian and Russian. The interpreter speaks from a console in the browser or from the app.</span></li>
+              <li><b>Listeners need no account<span class="pt">.</span></b><span>They scan the QR code from a poster you print with one click, pick a language and listen in their phone’s browser. People with the Avenit app can also listen in the app.</span></li>
+              <li><b>The interpreter can sit outside the hall<span class="pt">.</span></b><span>The “Original” channel sends them the sound from the mixer. Switching interpreters mid-service is one tap on “Take over the mic”.</span></li>
+              <li><b>Interpreters like any other ministry<span class="pt">.</span></b><span>Team line-up, languages, a service schedule and a live listener count. Once they confirm their service, the interpreter gets their channel.</span></li>
+            </ul>
+            <p class="tl-note">Tested with several hundred listeners at once. A person translates, not a machine.</p>
+          </div>
+          <div class="calls-phone" aria-hidden="true">
+            <div class="phone"><div class="scr"><div class="lt">
+              <div class="sb"><span>9:41</span><span class="bt"><s></s><i></i></span></div>
+              <div class="lt-head"><b>Sunday service</b><small><i></i>Live translation</small></div>
+              <div class="lt-list"><div class="lt-row on"><span class="code">EN</span><span class="tx"><b>English</b><small>Anna translating</small></span><span class="rd"></span></div><div class="lt-row"><span class="code">UK</span><span class="tx"><b>Українська</b><small>Olena translating</small></span><span class="rd"></span></div><div class="lt-row"><span class="code">RU</span><span class="tx"><b>Русский</b><small>Igor translating</small></span><span class="rd"></span></div></div>
+              <div class="lt-play"><svg class="ico"><use href="#i-headphones"/></svg>Listen</div>
+              <div class="lt-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="lt-foot"><span><b>128</b> listeners</span><span>no account</span></div>
+            </div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ═══════════ WSZĘDZIE (słód) ═══════════ -->
     <section class="sec dark" id="wszedzie" aria-labelledby="ws-h">
       <div class="wrap">
@@ -1151,7 +1238,7 @@
           <div class="fact" data-rv>
             <i class="fi"><svg class="ico"><use href="#i-mobile"/></svg></i>
             <h3>A phone app</h3>
-            <p>iPhone and Android. Push notifications about ministries, changes and new prayer requests.</p>
+            <p>iPhone and Android, with the same features as in the browser. Push notifications about ministries, changes and new prayer requests.</p>
             <div class="stores" aria-label="Get the Avenit app"><a href="https://apps.apple.com/app/id6820247671" target="_blank" rel="noopener" data-track="store-appstore-facts"><img src="/assets/brand/stores/appstore-en.svg" alt="Download on the App Store" width="135" height="40" loading="lazy" /></a><a href="https://play.google.com/store/apps/details?id=pl.avenit.app&amp;hl=en" target="_blank" rel="noopener" data-track="store-googleplay-facts"><img src="/assets/brand/stores/googleplay-en.png" alt="Get it on Google Play" width="148" height="44" loading="lazy" /></a></div>
           </div>
           <div class="fact" data-rv style="--d:.08s">
@@ -1171,6 +1258,22 @@
             <p>A separate database for your church, nightly backups and a data processing agreement.</p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ INTEGRACJE ═══════════ -->
+    <section class="sec" id="integracje" aria-labelledby="int-h">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="dw h2" id="int-h" data-rv><span>Microsoft 365 and Google Workspace<span class="pt">.</span></span><span class="l">Avenit works with what you already use<span class="pt">.</span></span></h2>
+          <p data-rv style="--d:.1s">Your church’s accounts, calendars and files connect to Avenit. No retyping and no copying files.</p>
+        </div>
+        <div class="intg">
+          <div data-rv><i><svg class="ico"><use href="#i-idcard"/></svg></i><h3>Accounts from your directory</h3><p>People from your church domain, e.g. @yourchurch.org, join Avenit automatically or go to an approval queue. You see a preview before any change.</p></div>
+          <div data-rv style="--d:.06s"><i><svg class="ico"><use href="#i-sync"/></svg></i><h3>Two-way calendar</h3><p>Events and services appear right away in Outlook and Google Calendar, including your church’s shared calendar. Changes sync back to Avenit.</p></div>
+          <div data-rv style="--d:.12s"><i><svg class="ico"><use href="#i-cloud"/></svg></i><h3>Files without copying</h3><p>Files from OneDrive, SharePoint and Google Drive in messages, events and Files, keeping their permissions.</p></div>
+        </div>
+        <p class="intg-note" data-rv>Sign in with Google or Microsoft. Your church’s Microsoft 365 or Google Workspace admin connects it once.</p>
       </div>
     </section>
 
@@ -1205,6 +1308,7 @@
           <button class="mod" type="button" role="switch" aria-checked="false">Files<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="false">Mailbox<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="false">Custom modules<span class="sw" aria-hidden="true"></span></button>
+          <button class="mod" type="button" role="switch" aria-checked="true">Translation<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="true">Calls &amp; online meetings<span class="sw" aria-hidden="true"></span></button>
           <button class="mod" type="button" role="switch" aria-checked="false">Projects &amp; tasks<span class="sw" aria-hidden="true"></span></button>
         </div>
@@ -1216,7 +1320,7 @@
       <div class="wrap">
         <div class="sec-head">
           <h2 class="dw h2" id="cen-h" data-rv><span>What does it cost<span class="pt">?</span></span><span class="l">You pay for the size of your church, not for modules<span class="pt">.</span></span></h2>
-          <p data-rv style="--d:.1s">Every module is in every plan, and the whole church can use the app with no user limit. We only count adults in the member directory: children, guests and archived people don’t count.</p>
+          <p data-rv style="--d:.1s">Every module is in every plan. We count active user accounts in the app: pending and blocked accounts don’t count, and people in your member directory without an account are unlimited.</p>
         </div>
 
         <div class="price-bar" data-rv>
@@ -1230,7 +1334,7 @@
         <div class="plans" aria-live="polite">
           <div class="plan" data-rv data-m="79" data-y="790" data-ym="65.83 zł per month">
             <h3>Start</h3>
-            <p class="size">up to <b>50</b> adults</p>
+            <p class="size">up to <b>50</b> user accounts</p>
             <p class="amount"><b class="num">79</b><span>zł / month</span></p>
             <p class="per"></p>
             <p class="extra">For a small church that wants to get Sunday and people in order.</p>
@@ -1238,7 +1342,7 @@
           </div>
           <div class="plan" data-rv style="--d:.06s" data-m="159" data-y="1,590" data-ym="132.50 zł per month">
             <h3>Community</h3>
-            <p class="size">up to <b>150</b> adults</p>
+            <p class="size">up to <b>150</b> user accounts</p>
             <p class="amount"><b class="num">159</b><span>zł / month</span></p>
             <p class="per"></p>
             <p class="extra">For a church with several ministries, home groups and a kids’ ministry.</p>
@@ -1246,7 +1350,7 @@
           </div>
           <div class="plan" data-rv style="--d:.12s" data-m="299" data-y="2,990" data-ym="249.17 zł per month">
             <h3>Church</h3>
-            <p class="size">up to <b>400</b> adults</p>
+            <p class="size">up to <b>400</b> user accounts</p>
             <p class="amount"><b class="num">299</b><span>zł / month</span></p>
             <p class="per"></p>
             <p class="extra">For a church with many teams, a youth group and ministry budgets.</p>
@@ -1254,14 +1358,14 @@
           </div>
           <div class="plan" data-rv style="--d:.18s" data-m="499" data-y="4,990" data-ym="415.83 zł per month">
             <h3>Church+</h3>
-            <p class="size">up to <b>1000</b> adults</p>
+            <p class="size">up to <b>1000</b> user accounts</p>
             <p class="amount"><b class="num">499</b><span>zł / month</span></p>
             <p class="per"></p>
             <p class="extra">For a large church. With priority support.</p>
             <a class="pill" href="#kontakt" data-plan="Church+" data-track="cta-pricing-kosciolplus">Choose Church+</a>
           </div>
           <div class="plan wide" data-rv>
-            <div><h3>Network</h3><p class="size">over <b>1000</b> adults, multiple locations, denominations</p></div>
+            <div><h3>Network</h3><p class="size">over <b>1000</b> user accounts, multiple locations, denominations</p></div>
             <p class="amount"><b class="num">from 899</b><span>zł / month</span></p>
             <p class="extra">Custom quote: campuses, rollout for many churches and priority support.</p>
             <a class="pill" href="#kontakt" data-plan="Network" data-track="cta-pricing-siec">Let’s talk</a>
@@ -1272,7 +1376,7 @@
           <h3>In every plan<span class="pt">.</span></h3>
           <ul>
             <li><svg class="ico"><use href="#i-check"/></svg><span><b>Every module</b>, no add-on fees</span></li>
-            <li><svg class="ico"><use href="#i-check"/></svg><span><b>No user limit</b>: the whole church can sign in</span></li>
+            <li><svg class="ico"><use href="#i-check"/></svg><span><b>Unlimited member directory</b>: you only pay for app accounts</span></li>
             <li><svg class="ico"><use href="#i-check"/></svg><span><b>iPhone and Android</b> apps plus the browser version</span></li>
             <li><svg class="ico"><use href="#i-check"/></svg><span>In <b>English, Polish and Ukrainian</b></span></li>
             <li><svg class="ico"><use href="#i-check"/></svg><span><b>Data in the EU</b>, a separate database and nightly backups</span></li>
@@ -1323,6 +1427,14 @@
             <p>English, Polish and Ukrainian. Every user picks their own language in the app, in the browser and on the phone.</p>
           </details>
           <details>
+            <summary>How does live translation work?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
+            <p>You start channels in several languages for a service. The interpreter speaks into a microphone in the browser or in the app, and listeners scan a QR code, pick a language and listen on their own phones with headphones, without creating an account.</p>
+          </details>
+          <details>
+            <summary>Does Avenit work with Microsoft 365 or Google Workspace?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
+            <p>Yes. Accounts from your church directory join Avenit automatically or via an approval queue, events and services sync both ways with Outlook and Google Calendar, and files from OneDrive, SharePoint and Google Drive are available without copying. Your church admin connects it once.</p>
+          </details>
+          <details>
             <summary>Is there a mobile app?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
             <p>Yes. Avenit works in the browser and as a mobile app for iOS and Android, with push notifications for members and volunteer teams. Get it on the <a href="https://apps.apple.com/app/id6820247671" target="_blank" rel="noopener">App Store</a> and <a href="https://play.google.com/store/apps/details?id=pl.avenit.app&amp;hl=en" target="_blank" rel="noopener">Google Play</a>.</p>
           </details>
@@ -1332,7 +1444,7 @@
           </details>
           <details>
             <summary>How much does the church app cost?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
-            <p>From 79 zł a month, VAT included. The price depends on the number of adults in your member directory, and every module is in every plan. See the <a href="#cennik">pricing</a>. To start, book a demo through the <a href="#kontakt">contact form</a> and get a trial period with no credit card required.</p>
+            <p>From 79 zł a month, VAT included. The price depends on the number of user accounts in the app, and every module is in every plan. See the <a href="#cennik">pricing</a>. To start, book a demo through the <a href="#kontakt">contact form</a> and get a trial period with no credit card required.</p>
           </details>
           <details>
             <summary>Is Avenit GDPR-compliant?<span class="pm" aria-hidden="true"><svg class="ico"><use href="#i-plus"/></svg></span></summary>
@@ -1418,6 +1530,8 @@
           <h2 id="f-prod">Product</h2>
           <a href="#sluzby">Ministries</a>
           <a href="#rozmowy">Calls &amp; meetings</a>
+          <a href="#tlumaczenie">Live translation</a>
+          <a href="#integracje">Microsoft 365 &amp; Google</a>
           <a href="#wszedzie">Phone &amp; browser</a>
           <a href="#moduly">Modules</a>
           <a href="#cennik">Pricing</a>
