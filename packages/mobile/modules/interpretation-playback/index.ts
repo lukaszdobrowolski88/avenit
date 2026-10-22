@@ -15,7 +15,10 @@ export interface PlaybackSubscription {
 
 export interface InterpretationPlaybackModule {
   // true = usługa uruchomiona (albo już działała — wtedy tylko nowy tekst powiadomienia).
-  start(title: string, text: string): boolean;
+  start(title: string, text: string, mode?: 'listen' | 'console'): boolean;
+  // Od apiVersion 2: tryb „console” (mikrofon tłumacza w tle, typ usługi mediaPlayback|microphone).
+  readonly apiVersion?: number;
+  readonly modes?: string[];
   stop(): void;
   isRunning(): boolean;
   addListener(event: 'onStopRequested', listener: (e: { reason: PlaybackStopReason }) => void): PlaybackSubscription;

@@ -250,7 +250,8 @@ const config: ExpoConfig = {
   // Aktualizacje OTA (eas update): zmiany tylko w JS/TS trafiają na telefony bez nowego builda.
   // runtimeVersion = wersja ABI natywnego, NIE wersja w sklepie. 1.2.0 różni się od 1.1.0
   // entitlementem/intent-filtrem oraz JEDNYM nowym, opcjonalnym modułem natywnym
-  // (AvenitInterpretationPlayback, tylko Android, modules/interpretation-playback). Mimo to dzielą
+  // (AvenitInterpretationPlayback, tylko Android, modules/interpretation-playback — słuchanie oraz od
+  // apiVersion 2 tryb „console”: mikrofon tłumacza w tle). Mimo to dzielą
   // runtime '1.1.0', bo nic w JS nie wymaga tego modułu: ładujemy go przez requireOptionalNativeModule,
   // a bez niego (1.1.0) słuchacz działa jak dawniej (ekran nie gaśnie, podpowiedź „nie wyłączaj
   // ekranu”). Żaden istniejący moduł natywny się nie zmienił. Dzięki temu poprawki OTA z main
