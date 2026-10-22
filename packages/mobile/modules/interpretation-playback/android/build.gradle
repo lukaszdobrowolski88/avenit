@@ -1,0 +1,21 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+// Moduł lokalny aplikacji (packages/mobile/modules) — autolinking Expo, bez publikacji.
+group = 'pl.avenit.interpretationplayback'
+version = '1.0.0'
+
+android {
+  namespace "pl.avenit.interpretationplayback"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+}
+
+dependencies {
+  // NotificationCompat / ContextCompat — ta sama wersja co w expo-audio (już w grafie zależności).
+  implementation 'androidx.core:core-ktx:1.15.0'
+}

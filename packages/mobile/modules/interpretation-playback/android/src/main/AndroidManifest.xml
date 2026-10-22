@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Słuchanie tłumaczenia na żywo przy wygaszonym ekranie: usługa pierwszoplanowa typu
+       mediaPlayback (Android 14+: FOREGROUND_SERVICE_MEDIA_PLAYBACK — deklaracja w Google Play),
+       blokada usypiania procesora i Wi-Fi (WAKE_LOCK), powiadomienie usługi (Android 13+). -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+  <application>
+    <service
+      android:name="pl.avenit.interpretationplayback.InterpretationPlaybackService"
+      android:exported="false"
+      android:stopWithTask="false"
+      android:foregroundServiceType="mediaPlayback" />
+  </application>
+</manifest>

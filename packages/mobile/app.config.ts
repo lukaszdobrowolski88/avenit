@@ -39,8 +39,9 @@ const config: ExpoConfig = {
   name: isPreview ? 'Avenit (preview)' : isDev ? 'Avenit (dev)' : 'Avenit',
   slug: 'avenit',
   // 1.1.0 = Expo SDK 57 (nowy runtime natywny — OTA dla 1.0.x publikuje się osobno).
-  // 1.2.0 = Universal Links / App Links (entitlement associated-domains, intent-filter) — BEZ nowych
-  // modułów natywnych, więc runtime zostaje 1.1.0 (niżej): jedna aktualizacja OTA trafia do 1.1.0 i 1.2.0.
+  // 1.2.0 = Universal Links / App Links (entitlement associated-domains, intent-filter) + Android:
+  // słuchanie tłumaczenia przy wygaszonym ekranie (lokalny moduł modules/interpretation-playback).
+  // Runtime zostaje 1.1.0 (niżej, tam uzasadnienie): jedna aktualizacja OTA trafia do 1.1.0 i 1.2.0.
   version: '1.2.0',
   orientation: 'portrait',
   scheme: ['avenit', 'schtomy'],
@@ -187,9 +188,11 @@ const config: ExpoConfig = {
       'expo-audio',
       {
         microphonePermission: MIC_TEXT,
-        // Bez odtwarzania w tle: domyślnie plugin dodaje usługę Androida „media playback”
-        // (FOREGROUND_SERVICE_MEDIA_PLAYBACK) — nieużywaną, a w Google Play wymagającą osobnej
-        // deklaracji. Tło dla rozmów zapewnia CallKit/Telecom (iOS: UIBackgroundModes voip+audio).
+        // Bez odtwarzania w tle expo-audio: jego usługa „media playback” byłaby nieużywana (głosówki
+        // grają na wierzchu). Tło dla rozmów zapewnia CallKit/Telecom (iOS: UIBackgroundModes
+        // voip+audio). UWAGA: od 1.2.0 FOREGROUND_SERVICE_MEDIA_PLAYBACK i tak jest w manifeście —
+        // dokłada go moduł modules/interpretation-playback (tłumaczenie na żywo przy zgaszonym
+        // ekranie), więc w Google Play potrzebna jest deklaracja usługi „Odtwarzanie multimediów”.
         enableBackgroundPlayback: false,
       },
     ],
@@ -245,9 +248,16 @@ const config: ExpoConfig = {
     typedRoutes: true,
   },
   // Aktualizacje OTA (eas update): zmiany tylko w JS/TS trafiają na telefony bez nowego builda.
-  // runtimeVersion = wersja ABI natywnego, NIE wersja w sklepie. 1.2.0 różni się od 1.1.0 tylko
-  // entitlementem/intent-filtrem (bez nowych modułów natywnych), więc dzielą runtime '1.1.0'.
-  // Po dodaniu/aktualizacji modułu natywnego albo podniesieniu SDK ustaw tu nową wartość (np. '1.3.0').
+  // runtimeVersion = wersja ABI natywnego, NIE wersja w sklepie. 1.2.0 różni się od 1.1.0
+  // entitlementem/intent-filtrem oraz JEDNYM nowym, opcjonalnym modułem natywnym
+  // (AvenitInterpretationPlayback, tylko Android, modules/interpretation-playback). Mimo to dzielą
+  // runtime '1.1.0', bo nic w JS nie wymaga tego modułu: ładujemy go przez requireOptionalNativeModule,
+  // a bez niego (1.1.0) słuchacz działa jak dawniej (ekran nie gaśnie, podpowiedź „nie wyłączaj
+  // ekranu”). Żaden istniejący moduł natywny się nie zmienił. Dzięki temu poprawki OTA z main
+  // trafiają też do użytkowników 1.1.0, którzy jeszcze nie zaktualizowali apki ze sklepu.
+  // Zasada na przyszłość: nowy moduł natywny może dzielić runtime TYLKO, gdy JS ładuje go jako
+  // opcjonalny i ma zapas bez niego. Aktualizacja/usunięcie modułu, zmiana jego API używanego bez
+  // zapasu albo podniesienie SDK → nowa wartość tutaj (np. '1.3.0').
   runtimeVersion: '1.1.0',
   ...(process.env.EAS_PROJECT_ID
     ? { updates: { url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID}`, fallbackToCacheTimeout: 0 } }

@@ -108,7 +108,17 @@ przeglądania, diagnostyki (brak raportowania awarii). Odcisk palca / twarz — 
 ### Uprawnienia (nie wymagają osobnych deklaracji)
 `CAMERA`, `RECORD_AUDIO`, `READ/WRITE_CALENDAR`, `POST_NOTIFICATIONS`, `USE_BIOMETRIC`, `RECEIVE_BOOT_COMPLETED`.
 Brak `READ_MEDIA_IMAGES/VIDEO` (zdjęcia przez systemowy wybierak) → bez deklaracji „Uprawnienia do zdjęć i filmów”.
-Brak usług pierwszoplanowych, dokładnych alarmów i lokalizacji w tle.
+Brak dokładnych alarmów i lokalizacji w tle.
+
+### Usługi pierwszoplanowe (Zasady → Treści aplikacji → „Uprawnienia usług działających na pierwszym planie”)
+- **Rozmowa telefoniczna** (`FOREGROUND_SERVICE_PHONE_CALL`, expo-callkit-telecom) — rozmowy audio/wideo w aplikacji.
+- **Odtwarzanie multimediów** (`FOREGROUND_SERVICE_MEDIA_PLAYBACK`, od 1.2.0, moduł `modules/interpretation-playback`) —
+  słuchanie tłumaczenia nabożeństwa na żywo przy wygaszonym ekranie / w tle. Opis do formularza: „Użytkownik
+  dotyka »Słuchaj« przy tłumaczeniu na żywo (np. kazania po angielsku). Aplikacja odtwarza dźwięk tłumacza
+  strumieniem audio; usługa utrzymuje odtwarzanie, gdy użytkownik wyłączy ekran albo przejdzie do innej
+  aplikacji. Powiadomienie »Słuchasz tłumaczenia« z przyciskiem »Zatrzymaj« jest widoczne przez cały czas.
+  Przerwanie usługi = urwany dźwięk w trakcie nabożeństwa.” Wymagany link do filmu (YouTube niepubliczny / Dysk):
+  Słuchaj → powiadomienie → wyłączenie ekranu → dźwięk gra dalej → Zatrzymaj z powiadomienia.
 
 ## 6. Wymogi treści użytkowników (polityka UGC Google Play)
 Te same co dla App Store i już wdrożone: akceptacja zasad społeczności przy pierwszym uruchomieniu, zgłaszanie

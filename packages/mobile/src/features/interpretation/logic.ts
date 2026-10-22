@@ -127,13 +127,50 @@ export function pollInterval(phase: Phase, fatal: FatalState | null): number | n
   return phase === 'listening' ? INFO_POLL_LISTENING_MS : INFO_POLL_MS;
 }
 
-// Ekran nie gaśnie: Android — przez całe słuchanie (bez usługi pierwszoplanowej system usypia
-// apkę przy wygaszonym ekranie); iOS — tylko zanim popłynie dźwięk (czekanie / łączenie), bo
-// uśpiona apka nie połączy się sama; w trakcie słuchania dźwięk gra też przy zablokowanym ekranie.
-export function shouldKeepAwake(os: string, phase: Phase): boolean {
+// Ekran nie gaśnie: Android bez usługi słuchania (stary build 1.1.0 albo usługa nie wstała) —
+// przez całe słuchanie, bo system usypia apkę przy wygaszonym ekranie; Android z usługą — nigdy
+// (usługa trzyma proces, procesor i Wi-Fi); iOS — tylko zanim popłynie dźwięk (czekanie /
+// łączenie), bo uśpiona apka nie połączy się sama; w trakcie słuchania dźwięk gra też przy
+// zablokowanym ekranie.
+export function shouldKeepAwake(os: string, phase: Phase, playbackService = false): boolean {
   if (phase === 'idle') return false;
-  if (os === 'android') return true;
+  if (os === 'android') return !playbackService;
   return phase !== 'listening';
+}
+
+// Usługa pierwszoplanowa słuchania (Android, moduł AvenitInterpretationPlayback): od „Słuchaj” do
+// końca słuchania — także w czekaniu na tłumacza i przy ponownym łączeniu (apka w tle łączy się
+// sama). Start tylko w odpowiedzi na dotknięcie (apka na wierzchu) — Android 12+ nie uruchomi
+// usługi z tła; dalsze zmiany stanu tylko zmieniają tekst powiadomienia.
+export function shouldRunPlaybackService(os: string, phase: Phase, moduleAvailable: boolean): boolean {
+  return os === 'android' && moduleAvailable && phase !== 'idle';
+}
+
+// Treść powiadomienia usługi: „Słuchasz tłumaczenia — English” + wydarzenie; w pozostałych stanach
+// to, co pasek stanu na ekranie („Czekamy na tłumacza…”, „Brak internetu”…).
+export function playbackNotification(
+  phase: Phase,
+  { channel, eventTitle, online = true }: { channel?: ListenerChannel | null; eventTitle?: string | null; online?: boolean } = {},
+): { title: string; text: string } {
+  const label = String(channel?.label ?? '').trim();
+  const event = String(eventTitle ?? '').trim();
+  const withLabel = (base: string) => (label ? `${base} — ${label}` : base);
+  if (phase === 'listening' && channel?.live !== false) {
+    return { title: withLabel('Słuchasz tłumaczenia'), text: event };
+  }
+  const view = phaseView(phase, { channel, online });
+  return { title: withLabel('Tłumaczenie na żywo'), text: view?.title ?? event };
+}
+
+// Podpowiedź pod przyciskiem o wygaszaniu ekranu.
+export function screenHint(os: string, playbackService: boolean): string {
+  if (os === 'ios') {
+    return 'Gdy już słyszysz tłumacza, możesz zablokować ekran — dźwięk będzie grał dalej. Czekając na tłumacza, zostaw aplikację otwartą.';
+  }
+  if (playbackService) {
+    return 'Możesz wyłączyć ekran albo przejść do innej aplikacji — tłumaczenie będzie grało dalej. Zatrzymasz je też z powiadomienia.';
+  }
+  return 'Na Androidzie nie wyłączaj ekranu w trakcie słuchania — aplikacja nie pozwoli mu zgasnąć.';
 }
 
 // Opis stanu słuchania (pasek stanu na ekranie).

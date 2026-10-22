@@ -1,12 +1,15 @@
 // Tłumaczenie na żywo w mobilce: kody błędów → stany ekranu, wybór języka, odpytywanie,
 // blokada wygaszania ekranu i rozpoznawanie linków /tlumaczenie/… (czysta logika, bez RN).
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   retryDelay, interpErrorState, fatalFromError, infoFromSession, defaultChannel, pollDecision, pollInterval,
-  shouldKeepAwake, phaseView, cardSummary, cardDataFromSession, cardTeamSections, interpretationTargetFromPath, interpretationTargetFromUrl, isPublicToken,
+  shouldKeepAwake, shouldRunPlaybackService, playbackNotification, screenHint, phaseView, cardSummary, cardDataFromSession, cardTeamSections, interpretationTargetFromPath, interpretationTargetFromUrl, isPublicToken,
   INFO_POLL_MS, INFO_POLL_LISTENING_MS, PERSON_NOTE, warningNote,
   appDomainFromApiUrl, tenantFromHost, appLinkFromUrl, appRouteForLink, browserOnlyUrl, tenantWebUrl,
 } from '../../packages/mobile/src/features/interpretation/logic';
+import { createHybridTimers, HYBRID_ID_BASE } from '../../packages/mobile/src/features/interpretation/bgTimers';
 import { redirectSystemPath } from '../../packages/mobile/app/+native-intent';
 import mobileConfig from '../../packages/mobile/app.config';
 import { appleAppSiteAssociation, assetLinks, IOS_BUNDLE_IDS, APPLE_TEAM_ID, ANDROID_PACKAGE } from '../../packages/api/src/public/app-links.js';
@@ -154,6 +157,36 @@ describe('odpytywanie i łączenie', () => {
     expect(shouldKeepAwake('ios', 'waiting')).toBe(true);
     expect(shouldKeepAwake('ios', 'idle')).toBe(false);
   });
+  it('Android z usługą słuchania: ekran może zgasnąć, usługa od „Słuchaj” do końca', () => {
+    expect(shouldKeepAwake('android', 'listening', true)).toBe(false);
+    expect(shouldKeepAwake('android', 'waiting', true)).toBe(false);
+    expect(shouldKeepAwake('android', 'listening', false)).toBe(true);
+    // iOS bez zmian — usługa to tylko Android.
+    expect(shouldKeepAwake('ios', 'waiting', true)).toBe(true);
+    for (const p of ['waiting', 'connecting', 'listening', 'reconnecting']) {
+      expect(shouldRunPlaybackService('android', p, true)).toBe(true);
+    }
+    expect(shouldRunPlaybackService('android', 'idle', true)).toBe(false);
+    expect(shouldRunPlaybackService('android', 'listening', false)).toBe(false); // stary build 1.1.0
+    expect(shouldRunPlaybackService('ios', 'listening', true)).toBe(false);
+  });
+  it('powiadomienie usługi', () => {
+    const ch = { id: 'a', lang_code: 'en', label: 'English', live: true };
+    expect(playbackNotification('listening', { channel: ch, eventTitle: 'Nabożeństwo' })).toEqual({
+      title: 'Słuchasz tłumaczenia — English',
+      text: 'Nabożeństwo',
+    });
+    expect(playbackNotification('listening', { channel: ch })).toEqual({ title: 'Słuchasz tłumaczenia — English', text: '' });
+    expect(playbackNotification('listening', { channel: { ...ch, live: false } }).text).toBe('Tłumacz ma przerwę');
+    expect(playbackNotification('waiting', { channel: ch })).toEqual({ title: 'Tłumaczenie na żywo — English', text: 'Czekamy na tłumacza…' });
+    expect(playbackNotification('reconnecting', { channel: ch, online: false }).text).toBe('Brak internetu');
+    expect(playbackNotification('connecting').title).toBe('Tłumaczenie na żywo');
+  });
+  it('podpowiedź o ekranie', () => {
+    expect(screenHint('android', false)).toMatch(/nie wyłączaj ekranu/);
+    expect(screenHint('android', true)).toMatch(/Możesz wyłączyć ekran/);
+    expect(screenHint('ios', false)).toMatch(/zablokować ekran/);
+  });
   it('opis stanu', () => {
     const ch = { id: 'a', lang_code: 'en', label: 'English', live: true };
     expect(phaseView('listening', { channel: ch }).title).toBe('Słuchasz: English');
@@ -289,5 +322,140 @@ describe('Universal Links / App Links (kod QR otwiera aplikację)', () => {
     expect(mobileConfig.android.package).toBe(ANDROID_PACKAGE);
     expect(assetLinks()[0].target.package_name).toBe(mobileConfig.android.package);
     expect(mobileConfig.version).toBe('1.2.0');
+  });
+});
+
+// Timery hybrydowe: RN na Androidzie wstrzymuje setTimeout w tle — tick() z usługi odpala zaległe.
+describe('timery w tle (bgTimers)', () => {
+  const makeHost = () => {
+    let now = 1000;
+    let seq = 0;
+    const native = new Map(); // zwykłe timery RN (w tle stoją — odpalamy ręcznie)
+    return {
+      host: {
+        setTimeout: (fn, ms) => { const id = ++seq; native.set(id, { fn, at: now + ms }); return id; },
+        clearTimeout: (id) => { native.delete(id); },
+        now: () => now,
+      },
+      advance: (ms) => { now += ms; },
+      // Ekran włączony: RN odpala swoje zaległe timery.
+      runNative: () => { for (const [id, t] of [...native]) if (t.at <= now) { native.delete(id); t.fn(); } },
+      nativeCount: () => native.size,
+    };
+  };
+
+  it('timeout odpala tick (ekran zgaszony) — raz, a timer RN zostaje wyczyszczony', () => {
+    const h = makeHost();
+    const T = createHybridTimers(h.host);
+    const calls = [];
+    const id = T.setTimeout((x) => calls.push(x), 5000, 'a');
+    expect(id).toBeGreaterThan(HYBRID_ID_BASE);
+    h.advance(4000);
+    T.tick();
+    expect(calls).toEqual([]);
+    h.advance(1000);
+    T.tick();
+    expect(calls).toEqual(['a']);
+    expect(h.nativeCount()).toBe(0);
+    h.runNative();
+    T.tick();
+    expect(calls).toEqual(['a']);
+    expect(T.size()).toBe(0);
+  });
+
+  it('na wierzchu działa zwykły timer RN; tick już go nie powtórzy', () => {
+    const h = makeHost();
+    const T = createHybridTimers(h.host);
+    let n = 0;
+    T.setTimeout(() => n++, 100);
+    h.advance(100);
+    h.runNative();
+    T.tick();
+    expect(n).toBe(1);
+  });
+
+  it('interval po długiej przerwie odpala raz i liczy od nowa (bez nadrabiania)', () => {
+    const h = makeHost();
+    const T = createHybridTimers(h.host);
+    let n = 0;
+    const id = T.setInterval(() => n++, 5000);
+    h.advance(60_000);
+    T.tick();
+    expect(n).toBe(1);
+    h.advance(4999);
+    T.tick();
+    expect(n).toBe(1);
+    h.advance(1);
+    T.tick();
+    expect(n).toBe(2);
+    T.clearInterval(id);
+    h.advance(10_000);
+    T.tick();
+    h.runNative();
+    expect(n).toBe(2);
+    expect(T.size()).toBe(0);
+  });
+
+  it('clear w trakcie i obce identyfikatory', () => {
+    const h = makeHost();
+    const T = createHybridTimers(h.host);
+    const order = [];
+    const b = T.setTimeout(() => order.push('b'), 20);
+    T.setTimeout(() => { order.push('a'); T.clearTimeout(b); }, 10);
+    h.advance(30);
+    T.tick();
+    expect(order).toEqual(['a']);
+    // Timer RN sprzed podmiany — clear trafia do RN.
+    const foreign = h.host.setTimeout(() => order.push('x'), 1);
+    T.clearTimeout(foreign);
+    h.advance(5);
+    h.runNative();
+    expect(order).toEqual(['a']);
+  });
+
+  it('błąd jednego callbacku nie blokuje pozostałych', () => {
+    const h = makeHost();
+    const T = createHybridTimers(h.host);
+    let ok = false;
+    T.setTimeout(() => { throw new Error('boom'); }, 1);
+    T.setTimeout(() => { ok = true; }, 2);
+    h.advance(5);
+    expect(() => T.tick()).toThrow('boom');
+    expect(ok).toBe(true);
+  });
+});
+
+// Moduł lokalny usługi słuchania (autolinking Expo z packages/mobile/modules).
+describe('moduł interpretation-playback (Android)', () => {
+  // Ścieżki od katalogu repo (vitest startuje w korzeniu; środowisko jsdom nie ma file:// w import.meta.url).
+  const dir = join(process.cwd(), 'packages/mobile/modules/interpretation-playback');
+  const read = (p) => readFileSync(join(dir, p), 'utf8');
+
+  it('konfiguracja modułu wskazuje istniejącą klasę Kotlin', () => {
+    const cfg = JSON.parse(read('expo-module.config.json'));
+    expect(cfg.platforms).toEqual(['android']);
+    const [cls] = cfg.android.modules;
+    const pkg = cls.split('.').slice(0, -1).join('.');
+    const name = cls.split('.').pop();
+    const kt = read(`android/src/main/java/${pkg.replace(/\./g, '/')}/${name}.kt`);
+    expect(kt).toContain(`package ${pkg}`);
+    expect(kt).toContain(`class ${name} : Module()`);
+    expect(kt).toContain('Name("AvenitInterpretationPlayback")');
+    expect(read('index.ts')).toContain("'AvenitInterpretationPlayback'");
+    expect(read('android/build.gradle')).toContain(`namespace "${pkg}"`);
+  });
+
+  it('manifest: usługa mediaPlayback + uprawnienia', () => {
+    const m = read('android/src/main/AndroidManifest.xml');
+    for (const perm of ['FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK', 'WAKE_LOCK', 'POST_NOTIFICATIONS']) {
+      expect(m).toContain(`android.permission.${perm}"`);
+    }
+    expect(m).toMatch(/<service[^>]*InterpretationPlaybackService"[^>]*android:foregroundServiceType="mediaPlayback"/s);
+    expect(m).toMatch(/android:exported="false"/);
+  });
+
+  it('runtime OTA wspólny z 1.1.0 (moduł opcjonalny w JS)', () => {
+    expect(mobileConfig.runtimeVersion).toBe('1.1.0');
+    expect(read('index.ts')).toContain('requireOptionalNativeModule');
   });
 });
