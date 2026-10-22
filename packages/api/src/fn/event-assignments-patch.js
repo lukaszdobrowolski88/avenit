@@ -17,6 +17,7 @@
 import { canAccess, loadGrants } from '../dataapi/registry.js';
 import { canPatchTeams } from '../dataapi/moduleScope.js';
 import { emitChange } from '../realtime/hub.js';
+import { enqueueCalendarSync } from '../integrations/calendarQueue.js';
 
 export const name = 'event-assignments-patch';
 export const method = 'POST';
@@ -105,5 +106,6 @@ export default async function handler(req, reply) {
   }
 
   try { emitChange(req.tenant.slug, 'events', 'update', [row]); } catch { /* realtime nieobowiązkowy */ }
+  enqueueCalendarSync(req.db, [row?.id ?? eventId], 'assignments').catch(() => {});
   return patchResponse(row);
 }

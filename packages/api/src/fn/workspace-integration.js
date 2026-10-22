@@ -5,6 +5,11 @@
 //   disconnect        — usunięcie połączenia kościoła
 //   save_settings     — ustawienia synchronizacji katalogu (włączenie automatu wymaga manage_users)
 //   save_credentials  — własna aplikacja OAuth kościoła (tylko pełny administrator, sekret szyfrowany)
+//   Faza 2 — kalendarz kościoła (calendarSync.js):
+//   calendar_connect  — Google: połączenie konta administratora z zakresem kalendarza (church_calendar)
+//   calendar_save     — skrzynka (Microsoft) / konto (Google), filtr modułów i typów, import, włączenie
+//   calendar_remove   — wyłączenie (kalendarz u dostawcy zostaje)
+//   calendar_sync     — pełne uzgodnienie teraz
 // Capability: action:settings:manage_integrations (FN_CAPABILITY) + kontrola w funkcji (access.js).
 import { config, isProd } from '../config.js';
 import { encryptPassword } from '../lib/mailcrypto.js';
@@ -17,6 +22,9 @@ import {
 import { loadConnection, publicConnection, IntegrationError } from '../integrations/tokens.js';
 import { startConnect, disconnect, NONCE_COOKIE, STATE_TTL_MS } from '../integrations/oauth.js';
 import { loadDirectorySettings, saveDirectorySettings, effectiveAllowedDomains, syncHistory, parseDomains } from '../integrations/directory.js';
+import {
+  churchCalendarStatus, saveChurchCalendar, removeChurchCalendar, loadChurchTarget, syncTarget, calendarCtxFromRequest, publicTarget,
+} from '../integrations/calendarSync.js';
 
 export const name = 'workspace-integration';
 export const isPublic = false;
@@ -46,6 +54,7 @@ async function providerStatus(db, provider, access) {
     allowed_domains_effective: effective.domains,
     allowed_domains_source: effective.source,
     history: await syncHistory(db, provider, 10),
+    calendar: await churchCalendarStatus(db, provider, access.caller?.id).catch(() => null),
     can_apply: !!access.canUsers,
     can_credentials: !!access.fullAdmin,
   };
@@ -63,7 +72,7 @@ export async function workspaceAction(req, access) {
   if (action === 'status') {
     const out = {};
     for (const p of PROVIDERS) out[p] = await providerStatus(db, p, access);
-    return { providers: out, purposes: ['directory'] };
+    return { providers: out, purposes: ['directory', 'church_calendar'] };
   }
 
   if (action === 'connect') {
@@ -72,6 +81,31 @@ export async function workspaceAction(req, access) {
       provider, purpose: 'directory', tenant: req.tenant.subdomain, user: { id: access.caller.id, email: actor }, creds,
     });
     return { url, __cookie: nonce };
+  }
+
+  if (action === 'calendar_connect') {
+    if (provider !== 'google') throw new IntegrationError('Kalendarz kościoła Microsoft 365 korzysta z połączenia organizacji (uprawnienie aplikacji).', { status: 400 });
+    const creds = await resolveIntegrationCreds(db, provider);
+    const { url, nonce } = await startConnect(db, {
+      provider, purpose: 'church_calendar', tenant: req.tenant.subdomain, user: { id: access.caller.id, email: actor }, creds,
+    });
+    return { url, __cookie: nonce };
+  }
+  if (action === 'calendar_save') {
+    const target = await saveChurchCalendar(db, provider, { ...(b.settings || {}), prefs: b.settings?.prefs }, access.caller);
+    await logAccountEvent(db, { email: actor, action: 'integration_calendar', actor, detail: `${provider}:${target?.enabled ? 'on' : 'off'}` });
+    return { success: true, target };
+  }
+  if (action === 'calendar_remove') {
+    const removed = await removeChurchCalendar(db, provider);
+    if (removed) await logAccountEvent(db, { email: actor, action: 'integration_calendar', actor, detail: `${provider}:removed` });
+    return { success: true, removed };
+  }
+  if (action === 'calendar_sync') {
+    const t = await loadChurchTarget(db, provider);
+    if (!t) throw new IntegrationError('Kalendarz kościoła nie jest skonfigurowany.', { status: 409 });
+    const result = await syncTarget(db, { ...t, backoff_until: null }, calendarCtxFromRequest(req), { forceFull: true, forcePull: true });
+    return { success: !result.error, result, target: await publicTarget(db, await loadChurchTarget(db, provider)) };
   }
 
   if (action === 'disconnect') {

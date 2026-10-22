@@ -6,9 +6,16 @@ import { platformPool, getTenantPool } from '../db.js';
 import { isProvider, resolveIntegrationCreds } from './providers.js';
 import { verifyIntegrationState, handleCallback, NONCE_COOKIE } from './oauth.js';
 
-export function settingsReturnUrl(subdomain, provider, result, reason) {
+export function settingsReturnUrl(subdomain, provider, result, reason, purpose = 'directory') {
+  // Kalendarz osobisty → Mój profil (osoba bez dostępu do Ustawień kościoła).
+  if (purpose === 'calendar') {
+    const q = new URLSearchParams({ cal: provider, cal_result: result });
+    if (reason) q.set('cal_reason', String(reason).slice(0, 60));
+    return `https://${subdomain}.${config.APP_DOMAIN}/profile?${q}`;
+  }
   const q = new URLSearchParams({ tab: 'integrations', ws: provider, ws_result: result });
   if (reason) q.set('ws_reason', String(reason).slice(0, 60));
+  if (purpose === 'church_calendar') q.set('ws_target', 'calendar');
   return `https://${subdomain}.${config.APP_DOMAIN}/settings?${q}`;
 }
 
@@ -45,8 +52,8 @@ export default async function integrationRoutes(app) {
       req.log.warn({ provider, tenant: t.subdomain, reason: out.reason, message: out.message }, 'integration connect failed');
     } else {
       const { logAccountEvent } = await import('../lib/account-audit.js');
-      await logAccountEvent(db, { email: out.account || null, action: 'integration_connected', actor: `integration:${provider}`, detail: provider });
+      await logAccountEvent(db, { email: out.account || null, action: 'integration_connected', actor: `integration:${provider}`, detail: parsed.purpose ? `${provider}:${parsed.purpose}` : provider });
     }
-    return reply.redirect(settingsReturnUrl(t.subdomain, provider, out.result === 'connected' ? 'connected' : 'error', out.reason));
+    return reply.redirect(settingsReturnUrl(t.subdomain, provider, out.result === 'connected' ? 'connected' : 'error', out.reason, parsed.purpose || 'directory'));
   });
 }

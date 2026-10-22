@@ -125,3 +125,40 @@ export const useSessions = () =>
     queryKey: ['sessions'],
     queryFn: async () => (await supabase.auth.getSessions()).sessions ?? [],
   });
+
+// ── Kalendarz Google / Outlook (fn calendar-sync, Faza 2) ───────────────────
+// Apka pokazuje tylko stan; łączenie konta (OAuth) odbywa się w przeglądarce (Mój profil na webie).
+export interface CalendarSyncProvider {
+  available: boolean;
+  connection: { status: string; account_email: string | null } | null;
+  target: { enabled: boolean; status: string; synced: number; last_error: string | null } | null;
+}
+export const useCalendarSyncStatus = (enabled: boolean) =>
+  useQuery({
+    queryKey: ['calendar-sync-status'],
+    enabled,
+    staleTime: 60_000,
+    queryFn: async (): Promise<Record<'google' | 'microsoft', CalendarSyncProvider> | null> => {
+      const { data, error } = await supabase.functions.invoke('calendar-sync', { body: { action: 'status' } });
+      if (error) return null; // starszy serwer bez funkcji — wiersz pokazuje tylko link
+      return (data as { providers?: Record<'google' | 'microsoft', CalendarSyncProvider> })?.providers ?? null;
+    },
+  });
+
+// Jednoliniowy opis stanu dla wiersza ustawień (klucze PL — tłumaczone przez t()).
+export function calendarSyncSummary(
+  providers: Record<'google' | 'microsoft', CalendarSyncProvider> | null | undefined,
+  t: (k: string, v?: Record<string, string | number>) => string,
+): string {
+  if (!providers) return t('Połącz Google lub Outlook — w przeglądarce');
+  const parts: string[] = [];
+  (['google', 'microsoft'] as const).forEach((p) => {
+    const s = providers[p];
+    if (!s?.connection) return;
+    const name = p === 'google' ? 'Google' : 'Outlook';
+    if (s.connection.status === 'revoked' || s.target?.status === 'error') parts.push(t('{name}: błąd — połącz ponownie', { name }));
+    else if (s.target && !s.target.enabled) parts.push(t('{name}: wstrzymane', { name }));
+    else parts.push(t('{name}: {n} wydarzeń', { name, n: s.target?.synced ?? 0 }));
+  });
+  return parts.length ? parts.join(' · ') : t('Połącz Google lub Outlook — w przeglądarce');
+}

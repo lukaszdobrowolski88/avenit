@@ -8,6 +8,7 @@ import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { emitChange } from '../realtime/hub.js';
 import { meetingCtxFromRequest } from '../meetings/service.js';
 import { syncEventsAfterWrite, syncRegistrationsAfterWrite } from '../meetings/events.js';
+import { enqueueCalendarAfterWrite } from '../integrations/calendarQueue.js';
 import { interpCtxFromRequest } from '../interpretation/service.js';
 import { prepareScheduleSync, syncScheduleAfterWrite } from '../interpretation/scheduleSync.js';
 import { notifyOnWrite, prepareUserTaskAssign, notifyUserTaskAssign } from '../realtime/push-hooks.js';
@@ -483,6 +484,8 @@ export default async function dataApiRoutes(app) {
         }
         // Potwierdzeni tłumacze z grafiku → kanały tłumaczenia na żywo wydarzenia — w tle.
         if (q.table === 'schedule_assignments') syncScheduleAfterWrite(interpCtxFromRequest(req), q, interpPrep, changed);
+        // Kalendarze Google / Outlook (119): wydarzenie, grafik albo zapis zmieniony → kolejka (worker co minutę).
+        enqueueCalendarAfterWrite(req.db, q.table, q.op, changed, req.log);
       }
 
       // Push: nowa wiadomość / zaproszenie do służby. Fire-and-forget — nie blokuje

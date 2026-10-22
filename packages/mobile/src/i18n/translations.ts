@@ -197,6 +197,11 @@ const en: Record<string, string> = {
   'wersja': 'version',
   'Nie znaleziono tego wpisu. Mógł zostać usunięty — odśwież widok.': 'This entry was not found. It may have been deleted — refresh the view.',
   'Nie udało się': 'Something went wrong',
+  'Kalendarz Google / Outlook': 'Google / Outlook calendar',
+  'Połącz Google lub Outlook — w przeglądarce': 'Connect Google or Outlook — in the browser',
+  '{name}: błąd — połącz ponownie': '{name}: error — reconnect',
+  '{name}: wstrzymane': '{name}: paused',
+  '{name}: {n} wydarzeń': '{name}: {n} events',
 };
 
 const uk: Record<string, string> = {
@@ -386,6 +391,11 @@ const uk: Record<string, string> = {
   'wersja': 'версія',
   'Nie znaleziono tego wpisu. Mógł zostać usunięty — odśwież widok.': 'Цей запис не знайдено. Можливо, його видалено — оновіть вигляд.',
   'Nie udało się': 'Не вдалося',
+  'Kalendarz Google / Outlook': 'Календар Google / Outlook',
+  'Połącz Google lub Outlook — w przeglądarce': 'Підключіть Google або Outlook — у браузері',
+  '{name}: błąd — połącz ponownie': '{name}: помилка — підключіть знову',
+  '{name}: wstrzymane': '{name}: призупинено',
+  '{name}: {n} wydarzeń': '{name}: {n} подій',
 };
 
 export const TRANSLATIONS: Record<'en' | 'uk', Record<string, string>> = { en, uk };

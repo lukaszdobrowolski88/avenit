@@ -37,12 +37,22 @@ export const MICROSOFT = {
 export const GOOGLE_SCOPES = {
   userReadonly: 'https://www.googleapis.com/auth/admin.directory.user.readonly',
   groupReadonly: 'https://www.googleapis.com/auth/admin.directory.group.readonly',
+  // Faza 2: najwęższy zakres pozwalający założyć WŁASNY kalendarz pomocniczy i zarządzać jego
+  // wydarzeniami — bez wglądu w kalendarz główny i inne kalendarze osoby.
+  calendarAppCreated: 'https://www.googleapis.com/auth/calendar.app.created',
+  // Kalendarz kościoła: udostępnienie kalendarza (ACL) domenie organizacji.
+  calendarAcls: 'https://www.googleapis.com/auth/calendar.acls',
 };
 
-// Zakresy per cel połączenia. Faza 1: 'directory' (połączenie kościoła). Fazy 2–3 (połączenia osób,
-// scope_kind 'user') są tu opisane, ale jeszcze niedostępne w interfejsie ani w fn.
-//   Google: calendar.events = „sensitive” (weryfikacja aplikacji), drive.file + Picker zamiast
-//   drive.readonly („restricted” → audyt CASA).
+export const GOOGLE_CALENDAR_BASE = 'https://www.googleapis.com/calendar/v3';
+
+// Zakresy per cel połączenia. Faza 1: 'directory' (połączenie kościoła). Faza 2: 'calendar'
+// (osobisty kalendarz osoby, scope_kind 'user') i 'church_calendar' (Google: kalendarz kościoła
+// na koncie administratora — także scope_kind 'user', z dodatkowym calendar.acls). Microsoft:
+// kalendarz kościoła = uprawnienie APLIKACJI Calendars.ReadWrite na połączeniu kościoła
+// (zgoda administratora przy „Połącz” — .default obejmuje wszystkie uprawnienia rejestracji).
+//   Google: zakresy kalendarza są „sensitive” (klient External → weryfikacja; zalecany Internal),
+//   drive.file + Picker zamiast drive.readonly („restricted” → audyt CASA).
 //   Microsoft: delegowane z offline_access (refresh token), katalog — uprawnienie APLIKACJI.
 export const PURPOSES = {
   directory: {
@@ -57,8 +67,16 @@ export const PURPOSES = {
   calendar: {
     scopeKind: 'user',
     phase: 2,
-    google: ['openid', 'email', 'https://www.googleapis.com/auth/calendar.events'],
+    google: ['openid', 'email', GOOGLE_SCOPES.calendarAppCreated],
     microsoft: ['openid', 'profile', 'email', 'offline_access', 'Calendars.ReadWrite'],
+  },
+  church_calendar: {
+    scopeKind: 'user',
+    phase: 2,
+    google: ['openid', 'email', GOOGLE_SCOPES.calendarAppCreated, GOOGLE_SCOPES.calendarAcls],
+    // Microsoft: bez logowania osoby — uprawnienie aplikacji na połączeniu kościoła.
+    microsoft: null,
+    microsoftAppRoles: ['Calendars.ReadWrite'],
   },
   files: {
     scopeKind: 'user',
@@ -67,8 +85,10 @@ export const PURPOSES = {
     microsoft: ['openid', 'profile', 'email', 'offline_access', 'Files.Read.All'],
   },
 };
-// Cele dostępne w tej wersji (Faza 1).
-export const ENABLED_PURPOSES = new Set(['directory']);
+// Cele dostępne w tej wersji (Faza 1 + 2).
+export const ENABLED_PURPOSES = new Set(['directory', 'calendar', 'church_calendar']);
+// Cele połączeń osób (scope_kind 'user') — callback zapisuje połączenie osoby, nie kościoła.
+export const USER_PURPOSES = new Set(['calendar', 'church_calendar']);
 
 const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isGuid = (v) => GUID_RE.test(String(v || ''));
