@@ -79,7 +79,7 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
   // Pełny adres weba TEGO kościoła (np. https://<kościół>.avenit.pl/tlumaczenie/…) → sama ścieżka.
   path = stripOwnWebHost(path);
   // Tłumaczenie na żywo: /tlumaczenie/<token> (link/QR), /tlumaczenie/sluchaj/<id> → ekran słuchacza;
-  // konsola tłumacza i „Oryginał” → web.
+  // /tlumaczenie/konsola/<id> → konsola tłumacza w aplikacji; „Oryginał” → web.
   const interp = interpretationTargetFromPath(path);
   if (interp) {
     openInterpretation(router, interp);

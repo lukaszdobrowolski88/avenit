@@ -6,6 +6,9 @@ import { B } from '../../components/ui/brand';
 import { FONT as F } from '../../lib/fonts';
 import { openOnWeb } from '../modules/useModules';
 import { CARD_POLL_MS, PERSON_NOTE, cardDataFromSession, cardSummary, cardTeamSections, warningNote, type CardData, type CardTeamSection, type SessionGetFull } from './logic';
+import { consoleWebPath } from './logic';
+import { nativeListeningAvailable } from './audio';
+import { openConsole } from './navigation';
 import { fetchSession } from './useListener';
 
 // Karta „Tłumaczenie na żywo” na ekranie wydarzenia (obok „Spotkania online”). Jedno wywołanie
@@ -36,7 +39,8 @@ export function InterpretationCard({ eventId, style }: { eventId: number; style?
   const sum = cardSummary(data);
   if (!sum.show) return null;
   const team = cardTeamSections(data);
-  const interpreter = (data?.my_channels?.length ?? 0) > 0;
+  // Konsola: przypisany tłumacz kanału albo zarządzający tłumaczeniem (wejdzie na każdy kanał).
+  const interpreter = (data?.my_channels?.length ?? 0) > 0 || !!data?.can_manage;
   const live = sum.live.length > 0;
 
   return (
@@ -65,14 +69,27 @@ export function InterpretationCard({ eventId, style }: { eventId: number; style?
         <Text style={{ fontSize: 13, color: B.onDark, fontFamily: F.bold }}>Słuchaj tłumaczenia</Text>
       </Pressable>
       {interpreter ? (
-        <Pressable
-          onPress={() => void openOnWeb(`/tlumaczenie/konsola/${encodeURIComponent(String(eventId))}`)}
-          accessibilityRole="link"
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 32 }}
-        >
-          <Mic size={13} color={B.ink} />
-          <Text style={{ fontSize: 12, color: B.ink, fontFamily: F.bold }}>Konsola tłumacza (w przeglądarce)</Text>
-        </Pressable>
+        nativeListeningAvailable() ? (
+          <Pressable
+            onPress={() => openConsole(router, eventId)}
+            accessibilityRole="button"
+            className="active:opacity-70"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: B.kurkuma, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, alignSelf: 'flex-start' }}
+          >
+            <Mic size={14} color={B.ink} />
+            <Text style={{ fontSize: 13, color: B.ink, fontFamily: F.bold }}>Konsola tłumacza</Text>
+          </Pressable>
+        ) : (
+          // Build bez WebRTC (Expo Go / bardzo stary) — konsola w przeglądarce.
+          <Pressable
+            onPress={() => void openOnWeb(consoleWebPath(String(eventId)))}
+            accessibilityRole="link"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 32 }}
+          >
+            <Mic size={13} color={B.ink} />
+            <Text style={{ fontSize: 12, color: B.ink, fontFamily: F.bold }}>Konsola tłumacza (w przeglądarce)</Text>
+          </Pressable>
+        )
       ) : null}
     </View>
   );
