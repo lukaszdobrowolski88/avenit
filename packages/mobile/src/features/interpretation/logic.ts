@@ -249,6 +249,8 @@ export interface CardChannel {
 }
 export interface CardData {
   my_channels: string[];
+  // Zarządzający tłumaczeniem — wchodzi do konsoli każdego kanału.
+  can_manage?: boolean;
   session: { status: 'idle' | 'live' | 'ended'; channels: CardChannel[] } | null;
   schedule?: { pending: CardScheduleEntry[]; no_account: CardScheduleEntry[] };
 }
@@ -307,6 +309,7 @@ export function cardDataFromSession(r: SessionGetFull | null | undefined): CardD
   const sch = r?.schedule;
   return {
     my_channels: myChannels,
+    ...(r?.can_manage ? { can_manage: true } : {}),
     session: s ? { status: s.status, channels } : null,
     ...(seesPeople && sch && typeof sch === 'object'
       ? { schedule: { pending: scheduleList(sch.pending, 'pending'), no_account: scheduleList(sch.no_account, 'no_account') } }
@@ -382,11 +385,15 @@ export function cardTeamSections(d: CardData | null | undefined): CardTeamSectio
 
 // ── Linki /tlumaczenie/… ────────────────────────────────────────────────────
 // Web: /tlumaczenie/<token> (publiczny link/QR), /tlumaczenie/sluchaj/<id wydarzenia> (zalogowany),
-// /tlumaczenie/konsola/<id> i /tlumaczenie/oryginal/<id> (konsola tłumacza, stół akustyka — web).
+// /tlumaczenie/konsola/<id> (konsola tłumacza — w aplikacji od wersji z konsolą) i
+// /tlumaczenie/oryginal/<id> (stół akustyka — web).
 export type InterpretationTarget =
   | { kind: 'event'; eventId: string }
   | { kind: 'token'; token: string }
+  | { kind: 'console'; eventId: string }
   | { kind: 'web'; path: string };
+
+export const consoleWebPath = (eventId: string) => `/tlumaczenie/konsola/${encodeURIComponent(eventId)}`;
 
 const decode = (s: string) => {
   try {
@@ -403,7 +410,8 @@ export function interpretationTargetFromPath(path: string | null | undefined): I
   const parts = m[1].split('/');
   if (parts.length === 1 && isPublicToken(parts[0])) return { kind: 'token', token: parts[0] };
   if (parts.length === 2 && parts[0] === 'sluchaj' && parts[1]) return { kind: 'event', eventId: decode(parts[1]) };
-  if (parts.length === 2 && (parts[0] === 'konsola' || parts[0] === 'oryginal') && parts[1]) return { kind: 'web', path: bare };
+  if (parts.length === 2 && parts[0] === 'konsola' && parts[1]) return { kind: 'console', eventId: decode(parts[1]) };
+  if (parts.length === 2 && parts[0] === 'oryginal' && parts[1]) return { kind: 'web', path: bare };
   return null;
 }
 
@@ -475,7 +483,11 @@ export function appLinkFromUrl(url: string | null | undefined, appDomain: string
     const d = String(appDomain ?? '').toLowerCase();
     if (!d || (host !== d && !host.endsWith(`.${d}`))) return null;
     const target = interpretationTargetFromPath(https[2] || '/');
-    return target ? { target, tenant: tenantFromHost(host, d) } : null;
+    if (!target) return null;
+    // https …/tlumaczenie/konsola/<id> jest wykluczony z Universal/App Links — gdyby jednak trafił
+    // do aplikacji, zachowuje się jak dotąd (przeglądarka). Konsolę w aplikacji otwiera avenit://.
+    const t: InterpretationTarget = target.kind === 'console' ? { kind: 'web', path: consoleWebPath(target.eventId) } : target;
+    return { target: t, tenant: tenantFromHost(host, d) };
   }
   const bare = s.replace(/^(?:avenit|schtomy):\/\//i, '/');
   if (!/^\/*tlumaczenie\//i.test(bare)) return null;
@@ -491,6 +503,7 @@ export function appRouteForLink(link: AppLink): string {
   const t = link.target;
   if (t.kind === 'token') return `/listen/${t.token}${q}`;
   if (t.kind === 'event') return `/listen/event/${encodeURIComponent(t.eventId)}${q}`;
+  if (t.kind === 'console') return `/listen/console/${encodeURIComponent(t.eventId)}${q}`;
   return `/listen/web?path=${encodeURIComponent(t.path)}${link.tenant ? `&tenant=${encodeURIComponent(link.tenant)}` : ''}`;
 }
 
@@ -501,6 +514,7 @@ export function browserOnlyUrl(webBase: string, target: InterpretationTarget): s
   const base = String(webBase ?? '').replace(/\/+$/, '');
   if (target.kind === 'token') return `${base}/tlumaczenie/${target.token}/`;
   if (target.kind === 'event') return `${base}/login?next=${encodeURIComponent(`/tlumaczenie/sluchaj/${encodeURIComponent(target.eventId)}`)}`;
+  if (target.kind === 'console') return `${base}${consoleWebPath(target.eventId)}`;
   return `${base}${target.path}`;
 }
 

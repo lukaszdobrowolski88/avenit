@@ -203,7 +203,8 @@ describe('linki /tlumaczenie/…', () => {
     expect(interpretationTargetFromPath(`/tlumaczenie/${TOKEN}`)).toEqual({ kind: 'token', token: TOKEN });
     expect(interpretationTargetFromPath(`tlumaczenie/${TOKEN}/?utm=qr`)).toEqual({ kind: 'token', token: TOKEN });
     expect(interpretationTargetFromPath('/tlumaczenie/sluchaj/42')).toEqual({ kind: 'event', eventId: '42' });
-    expect(interpretationTargetFromPath('/tlumaczenie/konsola/42')).toEqual({ kind: 'web', path: '/tlumaczenie/konsola/42' });
+    expect(interpretationTargetFromPath('/tlumaczenie/konsola/42')).toEqual({ kind: 'console', eventId: '42' });
+    expect(interpretationTargetFromPath('/tlumaczenie/konsola/a%20b/')).toEqual({ kind: 'console', eventId: 'a b' });
     expect(interpretationTargetFromPath('/tlumaczenie/oryginal/42')).toEqual({ kind: 'web', path: '/tlumaczenie/oryginal/42' });
     expect(interpretationTargetFromPath('/tlumaczenie/krotki')).toBeNull();
     expect(interpretationTargetFromPath('/wydarzenie/42')).toBeNull();
@@ -225,7 +226,10 @@ describe('linki /tlumaczenie/…', () => {
     expect(redirectSystemPath({ path: '/tlumaczenie/sluchaj/42', initial: false })).toBe('/listen/event/42');
     expect(redirectSystemPath({ path: 'schtomy://tlumaczenie/sluchaj/42', initial: false })).toBe('/listen/event/42');
     expect(redirectSystemPath({ path: 'avenit://program/12', initial: true })).toBe('avenit://program/12');
-    expect(redirectSystemPath({ path: 'avenit://tlumaczenie/konsola/42', initial: true })).toBe('/listen/web?path=%2Ftlumaczenie%2Fkonsola%2F42');
+    // Konsola tłumacza — w aplikacji (bramka /listen/console: logowanie / kościół z linku).
+    expect(redirectSystemPath({ path: 'avenit://tlumaczenie/konsola/42', initial: true })).toBe('/listen/console/42');
+    expect(redirectSystemPath({ path: 'avenit://tlumaczenie/konsola/42?tenant=SchWro', initial: true })).toBe('/listen/console/42?tenant=schwro');
+    expect(redirectSystemPath({ path: 'avenit://tlumaczenie/oryginal/42', initial: true })).toBe('/listen/web?path=%2Ftlumaczenie%2Foryginal%2F42');
     expect(redirectSystemPath({ path: 'avenit://tlumaczenie/krotki', initial: true })).toBe('avenit://tlumaczenie/krotki');
   });
 });
@@ -271,6 +275,8 @@ describe('Universal Links / App Links (kod QR otwiera aplikację)', () => {
     expect(browserOnlyUrl(`${base}/`, { kind: 'event', eventId: '42' })).toBe(`${base}/login?next=%2Ftlumaczenie%2Fsluchaj%2F42`);
     expect(browserOnlyUrl('', { kind: 'event', eventId: '42' })).toBe('/login?next=%2Ftlumaczenie%2Fsluchaj%2F42');
     expect(browserOnlyUrl(base, { kind: 'web', path: '/tlumaczenie/konsola/42' })).toBe(`${base}/tlumaczenie/konsola/42`);
+    expect(browserOnlyUrl(base, { kind: 'console', eventId: '42' })).toBe(`${base}/tlumaczenie/konsola/42`);
+    expect(appRouteForLink({ target: { kind: 'console', eventId: '7' }, tenant: 'schwro' })).toBe('/listen/console/7?tenant=schwro');
     expect(tenantWebUrl('inny', D, base)).toBe('https://inny.avenit.pl');
     expect(tenantWebUrl(null, D, base)).toBe(base);
   });

@@ -9,6 +9,7 @@ import { useAuthSession } from '../../lib/auth';
 import { setPendingLink } from '../../lib/pending-link';
 import { supabase, tenantWebBase } from '../../lib/supabase';
 import { openOnWeb } from '../modules/useModules';
+import { InterpreterConsoleScreen } from './ConsoleScreen';
 import { InterpretationListenerScreen } from './ListenerScreen';
 import { appDomainFromApiUrl, appRouteForLink, browserOnlyUrl, tenantWebUrl } from './logic';
 
@@ -135,9 +136,55 @@ export function InterpretationEventLinkGate({ eventId, tenant }: { eventId: stri
   );
 }
 
+// /tlumaczenie/konsola/<id> (avenit://): zalogowany w kościele z linku — konsola w aplikacji;
+// bez logowania — logowanie i powrót do tego linku; inny kościół — konsola w przeglądarce.
+export function InterpretationConsoleLinkGate({ eventId, tenant }: { eventId: string; tenant: string | null }) {
+  const router = useRouter();
+  const s = useSessionTenant();
+  if (!eventId) {
+    return (
+      <GateFrame>
+        <Message title="Nie znaleziono konsoli" body="Ten link nie działa." />
+      </GateFrame>
+    );
+  }
+  if (!s.ready) return <Loading />;
+  const target = { kind: 'console' as const, eventId };
+  const sameChurch = !tenant || (!!s.tenant && s.tenant === tenant);
+  if (s.signedIn && sameChurch) return <InterpreterConsoleScreen eventId={eventId} />;
+
+  const webUrl = browserOnlyUrl(tenantWebUrl(tenant, APP_DOMAIN, tenantWebBase()), target);
+  if (!s.signedIn) {
+    return (
+      <GateFrame>
+        <Message title="Zaloguj się, aby tłumaczyć" body="Konsola tłumacza działa z Twojego konta w kościele. Po zalogowaniu wrócisz tutaj." />
+        <Button
+          primary
+          label="Zaloguj się"
+          onPress={() => {
+            setPendingLink(appRouteForLink({ target, tenant }));
+            router.replace('/(auth)/login' as never);
+          }}
+        />
+        <Button label="Otwórz w przeglądarce" onPress={() => openInBrowser(webUrl)} />
+      </GateFrame>
+    );
+  }
+  return (
+    <GateFrame>
+      <Message
+        title="Link z innego kościoła"
+        body="To tłumaczenie należy do innego kościoła niż ten, w którym jesteś zalogowany. Otwórz konsolę w przeglądarce."
+      />
+      <Button primary label="Otwórz w przeglądarce" onPress={() => openInBrowser(webUrl)} />
+    </GateFrame>
+  );
+}
+
 const WEB_ONLY_PATH = /^\/tlumaczenie\/(?:konsola|oryginal)\/[^/?#]+$/;
 
-// Konsola tłumacza i „Oryginał” zostają na webie: zalogowany w tym kościele — web bez ponownego
+// „Oryginał” (i konsola z linku https — wykluczona z Universal/App Links) zostają na webie:
+// zalogowany w tym kościele — web bez ponownego
 // logowania (bilet), inaczej zwykły adres. Te ścieżki są wykluczone z Universal/App Links, więc
 // przeglądarka nie odda ich z powrotem aplikacji.
 export function InterpretationWebLinkGate({ path, tenant }: { path: string; tenant: string | null }) {

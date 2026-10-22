@@ -23,7 +23,11 @@ import { callkit } from '../calls/native/modules';
 import { getCallState, subscribeCall } from '../calls/native/engine';
 import {
   beginListeningAudio,
+  claimInterpretationAudio,
   endListeningAudio,
+  interpretationAudioUser,
+  registerInterpretationAudioUser,
+  releaseInterpretationAudio,
   listenerTimers,
   loadListenerLiveKit,
   nativeListeningAvailable,
@@ -76,6 +80,9 @@ async function fn<T>(name: string, body: Record<string, unknown>, tenant: string
   return data as T;
 }
 
+// Wywołanie fn interp-* (też konsola tłumacza): błąd → Error z { status, code, context }.
+export const interpFn = fn;
+
 export const fetchSession = (eventId: string | number) => fn<SessionGetResponse>('interp-session-get', { event_id: String(eventId) });
 
 export function memberSource(eventId: string): ListenerSource {
@@ -124,7 +131,7 @@ function deviceLanguages(): string[] {
 }
 
 type NetInfoModule = typeof import('@react-native-community/netinfo');
-function netInfo(): NetInfoModule['default'] | null {
+export function netInfo(): NetInfoModule['default'] | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const m = require('@react-native-community/netinfo') as NetInfoModule;
@@ -136,6 +143,8 @@ function netInfo(): NetInfoModule['default'] | null {
 
 export const CALL_BLOCK_HINT = 'Trwa rozmowa. Zakończ ją, żeby słuchać tłumaczenia.';
 export const CALL_STOP_HINT = 'Słuchanie przerwała rozmowa. Dotknij „Słuchaj”, żeby wrócić.';
+export const CONSOLE_BLOCK_HINT = 'Trwa Twoja zmiana w konsoli tłumacza. Zakończ ją, żeby słuchać.';
+export const CONSOLE_STOP_HINT = 'Słuchanie przerwała konsola tłumacza.';
 
 export function useInterpretationListener(src: ListenerSource) {
   const available = nativeListeningAvailable();
@@ -200,6 +209,7 @@ export function useInterpretationListener(src: ListenerSource) {
         audioOnRef.current = false;
         await endListeningAudio({ takenByCall: reason === 'call' }).catch(() => undefined);
       }
+      releaseInterpretationAudio('listener');
       if (reason !== 'unmount') set(setPhase, 'idle' as Phase);
     },
     [teardownRoom, set],
@@ -249,6 +259,11 @@ export function useInterpretationListener(src: ListenerSource) {
         await stopAll('call');
         return;
       }
+      if (interpretationAudioUser() === 'console') {
+        set(setHint, CONSOLE_BLOCK_HINT);
+        await stopAll('user');
+        return;
+      }
       const run = ++runRef.current;
       set(setPhase, (phaseRef.current === 'listening' || phaseRef.current === 'reconnecting' ? 'reconnecting' : 'connecting') as Phase);
       let res: ListenResponse;
@@ -277,6 +292,7 @@ export function useInterpretationListener(src: ListenerSource) {
       try {
         client = loadListenerLiveKit().client;
         if (!audioOnRef.current) {
+          await claimInterpretationAudio('listener');
           await beginListeningAudio();
           audioOnRef.current = true;
         }
@@ -437,10 +453,20 @@ export function useInterpretationListener(src: ListenerSource) {
     if (shouldRunPlaybackService(Platform.OS, phase, backgroundPlayback)) {
       if (!startPlaybackService(note.title, note.text)) setServiceFailed(true);
     } else if (serviceAvailable) {
-      stopPlaybackService();
+      stopPlaybackService('listen');
     }
     setKeepAwake(shouldKeepAwake(Platform.OS, phase, backgroundPlayback));
   }, [phase, backgroundPlayback, serviceAvailable, note.title, note.text]);
+
+  // Konsola tłumacza przejmuje dźwięk → koniec słuchania (z podpowiedzią).
+  useEffect(
+    () =>
+      registerInterpretationAudioUser('listener', async () => {
+        set(setHint, CONSOLE_STOP_HINT);
+        await stopAll('user');
+      }),
+    [stopAll, set],
+  );
 
   // Wyjście z ekranu = koniec słuchania.
   useEffect(() => {
@@ -448,7 +474,7 @@ export function useInterpretationListener(src: ListenerSource) {
     return () => {
       unmountedRef.current = true;
       setKeepAwake(false);
-      stopPlaybackService();
+      stopPlaybackService('listen');
       void stopAll('unmount');
     };
   }, [stopAll]);
@@ -461,6 +487,10 @@ export function useInterpretationListener(src: ListenerSource) {
     }
     if (getCallState()) {
       setHint(CALL_BLOCK_HINT);
+      return;
+    }
+    if (interpretationAudioUser() === 'console') {
+      setHint(CONSOLE_BLOCK_HINT);
       return;
     }
     setHint('');

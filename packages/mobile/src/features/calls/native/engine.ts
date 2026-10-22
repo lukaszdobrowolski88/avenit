@@ -470,7 +470,11 @@ const MEDIA_TEXT = {
   camera: { title: "Brak dostępu do aparatu", body: "Aby pokazać obraz z kamery, zezwól Avenit na dostęp do aparatu w Ustawieniach." },
   microphone: { title: "Brak dostępu do mikrofonu", body: "Aby rozmówcy Cię słyszeli, zezwól Avenit na dostęp do mikrofonu w Ustawieniach." },
 } as const;
-async function ensureMediaAccess(kind: "camera" | "microphone"): Promise<boolean> {
+// Eksport: konsola tłumacza (własny tekst okna — text).
+export async function ensureMediaAccess(
+  kind: "camera" | "microphone",
+  text: { title: string; body: string } | null = null,
+): Promise<boolean> {
   let granted = true;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -489,7 +493,7 @@ async function ensureMediaAccess(kind: "camera" | "microphone"): Promise<boolean
     return true; // nie umiemy sprawdzić — niech spróbuje sam getUserMedia
   }
   if (!granted) {
-    const t = MEDIA_TEXT[kind];
+    const t = text ?? MEDIA_TEXT[kind];
     Alert.alert(t.title, t.body, [
       { text: "Nie teraz", style: "cancel" },
       { text: "Otwórz ustawienia", onPress: () => void Linking.openSettings().catch(() => undefined) },

@@ -19,6 +19,7 @@ import { callOwnsAudioSession, loadLiveKit } from '../calls/native/modules';
 import { setExternalAudioOwner } from '../../lib/audioMode';
 import { playbackModule, type PlaybackStopReason } from '../../../modules/interpretation-playback';
 import { createHybridTimers, type HybridTimers } from './bgTimers';
+import { consoleServiceSupported } from './consoleLogic';
 
 type LiveKitRN = typeof import('@livekit/react-native');
 type LiveKitClient = typeof import('livekit-client');
@@ -40,6 +41,37 @@ export function callOwnsAudio(): boolean {
 }
 
 let held = false; // nasza aktywacja sesji (LiveKit liczy aktywacje — trzeba je bilansować)
+
+// ── Kto używa dźwięku tłumaczenia: słuchacz albo konsola tłumacza (nigdy oba naraz) ──
+// Konsola przejmuje dźwięk: najpierw kończy słuchanie (i czeka, aż sesja audio wróci), dopiero
+// potem ustawia swoją. Słuchanie nie startuje, gdy trwa zmiana w konsoli.
+export type InterpretationAudioUser = 'listener' | 'console';
+const users = new Map<InterpretationAudioUser, () => Promise<void>>();
+let activeUser: InterpretationAudioUser | null = null;
+
+// Rejestracja „jak mnie zatrzymać” na czas działania (słuchanie / zmiana w konsoli).
+export function registerInterpretationAudioUser(kind: InterpretationAudioUser, stop: () => Promise<void>): () => void {
+  users.set(kind, stop);
+  return () => {
+    if (users.get(kind) === stop) users.delete(kind);
+  };
+}
+
+export const interpretationAudioUser = () => activeUser;
+
+// Zajmij dźwięk: drugi użytkownik (jeśli działa) zostaje zatrzymany.
+export async function claimInterpretationAudio(kind: InterpretationAudioUser): Promise<void> {
+  const other: InterpretationAudioUser = kind === 'console' ? 'listener' : 'console';
+  if (activeUser === other) {
+    const stop = users.get(other);
+    if (stop) await stop().catch(() => undefined);
+  }
+  activeUser = kind;
+}
+
+export function releaseInterpretationAudio(kind: InterpretationAudioUser) {
+  if (activeUser === kind) activeUser = null;
+}
 
 export async function beginListeningAudio(): Promise<void> {
   const { rn } = loadLiveKit();
@@ -68,6 +100,58 @@ export async function beginListeningAudio(): Promise<void> {
   await AS.configureAudio({ android: { audioTypeOptions: rn.AndroidAudioTypePresets.media } }).catch(() => undefined);
   await AS.startAudioSession();
   held = true;
+}
+
+// Konsola tłumacza: mikrofon + odsłuch. iOS — playAndRecord / voiceChat (przetwarzanie głosu
+// Apple: usuwanie echa, gdy oryginał gra z głośnika), Bluetooth HFP (mikrofon słuchawek) i A2DP,
+// bez słuchawek — głośnik (nie słuchawka rozmów). Bez mixWithOthers: muzyka z innych apek milknie.
+// Android — typ „communication” (tryb inCommunication, AEC sprzętowe; wyjście: Bluetooth,
+// słuchawki przewodowe, głośnik).
+export async function beginConsoleAudio(): Promise<void> {
+  const { rn } = loadLiveKit();
+  setExternalAudioOwner(true);
+  const AS = rn.AudioSession;
+  if (Platform.OS === 'ios') {
+    if (held && !callOwnsAudio()) {
+      await AS.stopAudioSession().catch(() => undefined);
+      held = false;
+    }
+    await AS.setAppleAudioConfiguration({
+      audioCategory: 'playAndRecord',
+      audioCategoryOptions: ['allowBluetooth', 'allowBluetoothA2DP', 'defaultToSpeaker'],
+      audioMode: 'voiceChat',
+    }).catch((e: unknown) => {
+      if (__DEV__) console.warn('[interp] konsola — setAppleAudioConfiguration:', (e as Error)?.message);
+    });
+    if (!held) {
+      await AS.startAudioSession();
+      held = true;
+    }
+    return;
+  }
+  await AS.configureAudio({
+    android: {
+      preferredOutputList: ['bluetooth', 'headset', 'speaker', 'earpiece'],
+      audioTypeOptions: rn.AndroidAudioTypePresets.communication,
+    },
+  }).catch(() => undefined);
+  await AS.startAudioSession();
+  held = true;
+}
+
+// Koniec konsoli — jak koniec słuchania (wspólny bilans aktywacji sesji).
+export async function endConsoleAudio({ takenByCall = false }: { takenByCall?: boolean } = {}): Promise<void> {
+  await endListeningAudio({ takenByCall });
+}
+
+// Android: dostępne wyjścia dźwięku (słuchawki?). iOS / błąd → null.
+export async function audioOutputs(): Promise<string[] | null> {
+  if (Platform.OS !== 'android') return null;
+  try {
+    return await loadLiveKit().rn.AudioSession.getAudioOutputs();
+  } catch {
+    return null;
+  }
 }
 
 // takenByCall — przerwała nas rozmowa: na iOS nie ruszamy sesji, jeśli CallKit już ją przejął.
@@ -113,20 +197,40 @@ function keepAwakeModule(): KeepAwake | null {
   return ka;
 }
 
-let awake = false;
-export function setKeepAwake(on: boolean) {
-  if (on === awake) return;
+// Osobny znacznik dla słuchacza i konsoli — jedno nie gasi blokady drugiego.
+export const CONSOLE_KEEP_AWAKE_TAG = 'avenit-interpretation-console';
+const awake = new Set<string>();
+export function setKeepAwake(on: boolean, tag: string = KEEP_AWAKE_TAG) {
+  if (on === awake.has(tag)) return;
   const m = keepAwakeModule();
   if (!m) return;
-  awake = on;
-  if (on) m.activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
-  else m.deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
+  if (on) {
+    awake.add(tag);
+    m.activateKeepAwakeAsync(tag).catch(() => undefined);
+  } else {
+    awake.delete(tag);
+    m.deactivateKeepAwake(tag).catch(() => undefined);
+  }
 }
 
 // ── Usługa słuchania w tle (Android) ──────────────────────────────────────
 export function playbackServiceAvailable(): boolean {
   return !!playbackModule();
 }
+
+// Konsola w tle (Android): moduł musi umieć tryb „console” (usługa z mikrofonem). Moduł bez tego
+// trybu (słuchanie) albo brak modułu → konsola trzyma ekran włączony.
+export function consoleServiceAvailable(): boolean {
+  try {
+    return consoleServiceSupported(playbackModule() as unknown as { apiVersion?: unknown; modes?: unknown } | null);
+  } catch {
+    return false;
+  }
+}
+
+// Tryb, w którym JS uruchomił usługę (zdarzenia „Zatrzymaj” trafiają do właściciela).
+let serviceMode: 'listen' | 'console' | null = null;
+export const playbackServiceMode = () => serviceMode;
 
 let hybrid: HybridTimers | null = null;
 
@@ -184,19 +288,28 @@ export const listenerTimers = {
 };
 
 // Start (albo nowy tekst powiadomienia, gdy już działa). false = brak modułu / Android nie pozwolił.
-export function startPlaybackService(title: string, text: string): boolean {
+export function startPlaybackService(title: string, text: string, mode: 'listen' | 'console' = 'listen'): boolean {
   const m = playbackModule();
   if (!m) return false;
+  if (mode === 'console' && !consoleServiceAvailable()) return false;
   backgroundTimers();
   try {
-    return m.start(title, text) === true;
+    const ok =
+      mode === 'console'
+        ? (m.start as unknown as (t: string, x: string, mode: string) => boolean)(title, text, 'console') === true
+        : m.start(title, text) === true;
+    if (ok) serviceMode = mode;
+    return ok;
   } catch (e) {
     if (__DEV__) console.warn('[interp] usługa:', (e as Error)?.message);
     return false;
   }
 }
 
-export function stopPlaybackService() {
+export function stopPlaybackService(mode: 'listen' | 'console' | null = null) {
+  // Usługa innego właściciela (np. słuchacz sprząta, a działa konsola) — nie ruszamy.
+  if (mode && serviceMode && serviceMode !== mode) return;
+  serviceMode = null;
   try {
     playbackModule()?.stop();
   } catch {
