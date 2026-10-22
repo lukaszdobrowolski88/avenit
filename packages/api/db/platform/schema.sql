@@ -90,8 +90,9 @@ DROP TRIGGER IF EXISTS trigger_subscription_plans_updated_at ON subscription_pla
 CREATE TRIGGER trigger_subscription_plans_updated_at BEFORE UPDATE ON subscription_plans
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- Cennik „za dorosłych” (2026-10): limit planu = liczba DOROSŁYCH w bazie członków (max_members),
--- wszystkie moduły w każdym planie, bez limitu użytkowników, ceny BRUTTO w groszach.
+-- Cennik 2026-10: limit planu = liczba aktywnych KONT UŻYTKOWNIKÓW tenanta (kolumna max_members —
+-- nazwa historyczna; do migracji 007 liczyliśmy dorosłych w bazie członków), wszystkie moduły
+-- w każdym planie, ceny BRUTTO w groszach. max_users i pozostałe max_* = -1 (nieużywane).
 --   limit_buffer_pct — zapas ponad limit (10%), w którym nic się nie dzieje do końca okresu,
 --   is_custom        — plan z wyceną indywidualną (Sieć): nigdy nie fakturowany po cenie katalogowej.
 -- Same plany (start/wspolnota/kosciol/kosciol_plus/siec) i wycofanie starych (starter/standard/
@@ -431,13 +432,16 @@ CREATE TABLE IF NOT EXISTS platform_announcements (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ── TENANT_USAGE_SNAPSHOTS (comiesięczny zapis liczby dorosłych per tenant) ──
+-- ── TENANT_USAGE_SNAPSHOTS (comiesięczny zapis liczby kont użytkowników per tenant) ──
 -- Wypełnia worker (1. dnia miesiąca); tylko informacyjnie dla admina — nic nie blokuje.
+-- Do 2026-10 limit liczono w dorosłych (kolumna adults = historia); od migracji 007 — accounts.
 CREATE TABLE IF NOT EXISTS tenant_usage_snapshots (
   id BIGSERIAL PRIMARY KEY,
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   period DATE NOT NULL,                 -- pierwszy dzień miesiąca
-  adults INTEGER NOT NULL,
+  adults INTEGER,                       -- historia (dorośli w bazie członków, do 2026-10)
+  accounts INTEGER,                     -- aktywne konta użytkowników (limit planu)
+  pending_accounts INTEGER,             -- konta oczekujące (nie liczą się do limitu)
   plan_key VARCHAR(50),
   plan_limit INTEGER,
   state VARCHAR(20),
@@ -445,3 +449,6 @@ CREATE TABLE IF NOT EXISTS tenant_usage_snapshots (
   UNIQUE (tenant_id, period)
 );
 CREATE INDEX IF NOT EXISTS idx_tenant_usage_snapshots_tenant ON tenant_usage_snapshots(tenant_id, period DESC);
+ALTER TABLE tenant_usage_snapshots ADD COLUMN IF NOT EXISTS accounts INTEGER;
+ALTER TABLE tenant_usage_snapshots ADD COLUMN IF NOT EXISTS pending_accounts INTEGER;
+ALTER TABLE tenant_usage_snapshots ALTER COLUMN adults DROP NOT NULL;

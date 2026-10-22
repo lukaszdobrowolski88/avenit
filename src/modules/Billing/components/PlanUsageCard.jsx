@@ -1,9 +1,10 @@
 import React from 'react';
 import { CreditCard } from 'lucide-react';
 import { tr, appLocale } from '../../../i18n';
-import { formatPLN, usageLabel, usageMessage } from '../billingView';
+import { formatPLN, usageLabel, usageMessage, bufferLabel, pendingLabel } from '../billingView';
 
-// Karta „Twój plan”: plan, cena (miesięcznie/rocznie), pasek „N z L dorosłych” i komunikat stanu.
+// Karta „Twój plan”: plan, cena (miesięcznie/rocznie), pasek „Konta: N z L” (+ zapas, oczekujące)
+// i komunikat stanu.
 const STATUS = {
   trialing: { text: 'Okres próbny', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' },
   active: { text: 'Aktywna', cls: 'bg-gray-100 text-gray-700 dark:bg-gray-600/50 dark:text-gray-200' },
@@ -24,8 +25,10 @@ export default function PlanUsageCard({ data }) {
   const yearly = sub?.billingCycle === 'yearly';
   const amount = sub?.price?.amount ?? (yearly ? plan?.priceYearly : plan?.priceMonthly);
   const limited = usage && usage.state !== 'unlimited' && usage.limit > 0;
-  const width = limited ? Math.min(100, Math.round((usage.adults * 100) / usage.limit)) : 0;
+  const width = limited ? Math.min(100, Math.round((usage.accounts * 100) / usage.limit)) : 0;
   const msg = usageMessage(usage);
+  const buffer = bufferLabel(usage);
+  const pending = pendingLabel(usage);
   const inTrial = sub?.status === 'trialing' || tenant?.status === 'trial';
   const trialEnd = inTrial ? (sub?.trialEndsAt || tenant?.trialEndsAt || null) : null;
 
@@ -51,7 +54,7 @@ export default function PlanUsageCard({ data }) {
           )}
           {plan?.retired && suggestedPlan && (
             <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-              {tr('Ten plan nie jest już w ofercie. Dla Waszej liczby dorosłych pasuje plan {plan}.', { plan: suggestedPlan.name })}
+              {tr('Ten plan nie jest już w ofercie. Dla Waszej liczby kont użytkowników pasuje plan {plan}.', { plan: suggestedPlan.name })}
             </p>
           )}
         </div>
@@ -66,23 +69,25 @@ export default function PlanUsageCard({ data }) {
       {usage && (
         <div>
           <div className="flex items-baseline justify-between gap-3 text-sm mb-1.5">
-            <span className="text-gray-700 dark:text-gray-200 font-medium">{tr('Dorośli w bazie członków')}</span>
+            <span className="text-gray-700 dark:text-gray-200 font-medium">{tr('Wykorzystanie planu')}</span>
             <span className="tabular-nums text-gray-600 dark:text-gray-300">{usageLabel(usage)}</span>
           </div>
           {limited ? (
             <div
               className="h-2 rounded-full bg-gray-100 dark:bg-gray-600 overflow-hidden"
-              role="meter" aria-valuemin={0} aria-valuemax={usage.limit} aria-valuenow={usage.adults}
-              aria-label={tr('Dorośli w bazie członków')}
+              role="meter" aria-valuemin={0} aria-valuemax={usage.limit} aria-valuenow={usage.accounts}
+              aria-label={tr('Konta użytkowników')}
             >
               <div className={`h-full rounded-full transition-all ${BAR[usage.state] || BAR.ok}`} style={{ width: `${width}%` }} />
             </div>
           ) : (
-            <p className="text-xs text-gray-400 dark:text-gray-500">{tr('Bez limitu dorosłych')}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{tr('Bez limitu kont użytkowników')}</p>
           )}
+          {buffer && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 tabular-nums">{buffer}</p>}
+          {pending && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{pending}</p>}
           {msg && <p className={`text-sm mt-3 ${MSG[msg.tone]}`}>{msg.text}</p>}
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
-            {tr('Liczymy dorosłych w bazie członków. Dzieci, goście i osoby zarchiwizowane się nie liczą. Użytkowników i modułów jest bez limitu.')}
+            {tr('Liczymy aktywne konta użytkowników w aplikacji. Konta oczekujące i zablokowane się nie liczą, a osoby w bazie członków bez konta (np. dzieci, goście) są bez limitu. Wszystkie moduły w każdym planie.')}
           </p>
         </div>
       )}

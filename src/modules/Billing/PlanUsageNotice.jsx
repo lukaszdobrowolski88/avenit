@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { tr } from '../../i18n';
 import { usePermissions } from '../../contexts/PermissionsContext';
-import { getPlanUsage } from '../../lib/subscriptions';
+import { getPlanUsage, PLAN_USAGE_CHANGED } from '../../lib/subscriptions';
 import { noticeFor, noticeDismissKey } from './billingView';
 import '../../components/toolbar.css';
 
-// Dyskretny komunikat o przekroczeniu limitu dorosłych — tylko dla osób z dostępem do rozliczeń
-// (Ustawienia). Zwykli członkowie nic nie widzą (serwer i tak odpowiada im 403). Zamknięty nie wraca
-// w tym samym miesiącu dla tego samego stanu. Nic nie blokuje.
+// Dyskretny komunikat o przekroczeniu limitu kont użytkowników — tylko dla osób z dostępem do
+// rozliczeń (Ustawienia). Zwykli członkowie nic nie widzą (serwer i tak odpowiada im 403). Zamknięty
+// nie wraca w tym samym miesiącu dla tego samego stanu. Odświeża się po utworzeniu / zatwierdzeniu
+// kont (zdarzenie PLAN_USAGE_CHANGED). Nic nie blokuje.
 export default function PlanUsageNotice() {
   const perms = usePermissions();
   const allowed = perms?.ready ? perms.can('module:settings') : false;
@@ -18,16 +19,19 @@ export default function PlanUsageNotice() {
   useEffect(() => {
     if (!allowed) return undefined;
     let alive = true;
-    getPlanUsage()
+    const load = () => getPlanUsage()
       .then((d) => {
+        if (!alive) return;
         const n = noticeFor(d);
-        if (!alive || !n) return;
+        if (!n) { setNotice(null); return; }
         let dismissed = false;
         try { dismissed = localStorage.getItem(noticeDismissKey(n)) === '1'; } catch { /* brak storage */ }
-        if (!dismissed) setNotice(n);
+        setNotice(dismissed ? null : n);
       })
       .catch(() => {});
-    return () => { alive = false; };
+    load();
+    window.addEventListener(PLAN_USAGE_CHANGED, load);
+    return () => { alive = false; window.removeEventListener(PLAN_USAGE_CHANGED, load); };
   }, [allowed]);
 
   if (!notice) return null;

@@ -68,10 +68,10 @@ export default function TenantDetail() {
   };
 
   const currentPlan = plans.find((p) => p.id === subscription?.plan_id) || plans.find((p) => p.name === subscription?.plan_name);
-  // counted=false → baza tenanta nie odpowiedziała (adults=0 nic nie znaczy).
+  // counted=false → baza tenanta nie odpowiedziała (accounts=0 nic nie znaczy).
   const u = usage && usage.counted === false ? null : normalizeUsage(usage, currentPlan);
   const suggestedKey = usage?.suggestedPlan?.key;
-  const suggested = (suggestedKey && plans.find((p) => planKey(p) === suggestedKey)) || (u ? suggestPlan(plans, u.adults) : null);
+  const suggested = (suggestedKey && plans.find((p) => planKey(p) === suggestedKey)) || (u ? suggestPlan(plans, u.accounts) : null);
   const retired = !!usage?.planRetired || isRetiredPlan(currentPlan);
   const needsChange = suggested && currentPlan && suggested.id !== currentPlan.id && (retired || u?.state === 'over_buffer');
   const cycle = subscription?.billing_cycle || 'monthly';
@@ -107,7 +107,7 @@ export default function TenantDetail() {
           action={reqPlan && <Button size="sm" variant="primary" onClick={() => switchTo(reqPlan, req.billingCycle || 'monthly')}>Przenieś na plan {reqPlan.name}</Button>}
         >
           <b>Prośba o zmianę planu</b> z {req.requestedAt ? fmtDate(req.requestedAt) : '—'}{req.requestedBy ? ` (${req.requestedBy})` : ''}:
-          {' '}<b>{req.planName || req.planKey}</b>, cykl {CYCLE_LABEL[req.billingCycle] || 'miesięczny'}{req.adults != null ? `, dorosłych: ${req.adults}` : ''}.
+          {' '}<b>{req.planName || req.planKey}</b>, cykl {CYCLE_LABEL[req.billingCycle] || 'miesięczny'}{req.accounts != null ? `, kont: ${req.accounts}` : req.adults != null ? `, dorosłych (dawna metryka): ${req.adults}` : ''}.
           {req.message && <div className="small" style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>„{req.message}”</div>}
         </Notice>
       )}
@@ -118,7 +118,7 @@ export default function TenantDetail() {
           action={<Button size="sm" variant="primary" onClick={() => switchTo(suggested)}>Przenieś na plan {suggested.name}</Button>}
         >
           {retired
-            ? <>Plan <b>{currentPlan.name}</b> jest wycofany. Sugerowany plan według liczby dorosłych{u ? ` (${u.adults})` : ''}: <b>{suggested.name}</b> ({limitLabel(suggested.max_members)}, {formatZl(suggested.price_monthly, { from: isCustomPlan(suggested) })}/mies.).</>
+            ? <>Plan <b>{currentPlan.name}</b> jest wycofany. Sugerowany plan według liczby kont użytkowników{u ? ` (${u.accounts})` : ''}: <b>{suggested.name}</b> ({limitLabel(suggested.max_members)}, {formatZl(suggested.price_monthly, { from: isCustomPlan(suggested) })}/mies.).</>
             : <>Kościół przekracza limit planu wraz z buforem. Sugerowany plan: <b>{suggested.name}</b> ({limitLabel(suggested.max_members)}).</>}
         </Notice>
       )}
@@ -143,14 +143,16 @@ export default function TenantDetail() {
           </dl>
         </Card>
 
-        <Card title="Dorośli w bazie członków" subtitle="Liczą się dorośli; dzieci, goście i osoby zarchiwizowane — nie.">
+        <Card title="Konta użytkowników" subtitle="Liczą się aktywne konta w aplikacji; oczekujące i zablokowane — nie. Osoby w bazie członków bez konta są bez limitu.">
           {usage === undefined && <Loading>Liczenie…</Loading>}
           {usage !== undefined && u && (
             <>
               <UsageBar usage={u} />
-              {u.approximate && <div className="small muted" style={{ marginTop: 8 }}><Badge size="sm">szacunkowo</Badge> części dat urodzenia nie dało się odczytać.</div>}
+              {u.approximate && <div className="small muted" style={{ marginTop: 8 }}><Badge size="sm">szacunkowo</Badge> policzono wszystkie konta (nie udało się odczytać ich stanu).</div>}
               <div className="small muted" style={{ marginTop: 10 }}>
-                {u.state === 'unlimited' ? 'Plan bez limitu dorosłych.'
+                {u.pending > 0 && <>Oczekujące (nie liczą się): <b>{u.pending}</b>. </>}
+                {u.blocked > 0 && <>Zablokowane: {u.blocked}. </>}
+                {u.state === 'unlimited' ? 'Plan bez limitu kont.'
                   : <>Limit {u.limit}, z buforem {u.bufferLimit}. {u.pct != null && <>Wykorzystanie {u.pct}%.</>}</>}
                 {suggested && currentPlan && suggested.id !== currentPlan.id && !needsChange && (
                   <> Pasujący plan: <b>{suggested.name}</b>.</>
@@ -160,10 +162,10 @@ export default function TenantDetail() {
           )}
           {usage !== undefined && !u && (
             <div className="small muted">
-              {usageErr ? `Nie udało się policzyć dorosłych: ${usageErr}`
-                : usage?.counted === false ? 'Baza tego kościoła nie odpowiedziała — nie da się teraz policzyć dorosłych.'
-                : 'Licznik dorosłych nie jest jeszcze dostępny w API.'}
-              {counts && <> Wszystkich osób w bazie: <b>{counts.members}</b>.</>}
+              {usageErr ? `Nie udało się policzyć kont: ${usageErr}`
+                : usage?.counted === false ? 'Baza tego kościoła nie odpowiedziała — nie da się teraz policzyć kont.'
+                : 'Licznik kont nie jest jeszcze dostępny w API.'}
+              {counts && <> Wszystkich kont w bazie: <b>{counts.users}</b>.</>}
             </div>
           )}
         </Card>
@@ -173,7 +175,7 @@ export default function TenantDetail() {
 
       <div className="stats">
         <Stat label="Osoby w bazie" value={counts ? counts.members : '—'} hint="Wszystkie rekordy członków" />
-        <Stat label="Konta użytkowników" value={counts ? counts.users : '—'} />
+        <Stat label="Konta (wszystkie)" value={counts ? counts.users : '—'} hint="Z oczekującymi i zablokowanymi" />
         <Stat label="Grupy" value={counts ? counts.groups : '—'} />
         <Stat label="Baza danych" value={tenant.db_name} small />
       </div>
@@ -236,16 +238,20 @@ export default function TenantDetail() {
 // Historia miesięcznych odczytów (tenant_usage_snapshots) — najnowsze pierwsze w API.
 function UsageHistory({ history }) {
   const rows = [...history].reverse();
-  const max = Math.max(1, ...rows.map((h) => Math.max(h.adults || 0, h.plan_limit > 0 ? h.plan_limit : 0)));
   const label = (p) => new Date(p).toLocaleDateString('pl-PL', { month: 'short', year: '2-digit' });
+  // Odczyty sprzed zmiany metryki (2026-10) mają tylko „adults” — pokazujemy je jaśniej, z opisem.
+  const legacy = (h) => h.accounts == null && h.adults != null;
+  const val = (h) => (legacy(h) ? h.adults : h.accounts) || 0;
+  const desc = (h) => `${label(h.period)}: ${legacy(h) ? `${h.adults} dorosłych (dawna metryka)` : `${h.accounts ?? 0} kont`}${h.plan_limit > 0 ? ` z ${h.plan_limit}` : ''}`;
+  const max = Math.max(1, ...rows.map((h) => Math.max(val(h), h.plan_limit > 0 ? h.plan_limit : 0)));
+  const anyLegacy = rows.some(legacy);
   return (
-    <Card title="Dorośli — historia" subtitle="Odczyt z początku każdego miesiąca" className="mb">
-      <div className="bars" style={{ height: 96 }} role="img"
-        aria-label={rows.map((h) => `${label(h.period)}: ${h.adults}${h.plan_limit > 0 ? ` z ${h.plan_limit}` : ''}`).join(', ')}>
+    <Card title="Konta użytkowników — historia" subtitle={`Odczyt z początku każdego miesiąca${anyLegacy ? '; jaśniejsze słupki = dawna metryka (dorośli w bazie członków)' : ''}`} className="mb">
+      <div className="bars" style={{ height: 96 }} role="img" aria-label={rows.map(desc).join(', ')}>
         {rows.map((h) => (
-          <div key={h.period} className={`bar${h.adults ? ' has' : ''}`}
-            style={{ height: `${((h.adults || 0) / max) * 100}%`, background: ['over', 'over_buffer'].includes(h.state) ? 'var(--danger)' : undefined }}
-            title={`${label(h.period)}: ${h.adults}${h.plan_limit > 0 ? ` z ${h.plan_limit}` : ''} (${h.plan_key || '—'})`} />
+          <div key={h.period} className={`bar${val(h) ? ' has' : ''}`}
+            style={{ height: `${(val(h) / max) * 100}%`, opacity: legacy(h) ? 0.4 : undefined, background: ['over', 'over_buffer'].includes(h.state) ? 'var(--danger)' : undefined }}
+            title={`${desc(h)} (${h.plan_key || '—'})`} />
         ))}
       </div>
       <div className="bars-x" aria-hidden="true">{rows.map((h) => <span key={h.period}>{label(h.period)}</span>)}</div>

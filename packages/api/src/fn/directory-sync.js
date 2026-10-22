@@ -8,6 +8,8 @@ import { integrationCaller } from '../integrations/access.js';
 import { isProvider, PROVIDERS } from '../integrations/providers.js';
 import { IntegrationError, loadConnection } from '../integrations/tokens.js';
 import { runDirectorySync, syncHistory, loadDirectorySettings } from '../integrations/directory.js';
+import { platformPool } from '../db.js';
+import { accountsForecast } from '../tenant/accounts.js';
 
 export const name = 'directory-sync';
 export const isPublic = false;
@@ -29,7 +31,10 @@ export async function directoryAction(req, access, deps = {}) {
   const ctx = { tenantSubdomain: req.tenant?.subdomain, sendInvite: deps.sendInvite || sendInvite };
 
   if (action === 'history') return { history: await syncHistory(req.db, provider, 20) };
-  if (action === 'preview') return runDirectorySync(req.db, provider, { dryRun: true, actor, ctx });
+  if (action === 'preview') {
+    const res = await runDirectorySync(req.db, provider, { dryRun: true, actor, ctx });
+    return { ...res, accountsLimit: await planForecast(req, res.plan?.counts, deps) };
+  }
   if (action === 'apply') {
     if (!access.canUsers) {
       throw new IntegrationError('Zastosować synchronizację (zakładanie i blokowanie kont) może osoba z uprawnieniem „Zarządzaj użytkownikami”.', { status: 403, code: 'forbidden' });
@@ -37,6 +42,20 @@ export async function directoryAction(req, access, deps = {}) {
     return runDirectorySync(req.db, provider, { dryRun: false, trigger: 'manual', actor, ctx });
   }
   throw new IntegrationError('Nieznana akcja.', { status: 400 });
+}
+
+// Limit planu liczony w kontach użytkowników: „Po synchronizacji: X kont, limit planu Y”.
+// Nowe konta (także te, które trafią do kolejki zatwierdzeń) minus blokowane. Tylko informacja —
+// synchronizacja nikogo nie blokuje. Błąd liczenia (np. baza platform) → null, bez przerywania.
+async function planForecast(req, counts, deps = {}) {
+  if (!counts || !req.tenant?.id) return null;
+  const delta = (counts.create || 0) - (counts.block || 0);
+  try {
+    const f = deps.forecast || ((d) => accountsForecast(platformPool, req.tenant.id, req.db, d));
+    return await f(delta);
+  } catch {
+    return null;
+  }
 }
 
 export default async function handler(req, reply) {

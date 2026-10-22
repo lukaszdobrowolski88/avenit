@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon.jsx';
+import { accountsWord } from '../lib/plans.js';
 
 // Wspólne prymitywy panelu (marka Avenit). Style w styles.css — tu tylko struktura.
 
@@ -292,7 +293,7 @@ export function Segmented({ items, value, onChange, label }) {
   );
 }
 
-// ── Pasek użycia dorosłych vs limit planu ────────────────────────────
+// ── Pasek użycia: konta użytkowników vs limit planu ─────────────────
 export const USAGE_STATE = {
   ok: ['success', 'W limicie'],
   near: ['warning', 'Blisko limitu'],
@@ -307,19 +308,20 @@ export function UsageBadge({ state, size }) {
 
 export function UsageBar({ usage, mini, showBadge = true }) {
   if (!usage) return null;
-  const { adults, limit, bufferLimit, state } = usage;
+  const { accounts, limit, bufferLimit, state } = usage;
   const unlimited = state === 'unlimited' || limit == null || limit < 0;
-  const scaleMax = unlimited ? Math.max(adults || 1, 1) : Math.max(bufferLimit || limit, adults || 0, 1);
-  const pct = unlimited ? 100 : Math.min(100, ((adults || 0) / scaleMax) * 100);
+  const scaleMax = unlimited ? Math.max(accounts || 1, 1) : Math.max(bufferLimit || limit, accounts || 0, 1);
+  const pct = unlimited ? 100 : Math.min(100, ((accounts || 0) / scaleMax) * 100);
+  const word = unlimited ? accountsWord(accounts) : 'kont';
   const limitAt = unlimited ? null : (limit / scaleMax) * 100;
   return (
     <div className={cx('usage', `usage--${state || 'ok'}`, mini && 'usage--mini')}>
       <div className="usage-top">
-        <span className="tnum"><b>{adults ?? '—'}</b> {unlimited ? 'dorosłych' : <>z {limit} dorosłych</>}</span>
+        <span className="tnum"><b>{accounts ?? '—'}</b> {unlimited ? word : <>z {limit} kont</>}</span>
         {showBadge && <UsageBadge state={state} size={mini ? 'sm' : undefined} />}
       </div>
-      <div className="usage-track" role="meter" aria-valuemin={0} aria-valuemax={unlimited ? adults : limit} aria-valuenow={adults}
-        aria-label={unlimited ? `${adults} dorosłych` : `${adults} z ${limit} dorosłych`}>
+      <div className="usage-track" role="meter" aria-valuemin={0} aria-valuemax={unlimited ? accounts : limit} aria-valuenow={accounts}
+        aria-label={unlimited ? `${accounts} ${word} użytkowników` : `${accounts} z ${limit} kont użytkowników`}>
         <div className="usage-fill" style={{ width: `${pct}%` }} />
         {limitAt != null && limitAt < 100 && <span className="usage-mark" style={{ left: `calc(${limitAt}% - 1px)` }} title={`Limit planu: ${limit}`} />}
       </div>

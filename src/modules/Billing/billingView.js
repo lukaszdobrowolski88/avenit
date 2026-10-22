@@ -1,5 +1,5 @@
 // Logika widoku rozliczeń (czysta, testowalna): komunikaty o wykorzystaniu planu, ceny,
-// klucz odrzucenia komunikatu. Cennik = liczba dorosłych w bazie członków; nic nie blokujemy.
+// klucz odrzucenia komunikatu. Cennik = liczba aktywnych kont użytkowników; nic nie blokujemy.
 import { tr, appLocale } from '../../i18n';
 
 export function formatPLN(grosze, { whole = false } = {}) {
@@ -12,11 +12,23 @@ export function formatPLN(grosze, { whole = false } = {}) {
   }).format(amount);
 }
 
-// Tekst licznika: „42 z 50 dorosłych” / „1200 dorosłych” (plan bez limitu).
+// Tekst licznika: „Konta: 42 z 50” / „Konta: 1200” (plan bez limitu).
 export function usageLabel(usage) {
   if (!usage) return '';
-  if (usage.state === 'unlimited' || !(usage.limit > 0)) return tr('{n} dorosłych', { n: usage.adults });
-  return tr('{n} z {limit} dorosłych', { n: usage.adults, limit: usage.limit });
+  if (usage.state === 'unlimited' || !(usage.limit > 0)) return tr('Konta: {n}', { n: usage.accounts });
+  return tr('Konta: {n} z {limit}', { n: usage.accounts, limit: usage.limit });
+}
+
+// Linia o zapasie: „Limit 50 kont, z 10% zapasem 55.” (null dla planu bez limitu).
+export function bufferLabel(usage) {
+  if (!usage || usage.state === 'unlimited' || !(usage.limit > 0) || usage.bufferLimit == null) return null;
+  return tr('Limit {limit} kont, z 10% zapasem {buffer}.', { limit: usage.limit, buffer: usage.bufferLimit });
+}
+
+// Konta oczekujące (rejestracja / zgoda administratora) — nie liczą się do limitu.
+export function pendingLabel(usage) {
+  if (!usage || !(usage.pending > 0)) return null;
+  return tr('Oczekujące konta: {n}. Wejdą do licznika po zatwierdzeniu.', { n: usage.pending });
 }
 
 // Komunikat pod paskiem wykorzystania (ekran Subskrypcja). null = brak komunikatu.
@@ -28,7 +40,7 @@ export function usageMessage(usage) {
     case 'over':
       return { tone: 'warn', text: tr('Limit planu jest przekroczony, ale mieścicie się w 10% zapasie. Plan zmienimy od kolejnego okresu rozliczeniowego, nic nie jest blokowane.') };
     case 'over_buffer':
-      return { tone: 'alert', text: tr('Liczba dorosłych przekracza limit planu i 10% zapas. Wybierzcie większy plan poniżej, zmienimy go od kolejnego okresu. Nikt nie zostanie zablokowany.') };
+      return { tone: 'alert', text: tr('Liczba kont użytkowników przekracza limit planu i 10% zapas. Wybierzcie większy plan poniżej, zmienimy go od kolejnego okresu. Nikt nie zostanie zablokowany.') };
     default:
       return null;
   }
@@ -40,8 +52,8 @@ export function noticeFor(data) {
   if (!u || (u.state !== 'over' && u.state !== 'over_buffer')) return null;
   const plan = data?.plan?.name || '';
   const text = u.state === 'over'
-    ? tr('Dorosłych w bazie jest więcej niż w planie {plan} ({n} z {limit}). Mieścicie się w zapasie, plan zmienimy od kolejnego okresu.', { plan, n: u.adults, limit: u.limit })
-    : tr('Dorosłych w bazie jest wyraźnie więcej niż w planie {plan} ({n} z {limit}). Wybierzcie większy plan.', { plan, n: u.adults, limit: u.limit });
+    ? tr('Kont użytkowników jest więcej niż w planie {plan} ({n} z {limit}). Mieścicie się w zapasie, plan zmienimy od kolejnego okresu.', { plan, n: u.accounts, limit: u.limit })
+    : tr('Kont użytkowników jest wyraźnie więcej niż w planie {plan} ({n} z {limit}). Wybierzcie większy plan.', { plan, n: u.accounts, limit: u.limit });
   return { state: u.state, text };
 }
 

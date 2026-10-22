@@ -335,6 +335,17 @@ test('Google: podgląd (paginacja, domena połączonego konta), zastosowanie w t
   // Drugi przebieg: wszystko już powiązane.
   const again = await directoryAction(reqOf({ action: 'preview', provider: 'google' }, SEKR), s);
   assert.deepEqual([again.plan.counts.create, again.plan.counts.link, again.plan.counts.linked], [0, 0, 4]);
+  // Limit planu (konta użytkowników): bez tenant.id brak prognozy; z nim — delta = nowe − blokowane.
+  assert.equal(prev.accountsLimit, null);
+  assert.equal(again.accountsLimit, null);
+  const deltas = [];
+  const withPlan = await directoryAction({ ...reqOf({ action: 'preview', provider: 'google' }, SEKR), tenant: { id: 't1', subdomain: 'schwro', db_name: DB_NAME } }, s,
+    { forecast: async (d) => { deltas.push(d); return { accounts: 10 + d, limit: 50, state: 'ok' }; } });
+  assert.deepEqual(deltas, [0], 'po zastosowaniu nic nowego');
+  assert.deepEqual(withPlan.accountsLimit, { accounts: 10, limit: 50, state: 'ok' });
+  const broken = await directoryAction({ ...reqOf({ action: 'preview', provider: 'google' }, SEKR), tenant: { id: 't1' } }, s,
+    { forecast: async () => { throw new Error('platform down'); } });
+  assert.equal(broken.accountsLimit, null, 'błąd prognozy nie przerywa podglądu');
 });
 
 test('Google: blokada usuniętych z katalogu (on_disable=block) — nigdy administratora; harmonogram co 6 h', { skip }, async () => {

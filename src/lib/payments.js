@@ -5,7 +5,7 @@
 import { supabase } from './supabase';
 import { getCurrentTenant, getTenantSubscription, clearTenantCache } from './tenantContext';
 import { formatPrice } from './subscriptions';
-import { splitGross } from '@avenit/shared/src/billing/adults.js';
+import { splitGross } from '@avenit/shared/src/billing/accounts.js';
 
 /**
  * Tworzy nową fakturę. planPrice = cena planu BRUTTO (ceny Avenit zawierają VAT) — VAT

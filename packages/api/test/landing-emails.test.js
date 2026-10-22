@@ -57,6 +57,10 @@ test('parseChurchSize + suggestPlanForSize', () => {
   assert.equal(parseChurchSize('1 200 osób').max, 1200);
   assert.equal(parseChurchSize('300+ ludzi').max, 300);
   assert.equal(parseChurchSize('We have 45 adults').max, 45);
+  assert.equal(parseChurchSize('Potrzebujemy ok. 60 kont').max, 60);
+  assert.equal(parseChurchSize('około 40 użytkowników').max, 40);
+  assert.equal(parseChurchSize('about 30 users').max, 30);
+  assert.equal(parseChurchSize('mamy 60 kontaktów'), null);
   assert.equal(parseChurchSize('chcemy grafik'), null);
   assert.equal(suggestPlanForSize(50).key, 'start');
   assert.equal(suggestPlanForSize(51).key, 'wspolnota');
@@ -98,7 +102,7 @@ test('potwierdzenie PL: plan z ceną roczną, podsumowanie, cennik, tekst', () =
   assert.match(m.html, /1–2 dni roboczych/);
   assert.match(m.html, /Wspólnota/);
   assert.match(m.html, /1 590 zł \/ rok/);
-  assert.match(m.html, /do 150 dorosłych/);
+  assert.match(m.html, /do 150 kont użytkowników/);
   assert.match(m.html, /https:\/\/avenit\.pl\/#cennik/);
   assert.match(m.html, /Bez karty płatniczej/);
   assert.match(m.html, /polityka-prywatnosci/);
@@ -117,7 +121,7 @@ test('potwierdzenie EN: angielska treść, nazwy planów z /en/, link do /en/#ce
   assert.match(m.html, /<html lang="en"/);
   assert.match(m.html, /Church\+/);
   assert.match(m.html, /4,990 zł \/ year/);
-  assert.match(m.html, /up to 1000 adults/);
+  assert.match(m.html, /up to 1000 user accounts/);
   assert.match(m.html, /https:\/\/avenit\.pl\/en\/#cennik/);
   assert.match(m.html, /1–2 business days/);
   assert.ok(!m.html.includes('Dziękujemy'));

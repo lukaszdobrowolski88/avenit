@@ -1,15 +1,15 @@
-// Informacje o tenancie dla aplikacji kościoła: plan, wykorzystanie (dorośli), status subskrypcji.
+// Informacje o tenancie dla aplikacji kościoła: plan, wykorzystanie (konta użytkowników), status subskrypcji.
 // Dane mieszkają w bazie PLATFORM (nie w bazie tenanta), więc czytamy je stamtąd
 // po req.tenant.id. Zmianę planu wykonuje admin platformy — kościół wysyła prośbę (plan-request).
 //
-// Cennik: płaci się za liczbę DOROSŁYCH w bazie członków; wszystkie moduły w każdym planie,
-// bez limitu użytkowników. Nic nie blokujemy — przekroczenie to tylko komunikat dla adminów.
+// Cennik: płaci się za liczbę aktywnych KONT UŻYTKOWNIKÓW (app_users); wszystkie moduły w każdym
+// planie. Nic nie blokujemy — przekroczenie to tylko komunikat dla adminów.
 import { platformPool } from '../db.js';
 import { config } from '../config.js';
 import { loadGrants } from '../dataapi/registry.js';
 import { can } from '@avenit/shared/src/permissions/resolve.js';
-import { subscriptionPrice } from '@avenit/shared/src/billing/adults.js';
-import { tenantPlanUsage } from './adults.js';
+import { subscriptionPrice } from '@avenit/shared/src/billing/accounts.js';
+import { tenantPlanUsage } from './accounts.js';
 
 // Kto widzi rozliczenia (Ustawienia → Subskrypcja): superadmin, rola is_admin albo uprawnienie
 // module:settings. Zwykli członkowie — nie (żadnych komunikatów o planie).
@@ -44,7 +44,7 @@ export async function canSeeBilling(req) {
 const planOut = (p) => ({
   key: p.key, name: p.name, description: p.description,
   priceMonthly: p.price_monthly, priceYearly: p.price_yearly,
-  maxAdults: p.max_members, limitBufferPct: p.limit_buffer_pct ?? 10,
+  maxAccounts: p.max_members, limitBufferPct: p.limit_buffer_pct ?? 10,
   isCustom: !!p.is_custom, prioritySupport: !!p.features?.priority_support,
 });
 
@@ -138,7 +138,7 @@ export default async function tenantRoutes(app) {
         currentPeriodEnd: sub.current_period_end, trialEndsAt: sub.trial_ends_at,
         price: price && price.amount != null ? { amount: price.amount, cycle: price.cycle } : null,
       } : null,
-      usage: { adults: u.adults, limit: u.limit, bufferLimit: u.bufferLimit, pct: u.pct, state: u.state, approximate: u.approximate },
+      usage: { accounts: u.accounts, pending: u.pending, limit: u.limit, bufferLimit: u.bufferLimit, pct: u.pct, state: u.state, approximate: u.approximate },
       suggestedPlan: u.suggestedPlan,
       plans: u.plans.map(planOut),
     });
@@ -161,7 +161,7 @@ export default async function tenantRoutes(app) {
     const request = {
       planKey, planName: plan.name, billingCycle, message: message || null,
       requestedBy: req.user.email || req.user.id, requestedAt: new Date().toISOString(),
-      adults: u.adults, currentPlan: u.plan?.key || null,
+      accounts: u.accounts, currentPlan: u.plan?.key || null,
     };
     await platformPool.query(
       `UPDATE tenants SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('plan_request', $2::jsonb) WHERE id = $1`,
@@ -184,7 +184,7 @@ export default async function tenantRoutes(app) {
           <p><strong>Kościół:</strong> ${esc(req.tenant.name)} (${esc(req.tenant.subdomain || req.tenant.slug)})<br>
           <strong>Obecny plan:</strong> ${esc(u.plan?.name || '—')}<br>
           <strong>Wybrany plan:</strong> ${esc(plan.name)} (${cycle})<br>
-          <strong>Dorośli w bazie:</strong> ${u.adults}${u.limit > 0 ? ` / ${u.limit}` : ''}<br>
+          <strong>Konta użytkowników:</strong> ${u.accounts}${u.limit > 0 ? ` / ${u.limit}` : ''}${u.pending ? ` (oczekujące: ${u.pending})` : ''}<br>
           <strong>Zgłasza:</strong> ${esc(req.user.email || req.user.id)}</p>
           ${message ? `<p><strong>Wiadomość:</strong><br>${esc(message).replace(/\n/g, '<br>')}</p>` : ''}
         </div>`,

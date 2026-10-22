@@ -16,8 +16,8 @@ import { provisionTenant, dropTenantDatabase } from './provisioning.js';
 import { getTenantPool } from '../db.js';
 import { isProd, config } from '../config.js';
 import { BUILTIN_ROLES, presetGrantRows } from '@avenit/shared/src/permissions/presets.js';
-import { subscriptionPrice, splitGross } from '@avenit/shared/src/billing/adults.js';
-import { tenantPlanUsage } from '../tenant/adults.js';
+import { subscriptionPrice, splitGross } from '@avenit/shared/src/billing/accounts.js';
+import { tenantPlanUsage } from '../tenant/accounts.js';
 
 const adminCookie = { httpOnly: true, secure: isProd, sameSite: 'lax', path: '/' };
 
@@ -394,7 +394,7 @@ export default async function adminRoutes(app) {
     return reply.send({ tenant, subscription: sub.rows[0] || null, invoices: invoices.rows, modules: modules.rows, usage });
   });
 
-  // Wykorzystanie planu = liczba DOROSŁYCH w bazie członków vs limit planu (z 10% zapasem).
+  // Wykorzystanie planu = liczba aktywnych KONT UŻYTKOWNIKÓW vs limit planu (z 10% zapasem).
   // Tylko informacja — nic nie blokuje. limit = -1 dla planu bez limitu (state 'unlimited').
   app.get('/api/admin/tenants/:id/usage', { preHandler: app.requireAdmin }, async (req, reply) => {
     const { rows } = await platformPool.query(`SELECT id, db_name FROM tenants WHERE id = $1`, [req.params.id]);
@@ -403,14 +403,15 @@ export default async function adminRoutes(app) {
     try { tenantDb = getTenantPool(rows[0].db_name); } catch { tenantDb = null; }
     const u = await tenantPlanUsage(platformPool, rows[0].id, tenantDb);
     const history = await platformPool.query(
-      `SELECT period, adults, plan_key, plan_limit, state FROM tenant_usage_snapshots
+      `SELECT period, accounts, pending_accounts, adults, plan_key, plan_limit, state FROM tenant_usage_snapshots
         WHERE tenant_id = $1 ORDER BY period DESC LIMIT 12`, [rows[0].id]
     ).then((r) => r.rows).catch(() => []);
     const sub = u.subscription;
     return reply.send({
-      adults: u.adults, limit: u.limit, bufferLimit: u.bufferLimit, pct: u.pct, state: u.state,
+      accounts: u.accounts, pending: u.pending, blocked: u.blocked,
+      limit: u.limit, bufferLimit: u.bufferLimit, pct: u.pct, state: u.state,
       plan: u.plan, suggestedPlan: u.suggestedPlan, planRetired: u.planRetired,
-      counted: u.counted, approximate: u.approximate, totalMembers: u.totalMembers,
+      counted: u.counted, approximate: u.approximate, totalAccounts: u.totalAccounts,
       billingCycle: sub?.billing_cycle || null,
       customPriceMonthly: sub?.custom_price_monthly ?? null,
       customPriceYearly: sub?.custom_price_yearly ?? null,

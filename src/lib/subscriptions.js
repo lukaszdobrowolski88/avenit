@@ -8,8 +8,8 @@ import { appLocale } from '../i18n';
 import { DEFAULT_PLAN_KEY } from '@avenit/shared/src/billing/catalog.js';
 
 /**
- * Rozliczenia kościoła z API (baza platform): plan, cena, wykorzystanie (dorośli w bazie
- * członków) i lista planów do wyboru. Dostęp tylko dla osób z dostępem do rozliczeń —
+ * Rozliczenia kościoła z API (baza platform): plan, cena, wykorzystanie (aktywne konta
+ * użytkowników) i lista planów do wyboru. Dostęp tylko dla osób z dostępem do rozliczeń —
  * pozostali dostają 403 → zwracamy null (bez komunikatów o planie).
  */
 export async function getPlanUsage() {
@@ -17,6 +17,15 @@ export async function getPlanUsage() {
   if (res.status === 403 || res.status === 404) return null;
   if (!res.ok) throw new Error(`plan-usage ${res.status}`);
   return res.json();
+}
+
+/**
+ * Liczba kont się zmieniła (utworzenie / zatwierdzenie / import kont) — komunikat o limicie planu
+ * (PlanUsageNotice) odświeża się od razu, bez przeładowania. Nikogo nie blokujemy.
+ */
+export const PLAN_USAGE_CHANGED = 'avenit:plan-usage-changed';
+export function notifyPlanUsageChanged() {
+  try { window.dispatchEvent(new Event(PLAN_USAGE_CHANGED)); } catch { /* brak window (SSR/testy) */ }
 }
 
 /**

@@ -41,7 +41,7 @@ export default function Plans() {
     <div>
       <PageHeader
         title="Plany"
-        subtitle="Cennik avenit.pl: płaci się za liczbę dorosłych w bazie członków. Wszystkie moduły i bez limitu kont w każdym planie. Ceny brutto."
+        subtitle="Cennik avenit.pl: płaci się za liczbę aktywnych kont użytkowników w aplikacji (oczekujące i zablokowane się nie liczą). Wszystkie moduły w każdym planie. Ceny brutto."
         actions={<Button variant="primary" icon="plus" onClick={() => setEdit({})}>Nowy plan</Button>}
       />
 
@@ -79,7 +79,7 @@ export default function Plans() {
           </summary>
           <div className="retired-body">
             <Notice tone="info">
-              Subskrypcje na wycofanych planach nie zmieniają się same (bezpieczeństwo rozliczeń). Zmień plan w karcie kościoła — panel podpowie nowy plan według liczby dorosłych.
+              Subskrypcje na wycofanych planach nie zmieniają się same (bezpieczeństwo rozliczeń). Zmień plan w karcie kościoła — panel podpowie nowy plan według liczby kont użytkowników.
             </Notice>
             <PlanTable plans={retired} countFor={countFor} onEdit={setEdit} suggest={(p) => suggestPlan(plans, p.max_members > 0 ? p.max_members : null)} flush />
           </div>
@@ -114,7 +114,7 @@ function PlanCard({ plan: p, tenants, onEdit, wide }) {
       <div className={`plan-card plan-card--wide${off ? ' is-off' : ''}`}>
         <div>
           <div className="plan-name">{p.name}{custom && <Badge tone="accent" size="sm">wycena indywidualna</Badge>}</div>
-          <div className="plan-size">{p.max_members > 0 ? <>do <b>{p.max_members}</b> dorosłych</> : <>powyżej 1000 dorosłych, wiele lokalizacji</>}</div>
+          <div className="plan-size">{p.max_members > 0 ? <>do <b>{p.max_members}</b> kont użytkowników</> : <>powyżej 1000 kont, wiele lokalizacji</>}</div>
           {p.description && <div className="small muted" style={{ marginTop: 4 }}>{p.description}</div>}
         </div>
         <div>
@@ -128,7 +128,7 @@ function PlanCard({ plan: p, tenants, onEdit, wide }) {
   return (
     <div className={`plan-card${off ? ' is-off' : ''}`}>
       <div className="plan-name">{p.name}</div>
-      <div className="plan-size">{p.max_members > 0 ? <>do <b>{p.max_members}</b> dorosłych</> : <>bez limitu dorosłych</>}</div>
+      <div className="plan-size">{p.max_members > 0 ? <>do <b>{p.max_members}</b> kont użytkowników</> : <>bez limitu kont</>}</div>
       <div className="plan-price"><b>{formatZl(p.price_monthly, { from: custom })}</b><span>/ mies.</span></div>
       <div className="plan-yearly">
         {p.price_yearly != null ? `${formatZl(p.price_yearly)} / rok` : 'rocznie: indywidualnie'}
@@ -257,7 +257,7 @@ function PlanForm({ plan, onClose, onSaved }) {
         </Field>
       </div>
       <div className="field-row">
-        <Field label="Limit dorosłych" hint={unlimited ? 'Bez limitu (-1).' : `Do ${f.max_members} dorosłych, z buforem do ${Math.floor(Number(f.max_members) * (1 + Number(f.limit_buffer_pct || 0) / 100))}.`}>
+        <Field label="Limit kont użytkowników" hint={unlimited ? 'Bez limitu (-1).' : `Do ${f.max_members} aktywnych kont, z buforem do ${Math.floor(Number(f.max_members) * (1 + Number(f.limit_buffer_pct || 0) / 100))}.`}>
           <input type="number" min={-1} value={f.max_members} onChange={(e) => set('max_members', e.target.value)} />
         </Field>
         <Field label="Bufor ponad limit">

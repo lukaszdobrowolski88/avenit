@@ -206,6 +206,22 @@ function SyncSettings({ provider, st, roles, onSaved }) {
   );
 }
 
+// Limit planu liczony w kontach użytkowników — tylko informacja, synchronizacja nikogo nie blokuje.
+function PlanForecast({ forecast: f }) {
+  if (!f) return null;
+  const over = f.state === 'over' || f.state === 'over_buffer';
+  const text = f.limit > 0
+    ? tr('Po synchronizacji: {n} kont użytkowników, limit planu {limit}.', { n: f.accounts, limit: f.limit })
+    : tr('Po synchronizacji: {n} kont użytkowników (plan bez limitu).', { n: f.accounts });
+  return (
+    <p className={over ? 'text-sm text-amber-800 dark:text-amber-300' : hintCls}>
+      {text}
+      {f.state === 'over_buffer' && <> {tr('To więcej niż limit z 10% zapasem — nikt nie zostanie zablokowany, ale warto zmienić plan (Ustawienia → Subskrypcja).')}</>}
+      {f.state === 'over' && <> {tr('Mieścicie się w 10% zapasie ponad limit.')}</>}
+    </p>
+  );
+}
+
 function PreviewResult({ preview }) {
   const p = preview.plan;
   const tiles = [
@@ -235,6 +251,7 @@ function PreviewResult({ preview }) {
         ))}
       </div>
       <p className={hintCls}>{tr('W katalogu: {n} kont. Dozwolone domeny: {domains}.', { n: p.counts.directory, domains: domainsToText(preview.allowed_domains) || '—' })}</p>
+      <PlanForecast forecast={preview.accountsLimit} />
       {list(tr('Nowe konta'), p.create, (r) => r.email)}
       {list(tr('Istniejące — do powiązania'), p.link, (r) => r.email)}
       {list(tr('Do zablokowania'), p.block, (r) => `${r.email} · ${r.reason === 'removed' ? tr('usunięte z katalogu') : tr('wyłączone w katalogu')}`)}

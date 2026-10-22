@@ -1,4 +1,5 @@
-// Model planów (cennik avenit.pl): liczymy dorosłych w bazie członków.
+// Model planów (cennik avenit.pl): limit planu = aktywne KONTA UŻYTKOWNIKÓW (app_users tenanta;
+// do 2026-10 liczyliśmy dorosłych w bazie członków). Limit w subscription_plans.max_members.
 // Publiczne plany: start / wspolnota / kosciol / kosciol_plus / siec. Stare (starter, standard,
 // professional, enterprise) są wycofane — tenanci na nich zostają, panel podpowiada nowy plan.
 
@@ -38,7 +39,15 @@ export function zlToGrosze(v) {
 }
 export const groszeToZl = (g) => (g == null ? '' : String(Number(g) / 100).replace('.', ','));
 
-export const limitLabel = (n) => (n == null || n < 0 ? 'bez limitu' : `do ${n} dorosłych`);
+// Odmiana „konto”: 1 konto, 2–4 konta (bez 12–14), 5+ kont.
+export function accountsWord(n) {
+  const v = Math.abs(Number(n) || 0);
+  if (v === 1) return 'konto';
+  const d = v % 10, h = v % 100;
+  return d >= 2 && d <= 4 && !(h >= 12 && h <= 14) ? 'konta' : 'kont';
+}
+
+export const limitLabel = (n) => (n == null || n < 0 ? 'bez limitu' : `do ${n} kont użytkowników`);
 
 // Sortowanie publicznych planów jak na stronie.
 export function sortPlans(plans) {
@@ -49,23 +58,23 @@ export function sortPlans(plans) {
   });
 }
 
-// Najmniejszy publiczny plan, którego limit mieści podaną liczbę dorosłych (fallback, gdy API
+// Najmniejszy publiczny plan, którego limit mieści podaną liczbę kont (fallback, gdy API
 // nie zwróci suggestedPlan). Plan bez limitu (-1) łapie wszystko powyżej.
-export function suggestPlan(plans, adults) {
-  if (adults == null) return null;
+export function suggestPlan(plans, accounts) {
+  if (accounts == null) return null;
   const pub = sortPlans(plans.filter((p) => isPublicPlan(p) && !isRetiredPlan(p) && p.is_active !== false));
-  return pub.find((p) => p.max_members != null && p.max_members >= 0 && adults <= p.max_members)
+  return pub.find((p) => p.max_members != null && p.max_members >= 0 && accounts <= p.max_members)
     || pub.find((p) => p.max_members == null || p.max_members < 0)
     || null;
 }
 
-// Liczenie stanu po stronie klienta — tylko gdy endpoint /usage zwrócił adults bez state.
-export function usageState({ adults, limit, buffer = DEFAULT_BUFFER_PCT }) {
+// Liczenie stanu po stronie klienta — tylko gdy endpoint /usage zwrócił accounts bez state.
+export function usageState({ accounts, limit, buffer = DEFAULT_BUFFER_PCT }) {
   if (limit == null || limit < 0) return 'unlimited';
   const bufferLimit = Math.floor(limit * (1 + buffer / 100));
-  if (adults > bufferLimit) return 'over_buffer';
-  if (adults > limit) return 'over';
-  if (adults >= limit * 0.9) return 'near';
+  if (accounts > bufferLimit) return 'over_buffer';
+  if (accounts > limit) return 'over';
+  if (accounts >= limit * 0.9) return 'near';
   return 'ok';
 }
 
@@ -85,7 +94,7 @@ export function parsePlanInterest(message) {
 
 // Uzupełnia odpowiedź /usage o brakujące pola (stan, bufor) — odporne na częściowe API.
 export function normalizeUsage(u, plan) {
-  if (!u || u.adults == null || u.counted === false) return null;
+  if (!u || u.accounts == null || u.counted === false) return null;
   const limit = u.limit ?? plan?.max_members ?? null;
   const buffer = bufferPct(plan);
   const bufferLimit = u.bufferLimit ?? (limit == null || limit < 0 ? null : Math.floor(limit * (1 + buffer / 100)));
@@ -93,8 +102,8 @@ export function normalizeUsage(u, plan) {
     ...u,
     limit,
     bufferLimit,
-    state: u.state || usageState({ adults: u.adults, limit, buffer }),
-    pct: u.pct ?? (limit > 0 ? Math.round((u.adults / limit) * 100) : null),
+    state: u.state || usageState({ accounts: u.accounts, limit, buffer }),
+    pct: u.pct ?? (limit > 0 ? Math.round((u.accounts / limit) * 100) : null),
   };
 }
 
