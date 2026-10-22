@@ -9,7 +9,11 @@
 // sami. Zerwane połączenie / powrót sieci / powrót apki na wierzch — łączymy ponownie.
 // Rozmowa (CallKit / Telecom) ma pierwszeństwo: w trakcie rozmowy nie zaczniemy słuchać, a gdy
 // rozmowa się zaczyna (wychodząca albo dzwoni przychodząca) — słuchanie się kończy.
-import { useCallback, useEffect, useRef, useState } from 'react';
+// Android (build z modułem AvenitInterpretationPlayback): od „Słuchaj” działa usługa
+// pierwszoplanowa z powiadomieniem — dźwięk gra przy wygaszonym ekranie, a timery (ponawianie,
+// odpytywanie, ping LiveKit) są hybrydowe, bo RN w tle wstrzymuje setTimeout. „Zatrzymaj”
+// w powiadomieniu kończy słuchanie. Bez modułu — jak dawniej: ekran nie gaśnie (keep-awake).
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Room } from 'livekit-client';
@@ -17,16 +21,29 @@ import { supabase } from '../../lib/supabase';
 import { appLang } from '../../i18n';
 import { callkit } from '../calls/native/modules';
 import { getCallState, subscribeCall } from '../calls/native/engine';
-import { beginListeningAudio, endListeningAudio, loadListenerLiveKit, nativeListeningAvailable, setKeepAwake } from './audio';
+import {
+  beginListeningAudio,
+  endListeningAudio,
+  listenerTimers,
+  loadListenerLiveKit,
+  nativeListeningAvailable,
+  playbackServiceAvailable,
+  setKeepAwake,
+  startPlaybackService,
+  stopPlaybackService,
+  subscribePlaybackService,
+} from './audio';
 import {
   defaultChannel,
   fatalFromError,
   infoFromSession,
   interpErrorState,
   pollDecision,
+  playbackNotification,
   pollInterval,
   retryDelay,
   shouldKeepAwake,
+  shouldRunPlaybackService,
   type FatalState,
   type ListenerInfo,
   type ListenResponse,
@@ -128,6 +145,10 @@ export function useInterpretationListener(src: ListenerSource) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [online, setOnline] = useState(true);
   const [hint, setHint] = useState('');
+  // Usługa słuchania w tle (Android 1.2.0+); failed — Android jej nie uruchomił → keep-awake.
+  const serviceAvailable = useMemo(() => playbackServiceAvailable(), []);
+  const [serviceFailed, setServiceFailed] = useState(false);
+  const backgroundPlayback = serviceAvailable && !serviceFailed;
 
   const roomRef = useRef<Room | null>(null);
   const audioOnRef = useRef(false);
@@ -135,20 +156,22 @@ export function useInterpretationListener(src: ListenerSource) {
   const unmountedRef = useRef(false);
   const attemptRef = useRef(0);
   const runRef = useRef(0); // numer bieżącej próby — starsze odpowiedzi ignorujemy
-  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryRef = useRef<unknown>(null);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const onlineRef = useRef(online);
   onlineRef.current = online;
+  const backgroundRef = useRef(backgroundPlayback);
+  backgroundRef.current = backgroundPlayback;
 
   const set = useCallback(<T,>(fnSet: (v: T) => void, v: T) => {
     if (!unmountedRef.current) fnSet(v);
   }, []);
 
   const clearRetry = () => {
-    if (retryRef.current) clearTimeout(retryRef.current);
+    if (retryRef.current != null) listenerTimers.clear(retryRef.current);
     retryRef.current = null;
   };
 
@@ -207,7 +230,7 @@ export function useInterpretationListener(src: ListenerSource) {
     clearRetry();
     const delay = retryDelay(attemptRef.current++);
     set(setPhase, 'reconnecting' as Phase);
-    retryRef.current = setTimeout(async () => {
+    retryRef.current = listenerTimers.setTimeout(async () => {
       if (run !== runRef.current || leavingRef.current || selectedRef.current !== channelId) return;
       if (withInfo) {
         const r = await loadInfo();
@@ -311,18 +334,22 @@ export function useInterpretationListener(src: ListenerSource) {
   }, [loadInfo, src]);
 
   // Odpytywanie stanu: co 10 s przed słuchaniem (czekamy na tłumacza), co 30 s w trakcie.
+  // W tle — czekając na tłumacza, a z usługą słuchania także w trakcie (koniec tłumaczenia
+  // zatrzyma usługę, powiadomienie pokaże przerwę).
   useEffect(() => {
     const ms = pollInterval(phase, fatal);
     if (!ms) return undefined;
-    const t = setInterval(async () => {
-      if (AppState.currentState !== 'active' && phaseRef.current !== 'waiting') return;
+    const t = listenerTimers.setInterval(async () => {
+      const p = phaseRef.current;
+      const serviceOn = backgroundRef.current && p !== 'idle';
+      if (AppState.currentState !== 'active' && p !== 'waiting' && !serviceOn) return;
       const r = await loadInfo();
       if (pollDecision(phaseRef.current, r, selectedRef.current) === 'connect' && selectedRef.current) {
         attemptRef.current = 0;
         void connectRef.current(selectedRef.current);
       }
     }, ms);
-    return () => clearInterval(t);
+    return () => listenerTimers.clear(t);
   }, [phase, fatal, loadInfo]);
 
   // Sieć: powrót — od razu ponów (zamiast czekać na kolejną próbę).
@@ -387,10 +414,33 @@ export function useInterpretationListener(src: ListenerSource) {
     };
   }, [stopAll, set]);
 
-  // Ekran nie gaśnie (Android przez całe słuchanie, iOS do czasu, aż popłynie dźwięk).
+  // „Zatrzymaj” w powiadomieniu usługi (albo apka zamknięta z ostatnich) → koniec słuchania;
+  // usługa nie wstała → wracamy do „nie wyłączaj ekranu”.
+  useEffect(
+    () =>
+      subscribePlaybackService({
+        onStop: () => {
+          if (phaseRef.current === 'idle') return;
+          set(setHint, '');
+          void stopAll('user');
+        },
+        onFailed: () => set(setServiceFailed, true),
+      }),
+    [stopAll, set],
+  );
+
+  // Android z usługą: powiadomienie przez całe słuchanie (tekst = stan); bez usługi ekran nie gaśnie
+  // (Android przez całe słuchanie, iOS do czasu, aż popłynie dźwięk).
+  const channelNow = info?.channels.find((c) => c.id === selected) ?? null;
+  const note = playbackNotification(phase, { channel: channelNow, eventTitle: info?.event?.title ?? null, online });
   useEffect(() => {
-    setKeepAwake(shouldKeepAwake(Platform.OS, phase));
-  }, [phase]);
+    if (shouldRunPlaybackService(Platform.OS, phase, backgroundPlayback)) {
+      if (!startPlaybackService(note.title, note.text)) setServiceFailed(true);
+    } else if (serviceAvailable) {
+      stopPlaybackService();
+    }
+    setKeepAwake(shouldKeepAwake(Platform.OS, phase, backgroundPlayback));
+  }, [phase, backgroundPlayback, serviceAvailable, note.title, note.text]);
 
   // Wyjście z ekranu = koniec słuchania.
   useEffect(() => {
@@ -398,6 +448,7 @@ export function useInterpretationListener(src: ListenerSource) {
     return () => {
       unmountedRef.current = true;
       setKeepAwake(false);
+      stopPlaybackService();
       void stopAll('unmount');
     };
   }, [stopAll]);
@@ -438,6 +489,19 @@ export function useInterpretationListener(src: ListenerSource) {
     void stopAll('user');
   }, [stopAll]);
 
-  const channel = info?.channels.find((c) => c.id === selected) ?? null;
-  return { available, info, fatal, selected, channel, phase, online, hint, listen, choose, stop, reload: loadInfo };
+  return {
+    available,
+    info,
+    fatal,
+    selected,
+    channel: channelNow,
+    phase,
+    online,
+    hint,
+    backgroundPlayback,
+    listen,
+    choose,
+    stop,
+    reload: loadInfo,
+  };
 }

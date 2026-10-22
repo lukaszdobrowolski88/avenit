@@ -11,7 +11,7 @@ import { FONT as F } from '../../lib/fonts';
 import { goBack } from '../../lib/navigation';
 import { tenantWebBase } from '../../lib/supabase';
 import { openOnWeb } from '../modules/useModules';
-import { appDomainFromApiUrl, browserOnlyUrl, fatalMessage, phaseView, tenantWebUrl, type ListenerChannel, type ListenerInfo } from './logic';
+import { appDomainFromApiUrl, browserOnlyUrl, fatalMessage, phaseView, screenHint, tenantWebUrl, type ListenerChannel, type ListenerInfo } from './logic';
 import { memberSource, tokenSource, useInterpretationListener, type ListenerSource } from './useListener';
 
 // Ekran słuchacza tłumaczenia na żywo: lista języków (duże przyciski z oznaczeniem „na żywo”),
@@ -117,7 +117,6 @@ function ListenerBody({ src }: { src: ListenerSource }) {
 
 function ListenerContent({ src, L }: { src: ListenerSource; L: ReturnType<typeof useInterpretationListener> }) {
   const { info, fatal, phase, channel } = L;
-  const ios = Platform.OS === 'ios';
 
   if (!L.available) {
     const openWeb = () => {
@@ -255,9 +254,7 @@ function ListenerContent({ src, L }: { src: ListenerSource; L: ReturnType<typeof
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <Smartphone size={15} color={B.ink3} style={{ marginTop: 2 }} />
           <Text style={{ flex: 1, fontSize: 13, lineHeight: 19, color: B.ink3, fontFamily: F.medium }}>
-            {ios
-              ? 'Gdy już słyszysz tłumacza, możesz zablokować ekran — dźwięk będzie grał dalej. Czekając na tłumacza, zostaw aplikację otwartą.'
-              : 'Na Androidzie nie wyłączaj ekranu w trakcie słuchania — aplikacja nie pozwoli mu zgasnąć.'}
+            {screenHint(Platform.OS, L.backgroundPlayback)}
           </Text>
         </View>
         <Text style={{ fontSize: 13, lineHeight: 19, color: B.ink3, fontFamily: F.medium, paddingLeft: 23 }}>

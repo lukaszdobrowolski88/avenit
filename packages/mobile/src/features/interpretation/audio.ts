@@ -9,11 +9,16 @@
 // (zgasilibyśmy dźwięk rozmowy); bilans wyrównujemy przy następnym słuchaniu.
 // Android: typ audio „media” (strumień muzyki, tryb normal, fokus audio) na czas słuchania, potem
 // z powrotem „communication” — atrybuty wyjścia WebRTC są wspólne z rozmowami.
-// Ekran: expo-keep-awake (moduł z pakietu expo), ładowany leniwie — brak modułu = bez błędu.
+// Ekran / tło: Android z modułem AvenitInterpretationPlayback (build 1.2.0+) — usługa
+// pierwszoplanowa „Słuchasz tłumaczenia” (dźwięk gra przy wygaszonym ekranie) + timery odporne na
+// uśpienie JS (bgTimers.ts); bez modułu (1.1.0, ten sam runtime OTA) i na iOS — expo-keep-awake
+// (moduł z pakietu expo), ładowany leniwie — brak modułu = bez błędu.
 import { NativeModules, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
 import { callOwnsAudioSession, loadLiveKit } from '../calls/native/modules';
 import { setExternalAudioOwner } from '../../lib/audioMode';
+import { playbackModule, type PlaybackStopReason } from '../../../modules/interpretation-playback';
+import { createHybridTimers, type HybridTimers } from './bgTimers';
 
 type LiveKitRN = typeof import('@livekit/react-native');
 type LiveKitClient = typeof import('livekit-client');
@@ -116,4 +121,102 @@ export function setKeepAwake(on: boolean) {
   awake = on;
   if (on) m.activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
   else m.deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
+}
+
+// ── Usługa słuchania w tle (Android) ──────────────────────────────────────
+export function playbackServiceAvailable(): boolean {
+  return !!playbackModule();
+}
+
+let hybrid: HybridTimers | null = null;
+
+// Timery hybrydowe (bgTimers.ts) napędzane zdarzeniem onTick usługi — raz na proces. Podpinamy je
+// też pod CriticalTimers z livekit-client (ping sygnalizacji, ponowne łączenie, limity czasu);
+// bez tyknięć zachowują się jak zwykłe timery, więc rozmowy (ten sam livekit-client) nic nie tracą.
+function backgroundTimers(): HybridTimers | null {
+  if (hybrid) return hybrid;
+  const m = playbackModule();
+  if (!m) return null;
+  const t = createHybridTimers({
+    setTimeout: (fn, ms) => setTimeout(fn, ms),
+    clearTimeout: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
+    now: () => Date.now(),
+  });
+  try {
+    m.addListener('onTick', () => {
+      try {
+        t.tick();
+      } catch (e) {
+        if (__DEV__) console.warn('[interp] timer:', (e as Error)?.message);
+      }
+    });
+  } catch {
+    return null;
+  }
+  try {
+    const CT = loadLiveKit().client.CriticalTimers;
+    CT.setTimeout = t.setTimeout as unknown as typeof CT.setTimeout;
+    CT.setInterval = t.setInterval as unknown as typeof CT.setInterval;
+    CT.clearTimeout = t.clearTimeout as unknown as typeof CT.clearTimeout;
+    CT.clearInterval = t.clearInterval as unknown as typeof CT.clearInterval;
+  } catch {
+    /* bez LiveKit — tylko nasze timery */
+  }
+  hybrid = t;
+  return t;
+}
+
+// Timery słuchacza (ponawianie, odpytywanie): hybrydowe, gdy jest usługa — inaczej zwykłe.
+export const listenerTimers = {
+  setTimeout(fn: () => void, ms: number): unknown {
+    const t = backgroundTimers();
+    return t ? t.setTimeout(fn, ms) : setTimeout(fn, ms);
+  },
+  setInterval(fn: () => void, ms: number): unknown {
+    const t = backgroundTimers();
+    return t ? t.setInterval(fn, ms) : setInterval(fn, ms);
+  },
+  clear(handle: unknown) {
+    if (handle == null) return;
+    if (hybrid) hybrid.clearTimeout(handle);
+    else clearTimeout(handle as ReturnType<typeof setTimeout>);
+  },
+};
+
+// Start (albo nowy tekst powiadomienia, gdy już działa). false = brak modułu / Android nie pozwolił.
+export function startPlaybackService(title: string, text: string): boolean {
+  const m = playbackModule();
+  if (!m) return false;
+  backgroundTimers();
+  try {
+    return m.start(title, text) === true;
+  } catch (e) {
+    if (__DEV__) console.warn('[interp] usługa:', (e as Error)?.message);
+    return false;
+  }
+}
+
+export function stopPlaybackService() {
+  try {
+    playbackModule()?.stop();
+  } catch {
+    /* brak modułu */
+  }
+}
+
+// „Zatrzymaj” w powiadomieniu / apka usunięta z ostatnich → onStop; usługa nie wstała → onFailed.
+export function subscribePlaybackService(handlers: {
+  onStop: (reason: PlaybackStopReason) => void;
+  onFailed: () => void;
+}): () => void {
+  const m = playbackModule();
+  if (!m) return () => undefined;
+  const subs: { remove(): void }[] = [];
+  try {
+    subs.push(m.addListener('onStopRequested', (e) => handlers.onStop(e?.reason ?? 'notification')));
+    subs.push(m.addListener('onFailed', () => handlers.onFailed()));
+  } catch {
+    /* stary moduł */
+  }
+  return () => subs.forEach((s) => s.remove());
 }
