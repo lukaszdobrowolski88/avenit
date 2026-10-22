@@ -72,6 +72,9 @@ services:
       MS_CLIENT_SECRET: ${MS_CLIENT_SECRET:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Faza 3: Google Picker (klucz API przeglądarki + numer projektu; puste = z klienta / kościoła).
+      GOOGLE_PICKER_API_KEY: ${GOOGLE_PICKER_API_KEY:-}
+      GOOGLE_PICKER_APP_ID: ${GOOGLE_PICKER_APP_ID:-}
     volumes:
       - storage:/srv/storage
       # Klucze VoIP push (APNs .p8, konto serwisowe FCM) — na VPS /opt/avenit/secrets, poza repo.

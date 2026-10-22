@@ -105,7 +105,7 @@ export default function useFolders(ministryKey = null) {
 
       // Usuń pliki ze storage
       if (files && files.length > 0) {
-        const paths = files.map(f => f.storage_path);
+        const paths = files.map(f => f.storage_path).filter(Boolean); // odnośniki do chmury — bez pliku w magazynie
         await supabase.storage.from('materials').remove(paths);
       }
 

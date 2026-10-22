@@ -17,7 +17,7 @@
 import crypto from 'node:crypto';
 import { config } from '../config.js';
 import {
-  GOOGLE, MICROSOFT, PURPOSES, ENABLED_PURPOSES, USER_PURPOSES, GOOGLE_SCOPES, integrationRedirectUri, msAuthority,
+  GOOGLE, MICROSOFT, PURPOSES, ENABLED_PURPOSES, USER_PURPOSES, GOOGLE_SCOPES, REQUIRED_USER_SCOPE, integrationRedirectUri, msAuthority,
   isGuid, decodeJwt,
 } from './providers.js';
 import {
@@ -213,11 +213,17 @@ async function userCallback(db, st, query, creds, consume, provider) {
   const id = decodeJwt(r.body.id_token) || {};
   let externalTenant = null;
   let scopes;
+  const need = REQUIRED_USER_SCOPE[purpose] || {};
+  const scopeMsg = purpose === 'files'
+    ? (provider === 'google'
+      ? 'Nie udzielono dostępu do wybranych plików Dysku Google (zaznacz uprawnienie do plików).'
+      : 'Nie udzielono dostępu do plików (Files.Read.All).')
+    : (provider === 'google'
+      ? 'Nie udzielono dostępu do kalendarza (zaznacz uprawnienie do kalendarzy tworzonych przez Avenit).'
+      : 'Nie udzielono dostępu do kalendarza (Calendars.ReadWrite).');
   if (provider === 'google') {
     scopes = String(r.body.scope || '').split(/\s+/).filter(Boolean);
-    if (!scopes.includes(GOOGLE_SCOPES.calendarAppCreated)) {
-      return fail('scopes', 'Nie udzielono dostępu do kalendarza (zaznacz uprawnienie do kalendarzy tworzonych przez Avenit).');
-    }
+    if (need.google && !scopes.includes(need.google)) return fail('scopes', scopeMsg);
     externalTenant = id.hd ? String(id.hd).toLowerCase() : null;
   } else {
     const tid = String(id.tid || '').toLowerCase();
@@ -226,7 +232,7 @@ async function userCallback(db, st, query, creds, consume, provider) {
     externalTenant = tid;
     scopes = P.microsoft.slice();
     const granted = String(r.body.scope || '');
-    if (granted && !/Calendars\.ReadWrite/i.test(granted)) return fail('scopes', 'Nie udzielono dostępu do kalendarza (Calendars.ReadWrite).');
+    if (granted && need.microsoft && !need.microsoft.test(granted)) return fail('scopes', scopeMsg);
   }
   const email = String(id.email || id.preferred_username || '').toLowerCase() || null;
   const existing = await loadConnection(db, provider, { scopeKind: 'user', userId: st.user_id });

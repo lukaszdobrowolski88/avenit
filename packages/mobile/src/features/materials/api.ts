@@ -22,6 +22,10 @@ export interface FileRow {
   download_count: number;
   created_at: string;
   uploaded_by?: string | null;
+  // Odnośnik do pliku w Dysku Google / OneDrive / SharePoint (Faza 3, migracja 120) — bez pliku w magazynie.
+  external_provider?: string | null;
+  external_url?: string | null;
+  external_id?: string | null;
 }
 
 // Przestrzeń plików jak na webie: kolumna team_type = klucz modułu zespołu ('worship',
@@ -97,6 +101,9 @@ export interface SharedFile {
   folder_id: string | null;
   created_at: string | null;
   shared_label: string | null;
+  external_provider?: string | null;
+  external_url?: string | null;
+  external_id?: string | null;
 }
 
 // „Udostępnione mi" — przez fn my-shared-materials (przynależności i dopasowanie serwerowo).
@@ -118,8 +125,9 @@ export const formatBytes = (bytes: number): string => {
 };
 
 export const fileIconType = (
-  mime: string,
+  mimeIn: string | null | undefined,
 ): 'pdf' | 'image' | 'audio' | 'video' | 'doc' | 'other' => {
+  const mime = mimeIn ?? ''; // odnośnik do chmury bywa bez typu MIME
   if (mime.startsWith('image/')) return 'image';
   if (mime.startsWith('audio/')) return 'audio';
   if (mime.startsWith('video/')) return 'video';

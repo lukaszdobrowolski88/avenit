@@ -42,7 +42,12 @@ export const GOOGLE_SCOPES = {
   calendarAppCreated: 'https://www.googleapis.com/auth/calendar.app.created',
   // Kalendarz kościoła: udostępnienie kalendarza (ACL) domenie organizacji.
   calendarAcls: 'https://www.googleapis.com/auth/calendar.acls',
+  // Faza 3: dostęp WYŁĄCZNIE do plików wybranych przez osobę w Google Picker (lub utworzonych przez
+  // aplikację) — zakres „non-sensitive”, bez weryfikacji CASA (w przeciwieństwie do drive.readonly).
+  driveFile: 'https://www.googleapis.com/auth/drive.file',
 };
+
+export const GOOGLE_DRIVE_BASE = 'https://www.googleapis.com/drive/v3';
 
 export const GOOGLE_CALENDAR_BASE = 'https://www.googleapis.com/calendar/v3';
 
@@ -78,17 +83,43 @@ export const PURPOSES = {
     microsoft: null,
     microsoftAppRoles: ['Calendars.ReadWrite'],
   },
+  // Faza 3: wybór plików (Google Picker / OneDrive-SharePoint File Picker v8) — połączenie osoby.
+  //   Google: drive.file (tylko pliki wybrane w Pickerze; udostępnienie domenie też w tym zakresie).
+  //   Microsoft: delegowane Files.Read.All (odczyt plików, do których osoba ma dostęp — także
+  //   SharePoint) + offline_access; tokeny dla zasobu SharePoint (File Picker v8) wydaje serwer
+  //   z refresh tokenu osoby (scope https://<host>.sharepoint.com/.default — wymaga delegowanych
+  //   uprawnień SharePoint w rejestracji: MyFiles.Read / AllSites.Read).
   files: {
     scopeKind: 'user',
     phase: 3,
-    google: ['openid', 'email', 'https://www.googleapis.com/auth/drive.file'],
+    google: ['openid', 'email', GOOGLE_SCOPES.driveFile],
     microsoft: ['openid', 'profile', 'email', 'offline_access', 'Files.Read.All'],
   },
 };
-// Cele dostępne w tej wersji (Faza 1 + 2).
-export const ENABLED_PURPOSES = new Set(['directory', 'calendar', 'church_calendar']);
+// Cele dostępne w tej wersji (Faza 1–3).
+export const ENABLED_PURPOSES = new Set(['directory', 'calendar', 'church_calendar', 'files']);
 // Cele połączeń osób (scope_kind 'user') — callback zapisuje połączenie osoby, nie kościoła.
-export const USER_PURPOSES = new Set(['calendar', 'church_calendar']);
+export const USER_PURPOSES = new Set(['calendar', 'church_calendar', 'files']);
+
+// Zakres, bez którego połączenie osoby nie spełnia celu (sprawdzany po zgodzie i przy użyciu).
+export const REQUIRED_USER_SCOPE = {
+  calendar: { google: GOOGLE_SCOPES.calendarAppCreated, microsoft: /Calendars\.ReadWrite/i },
+  church_calendar: { google: GOOGLE_SCOPES.calendarAppCreated, microsoft: null },
+  files: { google: GOOGLE_SCOPES.driveFile, microsoft: /Files\.Read(\.All)?|Files\.ReadWrite/i },
+};
+
+// Czy połączenie osoby ma zakres plików (Faza 3).
+export function connHasFilesScope(conn) {
+  const scopes = Array.isArray(conn?.scopes) ? conn.scopes : [];
+  if (conn?.provider === 'google') return scopes.includes(GOOGLE_SCOPES.driveFile);
+  return scopes.some((s) => REQUIRED_USER_SCOPE.files.microsoft.test(String(s)));
+}
+// Czy połączenie osoby ma zakres kalendarza (Faza 2).
+export function connHasCalendarScope(conn) {
+  const scopes = Array.isArray(conn?.scopes) ? conn.scopes : [];
+  if (conn?.provider === 'google') return scopes.includes(GOOGLE_SCOPES.calendarAppCreated);
+  return scopes.some((s) => /Calendars\.ReadWrite/i.test(String(s)));
+}
 
 const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isGuid = (v) => GUID_RE.test(String(v || ''));

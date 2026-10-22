@@ -231,6 +231,10 @@ export interface MessageAttachment {
   /** Głosówka: długość w sekundach (jak web). */
   duration?: number;
   isVoiceMessage?: boolean;
+  /** Plik z Dysku Google / OneDrive / SharePoint (Faza 3): odnośnik, url = web_url. */
+  kind?: "cloud";
+  provider?: string;
+  web_url?: string;
 }
 
 export type MessageType = "text" | "poll" | "prayer" | "event" | "system" | "call";

@@ -1,7 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Check, CheckCheck, CornerUpLeft, Eye, EyeOff, FileText, Forward, Languages, Pin } from "lucide-react-native";
+import { Check, CheckCheck, CornerUpLeft, ExternalLink, Eye, EyeOff, FileText, Forward, Languages, Pin } from "lucide-react-native";
 import { format } from "date-fns";
 import type { MemberMap, MessageRow, ReactionAggregate } from "../api";
 import { memberDisplayName, memberInitials, pollOf } from "../api";
@@ -15,6 +15,8 @@ import { EventCard } from "./EventCard";
 import { AttachmentImage } from "./AttachmentImage";
 import { LinkPreviewCard, openLink } from "./LinkPreviewCard";
 import { openAttachment } from "../signedUrl";
+import { isCloudAttachment, cloudProviderOf, cloudOpenLabel, openCloudItem } from "../../../lib/cloudFiles";
+import { CloudGlyph } from "../../../components/ui/CloudGlyph";
 import { translatedFromLabel } from "../plus";
 import { CallMessageCard } from "../../calls/components/CallMessageCard";
 import { taskFromChatLink, taskNameFromMessage } from "../../tasks/share";
@@ -331,6 +333,42 @@ const MessageBubbleBase = ({
 
           {attachments.map((att, i) => {
             const gap = { marginBottom: message.content || i < attachments.length - 1 ? 6 : 0 };
+            // Plik z Dysku Google / OneDrive / SharePoint — odnośnik otwierany u dostawcy (przeglądarka
+            // albo aplikacja Dysk/OneDrive przez link uniwersalny), bez kopii w Avenit.
+            if (isCloudAttachment(att)) {
+              const provider = cloudProviderOf(att);
+              return (
+                <Pressable
+                  key={i}
+                  onPress={() => openCloudItem(att)}
+                  onLongPress={onLongPress}
+                  accessibilityRole="link"
+                  accessibilityLabel={`${att.name}. ${cloudOpenLabel(provider)}`}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: 8,
+                    borderRadius: 10,
+                    backgroundColor: mine ? "rgba(255,255,255,0.18)" : "#F6F4EE",
+                    marginBottom: 4,
+                  }}
+                >
+                  <View style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: "#ffffff", alignItems: "center", justifyContent: "center" }}>
+                    <CloudGlyph provider={provider} size={18} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, color: textColor, fontFamily: "Manrope_500Medium" }} numberOfLines={1}>
+                      {att.name}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: mine ? "#F3E3B0" : "#6B6557", fontFamily: "Manrope_400Regular" }} numberOfLines={1}>
+                      {cloudOpenLabel(provider)}
+                    </Text>
+                  </View>
+                  <ExternalLink size={14} color={mine ? "#ffffff" : "#6B6557"} />
+                </Pressable>
+              );
+            }
             if (isVoiceAttachment(att)) {
               // Długość: duration (s) jak w webie; starsze nagrania z telefonu — size w ms.
               return (

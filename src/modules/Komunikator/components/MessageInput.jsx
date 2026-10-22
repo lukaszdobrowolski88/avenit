@@ -11,6 +11,11 @@ import { previewText, sameEmail, MENTION_ALL, MENTION_ALL_TOKEN, insertMentionAt
 import { attachmentUploadPath } from '../utils/attachmentUrl';
 import { SignedImage } from './SignedAttachment';
 import ScheduleSendMenu from '../schedule/ScheduleSendMenu';
+import CloudAttachDialog from '../../../components/cloud/CloudAttachDialog';
+import CloudFileLink from '../../../components/cloud/CloudFileLink';
+import CloudProviderIcon from '../../../components/cloud/CloudProviderIcon';
+import useCloudFiles from '../../../components/cloud/useCloudFiles';
+import { isCloudAttachment, cloudMessageAttachment } from '@avenit/shared/src/lib/cloudFiles.js';
 
 const DRAFT_PREFIX = 'komunikator_draft_';
 
@@ -56,6 +61,9 @@ const MessageInput = forwardRef(function MessageInput({
   const pendingCaretRef = useRef(null); // pozycja kursora do ustawienia po wstawieniu wzmianki
   const [sending, setSending] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  // Pliki z Dysku Google / OneDrive (Faza 3 integracji) — odnośnik zamiast kopii pliku.
+  const [showCloud, setShowCloud] = useState(false);
+  const cloud = useCloudFiles();
   const longPressTimer = useRef(null);
   const longPressFired = useRef(false);
 
@@ -287,6 +295,13 @@ const MessageInput = forwardRef(function MessageInput({
   };
 
   const removeAttachment = (index) => setAttachments(prev => prev.filter((_, i) => i !== index));
+  const addCloudAttachments = (list) => {
+    const room = 10 - attachments.length;
+    if (list.length > room) toast.error(t('Maksymalnie 10 załączników na wiadomość'));
+    const next = list.slice(0, Math.max(0, room)).map(cloudMessageAttachment);
+    if (next.length) setAttachments(prev => [...prev, ...next]);
+    textareaRef.current?.focus();
+  };
 
   // Wykryj wzmiankę @ w trakcie pisania
   const detectMention = (value, caret) => {
@@ -411,7 +426,9 @@ const MessageInput = forwardRef(function MessageInput({
       {/* Podgląd załączników */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {attachments.map((att, idx) => (
+          {attachments.map((att, idx) => isCloudAttachment(att) ? (
+            <CloudFileLink key={idx} item={att} variant="chip" onRemove={() => removeAttachment(idx)} />
+          ) : (
             <div key={idx} className="relative group flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
               {isImageFile(att.type) ? (
                 <SignedImage url={att.url} alt={att.name} className="w-10 h-10 object-cover rounded-lg" />
@@ -485,6 +502,11 @@ const MessageInput = forwardRef(function MessageInput({
           <button type="button" onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
             <Paperclip size={18} className="text-accent-primary-light" /> {tr('Zdjęcie lub plik')}
           </button>
+          {cloud.visible && (
+            <button type="button" onClick={() => { setShowAttachMenu(false); setShowCloud(true); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
+              <CloudProviderIcon provider="google_drive" size={18} /> {tr('Z Dysku Google lub OneDrive')}
+            </button>
+          )}
           {richTypes && <>
           <button type="button" onClick={() => { setShowAttachMenu(false); onOpenPoll?.(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
             <BarChart3 size={18} className="text-accent-primary-light" /> {tr('Ankieta')}
@@ -502,6 +524,10 @@ const MessageInput = forwardRef(function MessageInput({
           )}
           </>}
         </div>
+      )}
+
+      {showCloud && (
+        <CloudAttachDialog isOpen={showCloud} onClose={() => setShowCloud(false)} onAttach={addCloudAttachments} />
       )}
 
       {canSchedule && (

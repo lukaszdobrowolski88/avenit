@@ -3,6 +3,7 @@ import { supabase, tenantWebBase } from '../../lib/supabase';
 import type { ProgramScheduleItem } from '../../lib/domain';
 import { reviveAgendaEvent, toAgendaEvent, type AgendaEvent } from './api';
 import { htmlToText } from './meta';
+import { cloudFromMaterialRow, cloudOpenUrl } from '@avenit/shared/src/lib/cloudFiles.js';
 
 // Pełne wydarzenie jak web (EventDetailPage + EventTeamsTab + EventMaterialsTab): szczegóły,
 // podpięty program, służby z rolami i osobami, rejestracja/płatność, materiały, załączniki,
@@ -40,6 +41,8 @@ export interface EventFile {
   storagePath: string | null;
   mime: string | null;
   size: number | null;
+  /** Plik z Dysku Google / OneDrive / SharePoint (Faza 3) — url prowadzi do dostawcy. */
+  cloudProvider?: string | null;
 }
 export interface EventProgram {
   id: number;
@@ -280,17 +283,25 @@ export const useEventDetail = (
       // ── Materiały (event_materials → materials_files) ──
       const fileIds = asList(matLinks).map((m) => m.file_id).filter((x) => x != null);
       const files = fileIds.length
-        ? await soft(supabase.from('materials_files').select('id, name, storage_path, mime_type, file_size').in('id', fileIds), [] as any[])
+        // '*' — kolumny external_* (pliki z chmury, migracja 120) mogą jeszcze nie istnieć na starszej bazie.
+        ? await soft(supabase.from('materials_files').select('*').in('id', fileIds), [] as any[])
         : [];
       const base = tenantWebBase();
-      const materials: EventFile[] = asList(files).map((f) => ({
-        id: String(f.id),
-        name: String(f.name ?? 'Plik'),
-        storagePath: f.storage_path ?? null,
-        url: base && f.storage_path ? `${base}/storage/materials/${String(f.storage_path).replace(/^\//, '')}` : null,
-        mime: f.mime_type ?? null,
-        size: f.file_size ?? null,
-      }));
+      const materials: EventFile[] = asList(files).map((f) => {
+        // Odnośnik do Dysku Google / OneDrive / SharePoint — adres u dostawcy (biała lista hostów).
+        const cloud = cloudFromMaterialRow(f);
+        return {
+          id: String(f.id),
+          name: String(f.name ?? 'Plik'),
+          storagePath: f.storage_path ?? null,
+          url: f.external_provider
+            ? (cloud ? cloudOpenUrl(cloud) : null)
+            : base && f.storage_path ? `${base}/storage/materials/${String(f.storage_path).replace(/^\//, '')}` : null,
+          mime: f.mime_type ?? null,
+          size: f.external_provider ? null : f.file_size ?? null,
+          cloudProvider: cloud?.provider ?? null,
+        };
+      });
       const attachments: EventFile[] = asList(parseJson(ev.attachments) ?? ev.attachments).map((a, i) => ({
         id: `att-${i}`,
         name: String(a?.name ?? 'Załącznik'),

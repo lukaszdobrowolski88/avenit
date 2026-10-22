@@ -29,7 +29,7 @@
 // Błędy: 429/503 → backoff (Retry-After), błąd tokenu → status 'error' + JEDEN e-mail do właściciela.
 import { rsvpBase } from '../fn/rsvp-send.js';
 import { loadConnection, loadConnectionById, decryptToken, publicConnection, IntegrationError, msClientCredentialsToken } from './tokens.js';
-import { GOOGLE, resolveIntegrationCreds } from './providers.js';
+import { GOOGLE, resolveIntegrationCreds, connHasFilesScope, connHasCalendarScope } from './providers.js';
 import { apiFor, RateLimitError } from './calendarApi.js';
 import {
   buildPayload, diffFields, eventUpdateFrom, importedEventRow, windowBounds, normalizeUserPrefs, normalizeChurchPrefs, isEmailLike,
@@ -466,8 +466,10 @@ export async function userCalendarStatus(db, userId) {
   const out = {};
   for (const provider of ['google', 'microsoft']) {
     const creds = await resolveIntegrationCreds(db, provider);
-    const conn = await loadConnection(db, provider, { scopeKind: 'user', userId }).catch(() => null);
-    const target = conn ? await loadUserTarget(db, userId, provider) : null;
+    const raw = await loadConnection(db, provider, { scopeKind: 'user', userId }).catch(() => null);
+    // Połączenie tylko do plików (Faza 3) to jeszcze nie kalendarz.
+    const target = raw ? await loadUserTarget(db, userId, provider) : null;
+    const conn = raw && (target || connHasCalendarScope(raw)) ? raw : null;
     out[provider] = { available: !!(creds.clientId && creds.clientSecret), connection: publicConnection(conn), target: await publicTarget(db, target) };
   }
   return out;
@@ -506,7 +508,15 @@ export async function removeUserCalendar(db, userId, provider, { removeRemote = 
   }
   if (target) await db.query(`DELETE FROM calendar_sync_targets WHERE id = $1`, [target.id]);
   const other = await one(db, `SELECT 1 AS x FROM calendar_sync_targets WHERE connection_id = $1 LIMIT 1`, [conn.id]);
-  if (!other) await revokeAndDelete(db, conn);
+  if (!other) {
+    // To samo połączenie służy do wyboru plików (Faza 3) — odbieramy tylko zakres kalendarza.
+    if (connHasFilesScope(conn)) {
+      const scopes = (conn.scopes || []).filter((s) => !/calendar|Calendars\./i.test(String(s)));
+      await db.query(`UPDATE integration_connections SET scopes = $2::text[], updated_at = now() WHERE id = $1`, [conn.id, scopes]);
+    } else {
+      await revokeAndDelete(db, conn);
+    }
+  }
   return true;
 }
 

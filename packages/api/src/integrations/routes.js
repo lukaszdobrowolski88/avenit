@@ -8,6 +8,12 @@ import { verifyIntegrationState, handleCallback, NONCE_COOKIE } from './oauth.js
 
 export function settingsReturnUrl(subdomain, provider, result, reason, purpose = 'directory') {
   // Kalendarz osobisty → Mój profil (osoba bez dostępu do Ustawień kościoła).
+  // Pliki z chmury (Faza 3) → Mój profil; okno wyskakujące (łączenie z przycisku wyboru) zamyka się samo.
+  if (purpose === 'files') {
+    const q = new URLSearchParams({ files: provider, files_result: result });
+    if (reason) q.set('files_reason', String(reason).slice(0, 60));
+    return `https://${subdomain}.${config.APP_DOMAIN}/profile?${q}`;
+  }
   if (purpose === 'calendar') {
     const q = new URLSearchParams({ cal: provider, cal_result: result });
     if (reason) q.set('cal_reason', String(reason).slice(0, 60));

@@ -156,6 +156,9 @@ const MODULES = [
   // w FN_CAPABILITY (wybór wydarzeń liczony uprawnieniami osoby); worker co minutę woła runForTenant
   // (kolejka zapisów, zmiany od dostawców co ~5 min, pełne uzgodnienie co 24 h — także kalendarz kościoła).
   'calendar-sync',
+  // Faza 3 (migracja 120): pliki z Dysku Google / OneDrive / SharePoint bez kopiowania — tylko własne
+  // połączenie osoby (krótko ważne tokeny dla Pickera, metadane wybranych plików), bez FN_CAPABILITY.
+  'cloud-files',
 ];
 
 export async function registerFunctions(app) {

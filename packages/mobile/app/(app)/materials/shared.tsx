@@ -26,6 +26,8 @@ import {
 } from '../../../src/features/materials/api';
 import { friendlyError, showError } from '../../../src/lib/errors';
 import { PullToRefresh } from "../../../src/components/ui/PullToRefresh";
+import { isCloudItem, openCloudItem, cloudProviderOf, cloudProviderLabel } from '../../../src/lib/cloudFiles';
+import { CloudGlyph } from '../../../src/components/ui/CloudGlyph';
 
 const ICON_BY_TYPE = {
   pdf: { Icon: FileText, tint: '#2A2312', bg: '#ECE8DE' },
@@ -41,6 +43,8 @@ export default function SharedMaterialsScreen() {
   const files = (data ?? []) as SharedFile[];
 
   const open = async (file: SharedFile) => {
+    // Plik z Dysku Google / OneDrive — otwieramy u dostawcy (przeglądarka / aplikacja dostawcy).
+    if (isCloudItem(file)) { await openCloudItem(file); return; }
     try {
       const url = await getDownloadUrl(file.storage_path);
       if (!url) {
@@ -137,14 +141,14 @@ export default function SharedMaterialsScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <ic.Icon size={20} color={ic.tint} />
+                    {cloudProviderOf(f) ? <CloudGlyph provider={cloudProviderOf(f)} size={22} /> : <ic.Icon size={20} color={ic.tint} />}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }} numberOfLines={2}>
                       {f.name}
                     </Text>
                     <Text style={{ fontSize: 12, color: '#6E685A', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
-                      {formatBytes(f.file_size || 0)}
+                      {cloudProviderOf(f) ? cloudProviderLabel(cloudProviderOf(f)) : formatBytes(f.file_size || 0)}
                       {f.shared_label && f.shared_label !== 'folder' ? ` · ${f.shared_label}` : ''}
                     </Text>
                   </View>

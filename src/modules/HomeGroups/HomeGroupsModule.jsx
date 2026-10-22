@@ -10,8 +10,13 @@ import { Home } from 'lucide-react';
 import {
   Plus, Search, Trash2, Users, MapPin, Calendar,
   UserPlus, BookOpen, Upload, Link as LinkIcon,
-  CheckSquare, DollarSign, FolderOpen, Package, Pencil, AlertTriangle
+  CheckSquare, DollarSign, FolderOpen, Package, Pencil, AlertTriangle, Cloud
 } from 'lucide-react';
+import CloudAttachDialog from '../../components/cloud/CloudAttachDialog';
+import CloudProviderIcon from '../../components/cloud/CloudProviderIcon';
+import useCloudFiles from '../../components/cloud/useCloudFiles';
+import { cloudOpenText, cloudProviderName } from '../../components/cloud/cloudFilesLogic';
+import { cloudMaterialRow, cloudFromMaterialRow, cloudOpenUrl } from '@avenit/shared/src/lib/cloudFiles.js';
 import FinanceTab from '../shared/FinanceTab';
 import HomeGroupsMap from './HomeGroupsMap';
 import EventsTab from '../shared/EventsTab';
@@ -67,6 +72,8 @@ export default function HomeGroupsModule() {
   const [editingItem, setEditingItem] = useState(null);
   const [showGroupMembersModal, setShowGroupMembersModal] = useState(false);
   const [showMaterialsModal, setShowMaterialsModal] = useState(false);
+  const [showCloudPick, setShowCloudPick] = useState(false); // „Z Dysku Google / OneDrive” w materiałach grupy
+  const cloudFiles = useCloudFiles();
   const [currentGroup, setCurrentGroup] = useState(null);
   const [groupMaterials, setGroupMaterials] = useState([]); // materials_files folderu bieżącej grupy
   const [materialCounts, setMaterialCounts] = useState({}); // group.id -> liczba plików
@@ -744,6 +751,21 @@ export default function HomeGroupsModule() {
       toast.error(err, { fallback: tr('Nie udało się dodać materiału.') });
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Pliki z Dysku Google / OneDrive (Faza 3): odnośniki w folderze grupy (udostępnionym członkom grupy).
+  const addCloudMaterials = async (attachments) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const folderId = await ensureGroupFolder(currentGroup);
+      const rows = attachments.map((a) => cloudMaterialRow(a, { folderId, teamType: MATERIALS_TEAM, uploadedBy: user?.email || null }));
+      const { error } = await supabase.from('materials_files').insert(rows);
+      if (error) throw error;
+      await loadGroupMaterials({ ...currentGroup, materials_folder_id: folderId });
+      fetchData();
+    } catch (err) {
+      toast.error(err, { fallback: tr('Nie udało się dodać plików z chmury.') });
     }
   };
 
@@ -1515,6 +1537,10 @@ export default function HomeGroupsModule() {
       )}
 
       {/* MODAL: Materials */}
+      {showCloudPick && currentGroup && (
+        <CloudAttachDialog isOpen={showCloudPick} onClose={() => setShowCloudPick(false)} onAttach={addCloudMaterials} />
+      )}
+
       {showMaterialsModal && currentGroup && (
       <Modal
         isOpen
@@ -1559,17 +1585,26 @@ export default function HomeGroupsModule() {
                     {uploading ? tr('Wysyłanie…') : tr('Dodaj')}
                   </button>
                 </div>
+                {cloudFiles.visible && (
+                  <button type="button" onClick={() => setShowCloudPick(true)} className="mt-2 inline-flex items-center gap-2 text-sm text-accent-secondary hover:underline">
+                    <Cloud size={15} aria-hidden="true" /> {tr('Z Dysku Google lub OneDrive')}
+                  </button>
+                )}
               </div>
 
               <p className="text-[11px] text-gray-400 mb-2">{tr('Materiały trafiają do zakładki „Pliki" (folder „{name}") i są udostępnione członkom tej grupy. Pliki dodane w „Plikach" w tym folderze też pojawią się tutaj.', { name: currentGroup.name })}</p>
               <div className="flex-1 overflow-y-auto space-y-2">
                 {groupMaterials.map(m => {
-                  const url = supabase.storage.from('materials').getPublicUrl(m.storage_path).data.publicUrl;
+                  // Odnośnik do Dysku Google / OneDrive — otwierany u dostawcy (adres z białej listy).
+                  const cloudItem = m.external_provider ? cloudFromMaterialRow(m) : null;
+                  const url = m.external_provider
+                    ? (cloudOpenUrl(cloudItem) || undefined)
+                    : supabase.storage.from('materials').getPublicUrl(m.storage_path).data.publicUrl;
                   return (
                   <div key={m.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/40 p-2 rounded-lg text-accent-secondary dark:text-accent-secondary-light">
-                        <BookOpen size={18}/>
+                        {m.external_provider ? <CloudProviderIcon provider={m.external_provider} size={18} title={cloudProviderName(m.external_provider)} /> : <BookOpen size={18}/>}
                       </div>
                       <div>
                         <div className="font-bold text-gray-800 dark:text-gray-200">{m.name}</div>
@@ -1582,7 +1617,7 @@ export default function HomeGroupsModule() {
                         target="_blank"
                         rel="noreferrer"
                         aria-label={tr('Otwórz: {name}', { name: m.name })}
-                        title={tr('Otwórz')}
+                        title={m.external_provider ? cloudOpenText(m.external_provider) : tr('Otwórz')}
                         className="text-accent-secondary hover:bg-accent-secondary-lightest p-2 rounded-lg"
                       >
                         <LinkIcon size={18} aria-hidden="true" />

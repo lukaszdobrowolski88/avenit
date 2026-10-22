@@ -14,6 +14,8 @@ import MessageText from './MessageText';
 import LinkPreviewCard from './LinkPreviewCard';
 import CallMessage from '../calls/CallMessage';
 import { SignedImage, SignedLink, SignedAudio } from './SignedAttachment';
+import CloudFileLink from '../../../components/cloud/CloudFileLink';
+import { isCloudAttachment } from '@avenit/shared/src/lib/cloudFiles.js';
 import { tr, useI18n } from '../../../i18n';
 import { confirmDialog } from '../../../lib/dialog';
 import { isVoiceAttachment, voiceDurationMs, previewText, mentionsMe, mentionNamesOf, attachmentsOf } from '../utils/chatLogic';
@@ -237,6 +239,10 @@ export default function MessageBubble({
     const iconMap = { 'image': Image, 'file-text': FileText, 'table': Table, 'file': File };
     const IconComponent = iconMap[getFileIcon(attachment.type)] || File;
 
+    // Plik z Dysku Google / OneDrive / SharePoint — odnośnik otwierany u dostawcy (bez kopii w Avenit).
+    if (isCloudAttachment(attachment)) {
+      return <CloudFileLink key={idx} item={attachment} variant={isOwn ? 'own' : 'card'} />;
+    }
     if (isVoiceAttachment(attachment)) {
       const ms = voiceDurationMs(attachment);
       return <SignedAudio key={idx} url={attachment.url} duration={ms ? ms / 1000 : undefined} isOwn={isOwn} />;

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { FolderOpen, Folder, Search, X, ChevronRight, Home, Layers, Pencil, Share2, Users2, FolderInput, List as ListIcon, LayoutGrid } from 'lucide-react';
+import { FolderOpen, Folder, Search, X, ChevronRight, Home, Layers, Pencil, Share2, Users2, FolderInput, List as ListIcon, LayoutGrid, Cloud } from 'lucide-react';
 import useFolders from './hooks/useFolders';
 import useMaterials from './hooks/useMaterials';
 import useShares from './hooks/useShares';
@@ -13,6 +13,9 @@ import MoveModal from './components/MoveModal';
 import { tr } from '../../i18n';
 import { confirmDialog, promptDialog } from '../../lib/dialog';
 import { toast } from '../../lib/toast';
+import Button from '../../components/Button';
+import CloudAttachDialog from '../../components/cloud/CloudAttachDialog';
+import useCloudFiles from '../../components/cloud/useCloudFiles';
 
 export default function MaterialsModule({ ministryKey = null, canEdit = false }) {
   // State
@@ -30,6 +33,8 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   const [previewFile, setPreviewFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showMobileFolders, setShowMobileFolders] = useState(false);
+  const [showCloud, setShowCloud] = useState(false); // „Z Dysku Google / OneDrive” (odnośnik, bez kopii)
+  const cloud = useCloudFiles();
 
   // Hooks
   const {
@@ -55,6 +60,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     uploading,
     uploadProgress,
     uploadFiles,
+    addCloudFiles,
     deleteFile,
     downloadFile,
     getFileUrl,
@@ -76,7 +82,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     return selectedFolderId ? (findFolderById(selectedFolderId)?.children || []) : folders;
   }, [viewAll, selectedFolderId, findFolderById, folders]);
 
-  const imageFiles = files.filter(f => f.mime_type?.startsWith('image/'));
+  const imageFiles = files.filter(f => f.mime_type?.startsWith('image/') && !f.external_provider);
 
   // Handlers
   const handleSearch = useCallback(async (query) => {
@@ -134,7 +140,15 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     catch (e) { toast.error(tr('Nie udało się zmienić nazwy: ') + e.message); }
   }, [updateFileName]);
 
+  const handleAddCloud = useCallback(async (attachments) => {
+    try {
+      const added = await addCloudFiles(attachments);
+      toast.success(tr('Dodano odnośniki: {n}', { n: added.length }));
+    } catch (e) { toast.error(e, { fallback: tr('Nie udało się dodać plików z chmury.') }); }
+  }, [addCloudFiles]);
+
   const handlePreviewFile = useCallback((file) => {
+    if (file.external_provider) { downloadFile(file).catch((e) => toast.error(e.message)); return; } // otwórz u dostawcy
     const m = file.mime_type || '';
     if (m.startsWith('image/') || m === 'application/pdf') { setPreviewFile(file); setPreviewUrl(getFileUrl(file.storage_path)); }
     else downloadFile(file); // brak podglądu → otwórz/pobierz
@@ -255,6 +269,11 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
           {canEdit && showFolderChrome && (
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <FileUploader onUpload={handleUpload} uploading={uploading} progress={uploadProgress} />
+              {cloud.visible && (
+                <div className="mt-3 flex justify-end">
+                  <Button variant="outline" size="sm" icon={Cloud} onClick={() => setShowCloud(true)}>{tr('Z Dysku Google lub OneDrive')}</Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -355,6 +374,10 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
         folders={folders}
         onMove={handleMove}
       />
+
+      {showCloud && (
+        <CloudAttachDialog isOpen={showCloud} onClose={() => setShowCloud(false)} onAttach={handleAddCloud} />
+      )}
 
       <FilePreviewModal
         isOpen={!!previewFile}
