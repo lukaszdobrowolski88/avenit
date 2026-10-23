@@ -175,3 +175,42 @@ export function validateLayout(layout) {
 
   return [...validatedLayout, ...missingWidgets].sort((a, b) => a.order - b.order);
 }
+
+// ── Domyślny układ KOŚCIOŁA (tenanta) ─────────────────────────────────────────
+// app_settings[DASHBOARD_DEFAULT_LAYOUT_KEY] = JSON {layout: [...], mobile_layout: ...|null}.
+// Seedowany przy zakładaniu kościoła (packages/api/src/admin/tenant-defaults.js), zmieniany
+// przyciskiem „Ustaw mój układ jako domyślny dla wszystkich”. Używany, gdy użytkownik nie ma
+// własnego układu; brak/uszkodzony → DEFAULT_LAYOUT z kodu.
+export const DASHBOARD_DEFAULT_LAYOUT_KEY = 'dashboard_default_layout';
+
+// Parsuje wartość ustawienia (tekst JSON albo obiekt). Akceptuje też gołą tablicę widżetów.
+export function parseTenantDefault(value) {
+  let v = value;
+  if (typeof v === 'string') {
+    try { v = JSON.parse(v); } catch { return null; }
+  }
+  if (v && typeof v === 'string') { // wartość zapisana podwójnie jako JSON-string
+    try { v = JSON.parse(v); } catch { return null; }
+  }
+  if (Array.isArray(v)) return { layout: v, mobile_layout: null };
+  if (!v || typeof v !== 'object') return null;
+  return {
+    layout: Array.isArray(v.layout) && v.layout.length ? v.layout : null,
+    mobile_layout: v.mobile_layout ?? null,
+  };
+}
+
+// Czy zapisany układ użytkownika jest „jego” (niepusty). Wiersz założony przez mobilkę ma
+// layout = {} (domyślna wartość kolumny) — to NIE jest własny układ weba.
+export function hasOwnLayout(layout) {
+  return Array.isArray(layout) && layout.some((it) => it && WIDGET_DEFINITIONS[it.widgetId]);
+}
+
+// Kolejność wyboru: własny układ → domyślny kościoła → domyślny z kodu. Zawsze po validateLayout
+// (nieznane widżety pomijane, brakujące dopisane na końcu).
+export function resolveLayout(ownLayout, tenantDefault) {
+  if (hasOwnLayout(ownLayout)) return validateLayout(ownLayout);
+  const td = tenantDefault?.layout;
+  if (hasOwnLayout(td)) return validateLayout(td);
+  return DEFAULT_LAYOUT;
+}
