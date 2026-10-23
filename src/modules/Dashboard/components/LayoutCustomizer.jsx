@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { X, Eye, EyeOff, RotateCcw, Users2 } from 'lucide-react';
 import { WIDGET_DEFINITIONS, WIDGET_SIZES } from '../utils/layoutDefaults';
 import { widgetAllowed } from '../utils/widgetAccess';
 import { usePermissions } from '../../../contexts/PermissionsContext';
@@ -14,6 +14,7 @@ export default function LayoutCustomizer({
   onToggleVisibility,
   onSizeChange,
   onReset,
+  onSetTenantDefault,
   userRole,
 }) {
   const { can } = usePermissions();
@@ -138,6 +139,15 @@ export default function LayoutCustomizer({
             <RotateCcw size={16} />
             {tr('Przywróć domyślne')}
           </button>
+          {onSetTenantDefault && (
+            <button
+              onClick={onSetTenantDefault}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            >
+              <Users2 size={16} />
+              {tr('Ustaw jako domyślny dla wszystkich')}
+            </button>
+          )}
           <button
             onClick={onClose}
             className="px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg transition-all"

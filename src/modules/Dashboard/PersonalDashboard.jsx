@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, RefreshCw, Calendar, CheckSquare, CalendarX, Heart, Users, MessageCircle, CalendarDays, Zap, Cake, CalendarCheck, Gift, ClipboardCheck } from 'lucide-react';
+import { Settings, RefreshCw, Users2, Calendar, CheckSquare, CalendarX, Heart, Users, MessageCircle, CalendarDays, Zap, Cake, CalendarCheck, Gift, ClipboardCheck } from 'lucide-react';
 
 import { useDashboardLayout } from './hooks/useDashboardLayout';
 import { useDashboardData } from './hooks/useDashboardData';
@@ -34,6 +34,9 @@ import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
 import Button from '../../components/Button';
 import { thumbUrl } from '../../lib/imageThumb';
+import { confirmDialog } from '../../lib/dialog';
+import { toast } from '../../lib/toast';
+import { SETTINGS_WRITE_CAPABILITY } from '@avenit/shared/src/permissions/catalog.js';
 
 const WIDGET_ICONS = {
   ministry: Calendar,
@@ -66,7 +69,22 @@ export default function PersonalDashboard({ user }) {
     updateSize,
     toggleVisibility,
     resetLayout,
+    saveAsTenantDefault,
   } = useDashboardLayout(userEmail);
+
+  // „Ustaw mój układ jako domyślny dla wszystkich” — tylko z prawem zapisu ustawień (serwer i tak
+  // to egzekwuje). Dotyczy osób bez własnego układu; zapisane układy zostają.
+  const canSetDefault = can(SETTINGS_WRITE_CAPABILITY.app_settings);
+  const handleSetTenantDefault = async () => {
+    const ok = await confirmDialog(tr('Ustawić Twój układ pulpitu jako domyślny dla wszystkich? Zobaczą go osoby, które nie dostosowały jeszcze swojego pulpitu (także nowe konta).'));
+    if (!ok) return;
+    try {
+      await saveAsTenantDefault();
+      toast.success(tr('Ustawiono układ domyślny dla wszystkich'));
+    } catch {
+      toast.error(tr('Nie udało się zapisać układu domyślnego.'));
+    }
+  };
 
   const {
     userProfile,
@@ -228,6 +246,18 @@ export default function PersonalDashboard({ user }) {
             <span className="hidden sm:inline font-medium">{t('Dostosuj')}</span>
           </button>
 
+          {/* Układ domyślny kościoła (admin, w trybie edycji) */}
+          {isCustomizing && canSetDefault && (
+            <button
+              onClick={handleSetTenantDefault}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
+              title={t('Osoby bez własnego układu zobaczą Twój pulpit')}
+            >
+              <Users2 size={18} />
+              <span className="font-medium">{t('Ustaw jako domyślny dla wszystkich')}</span>
+            </button>
+          )}
+
           {/* Toggle edit mode */}
           {visibleWidgets.length > 0 && (
             <button
@@ -299,6 +329,7 @@ export default function PersonalDashboard({ user }) {
         onToggleVisibility={toggleVisibility}
         onSizeChange={updateSize}
         onReset={resetLayout}
+        onSetTenantDefault={canSetDefault ? handleSetTenantDefault : undefined}
         userRole={userRole}
       />
     </div>

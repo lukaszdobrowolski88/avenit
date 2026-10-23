@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import { platformPool, getTenantPool, closeTenantPool, invalidateTenantCache } from '../db.js';
 import { hashPassword } from '../auth/passwords.js';
 import { runSqlScript } from '../lib/sqlscript.js';
+import { seedTenantDefaults } from './tenant-defaults.js';
 import { DEFAULT_PLAN_KEY, TRIAL_DAYS } from '@avenit/shared/src/billing/catalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -94,6 +95,9 @@ export async function provisionTenant({
     //     Dzięki temu nowe tabele wystarczy dodać jako migrację — bez regeneracji
     //     szablonu. Śledzone w tabeli _migrations.
     await applyTenantMigrations(pool);
+
+    // 2c. Domyślny wygląd (Avenit) i pulpit nowego kościoła — tylko brakujące klucze.
+    await seedTenantDefaults(pool);
 
     // 3. Konto administratora kościoła.
     const password = adminPassword || crypto.randomBytes(9).toString('base64url');
