@@ -118,7 +118,7 @@ export const publicAccess = (a) => ({
 });
 
 // Osoby z danym prawem (powiadomienia do zatwierdzających).
-async function usersWithCapability(db, dbName, capability) {
+export async function usersWithCapability(db, dbName, capability) {
   const { rows } = await db.query(
     `SELECT u.id, u.email, u.role, COALESCE(u.is_super_admin, false) AS is_super_admin
        FROM app_users u WHERE COALESCE(u.is_active, true) = true AND u.email IS NOT NULL`);
@@ -143,6 +143,20 @@ async function notify(ctx, emails, { title, body, postId }) {
     });
   } catch (e) { logErr(ctx, e, 'social: powiadomienie nie powiodło się'); }
 }
+
+// Historia posta (migracja 122). Brak tabeli (tenant przed migracją) nie blokuje akcji.
+async function logActivity(ctx, postId, kind, actor = null, note = null) {
+  try {
+    await ctx.db.query(`INSERT INTO social_post_activity (post_id, kind, actor, note) VALUES ($1, $2, $3, $4)`,
+      [postId, kind, actor ? lower(actor) : null, note ? String(note).slice(0, 2000) : null]);
+  } catch (e) {
+    if (e?.code !== '42P01') logErr(ctx, e, 'social: zapis historii');
+  }
+}
+
+// Kto widzi post: szkic tylko autor, osoby edytujące cudze posty i publikujący.
+export const canSeePost = (access, post) => post.status !== 'draft' || access.admin || access.updateAll || access.publish
+  || lower(post.created_by) === lower(access.me?.email);
 
 // ── Odczyt ──────────────────────────────────────────────────────────────────
 async function targetsOf(db, postIds) {
@@ -249,6 +263,7 @@ function cleanOptions(provider, o = {}) {
   if (provider === 'instagram' && SOCIAL_PROVIDERS.instagram.formats.includes(o.format)) out.format = o.format;
   if (provider === 'instagram' && o.share_to_feed === false) out.share_to_feed = false;
   if (provider === 'facebook' && o.link && /^https?:\/\/\S+$/i.test(String(o.link))) out.link = String(o.link).slice(0, 2000);
+  if (provider === 'facebook' && o.format === 'reel') out.format = 'reel';
   return out;
 }
 
@@ -264,11 +279,15 @@ function parseTime(v, now) {
   return d;
 }
 
-// Kolejka: najbliższy wolny slot dla kanałów posta.
+// Kolejka: najbliższy wolny slot dla kanałów posta. Kanał z własnymi godzinami używa tylko ich,
+// pozostałe — wspólnego harmonogramu; post z kilku kanałów bierze najbliższą godzinę z sumy.
 async function queueTime(ctx, accountIds, excludePostId) {
-  const { rows: slots } = await ctx.db.query(
+  const { rows: all } = await ctx.db.query(
     `SELECT weekday, time, account_id FROM social_queue_slots WHERE account_id IS NULL OR account_id = ANY($1::uuid[])`, [accountIds]);
-  if (!slots.filter(isValidSlot).length) return null;
+  const valid = all.filter(isValidSlot);
+  const own = new Set(valid.filter((x) => x.account_id).map((x) => x.account_id));
+  const slots = [...valid.filter((x) => x.account_id), ...(accountIds.some((id) => !own.has(id)) ? valid.filter((x) => !x.account_id) : [])];
+  if (!slots.length) return null;
   const { rows: taken } = await ctx.db.query(
     `SELECT DISTINCT p.scheduled_at FROM social_posts p JOIN social_post_targets t ON t.post_id = p.id
       WHERE p.status IN ('scheduled', 'pending_approval') AND p.scheduled_at > now()
@@ -392,6 +411,9 @@ export async function savePost(ctx, access, body = {}) {
   const full = await loadPost(ctx.db, post.id);
   emit(ctx, 'social_posts', existing ? 'update' : 'insert', [full]);
 
+  await logActivity(ctx, post.id, existing ? 'edited' : 'created', email);
+  if (status === 'pending_approval' && existing?.status !== 'pending_approval') await logActivity(ctx, post.id, 'submitted', email);
+  if (status === 'scheduled') await logActivity(ctx, post.id, intent === 'now' ? 'published_now' : 'scheduled', email, scheduledAt?.toISOString());
   if (status === 'pending_approval' && existing?.status !== 'pending_approval') {
     const approvers = (await usersWithCapability(ctx.db, ctx.dbName, 'action:social:publish')).filter((e) => e !== email);
     await notify(ctx, approvers, { title: 'Post do akceptacji', body: snippet(content), postId: post.id });
@@ -442,6 +464,7 @@ export async function approvePost(ctx, access, body = {}) {
   const full = await setStatus(ctx, post.id, ['pending_approval'],
     `status = 'scheduled', scheduled_at = $3, approved_by = $4, approved_at = now(), review_note = NULL`,
     [at.toISOString(), lower(access.me?.email)]);
+  await logActivity(ctx, post.id, 'approved', access.me?.email, at.toISOString());
   if (lower(post.created_by) !== lower(access.me?.email)) {
     await notify(ctx, [post.created_by], { title: 'Post zatwierdzony', body: snippet(post.content), postId: post.id });
   }
@@ -454,6 +477,7 @@ export async function rejectPost(ctx, access, body = {}) {
   const post = await mustLoad(ctx, body.id);
   const note = String(body.note || '').trim().slice(0, 2000) || null;
   const full = await setStatus(ctx, post.id, ['pending_approval'], `status = 'draft', review_note = $3`, [note]);
+  await logActivity(ctx, post.id, 'rejected', access.me?.email, note);
   await notify(ctx, [post.created_by], { title: 'Post odesłany do poprawy', body: note || snippet(post.content), postId: post.id });
   return full;
 }
@@ -463,7 +487,9 @@ export async function unschedulePost(ctx, access, body = {}) {
   const post = await mustLoad(ctx, body.id);
   if (post.status === 'scheduled' && !access.publish) throw err(403, MSG.noPublish, 'NO_PUBLISH');
   if (post.status === 'pending_approval' && !access.publish && !canTouch(access, post)) throw err(403, MSG.notYours, 'FORBIDDEN');
-  return setStatus(ctx, post.id, ['scheduled', 'pending_approval'], `status = 'draft', approved_by = NULL, approved_at = NULL`);
+  const full = await setStatus(ctx, post.id, ['scheduled', 'pending_approval'], `status = 'draft', approved_by = NULL, approved_at = NULL`);
+  await logActivity(ctx, post.id, 'unscheduled', access.me?.email);
+  return full;
 }
 
 export async function reschedulePost(ctx, access, body = {}) {
@@ -477,7 +503,9 @@ export async function reschedulePost(ctx, access, body = {}) {
   } else {
     throw err(409, MSG.notEditable, 'NOT_EDITABLE');
   }
-  return setStatus(ctx, post.id, [post.status], `scheduled_at = $3`, [at.toISOString()]);
+  const full = await setStatus(ctx, post.id, [post.status], `scheduled_at = $3`, [at.toISOString()]);
+  await logActivity(ctx, post.id, 'rescheduled', access.me?.email, at.toISOString());
+  return full;
 }
 
 export async function publishNow(ctx, access, body = {}) {
@@ -485,6 +513,7 @@ export async function publishNow(ctx, access, body = {}) {
   const post = await mustLoad(ctx, body.id);
   if (post.status !== 'scheduled') throw err(409, 'Opublikować od razu można zaplanowany post.', 'CONFLICT');
   const full = await setStatus(ctx, post.id, ['scheduled'], `scheduled_at = $3`, [nowOf(ctx).toISOString()]);
+  await logActivity(ctx, post.id, 'published_now', access.me?.email);
   kickPublish(ctx);
   return full;
 }
@@ -501,6 +530,7 @@ export async function retryPost(ctx, access, body = {}) {
       WHERE post_id = $1 AND status = 'failed' AND ($2::uuid IS NULL OR id = $2::uuid)`, [post.id, targetId]);
   if (!rowCount) throw err(409, 'Brak nieudanych publikacji do ponowienia.', 'CONFLICT');
   const full = await setStatus(ctx, post.id, ['failed', 'partial'], `status = 'publishing', scheduled_at = COALESCE(scheduled_at, now())`);
+  await logActivity(ctx, post.id, 'retried', access.me?.email);
   kickPublish(ctx);
   return full;
 }
@@ -525,6 +555,48 @@ export async function duplicatePost(ctx, access, body = {}) {
     content: post.content, media: post.media, tags: post.tags, intent: 'draft',
     targets: post.targets.filter((t) => t.account_id).map((t) => ({ account_id: t.account_id, content: t.content, media: t.media, options: t.options })),
   });
+}
+
+// ── Komentarze zespołu i historia ───────────────────────────────────────────
+export async function listActivity(ctx, access, body = {}) {
+  const post = await mustLoad(ctx, body.id);
+  if (!canSeePost(access, post)) throw err(403, MSG.notYours, 'FORBIDDEN');
+  try {
+    const { rows } = await ctx.db.query(
+      `SELECT id, kind, actor, note, created_at FROM social_post_activity WHERE post_id = $1 ORDER BY seq LIMIT 500`, [post.id]);
+    return rows;
+  } catch (e) {
+    if (e?.code === '42P01') return [];
+    throw e;
+  }
+}
+
+// Komentarz: każdy, kto widzi post. Powiadomienie: autor, zatwierdzający i wcześniejsi komentujący.
+export async function addComment(ctx, access, body = {}) {
+  const post = await mustLoad(ctx, body.id);
+  if (!canSeePost(access, post)) throw err(403, MSG.notYours, 'FORBIDDEN');
+  const text = String(body.body || '').trim();
+  if (!text) throw err(400, 'Komentarz jest pusty.');
+  if (text.length > 2000) throw err(400, 'Komentarz jest za długi (najwyżej 2000 znaków).');
+  const me = lower(access.me?.email);
+  await logActivity(ctx, post.id, 'comment', me, text);
+  const { rows } = await ctx.db.query(
+    `SELECT DISTINCT actor FROM social_post_activity WHERE post_id = $1 AND kind = 'comment' AND actor IS NOT NULL`, [post.id]).catch(() => ({ rows: [] }));
+  const who = [post.created_by, post.approved_by, ...rows.map((r) => r.actor)].map(lower).filter((e) => e && e !== me);
+  await notify(ctx, who, { title: 'Nowy komentarz do posta', body: text.length > 120 ? `${text.slice(0, 117)}…` : text, postId: post.id });
+  emit(ctx, 'social_posts', 'update', [post]);
+  return listActivity(ctx, access, { id: post.id });
+}
+
+export async function deleteComment(ctx, access, body = {}) {
+  const id = String(body.comment_id || '');
+  if (!UUID_RE.test(id)) throw err(400, 'Nie wybrano komentarza.');
+  const { rows } = await ctx.db.query(`SELECT * FROM social_post_activity WHERE id = $1 AND kind = 'comment'`, [id]);
+  const c = rows[0];
+  if (!c) throw err(404, 'Nie znaleziono komentarza.', 'NOT_FOUND');
+  if (!access.admin && lower(c.actor) !== lower(access.me?.email)) throw err(403, 'Usunąć można tylko własny komentarz.', 'FORBIDDEN');
+  await ctx.db.query(`DELETE FROM social_post_activity WHERE id = $1`, [id]);
+  return listActivity(ctx, access, { id: c.post_id });
 }
 
 // ── Kolejka (sloty) ─────────────────────────────────────────────────────────
@@ -604,6 +676,10 @@ async function refreshPostStatus(ctx, postId, { changed = false } = {}) {
   // Realtime tylko przy zmianie (status całości albo celów) — nie co minutę dla każdego posta w toku.
   const full = upd[0] || changed ? await loadPost(ctx.db, postId) : null;
   if (full) emit(ctx, 'social_posts', 'update', [full]);
+  if (upd[0] && ['published', 'partial', 'failed'].includes(next)) {
+    const failedNames = (full?.targets || []).filter((t) => t.status === 'failed').map((t) => `${t.account_name}: ${t.error || ''}`.trim());
+    await logActivity(ctx, postId, next, null, failedNames.join('\n') || null);
+  }
   if (upd[0] && (next === 'failed' || next === 'partial')) {
     const who = [upd[0].created_by, upd[0].approved_by].filter(Boolean);
     const failed = (full?.targets || []).filter((t) => t.status === 'failed').map((t) => t.account_name).filter(Boolean);
@@ -665,13 +741,13 @@ async function processTarget(ctx, t) {
     if (se.retryable && attempts < MAX_ATTEMPTS) {
       const delay = RETRY_DELAYS_MIN[Math.min(attempts - 1, RETRY_DELAYS_MIN.length - 1)];
       await updateTarget(ctx.db, t.id, {
-        status: progress.container || progress.children ? 'processing' : 'pending',
+        status: progress.container || progress.children || progress.reel_video_id ? 'processing' : 'pending',
         next_attempt_at: new Date(now.getTime() + delay * MIN).toISOString(), error: se.message,
       });
       return;
     }
     // Przy błędzie pliku kontenery do wyrzucenia — ponowienie zacznie od nowa.
-    await updateTarget(ctx.db, t.id, { status: 'failed', error: se.message, progress: se.code === 'ig_media' ? {} : progress });
+    await updateTarget(ctx.db, t.id, { status: 'failed', error: se.message, progress: se.code === 'remote_media' ? {} : progress });
     if (!se.tokenInvalid && se.code === 'permission') await markAccount(ctx.db, account.id, 'error', se.message);
   }
 }

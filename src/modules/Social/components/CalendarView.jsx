@@ -5,7 +5,7 @@ import Spinner from '../../../components/Spinner';
 import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { socialApi } from '../lib/socialApi';
-import { monthGrid, weekDays, postsByDay, dayKey, timeLabel, moveToDay, postPermissions, snippet, STATUS_COLOR, postWhen } from '../lib/socialUi';
+import { monthGrid, weekDays, postsByDay, dayKey, timeLabel, moveToDay, postPermissions, snippet, STATUS_COLOR, postWhen, filterPosts } from '../lib/socialUi';
 import { isVideo, POST_STATUS_LABELS } from '@avenit/shared/src/lib/social.js';
 import { ProviderIcon } from './ChannelAvatar';
 
@@ -34,7 +34,7 @@ function Chip({ post, draggable, onOpen, onDragStart }) {
   );
 }
 
-export default function CalendarView({ version, access, myEmail, onOpen, onCreate, onChanged }) {
+export default function CalendarView({ version, access, myEmail, filters, onOpen, onCreate, onChanged }) {
   const [mode, setMode] = useState('month');
   const [cursor, setCursor] = useState(() => new Date());
   const [posts, setPosts] = useState(null);
@@ -58,7 +58,7 @@ export default function CalendarView({ version, access, myEmail, onOpen, onCreat
     return () => { alive = false; };
   }, [range, version]);
 
-  const byDay = useMemo(() => postsByDay(posts || []), [posts]);
+  const byDay = useMemo(() => postsByDay(filterPosts(posts || [], filters, myEmail)), [posts, filters, myEmail]);
   const today = dayKey(new Date());
   const canCreate = access.create || access.publish;
 

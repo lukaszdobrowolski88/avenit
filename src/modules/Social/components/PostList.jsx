@@ -5,7 +5,7 @@ import Spinner from '../../../components/Spinner';
 import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 import { socialApi } from '../lib/socialApi';
-import { groupByDay, dayKey } from '../lib/socialUi';
+import { groupByDay, dayKey, filterPosts, filtersActive } from '../lib/socialUi';
 import PostCard from './PostCard';
 
 const EMPTY = {
@@ -28,18 +28,22 @@ function dayHeading(key, date) {
 }
 
 // Lista postów jednego widoku, pogrupowana po dniach (szkice i akceptacja — płasko).
-export default function PostList({ view, version, access, myEmail, accountsById, onOpen, onAction, action }) {
-  const [posts, setPosts] = useState(null);
+export default function PostList({ view, version, access, myEmail, accountsById, filters, onOpen, onAction, action }) {
+  const [loaded, setLoaded] = useState(null);
 
   useEffect(() => {
     let alive = true;
     socialApi.list({ view })
-      .then((list) => { if (alive) setPosts(list); })
-      .catch((e) => { if (alive) { setPosts([]); toast.error(e.message); } });
+      .then((list) => { if (alive) setLoaded(list); })
+      .catch((e) => { if (alive) { setLoaded([]); toast.error(e.message); } });
     return () => { alive = false; };
   }, [view, version]);
 
-  if (posts === null) return <Spinner center label={tr('Ładowanie postów…')} />;
+  if (loaded === null) return <Spinner center label={tr('Ładowanie postów…')} />;
+  const posts = filterPosts(loaded, filters, myEmail);
+  if (!posts.length && loaded.length && filtersActive(filters)) {
+    return <EmptyState icon={EMPTY[view].icon} title={tr('Brak postów dla wybranych filtrów')} subtitle={tr('Zmień albo wyczyść filtry.')} />;
+  }
   if (!posts.length) {
     const e = EMPTY[view];
     return <EmptyState icon={e.icon} title={tr(e.title)} subtitle={tr(e.subtitle)} action={action} />;

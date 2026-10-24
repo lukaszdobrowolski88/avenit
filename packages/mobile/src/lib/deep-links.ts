@@ -161,6 +161,15 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
     goToTab(router, 'dashboard');
     return;
   }
+  // Social Media: /social?post=<id> (powiadomienie: do akceptacji, komentarz, błąd) → ekran posta;
+  // /social?tab=channels (kanał do połączenia) → Kanały.
+  if (bare === '/social' || bare === '/(app)/social') {
+    const postId = queryParam(clean, 'post');
+    if (postId) router.push({ pathname: '/(app)/social/post/[id]', params: { id: postId } } as never);
+    else if (queryParam(clean, 'tab') === 'channels') router.push('/(app)/social/channels' as never);
+    else router.push('/(app)/social' as never);
+    return;
+  }
   const alias = WEB_ALIASES[bare];
   if (alias) {
     alias(router);

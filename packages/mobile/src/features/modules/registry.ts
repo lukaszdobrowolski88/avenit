@@ -93,6 +93,7 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
   mailing: m({ key: 'mailing', label: 'Kampanie e-mail', Icon: Send, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', webPath: '/mailing', keywords: 'mailing newsletter' }),
   mail: m({ key: 'mail', label: 'Skrzynka pocztowa', Icon: Mail, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', webPath: '/mail', keywords: 'poczta e-mail' }),
   sms_campaigns: m({ key: 'sms_campaigns', label: 'Kampanie SMS', Icon: MessageSquare, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', route: '/(app)/campaigns/sms', webPath: '/sms-campaigns', keywords: 'sms wiadomości kampania' }),
+  social: m({ key: 'social', label: 'Social Media', Icon: Share2, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', route: '/(app)/social', webPath: '/social', keywords: 'facebook instagram posty planowanie publikacja media społecznościowe' }),
   push_campaigns: m({ key: 'push_campaigns', label: 'Kampanie push', Icon: BellRing, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', route: '/(app)/campaigns/push', webPath: '/push-campaigns', keywords: 'powiadomienia push kampania' }),
   automation: m({ key: 'automation', label: 'Automatyzacje', Icon: Workflow, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', webPath: '/automation', keywords: 'reguły workflow' }),
   analytics: m({ key: 'analytics', label: 'Analityka', Icon: BarChart3, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', webPath: '/analytics', keywords: 'ccli raport pieśni statystyki', hint: 'Statystyki i raport CCLI' }),

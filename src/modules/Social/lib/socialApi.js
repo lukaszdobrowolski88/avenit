@@ -38,6 +38,9 @@ export const socialApi = {
   slots: () => socialCall('slots').then((d) => d.slots || []),
   saveSlots: (slots, accountId = null) => socialCall('slots_save', { slots, account_id: accountId }).then((d) => d.slots || []),
   queuePreview: (accountIds, id) => socialCall('queue_preview', { account_ids: accountIds, id }).then((d) => d.next_slot),
+  activity: (id) => socialCall('activity', { id }).then((d) => d.activity || []),
+  comment: (id, body) => socialCall('comment', { id, body }).then((d) => d.activity || []),
+  commentDelete: (commentId) => socialCall('comment_delete', { comment_id: commentId }).then((d) => d.activity || []),
 };
 
 // Wgranie pliku do bucketu social-media → obiekt mediów posta (z wymiarami / długością wideo).

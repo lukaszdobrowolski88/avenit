@@ -9,7 +9,9 @@ export const SOCIAL_PROVIDERS = {
   facebook: {
     key: 'facebook', label: 'Facebook', color: '#1877F2',
     maxChars: 63206, maxImages: 10, maxVideos: 1,
-    formats: ['post'],
+    formats: ['post', 'reel'],
+    // Rolka na Facebooku: pionowe wideo 3–90 s.
+    reelMinSec: 3, reelMaxSec: 90,
   },
   instagram: {
     key: 'instagram', label: 'Instagram', color: '#E1306C',
@@ -23,6 +25,7 @@ export const SOCIAL_PROVIDERS = {
 
 export const SOCIAL_PROVIDER_KEYS = Object.keys(SOCIAL_PROVIDERS);
 export const IG_FORMAT_LABELS = { feed: 'Post', reel: 'Rolka', story: 'Relacja' };
+export const FB_FORMAT_LABELS = { post: 'Post', reel: 'Rolka' };
 
 // Statusy posta (całość) i publikacji w kanale.
 export const POST_STATUSES = ['draft', 'pending_approval', 'scheduled', 'publishing', 'published', 'partial', 'failed'];
@@ -81,9 +84,10 @@ export function instagramFormat(media, options = {}) {
   return 'feed';
 }
 
-// Kształt publikacji na Facebooku: tekst/link, zdjęcie, wiele zdjęć albo wideo.
-export function facebookShape(media) {
+// Kształt publikacji na Facebooku: tekst/link, zdjęcie, wiele zdjęć, wideo albo rolka.
+export function facebookShape(media, options = {}) {
   const list = media || [];
+  if (options.format === 'reel') return 'reel';
   if (!list.length) return 'text';
   if (list.some(isVideo)) return 'video';
   return list.length === 1 ? 'photo' : 'album';
@@ -120,6 +124,13 @@ export function validateTarget(provider, { content = '', media = [], options = {
     if (videos.length && images.length) errors.push(t('Facebook: opublikuj wideo albo zdjęcia — nie oba naraz.'));
     if (videos.length > P.maxVideos) errors.push(t('Facebook: jedno wideo na post.'));
     if (images.length > P.maxImages) errors.push(t('Facebook: najwyżej {n} zdjęć.', { n: P.maxImages }));
+    if (options.format === 'reel') {
+      if (videos.length !== 1 || media.length !== 1) errors.push(t('Rolka: dokładnie jedno wideo.'));
+      const d = Number(videos[0]?.duration);
+      if (d && (d < P.reelMinSec || d > P.reelMaxSec)) errors.push(t('Rolka na Facebooku: wideo od {min} do {max} s.', { min: P.reelMinSec, max: P.reelMaxSec }));
+      const w = Number(videos[0]?.width), h = Number(videos[0]?.height);
+      if (w && h && w >= h) warnings.push(t('Rolka wygląda najlepiej w pionie (9:16).'));
+    }
   }
 
   if (provider === 'instagram') {
@@ -195,3 +206,25 @@ export function aggregatePostStatus(targetStatuses) {
   if (ok > 0) return 'partial';
   return 'failed';
 }
+
+// Co osoba może zrobić z postem (zgodnie z serwerem — social/service.js).
+export function postPermissions(post, access = {}, myEmail = '') {
+  const lower = (v) => String(v || '').toLowerCase();
+  const own = lower(post?.created_by) === lower(myEmail);
+  const s = post?.status;
+  const editable = EDITABLE_STATUSES.has(s);
+  const out = {
+    edit: editable && (access.admin || access.update_all || access.publish || (own && access.create)),
+    approve: s === 'pending_approval' && access.publish,
+    reject: s === 'pending_approval' && access.publish,
+    unschedule: (s === 'scheduled' && access.publish) || (s === 'pending_approval' && (access.publish || own)),
+    publishNow: s === 'scheduled' && access.publish,
+    retry: (s === 'failed' || s === 'partial') && access.publish,
+    duplicate: access.create || access.publish,
+    delete: s !== 'publishing' && (access.admin || access.delete_all || (own && ['draft', 'pending_approval', 'failed'].includes(s))
+      || (own && s === 'scheduled' && access.publish)),
+    move: (s === 'scheduled' && access.publish) || ((s === 'draft' || s === 'pending_approval') && (own || access.publish)),
+  };
+  return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, Boolean(v)]));
+}
+
