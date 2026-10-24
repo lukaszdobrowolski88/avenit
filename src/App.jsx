@@ -71,6 +71,7 @@ const AnalyticsModule = lazy(() => import('./modules/Analytics/AnalyticsModule')
 const AutomationModule = lazy(() => import('./modules/Automation/AutomationModule'));
 const AiAssistantModule = lazy(() => import('./modules/AI/AiAssistantModule'));
 const RoomsModule = lazy(() => import('./modules/Rooms/RoomsModule'));
+const SocialModule = lazy(() => import('./modules/Social/SocialModule'));
 const ServeModule = lazy(() => import('./modules/Serve/ServeModule'));
 const RsvpModule = lazy(() => import('./modules/Rsvp/RsvpModule'));
 const GlobalSettings = lazy(() => import('./modules/Settings/GlobalSettings'));
@@ -97,7 +98,7 @@ const SYSTEM_MODULE_KEYS = [
   'dashboard', 'programs', 'calendar', 'members', 'worship', 'media',
   'atmosfera', 'kids', 'homegroups', 'finance', 'giving', 'teaching', 'prayer',
   'komunikator', 'mlodziezowka', 'tlumaczenia', 'mailing', 'mail', 'forms', 'settings', 'push_campaigns', 'sms_campaigns',
-  'attendance', 'analytics', 'automation', 'ai', 'sermons', 'care', 'rooms', 'serve', 'rsvp', 'boards'
+  'attendance', 'analytics', 'automation', 'ai', 'sermons', 'care', 'rooms', 'serve', 'rsvp', 'boards', 'social'
 ];
 
 // Fallback dla granicy <Suspense> — pokazywany na czas doładowania chunku modułu (lazy).
@@ -661,6 +662,9 @@ function AppInner() {
                 <Route path="/care" element={<Navigate to={MERGED_MODULE_TARGETS.care} replace />} />
                 <Route path="/rooms" element={
                   <ProtectedRoute resource="module:rooms"><RoomsModule /></ProtectedRoute>
+                } />
+                <Route path="/social" element={
+                  <ProtectedRoute resource="module:social"><SocialModule /></ProtectedRoute>
                 } />
                 <Route path="/serve" element={
                   <ProtectedRoute resource="module:serve"><ServeModule /></ProtectedRoute>

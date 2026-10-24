@@ -15,7 +15,7 @@ import TenantModulesConfig from './TenantModulesConfig.jsx';
 const MODULE_KEYS = [
   'dashboard', 'programs', 'calendar', 'members', 'worship', 'media', 'atmosfera',
   'kids', 'homegroups', 'finance', 'teaching', 'prayer', 'komunikator',
-  'mlodziezowka', 'tlumaczenia', 'mailing', 'mail', 'forms', 'push_campaigns', 'sms_campaigns', 'settings',
+  'mlodziezowka', 'tlumaczenia', 'mailing', 'mail', 'forms', 'push_campaigns', 'sms_campaigns', 'social', 'settings',
 ];
 
 const CYCLE_LABEL = { monthly: 'miesięczny', yearly: 'roczny' };

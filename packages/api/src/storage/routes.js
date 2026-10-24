@@ -85,6 +85,9 @@ const BUCKETS = new Set([
   'mail-attachments',
   'messenger-attachments',
   'form-uploads', // pola „plik/zdjęcie” i grafiki formularzy (brakowało → każdy upload 404)
+  // Social Media: zdjęcia i wideo postów. Odczyt publiczny (Meta pobiera pliki po adresie przy
+  // publikacji; ścieżki z losowym identyfikatorem), wgrywanie tylko z dostępem do modułu.
+  'social-media',
 ]);
 
 // Buckety wrażliwe: kto może listować/usuwać/podpisywać (dowolna z capability; admin zawsze).
@@ -256,6 +259,7 @@ const BUCKET_STAFF = {
   equipment: ['res:equipment:delete'],
   programs: ['res:programs:update'],
   'form-uploads': ['module:forms'],
+  'social-media': ['module:social'],
   'public-assets': [],
 };
 
@@ -325,6 +329,10 @@ export async function uploadDenied(req, bucket, filePath, { overwrite }) {
     return null;
   }
   if (SENSITIVE[bucket]) return (await canUseBucket(req, bucket)) ? null : 'Brak uprawnień do tego bucketu';
+  if (bucket === 'social-media') {
+    const me = await callerAccess(req).catch(() => null);
+    if (!me || (!me.isAdmin && !me.can('module:social'))) return 'Pliki postów dodaje osoba z dostępem do Social Media';
+  }
   // Pliki przestrzeni wrażliwej (materials/finance/… itd.) wgrywa tylko osoba z dostępem do jej modułu.
   if (isSignedReadPath(bucket, filePath) && !(await canSignMaterialsFile(req, filePath))) {
     return 'Pliki tej przestrzeni dodaje osoba z dostępem do jej modułu';

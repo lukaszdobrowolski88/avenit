@@ -90,6 +90,7 @@ function PrivacyDefault({ org, contact, today }) {
 
       <H>5. Logowanie przez Google / Microsoft</H>
       <P>Jeśli logujesz się kontem Google lub Microsoft, otrzymujemy od dostawcy Twój adres e-mail, imię oraz zdjęcie profilowe, aby utworzyć lub dopasować konto w aplikacji. Nie uzyskujemy dostępu do Twojej skrzynki, kontaktów ani innych danych. Zakres jest ograniczony do: identyfikatora, adresu e-mail i podstawowego profilu.</P>
+      <P><strong>Publikowanie na Facebooku i Instagramie.</strong> Jeśli osoba uprawniona połączy w module Social Media stronę na Facebooku lub konto firmowe na Instagramie, aplikacja otrzymuje od Meta: identyfikator i nazwę strony oraz konta, nazwę użytkownika Instagrama, zdjęcie profilowe, token dostępu strony (przechowywany w postaci zaszyfrowanej) oraz identyfikator osoby łączącej w aplikacji Meta. Dane te służą wyłącznie do publikowania postów przygotowanych w aplikacji i pokazywania ich statusu — treść i pliki posta przekazujemy do Meta w chwili publikacji. Nie odczytujemy wiadomości ani danych obserwujących. Połączenie można w każdej chwili usunąć (Social Media → Kanały → Odłącz kanał) albo cofnąć dostęp aplikacji w ustawieniach Facebooka — usuwamy wtedy tokeny i dane kanału.</P>
 
       <H>6. Okres przechowywania</H>
       <P>Dane przechowujemy przez czas korzystania z konta oraz po jego usunięciu tylko w zakresie wymaganym prawem (np. dane księgowe darowizn) lub do czasu przedawnienia ewentualnych roszczeń. Logi bezpieczeństwa przechowujemy przez ograniczony czas.</P>

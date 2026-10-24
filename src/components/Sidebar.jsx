@@ -142,6 +142,7 @@ const STATIC_MODULES = [
   { key: 'mailing', path: '/mailing', iconName: 'Send', label: 'Kampanie e-mail', resource: 'module:mailing' },
   { key: 'push_campaigns', path: '/push-campaigns', iconName: 'BellRing', label: 'Kampanie push', resource: 'module:push_campaigns' },
   { key: 'sms_campaigns', path: '/sms-campaigns', iconName: 'Smartphone', label: 'Kampanie SMS', resource: 'module:sms_campaigns' },
+  { key: 'social', path: '/social', iconName: 'Share2', label: 'Social Media', resource: 'module:social' },
 ];
 
 // Zasób uprawnień dla pozycji z fallbacku sterowanych ustawieniem modułu.

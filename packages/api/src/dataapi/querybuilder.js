@@ -536,6 +536,8 @@ const NATIVE_ARRAY_COLUMNS = new Set([
   'sms_campaign_segments.emails',
   'sms_campaign_segments.phones',
   'sms_user_preferences.category_opt_outs',
+  'social_accounts.scopes',
+  'social_posts.tags',
   'songs.tags',
   'tasks.tags',
   'teachings.tags',

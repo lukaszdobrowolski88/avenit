@@ -101,6 +101,9 @@ export const RESOURCE_LABELS = {
   resources: 'Sale i zasoby', resource_bookings: 'Rezerwacje',
   volunteer_blockouts: 'Niedostępność wolontariuszy', song_usage: 'Użycie pieśni (CCLI)',
   automation_workflows: 'Automatyzacje', automation_steps: 'Kroki automatyzacji', automation_runs: 'Uruchomienia automatyzacji',
+  // Social Media (migracja 121).
+  social_posts: 'Posty social media', social_post_targets: 'Publikacje w kanałach', social_accounts: 'Kanały social media',
+  social_queue_slots: 'Godziny kolejki postów', social_hashtag_groups: 'Zestawy hashtagów',
 };
 
 // Definicje modułów. Kolejność = kolejność w macierzy uprawnień.
@@ -414,6 +417,18 @@ export const MODULES = [
     resources: ['automation_workflows', 'automation_steps', 'automation_runs'],
     tabs: [], actions: [], fields: [],
   },
+  {
+    // Social Media (migracja 121): „Posty: tworzenie” = szkice i wysyłanie do akceptacji (własne posty
+    // autor edytuje zawsze); edycja/usuwanie = CUDZE posty. Publikację bez akceptacji daje akcja publish.
+    key: 'social', label: 'Social Media',
+    resources: ['social_posts', 'social_post_targets', 'social_accounts', 'social_queue_slots', 'social_hashtag_groups'],
+    tabs: [],
+    actions: [
+      { key: 'publish', label: 'Publikuj i planuj posty bez akceptacji (zatwierdzaj posty innych)' },
+      { key: 'manage_accounts', label: 'Podłączaj i odłączaj kanały (Facebook, Instagram)' },
+    ],
+    fields: [],
+  },
 ];
 
 // Zapis do tabel app_* (resource:null) wymaga akcji manage_* zamiast CRUD.
@@ -578,4 +593,6 @@ export const FN_CAPABILITY = {
   // Zastosowanie synchronizacji wymaga dodatkowo manage_users (sprawdzane w funkcji).
   'workspace-integration': 'action:settings:manage_integrations',
   'directory-sync': 'action:settings:manage_integrations',
+  // Social Media: bramka modułu; prawa szczegółowe (tworzenie / publikacja / kanały) w funkcji.
+  'social': 'module:social',
 };
