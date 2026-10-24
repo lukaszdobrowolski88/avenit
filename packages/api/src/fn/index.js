@@ -161,6 +161,9 @@ const MODULES = [
   // Faza 3 (migracja 120): pliki z Dysku Google / OneDrive / SharePoint bez kopiowania — tylko własne
   // połączenie osoby (krótko ważne tokeny dla Pickera, metadane wybranych plików), bez FN_CAPABILITY.
   'cloud-files',
+  // Social Media (migracja 121, src/social): posty, akceptacja, kolejka, kanały FB/IG. Bramka
+  // module:social z eksportu + szczegółowe prawa w funkcji; worker co minutę woła runForTenant.
+  'social',
 ];
 
 export async function registerFunctions(app) {

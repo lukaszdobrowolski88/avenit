@@ -100,6 +100,14 @@ export const REGISTRY = {
   automation_workflows: T('module:automation'),
   automation_steps: T('module:automation'),
   automation_runs: T('module:automation'),
+  // Social Media (migracja 121): posty i kanały tylko do odczytu (zapis i zmiany statusu przez fn
+  // social — akceptacja, prawo publikacji); token kanału nigdy nie wychodzi. Sloty kolejki
+  // i zestawy hashtagów — zwykły CRUD w zakresie modułu. social_oauth_states — poza rejestrem.
+  social_accounts: T('module:social', { readOnly: true, hiddenColumns: ['access_token_enc', 'fb_user_id', 'token_expires_at'] }),
+  social_posts: T('module:social', { readOnly: true }),
+  social_post_targets: T('module:social', { readOnly: true, hiddenColumns: ['lease_until', 'progress'] }),
+  social_queue_slots: T('module:social'),
+  social_hashtag_groups: T('module:social'),
   rsvp_invitations: T(null),
   // Stare zadania Kalendarza — przeniesione na Tablicę „Zadania” (source_kind 'tasks'); tylko odczyt.
   tasks: T('module:calendar', { readOnly: true }),

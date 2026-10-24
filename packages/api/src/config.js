@@ -82,6 +82,16 @@ const schema = z.object({
   GOOGLE_PICKER_API_KEY: z.string().optional(),
   GOOGLE_PICKER_APP_ID: z.string().optional(),
 
+  // Social Media (moduł social, docs/social-media.md): platformowa aplikacja Meta (Facebook Login
+  // for Business) — strony FB i konta firmowe IG. URI przekierowania:
+  // https://app.<APP_DOMAIN>/api/social/oauth/meta/callback. META_CONFIG_ID = konfiguracja
+  // „Facebook Login for Business” (gdy pusta — klasyczne zakresy). Puste ID/sekret = kanały
+  // niedostępne (karta „skonfiguruj na platformie”).
+  META_APP_ID: z.string().optional(),
+  META_APP_SECRET: z.string().optional(),
+  META_CONFIG_ID: z.string().optional(),
+  META_GRAPH_VERSION: z.string().default('v26.0'),
+
   // Połączenia audio/wideo (LiveKit SFU, usługa `livekit` w docker-compose). Bez klucza i sekretu
   // połączenia są wyłączone: fn call-* → 503 calls_disabled, web chowa przyciski.
   //  LIVEKIT_URL  — publiczny adres sygnalizacji dla klientów (domyślnie wss://rtc.APP_DOMAIN),

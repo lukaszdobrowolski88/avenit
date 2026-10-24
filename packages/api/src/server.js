@@ -88,6 +88,9 @@ export async function buildServer() {
   // Globalny callback integracji Google Workspace / Microsoft 365 (ten sam model: tenant ze state).
   const { default: integrationRoutes } = await import('./integrations/routes.js');
   await app.register(integrationRoutes);
+  // Social Media: callback logowania Meta + żądania usunięcia danych (tenant ze state / wszystkie).
+  const { default: socialRoutes } = await import('./social/routes.js');
+  await app.register(socialRoutes);
   // Publiczny formularz zgłoszeniowy ze strony głównej (avenit.pl).
   const { default: landingRoutes } = await import('./landing/routes.js');
   await app.register(landingRoutes);

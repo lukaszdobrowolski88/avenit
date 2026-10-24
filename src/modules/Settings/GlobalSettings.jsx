@@ -74,7 +74,7 @@ const TEAM_TABLES = [
 const MINISTRY_MODULE_KEYS = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka', 'tlumaczenia'];
 const SYSTEM_MODULE_KEYS = new Set(['dashboard', 'programs', 'calendar', 'members', 'finance', 'teaching', 'prayer', 'komunikator',
   'mailing', 'settings', 'push_campaigns', 'mail', 'boards', 'sms_campaigns', 'giving', 'care', 'attendance', 'serve', 'rooms',
-  'rsvp', 'sermons', 'automation', 'analytics', 'ai', 'forms']);
+  'rsvp', 'sermons', 'automation', 'analytics', 'ai', 'forms', 'social']);
 const teamCols = (def) => `id, full_name, email, phone${def.hasStatus ? ', status' : ''}${def.hasGroup ? ', group_id' : ''}`;
 
 // --- UI HELPERS ---

@@ -48,6 +48,7 @@ const KEY_KEYWORDS = {
   boards: 'tablice zadania kanban projekty',
   forms: 'ankiety zapisy formularze',
   rooms: 'sale rezerwacje zasoby',
+  social: 'social media facebook instagram posty planowanie publikacja',
   automation: 'automatyczne automatyzacje',
   analytics: 'statystyki raporty analityka ccli wykonania pieśni',
   ai: 'asystent ai',
