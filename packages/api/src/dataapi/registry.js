@@ -108,6 +108,8 @@ export const REGISTRY = {
   social_post_targets: T('module:social', { readOnly: true, hiddenColumns: ['lease_until', 'progress'] }),
   social_queue_slots: T('module:social'),
   social_hashtag_groups: T('module:social'),
+  social_ideas: T('module:social'),        // pomysły na posty (migracja 124)
+  social_media_items: T('module:social'),  // biblioteka mediów (migracja 124)
   rsvp_invitations: T(null),
   // Stare zadania Kalendarza — przeniesione na Tablicę „Zadania” (source_kind 'tasks'); tylko odczyt.
   tasks: T('module:calendar', { readOnly: true }),

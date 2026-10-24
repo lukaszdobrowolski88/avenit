@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Share2, Plus, CalendarDays, ListOrdered, ClipboardCheck, FileText, CheckCheck, Link2, AlertTriangle, Link as LinkIcon, Workflow } from 'lucide-react';
+import { Share2, Plus, CalendarDays, ListOrdered, ClipboardCheck, FileText, CheckCheck, Link2, AlertTriangle, Link as LinkIcon, Workflow, Lightbulb, GalleryVerticalEnd } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import Button from '../../components/Button';
@@ -20,6 +20,8 @@ import CalendarView from './components/CalendarView';
 import ChannelsTab from './components/ChannelsTab';
 import LinkPageTab from './components/LinkPageTab';
 import RulesTab from './components/RulesTab';
+import IdeasTab from './components/IdeasTab';
+import LibraryTab from './components/LibraryTab';
 
 function TabLabel({ label, count, tone }) {
   return (
@@ -139,6 +141,8 @@ export default function SocialModule() {
     { id: 'approval', label: <TabLabel label="Do akceptacji" count={counts.approval} />, icon: ClipboardCheck },
     { id: 'drafts', label: <TabLabel label="Szkice" count={counts.drafts} />, icon: FileText },
     { id: 'sent', label: <TabLabel label="Opublikowane" count={counts.failed} tone="danger" />, icon: CheckCheck },
+    { id: 'ideas', label: tr('Pomysły'), icon: Lightbulb },
+    { id: 'library', label: tr('Biblioteka'), icon: GalleryVerticalEnd },
     { id: 'links', label: tr('Strona linków'), icon: LinkIcon },
     { id: 'rules', label: tr('Reguły'), icon: Workflow },
     { id: 'channels', label: tr('Kanały'), icon: Link2 },
@@ -169,7 +173,7 @@ export default function SocialModule() {
         <p className="text-sm text-red-700 dark:text-red-300">{social.error}</p>
       ) : (
         <div className="space-y-4">
-          {!['channels', 'links', 'rules'].includes(tab) && (
+          {!['channels', 'links', 'rules', 'ideas', 'library'].includes(tab) && (
             <FilterBar accounts={accounts} filters={filters} onChange={setFilters}
               statuses={tab === 'calendar' ? ['draft', 'pending_approval', 'scheduled', 'published', 'partial', 'failed'] : tab === 'sent' ? ['published', 'partial', 'failed'] : null} />
           )}
@@ -182,6 +186,8 @@ export default function SocialModule() {
               onOpen={open} onAction={onAction} action={tab !== 'sent' ? createBtn : null} />
           )}
           {tab === 'channels' && <ChannelsTab accounts={accounts} access={access} meta={meta} onChanged={reload} />}
+          {tab === 'ideas' && <IdeasTab version={version} onCreatePost={(defaults) => setComposer({ post: null, defaults })} />}
+          {tab === 'library' && <LibraryTab onCreatePost={(defaults) => setComposer({ post: null, defaults })} />}
           {tab === 'links' && <LinkPageTab access={access} />}
           {tab === 'rules' && <RulesTab accounts={accounts} access={access} />}
         </div>

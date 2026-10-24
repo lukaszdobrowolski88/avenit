@@ -409,6 +409,12 @@ export async function savePost(ctx, access, body = {}) {
     return post;
   };
   const post = await withTx(ctx.db, run);
+  await registerMedia(ctx, [...media, ...targets.flatMap((t) => t.media || [])], email);
+  // Post z pomysłu (migracja 124) — pomysł pokazuje, że został użyty.
+  if (!existing && body.source_type === 'idea' && UUID_RE.test(String(body.source_id || ''))) {
+    await ctx.db.query(`UPDATE social_ideas SET post_id = $1, updated_at = now() WHERE id = $2`, [post.id, body.source_id])
+      .catch((e) => { if (e?.code !== '42P01') logErr(ctx, e, 'social: pomysł → post'); });
+  }
   const full = await loadPost(ctx.db, post.id);
   emit(ctx, 'social_posts', existing ? 'update' : 'insert', [full]);
 
@@ -421,6 +427,25 @@ export async function savePost(ctx, access, body = {}) {
   }
   if (intent === 'now') kickPublish(ctx);
   return full;
+}
+
+// Media użyte w poście trafiają do biblioteki (migracja 124) — do ponownego użycia w kolejnych postach.
+async function registerMedia(ctx, list, email) {
+  const seen = new Set();
+  for (const m of list || []) {
+    if (!m?.path || seen.has(m.path)) continue;
+    seen.add(m.path);
+    try {
+      await ctx.db.query(
+        `INSERT INTO social_media_items (path, mime, kind, width, height, size, duration, alt, name, source, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'post', $10) ON CONFLICT (path) DO NOTHING`,
+        [m.path, m.mime || null, m.kind === 'video' ? 'video' : 'image', m.width ? Math.round(m.width) : null, m.height ? Math.round(m.height) : null,
+          m.size ? Math.round(m.size) : null, m.duration || null, m.alt || null, m.name || null, email || null]);
+    } catch (e) {
+      if (e?.code === '42P01') return; // tenant przed migracją 124
+      logErr(ctx, e, 'social: biblioteka mediów');
+    }
+  }
 }
 
 const snippet = (text) => {

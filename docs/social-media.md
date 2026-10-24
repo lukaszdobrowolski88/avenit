@@ -108,6 +108,23 @@ jak w Bufferze. Migracja tenanta `121_social_media.sql`, kod: `packages/api/src/
 - **Caddy:** na hoście kościoła `/l/*` i `/linki` idą do API, każda ścieżka w osobnym bloku
   `handle`. Przed wdrożeniem sprawdź konfigurację: `caddy validate`.
 
+## Pomysły i biblioteka mediów (migracja 124)
+
+- **Pomysły** (`social_ideas`, zakładka „Pomysły”):
+  - tablica w trzech kolumnach: Pomysły / W przygotowaniu / Gotowe do publikacji;
+  - karta ma tytuł, treść, zdjęcia lub wideo i etykiety; między kolumnami przenosi się ją przeciągnięciem;
+  - „Utwórz post” otwiera kompozytor z treścią i mediami pomysłu, a zapisany post wiąże się z pomysłem
+    (`post_id`, znaczek „Użyty w poście”);
+  - w mobilce: szybkie dodanie pomysłu z tekstem i zdjęciem z galerii albo aparatu, przenoszenie
+    i „Utwórz post”.
+- **Biblioteka mediów** (`social_media_items`, zakładka „Biblioteka”):
+  - co trafia do biblioteki: pliki wgrane w zakładce, zaimportowane z modułu Pliki (kopia do bucketu
+    `social-media`, pobierana z uprawnieniami osoby) oraz media każdego zapisanego posta (dopisuje je serwer);
+  - szczegóły pliku: nazwa, tekst alternatywny, etykiety, „Użyj w nowym poście”;
+  - w kompozytorze przycisk „Z biblioteki” (web i mobilka) — także dla własnych zdjęć kanału.
+- Sprzątanie plików (`social-maintenance`) nie usuwa plików z biblioteki ani z pomysłów.
+- Prawa: zwykły CRUD w macierzy uprawnień — „Pomysły na posty” i „Biblioteka mediów”.
+
 ## Uprawnienia (Ustawienia → Uprawnienia → Social Media)
 
 | Prawo | Co daje |
@@ -187,6 +204,7 @@ mają dostępu, dopóki nie zostanie nadany w macierzy (np. służbie Media). Mo
 
 1. ~~Udostępnianie z wydarzeń i kazań, reguły, UTM i krótkie linki, strona linków~~ (zrobione, migracja 123).
 2. Asystent AI w kompozytorze (warianty tekstu, hashtagi, tłumaczenie PL/EN/UK) przez `ai-assist`.
+2a. ~~Pomysły i biblioteka mediów~~ (zrobione, migracja 124).
 3. Analityka postów (zasięg, reakcje, najlepsze godziny), wymaga `read_insights` /
    `instagram_manage_insights`.
 4. Kolejne sieci: Threads, LinkedIn, YouTube, Bluesky; przypomnienia do ręcznej publikacji (TikTok,

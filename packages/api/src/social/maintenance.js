@@ -90,12 +90,13 @@ async function referencedDirs(db) {
   const { rows } = await db.query(
     `SELECT media FROM social_posts UNION ALL SELECT media FROM social_post_targets WHERE media IS NOT NULL`);
   const dirs = new Set();
-  for (const r of rows) {
-    for (const m of Array.isArray(r.media) ? r.media : []) {
-      const dir = String(m?.path || '').split('/')[0];
-      if (dir) dirs.add(dir);
-    }
-  }
+  const add = (p) => { const dir = String(p || '').split('/')[0]; if (dir) dirs.add(dir); };
+  for (const r of rows) for (const m of Array.isArray(r.media) ? r.media : []) add(m?.path);
+  // Pomysły i biblioteka mediów (migracja 124) — ich plików też nie usuwamy.
+  const { rows: ideas } = await db.query(`SELECT media FROM social_ideas`).catch(() => ({ rows: [] }));
+  for (const r of ideas) for (const m of Array.isArray(r.media) ? r.media : []) add(m?.path);
+  const { rows: lib } = await db.query(`SELECT path FROM social_media_items`).catch(() => ({ rows: [] }));
+  for (const r of lib) add(r.path);
   return dirs;
 }
 
