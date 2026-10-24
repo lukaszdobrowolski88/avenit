@@ -34,13 +34,22 @@ vi.mock('../../lib/supabase', () => ({
     functions: {
       invoke: vi.fn(async (name, { body }) => {
         h.calls.push(body);
-        if (body.action === 'status') return { data: { accounts: [FB, IG], access: h.access, counts: { queue: h.posts.length, approval: 0, drafts: 0, failed: 0 }, meta: { configured: true }, me: { email: 'ja@k.pl' } }, error: null };
+        if (body.action === 'status') return { data: { accounts: [FB, IG], access: h.access, counts: { queue: h.posts.length, approval: 0, drafts: 0, failed: 0, inbox: 1 }, meta: { configured: true }, me: { email: 'ja@k.pl' } }, error: null };
         if (body.action === 'list') return { data: { posts: h.posts }, error: null };
         if (body.action === 'queue_preview') return { data: { next_slot: new Date(Date.now() + 86400_000).toISOString() }, error: null };
         if (body.action === 'share_prefill') return { data: { prefill: { content: `📅 Koncert ${body.kind}:${body.id}\nWięcej: https://k.avenit.pl/l/Ab3dE7x`, media: [], source_type: body.kind, source_id: body.id } }, error: null };
         if (body.action === 'link_page') return { data: { page: { enabled: true, title: 'Nasz kościół', bio: '', links: [{ label: 'Strona', url: 'https://k.pl', code: 'abc1234', clicks: 7 }], show_events: true, show_sermons: true, show_posts: true }, url: 'https://k.avenit.pl/linki' }, error: null };
         if (body.action === 'rules') return { data: { rules: [{ id: 'r1', name: 'Kazania na FB', trigger: 'sermon_published', action: 'draft', account_ids: [FB.id], enabled: true, config: {} }] }, error: null };
         if (body.action === 'settings') return { data: { settings: { shorten_links: true, utm: true } }, error: null };
+        if (body.action === 'analytics') return { data: { analytics: {
+          days: 30, totals: { posts: 4, publications: 6, views: 12400, reach: 8000, interactions: 530, link_clicks: 42, avg_interactions: 88.3, with_metrics: 6 },
+          weeks: [{ week: '2026-10-05', publications: 2, interactions: 120, views: 3000 }, { week: '2026-10-12', publications: 4, interactions: 410, views: 9400 }],
+          slots: [{ weekday: 7, bucket: 6, publications: 3, avg_interactions: 140 }, { weekday: 3, bucket: 3, publications: 2, avg_interactions: 35 }],
+          top: [{ post_id: 'p1', interactions: 300, views: 7000, reach: 5000, link_clicks: 12, content: 'Zapraszamy na nabożeństwo w niedzielę', media: [], targets: [{ id: 't1', provider: 'facebook', account_id: FB.id, account_name: FB.name, permalink: null }] }],
+          followers: { [FB.id]: [{ day: '2026-10-01', followers: 1200 }, { day: '2026-10-24', followers: 1260 }] },
+        } }, error: null };
+        if (body.action === 'inbox') return { data: { comments: [{ id: 'c1', provider: 'facebook', account_id: FB.id, account_name: FB.name, author_name: 'Kasia', message: 'O której zaczynacie?', created_time: '2026-10-24T10:00:00Z', status: 'new', hidden: false, post_content: 'Zapraszamy na nabożeństwo', post_media: [], replies: [] }] }, error: null };
+        if (body.action === 'inbox_reply' || body.action === 'inbox_mark') return { data: { ok: true }, error: null };
         if (body.action === 'activity') return { data: { activity: h.activity }, error: null };
         if (body.action === 'comment') { h.activity = [...h.activity, { id: 'c1', kind: 'comment', actor: 'ja@k.pl', note: body.body, created_at: new Date().toISOString() }]; return { data: { activity: h.activity }, error: null }; }
         if (body.action === 'save') return { data: { post: { id: 'new', status: body.intent === 'draft' ? 'draft' : 'scheduled', scheduled_at: new Date().toISOString(), targets: [] } }, error: null };
@@ -186,5 +195,27 @@ describe('SocialModule (dymny)', () => {
     fireEvent.click(imgs[imgs.length - 1].closest('button'));
     fireEvent.click(screen.getByRole('button', { name: 'Dodaj (1)' }));
     await waitFor(() => expect(document.querySelector('img[src*="abc/plik.jpg?w=192"]')).toBeTruthy());
+  });
+
+  it('analityka: wskaźniki, tygodnie, obserwujący i najlepsze pory', async () => {
+    renderModule();
+    tab('analytics');
+    expect(await screen.findByText('Opublikowane posty')).toBeTruthy();
+    expect(screen.getByText('12,4 tys.')).toBeTruthy();
+    expect(screen.getByText('530')).toBeTruthy();
+    expect(screen.getByText('+60')).toBeTruthy();
+    expect(screen.getByLabelText(/Nd, 18–21: średnio 140 interakcji/)).toBeTruthy();
+    expect(screen.getByText(/Zapraszamy na nabożeństwo w niedzielę/)).toBeTruthy();
+  });
+
+  it('komentarze: odpowiedź z skrzynki', async () => {
+    h.access = { ...h.access, engage: true };
+    renderModule();
+    tab('inbox');
+    expect(await screen.findByText('O której zaczynacie?')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Odpowiedz' }));
+    fireEvent.change(screen.getByLabelText('Odpowiedź'), { target: { value: 'O 10:00!' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Odpowiedz' }).pop());
+    await waitFor(() => expect(h.calls.find((c) => c.action === 'inbox_reply')).toMatchObject({ id: 'c1', message: 'O 10:00!' }));
   });
 });

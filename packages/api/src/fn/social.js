@@ -17,12 +17,17 @@
 //   post_links   { id } → krótkie linki posta z kliknięciami
 //   settings / settings_save { shorten_links, utm }       link_page / link_page_save (strona /linki)
 //   rules / rule_save / rule_delete — reguły automatyczne
+//   analytics { days, account_ids } — podsumowanie analityki; post_metrics { id } — metryki posta
+//   inbox { status: new|all|hidden, account_id?, post_id? } — skrzynka komentarzy
+//   inbox_reply { id, message }  inbox_hide { id, hidden }  inbox_delete { id }  inbox_mark { ids | all, status }
 // Worker (co minutę): runForTenant — należne posty publikowane, ponowienia, przetwarzanie IG.
 // Uprawnienia szczegółowe w funkcji (social/service.js → socialAccess); bramka: module:social.
 import { config, isProd } from '../config.js';
 import { canAccess } from '../dataapi/registry.js';
 import { sharePrefill, postLinks, loadSettings, saveSettings, loadLinkPage, saveLinkPage, withClicks, tenantBase } from '../social/links.js';
 import { listRules, saveRule, deleteRule } from '../social/rules.js';
+import { analyticsSummary, targetMetrics } from '../social/insights.js';
+import { listComments, newCommentsCount, replyComment, hideComment, deleteSocialComment, markComments } from '../social/comments.js';
 import { SocialError, metaConfigured, metaRedirectUri } from '../social/meta.js';
 import { startConnect, NONCE_COOKIE, STATE_TTL_MS } from '../social/accounts.js';
 import {
@@ -48,7 +53,8 @@ async function assertCanRead(ctx, access, table) {
 
 const ACTIONS = {
   async status(ctx, access) {
-    const [accounts, c] = await Promise.all([accountsPublic(ctx), counts(ctx, access)]);
+    const [accounts, c, inboxNew] = await Promise.all([accountsPublic(ctx), counts(ctx, access), newCommentsCount(ctx.db)]);
+    c.inbox = inboxNew;
     return {
       accounts, access: publicAccess(access), counts: c, me: { email: access.me?.email || null },
       meta: { configured: metaConfigured(), redirect_uri: metaRedirectUri() },
@@ -109,6 +115,18 @@ const ACTIONS = {
   async rules(ctx) { return { rules: await listRules(ctx) }; },
   async rule_save(ctx, access, body) { return { rules: await saveRule(ctx, access, body) }; },
   async rule_delete(ctx, access, body) { return { rules: await deleteRule(ctx, access, body) }; },
+  async analytics(ctx, access, body) { return { analytics: await analyticsSummary(ctx, body) }; },
+  async post_metrics(ctx, access, body) {
+    const post = await loadPost(ctx.db, body.id);
+    if (!post) throw new SocialError(MSG.notFound, { status: 404, code: 'NOT_FOUND' });
+    if (!canSeePost(access, post)) throw forbid(MSG.notYours);
+    return { metrics: await targetMetrics(ctx.db, post.id) };
+  },
+  async inbox(ctx, access, body) { return { comments: await listComments(ctx, body) }; },
+  inbox_reply: (ctx, access, body) => replyComment(ctx, access, body),
+  inbox_hide: (ctx, access, body) => hideComment(ctx, access, body),
+  inbox_delete: (ctx, access, body) => deleteSocialComment(ctx, access, body),
+  inbox_mark: (ctx, access, body) => markComments(ctx, access, body),
 };
 
 export async function socialAction(req, access) {

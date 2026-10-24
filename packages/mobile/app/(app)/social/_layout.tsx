@@ -9,6 +9,7 @@ export default function SocialLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="compose" />
         <Stack.Screen name="channels" />
+        <Stack.Screen name="inbox" />
         <Stack.Screen name="post/[id]" />
       </Stack>
     </ModuleGate>

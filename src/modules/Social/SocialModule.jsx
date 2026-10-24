@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Share2, Plus, CalendarDays, ListOrdered, ClipboardCheck, FileText, CheckCheck, Link2, AlertTriangle, Link as LinkIcon, Workflow, Lightbulb, GalleryVerticalEnd } from 'lucide-react';
+import { Share2, Plus, CalendarDays, ListOrdered, ClipboardCheck, FileText, CheckCheck, Link2, AlertTriangle, Link as LinkIcon, Workflow, Lightbulb, GalleryVerticalEnd, BarChart3, MessageCircle } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import Button from '../../components/Button';
@@ -22,6 +22,8 @@ import LinkPageTab from './components/LinkPageTab';
 import RulesTab from './components/RulesTab';
 import IdeasTab from './components/IdeasTab';
 import LibraryTab from './components/LibraryTab';
+import AnalyticsTab from './components/AnalyticsTab';
+import InboxTab from './components/InboxTab';
 
 function TabLabel({ label, count, tone }) {
   return (
@@ -44,6 +46,7 @@ export default function SocialModule() {
   const [composer, setComposer] = useState(null); // { post?, defaults? }
   const [detail, setDetail] = useState(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [inboxPost, setInboxPost] = useState(null); // komentarze jednego posta (link z powiadomienia)
   const myEmail = me?.email || '';
   const accountsById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const canCreate = access.create || access.publish;
@@ -83,10 +86,18 @@ export default function SocialModule() {
       .catch((e) => toast.error(e.message));
   }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Link z powiadomienia: /social?post=<id>.
+  // Link z powiadomienia: /social?post=<id> (szczegóły) albo /social?tab=inbox&post=<id> (komentarze posta).
   useEffect(() => {
     const id = params.get('post');
     if (!id) return;
+    if (params.get('tab') === 'inbox') {
+      setInboxPost(id);
+      setTab('inbox');
+      const next = new URLSearchParams(params);
+      next.delete('post');
+      setParams(next, { replace: true });
+      return;
+    }
     socialApi.get(id).then((p) => open(p)).catch((e) => toast.error(e.message));
     const next = new URLSearchParams(params);
     next.delete('post');
@@ -141,6 +152,8 @@ export default function SocialModule() {
     { id: 'approval', label: <TabLabel label="Do akceptacji" count={counts.approval} />, icon: ClipboardCheck },
     { id: 'drafts', label: <TabLabel label="Szkice" count={counts.drafts} />, icon: FileText },
     { id: 'sent', label: <TabLabel label="Opublikowane" count={counts.failed} tone="danger" />, icon: CheckCheck },
+    { id: 'inbox', label: <TabLabel label="Komentarze" count={counts.inbox} />, icon: MessageCircle },
+    { id: 'analytics', label: tr('Analityka'), icon: BarChart3 },
     { id: 'ideas', label: tr('Pomysły'), icon: Lightbulb },
     { id: 'library', label: tr('Biblioteka'), icon: GalleryVerticalEnd },
     { id: 'links', label: tr('Strona linków'), icon: LinkIcon },
@@ -173,7 +186,7 @@ export default function SocialModule() {
         <p className="text-sm text-red-700 dark:text-red-300">{social.error}</p>
       ) : (
         <div className="space-y-4">
-          {!['channels', 'links', 'rules', 'ideas', 'library'].includes(tab) && (
+          {!['channels', 'links', 'rules', 'ideas', 'library', 'inbox', 'analytics'].includes(tab) && (
             <FilterBar accounts={accounts} filters={filters} onChange={setFilters}
               statuses={tab === 'calendar' ? ['draft', 'pending_approval', 'scheduled', 'published', 'partial', 'failed'] : tab === 'sent' ? ['published', 'partial', 'failed'] : null} />
           )}
@@ -186,6 +199,10 @@ export default function SocialModule() {
               onOpen={open} onAction={onAction} action={tab !== 'sent' ? createBtn : null} />
           )}
           {tab === 'channels' && <ChannelsTab accounts={accounts} access={access} meta={meta} onChanged={reload} />}
+          {tab === 'inbox' && (
+            <InboxTab accounts={accounts} access={access} version={version} postFilter={inboxPost} onClearPostFilter={() => setInboxPost(null)} onChanged={refresh} />
+          )}
+          {tab === 'analytics' && <AnalyticsTab accounts={accounts} onOpenPost={(id) => socialApi.get(id).then(open).catch((e) => toast.error(e.message))} />}
           {tab === 'ideas' && <IdeasTab version={version} onCreatePost={(defaults) => setComposer({ post: null, defaults })} />}
           {tab === 'library' && <LibraryTab onCreatePost={(defaults) => setComposer({ post: null, defaults })} />}
           {tab === 'links' && <LinkPageTab access={access} />}

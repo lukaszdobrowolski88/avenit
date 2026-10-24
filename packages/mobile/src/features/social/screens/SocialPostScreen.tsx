@@ -14,7 +14,7 @@ import { showError } from '../../../lib/errors';
 import { toast } from '../../../lib/toast';
 import { effectiveTarget } from '@avenit/shared/src/lib/social.js';
 import {
-  mediaUri, socialApi, useActivity, useInvalidateSocial, useSocialPost, useSocialRealtime, useSocialStatus, type Activity, type SocialPost,
+  mediaUri, socialApi, useActivity, useInvalidateSocial, usePostMetrics, useSocialPost, useSocialRealtime, useSocialStatus, type Activity, type SocialPost,
 } from '../api';
 import { actionItems, permsFor, runPostAction, type PostAction } from '../actions';
 import { ChannelAvatar, StatusPill, TARGET_DOT, fmtWhen, targetLabel } from '../components/ui';
@@ -34,6 +34,7 @@ export const SocialPostScreen = () => {
   const status = useSocialStatus();
   const post = useSocialPost(id);
   const activity = useActivity(id);
+  const metrics = usePostMetrics(id);
   const invalidate = useInvalidateSocial();
   useSocialRealtime();
   const [rejecting, setRejecting] = useState(false);
@@ -156,6 +157,18 @@ export const SocialPostScreen = () => {
                     ) : null}
                   </View>
                   {t.error ? <Text style={{ marginTop: 6, fontSize: 12, lineHeight: 17, color: t.status === 'failed' ? B.danger : B.goldDeep, fontFamily: F.medium }}>{t.error}</Text> : null}
+                  {(() => {
+                    const m = (metrics.data ?? []).find((x) => x.target_id === t.id);
+                    if (!m) return null;
+                    const parts = [
+                      m.views != null ? `${m.views} wyświetleń` : null,
+                      m.reach != null ? `zasięg ${m.reach}` : null,
+                      `${m.likes ?? 0} reakcji`, `${m.comments ?? 0} kom.`,
+                      m.shares != null ? `${m.shares} udostępnień` : null,
+                      m.saves != null ? `${m.saves} zapisów` : null,
+                    ].filter(Boolean);
+                    return <Text style={{ marginTop: 6, fontSize: 12, color: B.ink2, fontFamily: F.semibold, fontVariant: ['tabular-nums'] }}>{parts.join(' · ')}</Text>;
+                  })()}
                   {custom ? <Text numberOfLines={3} style={{ marginTop: 6, fontSize: 12, lineHeight: 17, color: B.ink3, fontFamily: F.medium }}>{`Własna treść: ${own.content}`}</Text> : null}
                   {t.options?.first_comment ? <Text numberOfLines={2} style={{ marginTop: 4, fontSize: 12, color: B.ink4, fontFamily: F.medium }}>{`Pierwszy komentarz: ${t.options.first_comment}`}</Text> : null}
                 </View>

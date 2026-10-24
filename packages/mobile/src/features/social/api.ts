@@ -70,13 +70,13 @@ export interface SocialPost {
 }
 
 export interface SocialAccess {
-  view?: boolean; create?: boolean; update_all?: boolean; delete_all?: boolean; publish?: boolean; manage?: boolean; admin?: boolean;
+  view?: boolean; create?: boolean; update_all?: boolean; delete_all?: boolean; publish?: boolean; manage?: boolean; engage?: boolean; admin?: boolean;
 }
 
 export interface SocialStatus {
   accounts: SocialAccount[];
   access: SocialAccess;
-  counts: { queue: number; approval: number; drafts: number; failed: number };
+  counts: { queue: number; approval: number; drafts: number; failed: number; inbox?: number };
   meta: { configured: boolean };
   me: { email: string | null };
 }
@@ -305,3 +305,29 @@ export const libraryToMedia = (it: LibraryItem): SocialMedia => ({
   path: it.path, mime: it.mime || '', kind: it.kind === 'video' ? 'video' : 'image',
   width: it.width ?? null, height: it.height ?? null, size: it.size ?? null, duration: it.duration ?? null, alt: it.alt ?? null, name: it.name ?? null,
 });
+
+// ── Analityka i skrzynka komentarzy (migracja 125) ──────────────────────────
+export interface TargetMetrics {
+  target_id: string; provider: Provider; likes: number | null; comments: number | null; shares: number | null; saves: number | null;
+  views: number | null; reach: number | null; clicks: number | null; interactions: number | null;
+}
+export const usePostMetrics = (id?: string) =>
+  useQuery({ queryKey: ['social', 'metrics', id || ''], enabled: !!id, queryFn: () => socialCall<{ metrics: TargetMetrics[] }>('post_metrics', { id }).then((d) => d.metrics || []) });
+
+export interface InboxComment {
+  id: string; provider: Provider; account_id: string | null; account_name: string | null; author_name: string | null; message: string;
+  created_time: string | null; status: 'new' | 'read' | 'replied'; hidden: boolean; is_own: boolean; permalink?: string | null;
+  post_id?: string | null; post_content?: string | null; post_media?: SocialMedia[] | null; replies: InboxComment[];
+}
+export type InboxFilter = 'new' | 'all' | 'hidden';
+export const useInbox = (status: InboxFilter, postId?: string) =>
+  useQuery({
+    queryKey: ['social', 'inbox', status, postId || ''],
+    queryFn: () => socialCall<{ comments: InboxComment[] }>('inbox', { status, post_id: postId }).then((d) => d.comments || []),
+  });
+export const inboxApi = {
+  reply: (id: string, message: string) => socialCall('inbox_reply', { id, message }),
+  hide: (id: string, hidden: boolean) => socialCall('inbox_hide', { id, hidden }),
+  remove: (id: string) => socialCall('inbox_delete', { id }),
+  mark: (body: { ids?: string[]; all?: boolean; status: 'read' | 'new' }) => socialCall('inbox_mark', body),
+};

@@ -130,6 +130,7 @@ export const SocialHomeScreen = () => {
               const n = v.count && counts ? counts[v.count] : 0;
               return <Chip key={v.key} label={n ? `${v.label} ${n}` : v.label} on={mode === v.key} onPress={() => setView(v.key)} />;
             })}
+            <Chip label={counts?.inbox ? `Komentarze ${counts.inbox}` : 'Komentarze'} on={false} onPress={() => router.push('/(app)/social/inbox' as never)} />
             <Chip label="Pomysły" on={mode === 'ideas'} onPress={() => setMode('ideas')} />
             <Chip label="Kanały" on={false} onPress={() => router.push('/(app)/social/channels' as never)} />
           </ScrollView>

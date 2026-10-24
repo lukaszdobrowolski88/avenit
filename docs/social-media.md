@@ -125,6 +125,40 @@ jak w Bufferze. Migracja tenanta `121_social_media.sql`, kod: `packages/api/src/
 - Sprzątanie plików (`social-maintenance`) nie usuwa plików z biblioteki ani z pomysłów.
 - Prawa: zwykły CRUD w macierzy uprawnień — „Pomysły na posty” i „Biblioteka mediów”.
 
+## Analityka i skrzynka komentarzy (migracja 125)
+
+- **Analityka** (zakładka „Analityka”, worker `social-insights` co 3 h):
+  - **Skąd metryki:** dla publikacji z ostatnich 60 dni (świeże do 3 dni częściej).
+    - Facebook: reakcje, komentarze i udostępnienia z pól posta; wyświetlenia i zasięg z
+      `post_media_view` / `post_total_media_view_unique` — następców wycofanego w v26
+      `post_impressions_unique`.
+    - Instagram: polubienia i komentarze oraz `views`, `reach`, `saved`, `shares`, `total_interactions`.
+    - Gdy jakiejś metryki nie ma (Meta wycofuje metryki między wersjami), pytamy o każdą osobno
+      i pomijamy brakującą.
+  - **Obserwujący:** raz dziennie (`social_account_stats`).
+  - **Na ekranie:**
+    - okres 7 / 30 / 90 dni i filtr kanałów;
+    - wskaźniki: posty, wyświetlenia, zasięg, interakcje, średnia, kliknięcia krótkich linków;
+    - wykres interakcji tygodniowo;
+    - obserwujący z wykresem trendu;
+    - mapa najlepszych pór publikacji (dzień × 3 h, ostatnie 180 dni);
+    - tabela najlepszych postów;
+    - w szczegółach posta — metryki każdego kanału.
+- **Skrzynka komentarzy** (zakładka „Komentarze”, worker `social-comments` co 10 min):
+  - **Zakres:** komentarze i odpowiedzi spod publikacji z ostatnich 30 dni.
+  - **Własne odpowiedzi strony lub konta** nie trafiają do „Nowych”.
+  - **Filtry:** Nowe / Wszystkie / Ukryte, kanał, jeden post.
+  - **Akcje:** odpowiedź jako strona lub konto, ukrycie, usunięcie (u dostawcy), oznaczenie jako
+    przeczytane.
+  - **Powiadomienie** dla autora posta, jedno na przebieg synchronizacji.
+  - **Mobilka:** ekran „Komentarze” z odpowiadaniem z telefonu.
+- **Uprawnienie** `action:social:engage` („Odpowiadaj na komentarze i moderuj je”). Czytać skrzynkę
+  może każdy z dostępem do modułu.
+- **Kanały połączone przed tą wersją** nie mają nowych zgód (`read_insights`,
+  `instagram_manage_insights`, `pages_read_user_content`). Moduł pokazuje baner „Połącz
+  ponownie”. Bez tego analityka ma tylko reakcje i komentarze (bez wyświetleń i zasięgu), a
+  skrzynka komentarzy jest pusta.
+
 ## Uprawnienia (Ustawienia → Uprawnienia → Social Media)
 
 | Prawo | Co daje |
@@ -134,6 +168,7 @@ jak w Bufferze. Migracja tenanta `121_social_media.sql`, kod: `packages/api/src/
 | Posty: edycja / usuwanie | edycja / usuwanie **cudzych** postów (szkice innych też są wtedy widoczne) |
 | `action:social:publish` | publikowanie i planowanie bez akceptacji, zatwierdzanie i odsyłanie postów, ponawianie |
 | `action:social:manage_accounts` | podłączanie i odłączanie kanałów |
+| `action:social:engage` | odpowiadanie na komentarze, ukrywanie i usuwanie ich |
 | Zestawy hashtagów / godziny kolejki | zwykły CRUD |
 
 Administrator, rada i koordynator mają wszystko z presetów (`*`, `module:*`). Lider i członek nie
@@ -160,10 +195,13 @@ mają dostępu, dopóki nie zostanie nadany w macierzy (np. służbie Media). Mo
    - **Require App Secret: Yes** (Avenit wysyła `appsecret_proof` przy każdym wywołaniu).
 6. Uprawnienia, o które prosi aplikacja:
    - `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`
-   - `pages_manage_engagement` (pierwszy komentarz na FB)
+   - `pages_manage_engagement` (pierwszy komentarz na FB, odpowiedzi, ukrywanie i usuwanie komentarzy)
+   - `pages_read_user_content` (skrzynka komentarzy FB)
+   - `read_insights` (analityka FB)
    - `business_management` (strony z Business Managera)
    - `instagram_basic`, `instagram_content_publish`
-   - `instagram_manage_comments` (pierwszy komentarz na IG)
+   - `instagram_manage_comments` (pierwszy komentarz i skrzynka komentarzy IG)
+   - `instagram_manage_insights` (analityka IG)
 7. (Opcjonalnie) Facebook Login for Business → **Configurations** → nowa konfiguracja typu *User access
    token* z powyższymi uprawnieniami. Jej ID wpisz jako `META_CONFIG_ID`, wtedy dialog logowania
    bierze zakresy z konfiguracji.
@@ -205,8 +243,7 @@ mają dostępu, dopóki nie zostanie nadany w macierzy (np. służbie Media). Mo
 1. ~~Udostępnianie z wydarzeń i kazań, reguły, UTM i krótkie linki, strona linków~~ (zrobione, migracja 123).
 2. Asystent AI w kompozytorze (warianty tekstu, hashtagi, tłumaczenie PL/EN/UK) przez `ai-assist`.
 2a. ~~Pomysły i biblioteka mediów~~ (zrobione, migracja 124).
-3. Analityka postów (zasięg, reakcje, najlepsze godziny), wymaga `read_insights` /
-   `instagram_manage_insights`.
+3. ~~Analityka postów i skrzynka komentarzy~~ (zrobione, migracja 125).
 4. Kolejne sieci: Threads, LinkedIn, YouTube, Bluesky; przypomnienia do ręcznej publikacji (TikTok,
    relacje).
 5. Mobilka: akceptacja, szybki post ze zdjęciem z telefonu.

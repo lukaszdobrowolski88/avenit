@@ -427,6 +427,7 @@ export const MODULES = [
     actions: [
       { key: 'publish', label: 'Publikuj i planuj posty bez akceptacji (zatwierdzaj posty innych)' },
       { key: 'manage_accounts', label: 'Podłączaj i odłączaj kanały (Facebook, Instagram)' },
+      { key: 'engage', label: 'Odpowiadaj na komentarze i moderuj je (ukryj, usuń)' },
     ],
     fields: [],
   },

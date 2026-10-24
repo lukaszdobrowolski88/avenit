@@ -50,6 +50,13 @@ export const socialApi = {
   rules: () => socialCall('rules').then((d) => d.rules || []),
   saveRule: (rule) => socialCall('rule_save', rule).then((d) => d.rules || []),
   deleteRule: (id) => socialCall('rule_delete', { id }).then((d) => d.rules || []),
+  analytics: (params) => socialCall('analytics', params).then((d) => d.analytics),
+  postMetrics: (id) => socialCall('post_metrics', { id }).then((d) => d.metrics || []),
+  inbox: (params) => socialCall('inbox', params).then((d) => d.comments || []),
+  inboxReply: (id, message) => socialCall('inbox_reply', { id, message }),
+  inboxHide: (id, hidden) => socialCall('inbox_hide', { id, hidden }),
+  inboxDelete: (id) => socialCall('inbox_delete', { id }),
+  inboxMark: (body) => socialCall('inbox_mark', body),
 };
 
 // Link „Udostępnij w social media” z innych modułów (wydarzenie, kazanie).

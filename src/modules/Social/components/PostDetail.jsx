@@ -19,10 +19,13 @@ export default function PostDetail({ post, open, onClose, access, myEmail, accou
   const [previewId, setPreviewId] = useState(null);
   const previewTarget = useMemo(() => targets.find((t) => t.id === previewId) || targets[0], [targets, previewId]);
   const [links, setLinks] = useState([]);
+  const [metrics, setMetrics] = useState([]);
   useEffect(() => {
-    if (!open || !post?.id) { setLinks([]); return; }
+    if (!open || !post?.id) { setLinks([]); setMetrics([]); return; }
     socialApi.postLinks(post.id).then(setLinks).catch(() => setLinks([]));
+    socialApi.postMetrics(post.id).then(setMetrics).catch(() => setMetrics([]));
   }, [open, post?.id]);
+  const metricsOf = (targetId) => metrics.find((m) => m.target_id === targetId);
   if (!post) return null;
   const previewAccount = previewTarget
     ? (accountsById.get(previewTarget.account_id) || { provider: previewTarget.provider, name: previewTarget.account_name })
@@ -61,6 +64,18 @@ export default function PostDetail({ post, open, onClose, access, myEmail, accou
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate">{t.account_name}</p>
                   {t.error && <p className={`text-xs mt-0.5 ${t.status === 'failed' ? 'text-red-700 dark:text-red-300' : 'text-amber-700 dark:text-amber-300'}`}>{t.error}</p>}
                   {t.published_at && <p className="text-xs text-gray-500 mt-0.5">{fmtWhen(t.published_at)}</p>}
+                  {metricsOf(t.id) && (() => {
+                    const m = metricsOf(t.id);
+                    const parts = [
+                      m.views != null && tr('{n} wyświetleń', { n: m.views }),
+                      m.reach != null && tr('zasięg {n}', { n: m.reach }),
+                      tr('{n} reakcji', { n: m.likes || 0 }),
+                      tr('{n} kom.', { n: m.comments || 0 }),
+                      m.shares != null && tr('{n} udostępnień', { n: m.shares }),
+                      m.saves != null && tr('{n} zapisów', { n: m.saves }),
+                    ].filter(Boolean);
+                    return <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 tabular-nums">{parts.join(' · ')}</p>;
+                  })()}
                 </div>
                 <StatusPill color={TARGET_COLOR[t.status]}>{tr(TARGET_STATUS_LABELS[t.status] || t.status)}</StatusPill>
                 {t.permalink && (

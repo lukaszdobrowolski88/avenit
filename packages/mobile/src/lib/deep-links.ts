@@ -165,7 +165,9 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
   // /social?tab=channels (kanał do połączenia) → Kanały.
   if (bare === '/social' || bare === '/(app)/social') {
     const postId = queryParam(clean, 'post');
-    if (postId) router.push({ pathname: '/(app)/social/post/[id]', params: { id: postId } } as never);
+    const socialTab = queryParam(clean, 'tab');
+    if (socialTab === 'inbox') router.push({ pathname: '/(app)/social/inbox', params: postId ? { post: postId } : {} } as never);
+    else if (postId) router.push({ pathname: '/(app)/social/post/[id]', params: { id: postId } } as never);
     else if (queryParam(clean, 'tab') === 'channels') router.push('/(app)/social/channels' as never);
     else router.push('/(app)/social' as never);
     return;

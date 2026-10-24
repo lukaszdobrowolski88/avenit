@@ -21,6 +21,8 @@ import { renderTemplate, withUtm, findUrls, youtubeId, youtubeThumb, eventVars, 
 import { sharePrefill, saveLinkPage, saveSettings, loadSettings } from '../src/social/links.js';
 import socialPublicRoutes, { eventIcs } from '../src/social/pages.js';
 import { saveRule, runRules } from '../src/social/rules.js';
+import { runInsights, analyticsSummary, fetchTargetMetrics } from '../src/social/insights.js';
+import { syncComments, listComments, replyComment, hideComment, deleteSocialComment, markComments, newCommentsCount } from '../src/social/comments.js';
 import path from 'node:path';
 import { REGISTRY, getTableRule, invalidatePermissions } from '../src/dataapi/registry.js';
 import { MODULES, FN_CAPABILITY } from '@avenit/shared/src/permissions/catalog.js';
@@ -151,7 +153,7 @@ test('rejestr i katalog: posty i kanały tylko do odczytu, token ukryty, stany O
   assert.equal(getTableRule('social_queue_slots').resource, 'module:social');
   assert.equal(REGISTRY.social_oauth_states, undefined);
   const mod = MODULES.find((m) => m.key === 'social');
-  assert.deepEqual(mod.actions.map((a) => a.key), ['publish', 'manage_accounts']);
+  assert.deepEqual(mod.actions.map((a) => a.key), ['publish', 'manage_accounts', 'engage']);
   assert.equal(FN_CAPABILITY.social, 'module:social');
   assert.equal(publicAccount({ id: 'x', access_token_enc: 'SECRET', fb_user_id: '1' }).access_token_enc, undefined);
 });
@@ -161,6 +163,7 @@ const MIG = new URL('../db/tenant-migrations/121_social_media.sql', import.meta.
 const MIG122 = new URL('../db/tenant-migrations/122_social_activity.sql', import.meta.url);
 const MIG123 = new URL('../db/tenant-migrations/123_social_share.sql', import.meta.url);
 const MIG124 = new URL('../db/tenant-migrations/124_social_ideas_library.sql', import.meta.url);
+const MIG125 = new URL('../db/tenant-migrations/125_social_insights_comments.sql', import.meta.url);
 const uid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const DB_NAME = 'test_social';
 
@@ -230,6 +233,8 @@ before(async () => {
   await pg.exec(fs.readFileSync(MIG123, 'utf8'));
   await pg.exec(fs.readFileSync(MIG124, 'utf8'));
   await pg.exec(fs.readFileSync(MIG124, 'utf8'));
+  await pg.exec(fs.readFileSync(MIG125, 'utf8'));
+  await pg.exec(fs.readFileSync(MIG125, 'utf8'));
   await pg.exec(`
     CREATE TABLE IF NOT EXISTS app_settings (key text PRIMARY KEY, value text, updated_at timestamptz);
     CREATE TABLE events (id serial PRIMARY KEY, title text, date date, time text, end_time text, location text, details_html text,
@@ -249,8 +254,8 @@ after(() => { globalThis.fetch = realFetch; });
 test('migracja 121: tabele, moduł w menu raz, unikalny kanał', { skip }, async () => {
   const { rows } = await db.query(`SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'social_%' ORDER BY 1`);
   assert.deepEqual(rows.map((r) => r.table_name),
-    ['social_accounts', 'social_hashtag_groups', 'social_ideas', 'social_links', 'social_media_items', 'social_oauth_states', 'social_post_activity',
-      'social_post_targets', 'social_posts', 'social_queue_slots', 'social_rule_runs', 'social_rules']);
+    ['social_account_stats', 'social_accounts', 'social_comments', 'social_hashtag_groups', 'social_ideas', 'social_links', 'social_media_items',
+      'social_metrics', 'social_oauth_states', 'social_post_activity', 'social_post_targets', 'social_posts', 'social_queue_slots', 'social_rule_runs', 'social_rules']);
   const m = await db.query(`SELECT key, path, resource_key, component_name FROM app_modules WHERE key = 'social'`);
   assert.equal(m.rows.length, 1);
   assert.deepEqual(m.rows[0], { key: 'social', path: '/social', resource_key: 'module:social', component_name: 'SocialModule' });
@@ -840,6 +845,106 @@ test('pomysły i biblioteka: post z pomysłu wiąże pomysł, media trafiają do
   fs.rmSync(base, { recursive: true, force: true });
   assert.equal(getTableRule('social_ideas').resource, 'module:social');
   assert.equal(getTableRule('social_media_items').resource, 'module:social');
+});
+
+test('analityka: metryki FB (nieznana metryka pomijana) i IG, obserwujący, podsumowanie z najlepszymi porami', { skip }, async () => {
+  const ctx = ctxOf();
+  const pub = await accessOf(PUBLISHER);
+  await db.query(`UPDATE social_accounts SET status = 'active'`);
+  const post = await savePost(ctx, pub, { content: 'Analityka', media: [IMG()], targets: [{ account_id: FB.id }, { account_id: IG.id }], intent: 'draft' });
+  await db.query(`UPDATE social_posts SET status = 'published', published_at = now() - interval '2 days' WHERE id = $1`, [post.id]);
+  await db.query(`UPDATE social_post_targets SET status = 'published', published_at = now() - interval '2 days',
+    external_id = CASE provider WHEN 'facebook' THEN 'P1_500' ELSE 'M500' END WHERE post_id = $1`, [post.id]);
+  mockFetch([
+    [(c) => c.path === '/P1_500' && /reactions/.test(c.q.fields), json({ reactions: { summary: { total_count: 12 } }, comments: { summary: { total_count: 3 } }, shares: { count: 2 } })],
+    // Zestaw metryk z jedną wycofaną → błąd 100, potem pojedynczo (post_clicks już nie istnieje).
+    [(c) => c.path === '/P1_500/insights' && c.q.metric.includes(','), json({ error: { code: 100, message: 'Invalid metric' } }, 400)],
+    [(c) => c.path === '/P1_500/insights' && c.q.metric === 'post_total_media_view_unique', json({ data: [{ name: 'post_total_media_view_unique', values: [{ value: 340 }] }] })],
+    [(c) => c.path === '/P1_500/insights' && c.q.metric === 'post_media_view', json({ data: [{ name: 'post_media_view', values: [{ value: { organic: 400, paid: 20 } }] }] })],
+    [(c) => c.path === '/P1_500/insights' && c.q.metric === 'post_clicks', json({ error: { code: 100, message: 'deprecated' } }, 400)],
+    [(c) => c.path === '/M500' && c.q.fields === 'like_count,comments_count', json({ like_count: 40, comments_count: 5 })],
+    [(c) => c.path === '/M500/insights', json({ data: [{ name: 'views', values: [{ value: 900 }] }, { name: 'reach', values: [{ value: 600 }] }, { name: 'saved', values: [{ value: 7 }] }, { name: 'shares', values: [{ value: 4 }] }, { name: 'total_interactions', values: [{ value: 56 }] }] })],
+    [(c) => c.path === '/P1' && /followers_count/.test(c.q.fields), json({ followers_count: 1200 })],
+    [(c) => c.path === '/IG1' && c.q.fields === 'followers_count', json({ followers_count: 850 })],
+  ]);
+  const st = await runInsights(ctx);
+  assert.equal(st.metrics, 2);
+  assert.equal(st.followers, 2);
+  const { rows: ms } = await db.query(`SELECT provider, likes, comments, shares, saves, views, reach, clicks, interactions FROM social_metrics ORDER BY provider`);
+  assert.deepEqual(ms[0], { provider: 'facebook', likes: 12, comments: 3, shares: 2, saves: null, views: 420, reach: 340, clicks: null, interactions: 17 });
+  assert.deepEqual(ms[1], { provider: 'instagram', likes: 40, comments: 5, shares: 4, saves: 7, views: 900, reach: 600, clicks: null, interactions: 56 });
+  // Świeże metryki — drugi przebieg nic nie pobiera (poniżej 2 h), obserwujący raz dziennie.
+  mockFetch([]);
+  assert.deepEqual(await runInsights(ctx), { metrics: 0, followers: 0, errors: 0 });
+  const a = await analyticsSummary(ctx, { days: 30 });
+  assert.equal(a.totals.posts, 1);
+  assert.equal(a.totals.interactions, 73);
+  assert.equal(a.totals.views, 1320);
+  assert.equal(a.totals.avg_interactions, 36.5);
+  assert.equal(a.top[0].post_id, post.id);
+  assert.equal(a.top[0].interactions, 73);
+  assert.equal(a.slots.length >= 1, true);
+  assert.equal(a.followers[FB.id][0].followers, 1200);
+  const onlyIg = await analyticsSummary(ctx, { days: 30, account_ids: [IG.id] });
+  assert.equal(onlyIg.totals.interactions, 56);
+  assert.deepEqual(publicAccount({ provider: 'facebook', scopes: ['pages_manage_posts'] }).needs_reconnect_for, ['insights', 'comments']);
+  assert.deepEqual(publicAccount({ provider: 'instagram', scopes: [] }).needs_reconnect_for, []);
+});
+
+test('komentarze: synchronizacja (własne odpowiedzi, powiadomienie autora), odpowiedź, ukrycie, usunięcie, oznaczanie', { skip }, async () => {
+  const ctx = ctxOf();
+  await db.query(`INSERT INTO permission_grants (role, capability, allowed) VALUES ('publikujacy', 'action:social:engage', true)`);
+  invalidatePermissions(DB_NAME);
+  const pub = await accessOf(PUBLISHER);
+  assert.equal(pub.engage, true);
+  const ed = await accessOf(EDITOR);
+  mockFetch([
+    [(c) => c.path === '/P1_500/comments' && c.method === 'GET', json({ data: [
+      { id: 'c1', message: 'O której zaczynacie?', from: { id: 'u1', name: 'Kasia' }, created_time: '2026-10-24T10:00:00+0000', like_count: 1,
+        comments: { data: [{ id: 'c1r', message: 'O 10:00!', from: { id: 'P1', name: 'Kościół Wrocław' }, created_time: '2026-10-24T10:05:00+0000' }] } },
+      { id: 'c2', message: 'Super!', from: { id: 'u2', name: 'Tomek' }, created_time: '2026-10-24T11:00:00+0000' },
+    ] })],
+    [(c) => c.path === '/M500/comments' && c.method === 'GET', json({ data: [{ id: 'i1', text: 'Piękne zdjęcie 😍', username: 'ola', timestamp: '2026-10-24T12:00:00+0000', replies: { data: [] } }] })],
+  ]);
+  delivered.length = 0;
+  const st = await syncComments(ctx);
+  assert.equal(st.added, 3);
+  assert.equal(await newCommentsCount(db), 3);
+  assert.equal(delivered.length, 1);
+  assert.match(delivered[0].title, /Nowe komentarze pod Twoim postem \(3\)/);
+  const inbox = await listComments(ctx, { status: 'new' });
+  assert.deepEqual(inbox.map((c) => c.external_id), ['i1', 'c2', 'c1']);
+  const c1 = inbox.find((c) => c.external_id === 'c1');
+  assert.equal(c1.replies.length, 1);
+  assert.equal(c1.replies[0].is_own, true);
+  // Kolejna synchronizacja nie dubluje (świeży post — dopiero za 9 min).
+  await db.query(`UPDATE social_post_targets SET comments_synced_at = now() - interval '1 hour'`);
+  delivered.length = 0;
+  assert.equal((await syncComments(ctx)).added, 0);
+  assert.equal(delivered.length, 0);
+
+  await assert.rejects(replyComment(ctx, ed, { id: c1.id, message: 'x' }), (e) => e.code === 'FORBIDDEN');
+  const igc = inbox.find((c) => c.external_id === 'i1');
+  mockFetch([
+    [(c) => c.method === 'POST' && c.path === '/i1/replies', json({ id: 'i1r' })],
+    [(c) => c.method === 'POST' && c.path === '/c2', json({ success: true })],
+    [(c) => c.method === 'DELETE' && c.path === '/c2', json({ success: true })],
+  ]);
+  await replyComment(ctx, pub, { id: igc.id, message: 'Dziękujemy! 🙏' });
+  assert.equal(calls.find((c) => c.path === '/i1/replies').body.message, 'Dziękujemy! 🙏');
+  const { rows: [ir] } = await db.query(`SELECT status, replied_by FROM social_comments WHERE external_id = 'i1'`);
+  assert.deepEqual(ir, { status: 'replied', replied_by: 'pub@k.pl' });
+  assert.equal((await db.query(`SELECT is_own FROM social_comments WHERE external_id = 'i1r'`)).rows[0].is_own, true);
+  const c2 = inbox.find((c) => c.external_id === 'c2');
+  await hideComment(ctx, pub, { id: c2.id, hidden: true });
+  assert.equal(calls.find((c) => c.path === '/c2' && c.method === 'POST').body.is_hidden, 'true');
+  assert.equal((await listComments(ctx, { status: 'hidden' })).length, 1);
+  await markComments(ctx, pub, { ids: [c1.id], status: 'read' });
+  assert.deepEqual((await listComments(ctx, { status: 'new' })).map((c) => c.external_id), []);
+  await deleteSocialComment(ctx, pub, { id: c2.id });
+  assert.ok(calls.some((c) => c.method === 'DELETE' && c.path === '/c2' && c.q.access_token));
+  assert.equal((await db.query(`SELECT count(*)::int AS n FROM social_comments WHERE external_id = 'c2'`)).rows[0].n, 0);
+  await db.query(`DELETE FROM social_posts`);
 });
 
 test('worker: tenant bez migracji — fn nie wywraca workera', { skip }, async () => {

@@ -33,11 +33,22 @@ export const metaRedirectUri = () => `https://app.${config.APP_DOMAIN}/api/socia
 //   pages_manage_engagement — pierwszy komentarz jako strona,
 //   business_management — strony zarządzane przez Business Managera,
 //   instagram_basic + instagram_content_publish — publikacja na koncie firmowym IG,
-//   instagram_manage_comments — pierwszy komentarz na IG.
+//   instagram_manage_comments — pierwszy komentarz i skrzynka komentarzy IG,
+//   pages_read_user_content — czytanie komentarzy pod postami strony (skrzynka),
+//   read_insights + instagram_manage_insights — analityka postów (migracja 125).
 export const META_SCOPES = [
-  'pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'pages_manage_engagement',
-  'business_management', 'instagram_basic', 'instagram_content_publish', 'instagram_manage_comments',
+  'pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'pages_manage_engagement', 'pages_read_user_content',
+  'read_insights', 'business_management', 'instagram_basic', 'instagram_content_publish', 'instagram_manage_comments',
+  'instagram_manage_insights',
 ];
+// Zakresy potrzebne do analityki / komentarzy — kanał połączony wcześniej musi połączyć się ponownie.
+export const INSIGHTS_SCOPES = { facebook: ['read_insights'], instagram: ['instagram_manage_insights'] };
+export const COMMENTS_SCOPES = { facebook: ['pages_read_user_content', 'pages_manage_engagement'], instagram: ['instagram_manage_comments'] };
+export const missingScopes = (account, needed) => {
+  const have = new Set(account?.scopes || []);
+  if (!have.size) return [];
+  return (needed[account.provider] || []).filter((s) => !have.has(s));
+};
 export const REQUIRED_PAGE_SCOPE = 'pages_manage_posts';
 export const REQUIRED_IG_SCOPE = 'instagram_content_publish';
 
@@ -99,9 +110,9 @@ export async function graph(method, path, { token, params = {}, base } = {}) {
     .map(([k, v]) => [k, typeof v === 'object' ? JSON.stringify(v) : String(v)]));
   let res;
   try {
-    if (method === 'GET') {
+    if (method === 'GET' || method === 'DELETE') {
       for (const [k, v] of Object.entries(flat)) url.searchParams.set(k, v);
-      res = await globalThis.fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+      res = await globalThis.fetch(url, { method, headers: { Accept: 'application/json' } });
     } else {
       res = await globalThis.fetch(url, {
         method,

@@ -9,6 +9,7 @@
 import crypto from 'node:crypto';
 import { config } from '../config.js';
 import { encryptPassword, decryptPassword } from '../lib/mailcrypto.js';
+import { missingScopes, INSIGHTS_SCOPES, COMMENTS_SCOPES } from './meta.js';
 import {
   SocialError, metaConfigured, authorizeUrl, exchangeCode, longLivedToken, fetchMe, fetchPages, fetchGrantedScopes,
   canCreateOnPage, REQUIRED_PAGE_SCOPE, REQUIRED_IG_SCOPE,
@@ -48,6 +49,11 @@ export function publicAccount(a) {
     id: a.id, provider: a.provider, external_id: a.external_id, name: a.name, username: a.username,
     avatar_url: a.avatar_url, page_id: a.page_id, status: a.status, last_error: a.last_error,
     connected_by: a.connected_by, created_at: a.created_at, updated_at: a.updated_at,
+    // Kanał połączony przed analityką/komentarzami (migracja 125) — brak nowych zgód Meta.
+    needs_reconnect_for: [
+      ...(missingScopes(a, INSIGHTS_SCOPES).length ? ['insights'] : []),
+      ...(missingScopes(a, COMMENTS_SCOPES).length ? ['comments'] : []),
+    ],
   };
 }
 

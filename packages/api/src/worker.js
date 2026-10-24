@@ -17,6 +17,8 @@
 //  - social                  co 1 min (Social Media: publikacja zaplanowanych postów FB/IG, ponowienia, przetwarzanie IG)
 //  - social-maintenance      codziennie 04:20 Europe/Warsaw (Social Media: tokeny kanałów + zdjęcia profilowe, sprzątanie plików)
 //  - social-rules            co godzinę (minuta 7; Social Media: reguły — nowe kazanie, przypomnienie o wydarzeniu)
+//  - social-insights         co 3 h (minuta 23; Social Media: metryki postów i obserwujący kanałów)
+//  - social-comments         co 10 min (Social Media: skrzynka komentarzy FB/IG)
 //  - schedule-reminders      codziennie 18:00 Europe/Warsaw (grafik: przypomnienia + ponaglenia)
 //  - task-digest             codziennie 07:00 Europe/Warsaw (skrót zadań na dziś; nadrabianie przy starcie do 12:00)
 //  - board-import-legacy     przy starcie + codziennie 03:40 (stare tabele *_tasks → Tablice, raz na tenanta)
@@ -116,6 +118,9 @@ cron.schedule('* * * * *', exclusive(() => forEachTenant('social', 'social')));
 cron.schedule('20 4 * * *', exclusive(() => forEachTenant('social-maintenance', 'social-maintenance')), { timezone: 'Europe/Warsaw' });
 // Social Media: reguły automatyczne co godzinę — nowe kazania, przypomnienia o wydarzeniach za N dni.
 cron.schedule('7 * * * *', exclusive(() => forEachTenant('social-rules', 'social-rules')));
+// Social Media: analityka co 3 h (świeże posty częściej — wybiera funkcja) i komentarze co 10 min.
+cron.schedule('23 */3 * * *', exclusive(() => forEachTenant('social-insights', 'social-insights')));
+cron.schedule('*/10 * * * *', exclusive(() => forEachTenant('social-comments', 'social-comments')));
 // Komunikator+: kanały służb i grup domowych — skład z zespołów/grup (dopisz/usuń/role), co 10 min.
 cron.schedule('*/10 * * * *', exclusive(() => forEachTenant('chat-channels-sync', 'chat-channels-sync')));
 

@@ -95,11 +95,11 @@ export async function socialAccess(db, user, dbName) {
     `SELECT u.id, u.email, u.role, u.is_active, COALESCE(u.is_super_admin, false) AS is_super_admin
        FROM app_users u WHERE u.id = $1`, [user?.id]);
   const me = rows[0];
-  const none = { me, admin: false, view: false, create: false, updateAll: false, deleteAll: false, publish: false, manage: false };
+  const none = { me, admin: false, view: false, create: false, updateAll: false, deleteAll: false, publish: false, manage: false, engage: false };
   if (!me || me.is_active === false) return none;
   const { grants, adminRoles } = await loadGrants(db, dbName);
   if (me.is_super_admin || adminRoles.has(me.role) || grants === null) {
-    return { me, admin: true, view: true, create: true, updateAll: true, deleteAll: true, publish: true, manage: true };
+    return { me, admin: true, view: true, create: true, updateAll: true, deleteAll: true, publish: true, manage: true, engage: true };
   }
   const r = makeResolver(grants, { role: me.role, userId: me.id, isAdmin: false });
   const view = r.can('module:social');
@@ -111,11 +111,12 @@ export async function socialAccess(db, user, dbName) {
     deleteAll: r.can('res:social_posts:delete'),
     publish: r.can('action:social:publish'),
     manage: r.can('action:social:manage_accounts'),
+    engage: r.can('action:social:engage'),
   };
 }
 
 export const publicAccess = (a) => ({
-  view: a.view, create: a.create, update_all: a.updateAll, delete_all: a.deleteAll, publish: a.publish, manage: a.manage, admin: a.admin,
+  view: a.view, create: a.create, update_all: a.updateAll, delete_all: a.deleteAll, publish: a.publish, manage: a.manage, engage: a.engage, admin: a.admin,
 });
 
 // Osoby z danym prawem (powiadomienia do zatwierdzających).
