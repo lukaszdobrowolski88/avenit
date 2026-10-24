@@ -13,6 +13,10 @@ import {
   reschedulePost, unschedulePost,
 } from '../src/social/service.js';
 import { socialReturnUrl } from '../src/social/routes.js';
+import { listActivity, addComment, deleteComment } from '../src/social/service.js';
+import { checkAccounts, cleanupMedia, ORPHAN_DAYS } from '../src/social/maintenance.js';
+import os from 'node:os';
+import path from 'node:path';
 import { REGISTRY, getTableRule, invalidatePermissions } from '../src/dataapi/registry.js';
 import { MODULES, FN_CAPABILITY } from '@avenit/shared/src/permissions/catalog.js';
 import {
@@ -149,6 +153,7 @@ test('rejestr i katalog: posty i kanały tylko do odczytu, token ukryty, stany O
 
 // ── Prawdziwy SQL (PGlite) + atrapa Graph API ───────────────────────────────
 const MIG = new URL('../db/tenant-migrations/121_social_media.sql', import.meta.url);
+const MIG122 = new URL('../db/tenant-migrations/122_social_activity.sql', import.meta.url);
 const uid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const DB_NAME = 'test_social';
 
@@ -212,6 +217,9 @@ before(async () => {
   `);
   await pg.exec(fs.readFileSync(MIG, 'utf8'));
   await pg.exec(fs.readFileSync(MIG, 'utf8')); // idempotentna
+  await pg.exec(fs.readFileSync(MIG122, 'utf8'));
+  await pg.exec(fs.readFileSync(MIG122, 'utf8'));
+  await pg.exec(`CREATE TABLE storage_objects (bucket text, path text, uploaded_by text, updated_at timestamptz, PRIMARY KEY (bucket, path))`);
   await db.query(`INSERT INTO app_users (id, email, role, is_super_admin) VALUES
     ($1, 'admin@k.pl', 'superadmin', true), ($2, 'redaktor@k.pl', 'redaktor', false), ($3, 'pub@k.pl', 'publikujacy', false),
     ($4, 'czlonek@k.pl', 'czlonek', false), ($5, 'redaktor2@k.pl', 'redaktor', false)`, [ADMIN, EDITOR, PUBLISHER, OUTSIDER, EDITOR2]);
@@ -223,7 +231,7 @@ after(() => { globalThis.fetch = realFetch; });
 test('migracja 121: tabele, moduł w menu raz, unikalny kanał', { skip }, async () => {
   const { rows } = await db.query(`SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'social_%' ORDER BY 1`);
   assert.deepEqual(rows.map((r) => r.table_name),
-    ['social_accounts', 'social_hashtag_groups', 'social_oauth_states', 'social_post_targets', 'social_posts', 'social_queue_slots']);
+    ['social_accounts', 'social_hashtag_groups', 'social_oauth_states', 'social_post_activity', 'social_post_targets', 'social_posts', 'social_queue_slots']);
   const m = await db.query(`SELECT key, path, resource_key, component_name FROM app_modules WHERE key = 'social'`);
   assert.equal(m.rows.length, 1);
   assert.deepEqual(m.rows[0], { key: 'social', path: '/social', resource_key: 'module:social', component_name: 'SocialModule' });
@@ -495,6 +503,129 @@ test('worker: porzucona publikacja (dzierżawa minęła) nie jest ponawiana auto
   assert.equal(p.status, 'failed');
   assert.match(p.targets[0].error, /przerwana/);
   assert.equal(calls.length, 0);
+});
+
+test('walidacja rolki Facebooka: jedno wideo, 3–90 s, ostrzeżenie dla poziomego', () => {
+  assert.match(validateTarget('facebook', { media: [IMG()], options: { format: 'reel' } }).errors[0], /Rolka/);
+  assert.match(validateTarget('facebook', { media: [VID({ duration: 120 })], options: { format: 'reel' } }).errors[0], /90 s/);
+  const ok = validateTarget('facebook', { media: [VID({ duration: 30, width: 1920, height: 1080 })], options: { format: 'reel' } });
+  assert.deepEqual(ok.errors, []);
+  assert.match(ok.warnings[0], /9:16/);
+  assert.equal(facebookShape([VID()], { format: 'reel' }), 'reel');
+});
+
+test('historia i komentarze: zdarzenia z akcji, komentarz powiadamia autora, usuwa tylko autor komentarza', { skip }, async () => {
+  const ctx = ctxOf();
+  const ed = await accessOf(EDITOR);
+  const pub = await accessOf(PUBLISHER);
+  const post = await savePost(ctx, ed, { content: 'Historia', targets: [{ account_id: FB.id }], intent: 'submit' });
+  await rejectPost(ctx, pub, { id: post.id, note: 'Krócej' });
+  delivered.length = 0;
+  const list = await addComment(ctx, pub, { id: post.id, body: 'Skróć do dwóch zdań' });
+  assert.deepEqual(list.map((a) => a.kind), ['created', 'submitted', 'rejected', 'comment']);
+  assert.equal(list[2].note, 'Krócej');
+  assert.deepEqual(delivered.map((d) => d.user_email), ['redaktor@k.pl']);
+  // Szkic redaktora — drugi redaktor nie widzi historii.
+  await assert.rejects(listActivity(ctx, await accessOf(EDITOR2), { id: post.id }), (e) => e.code === 'FORBIDDEN');
+  await assert.rejects(deleteComment(ctx, ed, { comment_id: list[3].id }), (e) => e.code === 'FORBIDDEN');
+  const after = await deleteComment(ctx, pub, { comment_id: list[3].id });
+  assert.ok(!after.some((a) => a.kind === 'comment'));
+  await assert.rejects(addComment(ctx, pub, { id: post.id, body: '   ' }), /pusty/);
+  await db.query(`DELETE FROM social_posts`);
+});
+
+test('kolejka: kanał z własnymi godzinami używa tylko ich, pozostałe — wspólnych', { skip }, async () => {
+  const ctx = ctxOf();
+  const pub = await accessOf(PUBLISHER);
+  await saveSlots(ctx, pub, { slots: [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, time: '18:00' })) });
+  await saveSlots(ctx, pub, { account_id: IG.id, slots: [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, time: '07:15' })) });
+  const ig = await savePost(ctx, pub, { content: 'IG', media: [IMG()], targets: [{ account_id: IG.id }], intent: 'queue' });
+  const fb = await savePost(ctx, pub, { content: 'FB', targets: [{ account_id: FB.id }], intent: 'queue' });
+  const wi = warsawParts(ig.scheduled_at), wf = warsawParts(fb.scheduled_at);
+  assert.deepEqual([wi.hour, wi.minute], [7, 15]);
+  assert.deepEqual([wf.hour, wf.minute], [18, 0]);
+  await saveSlots(ctx, pub, { account_id: IG.id, slots: [] });
+  await db.query(`DELETE FROM social_posts`);
+});
+
+test('worker: rolka na Facebooku — start, wgranie z adresu, finish, przetwarzanie, publikacja', { skip }, async () => {
+  const ctx = ctxOf();
+  const pub = await accessOf(PUBLISHER);
+  const post = await savePost(ctx, pub, {
+    content: 'Rolka FB', media: [VID({ path: 'abc/r.mp4', duration: 20, width: 1080, height: 1920 })],
+    targets: [{ account_id: FB.id, options: { format: 'reel' } }], intent: 'now',
+  });
+  mockFetch([
+    [(c) => c.method === 'POST' && c.path === '/P1/video_reels' && c.body.upload_phase === 'start', json({ video_id: 'V9', upload_url: 'https://rupload.facebook.com/video-upload/v26.0/V9' })],
+    [(c) => c.host === 'rupload.facebook.com', json({ success: true })],
+    [(c) => c.method === 'POST' && c.path === '/P1/video_reels' && c.body.upload_phase === 'finish', json({ success: true })],
+    [(c) => c.method === 'GET' && c.path === '/V9' && c.q.fields === 'status', json({ status: { video_status: 'processing', publishing_phase: { status: 'in_progress' } } })],
+  ]);
+  await runDuePublishing(ctx);
+  let t = (await loadPost(db, post.id)).targets[0];
+  assert.equal(t.status, 'processing');
+  assert.equal(calls.find((c) => c.path === '/P1/video_reels' && c.body.upload_phase === 'finish').body.description, 'Rolka FB');
+  await db.query(`UPDATE social_post_targets SET next_attempt_at = now() - interval '1 second' WHERE id = $1`, [t.id]);
+  mockFetch([
+    [(c) => c.method === 'GET' && c.path === '/V9' && c.q.fields === 'status', json({ status: { video_status: 'ready', publishing_phase: { status: 'complete' } } })],
+    [(c) => c.method === 'GET' && c.path === '/V9' && c.q.fields === 'permalink_url', json({ permalink_url: '/reel/V9' })],
+  ]);
+  await runDuePublishing(ctx);
+  assert.ok(!calls.some((c) => c.body?.upload_phase === 'start')); // bez ponownego wgrywania
+  const done = await loadPost(db, post.id);
+  t = done.targets[0];
+  assert.equal(done.status, 'published');
+  assert.equal(t.permalink, 'https://www.facebook.com/reel/V9');
+  const hist = await listActivity(ctx, pub, { id: post.id });
+  assert.ok(hist.some((a) => a.kind === 'published'));
+  await db.query(`DELETE FROM social_posts`);
+});
+
+test('utrzymanie: odświeżenie zdjęć, nieważny token → do połączenia + powiadomienie autora zaplanowanego posta', { skip }, async () => {
+  const ctx = ctxOf();
+  const pub = await accessOf(PUBLISHER);
+  await db.query(`UPDATE social_accounts SET status = 'active', last_error = NULL`);
+  const post = await savePost(ctx, pub, { content: 'Za tydzień', media: [IMG()], targets: [{ account_id: IG.id }], intent: 'schedule',
+    scheduled_at: new Date(Date.now() + 7 * 86400_000).toISOString() });
+  mockFetch([
+    [(c) => c.path === '/P1', json({ id: 'P1', name: 'Kościół Wrocław Południe', picture: { data: { url: 'https://cdn/nowe.jpg' } } })],
+    [(c) => c.path === '/IG1', json({ error: { code: 190, message: 'Session has expired' } }, 400)],
+  ]);
+  delivered.length = 0;
+  const stats = await checkAccounts(ctx);
+  assert.deepEqual([stats.ok, stats.revoked], [1, 1]);
+  const { rows } = await db.query(`SELECT provider, name, avatar_url, status FROM social_accounts ORDER BY provider`);
+  assert.deepEqual(rows[0], { provider: 'facebook', name: 'Kościół Wrocław Południe', avatar_url: 'https://cdn/nowe.jpg', status: 'active' });
+  assert.equal(rows[1].status, 'revoked');
+  assert.ok(delivered.some((d) => d.user_email === 'pub@k.pl' && /ponownego połączenia/.test(d.title)));
+  // Drugi przebieg — już odłączony, bez ponownego powiadomienia.
+  delivered.length = 0;
+  await checkAccounts(ctx);
+  assert.equal(delivered.length, 0);
+  await db.query(`UPDATE social_accounts SET status = 'active', last_error = NULL`);
+  await db.query(`DELETE FROM social_posts WHERE id = $1`, [post.id]);
+});
+
+test('utrzymanie: usuwa stare nieużywane katalogi plików, zostawia używane i świeże', { skip }, async () => {
+  const ctx = ctxOf();
+  const pub = await accessOf(PUBLISHER);
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'social-'));
+  const root = path.join(base, 'schwro', 'social-media');
+  for (const d of ['uzywany', 'stary', 'swiezy']) {
+    fs.mkdirSync(path.join(root, d), { recursive: true });
+    fs.writeFileSync(path.join(root, d, 'plik.jpg'), 'x');
+  }
+  fs.mkdirSync(path.join(base, 'schwro', '.thumbs', 'social-media', 'stary'), { recursive: true });
+  const old = new Date(Date.now() - (ORPHAN_DAYS + 1) * 86400_000);
+  fs.utimesSync(path.join(root, 'stary'), old, old);
+  fs.utimesSync(path.join(root, 'uzywany'), old, old);
+  await savePost(ctx, pub, { content: 'x', media: [IMG({ path: 'uzywany/plik.jpg' })], targets: [{ account_id: FB.id }], intent: 'draft' });
+  const out = await cleanupMedia(ctx, { baseDir: base });
+  assert.equal(out.removed, 1);
+  assert.deepEqual(fs.readdirSync(root).sort(), ['swiezy', 'uzywany']);
+  assert.ok(!fs.existsSync(path.join(base, 'schwro', '.thumbs', 'social-media', 'stary')));
+  fs.rmSync(base, { recursive: true, force: true });
+  await db.query(`DELETE FROM social_posts`);
 });
 
 test('worker: tenant bez migracji — fn nie wywraca workera', { skip }, async () => {

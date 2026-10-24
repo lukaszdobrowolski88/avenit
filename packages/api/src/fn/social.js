@@ -11,6 +11,8 @@
 //   delete       { id }  duplicate { id }
 //   slots        — harmonogram kolejki; slots_save { account_id?, slots: [{ weekday, time }] }
 //   queue_preview { account_ids, id? } → { next_slot }
+//   activity     { id } → { activity }  (historia + komentarze zespołu)
+//   comment      { id, body } → { activity }   comment_delete { comment_id } → { activity }
 // Worker (co minutę): runForTenant — należne posty publikowane, ponowienia, przetwarzanie IG.
 // Uprawnienia szczegółowe w funkcji (social/service.js → socialAccess); bramka: module:social.
 import { config, isProd } from '../config.js';
@@ -19,7 +21,7 @@ import { startConnect, NONCE_COOKIE, STATE_TTL_MS } from '../social/accounts.js'
 import {
   ctxFromRequest, ctxFromWorker, socialAccess, publicAccess, listPosts, loadPost, savePost, approvePost, rejectPost,
   unschedulePost, reschedulePost, publishNow, retryPost, deletePost, duplicatePost, getSlots, saveSlots, previewQueue,
-  removeAccount, accountsPublic, counts, runDuePublishing, MSG,
+  removeAccount, accountsPublic, counts, runDuePublishing, MSG, canSeePost, listActivity, addComment, deleteComment,
 } from '../social/service.js';
 
 export const name = 'social';
@@ -47,8 +49,7 @@ const ACTIONS = {
   async get(ctx, access, body) {
     const post = await loadPost(ctx.db, body.id);
     if (!post) throw new SocialError(MSG.notFound, { status: 404, code: 'NOT_FOUND' });
-    const mine = String(post.created_by || '').toLowerCase() === String(access.me?.email || '').toLowerCase();
-    if (post.status === 'draft' && !mine && !access.admin && !access.updateAll && !access.publish) throw forbid(MSG.notYours);
+    if (!canSeePost(access, post)) throw forbid(MSG.notYours);
     return { post };
   },
   async save(ctx, access, body) { return { post: await savePost(ctx, access, body) }; },
@@ -63,6 +64,9 @@ const ACTIONS = {
   async slots(ctx) { return { slots: await getSlots(ctx) }; },
   async slots_save(ctx, access, body) { return { slots: await saveSlots(ctx, access, body) }; },
   queue_preview: (ctx, access, body) => previewQueue(ctx, access, body),
+  async activity(ctx, access, body) { return { activity: await listActivity(ctx, access, body) }; },
+  async comment(ctx, access, body) { return { activity: await addComment(ctx, access, body) }; },
+  async comment_delete(ctx, access, body) { return { activity: await deleteComment(ctx, access, body) }; },
 };
 
 export async function socialAction(req, access) {

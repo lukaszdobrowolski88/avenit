@@ -39,6 +39,30 @@ jak w Bufferze. Migracja tenanta `121_social_media.sql`, kod: `packages/api/src/
     (sharp) i przycina ją do środka, gdy proporcje wychodzą poza zakres. Kompozytor ostrzega o tym
     z wyprzedzeniem.
 
+- **Komentarze i historia** (migracja 122, `social_post_activity`): komentarze zespołu pod postem
+  (powiadomienie dla autora, zatwierdzającego i wcześniej komentujących) i historia zdarzeń: kto
+  utworzył, wysłał, zatwierdził, odesłał, zaplanował; opublikowano / błąd.
+- **Rolki na Facebooku**: format „Rolka” w kanale FB (Reels API: start → wgranie z adresu → finish
+  → przetwarzanie, potem publikacja; pionowe wideo 3–90 s).
+- **Godziny kolejki per kanał**: kanał z własnymi godzinami używa tylko ich, pozostałe — wspólnych.
+- **Utrzymanie codziennie o 04:20** (`fn/social-maintenance.js`):
+  - test tokenu każdego kanału. Nieważny token daje status „Połącz ponownie” i powiadomienie
+    zarządzających oraz autorów zaplanowanych postów, zanim publikacja się nie uda;
+  - odświeżenie nazw i zdjęć profilowych, bo adresy z CDN Meta wygasają;
+  - usunięcie katalogów plików, których nie używa żaden post, starszych niż 3 dni.
+- **Kompozytor (web)**: pytanie przed zamknięciem z niezapisanymi zmianami. Nowy post zapisuje się
+  w przeglądarce i można go przywrócić. Kanał może mieć własne zdjęcia lub wideo.
+- **Filtry** kalendarza i list: kanały, status, „Tylko moje”.
+- **Aplikacja mobilna** (natywny moduł `app/(app)/social`):
+  - kolejka, do akceptacji, szkice, opublikowane;
+  - kompozytor ze zdjęciami i wideo z galerii albo aparatu, formatami, pierwszym komentarzem
+    i terminem;
+  - szczegóły posta z akceptacją, ponowieniem, komentarzami i historią;
+  - kanały ze statusem i harmonogramem.
+  
+  Łączenie kanałów (logowanie Meta) otwiera web z biletem SSO. Linki z powiadomień
+  `/social?post=…` otwierają ekran posta.
+
 ## Uprawnienia (Ustawienia → Uprawnienia → Social Media)
 
 | Prawo | Co daje |

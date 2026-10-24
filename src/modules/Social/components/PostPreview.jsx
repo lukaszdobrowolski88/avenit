@@ -49,7 +49,30 @@ function Carousel({ media, aspect }) {
   );
 }
 
-function FacebookPreview({ account, content, media }) {
+// Rolka (FB i IG): pionowa klatka 9:16 z podpisem na dole.
+function VerticalPreview({ account, content, media, label, handle }) {
+  return (
+    <div className="relative mx-auto w-[240px] rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '9 / 16' }}>
+      {media[0] && (isVideo(media[0])
+        ? <video src={mediaSrc(media[0])} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+        : <img src={mediaSrc(media[0])} alt={media[0].alt || ''} className="w-full h-full object-cover" />)}
+      <div className="absolute inset-x-0 top-0 p-2.5 flex items-center gap-2 bg-gradient-to-b from-black/50 to-transparent">
+        <ChannelAvatar account={account} size={26} />
+        <span className="text-[12px] font-semibold text-white truncate">{handle}</span>
+        <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide text-white/80">{label}</span>
+      </div>
+      {content && (
+        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/70 to-transparent">
+          <p className="text-[12px] text-white line-clamp-3 whitespace-pre-wrap">{content}</p>
+        </div>
+      )}
+      {!media[0] && <p className="absolute inset-0 flex items-center justify-center text-white/60 text-sm">{tr('Dodaj zdjęcie lub wideo')}</p>}
+    </div>
+  );
+}
+
+function FacebookPreview({ account, content, media, options }) {
+  if (options?.format === 'reel') return <VerticalPreview account={account} content={content} media={media} label={tr('Rolka')} handle={account?.name} />;
   const link = !media.length ? firstUrl(content) : null;
   return (
     <div className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -143,5 +166,5 @@ export default function PostPreview({ account, content, media, options }) {
   if (!account) return null;
   return account.provider === 'instagram'
     ? <InstagramPreview account={account} content={content} media={media || []} options={options || {}} />
-    : <FacebookPreview account={account} content={content} media={media || []} />;
+    : <FacebookPreview account={account} content={content} media={media || []} options={options || {}} />;
 }

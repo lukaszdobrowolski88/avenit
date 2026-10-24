@@ -13,7 +13,7 @@ import { supabase } from '../../../lib/supabase';
 import { useCan } from '../../../components/Can';
 import { socialApi } from '../lib/socialApi';
 import { WEEKDAY_LABELS } from '@avenit/shared/src/lib/social.js';
-import ChannelAvatar, { providerLabel } from './ChannelAvatar';
+import ChannelAvatar, { providerLabel, channelName, ProviderIcon } from './ChannelAvatar';
 
 function Card({ icon: Icon, title, subtitle, actions, children }) {
   return (
@@ -110,14 +110,20 @@ function Accounts({ accounts, access, meta, onChanged }) {
 }
 
 // Harmonogram kolejki: dla każdego dnia tygodnia lista godzin (czas polski), wspólny dla kanałów.
-function QueueSlots({ canEdit }) {
-  const [slots, setSlots] = useState(null);
+function QueueSlots({ canEdit, accounts }) {
+  const [all, setAll] = useState(null);
+  const [scope, setScope] = useState(null); // null = wspólny harmonogram, inaczej id kanału
   const [draft, setDraft] = useState(null);
   const [adding, setAdding] = useState({});
 
   useEffect(() => {
-    socialApi.slots().then((s) => setSlots(s.filter((x) => !x.account_id))).catch(() => setSlots([]));
+    socialApi.slots().then(setAll).catch(() => setAll([]));
   }, []);
+  // Godziny bieżącego zakresu (wspólne albo własne kanału).
+  const slots = useMemo(() => (all || []).filter((x) => (x.account_id || null) === scope), [all, scope]);
+  const ownChannels = useMemo(() => new Set((all || []).filter((x) => x.account_id).map((x) => x.account_id)), [all]);
+  const usesShared = scope !== null && !slots.length && draft === null;
+  const pickScope = (v) => { setScope(v || null); setDraft(null); setAdding({}); };
 
   const byDay = useMemo(() => {
     const m = new Map();
@@ -127,7 +133,7 @@ function QueueSlots({ canEdit }) {
     return m;
   }, [slots, draft]);
 
-  if (slots === null) return <Spinner />;
+  if (all === null) return <Spinner />;
   const editing = draft !== null;
   const current = draft || slots;
 
@@ -147,8 +153,8 @@ function QueueSlots({ canEdit }) {
   };
   const save = async () => {
     try {
-      const saved = await socialApi.saveSlots(draft.map((s) => ({ weekday: Number(s.weekday), time: s.time })));
-      setSlots(saved.filter((x) => !x.account_id));
+      const saved = await socialApi.saveSlots(draft.map((s) => ({ weekday: Number(s.weekday), time: s.time })), scope);
+      setAll(saved);
       setDraft(null);
       toast.success(tr('Harmonogram kolejki zapisany.'));
     } catch (e) { toast.error(e.message); }
@@ -163,6 +169,27 @@ function QueueSlots({ canEdit }) {
           <Button size="sm" onClick={save}>{tr('Zapisz')}</Button>
         </>
       )}>
+      {accounts.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap mb-3" role="tablist" aria-label={tr('Harmonogram dla')}>
+          {[{ id: null, label: tr('Wspólny dla kanałów') }, ...accounts.map((a) => ({ id: a.id, label: channelName(a), acc: a }))].map((o) => (
+            <button key={o.id || 'all'} type="button" role="tab" aria-selected={scope === o.id} onClick={() => pickScope(o.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${scope === o.id ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}>
+              {o.acc && <ProviderIcon provider={o.acc.provider} size={12} />}{o.label}
+              {o.acc && ownChannels.has(o.id) && <span className="w-1.5 h-1.5 rounded-full bg-accent-primary" aria-label={tr('własne godziny')} />}
+            </button>
+          ))}
+        </div>
+      )}
+      {usesShared ? (
+        <div className="rounded-xl bg-gray-50 dark:bg-gray-900/40 px-4 py-4 text-sm text-gray-600 dark:text-gray-300 space-y-3">
+          <p>{tr('Ten kanał korzysta ze wspólnego harmonogramu. Ustaw własne godziny, jeśli ma publikować o innych porach (np. Instagram wieczorem).')}</p>
+          {canEdit && (
+            <Button size="sm" variant="outline" onClick={() => setDraft((all || []).filter((x) => !x.account_id).map((x) => ({ weekday: x.weekday, time: x.time })))}>
+              {tr('Ustaw własne godziny')}
+            </Button>
+          )}
+        </div>
+      ) : (
       <div className="space-y-1">
         {WEEKDAY_LABELS.map((label, i) => {
           const weekday = i + 1;
@@ -191,7 +218,15 @@ function QueueSlots({ canEdit }) {
             </div>
           );
         })}
+        {canEdit && scope !== null && slots.length > 0 && draft === null && (
+          <div className="pt-3">
+            <Button size="sm" variant="ghost" onClick={async () => {
+              try { setAll(await socialApi.saveSlots([], scope)); toast.success(tr('Kanał wrócił do wspólnego harmonogramu.')); } catch (e) { toast.error(e.message); }
+            }}>{tr('Wróć do wspólnego harmonogramu')}</Button>
+          </div>
+        )}
       </div>
+      )}
     </Card>
   );
 }
@@ -273,7 +308,7 @@ export default function ChannelsTab({ accounts, access, meta, onChanged }) {
         <Accounts accounts={accounts} access={access} meta={meta} onChanged={onChanged} />
         <HashtagGroups />
       </div>
-      <QueueSlots canEdit={access.publish || access.manage} />
+      <QueueSlots canEdit={access.publish || access.manage} accounts={accounts} />
     </div>
   );
 }

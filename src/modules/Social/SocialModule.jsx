@@ -10,7 +10,8 @@ import { toast } from '../../lib/toast';
 import { confirmDialog, promptDialog } from '../../lib/dialog';
 import useSocial from './hooks/useSocial';
 import { socialApi } from './lib/socialApi';
-import { connectMessage } from './lib/socialUi';
+import { connectMessage, EMPTY_FILTERS } from './lib/socialUi';
+import FilterBar from './components/FilterBar';
 import { EDITABLE_STATUSES } from '@avenit/shared/src/lib/social.js';
 import Composer, { fmtWhen } from './components/Composer';
 import PostDetail from './components/PostDetail';
@@ -38,6 +39,7 @@ export default function SocialModule() {
   const [tab, setTab] = useState('calendar');
   const [composer, setComposer] = useState(null); // { post?, defaults? }
   const [detail, setDetail] = useState(null);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const myEmail = me?.email || '';
   const accountsById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const canCreate = access.create || access.publish;
@@ -147,13 +149,17 @@ export default function SocialModule() {
       {loading ? <Spinner center label={tr('Ładowanie…')} /> : social.error ? (
         <p className="text-sm text-red-700 dark:text-red-300">{social.error}</p>
       ) : (
-        <div>
+        <div className="space-y-4">
+          {tab !== 'channels' && (
+            <FilterBar accounts={accounts} filters={filters} onChange={setFilters}
+              statuses={tab === 'calendar' ? ['draft', 'pending_approval', 'scheduled', 'published', 'partial', 'failed'] : tab === 'sent' ? ['published', 'partial', 'failed'] : null} />
+          )}
           {tab === 'calendar' && (
-            <CalendarView version={version} access={access} myEmail={myEmail} onOpen={open}
+            <CalendarView version={version} access={access} myEmail={myEmail} filters={filters} onOpen={open}
               onCreate={(defaults) => setComposer({ post: null, defaults })} onChanged={reload} />
           )}
           {['queue', 'approval', 'drafts', 'sent'].includes(tab) && (
-            <PostList view={tab} version={version} access={access} myEmail={myEmail} accountsById={accountsById}
+            <PostList view={tab} version={version} access={access} myEmail={myEmail} accountsById={accountsById} filters={filters}
               onOpen={open} onAction={onAction} action={tab !== 'sent' ? createBtn : null} />
           )}
           {tab === 'channels' && <ChannelsTab accounts={accounts} access={access} meta={meta} onChanged={reload} />}

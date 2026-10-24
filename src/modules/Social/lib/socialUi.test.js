@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   monthGrid, weekDays, groupByDay, postsByDay, moveToDay, postPermissions, appendBlock, snippet, connectMessage,
-  toLocalFields, fromLocalFields, dayKey,
+  toLocalFields, fromLocalFields, dayKey, filterPosts, filtersActive, EMPTY_FILTERS,
 } from './socialUi';
 
 describe('kalendarz', () => {
@@ -85,5 +85,22 @@ describe('tekst', () => {
     expect(connectMessage(new URLSearchParams('sm_result=connected&sm_added=2'))).toMatchObject({ tone: 'success', n: 2 });
     expect(connectMessage(new URLSearchParams('sm_result=error&sm_reason=no_pages')).text).toMatch(/stron/);
     expect(connectMessage(new URLSearchParams(''))).toBeNull();
+  });
+});
+
+describe('filtry', () => {
+  const posts = [
+    { id: 'a', status: 'scheduled', created_by: 'Ja@k.pl', targets: [{ account_id: 'fb' }] },
+    { id: 'b', status: 'published', created_by: 'inny@k.pl', targets: [{ account_id: 'ig' }, { account_id: 'fb' }] },
+    { id: 'c', status: 'scheduled', created_by: 'inny@k.pl', targets: [{ account_id: 'ig' }] },
+  ];
+  it('bez filtrów — wszystko', () => {
+    expect(filtersActive(EMPTY_FILTERS)).toBe(false);
+    expect(filterPosts(posts, EMPTY_FILTERS)).toHaveLength(3);
+  });
+  it('kanał, status i tylko moje łączą się', () => {
+    expect(filterPosts(posts, { accounts: ['fb'] }).map((p) => p.id)).toEqual(['a', 'b']);
+    expect(filterPosts(posts, { accounts: ['ig'], status: 'scheduled' }).map((p) => p.id)).toEqual(['c']);
+    expect(filterPosts(posts, { mine: true }, 'ja@k.pl').map((p) => p.id)).toEqual(['a']);
   });
 });

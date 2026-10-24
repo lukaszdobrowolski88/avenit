@@ -1,6 +1,5 @@
 // Social Media — czysta logika widoków (bez Reacta), testowana w socialUi.test.js.
 import { STATUS_COLORS } from '../../../components/ui/DataTable';
-import { EDITABLE_STATUSES } from '@avenit/shared/src/lib/social.js';
 
 // Kolory statusów — bez „tęczy”: szarość, musztarda marki, zieleń/czerwień tylko jako wynik.
 export const STATUS_COLOR = {
@@ -112,25 +111,8 @@ export function moveToDay(iso, targetDate) {
 
 const lower = (v) => String(v || '').toLowerCase();
 
-// Co osoba może zrobić z postem (zgodnie z serwerem — social/service.js).
-export function postPermissions(post, access = {}, myEmail = '') {
-  const own = lower(post?.created_by) === lower(myEmail);
-  const s = post?.status;
-  const editable = EDITABLE_STATUSES.has(s);
-  const out = {
-    edit: editable && (access.admin || access.update_all || access.publish || (own && access.create)),
-    approve: s === 'pending_approval' && access.publish,
-    reject: s === 'pending_approval' && access.publish,
-    unschedule: (s === 'scheduled' && access.publish) || (s === 'pending_approval' && (access.publish || own)),
-    publishNow: s === 'scheduled' && access.publish,
-    retry: (s === 'failed' || s === 'partial') && access.publish,
-    duplicate: access.create || access.publish,
-    delete: s !== 'publishing' && (access.admin || access.delete_all || (own && ['draft', 'pending_approval', 'failed'].includes(s))
-      || (own && s === 'scheduled' && access.publish)),
-    move: (s === 'scheduled' && access.publish) || ((s === 'draft' || s === 'pending_approval') && (own || access.publish)),
-  };
-  return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, Boolean(v)]));
-}
+// Co osoba może zrobić z postem — wspólne z mobilką (shared/lib/social.js), zgodne z serwerem.
+export { postPermissions } from '@avenit/shared/src/lib/social.js';
 
 // Wstawienie tekstu na końcu (zestaw hashtagów) z odstępem.
 export function appendBlock(text, block) {
@@ -163,4 +145,19 @@ export function connectMessage(params) {
     not_configured: 'Aplikacja Meta nie jest skonfigurowana na platformie.',
   };
   return { tone: 'error', text: reasons[params.get('sm_reason')] || 'Nie udało się połączyć kanałów.' };
+}
+
+// Filtry widoków: kanały (którykolwiek z wybranych), status, tylko moje posty.
+export const EMPTY_FILTERS = { accounts: [], status: '', mine: false };
+export const filtersActive = (f) => Boolean(f && (f.accounts?.length || f.status || f.mine));
+export function filterPosts(posts, f, myEmail = '') {
+  if (!filtersActive(f)) return posts || [];
+  const acc = new Set(f.accounts || []);
+  const me = lower(myEmail);
+  return (posts || []).filter((p) => {
+    if (acc.size && !(p.targets || []).some((t) => acc.has(t.account_id))) return false;
+    if (f.status && p.status !== f.status) return false;
+    if (f.mine && lower(p.created_by) !== me) return false;
+    return true;
+  });
 }

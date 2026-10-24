@@ -9,6 +9,7 @@ import { STATUS_COLOR, TARGET_COLOR, postPermissions } from '../lib/socialUi';
 import ChannelAvatar from './ChannelAvatar';
 import PostPreview from './PostPreview';
 import { fmtWhen } from './Composer';
+import ActivityPanel from './ActivityPanel';
 
 // Szczegóły posta po publikacji (albo w trakcie): wynik w każdym kanale, linki, błędy, ponowienie.
 export default function PostDetail({ post, open, onClose, access, myEmail, accountsById, onAction }) {
@@ -65,6 +66,7 @@ export default function PostDetail({ post, open, onClose, access, myEmail, accou
               </li>
             ))}
           </ul>
+          <ActivityPanel postId={post.id} myEmail={myEmail} isAdmin={access?.admin} />
         </div>
         <aside className="bg-gray-50 dark:bg-gray-900/40 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 p-5">
           {previewAccount && <PostPreview account={previewAccount} content={eff.content} media={eff.media} options={eff.options} />}

@@ -11,7 +11,8 @@
 // przyjmuje tylko JPEG o proporcjach 4:5–1,91:1 — przed wysłaniem robimy kopię JPEG (sharp),
 // przyciętą do środka, gdy proporcje wychodzą poza zakres. Facebook dostaje JPEG/PNG/GIF bez zmian.
 import fsp from 'node:fs/promises';
-import { graph, graphVideoBase, SocialError } from './meta.js';
+import { graph, graphVideoBase, SocialError, classifyMetaError } from './meta.js';
+import { config } from '../config.js';
 import { storagePath, publicStorageUrl } from '../storage/files.js';
 import {
   facebookShape, instagramFormat, instagramImageCrop, firstUrl, isVideo, SOCIAL_PROVIDERS,
@@ -78,10 +79,53 @@ async function convertToJpeg(ctx, m, { crop, suffix }) {
 
 const absFacebookUrl = (u) => (!u ? null : /^https?:\/\//.test(u) ? u : `https://www.facebook.com${u.startsWith('/') ? '' : '/'}${u}`);
 
-// ── Facebook (strona) ─────────────────────────────────────────────────────────
-async function publishFacebook(ctx, { account, token, content, media, options }) {
+// ── Facebook: rolka (Reels API, 3 kroki: start → wgranie z adresu → finish, potem przetwarzanie) ──
+async function publishFacebookReel(ctx, { account, token, content, media, progress }) {
   const page = account.external_id;
-  const shape = facebookShape(media);
+  const p = { ...(progress || {}) };
+  const video = media.find(isVideo);
+  if (!video) throw new SocialError('Rolka wymaga wideo.', { code: 'bad_media' });
+  if (!p.reel_video_id) {
+    const start = await graph('POST', `/${page}/video_reels`, { token, params: { upload_phase: 'start' } });
+    if (!start?.video_id) throw new SocialError('Facebook nie rozpoczął wgrywania rolki.', { code: 'provider' });
+    const fileUrl = await mediaUrl(ctx, video, { provider: 'facebook' });
+    const uploadUrl = start.upload_url || `https://rupload.facebook.com/video-upload/${config.META_GRAPH_VERSION || 'v26.0'}/${start.video_id}`;
+    let res;
+    try {
+      res = await globalThis.fetch(uploadUrl, { method: 'POST', headers: { Authorization: `OAuth ${token}`, file_url: fileUrl } });
+    } catch {
+      throw new SocialError('Brak połączenia z Meta — ponowimy publikację.', { code: 'network', status: 503, retryable: true });
+    }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body?.error || body?.success === false) throw classifyMetaError(body, res.status);
+    p.reel_video_id = String(start.video_id);
+  }
+  if (!p.finished) {
+    await graph('POST', `/${page}/video_reels`, {
+      token, params: { upload_phase: 'finish', video_id: p.reel_video_id, video_state: 'PUBLISHED', description: content || undefined },
+    });
+    p.finished = true;
+  }
+  const st = await graph('GET', `/${p.reel_video_id}`, { token, params: { fields: 'status' } });
+  const vs = st?.status?.video_status;
+  const phase = st?.status?.publishing_phase?.status;
+  if (vs === 'error' || phase === 'error' || st?.status?.processing_phase?.status === 'error') {
+    throw new SocialError('Facebook odrzucił rolkę: wideo nie spełnia wymagań (pionowe MP4/H.264, 3–90 s).', { code: 'remote_media' });
+  }
+  if (phase !== 'complete' && vs !== 'published') return { status: 'processing', progress: p };
+  let permalink = null;
+  try {
+    const r = await graph('GET', `/${p.reel_video_id}`, { token, params: { fields: 'permalink_url' } });
+    permalink = absFacebookUrl(r.permalink_url);
+  } catch { /* link nie jest konieczny */ }
+  return { status: 'published', external_id: p.reel_video_id, permalink };
+}
+
+// ── Facebook (strona) ─────────────────────────────────────────────────────────
+async function publishFacebook(ctx, { account, token, content, media, options, progress }) {
+  const page = account.external_id;
+  const shape = facebookShape(media, options);
+  if (shape === 'reel') return publishFacebookReel(ctx, { account, token, content, media, progress });
   const msg = content || undefined;
   let postId;
   if (shape === 'text') {
@@ -126,7 +170,7 @@ async function containerStatus(token, id) {
 
 function containerError(st) {
   const why = st.code === 'EXPIRED' ? 'plik wygasł przed publikacją' : (st.detail || 'plik nie spełnia wymagań');
-  return new SocialError(`Instagram odrzucił plik: ${why}. Sprawdź format (MP4/H.264, JPEG) i długość wideo.`, { code: 'ig_media' });
+  return new SocialError(`Instagram odrzucił plik: ${why}. Sprawdź format (MP4/H.264, JPEG) i długość wideo.`, { code: 'remote_media' });
 }
 
 // Czy wszystkie kontenery gotowe? Zdjęcia zwykle są od razu — krótkie dopytanie oszczędza minutę.

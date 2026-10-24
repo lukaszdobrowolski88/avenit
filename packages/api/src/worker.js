@@ -15,6 +15,7 @@
 //  - chat-reminders          co 1 min (Komunikator: „Przypomnij mi” — push + wpis w Powiadomieniach)
 //  - interp-sweep            co 1 min (tłumaczenie na żywo: koniec 6 h po wydarzeniu, kanały bez tłumacza → idle)
 //  - social                  co 1 min (Social Media: publikacja zaplanowanych postów FB/IG, ponowienia, przetwarzanie IG)
+//  - social-maintenance      codziennie 04:20 Europe/Warsaw (Social Media: tokeny kanałów + zdjęcia profilowe, sprzątanie plików)
 //  - schedule-reminders      codziennie 18:00 Europe/Warsaw (grafik: przypomnienia + ponaglenia)
 //  - task-digest             codziennie 07:00 Europe/Warsaw (skrót zadań na dziś; nadrabianie przy starcie do 12:00)
 //  - board-import-legacy     przy starcie + codziennie 03:40 (stare tabele *_tasks → Tablice, raz na tenanta)
@@ -109,6 +110,9 @@ cron.schedule('* * * * *', exclusive(() => forEachTenant('chat-reminders', 'chat
 cron.schedule('* * * * *', exclusive(() => forEachTenant('interp-sweep', 'interp-sweep')));
 // Social Media: należne posty na Facebooka / Instagram, ponowienia błędów chwilowych, wideo IG w przetwarzaniu.
 cron.schedule('* * * * *', exclusive(() => forEachTenant('social', 'social')));
+// Social Media: codziennie 04:20 — kanały z nieważnym tokenem (powiadomienie przed publikacją), odświeżenie
+// zdjęć profilowych (adresy z CDN Meta wygasają), nieużywane pliki postów starsze niż 3 dni.
+cron.schedule('20 4 * * *', exclusive(() => forEachTenant('social-maintenance', 'social-maintenance')), { timezone: 'Europe/Warsaw' });
 // Komunikator+: kanały służb i grup domowych — skład z zespołów/grup (dopisz/usuń/role), co 10 min.
 cron.schedule('*/10 * * * *', exclusive(() => forEachTenant('chat-channels-sync', 'chat-channels-sync')));
 

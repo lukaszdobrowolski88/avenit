@@ -6,13 +6,14 @@ import EmptyState from '../../../components/EmptyState';
 import { DateInput, TimeField } from '../../../components/pickers';
 import { tr, appLocale } from '../../../i18n';
 import { toast } from '../../../lib/toast';
-import { promptDialog } from '../../../lib/dialog';
+import { promptDialog, confirmDialog } from '../../../lib/dialog';
 import { supabase } from '../../../lib/supabase';
 import { socialApi } from '../lib/socialApi';
 import { toLocalFields, fromLocalFields, appendBlock, postPermissions } from '../lib/socialUi';
 import {
-  SOCIAL_PROVIDERS, IG_FORMAT_LABELS, validateTarget, effectiveTarget, charCount, instagramFormat,
+  SOCIAL_PROVIDERS, IG_FORMAT_LABELS, FB_FORMAT_LABELS, validateTarget, effectiveTarget, charCount, instagramFormat,
 } from '@avenit/shared/src/lib/social.js';
+import ActivityPanel from './ActivityPanel';
 import ChannelAvatar, { providerLabel, channelName, ProviderIcon } from './ChannelAvatar';
 import MediaPicker from './MediaPicker';
 import PostPreview from './PostPreview';
@@ -90,6 +91,18 @@ function HashtagMenu({ onInsert }) {
   );
 }
 
+// Niezapisany nowy post w przeglądarce (zamknięta karta, odświeżenie) — do przywrócenia.
+const DRAFT_KEY = 'social.composer.draft';
+const DRAFT_TTL_MS = 7 * 86400_000;
+const readLocalDraft = () => {
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+    return d && Date.now() - d.savedAt < DRAFT_TTL_MS ? d : null;
+  } catch { return null; }
+};
+const writeLocalDraft = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...d, savedAt: Date.now() })); } catch { /* prywatne okno */ } };
+const clearLocalDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch { /* prywatne okno */ } };
+
 const initialWhen = (post, defaults, canPublish) => {
   const at = post?.scheduled_at || defaults?.scheduled_at;
   if (at && new Date(at) > new Date()) return 'schedule';
@@ -114,6 +127,8 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
   const [hm, setHm] = useState('');
   const [nextSlot, setNextSlot] = useState(null);
   const [serverErrors, setServerErrors] = useState([]);
+  const [localDraft, setLocalDraft] = useState(null);
+  const baseline = useRef(null);
 
   // Wczytanie posta / wartości domyślnych przy otwarciu.
   useEffect(() => {
@@ -121,27 +136,65 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
     const targets = post?.targets || [];
     const ids = targets.length ? targets.map((t) => t.account_id).filter(Boolean)
       : (defaults?.account_ids || (usable.length === 1 ? [usable[0].id] : []));
-    setSelected(ids);
-    setContent(post?.content ?? defaults?.content ?? '');
-    setMedia(post?.media || defaults?.media || []);
+    const initContent = post?.content ?? defaults?.content ?? '';
+    const initMedia = post?.media || defaults?.media || [];
     const c = {};
     for (const t of targets) {
       if (!t.account_id) continue;
-      c[t.account_id] = { on: t.content != null && t.content !== '', content: t.content || '', options: t.options || {} };
+      const own = Array.isArray(t.media) && t.media.length > 0;
+      c[t.account_id] = { on: t.content != null && t.content !== '', content: t.content || '', options: t.options || {}, mediaOn: own, media: own ? t.media : [] };
     }
+    const w = initialWhen(post, defaults, canPublish);
+    let f = toLocalFields(post?.scheduled_at || defaults?.scheduled_at || '');
+    if (!f.ymd) {
+      const d = new Date(Date.now() + 2 * 3600_000);
+      f = { ymd: toLocalFields(d.toISOString()).ymd, hm: `${String(d.getHours()).padStart(2, '0')}:00` };
+    }
+    setSelected(ids);
+    setContent(initContent);
+    setMedia(initMedia);
     setCustom(c);
     setTab('all');
     setPreviewId(ids[0] || null);
-    const w = initialWhen(post, defaults, canPublish);
     setWhen(w);
-    const f = toLocalFields(post?.scheduled_at || defaults?.scheduled_at || '');
-    if (!f.ymd) {
-      const d = new Date(Date.now() + 2 * 3600_000);
-      setYmd(toLocalFields(d.toISOString()).ymd);
-      setHm(`${String(d.getHours()).padStart(2, '0')}:00`);
-    } else { setYmd(f.ymd); setHm(f.hm); }
+    setYmd(f.ymd);
+    setHm(f.hm);
     setServerErrors([]);
+    // Punkt odniesienia „bez zmian” — te same wartości, które właśnie ustawiamy.
+    baseline.current = JSON.stringify({ selected: ids, content: initContent, media: initMedia, custom: c, when: w, ymd: f.ymd, hm: f.hm });
+    setLocalDraft(!post?.id && !defaults?.content ? readLocalDraft() : null);
   }, [open, post, defaults]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const snap = JSON.stringify({ selected, content, media, custom, when, ymd, hm });
+  const dirty = open && !readOnly && baseline.current !== null && snap !== baseline.current;
+
+  // Autozapis nowego posta w przeglądarce (co sekundę po zmianie).
+  useEffect(() => {
+    if (!open || editing || !dirty) return undefined;
+    const t = setTimeout(() => writeLocalDraft({ selected, content, media, custom, when, ymd, hm }), 1000);
+    return () => clearTimeout(t);
+  }, [open, editing, dirty, snap]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const restoreLocalDraft = () => {
+    const d = localDraft;
+    if (!d) return;
+    const ids = (d.selected || []).filter((id) => usable.some((a) => a.id === id));
+    setSelected(ids);
+    setContent(d.content || '');
+    setMedia(Array.isArray(d.media) ? d.media : []);
+    setCustom(d.custom || {});
+    setWhen(d.when || (canPublish ? 'queue' : 'none'));
+    if (d.ymd) setYmd(d.ymd);
+    if (d.hm) setHm(d.hm);
+    setPreviewId(ids[0] || null);
+    setLocalDraft(null);
+  };
+
+  // Zamknięcie z niezapisanymi zmianami — pytamy (szkic nowego posta zostaje w przeglądarce).
+  const requestClose = async () => {
+    if (dirty && !(await confirmDialog({ title: tr('Zamknąć bez zapisywania?'), message: editing ? tr('Zmiany w poście nie zostaną zapisane.') : tr('Post zostanie w tej przeglądarce — przywrócisz go przy następnym tworzeniu posta.'), danger: false }))) return;
+    onClose();
+  };
 
   // Najbliższy slot kolejki dla wybranych kanałów.
   useEffect(() => {
@@ -166,7 +219,7 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
 
   const targetFor = (acc) => {
     const c = custom[acc.id] || {};
-    return { account_id: acc.id, content: c.on ? c.content : null, options: c.options || {} };
+    return { account_id: acc.id, content: c.on ? c.content : null, media: c.mediaOn && c.media?.length ? c.media : null, options: c.options || {} };
   };
   const setCustomFor = (id, patch) => setCustom((prev) => ({ ...prev, [id]: { on: false, content: '', options: {}, ...prev[id], ...patch } }));
   const setOption = (id, key, value) => setCustom((prev) => {
@@ -206,6 +259,8 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
         schedule: tr('Zaplanowano na {when}.', { when: fmtWhen(saved.scheduled_at) }),
       }[intent];
       toast.success(msg);
+      if (!post?.id) clearLocalDraft();
+      baseline.current = null;
       onSaved?.(saved);
       onClose();
     } catch (e) {
@@ -250,7 +305,7 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
     <Button variant="secondary" onClick={onClose}>{tr('Zamknij')}</Button>
   ) : (
     <>
-      <Button variant="secondary" onClick={onClose}>{tr('Anuluj')}</Button>
+      <Button variant="secondary" onClick={requestClose}>{tr('Anuluj')}</Button>
       {pendingOther && <Button variant="outline" icon={MessageSquareDashed} onClick={reject}>{tr('Odeślij do poprawy')}</Button>}
       <Button variant="outline" onClick={() => submit('draft')}>{tr('Zapisz szkic')}</Button>
       {canPublish ? (
@@ -267,7 +322,7 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
   const activeCustom = activeAcc ? (custom[activeAcc.id] || { on: false, content: '', options: {} }) : null;
 
   return (
-    <Modal isOpen={open} onClose={onClose} size="full" closeOnBackdrop={false} icon={PenSquare}
+    <Modal isOpen={open} onClose={requestClose} size="full" closeOnBackdrop={false} icon={PenSquare}
       title={readOnly ? tr('Podgląd posta') : editing ? tr('Edytuj post') : tr('Nowy post')}
       subtitle={post?.status === 'pending_approval' ? tr('Czeka na akceptację') : undefined}
       footer={footer}>
@@ -278,6 +333,13 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
       ) : (
         <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-0 min-h-[60vh]">
           <div className="p-6 space-y-5 min-w-0">
+            {localDraft && (
+              <div className="rounded-xl bg-gray-100 dark:bg-gray-800 px-4 py-3 text-sm flex items-center gap-3 flex-wrap">
+                <span className="flex-1 min-w-[200px] text-gray-700 dark:text-gray-200">{tr('Masz niezapisany post z {when}.', { when: fmtWhen(new Date(localDraft.savedAt).toISOString()) })}</span>
+                <Button size="sm" onClick={restoreLocalDraft}>{tr('Przywróć')}</Button>
+                <Button size="sm" variant="ghost" onClick={() => { clearLocalDraft(); setLocalDraft(null); }}>{tr('Odrzuć')}</Button>
+              </div>
+            )}
             {post?.review_note && post.status === 'draft' && (
               <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 px-4 py-3 text-sm flex gap-2">
                 <MessageSquareDashed size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
@@ -304,7 +366,7 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
             {/* Zakładki treści: wspólna + per kanał */}
             {selectedAccounts.length > 0 && (
               <div className="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-700">
-                {[{ id: 'all', label: tr('Wspólna treść') }, ...selectedAccounts.map((a) => ({ id: a.id, label: `${providerLabel(a.provider)}${custom[a.id]?.on ? ' •' : ''}`, acc: a }))].map((t) => (
+                {[{ id: 'all', label: tr('Wspólna treść') }, ...selectedAccounts.map((a) => ({ id: a.id, label: `${providerLabel(a.provider)}${custom[a.id]?.on || custom[a.id]?.mediaOn ? ' •' : ''}`, acc: a }))].map((t) => (
                   <button key={t.id} type="button" onClick={() => { setTab(t.id); if (t.acc) setPreviewId(t.id); }}
                     className={`px-3 py-2 text-sm border-b-2 -mb-px flex items-center gap-1.5 ${tab === t.id ? 'border-accent-primary text-gray-900 dark:text-white font-medium' : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
                     {t.acc && <ProviderIcon provider={t.acc.provider} size={14} />}{t.label}
@@ -351,6 +413,26 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
                     />
                   </div>
                 )}
+                {activeAcc.provider === 'facebook' && (
+                  <div className="space-y-1.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{tr('Format na Facebooku')}</p>
+                    <Segmented
+                      value={activeCustom.options?.format === 'reel' ? 'reel' : 'post'}
+                      onChange={(v) => !readOnly && setOption(activeAcc.id, 'format', v === 'reel' ? 'reel' : undefined)}
+                      options={SOCIAL_PROVIDERS.facebook.formats.map((f) => ({ value: f, label: tr(FB_FORMAT_LABELS[f]) }))}
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                    <input type="checkbox" checked={Boolean(activeCustom.mediaOn)} disabled={readOnly} className="rounded"
+                      onChange={(e) => setCustomFor(activeAcc.id, { mediaOn: e.target.checked, media: activeCustom.media?.length ? activeCustom.media : media })} />
+                    {tr('Inne zdjęcia lub wideo dla tego kanału')}
+                  </label>
+                  {activeCustom.mediaOn && (
+                    <MediaPicker media={activeCustom.media || []} onChange={(m) => setCustomFor(activeAcc.id, { media: m })} disabled={readOnly} />
+                  )}
+                </div>
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{tr('Pierwszy komentarz (opcjonalnie)')}</p>
                   <textarea value={activeCustom.options?.first_comment || ''} onChange={(e) => setOption(activeAcc.id, 'first_comment', e.target.value)} rows={2} readOnly={readOnly}
@@ -399,6 +481,12 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
                     <p key={`${c.acc.id}w${i}`} className="text-sm text-amber-700 dark:text-amber-300 flex gap-2"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" /><span><b>{channelName(c.acc)}:</b> {m}</span></p>
                   )),
                 ])}
+              </div>
+            )}
+
+            {editing && (
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                <ActivityPanel postId={post.id} myEmail={myEmail} isAdmin={access?.admin} />
               </div>
             )}
           </div>
