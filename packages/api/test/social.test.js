@@ -160,6 +160,7 @@ test('rejestr i katalog: posty i kanały tylko do odczytu, token ukryty, stany O
 const MIG = new URL('../db/tenant-migrations/121_social_media.sql', import.meta.url);
 const MIG122 = new URL('../db/tenant-migrations/122_social_activity.sql', import.meta.url);
 const MIG123 = new URL('../db/tenant-migrations/123_social_share.sql', import.meta.url);
+const MIG124 = new URL('../db/tenant-migrations/124_social_ideas_library.sql', import.meta.url);
 const uid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const DB_NAME = 'test_social';
 
@@ -227,6 +228,8 @@ before(async () => {
   await pg.exec(fs.readFileSync(MIG122, 'utf8'));
   await pg.exec(fs.readFileSync(MIG123, 'utf8'));
   await pg.exec(fs.readFileSync(MIG123, 'utf8'));
+  await pg.exec(fs.readFileSync(MIG124, 'utf8'));
+  await pg.exec(fs.readFileSync(MIG124, 'utf8'));
   await pg.exec(`
     CREATE TABLE IF NOT EXISTS app_settings (key text PRIMARY KEY, value text, updated_at timestamptz);
     CREATE TABLE events (id serial PRIMARY KEY, title text, date date, time text, end_time text, location text, details_html text,
@@ -246,8 +249,8 @@ after(() => { globalThis.fetch = realFetch; });
 test('migracja 121: tabele, moduł w menu raz, unikalny kanał', { skip }, async () => {
   const { rows } = await db.query(`SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'social_%' ORDER BY 1`);
   assert.deepEqual(rows.map((r) => r.table_name),
-    ['social_accounts', 'social_hashtag_groups', 'social_links', 'social_oauth_states', 'social_post_activity', 'social_post_targets', 'social_posts',
-      'social_queue_slots', 'social_rule_runs', 'social_rules']);
+    ['social_accounts', 'social_hashtag_groups', 'social_ideas', 'social_links', 'social_media_items', 'social_oauth_states', 'social_post_activity',
+      'social_post_targets', 'social_posts', 'social_queue_slots', 'social_rule_runs', 'social_rules']);
   const m = await db.query(`SELECT key, path, resource_key, component_name FROM app_modules WHERE key = 'social'`);
   assert.equal(m.rows.length, 1);
   assert.deepEqual(m.rows[0], { key: 'social', path: '/social', resource_key: 'module:social', component_name: 'SocialModule' });
@@ -806,6 +809,37 @@ test('reguły: nowe kazanie → szkic (IG bez zdjęcia nie przejdzie do kolejki)
   assert.ok(rules.length >= 1);
   await db.query(`DELETE FROM social_posts`);
   await db.query(`DELETE FROM social_rules`);
+});
+
+test('pomysły i biblioteka: post z pomysłu wiąże pomysł, media trafiają do biblioteki raz, sprzątanie je omija', { skip }, async () => {
+  const ctx = ctxOf();
+  const pub = await accessOf(PUBLISHER);
+  const { rows: [idea] } = await db.query(`INSERT INTO social_ideas (title, content, media) VALUES ('Świadectwo', 'Historia Ani', '[{"path":"idea01/plik.jpg","mime":"image/jpeg","kind":"image"}]') RETURNING id`);
+  const post = await savePost(ctx, pub, {
+    content: 'Historia Ani', media: [IMG({ path: 'lib01/plik.jpg' })], intent: 'draft', source_type: 'idea', source_id: idea.id,
+    targets: [{ account_id: FB.id, media: [IMG({ path: 'lib02/plik.jpg' })] }],
+  });
+  assert.equal((await db.query(`SELECT post_id FROM social_ideas WHERE id = $1`, [idea.id])).rows[0].post_id, post.id);
+  await savePost(ctx, pub, { id: post.id, content: 'Historia Ani!', media: [IMG({ path: 'lib01/plik.jpg' })], intent: 'draft', targets: [{ account_id: FB.id }] });
+  const { rows: lib } = await db.query(`SELECT path, source, created_by FROM social_media_items WHERE path LIKE 'lib%' ORDER BY path`);
+  assert.deepEqual(lib.map((r) => r.path), ['lib01/plik.jpg', 'lib02/plik.jpg']);
+  assert.equal(lib[0].source, 'post');
+  // Plik tylko w bibliotece (post usunięty) i plik pomysłu — sprzątanie ich nie rusza.
+  await db.query(`DELETE FROM social_posts`);
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'social-lib-'));
+  const root = path.join(base, 'schwro', 'social-media');
+  const old = new Date(Date.now() - (ORPHAN_DAYS + 1) * 86400_000);
+  for (const d of ['lib01', 'idea01', 'sierota']) {
+    fs.mkdirSync(path.join(root, d), { recursive: true });
+    fs.writeFileSync(path.join(root, d, 'plik.jpg'), 'x');
+    fs.utimesSync(path.join(root, d), old, old);
+  }
+  const out = await cleanupMedia(ctx, { baseDir: base });
+  assert.equal(out.removed, 1);
+  assert.deepEqual(fs.readdirSync(root).sort(), ['idea01', 'lib01']);
+  fs.rmSync(base, { recursive: true, force: true });
+  assert.equal(getTableRule('social_ideas').resource, 'module:social');
+  assert.equal(getTableRule('social_media_items').resource, 'module:social');
 });
 
 test('worker: tenant bez migracji — fn nie wywraca workera', { skip }, async () => {

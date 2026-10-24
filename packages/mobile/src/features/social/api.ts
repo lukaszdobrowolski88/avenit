@@ -233,3 +233,75 @@ export const uploadAsset = async (a: ImagePicker.ImagePickerAsset): Promise<Soci
     duration: a.duration ? Math.round(a.duration / 100) / 10 : null, alt: null, name: a.fileName || null,
   };
 };
+
+// ── Pomysły i biblioteka mediów (migracja 124; CRUD przez /api/db w zakresie modułu) ─────────
+export type IdeaColumn = 'idea' | 'progress' | 'ready';
+export const IDEA_COLUMNS: { key: IdeaColumn; label: string }[] = [
+  { key: 'idea', label: 'Pomysły' },
+  { key: 'progress', label: 'W przygotowaniu' },
+  { key: 'ready', label: 'Gotowe do publikacji' },
+];
+
+export interface SocialIdea {
+  id: string;
+  title: string;
+  content: string;
+  media: SocialMedia[];
+  tags: string[];
+  column_key: IdeaColumn;
+  position: number;
+  post_id: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface LibraryItem extends SocialMedia { id: string; source: string; tags: string[]; created_at: string }
+
+const dbError = (error: unknown) => new Error((error as any)?.message || 'Nie udało się zapisać');
+
+export const useIdeas = (enabled = true) =>
+  useQuery({
+    queryKey: ['social', 'ideas'],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('social_ideas').select('*').order('created_at', { ascending: false }).limit(300);
+      if (error) throw dbError(error);
+      return (data as SocialIdea[]) || [];
+    },
+  });
+
+export const ideasApi = {
+  create: async (row: Partial<SocialIdea>) => {
+    const { error } = await supabase.from('social_ideas').insert({ ...row, position: Date.now() / -1000 });
+    if (error) throw dbError(error);
+  },
+  update: async (id: string, patch: Partial<SocialIdea>) => {
+    const { error } = await supabase.from('social_ideas').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) throw dbError(error);
+  },
+  remove: async (id: string) => {
+    const { error } = await supabase.from('social_ideas').delete().eq('id', id);
+    if (error) throw dbError(error);
+  },
+  get: async (id: string): Promise<SocialIdea | null> => {
+    const { data, error } = await supabase.from('social_ideas').select('*').eq('id', id).maybeSingle();
+    if (error) throw dbError(error);
+    return (data as SocialIdea) || null;
+  },
+};
+
+export const useLibrary = (enabled: boolean) =>
+  useQuery({
+    queryKey: ['social', 'library'],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('social_media_items').select('*').order('created_at', { ascending: false }).limit(300);
+      if (error) throw dbError(error);
+      return (data as LibraryItem[]) || [];
+    },
+  });
+
+export const libraryToMedia = (it: LibraryItem): SocialMedia => ({
+  path: it.path, mime: it.mime || '', kind: it.kind === 'video' ? 'video' : 'image',
+  width: it.width ?? null, height: it.height ?? null, size: it.size ?? null, duration: it.duration ?? null, alt: it.alt ?? null, name: it.name ?? null,
+});

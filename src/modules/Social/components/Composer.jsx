@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { PenSquare, Hash, AlertCircle, AlertTriangle, ListOrdered, Zap, CalendarClock, MessageSquareDashed, Link2 } from 'lucide-react';
+import { PenSquare, Hash, AlertCircle, AlertTriangle, ListOrdered, Zap, CalendarClock, MessageSquareDashed, Link2, GalleryVerticalEnd } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
@@ -14,6 +14,7 @@ import {
   SOCIAL_PROVIDERS, IG_FORMAT_LABELS, FB_FORMAT_LABELS, validateTarget, effectiveTarget, charCount, instagramFormat,
 } from '@avenit/shared/src/lib/social.js';
 import ActivityPanel from './ActivityPanel';
+import LibraryPicker from './LibraryPicker';
 import ChannelAvatar, { providerLabel, channelName, ProviderIcon } from './ChannelAvatar';
 import MediaPicker from './MediaPicker';
 import PostPreview from './PostPreview';
@@ -128,6 +129,7 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
   const [nextSlot, setNextSlot] = useState(null);
   const [serverErrors, setServerErrors] = useState([]);
   const [localDraft, setLocalDraft] = useState(null);
+  const [libraryFor, setLibraryFor] = useState(null); // 'all' | id kanału — dokąd dodać media z biblioteki
   const baseline = useRef(null);
 
   // Wczytanie posta / wartości domyślnych przy otwarciu.
@@ -322,6 +324,14 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
   const activeCustom = activeAcc ? (custom[activeAcc.id] || { on: false, content: '', options: {} }) : null;
 
   return (
+    <>
+    <LibraryPicker open={Boolean(libraryFor)} onClose={() => setLibraryFor(null)}
+      max={Math.max(1, 10 - (libraryFor && libraryFor !== 'all' ? (custom[libraryFor]?.media || []).length : media.length))}
+      onPick={(list) => {
+        const add = (prev) => [...prev, ...list.filter((m) => !prev.some((p) => p.path === m.path))].slice(0, 10);
+        if (libraryFor === 'all') setMedia(add);
+        else if (libraryFor) setCustomFor(libraryFor, { mediaOn: true, media: add(custom[libraryFor]?.media || []) });
+      }} />
     <Modal isOpen={open} onClose={requestClose} size="full" closeOnBackdrop={false} icon={PenSquare}
       title={readOnly ? tr('Podgląd posta') : editing ? tr('Edytuj post') : tr('Nowy post')}
       subtitle={post?.status === 'pending_approval' ? tr('Czeka na akceptację') : undefined}
@@ -430,7 +440,10 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
                     {tr('Inne zdjęcia lub wideo dla tego kanału')}
                   </label>
                   {activeCustom.mediaOn && (
-                    <MediaPicker media={activeCustom.media || []} onChange={(m) => setCustomFor(activeAcc.id, { media: m })} disabled={readOnly} />
+                    <>
+                      <MediaPicker media={activeCustom.media || []} onChange={(m) => setCustomFor(activeAcc.id, { media: m })} disabled={readOnly} />
+                      {!readOnly && <Button size="sm" variant="ghost" icon={GalleryVerticalEnd} onClick={() => setLibraryFor(activeAcc.id)}>{tr('Z biblioteki')}</Button>}
+                    </>
                   )}
                 </div>
                 <div className="space-y-1.5">
@@ -443,7 +456,10 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
 
             {/* Media */}
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-2">{tr('Zdjęcia i wideo')}</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{tr('Zdjęcia i wideo')}</p>
+                {!readOnly && <Button size="sm" variant="ghost" icon={GalleryVerticalEnd} onClick={() => setLibraryFor('all')}>{tr('Z biblioteki')}</Button>}
+              </div>
               <MediaPicker media={media} onChange={setMedia} disabled={readOnly} />
             </div>
 
@@ -515,5 +531,6 @@ export default function Composer({ open, onClose, post, defaults, accounts, acce
         </div>
       )}
     </Modal>
+    </>
   );
 }

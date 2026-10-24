@@ -16,6 +16,7 @@ import {
 } from '../api';
 import { actionItems, runPostAction, type PostAction } from '../actions';
 import { PostCard, fmtDayHeading } from '../components/ui';
+import { IdeasView } from '../components/IdeasView';
 
 // Social Media w apce — jak moduł na webie: kolejka (po dniach), do akceptacji, szkice, opublikowane;
 // tworzenie i edycja postów, akceptacja, komentarze. Podłączanie kanałów (logowanie Meta) — na webie.
@@ -44,7 +45,9 @@ const MenuRow = ({ label, onPress, last }: { label: string; onPress: () => void;
 export const SocialHomeScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams<{ view?: string }>();
-  const [view, setView] = useState<ListView>(VIEWS.some((v) => v.key === params.view) ? (params.view as ListView) : 'queue');
+  const [mode, setMode] = useState<ListView | 'ideas'>(params.view === 'ideas' ? 'ideas' : VIEWS.some((v) => v.key === params.view) ? (params.view as ListView) : 'queue');
+  const view: ListView = mode === 'ideas' ? 'queue' : mode;
+  const setView = (v: ListView) => setMode(v);
   const status = useSocialStatus();
   const posts = useSocialPosts(view);
   const invalidate = useInvalidateSocial();
@@ -125,16 +128,18 @@ export const SocialHomeScreen = () => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -16, marginBottom: 12 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
             {VIEWS.map((v) => {
               const n = v.count && counts ? counts[v.count] : 0;
-              return <Chip key={v.key} label={n ? `${v.label} ${n}` : v.label} on={view === v.key} onPress={() => setView(v.key)} />;
+              return <Chip key={v.key} label={n ? `${v.label} ${n}` : v.label} on={mode === v.key} onPress={() => setView(v.key)} />;
             })}
+            <Chip label="Pomysły" on={mode === 'ideas'} onPress={() => setMode('ideas')} />
             <Chip label="Kanały" on={false} onPress={() => router.push('/(app)/social/channels' as never)} />
           </ScrollView>
 
-          {posts.isLoading || status.isLoading ? <ActivityIndicator color={B.ink} style={{ marginTop: 32 }} /> : null}
-          {posts.isError ? (
+          {mode === 'ideas' ? <IdeasView /> : null}
+          {mode !== 'ideas' && (posts.isLoading || status.isLoading) ? <ActivityIndicator color={B.ink} style={{ marginTop: 32 }} /> : null}
+          {mode !== 'ideas' && posts.isError ? (
             <EmptyState Icon={Share2} title="Nie udało się wczytać postów" hint="Sprawdź połączenie i spróbuj ponownie." actionLabel="Odśwież" onAction={() => posts.refetch()} />
           ) : null}
-          {!posts.isLoading && !posts.isError && !list.length ? (
+          {mode !== 'ideas' && !posts.isLoading && !posts.isError && !list.length ? (
             !status.data?.accounts?.length ? (
               <EmptyState Icon={Link2} title="Brak podłączonych kanałów" hint="Kanały (strona na Facebooku, konto na Instagramie) podłącza się w wersji web — w zakładce Kanały." actionLabel="Kanały" onAction={() => router.push('/(app)/social/channels' as never)} />
             ) : (
@@ -142,7 +147,7 @@ export const SocialHomeScreen = () => {
             )
           ) : null}
 
-          {groups.map((g) => (
+          {mode !== 'ideas' && groups.map((g) => (
             <View key={g.key}>
               {g.heading ? (
                 <Text style={{ marginTop: 6, marginBottom: 8, marginLeft: 4, fontSize: 13, color: B.ink2, fontFamily: F.bold }}>

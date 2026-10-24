@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, Switch, Text, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { AlertCircle, AlertTriangle, Camera, Film, Hash, ImagePlus, PenSquare, X } from 'lucide-react-native';
+import { AlertCircle, AlertTriangle, Camera, Check, Film, Hash, ImagePlus, Library, PenSquare, X } from 'lucide-react-native';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { Chip, FormInput, FormLabel, PrimaryButton, Sheet } from '../../../components/ui/Sheet';
@@ -16,7 +17,8 @@ import {
   SOCIAL_PROVIDERS, MAX_MEDIA, IG_FORMAT_LABELS, FB_FORMAT_LABELS, charCount, effectiveTarget, instagramFormat, validateTarget,
 } from '@avenit/shared/src/lib/social.js';
 import {
-  FileTooLarge, hashtagGroups, mediaUri, pickMedia, socialApi, uploadAsset, useInvalidateSocial, useSharePrefill, useSocialPost, useSocialStatus,
+  FileTooLarge, hashtagGroups, ideasApi, libraryToMedia, mediaUri, pickMedia, socialApi, uploadAsset, useInvalidateSocial, useLibrary, useSharePrefill,
+  useSocialPost, useSocialStatus, type LibraryItem,
   type Intent, type SocialAccount, type SocialMedia, type TargetOptions,
 } from '../api';
 import { ChannelAvatar, channelName, fmtWhen, providerLabel } from '../components/ui';
@@ -41,13 +43,19 @@ const appendBlock = (text: string, block: string) => (!text.trim() ? block.trim(
 export const SocialComposeScreen = () => {
   const router = useRouter();
   const navigation = useNavigation();
-  const params = useLocalSearchParams<{ id?: string; date?: string; source?: string; sourceId?: string }>();
+  const params = useLocalSearchParams<{ id?: string; date?: string; source?: string; sourceId?: string; idea?: string }>();
   const editingId = params.id ? String(params.id) : undefined;
   const status = useSocialStatus();
   const existing = useSocialPost(editingId);
   // „Udostępnij w social media” z wydarzenia / kazania → treść z linkiem (i miniatura kazania).
   const shareKind = !editingId && (params.source === 'event' || params.source === 'sermon') ? String(params.source) : undefined;
   const prefill = useSharePrefill(shareKind, shareKind && params.sourceId ? String(params.sourceId) : undefined);
+  // Post z pomysłu (migracja 124): treść i zdjęcia pomysłu; zapis wiąże pomysł z postem.
+  const ideaId = !editingId && params.idea ? String(params.idea) : undefined;
+  const idea = useQuery({ queryKey: ['social', 'idea', ideaId || ''], enabled: !!ideaId, queryFn: () => ideasApi.get(ideaId!) });
+  const [libOpen, setLibOpen] = useState(false);
+  const [libPicked, setLibPicked] = useState<LibraryItem[]>([]);
+  const library = useLibrary(libOpen);
   const invalidate = useInvalidateSocial();
 
   const access = status.data?.access ?? {};
@@ -79,7 +87,7 @@ export const SocialComposeScreen = () => {
 
   // Wczytanie posta / wartości początkowych (raz, gdy dane są gotowe).
   useEffect(() => {
-    if (ready || status.isLoading || (editingId && existing.isLoading) || (shareKind && prefill.isLoading)) return;
+    if (ready || status.isLoading || (editingId && existing.isLoading) || (shareKind && prefill.isLoading) || (ideaId && idea.isLoading)) return;
     const targets = post?.targets ?? [];
     const ids = targets.length ? targets.map((t) => t.account_id).filter(Boolean) as string[] : usable.length === 1 ? [usable[0].id] : [];
     const c: Record<string, Custom> = {};
@@ -91,8 +99,8 @@ export const SocialComposeScreen = () => {
     const w: When = at && new Date(at) > new Date() ? 'schedule' : canPublish ? 'queue' : 'none';
     const base = at ? new Date(at) : new Date(Date.now() + 2 * 3600_000);
     const f = { ymd: toYmd(base), hm: at ? `${pad(base.getHours())}:${pad(base.getMinutes())}` : `${pad(base.getHours())}:00` };
-    const initContent = post?.content ?? prefill.data?.content ?? '';
-    const initMedia = post?.media ?? prefill.data?.media ?? [];
+    const initContent = post?.content ?? prefill.data?.content ?? (idea.data ? (idea.data.content || idea.data.title || '') : '');
+    const initMedia = post?.media ?? prefill.data?.media ?? idea.data?.media ?? [];
     setSelected(ids);
     setContent(initContent);
     setMedia(initMedia);
@@ -104,7 +112,7 @@ export const SocialComposeScreen = () => {
     baseline.current = JSON.stringify({ ids, content: post?.content ?? '', media: post?.media ?? [], c, w, ...f });
     setReady(true);
     if (prefill.isError) showError('Nie udało się przygotować treści', prefill.error);
-  }, [ready, status.isLoading, existing.isLoading, editingId, post, usable, canPublish, params.date, shareKind, prefill.isLoading, prefill.data, prefill.isError, prefill.error]);
+  }, [ready, status.isLoading, existing.isLoading, editingId, post, usable, canPublish, params.date, shareKind, prefill.isLoading, prefill.data, prefill.isError, prefill.error, ideaId, idea.isLoading, idea.data]);
 
   const snap = JSON.stringify({ ids: selected, content, media, c: custom, w: when, ymd, hm });
   const dirty = ready && baseline.current !== null && snap !== baseline.current;
@@ -189,6 +197,7 @@ export const SocialComposeScreen = () => {
       const out = await socialApi.save({
         id: editingId, content, media, intent, tags: post?.tags ?? [],
         ...(!editingId && prefill.data ? { source_type: prefill.data.source_type, source_id: prefill.data.source_id } : {}),
+        ...(!editingId && ideaId && idea.data ? { source_type: 'idea', source_id: ideaId } : {}),
         targets: selectedAccounts.map(targetFor),
         ...(scheduled ? { scheduled_at: scheduled } : {}),
       });
@@ -209,7 +218,7 @@ export const SocialComposeScreen = () => {
     }
   };
 
-  if (status.isLoading || (editingId && existing.isLoading) || (shareKind && prefill.isLoading) || !ready) {
+  if (status.isLoading || (editingId && existing.isLoading) || (shareKind && prefill.isLoading) || (ideaId && idea.isLoading) || !ready) {
     return <View style={{ flex: 1, backgroundColor: B.paper }}><PageHeader title={editingId ? 'Edytuj post' : 'Nowy post'} Icon={PenSquare} showBack /><ActivityIndicator color={B.ink} style={{ marginTop: 40 }} /></View>;
   }
   if (!usable.length) {
@@ -303,6 +312,10 @@ export const SocialComposeScreen = () => {
                 <Camera size={17} color={B.ink} /><Text style={{ fontSize: 14, color: B.ink, fontFamily: F.bold }}>Aparat</Text>
               </Pressable>
             </View>
+            <Pressable onPress={() => { setLibPicked([]); setLibOpen(true); }} accessibilityRole="button" className="active:opacity-70"
+              style={{ marginTop: 8, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', height: 46, borderRadius: 999, backgroundColor: B.paper }}>
+              <Library size={17} color={B.ink} /><Text style={{ fontSize: 14, color: B.ink, fontFamily: F.bold }}>Z biblioteki</Text>
+            </Pressable>
             <Hint>{`Do ${MAX_MEDIA} plików, każdy najwyżej 50 MB. Instagram wymaga zdjęcia albo wideo.`}</Hint>
           </Card>
 
@@ -397,6 +410,33 @@ export const SocialComposeScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Sheet visible={libOpen} onClose={() => setLibOpen(false)} title="Biblioteka mediów" eyebrow="Dodaj do posta"
+        footer={<PrimaryButton label={libPicked.length ? `Dodaj (${libPicked.length})` : 'Dodaj'} disabled={!libPicked.length} onPress={() => {
+          const add = libPicked.map(libraryToMedia).filter((m) => !media.some((x) => x.path === m.path));
+          setMedia((prev) => [...prev, ...add].slice(0, MAX_MEDIA));
+          setLibOpen(false);
+        }} />}>
+        {library.isLoading ? <ActivityIndicator color={B.ink} style={{ marginTop: 20 }} /> : null}
+        {library.data && !library.data.length ? <Hint>Biblioteka jest pusta — zdjęcia z postów i wgrane na webie pojawią się tutaj.</Hint> : null}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+          {(library.data ?? []).map((it) => {
+            const on = libPicked.some((p) => p.id === it.id);
+            return (
+              <Pressable key={it.id} onPress={() => setLibPicked((prev) => (on ? prev.filter((p) => p.id !== it.id) : prev.length + media.length >= MAX_MEDIA ? prev : [...prev, it]))}
+                accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={it.name || 'Plik'}
+                style={{ width: '31.5%', aspectRatio: 1, borderRadius: 14, overflow: 'hidden', backgroundColor: B.paper2, alignItems: 'center', justifyContent: 'center', borderWidth: on ? 3 : 0, borderColor: B.kurkuma }}>
+                {it.kind === 'video' ? <Film size={22} color={B.ink3} /> : <Image source={{ uri: mediaUri(it, 256) }} style={{ width: '100%', height: '100%' }} contentFit="cover" />}
+                {on ? (
+                  <View style={{ position: 'absolute', right: 5, top: 5, width: 22, height: 22, borderRadius: 11, backgroundColor: B.kurkuma, alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={13} color={B.ink} />
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </Sheet>
 
       <Sheet visible={tagsOpen} onClose={() => setTagsOpen(false)} title="Zestawy hashtagów" eyebrow="Wstaw do treści">
         {groups === null ? <ActivityIndicator color={B.ink} style={{ marginTop: 20 }} /> : null}

@@ -104,6 +104,7 @@ export const RESOURCE_LABELS = {
   // Social Media (migracja 121).
   social_posts: 'Posty social media', social_post_targets: 'Publikacje w kanałach', social_accounts: 'Kanały social media',
   social_queue_slots: 'Godziny kolejki postów', social_hashtag_groups: 'Zestawy hashtagów',
+  social_ideas: 'Pomysły na posty', social_media_items: 'Biblioteka mediów',
 };
 
 // Definicje modułów. Kolejność = kolejność w macierzy uprawnień.
@@ -421,7 +422,7 @@ export const MODULES = [
     // Social Media (migracja 121): „Posty: tworzenie” = szkice i wysyłanie do akceptacji (własne posty
     // autor edytuje zawsze); edycja/usuwanie = CUDZE posty. Publikację bez akceptacji daje akcja publish.
     key: 'social', label: 'Social Media',
-    resources: ['social_posts', 'social_post_targets', 'social_accounts', 'social_queue_slots', 'social_hashtag_groups'],
+    resources: ['social_posts', 'social_post_targets', 'social_accounts', 'social_queue_slots', 'social_hashtag_groups', 'social_ideas', 'social_media_items'],
     tabs: [],
     actions: [
       { key: 'publish', label: 'Publikuj i planuj posty bez akceptacji (zatwierdzaj posty innych)' },
