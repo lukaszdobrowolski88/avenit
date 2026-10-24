@@ -120,6 +120,17 @@ export const useSocialPost = (id?: string) =>
 export const useActivity = (id?: string) =>
   useQuery({ queryKey: socialKeys.activity(id || ''), enabled: !!id, queryFn: () => socialCall<{ activity: Activity[] }>('activity', { id }).then((d) => d.activity || []) });
 
+export interface SharePrefill { content: string; media: SocialMedia[]; source_type: string; source_id: string; link: string; title?: string }
+
+// Gotowy szkic z wydarzenia / kazania („Udostępnij w social media”).
+export const useSharePrefill = (kind?: string, id?: string) =>
+  useQuery({
+    queryKey: ['social', 'prefill', kind || '', id || ''],
+    enabled: !!kind && !!id,
+    staleTime: Infinity,
+    queryFn: () => socialCall<{ prefill: SharePrefill }>('share_prefill', { kind, id }).then((d) => d.prefill),
+  });
+
 export const useSlots = () =>
   useQuery({ queryKey: socialKeys.slots, queryFn: () => socialCall<{ slots: { account_id: string | null; weekday: number; time: string }[] }>('slots').then((d) => d.slots || []) });
 

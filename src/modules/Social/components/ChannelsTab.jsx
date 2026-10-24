@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link2, Trash2, Plus, X, Clock, Hash, Info, RefreshCw, Copy } from 'lucide-react';
+import { Link2, Trash2, Plus, X, Clock, Hash, Info, RefreshCw, Copy, MousePointerClick } from 'lucide-react';
 import Button from '../../../components/Button';
 import EmptyState from '../../../components/EmptyState';
 import Spinner from '../../../components/Spinner';
@@ -301,12 +301,40 @@ function HashtagGroups() {
   );
 }
 
+// Krótkie linki z UTM przy publikacji na Facebooku (liczenie kliknięć per post i kanał).
+function LinkSettings({ canEdit }) {
+  const [s, setS] = useState(null);
+  useEffect(() => { socialApi.settings().then(setS).catch(() => setS({ shorten_links: true, utm: true })); }, []);
+  if (!s) return null;
+  const save = async (patch) => {
+    const next = { ...s, ...patch };
+    setS(next);
+    try { setS(await socialApi.saveSettings(next)); } catch (e) { toast.error(e.message); }
+  };
+  return (
+    <Card icon={MousePointerClick} title={tr('Linki w postach')} subtitle={tr('Adresy w postach na Facebooku zamieniamy na krótkie linki kościoła — widać, ile osób kliknęło.')}>
+      <label className="flex items-start gap-3 py-1.5">
+        <input type="checkbox" className="mt-0.5 rounded" checked={s.shorten_links} disabled={!canEdit} onChange={(e) => save({ shorten_links: e.target.checked })} />
+        <span className="text-sm text-gray-800 dark:text-gray-100">{tr('Skracaj linki i licz kliknięcia')}</span>
+      </label>
+      <label className="flex items-start gap-3 py-1.5">
+        <input type="checkbox" className="mt-0.5 rounded" checked={s.utm} disabled={!canEdit || !s.shorten_links} onChange={(e) => save({ utm: e.target.checked })} />
+        <span>
+          <span className="block text-sm text-gray-800 dark:text-gray-100">{tr('Dodawaj parametry UTM')}</span>
+          <span className="block text-xs text-gray-500">{tr('utm_source=facebook, utm_medium=social — ruch z postów widać w Google Analytics strony docelowej.')}</span>
+        </span>
+      </label>
+    </Card>
+  );
+}
+
 export default function ChannelsTab({ accounts, access, meta, onChanged }) {
   return (
     <div className="grid xl:grid-cols-2 gap-5 items-start">
       <div className="space-y-5">
         <Accounts accounts={accounts} access={access} meta={meta} onChanged={onChanged} />
         <HashtagGroups />
+        <LinkSettings canEdit={access.publish || access.manage} />
       </div>
       <QueueSlots canEdit={access.publish || access.manage} accounts={accounts} />
     </div>

@@ -13,6 +13,7 @@ import { DataTable, THead, TH, TR, TD, StatusPill, STATUS_COLORS } from '../../.
 import { DateInput } from '../../../components/pickers';
 import { confirmDialog, promptDialog } from '../../../lib/dialog';
 import { tr } from '../../../i18n';
+import ShareToSocialButton from '../../Social/ShareToSocialButton';
 
 const localToday = () => {
   const d = new Date();
@@ -255,6 +256,8 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
                       >
                         {copiedId === item.id ? <Check size={15} className="text-emerald-500" /> : <LinkIcon size={15} />}
                       </button>
+                      <ShareToSocialButton kind="sermon" id={item.id}
+                        disabledReason={!item.is_published || !item.slug ? tr('Udostępnić można opublikowane kazanie (z publicznym adresem).') : null} />
                       <button onClick={() => openEdit(item)} title={tr('Edytuj')} aria-label={tr('Edytuj kazanie „{title}”', { title: item.title })} className="p-2 rounded-lg text-gray-500 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} aria-hidden="true" /></button>
                       <button onClick={() => remove(item)} title={tr('Usuń')} aria-label={tr('Usuń kazanie „{title}”', { title: item.title })} className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} aria-hidden="true" /></button>
                     </div>

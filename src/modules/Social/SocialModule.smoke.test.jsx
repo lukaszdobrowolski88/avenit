@@ -18,6 +18,10 @@ vi.mock('../../lib/supabase', () => ({
         if (body.action === 'status') return { data: { accounts: [FB, IG], access: h.access, counts: { queue: h.posts.length, approval: 0, drafts: 0, failed: 0 }, meta: { configured: true }, me: { email: 'ja@k.pl' } }, error: null };
         if (body.action === 'list') return { data: { posts: h.posts }, error: null };
         if (body.action === 'queue_preview') return { data: { next_slot: new Date(Date.now() + 86400_000).toISOString() }, error: null };
+        if (body.action === 'share_prefill') return { data: { prefill: { content: `📅 Koncert ${body.kind}:${body.id}\nWięcej: https://k.avenit.pl/l/Ab3dE7x`, media: [], source_type: body.kind, source_id: body.id } }, error: null };
+        if (body.action === 'link_page') return { data: { page: { enabled: true, title: 'Nasz kościół', bio: '', links: [{ label: 'Strona', url: 'https://k.pl', code: 'abc1234', clicks: 7 }], show_events: true, show_sermons: true, show_posts: true }, url: 'https://k.avenit.pl/linki' }, error: null };
+        if (body.action === 'rules') return { data: { rules: [{ id: 'r1', name: 'Kazania na FB', trigger: 'sermon_published', action: 'draft', account_ids: [FB.id], enabled: true, config: {} }] }, error: null };
+        if (body.action === 'settings') return { data: { settings: { shorten_links: true, utm: true } }, error: null };
         if (body.action === 'activity') return { data: { activity: h.activity }, error: null };
         if (body.action === 'comment') { h.activity = [...h.activity, { id: 'c1', kind: 'comment', actor: 'ja@k.pl', note: body.body, created_at: new Date().toISOString() }]; return { data: { activity: h.activity }, error: null }; }
         if (body.action === 'save') return { data: { post: { id: 'new', status: body.intent === 'draft' ? 'draft' : 'scheduled', scheduled_at: new Date().toISOString(), targets: [] } }, error: null };
@@ -112,5 +116,22 @@ describe('SocialModule (dymny)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Anuluj' }));
     await waitFor(() => expect(confirmDialog).toHaveBeenCalled());
     expect(screen.getByLabelText('Treść posta')).toBeTruthy(); // okno zostaje
+  });
+
+  it('„Udostępnij w social media”: ?share=event:5 otwiera kompozytor z gotową treścią', async () => {
+    render(<MemoryRouter initialEntries={['/social?share=event:5']}><SocialModule /></MemoryRouter>);
+    const ta = await screen.findByLabelText('Treść posta');
+    await waitFor(() => expect(ta.value).toMatch(/Koncert event:5/));
+    expect(h.calls.find((c) => c.action === 'share_prefill')).toMatchObject({ kind: 'event', id: '5' });
+  });
+
+  it('zakładki Strona linków (kliknięcia przycisku) i Reguły', async () => {
+    renderModule();
+    tab('links');
+    expect(await screen.findByDisplayValue('Nasz kościół')).toBeTruthy();
+    expect(screen.getByText('7 klik.')).toBeTruthy();
+    expect(screen.getByText('https://k.avenit.pl/linki')).toBeTruthy();
+    tab('rules');
+    expect(await screen.findByText('Kazania na FB')).toBeTruthy();
   });
 });

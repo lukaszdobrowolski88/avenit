@@ -1,11 +1,14 @@
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StatusBar,
   Text,
   View,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Megaphone } from 'lucide-react-native';
+import { usePermissions } from '../../../src/lib/permissions';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { SermonAudioPlayer } from '../../../src/features/sermons/components/SermonAudioPlayer';
@@ -17,6 +20,9 @@ import { friendlyError } from '../../../src/lib/errors';
 export default function SermonDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: sermon, isLoading, isError, error } = useSermon(id ?? '');
+  const router = useRouter();
+  const perms = usePermissions();
+  const canSocial = perms.moduleVisible('social') && (perms.can('res:social_posts:create') || perms.can('action:social:publish'));
 
   if (isLoading) {
     return (
@@ -66,7 +72,22 @@ export default function SermonDetailScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
-        <PageHeader title="Kazanie" subtitle={sermon.series ?? undefined} showBack />
+        <PageHeader
+          title="Kazanie"
+          subtitle={sermon.series ?? undefined}
+          showBack
+          right={canSocial && sermon.is_published ? (
+            <Pressable
+              onPress={() => router.push({ pathname: '/(app)/social/compose', params: { source: 'sermon', sourceId: String(sermon.id) } } as never)}
+              accessibilityRole="button"
+              accessibilityLabel="Udostępnij w social media"
+              className="active:opacity-70"
+              style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: B.card, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Megaphone size={19} color={B.ink} />
+            </Pressable>
+          ) : undefined}
+        />
 
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
           {/* Karta jak plakat marki: kurkumowa data, tytuł pogrubiony + werset cienkim krojem,

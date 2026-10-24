@@ -91,6 +91,10 @@ export async function buildServer() {
   // Social Media: callback logowania Meta + żądania usunięcia danych (tenant ze state / wszystkie).
   const { default: socialRoutes } = await import('./social/routes.js');
   await app.register(socialRoutes);
+  // Social Media: publiczne strony kościoła — krótkie linki /l/:kod (karta wydarzenia, podgląd OG),
+  // strona linków /linki i publiczny odczyt kazania (/api/public/sermon/:slug).
+  const { default: socialPublicRoutes } = await import('./social/pages.js');
+  await app.register(socialPublicRoutes);
   // Publiczny formularz zgłoszeniowy ze strony głównej (avenit.pl).
   const { default: landingRoutes } = await import('./landing/routes.js');
   await app.register(landingRoutes);

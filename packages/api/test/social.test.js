@@ -16,6 +16,11 @@ import { socialReturnUrl } from '../src/social/routes.js';
 import { listActivity, addComment, deleteComment } from '../src/social/service.js';
 import { checkAccounts, cleanupMedia, ORPHAN_DAYS } from '../src/social/maintenance.js';
 import os from 'node:os';
+import Fastify from 'fastify';
+import { renderTemplate, withUtm, findUrls, youtubeId, youtubeThumb, eventVars, DEFAULT_TEMPLATES, plainText } from '@avenit/shared/src/lib/socialShare.js';
+import { sharePrefill, saveLinkPage, saveSettings, loadSettings } from '../src/social/links.js';
+import socialPublicRoutes, { eventIcs } from '../src/social/pages.js';
+import { saveRule, runRules } from '../src/social/rules.js';
 import path from 'node:path';
 import { REGISTRY, getTableRule, invalidatePermissions } from '../src/dataapi/registry.js';
 import { MODULES, FN_CAPABILITY } from '@avenit/shared/src/permissions/catalog.js';
@@ -154,6 +159,7 @@ test('rejestr i katalog: posty i kanały tylko do odczytu, token ukryty, stany O
 // ── Prawdziwy SQL (PGlite) + atrapa Graph API ───────────────────────────────
 const MIG = new URL('../db/tenant-migrations/121_social_media.sql', import.meta.url);
 const MIG122 = new URL('../db/tenant-migrations/122_social_activity.sql', import.meta.url);
+const MIG123 = new URL('../db/tenant-migrations/123_social_share.sql', import.meta.url);
 const uid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const DB_NAME = 'test_social';
 
@@ -219,6 +225,15 @@ before(async () => {
   await pg.exec(fs.readFileSync(MIG, 'utf8')); // idempotentna
   await pg.exec(fs.readFileSync(MIG122, 'utf8'));
   await pg.exec(fs.readFileSync(MIG122, 'utf8'));
+  await pg.exec(fs.readFileSync(MIG123, 'utf8'));
+  await pg.exec(fs.readFileSync(MIG123, 'utf8'));
+  await pg.exec(`
+    CREATE TABLE IF NOT EXISTS app_settings (key text PRIMARY KEY, value text, updated_at timestamptz);
+    CREATE TABLE events (id serial PRIMARY KEY, title text, date date, time text, end_time text, location text, details_html text,
+      description text, format text, module_key text, is_archived boolean DEFAULT false, event_type text);
+    CREATE TABLE sermons (id serial PRIMARY KEY, title text, speaker text, series text, sermon_date date, scripture_ref text, description text,
+      audio_url text, video_url text, notes text, slug text, is_published boolean DEFAULT false, created_at timestamptz DEFAULT now());
+  `);
   await pg.exec(`CREATE TABLE storage_objects (bucket text, path text, uploaded_by text, updated_at timestamptz, PRIMARY KEY (bucket, path))`);
   await db.query(`INSERT INTO app_users (id, email, role, is_super_admin) VALUES
     ($1, 'admin@k.pl', 'superadmin', true), ($2, 'redaktor@k.pl', 'redaktor', false), ($3, 'pub@k.pl', 'publikujacy', false),
@@ -231,7 +246,8 @@ after(() => { globalThis.fetch = realFetch; });
 test('migracja 121: tabele, moduł w menu raz, unikalny kanał', { skip }, async () => {
   const { rows } = await db.query(`SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'social_%' ORDER BY 1`);
   assert.deepEqual(rows.map((r) => r.table_name),
-    ['social_accounts', 'social_hashtag_groups', 'social_oauth_states', 'social_post_activity', 'social_post_targets', 'social_posts', 'social_queue_slots']);
+    ['social_accounts', 'social_hashtag_groups', 'social_links', 'social_oauth_states', 'social_post_activity', 'social_post_targets', 'social_posts',
+      'social_queue_slots', 'social_rule_runs', 'social_rules']);
   const m = await db.query(`SELECT key, path, resource_key, component_name FROM app_modules WHERE key = 'social'`);
   assert.equal(m.rows.length, 1);
   assert.deepEqual(m.rows[0], { key: 'social', path: '/social', resource_key: 'module:social', component_name: 'SocialModule' });
@@ -427,8 +443,8 @@ test('worker: limit sieci → ponowienie z przerwą, potem sukces', { skip }, as
   assert.equal(done.status, 'published');
   assert.equal(t.attempts, 2);
   assert.equal(t.permalink, 'https://www.facebook.com/P1/posts/100');
-  // Link z tekstu jako podgląd linku.
-  assert.equal(calls.find((c) => c.path === '/P1/feed').body.link, 'https://avenit.pl/wydarzenie');
+  // Link z tekstu jako podgląd linku — skrócony (krótki link z UTM, migracja 123).
+  assert.match(calls.find((c) => c.path === '/P1/feed').body.link, /^https:\/\/schwro\.avenit\.pl\/l\/[A-Za-z0-9]{7}$/);
 });
 
 test('worker: rolka IG w przetwarzaniu → kolejny przebieg publikuje tym samym kontenerem', { skip }, async () => {
@@ -626,6 +642,170 @@ test('utrzymanie: usuwa stare nieużywane katalogi plików, zostawia używane i 
   assert.ok(!fs.existsSync(path.join(base, 'schwro', '.thumbs', 'social-media', 'stary')));
   fs.rmSync(base, { recursive: true, force: true });
   await db.query(`DELETE FROM social_posts`);
+});
+
+test('szablony: zmienne, fragmenty warunkowe, UTM, adresy, YouTube', () => {
+  const ev = { title: 'Koncert uwielbienia', date: '2026-11-08', time: '18:00', location: 'Sala główna', details_html: '<p>Zapraszamy&nbsp;całe rodziny!</p><p>Wstęp wolny.</p>' };
+  const out = renderTemplate(DEFAULT_TEMPLATES.event, eventVars(ev, 'https://k.avenit.pl/l/abc1234'));
+  assert.equal(out, '📅 Koncert uwielbienia\nniedziela, 8 listopada · godz. 18:00 · Sala główna\n\nZapraszamy całe rodziny!\nWstęp wolny.\n\nWięcej: https://k.avenit.pl/l/abc1234');
+  const bare = renderTemplate(DEFAULT_TEMPLATES.event, eventVars({ title: 'X', date: '2026-11-08' }, 'L'));
+  assert.equal(bare, '📅 X\nniedziela, 8 listopada\n\nWięcej: L');
+  assert.equal(withUtm('https://ex.pl/a?x=1', { source: 'facebook', campaign: 'avenit-1' }), 'https://ex.pl/a?x=1&utm_source=facebook&utm_medium=social&utm_campaign=avenit-1');
+  assert.equal(withUtm('https://ex.pl/?utm_source=own', { source: 'facebook' }), 'https://ex.pl/?utm_source=own&utm_medium=social');
+  assert.deepEqual(findUrls('Zapisy: https://ex.pl/zapisy. Info (https://ex.pl/a) i https://ex.pl/zapisy'), ['https://ex.pl/zapisy', 'https://ex.pl/a']);
+  assert.equal(youtubeId('https://youtu.be/dQw4w9WgXcQ?t=10'), 'dQw4w9WgXcQ');
+  assert.equal(youtubeThumb('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=x'), 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
+  assert.equal(plainText('<b>a</b>&amp;b'), 'a&b');
+  const ics = eventIcs({ title: 'A, B', date: '2026-11-08', time: '18:00', location: 'Sala' }, { host: 'k.avenit.pl', code: 'abc1234' });
+  assert.match(ics, /DTSTART;TZID=Europe\/Warsaw:20261108T180000/);
+  assert.match(ics, /DTEND;TZID=Europe\/Warsaw:20261108T190000/);
+  assert.match(ics, /SUMMARY:A\\, B/);
+});
+
+test('udostępnianie: szkic z wydarzenia (link do karty) i z kazania (miniatura), ponownie ten sam link', { skip }, async () => {
+  const ctx = { ...ctxOf(), deps: { ...ctxOf().deps, fetchThumb: async (_c, url) => (url ? { path: 'thumb/plik.jpg', mime: 'image/jpeg', kind: 'image', width: 480, height: 360 } : null) } };
+  const pub = await accessOf(PUBLISHER);
+  const { rows: [ev] } = await db.query(`INSERT INTO events (title, date, time, location, details_html) VALUES ('Śniadanie', '2026-11-14', '09:00', 'Kawiarnia', '<p>Dla kobiet</p>') RETURNING id`);
+  const a = await sharePrefill(ctx, pub, { kind: 'event', id: ev.id });
+  assert.match(a.link, /^https:\/\/schwro\.avenit\.pl\/l\/[A-Za-z0-9]{7}$/);
+  assert.match(a.content, /Śniadanie/);
+  assert.equal(a.source_type, 'event');
+  const b = await sharePrefill(ctx, pub, { kind: 'event', id: ev.id });
+  assert.equal(b.link, a.link);
+  const { rows: [sm] } = await db.query(`INSERT INTO sermons (title, speaker, slug, is_published, video_url) VALUES ('Łaska', 'Jan', 'laska', true, 'https://youtu.be/dQw4w9WgXcQ') RETURNING id`);
+  const c = await sharePrefill(ctx, pub, { kind: 'sermon', id: sm.id });
+  assert.equal(c.media[0].path, 'thumb/plik.jpg');
+  assert.match(c.content, /Nowe kazanie: „Łaska” — Jan/);
+  const { rows: [l] } = await db.query(`SELECT * FROM social_links WHERE kind = 'sermon'`);
+  assert.equal(l.target_url, 'https://schwro.avenit.pl/sermon/laska');
+  assert.equal(l.image_url, 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
+  const { rows: [draft] } = await db.query(`INSERT INTO sermons (title, slug, is_published) VALUES ('Szkic', 'szkic', false) RETURNING id`);
+  await assert.rejects(sharePrefill(ctx, pub, { kind: 'sermon', id: draft.id }), (e) => e.code === 'NOT_PUBLISHED');
+});
+
+test('publikacja FB: adresy → krótkie linki z UTM (raz, także przy ponowieniu); wyłączone w ustawieniach — bez zmian', { skip }, async () => {
+  const ctx = ctxOf();
+  const pub = await accessOf(PUBLISHER);
+  await db.query(`UPDATE social_accounts SET status = 'active'`);
+  const post = await savePost(ctx, pub, { content: 'Zapisy: https://ex.pl/zapisy i FB https://facebook.com/x', targets: [{ account_id: FB.id }], intent: 'now' });
+  mockFetch([[(c) => c.path === '/P1/feed', json({ error: { code: 2, message: 'tmp' } }, 500)]]);
+  await runDuePublishing(ctx);
+  const { rows: links1 } = await db.query(`SELECT * FROM social_links WHERE post_id = $1`, [post.id]);
+  assert.equal(links1.length, 1);
+  assert.equal(links1[0].target_url, `https://ex.pl/zapisy?utm_source=facebook&utm_medium=social&utm_campaign=avenit-${post.id.slice(0, 8)}`);
+  await db.query(`UPDATE social_post_targets SET next_attempt_at = now() - interval '1 second' WHERE post_id = $1`, [post.id]);
+  mockFetch([
+    [(c) => c.path === '/P1/feed', json({ id: 'P1_200' })],
+    [(c) => c.method === 'GET' && c.path === '/P1_200', json({})],
+  ]);
+  await runDuePublishing(ctx);
+  const feed = calls.find((c) => c.path === '/P1/feed');
+  assert.equal(feed.body.message, `Zapisy: https://schwro.avenit.pl/l/${links1[0].code} i FB https://facebook.com/x`);
+  assert.equal(feed.body.link, `https://schwro.avenit.pl/l/${links1[0].code}`);
+  const { rows: links2 } = await db.query(`SELECT * FROM social_links WHERE post_id = $1`, [post.id]);
+  assert.equal(links2.length, 1); // ponowienie nie tworzy nowych linków
+  // Wyłączone skracanie.
+  await saveSettings(db, { shorten_links: false });
+  assert.equal((await loadSettings(db)).shorten_links, false);
+  const p2 = await savePost(ctx, pub, { content: 'Bez skracania https://ex.pl/b', targets: [{ account_id: FB.id }], intent: 'now' });
+  mockFetch([[(c) => c.path === '/P1/feed', json({ id: 'P1_201' })], [(c) => c.method === 'GET' && c.path === '/P1_201', json({})]]);
+  await runDuePublishing(ctx);
+  assert.equal(calls.find((c) => c.path === '/P1/feed').body.message, 'Bez skracania https://ex.pl/b');
+  assert.equal((await db.query(`SELECT count(*)::int AS n FROM social_links WHERE post_id = $1`, [p2.id])).rows[0].n, 0);
+  await saveSettings(db, { shorten_links: true });
+  await db.query(`DELETE FROM social_posts`);
+});
+
+test('strony publiczne: /l przekierowuje i liczy (człowiek), karta wydarzenia + .ics, podgląd OG kazania dla robota, /linki, kazanie JSON', { skip }, async () => {
+  const app = Fastify();
+  app.decorate('requireTenant', async (req) => { req.db = db; req.tenant = { name: 'Kościół Testowy', slug: 'schwro', subdomain: 'schwro' }; });
+  await app.register(socialPublicRoutes);
+  const human = { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' };
+  const bot = { 'user-agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)' };
+  await db.query(`INSERT INTO social_links (code, kind, target_url) VALUES ('urlAAAA', 'url', 'https://ex.pl/?utm_source=facebook'), ('badBBBB', 'url', 'javascript:alert(1)')`);
+  let r = await app.inject({ url: '/l/urlAAAA', headers: human });
+  assert.equal(r.statusCode, 302);
+  assert.equal(r.headers.location, 'https://ex.pl/?utm_source=facebook');
+  await new Promise((res) => setTimeout(res, 20));
+  assert.equal((await db.query(`SELECT clicks FROM social_links WHERE code = 'urlAAAA'`)).rows[0].clicks, 1);
+  r = await app.inject({ url: '/l/urlAAAA', headers: bot });
+  assert.equal(r.statusCode, 302);
+  await new Promise((res) => setTimeout(res, 20));
+  assert.equal((await db.query(`SELECT clicks FROM social_links WHERE code = 'urlAAAA'`)).rows[0].clicks, 1); // robot się nie liczy
+  assert.equal((await app.inject({ url: '/l/badBBBB', headers: human })).statusCode, 404);
+  assert.equal((await app.inject({ url: '/l/nieMa12', headers: human })).statusCode, 404);
+  assert.equal((await app.inject({ url: '/l/<script>', headers: human })).statusCode, 404);
+
+  const { rows: [ev] } = await db.query(`SELECT id FROM events WHERE title = 'Śniadanie'`);
+  const { rows: [el] } = await db.query(`SELECT code FROM social_links WHERE kind = 'event' AND ref_id = $1`, [String(ev.id)]);
+  r = await app.inject({ url: `/l/${el.code}`, headers: bot });
+  assert.equal(r.statusCode, 200);
+  assert.match(r.body, /<meta property="og:title" content="Śniadanie">/);
+  assert.match(r.body, /sobota, 14 listopada · godz. 09:00/);
+  assert.match(r.body, /Dla kobiet/);
+  r = await app.inject({ url: `/l/${el.code}/kalendarz.ics`, headers: human });
+  assert.match(r.headers['content-type'], /text\/calendar/);
+  assert.match(r.body, /SUMMARY:Śniadanie/);
+
+  const { rows: [sl] } = await db.query(`SELECT code FROM social_links WHERE kind = 'sermon'`);
+  r = await app.inject({ url: `/l/${sl.code}`, headers: bot });
+  assert.equal(r.statusCode, 200);
+  assert.match(r.body, /og:image" content="https:\/\/img\.youtube\.com/);
+  assert.match(r.body, /http-equiv="refresh" content="0;url=https:\/\/schwro\.avenit\.pl\/sermon\/laska"/);
+  r = await app.inject({ url: `/l/${sl.code}`, headers: human });
+  assert.equal(r.statusCode, 302);
+
+  assert.equal((await app.inject({ url: '/linki', headers: human })).statusCode, 404); // wyłączona
+  const page = await saveLinkPage(ctxOf(), { enabled: true, title: 'Nasz kościół', bio: 'Niedziele 10:00', links: [{ label: 'Strona', url: 'kosciol.pl' }, { label: '', url: 'x' }] });
+  assert.equal(page.links.length, 1);
+  assert.equal(page.links[0].url, 'https://kosciol.pl');
+  const again = await saveLinkPage(ctxOf(), { ...page, links: page.links });
+  assert.equal(again.links[0].code, page.links[0].code); // ten sam adres — ten sam kod
+  r = await app.inject({ url: '/linki', headers: human });
+  assert.equal(r.statusCode, 200);
+  assert.match(r.body, /Nasz kościół/);
+  assert.match(r.body, new RegExp(`href="/l/${page.links[0].code}"`));
+  assert.match(r.body, /Śniadanie/); // udostępnione nadchodzące wydarzenie
+  assert.match(r.body, /href="\/sermon\/laska"/);
+
+  r = await app.inject({ url: '/api/public/sermon/laska' });
+  assert.equal(JSON.parse(r.body).sermon.youtube_id, 'dQw4w9WgXcQ');
+  assert.equal((await app.inject({ url: '/api/public/sermon/szkic' })).statusCode, 404); // nieopublikowane
+  await app.close();
+});
+
+test('reguły: nowe kazanie → szkic (IG bez zdjęcia nie przejdzie do kolejki), przypomnienie o wydarzeniu, bez duplikatów', { skip }, async () => {
+  const ctx = { ...ctxOf(), deps: { ...ctxOf().deps, fetchThumb: async () => null } };
+  const pub = await accessOf(PUBLISHER);
+  const ed = await accessOf(EDITOR);
+  await assert.rejects(saveRule(ctx, ed, { trigger: 'sermon_published', action: 'queue', account_ids: [FB.id] }), (e) => e.code === 'NO_PUBLISH');
+  await saveSlots(ctx, pub, { slots: [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, time: '12:00' })) });
+  const rules = await saveRule(ctx, pub, { trigger: 'sermon_published', action: 'queue', account_ids: [FB.id, IG.id] });
+  await db.query(`INSERT INTO sermons (title, speaker, slug, is_published) VALUES ('Nadzieja', 'Ola', 'nadzieja', true)`);
+  delivered.length = 0;
+  let st = await runRules(ctx);
+  assert.equal(st.created, 1);
+  const { rows: posts } = await db.query(`SELECT * FROM social_posts WHERE source_type = 'sermon'`);
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].status, 'draft'); // IG bez zdjęcia → szkic do uzupełnienia
+  assert.ok(delivered.some((d) => d.user_email === 'pub@k.pl' && /przygotowała szkic/.test(d.title)));
+  st = await runRules(ctx);
+  assert.equal(st.created, 0); // bez duplikatu
+  // Przypomnienie: wydarzenie za 2 dni (czas polski), tylko ogólne.
+  const p = warsawParts(new Date(Date.now() + 2 * 86400_000));
+  const ymd = `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+  await db.query(`INSERT INTO events (title, date, time) VALUES ('Modlitwa', $1, '19:00'), ('Próba zespołu', $1, '18:00')`, [ymd]);
+  await db.query(`UPDATE events SET module_key = 'worship' WHERE title = 'Próba zespołu'`);
+  await saveRule(ctx, pub, { trigger: 'event_reminder', action: 'queue', account_ids: [FB.id], config: { days_before: 2 } });
+  st = await runRules(ctx);
+  assert.equal(st.created, 1);
+  const { rows: evPosts } = await db.query(`SELECT * FROM social_posts WHERE source_type = 'event'`);
+  assert.equal(evPosts.length, 1);
+  assert.equal(evPosts[0].status, 'scheduled');
+  assert.match(evPosts[0].content, /Modlitwa/);
+  assert.ok(rules.length >= 1);
+  await db.query(`DELETE FROM social_posts`);
+  await db.query(`DELETE FROM social_rules`);
 });
 
 test('worker: tenant bez migracji — fn nie wywraca workera', { skip }, async () => {

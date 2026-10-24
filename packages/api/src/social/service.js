@@ -24,6 +24,7 @@ import { deliverNotifications } from '../dataapi/boardNotify.js';
 import { SocialError } from './meta.js';
 import { decryptToken, markAccount, publicAccount, listAccounts } from './accounts.js';
 import { publishTarget, postFirstComment, MEDIA_PATH_RE } from './publish.js';
+import { loadSettings, shortenForTarget } from './links.js';
 import {
   SOCIAL_PROVIDERS, validateTarget, effectiveTarget, nextQueueSlot, aggregatePostStatus, isValidSlot,
   EDITABLE_STATUSES, MAX_MEDIA, MAX_TARGETS, MAX_CONTENT, charCount,
@@ -707,13 +708,27 @@ async function processTarget(ctx, t) {
     await updateTarget(ctx.db, t.id, { status: 'failed', error: account.last_error || 'Połączenie z kontem wygasło — połącz kanał ponownie.' });
     return;
   }
-  const progress = t.progress || {};
+  let progress = t.progress || {};
   if (progress.started_at && now - new Date(progress.started_at) > PROCESSING_TIMEOUT_MS) {
     await updateTarget(ctx.db, t.id, { status: 'failed', error: 'Przetwarzanie pliku przez sieć trwało zbyt długo. Spróbuj krótszego wideo.', progress: {} });
     return;
   }
   const eff = effectiveTarget(post, t);
   try {
+    // Facebook: adresy w treści → krótkie linki z UTM (raz na kanał; ponowienia biorą zapisany wynik).
+    if (account.provider === 'facebook') {
+      if (!progress.short_done) {
+        const settings = await loadSettings(ctx.db);
+        const out = await shortenForTarget(ctx, { text: eff.content, link: eff.options.link, post, target: t, settings }).catch((e) => {
+          logErr(ctx, e, 'social: skracanie linków');
+          return { text: eff.content, link: eff.options.link };
+        });
+        progress = { ...progress, short_done: true, short_content: out.text, short_link: out.link || null };
+        await ctx.db.query(`UPDATE social_post_targets SET progress = $2::jsonb WHERE id = $1`, [t.id, JSON.stringify(progress)]);
+      }
+      eff.content = progress.short_content ?? eff.content;
+      if (progress.short_link) eff.options = { ...eff.options, link: progress.short_link };
+    }
     const token = await decryptToken(account.access_token_enc);
     if (!token) throw new SocialError('Brak tokenu kanału — połącz kanał ponownie.', { code: 'token_invalid', tokenInvalid: true });
     const out = await publishTarget(ctx, { account, token, content: eff.content, media: eff.media, options: eff.options, progress });
