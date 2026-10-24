@@ -13,9 +13,16 @@
 //   queue_preview { account_ids, id? } → { next_slot }
 //   activity     { id } → { activity }  (historia + komentarze zespołu)
 //   comment      { id, body } → { activity }   comment_delete { comment_id } → { activity }
+//   share_prefill { kind: event|sermon, id } → gotowy szkic (treść z linkiem /l/…, miniatura kazania)
+//   post_links   { id } → krótkie linki posta z kliknięciami
+//   settings / settings_save { shorten_links, utm }       link_page / link_page_save (strona /linki)
+//   rules / rule_save / rule_delete — reguły automatyczne
 // Worker (co minutę): runForTenant — należne posty publikowane, ponowienia, przetwarzanie IG.
 // Uprawnienia szczegółowe w funkcji (social/service.js → socialAccess); bramka: module:social.
 import { config, isProd } from '../config.js';
+import { canAccess } from '../dataapi/registry.js';
+import { sharePrefill, postLinks, loadSettings, saveSettings, loadLinkPage, saveLinkPage, withClicks, tenantBase } from '../social/links.js';
+import { listRules, saveRule, deleteRule } from '../social/rules.js';
 import { SocialError, metaConfigured, metaRedirectUri } from '../social/meta.js';
 import { startConnect, NONCE_COOKIE, STATE_TTL_MS } from '../social/accounts.js';
 import {
@@ -30,6 +37,14 @@ export const capability = 'module:social';
 export const rateLimit = { max: 120, timeWindow: '1 minute' };
 
 const forbid = (message) => new SocialError(message, { status: 403, code: 'FORBIDDEN' });
+
+// Udostępnić wydarzenie / kazanie może osoba, która je widzi (te same reguły co /api/db).
+async function assertCanRead(ctx, access, table) {
+  if (access.admin) return;
+  const me = access.me || {};
+  const r = await canAccess({ pool: ctx.db, dbName: ctx.dbName, table, op: 'select', user: { id: me.id, role: me.role, is_super_admin: me.is_super_admin } });
+  if (!r.ok) throw forbid('Nie masz dostępu do tej treści.');
+}
 
 const ACTIONS = {
   async status(ctx, access) {
@@ -67,6 +82,33 @@ const ACTIONS = {
   async activity(ctx, access, body) { return { activity: await listActivity(ctx, access, body) }; },
   async comment(ctx, access, body) { return { activity: await addComment(ctx, access, body) }; },
   async comment_delete(ctx, access, body) { return { activity: await deleteComment(ctx, access, body) }; },
+  async share_prefill(ctx, access, body) {
+    if (!access.create && !access.publish) throw forbid(MSG.noCreate);
+    await assertCanRead(ctx, access, body.kind === 'sermon' ? 'sermons' : 'events');
+    return { prefill: await sharePrefill(ctx, access, { kind: body.kind, id: body.id }) };
+  },
+  async post_links(ctx, access, body) {
+    const post = await loadPost(ctx.db, body.id);
+    if (!post) throw new SocialError(MSG.notFound, { status: 404, code: 'NOT_FOUND' });
+    if (!canSeePost(access, post)) throw forbid(MSG.notYours);
+    return { links: await postLinks(ctx.db, post.id) };
+  },
+  async settings(ctx) { return { settings: await loadSettings(ctx.db) }; },
+  async settings_save(ctx, access, body) {
+    if (!access.publish && !access.manage) throw forbid(MSG.noManage);
+    return { settings: await saveSettings(ctx.db, body) };
+  },
+  async link_page(ctx) {
+    const page = await withClicks(ctx.db, await loadLinkPage(ctx.db));
+    return { page, url: `${tenantBase(ctx.tenantSubdomain || ctx.tenantSlug)}/linki` };
+  },
+  async link_page_save(ctx, access, body) {
+    if (!access.publish && !access.manage) throw forbid(MSG.noManage);
+    return { page: await saveLinkPage(ctx, body), url: `${tenantBase(ctx.tenantSubdomain || ctx.tenantSlug)}/linki` };
+  },
+  async rules(ctx) { return { rules: await listRules(ctx) }; },
+  async rule_save(ctx, access, body) { return { rules: await saveRule(ctx, access, body) }; },
+  async rule_delete(ctx, access, body) { return { rules: await deleteRule(ctx, access, body) }; },
 };
 
 export async function socialAction(req, access) {

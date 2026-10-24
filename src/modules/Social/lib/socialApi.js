@@ -41,7 +41,19 @@ export const socialApi = {
   activity: (id) => socialCall('activity', { id }).then((d) => d.activity || []),
   comment: (id, body) => socialCall('comment', { id, body }).then((d) => d.activity || []),
   commentDelete: (commentId) => socialCall('comment_delete', { comment_id: commentId }).then((d) => d.activity || []),
+  sharePrefill: (kind, id) => socialCall('share_prefill', { kind, id }).then((d) => d.prefill),
+  postLinks: (id) => socialCall('post_links', { id }).then((d) => d.links || []),
+  settings: () => socialCall('settings').then((d) => d.settings),
+  saveSettings: (s) => socialCall('settings_save', s).then((d) => d.settings),
+  linkPage: () => socialCall('link_page'),
+  saveLinkPage: (page) => socialCall('link_page_save', page),
+  rules: () => socialCall('rules').then((d) => d.rules || []),
+  saveRule: (rule) => socialCall('rule_save', rule).then((d) => d.rules || []),
+  deleteRule: (id) => socialCall('rule_delete', { id }).then((d) => d.rules || []),
 };
+
+// Link „Udostępnij w social media” z innych modułów (wydarzenie, kazanie).
+export const shareToSocialPath = (kind, id) => `/social?share=${kind}:${encodeURIComponent(String(id))}`;
 
 // Wgranie pliku do bucketu social-media → obiekt mediów posta (z wymiarami / długością wideo).
 export async function uploadSocialMedia(file) {

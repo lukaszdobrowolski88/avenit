@@ -273,12 +273,23 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
   const showDetails = !!d.details || d.fields.length > 0 || !!d.link;
   const showMyService = d.myAssignments.length > 0 || ev.isMine;
 
-  const share = () => {
+  // „Udostępnij”: osoba z prawem tworzenia postów wybiera — post w social media (gotowy szkic z publiczną
+  // kartą wydarzenia) albo zwykłe wysłanie linku.
+  const canSocial = perms.moduleVisible('social') && (perms.can('res:social_posts:create') || perms.can('action:social:publish'));
+  const shareLink = () => {
     const base = tenantWebBase();
     const when = `${cap(format(ev.startsAt, 'EEEE, d MMMM', { locale: pl }))}, ${timeRange(ev)}`;
     Share.share({
       message: [ev.title, when, ev.location, base ? `${base}/wydarzenie/${ev.eventId}` : null].filter(Boolean).join('\n'),
     }).catch(() => undefined);
+  };
+  const share = () => {
+    if (!canSocial) return shareLink();
+    Alert.alert('Udostępnij wydarzenie', undefined, [
+      { text: 'Post w social media', onPress: () => router.push({ pathname: '/(app)/social/compose', params: { source: 'event', sourceId: String(ev.eventId) } } as never) },
+      { text: 'Wyślij link', onPress: shareLink },
+      { text: 'Anuluj', style: 'cancel' },
+    ]);
   };
 
   // Skróty do sekcji (przyklejony pasek): pozycja sekcji z onLayout → scrollTo.

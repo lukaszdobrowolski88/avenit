@@ -16,7 +16,7 @@ import {
   SOCIAL_PROVIDERS, MAX_MEDIA, IG_FORMAT_LABELS, FB_FORMAT_LABELS, charCount, effectiveTarget, instagramFormat, validateTarget,
 } from '@avenit/shared/src/lib/social.js';
 import {
-  FileTooLarge, hashtagGroups, mediaUri, pickMedia, socialApi, uploadAsset, useInvalidateSocial, useSocialPost, useSocialStatus,
+  FileTooLarge, hashtagGroups, mediaUri, pickMedia, socialApi, uploadAsset, useInvalidateSocial, useSharePrefill, useSocialPost, useSocialStatus,
   type Intent, type SocialAccount, type SocialMedia, type TargetOptions,
 } from '../api';
 import { ChannelAvatar, channelName, fmtWhen, providerLabel } from '../components/ui';
@@ -41,10 +41,13 @@ const appendBlock = (text: string, block: string) => (!text.trim() ? block.trim(
 export const SocialComposeScreen = () => {
   const router = useRouter();
   const navigation = useNavigation();
-  const params = useLocalSearchParams<{ id?: string; date?: string }>();
+  const params = useLocalSearchParams<{ id?: string; date?: string; source?: string; sourceId?: string }>();
   const editingId = params.id ? String(params.id) : undefined;
   const status = useSocialStatus();
   const existing = useSocialPost(editingId);
+  // „Udostępnij w social media” z wydarzenia / kazania → treść z linkiem (i miniatura kazania).
+  const shareKind = !editingId && (params.source === 'event' || params.source === 'sermon') ? String(params.source) : undefined;
+  const prefill = useSharePrefill(shareKind, shareKind && params.sourceId ? String(params.sourceId) : undefined);
   const invalidate = useInvalidateSocial();
 
   const access = status.data?.access ?? {};
@@ -76,7 +79,7 @@ export const SocialComposeScreen = () => {
 
   // Wczytanie posta / wartości początkowych (raz, gdy dane są gotowe).
   useEffect(() => {
-    if (ready || status.isLoading || (editingId && existing.isLoading)) return;
+    if (ready || status.isLoading || (editingId && existing.isLoading) || (shareKind && prefill.isLoading)) return;
     const targets = post?.targets ?? [];
     const ids = targets.length ? targets.map((t) => t.account_id).filter(Boolean) as string[] : usable.length === 1 ? [usable[0].id] : [];
     const c: Record<string, Custom> = {};
@@ -88,16 +91,20 @@ export const SocialComposeScreen = () => {
     const w: When = at && new Date(at) > new Date() ? 'schedule' : canPublish ? 'queue' : 'none';
     const base = at ? new Date(at) : new Date(Date.now() + 2 * 3600_000);
     const f = { ymd: toYmd(base), hm: at ? `${pad(base.getHours())}:${pad(base.getMinutes())}` : `${pad(base.getHours())}:00` };
+    const initContent = post?.content ?? prefill.data?.content ?? '';
+    const initMedia = post?.media ?? prefill.data?.media ?? [];
     setSelected(ids);
-    setContent(post?.content ?? '');
-    setMedia(post?.media ?? []);
+    setContent(initContent);
+    setMedia(initMedia);
     setCustom(c);
     setWhen(w);
     setYmd(f.ymd);
     setHm(f.hm);
+    // Szkic z udostępnienia od razu liczy się jako zmiana (wyjście pyta o zapis).
     baseline.current = JSON.stringify({ ids, content: post?.content ?? '', media: post?.media ?? [], c, w, ...f });
     setReady(true);
-  }, [ready, status.isLoading, existing.isLoading, editingId, post, usable, canPublish, params.date]);
+    if (prefill.isError) showError('Nie udało się przygotować treści', prefill.error);
+  }, [ready, status.isLoading, existing.isLoading, editingId, post, usable, canPublish, params.date, shareKind, prefill.isLoading, prefill.data, prefill.isError, prefill.error]);
 
   const snap = JSON.stringify({ ids: selected, content, media, c: custom, w: when, ymd, hm });
   const dirty = ready && baseline.current !== null && snap !== baseline.current;
@@ -181,6 +188,7 @@ export const SocialComposeScreen = () => {
     try {
       const out = await socialApi.save({
         id: editingId, content, media, intent, tags: post?.tags ?? [],
+        ...(!editingId && prefill.data ? { source_type: prefill.data.source_type, source_id: prefill.data.source_id } : {}),
         targets: selectedAccounts.map(targetFor),
         ...(scheduled ? { scheduled_at: scheduled } : {}),
       });
@@ -201,7 +209,7 @@ export const SocialComposeScreen = () => {
     }
   };
 
-  if (status.isLoading || (editingId && existing.isLoading) || !ready) {
+  if (status.isLoading || (editingId && existing.isLoading) || (shareKind && prefill.isLoading) || !ready) {
     return <View style={{ flex: 1, backgroundColor: B.paper }}><PageHeader title={editingId ? 'Edytuj post' : 'Nowy post'} Icon={PenSquare} showBack /><ActivityIndicator color={B.ink} style={{ marginTop: 40 }} /></View>;
   }
   if (!usable.length) {

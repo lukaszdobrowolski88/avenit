@@ -26,6 +26,7 @@ import { DateInput, TimeField } from '../components/pickers';
 import { confirmDialog } from '../lib/dialog';
 import { tr } from '../i18n';
 import OnlineMeetingCard from './Events/OnlineMeetingCard';
+import ShareToSocialButton from './Social/ShareToSocialButton';
 import InterpretationCard from './Events/InterpretationCard';
 import { EventFormatPicker, EventFormatBadge, JoinEventButton, hasPlace, isOnlineFormat, joinWindowOpen } from './Events/eventFormat';
 
@@ -514,6 +515,7 @@ export default function EventDetailPage() {
         {isOnlineFormat(ev.format) && joinWindowOpen(ev) && (
           <JoinEventButton eventId={ev.id} title={ev.title} className="mt-2 shrink-0" />
         )}
+        <ShareToSocialButton kind="event" id={ev.id} className="mt-1" />
         {canManage && (
           <button onClick={del} className="mt-1 p-2 shrink-0 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title={tr('Usuń wydarzenie')} aria-label={tr('Usuń wydarzenie')}><Trash2 size={18} /></button>
         )}

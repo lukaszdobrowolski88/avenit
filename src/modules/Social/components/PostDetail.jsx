@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Eye, ExternalLink, RotateCcw, Copy, Trash2, Pencil } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
@@ -10,6 +10,7 @@ import ChannelAvatar from './ChannelAvatar';
 import PostPreview from './PostPreview';
 import { fmtWhen } from './Composer';
 import ActivityPanel from './ActivityPanel';
+import { socialApi } from '../lib/socialApi';
 
 // Szczegóły posta po publikacji (albo w trakcie): wynik w każdym kanale, linki, błędy, ponowienie.
 export default function PostDetail({ post, open, onClose, access, myEmail, accountsById, onAction }) {
@@ -17,6 +18,11 @@ export default function PostDetail({ post, open, onClose, access, myEmail, accou
   const targets = post?.targets || [];
   const [previewId, setPreviewId] = useState(null);
   const previewTarget = useMemo(() => targets.find((t) => t.id === previewId) || targets[0], [targets, previewId]);
+  const [links, setLinks] = useState([]);
+  useEffect(() => {
+    if (!open || !post?.id) { setLinks([]); return; }
+    socialApi.postLinks(post.id).then(setLinks).catch(() => setLinks([]));
+  }, [open, post?.id]);
   if (!post) return null;
   const previewAccount = previewTarget
     ? (accountsById.get(previewTarget.account_id) || { provider: previewTarget.provider, name: previewTarget.account_name })
@@ -66,6 +72,19 @@ export default function PostDetail({ post, open, onClose, access, myEmail, accou
               </li>
             ))}
           </ul>
+          {links.length > 0 && (
+            <div className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-2">{tr('Kliknięcia linków')}</p>
+              <ul className="space-y-1.5">
+                {links.map((l) => (
+                  <li key={l.code} className="flex items-center gap-2 text-sm">
+                    <span className="flex-1 min-w-0 truncate text-gray-700 dark:text-gray-200" title={l.target_url}>{(l.target_url || '').replace(/[?&]utm_[^&]+/g, '').replace(/\?$/, '')}</span>
+                    <span className="font-semibold tabular-nums text-gray-900 dark:text-white">{l.clicks}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <ActivityPanel postId={post.id} myEmail={myEmail} isAdmin={access?.admin} />
         </div>
         <aside className="bg-gray-50 dark:bg-gray-900/40 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 p-5">

@@ -63,6 +63,51 @@ jak w Bufferze. Migracja tenanta `121_social_media.sql`, kod: `packages/api/src/
   Łączenie kanałów (logowanie Meta) otwiera web z biletem SSO. Linki z powiadomień
   `/social?post=…` otwierają ekran posta.
 
+## Udostępnianie z Avenit, krótkie linki, strona linków, reguły (migracja 123)
+
+- **„Udostępnij w social media”** (ikona megafonu):
+  - **Gdzie:** web — przy wydarzeniu (nagłówek strony wydarzenia) i przy kazaniu (lista kazań);
+    mobilka — „Udostępnij” na wydarzeniu i przycisk w nagłówku kazania.
+  - **Co robi:** otwiera kompozytor z gotową treścią z szablonu i linkiem; do kazania dodaje
+    miniaturę z YouTube.
+  - **Kto widzi przycisk:** osoba z prawem tworzenia postów, która widzi daną treść.
+  - **Kazania:** tylko opublikowane, z publicznym adresem.
+- **Krótkie linki** `https://<kościół>.avenit.pl/l/<kod>` (`social_links`):
+  - **Na Facebooku:** przy publikacji adresy w treści i link podglądu zamieniają się na krótkie
+    linki z UTM (`utm_source=facebook`, `utm_medium=social`, `utm_campaign=avenit-<post>`).
+    Robi się to raz na kanał, ponowienie publikacji używa tych samych linków.
+  - **Kliknięcia:** widać je w szczegółach posta. Kliknięć robotów nie liczymy.
+  - **Wyłączanie:** w zakładce Kanały → „Linki w postach”.
+  - **Instagram:** bez skracania, bo linki w podpisie nie są klikalne.
+- **Wydarzenia nie mają publicznej strony.** Link do udostępnionego wydarzenia pokazuje
+  publiczną kartę renderowaną na serwerze: tytuł, termin, miejsce, opis, „Dodaj do kalendarza”
+  (.ics) i meta tagi OG dla podglądu na Facebooku. Widać tylko wydarzenia jawnie udostępnione.
+- **Link do kazania:**
+  - robot (Facebook, Messenger) dostaje podgląd OG z miniaturą;
+  - człowiek trafia na `/sermon/<slug>`.
+  
+  Publiczna strona kazania czyta teraz `GET /api/public/sermon/:slug`. Wcześniej czytała przez
+  `/api/db`, które wymaga logowania, więc niezalogowany odwiedzający widział „nie znaleziono”.
+- **Strona linków** `https://<kościół>.avenit.pl/linki` („link in bio”), renderowana na serwerze:
+  - zawartość: tytuł, opis, przyciski z licznikiem kliknięć, udostępnione nadchodzące wydarzenia,
+    ostatnie opublikowane kazania i kafelki opublikowanych postów;
+  - ustawienia: zakładka „Strona linków”, zapis w `app_settings.social_link_page`;
+  - domyślnie wyłączona.
+- **Reguły** (zakładka „Reguły”, worker co godzinę — `fn/social-rules.js`):
+  - **Wyzwalacze:**
+    - **Nowe kazanie** — opublikowane po utworzeniu reguły;
+    - **Przypomnienie o wydarzeniu** — N dni przed, czas polski; domyślnie tylko wydarzenia
+      ogólne (bez wewnętrznych wydarzeń służb), opcjonalnie wybrane typy.
+  - **Co tworzy reguła:** szkic, post do akceptacji albo post w kolejce, w wybranych kanałach,
+    z szablonem treści. Szablon używa zmiennych `{tytul}`, `{data}`, `{link}` itd.; fragment
+    `{zmienna? …}` pojawia się tylko, gdy zmienna ma wartość.
+  - **Prawa:** post powstaje z prawami autora reguły, sprawdzanymi przy każdym przebiegu.
+  - **Gdy post nie przejdzie walidacji** (np. Instagram bez zdjęcia) albo kolejka nie ma godzin,
+    powstaje szkic i autor dostaje powiadomienie.
+  - **Bez duplikatów:** każdą treść reguła obsługuje raz (`social_rule_runs`).
+- **Caddy:** na hoście kościoła `/l/*` i `/linki` idą do API, każda ścieżka w osobnym bloku
+  `handle`. Przed wdrożeniem sprawdź konfigurację: `caddy validate`.
+
 ## Uprawnienia (Ustawienia → Uprawnienia → Social Media)
 
 | Prawo | Co daje |
@@ -140,8 +185,7 @@ mają dostępu, dopóki nie zostanie nadany w macierzy (np. służbie Media). Mo
 
 ## Następne etapy (plan)
 
-1. Udostępnianie z wydarzeń, kazań i ogłoszeń (gotowy szkic z linkiem i grafiką), reguły
-   automatyczne, UTM i krótkie linki, strona linków („link in bio”).
+1. ~~Udostępnianie z wydarzeń i kazań, reguły, UTM i krótkie linki, strona linków~~ (zrobione, migracja 123).
 2. Asystent AI w kompozytorze (warianty tekstu, hashtagi, tłumaczenie PL/EN/UK) przez `ai-assist`.
 3. Analityka postów (zasięg, reakcje, najlepsze godziny), wymaga `read_insights` /
    `instagram_manage_insights`.

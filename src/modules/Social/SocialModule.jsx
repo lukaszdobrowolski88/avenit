@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Share2, Plus, CalendarDays, ListOrdered, ClipboardCheck, FileText, CheckCheck, Link2, AlertTriangle } from 'lucide-react';
+import { Share2, Plus, CalendarDays, ListOrdered, ClipboardCheck, FileText, CheckCheck, Link2, AlertTriangle, Link as LinkIcon, Workflow } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import Button from '../../components/Button';
@@ -18,6 +18,8 @@ import PostDetail from './components/PostDetail';
 import PostList from './components/PostList';
 import CalendarView from './components/CalendarView';
 import ChannelsTab from './components/ChannelsTab';
+import LinkPageTab from './components/LinkPageTab';
+import RulesTab from './components/RulesTab';
 
 function TabLabel({ label, count, tone }) {
   return (
@@ -63,6 +65,21 @@ export default function SocialModule() {
     if (post && post.status === 'failed') { setDetail(post); return; }
     setComposer({ post });
   }, []);
+
+  // „Udostępnij w social media” z innych modułów: /social?share=event:<id> | sermon:<id> → gotowy szkic.
+  useEffect(() => {
+    const share = params.get('share');
+    if (!share) return;
+    const [kind, ...rest] = share.split(':');
+    const id = rest.join(':');
+    const next = new URLSearchParams(params);
+    next.delete('share');
+    setParams(next, { replace: true });
+    if (!['event', 'sermon'].includes(kind) || !id) return;
+    socialApi.sharePrefill(kind, id)
+      .then((p) => setComposer({ post: null, defaults: { content: p.content, media: p.media, source_type: p.source_type, source_id: p.source_id } }))
+      .catch((e) => toast.error(e.message));
+  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Link z powiadomienia: /social?post=<id>.
   useEffect(() => {
@@ -122,6 +139,8 @@ export default function SocialModule() {
     { id: 'approval', label: <TabLabel label="Do akceptacji" count={counts.approval} />, icon: ClipboardCheck },
     { id: 'drafts', label: <TabLabel label="Szkice" count={counts.drafts} />, icon: FileText },
     { id: 'sent', label: <TabLabel label="Opublikowane" count={counts.failed} tone="danger" />, icon: CheckCheck },
+    { id: 'links', label: tr('Strona linków'), icon: LinkIcon },
+    { id: 'rules', label: tr('Reguły'), icon: Workflow },
     { id: 'channels', label: tr('Kanały'), icon: Link2 },
   ];
 
@@ -150,7 +169,7 @@ export default function SocialModule() {
         <p className="text-sm text-red-700 dark:text-red-300">{social.error}</p>
       ) : (
         <div className="space-y-4">
-          {tab !== 'channels' && (
+          {!['channels', 'links', 'rules'].includes(tab) && (
             <FilterBar accounts={accounts} filters={filters} onChange={setFilters}
               statuses={tab === 'calendar' ? ['draft', 'pending_approval', 'scheduled', 'published', 'partial', 'failed'] : tab === 'sent' ? ['published', 'partial', 'failed'] : null} />
           )}
@@ -163,6 +182,8 @@ export default function SocialModule() {
               onOpen={open} onAction={onAction} action={tab !== 'sent' ? createBtn : null} />
           )}
           {tab === 'channels' && <ChannelsTab accounts={accounts} access={access} meta={meta} onChanged={reload} />}
+          {tab === 'links' && <LinkPageTab access={access} />}
+          {tab === 'rules' && <RulesTab accounts={accounts} access={access} />}
         </div>
       )}
 

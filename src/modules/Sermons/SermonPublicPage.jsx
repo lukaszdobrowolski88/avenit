@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Podcast, ArrowLeft } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
 import SermonPlayer from './components/SermonPlayer';
 import Spinner from '../../components/Spinner';
 import { tr } from '../../i18n';
@@ -9,7 +8,6 @@ import { tr } from '../../i18n';
 /**
  * Publiczna strona pojedynczego kazania — dostępna bez logowania pod /sermon/:slug.
  * Pokazuje wyłącznie kazania opublikowane (is_published = true).
- * UWAGA: trasę należy podpiąć w App.jsx (robi koordynator) — patrz uwagi w zgłoszeniu.
  */
 export default function SermonPublicPage() {
   const { slug } = useParams();
@@ -23,17 +21,13 @@ export default function SermonPublicPage() {
       setLoading(true);
       setNotFound(false);
       try {
-        const { data, error } = await supabase
-          .from('sermons')
-          .select('*')
-          .eq('slug', slug)
-          .eq('is_published', true)
-          .order('sermon_date', { ascending: false, nullsFirst: false })
-          .limit(1);
-        if (error) throw error;
+        // Publiczny odczyt (bez logowania) — /api/db wymaga sesji, więc odwiedzający z Facebooka
+        // dostawał „nie znaleziono”.
+        const res = await fetch(`/api/public/sermon/${encodeURIComponent(slug)}`);
         if (!active) return;
-        if (data && data.length > 0) {
-          setSermon(data[0]);
+        if (res.ok) {
+          const { sermon: row } = await res.json();
+          if (row) setSermon(row); else setNotFound(true);
         } else {
           setNotFound(true);
         }

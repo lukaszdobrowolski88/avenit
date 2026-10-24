@@ -137,6 +137,14 @@
 	handle /storage/* {
 		reverse_proxy api:3001
 	}
+	# Social Media: krótkie linki (/l/<kod>, karta wydarzenia, .ics) i strona linków — HTML z API
+	# (podgląd dla Facebooka wymaga meta tagów, których SPA nie ma). Osobne bloki: handle = 1 ścieżka.
+	handle /l/* {
+		reverse_proxy api:3001
+	}
+	handle /linki {
+		reverse_proxy api:3001
+	}
 	handle {
 		# Aplikacje kościołów są za logowaniem — nie indeksować
 		header X-Robots-Tag "noindex, nofollow"
